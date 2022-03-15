@@ -59,10 +59,14 @@ class SubtypesInstanceManager:
     def get(cls, subtype_name: str, raise_if_missing: bool = True):
         instances = cls.instances()
         base_type = cls.get_base_type()
-        if not instances:
-            for clazz in get_all_subclasses(base_type):
-                instances[clazz.impl_name()] = clazz()
         instance = instances.get(subtype_name)
+        if instance is None:
+            # lazily load subtype instance (required if new plugins are dynamically loaded at runtime)
+            for clazz in get_all_subclasses(base_type):
+                impl_name = clazz.impl_name()
+                if impl_name not in instances:
+                    instances[impl_name] = clazz()
+            instance = instances.get(subtype_name)
         if not instance and raise_if_missing:
             raise NotImplementedError(
                 f"Unable to find implementation named '{subtype_name}' for base type {base_type}"
@@ -108,7 +112,7 @@ def not_none_or(value: Optional[Any], alternative: Any) -> Any:
 
 
 def recurse_object(obj: ComplexType, func: Callable, path: str = "") -> ComplexType:
-    """Recursively apply `func` to `obj` (may be a list, dict, or other object)."""
+    """Recursively apply `func` to `obj` (might be a list, dict, or other object)."""
     obj = func(obj, path=path)
     if isinstance(obj, list):
         for i in range(len(obj)):
@@ -116,7 +120,7 @@ def recurse_object(obj: ComplexType, func: Callable, path: str = "") -> ComplexT
             obj[i] = recurse_object(obj[i], func, tmp_path)
     elif isinstance(obj, dict):
         for k, v in obj.items():
-            tmp_path = "%s%s" % ((path + ".") if path else "", k)
+            tmp_path = "%s%s" % (f"{path}." if path else "", k)
             obj[k] = recurse_object(v, func, tmp_path)
     return obj
 

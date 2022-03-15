@@ -36,7 +36,6 @@ from localstack.constants import (
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.utils.aws import templating
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.collections import pick_attributes
 from localstack.utils.functions import run_safe
@@ -379,11 +378,6 @@ def get_s3_hostname():
     return LOCALHOST
 
 
-# TODO remove from here in the future
-def render_velocity_template(*args, **kwargs):
-    return templating.render_velocity_template(*args, **kwargs)
-
-
 def generate_presigned_url(*args, **kwargs):
     endpoint_url = kwargs.pop("endpoint_url", None)
     s3_client = connect_to_service(
@@ -593,12 +587,14 @@ def get_iam_role(resource, env=None):
     return "role-%s" % resource
 
 
-# TODO: remove this (can't statically define secret ARN because it includes a random suffix)
-def secretsmanager_secret_arn(secret_id, account_id=None, region_name=None):
+def secretsmanager_secret_arn(secret_id, account_id=None, region_name=None, random_suffix=None):
     if ":" in (secret_id or ""):
         return secret_id
     pattern = "arn:aws:secretsmanager:%s:%s:secret:%s"
-    return _resource_arn(secret_id, pattern, account_id=account_id, region_name=region_name)
+    arn = _resource_arn(secret_id, pattern, account_id=account_id, region_name=region_name)
+    if random_suffix:
+        arn += f"-{random_suffix}"
+    return arn
 
 
 def cloudformation_stack_arn(stack_name, stack_id=None, account_id=None, region_name=None):

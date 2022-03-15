@@ -406,8 +406,8 @@ def get_attr_from_model_instance(resource, attribute, resource_type, resource_id
     try:
         inst = model_class(resource_name=resource_id, resource_json=resource)
         return inst.get_cfn_attribute(attribute)
-    except Exception:
-        pass
+    except Exception as e:
+        LOG.debug("Failed to retrieve model attribute: %s", attribute, exc_info=e)
 
 
 def resolve_ref(stack, ref, attribute):

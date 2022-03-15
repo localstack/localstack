@@ -1,0 +1,28 @@
+Resources:
+  CustomNestedStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        NestedBucketName: {{ nested_bucket_name }}
+      TemplateURL:
+        Fn::Join:
+          - ""
+          - - https://s3.
+            - Ref: AWS::Region
+            - "."
+            - Ref: AWS::URLSuffix
+            - {{ s3_bucket_url }}
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+Outputs:
+  CustomNestedStackId:
+    Value:
+      Ref: CustomNestedStack
+  CustomOutput:
+    Value:
+      Fn::Join:
+        - "-"
+        - - Fn::GetAtt:
+              - CustomNestedStack
+              - Outputs.InnerCustomOutput
+          - suffix

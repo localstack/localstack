@@ -157,11 +157,10 @@ def awslambda():
 
 @aws_provider()
 def logs():
-    from localstack.services.logs import logs_listener, logs_starter
+    from localstack.services.logs.provider import LogsAwsApiListener
 
-    return Service(
-        "logs", listener=logs_listener.UPDATE_LOGS, start=logs_starter.start_cloudwatch_logs
-    )
+    listener = LogsAwsApiListener()
+    return Service("logs", listener=listener)
 
 
 @aws_provider()
@@ -210,13 +209,13 @@ def s3():
 
 @aws_provider()
 def secretsmanager():
-    from localstack.services.secretsmanager import secretsmanager_listener, secretsmanager_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.secretsmanager.provider import SecretsmanagerProvider
 
+    provider = SecretsmanagerProvider()
     return Service(
         "secretsmanager",
-        listener=secretsmanager_listener.UPDATE_SECRETSMANAGER,
-        start=secretsmanager_starter.start_secretsmanager,
-        check=secretsmanager_starter.check_secretsmanager,
+        listener=AwsApiListener("secretsmanager", MotoFallbackDispatcher(provider)),
     )
 
 
