@@ -1,0 +1,167 @@
+Resources:
+  userpool38E431F2:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AutoVerifiedAttributes:
+        - email
+      EmailVerificationMessage: The verification code to your new account is {####}
+      EmailVerificationSubject: Verify your new account
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 6
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: false
+      SmsVerificationMessage: The verification code to your new account is {####}
+      UsernameAttributes:
+        - email
+      UserPoolName: {{user_pool_name}}
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailMessage: The verification code to your new account is {####}
+        EmailSubject: Verify your new account
+        SmsMessage: The verification code to your new account is {####}
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: cdk-starter-stack/user-pool/Resource
+  userpoolclient6E7D7551:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId:
+        Ref: userpool38E431F2
+      AllowedOAuthFlows:
+        - implicit
+        - code
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - profile
+        - phone
+        - email
+        - openid
+        - aws.cognito.signin.user.admin
+      CallbackURLs:
+        - https://example.com
+      ExplicitAuthFlows:
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_CUSTOM_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      SupportedIdentityProviders:
+        - COGNITO
+    Metadata:
+      aws:cdk:path: cdk-starter-stack/user-pool-client/Resource
+  identitypool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      AllowUnauthenticatedIdentities: true
+      CognitoIdentityProviders:
+        - ClientId:
+            Ref: userpoolclient6E7D7551
+          ProviderName:
+            Fn::GetAtt:
+              - userpool38E431F2
+              - ProviderName
+      IdentityPoolName: {{identity_pool_name}}
+    Metadata:
+      aws:cdk:path: cdk-starter-stack/identity-pool
+  anonymousgrouprole4CF2AF7A:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud:
+                  Ref: identitypool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: unauthenticated
+            Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+        Version: "2012-10-17"
+      Description: Default role for anonymous users
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: cdk-starter-stack/anonymous-group-role/Resource
+  usersgrouprole5142F148:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud:
+                  Ref: identitypool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+            Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+        Version: "2012-10-17"
+      Description: Default role for authenticated users
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: cdk-starter-stack/users-group-role/Resource
+  identitypoolroleattachment:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId:
+        Ref: identitypool
+      RoleMappings:
+        mapping:
+          AmbiguousRoleResolution: AuthenticatedRole
+          IdentityProvider:
+            Fn::Join:
+              - ""
+              - - cognito-idp.eu-central-1.amazonaws.com/
+                - Ref: userpool38E431F2
+                - ":"
+                - Ref: userpoolclient6E7D7551
+          Type: Token
+      Roles:
+        authenticated:
+          Fn::GetAtt:
+            - usersgrouprole5142F148
+            - Arn
+        unauthenticated:
+          Fn::GetAtt:
+            - anonymousgrouprole4CF2AF7A
+            - Arn
+    Metadata:
+      aws:cdk:path: cdk-starter-stack/identity-pool-role-attachment
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAAA02OvQ7CMAyEn6V7cKlgKBuoExOoiAeoUgPpT4wSB4SivDsJqNDpzp991hWwKWGZbZunXci2z70kg+BP3MheVBd9cHx3LCrSlo2TnFiNlpyRGERKxcRVKybwZ4vmSDSkm5+fTDUo1Dxf/cm+jUbxawrP55oG3HGscxsjDEI1I/gEP02ihhCEphahs/mjWENRwirrrFIL4+KXEaH+6hvDBBXz6wAAAA==
+    Metadata:
+      aws:cdk:path: cdk-starter-stack/CDKMetadata/Default
+Outputs:
+  userPoolId:
+    Value:
+      Ref: userpool38E431F2
+  userPoolClientId:
+    Value:
+      Ref: userpoolclient6E7D7551
+  identityPoolId:
+    Value:
+      Ref: identitypool
