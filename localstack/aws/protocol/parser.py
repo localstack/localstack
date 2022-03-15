@@ -426,7 +426,9 @@ class QueryRequestParser(RequestParser):
         request_uri_regex = self._get_request_uri_regex(operation)
         input_shape: StructureShape = operation.input_shape
         parsed = self._parse_shape(request, input_shape, instance, request_uri_regex)
-        return operation, parsed if parsed is not None else {}
+        if parsed is None:
+            return operation, {}
+        return operation, parsed
 
     def _process_member(
         self,
