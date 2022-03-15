@@ -117,7 +117,7 @@ class Ec2Provider(Ec2Api, ABC):
             ]
         )
 
-    @handler("PurchaseReservedInstancesOfferings", expand=False)
+    @handler("PurchaseReservedInstancesOffering", expand=False)
     def purchase_reserved_instances_offering(
         self,
         context: RequestContext,
