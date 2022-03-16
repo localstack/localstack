@@ -229,7 +229,9 @@ class TestCloudWatchLogs:
             assert len(response["subscriptionFilters"]) == 1
 
             def check_invocation():
-                events = testutil.get_lambda_log_events(test_lambda_name, log_group=logs_log_group)
+                events = testutil.get_lambda_log_events(
+                    test_lambda_name, log_group=logs_log_group, logs_client=logs_client
+                )
                 assert len(events) == 2
                 assert "test" in events
                 assert "test 2" in events

@@ -239,9 +239,10 @@ def s3_create_bucket(s3_client):
     # cleanup
     for bucket in buckets:
         try:
+            # TODO we should also delete content of bucket, as the delete_bucket will fail if the bucket is not empty
+            # suggested way is using resource model: https://github.com/boto/boto3/issues/1189#issuecomment-317858880
+            # but this does not work against Localstack (InvalidAccessKeyId) -> xfail: test_delete_bucket_with_content
             if is_aws_cloud():
-                # bucket might not be empty -> try to delete everything
-                # there is currently no way to do this with s3_client
                 bucket = boto3.resource("s3").Bucket(bucket)
                 bucket.objects.all().delete()
                 bucket.delete()
