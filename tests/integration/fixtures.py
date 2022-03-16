@@ -17,6 +17,7 @@ from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.testutil import start_http_server
 from tests.integration.cloudformation.utils import render_template, template_path
+from tests.integration.util import is_aws_cloud
 
 if TYPE_CHECKING:
     from mypy_boto3_acm import ACMClient
@@ -238,7 +239,15 @@ def s3_create_bucket(s3_client):
     # cleanup
     for bucket in buckets:
         try:
-            s3_client.delete_bucket(Bucket=bucket)
+            # TODO we should also delete content of bucket, as the delete_bucket will fail if the bucket is not empty
+            # suggested way is using resource model: https://github.com/boto/boto3/issues/1189#issuecomment-317858880
+            # but this does not work against Localstack (InvalidAccessKeyId) -> xfail: test_delete_bucket_with_content
+            if is_aws_cloud():
+                bucket = boto3.resource("s3").Bucket(bucket)
+                bucket.objects.all().delete()
+                bucket.delete()
+            else:
+                s3_client.delete_bucket(Bucket=bucket)
         except Exception as e:
             LOG.debug("error cleaning up bucket %s: %s", bucket, e)
 
@@ -330,7 +339,7 @@ def kinesis_create_stream(kinesis_client):
 
     for stream_name in stream_names:
         try:
-            kinesis_client.delete_stream(StreamName=stream_name)
+            kinesis_client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
         except Exception as e:
             LOG.debug("error cleaning up kinesis stream %s: %s", stream_name, e)
 
