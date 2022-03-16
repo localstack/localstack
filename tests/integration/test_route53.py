@@ -7,6 +7,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
+# TODO: add proper cleanup
 class TestRoute53:
     def test_create_hosted_zone(self):
         route53 = aws_stack.create_external_boto_client("route53")
@@ -17,12 +18,9 @@ class TestRoute53:
         response = route53.get_change(Id="string")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-    def test_associate_vpc_with_hosted_zone(self):
-        ec2 = aws_stack.create_external_boto_client("ec2")
-        route53 = aws_stack.create_external_boto_client("route53")
-
+    def test_associate_vpc_with_hosted_zone(self, ec2_client, route53_client, cleanups):
         name = "zone123"
-        response = route53.create_hosted_zone(
+        response = route53_client.create_hosted_zone(
             Name=name,
             CallerReference="ref123",
             HostedZoneConfig={"PrivateZone": True, "Comment": "test"},
@@ -31,18 +29,24 @@ class TestRoute53:
         zone_id = zone_id.replace("/hostedzone/", "")
 
         # associate zone with VPC
-        vpc = ec2.create_vpc(CidrBlock="10.0.0.0/24")
+        vpc = ec2_client.create_vpc(CidrBlock="10.0.0.0/24")
+        cleanups.append(lambda: ec2_client.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
         vpc_id = vpc["Vpc"]["VpcId"]
         vpc_region = aws_stack.get_region()
-        result = route53.associate_vpc_with_hosted_zone(
+        result = route53_client.associate_vpc_with_hosted_zone(
             HostedZoneId=zone_id,
             VPC={"VPCRegion": vpc_region, "VPCId": vpc_id},
             Comment="test 123",
         )
+        cleanups.append(
+            lambda: route53_client.disassociate_vpc_from_hosted_zone(
+                HostedZoneId=zone_id, VPC={"VPCRegion": vpc_region, "VPCId": vpc_id}
+            )
+        )
         assert result["ChangeInfo"].get("Id")
 
         # list zones by VPC
-        result = route53.list_hosted_zones_by_vpc(VPCId=vpc_id, VPCRegion=vpc_region)[
+        result = route53_client.list_hosted_zones_by_vpc(VPCId=vpc_id, VPCRegion=vpc_region)[
             "HostedZoneSummaries"
         ]
         expected = {
@@ -53,17 +57,17 @@ class TestRoute53:
         assert expected in result
 
         # list zones by name
-        result = route53.list_hosted_zones_by_name(DNSName=name).get("HostedZones")
+        result = route53_client.list_hosted_zones_by_name(DNSName=name).get("HostedZones")
         assert result[0]["Name"] == "zone123."
-        result = route53.list_hosted_zones_by_name(DNSName="%s." % name).get("HostedZones")
+        result = route53_client.list_hosted_zones_by_name(DNSName="%s." % name).get("HostedZones")
         assert result[0]["Name"] == "zone123."
 
         # assert that VPC is attached in Zone response
-        result = route53.get_hosted_zone(Id=zone_id)
+        result = route53_client.get_hosted_zone(Id=zone_id)
         assert result["VPCs"] == [{"VPCRegion": vpc_region, "VPCId": vpc_id}]
 
         # disassociate
-        route53.disassociate_vpc_from_hosted_zone(
+        route53_client.disassociate_vpc_from_hosted_zone(
             HostedZoneId=zone_id,
             VPC={"VPCRegion": aws_stack.get_region(), "VPCId": vpc_id},
             Comment="test2",
@@ -71,7 +75,7 @@ class TestRoute53:
         assert response["ResponseMetadata"]["HTTPStatusCode"] in [200, 201]
         # subsequent call (after disassociation) should fail with 404 error
         with pytest.raises(Exception):
-            route53.disassociate_vpc_from_hosted_zone(
+            route53_client.disassociate_vpc_from_hosted_zone(
                 HostedZoneId=zone_id,
                 VPC={"VPCRegion": aws_stack.get_region(), "VPCId": vpc_id},
             )

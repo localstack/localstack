@@ -1,3 +1,5 @@
+import pytest
+
 from localstack.utils.patch import Patch, get_defining_object, patch
 
 
@@ -100,6 +102,49 @@ def test_patch_decorator_on_bound_method():
     assert obj.do_echo("foo") == "monkey: foo"
     assert MyEchoer().do_echo("foo") == "do_echo: foo"
     monkey.patch.undo()
+
+    assert obj.do_echo("foo") == "do_echo: foo"
+    assert MyEchoer().do_echo("foo") == "do_echo: foo"
+
+
+def test_patch_decorator_twice_on_method():
+    @patch(target=MyEchoer.do_echo)
+    def monkey1(self, *args):
+        return f"monkey: {args[-1]}"
+
+    @patch(target=MyEchoer.do_echo)
+    def monkey2(fn, self, *args):
+        return f"monkey 2: {fn(*args)}"
+
+    obj = MyEchoer()
+
+    try:
+        assert obj.do_echo("foo") == "monkey 2: monkey: foo"
+        assert MyEchoer().do_echo("foo") == "monkey 2: monkey: foo"
+    finally:
+        monkey2.patch.undo()
+        monkey1.patch.undo()
+
+    assert obj.do_echo("foo") == "do_echo: foo"
+    assert MyEchoer().do_echo("foo") == "do_echo: foo"
+
+
+@pytest.mark.parametrize("pass_target", [True, False])
+def test_patch_decorator_twice_on_bound_method(pass_target):
+    obj = MyEchoer()
+
+    @patch(target=obj.do_echo, pass_target=pass_target)
+    def monkey1(self, *args):
+        return f"monkey: {args[-1]}"
+
+    @patch(target=obj.do_echo, pass_target=True)
+    def monkey2(self, fn, *args):
+        return f"monkey 2: {fn(*args)}"
+
+    assert obj.do_echo("foo") == "monkey 2: monkey: foo"
+    assert MyEchoer().do_echo("foo") == "do_echo: foo"
+    monkey2.patch.undo()
+    monkey1.patch.undo()
 
     assert obj.do_echo("foo") == "do_echo: foo"
     assert MyEchoer().do_echo("foo") == "do_echo: foo"

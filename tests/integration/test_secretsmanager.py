@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Dict, List, Optional
 
 import pytest
 import requests
@@ -190,7 +190,7 @@ class TestSecretsManager:
         testutil.delete_lambda_function(function_name)
 
     def test_put_secret_value_with_version_stages(self, secretsmanager_client):
-        secret_name: str = "test_put_secret_value_with_version_stages"
+        secret_name: str = "s-%s" % short_uid()
 
         secret_string_v0: str = "secret_string_v0"
         cr_v0_res = secretsmanager_client.create_secret(
@@ -269,14 +269,14 @@ class TestSecretsManager:
         secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
     @staticmethod
-    def secretsmanager_http_json_headers(amz_target: str) -> dict:
+    def secretsmanager_http_json_headers(amz_target: str) -> Dict:
         headers = aws_stack.mock_aws_request_headers("secretsmanager")
         headers["X-Amz-Target"] = amz_target
         return headers
 
     def secretsmanager_http_json_post(self, amz_target: str, http_body: json) -> requests.Response:
         ep_url: str = aws_stack.get_local_service_url("secretsmanager")
-        http_headers: dict = self.secretsmanager_http_json_headers(amz_target)
+        http_headers: Dict = self.secretsmanager_http_json_headers(amz_target)
         return requests.post(ep_url, headers=http_headers, data=json.dumps(http_body))
 
     def secretsmanager_http_create_secret_string(
@@ -423,7 +423,7 @@ class TestSecretsManager:
         secret_id: str,
         secret_string: str,
         client_request_token: Optional[str],
-        version_stages: [str],
+        version_stages: List[str],
     ) -> requests.Response:
         http_body: json = {
             "SecretId": secret_id,
@@ -438,7 +438,7 @@ class TestSecretsManager:
         res: requests.Response,
         secret_name: str,
         client_request_token: Optional[str],
-        version_stages: [str],
+        version_stages: List[str],
     ) -> json:
         req_version_id: str
         if client_request_token is None:
@@ -453,7 +453,7 @@ class TestSecretsManager:
         return res_json
 
     def test_http_put_secret_value_with_new_custom_client_request_token(self):
-        secret_name: str = "test_http_put_secret_value_with_new_custom_client_request_token"
+        secret_name: str = "s-%s" % short_uid()
 
         # Create v0.
         secret_string_v0: str = "MySecretString"
@@ -506,7 +506,7 @@ class TestSecretsManager:
         )
 
     def test_http_put_secret_value_with_duplicate_client_request_token(self):
-        secret_name: str = "test_http_put_secret_value_with_duplicate_client_request_token"
+        secret_name: str = "s-%s" % short_uid()
 
         # Create v0.
         secret_string_v0: str = "MySecretString"
@@ -554,7 +554,7 @@ class TestSecretsManager:
         )
 
     def test_http_put_secret_value_with_null_client_request_token(self):
-        secret_name: str = "test_http_put_secret_value_with_null_client_request_token"
+        secret_name: str = "s-%s" % short_uid()
 
         # Create v0.
         secret_string_v0: str = "MySecretString"
@@ -603,7 +603,7 @@ class TestSecretsManager:
         )
 
     def test_http_put_secret_value_with_undefined_client_request_token(self):
-        secret_name: str = "test_http_put_secret_value_with_undefined_client_request_token"
+        secret_name: str = "s-%s" % short_uid()
 
         # Create v0.
         secret_string_v0: str = "MySecretString"
@@ -651,7 +651,7 @@ class TestSecretsManager:
         )
 
     def test_http_put_secret_value_duplicate_req(self):
-        secret_name: str = "test_http_put_secret_value_duplicate_req"
+        secret_name: str = "s-%s" % short_uid()
 
         # Create v0.
         secret_string_v0: str = "MySecretString"
@@ -699,7 +699,7 @@ class TestSecretsManager:
         )
 
     def test_http_put_secret_value_null_client_request_token_new_version_stages(self):
-        secret_name: str = "test_http_put_secret_value_null_client_request_token_new_version_stages"
+        secret_name: str = "s-%s" % short_uid()
 
         # Create v0.
         secret_string_v0: str = "MySecretString"
@@ -718,7 +718,7 @@ class TestSecretsManager:
 
         # Update v0 with null ClientRequestToken.
         secret_string_v1: str = "MyNewSecretString"
-        version_stages_v1: [str] = ["AWSPENDING"]
+        version_stages_v1: List[str] = ["AWSPENDING"]
         #
         pv_v1_res_json = self.secretsmanager_http_put_secret_value_with_version_val_res(
             self.secretsmanager_http_put_secret_value_with_version(
@@ -764,9 +764,7 @@ class TestSecretsManager:
         )
 
     def test_http_put_secret_value_custom_client_request_token_new_version_stages(self):
-        secret_name: str = (
-            "test_http_put_secret_value_custom_client_request_token_new_version_stages"
-        )
+        secret_name: str = "s-%s" % short_uid()
 
         # Create v0.
         secret_string_v0: str = "MySecretString"
@@ -785,7 +783,7 @@ class TestSecretsManager:
 
         # Update v0 with null ClientRequestToken.
         secret_string_v1: str = "MyNewSecretString"
-        version_stages_v1: [str] = ["AWSPENDING"]
+        version_stages_v1: List[str] = ["AWSPENDING"]
         crt_v1: str = str(uuid.uuid4())
         while crt_v1 == cr_v0_res_json["VersionId"]:
             crt_v1 = str(uuid.uuid4())

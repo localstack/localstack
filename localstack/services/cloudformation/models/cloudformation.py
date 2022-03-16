@@ -1,6 +1,10 @@
+import logging
+
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
+
+LOG = logging.getLogger(__name__)
 
 
 class CloudFormationStack(GenericBaseModel):
@@ -18,6 +22,24 @@ class CloudFormationStack(GenericBaseModel):
         result = client.describe_stacks(StackName=child_stack_name)
         result = (result.get("Stacks") or [None])[0]
         return result
+
+    def get_cfn_attribute(self, attribute_name: str):
+        if attribute_name.startswith("Outputs."):
+            parts = attribute_name.split(".")
+            if len(parts) > 2:
+                raise Exception(
+                    f"Too many parts for stack output reference found: {attribute_name=}"
+                )
+            output_key = parts[1]
+            candidates = [
+                o["OutputValue"] for o in self.props["Outputs"] if o["OutputKey"] == output_key
+            ]
+            if len(candidates) == 1:
+                return candidates[0]
+            else:
+                raise Exception(f"Too many output values found for key {output_key=}")
+
+        return super(CloudFormationStack, self).get_cfn_attribute(attribute_name)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):

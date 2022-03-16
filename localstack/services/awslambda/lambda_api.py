@@ -72,6 +72,7 @@ from localstack.utils.common import (
     unzip,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.functions import run_safe
 from localstack.utils.generic.singleton_utils import SubtypesInstanceManager
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.run import FuncThread
@@ -552,7 +553,6 @@ def process_apigateway_invocation(
     query_string_params=None,
     stage_variables=None,
     request_context=None,
-    event_context=None,
 ):
     if path_params is None:
         path_params = {}
@@ -560,8 +560,6 @@ def process_apigateway_invocation(
         stage_variables = {}
     if request_context is None:
         request_context = {}
-    if event_context is None:
-        event_context = {}
     try:
         resource_path = resource_path or path
         event = construct_invocation_event(
@@ -584,7 +582,7 @@ def process_apigateway_invocation(
         inv_result = run_lambda(
             func_arn=func_arn,
             event=event,
-            context=event_context,
+            context=request_context,
             asynchronous=asynchronous,
         )
         return inv_result.result
@@ -814,7 +812,8 @@ def run_lambda(
         }
         LOG.info("Error executing Lambda function %s: %s %s", func_arn, e, traceback.format_exc())
         if isinstance(e, lambda_executors.InvocationException):
-            response = json.loads(e.result)
+            exc_result = e.result
+            response = run_safe(lambda: json.loads(exc_result)) or response
         log_output = e.log_output if isinstance(e, lambda_executors.InvocationException) else ""
         return InvocationResult(Response(json.dumps(response), status=500), log_output)
     finally:

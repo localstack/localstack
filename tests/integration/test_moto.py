@@ -3,7 +3,7 @@ import pytest
 from localstack import config
 from localstack.aws.api import ServiceException, handler
 from localstack.services import moto
-from localstack.services.moto import MotoFallbackDispatcher
+from localstack.services.moto import MotoFallbackDispatcher, get_dispatcher
 from localstack.utils.common import short_uid, to_str
 
 
@@ -222,3 +222,26 @@ def test_moto_fallback_dispatcher():
     response = _dispatch("ListQueues", None)
     assert len(provider.calls) == 1
     assert len([url for url in response["QueueUrls"] if qname in url])
+
+
+def test_get_dispatcher_for_path_with_optional_slashes():
+    assert get_dispatcher("route53", "/2013-04-01/hostedzone/BOR36Z3H458JKS9/rrset/")
+    assert get_dispatcher("route53", "/2013-04-01/hostedzone/BOR36Z3H458JKS9/rrset")
+
+
+def test_request_with_response_header_location_fields():
+    # CreateHostedZoneResponse has a member "Location" that's located in the headers
+    zone_name = f"zone-{short_uid()}.com"
+    request = moto.create_aws_request_context(
+        "route53", "CreateHostedZone", {"Name": zone_name, "CallerReference": "test"}
+    )
+    response = moto.call_moto(request, include_response_metadata=True)
+    # assert response["Location"]  # FIXME: this is required according to the spec, but not returned by moto
+    assert response["HostedZone"]["Id"]
+
+    # clean up
+    moto.call_moto(
+        moto.create_aws_request_context(
+            "route53", "DeleteHostedZone", {"Id": response["HostedZone"]["Id"]}
+        )
+    )

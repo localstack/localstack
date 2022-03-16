@@ -324,6 +324,35 @@ class EC2VPC(GenericBaseModel):
         resp = client.describe_vpcs(Filters=[{"Name": "cidr", "Values": [self.props["CidrBlock"]]}])
         return (resp["Vpcs"] or [None])[0]
 
+    def get_cfn_attribute(self, attribute_name):
+        ec2_client = aws_stack.connect_to_service("ec2")
+        vpc_id = self.state["VpcId"]
+
+        if attribute_name == "DefaultSecurityGroup":
+            sgs = ec2_client.describe_security_groups(
+                Filters=[
+                    {"Name": "group-name", "Values": ["default"]},
+                    {"Name": "vpc-id", "Values": [vpc_id]},
+                ]
+            )["SecurityGroups"]
+            if len(sgs) != 1:
+                raise Exception(f"There should only be one default group for this VPC ({vpc_id=})")
+            return sgs[0]["GroupId"]
+        elif attribute_name == "DefaultNetworkAcl":
+            acls = ec2_client.describe_network_acls(
+                Filters=[
+                    {"Name": "default", "Values": ["true"]},
+                    {"Name": "vpc-id", "Values": [vpc_id]},
+                ]
+            )["NetworkAcls"]
+            if len(acls) != 1:
+                raise Exception(
+                    f"There should only be one default network ACL for this VPC ({vpc_id=})"
+                )
+            return acls[0]["NetworkAclId"]
+        else:
+            return super(EC2VPC, self).get_cfn_attribute(attribute_name)
+
     @classmethod
     def get_deploy_templates(cls):
         def _pre_delete(resource_id, resources, resource_type, func, stack_name):

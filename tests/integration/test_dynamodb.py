@@ -722,6 +722,7 @@ class TestDynamoDB:
             records["Records"][0]["dynamodb"]["ApproximateCreationDateTime"],
             datetime,
         )
+        assert records["Records"][0]["dynamodb"]["ApproximateCreationDateTime"].microsecond == 0
         assert records["Records"][0]["eventVersion"] == "1.1"
         assert records["Records"][0]["eventName"] == "INSERT"
         assert "OldImage" not in records["Records"][0]["dynamodb"]
@@ -730,6 +731,7 @@ class TestDynamoDB:
             records["Records"][1]["dynamodb"]["ApproximateCreationDateTime"],
             datetime,
         )
+        assert records["Records"][1]["dynamodb"]["ApproximateCreationDateTime"].microsecond == 0
         assert records["Records"][1]["eventVersion"] == "1.1"
         assert records["Records"][1]["eventName"] == "MODIFY"
         assert "OldImage" in records["Records"][1]["dynamodb"]

@@ -463,7 +463,8 @@ class ProxyListenerDynamoDB(ProxyListener):
             "eventID": "1",
             "eventVersion": "1.1",
             "dynamodb": {
-                "ApproximateCreationDateTime": time.time(),
+                # expects nearest second rounded down
+                "ApproximateCreationDateTime": int(time.time()),
                 # 'StreamViewType': 'NEW_AND_OLD_IMAGES',
                 "SizeBytes": -1,
             },
