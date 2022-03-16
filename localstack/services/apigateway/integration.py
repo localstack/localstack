@@ -45,88 +45,91 @@ class SnsIntegration(BackendIntegration):
         )
 
 
+class VelocityUtil(object):
+    """
+    Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
+    velocity templates.
+    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+    """
+
+    def base64Encode(self, s):
+        if not isinstance(s, str):
+            s = json.dumps(s)
+        encoded_str = s.encode(config.DEFAULT_ENCODING)
+        encoded_b64_str = base64.b64encode(encoded_str)
+        return encoded_b64_str.decode(config.DEFAULT_ENCODING)
+
+    def base64Decode(self, s):
+        if not isinstance(s, str):
+            s = json.dumps(s)
+        return base64.b64decode(s)
+
+    def toJson(self, obj):
+        return obj and json.dumps(obj)
+
+    def urlEncode(self, s):
+        return quote_plus(s)
+
+    def urlDecode(self, s):
+        return unquote_plus(s)
+
+    def escapeJavaScript(self, s):
+        try:
+            return json.dumps(json.loads(s))
+        except Exception:
+            primitive_types = (str, int, bool, float, type(None))
+            s = s if isinstance(s, primitive_types) else str(s)
+        if str(s).strip() in ["true", "false"]:
+            s = bool(s)
+        elif s not in [True, False] and is_number(s):
+            s = to_number(s)
+        return json.dumps(s)
+
+
+class VelocityInput(object):
+    """
+    Simple class to mimic the behavior of variable '$input' in AWS API Gateway integration
+    velocity templates.
+    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+    """
+
+    def __init__(self, body, params):
+        self.parameters = params or {}
+        self.value = body
+
+    def path(self, path):
+        if not self.value:
+            return {}
+        value = self.value if isinstance(self.value, dict) else json.loads(self.value)
+        return extract_jsonpath(value, path)
+
+    def json(self, path):
+        path = path or "$"
+        matching = self.path(path)
+        if isinstance(matching, (list, dict)):
+            matching = json_safe(matching)
+        return json.dumps(matching)
+
+    @property
+    def body(self):
+        return self.value
+
+    def params(self, name=None):
+        if not name:
+            return self.parameters
+        for k in ["path", "querystring", "header"]:
+            if val := self.parameters.get(k).get(name):
+                return val
+        return ""
+
+    def __getattr__(self, name):
+        return self.value.get(name)
+
+    def __repr__(self):
+        return "$input"
+
+
 class VtlTemplate:
-    class VelocityUtil(object):
-        """
-        Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
-        velocity templates.
-        See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
-        """
-
-        def base64Encode(self, s):
-            if not isinstance(s, str):
-                s = json.dumps(s)
-            encoded_str = s.encode(config.DEFAULT_ENCODING)
-            encoded_b64_str = base64.b64encode(encoded_str)
-            return encoded_b64_str.decode(config.DEFAULT_ENCODING)
-
-        def base64Decode(self, s):
-            if not isinstance(s, str):
-                s = json.dumps(s)
-            return base64.b64decode(s)
-
-        def toJson(self, obj):
-            return obj and json.dumps(obj)
-
-        def urlEncode(self, s):
-            return quote_plus(s)
-
-        def urlDecode(self, s):
-            return unquote_plus(s)
-
-        def escapeJavaScript(self, s):
-            try:
-                return json.dumps(json.loads(s))
-            except Exception:
-                primitive_types = (str, int, bool, float, type(None))
-                s = s if isinstance(s, primitive_types) else str(s)
-            if str(s).strip() in ["true", "false"]:
-                s = bool(s)
-            elif s not in [True, False] and is_number(s):
-                s = to_number(s)
-            return json.dumps(s)
-
-    class VelocityInput(object):
-        """
-        Simple class to mimic the behavior of variable '$input' in AWS API Gateway integration
-        velocity templates.
-        See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
-        """
-
-        def __init__(self, body, params):
-            self.parameters = params or {}
-            self.value = body
-
-        def path(self, path):
-            if not self.value:
-                return {}
-            value = self.value if isinstance(self.value, dict) else json.loads(self.value)
-            return extract_jsonpath(value, path)
-
-        def json(self, path):
-            path = path or "$"
-            matching = self.path(path)
-            if isinstance(matching, (list, dict)):
-                matching = json_safe(matching)
-            return json.dumps(matching)
-
-        @property
-        def body(self):
-            return self.value
-
-        def params(self, name=None):
-            if not name:
-                return self.parameters
-            for k in ["path", "querystring", "header"]:
-                if val := self.parameters.get(k).get(name):
-                    return val
-            return ""
-
-        def __getattr__(self, name):
-            return self.value.get(name)
-
-        def __repr__(self):
-            return "$input"
 
     def render_vtl(self, template, variables: dict, as_json=False):
         if variables is None:
@@ -177,8 +180,8 @@ class VtlTemplate:
         stage_var = variables.get("stage_variables") or {}
         t = airspeed.Template(template)
         namespace = {
-            "input": self.VelocityInput(input_var.get("body"), input_var.get("params")),
-            "util": self.VelocityUtil(),
+            "input": VelocityInput(input_var.get("body"), input_var.get("params")),
+            "util": VelocityUtil(),
             "context": context_var,
             "stageVariables": stage_var,
         }
