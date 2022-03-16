@@ -16,7 +16,7 @@ from localstack.services.apigateway.helpers import apply_json_patch_safe
 from localstack.services.apigateway.integration import (
     RequestTemplates,
     ResponseTemplates,
-    VtlTemplate, VelocityUtil,
+    VelocityUtil,
 )
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone

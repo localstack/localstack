@@ -606,9 +606,7 @@ def construct_invocation_event(
         "isBase64Encoded": is_base64_encoded,
         "httpMethod": method,
         "queryStringParameters": query_string_params,
-        "multiValueQueryStringParameters": multi_value_dict_for_list(
-            query_string_params
-        ),
+        "multiValueQueryStringParameters": multi_value_dict_for_list(query_string_params),
     }
 
 
