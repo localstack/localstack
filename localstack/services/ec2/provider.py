@@ -46,8 +46,6 @@ from localstack.services import moto
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.strings import long_uid, short_uid
 
-GATEWAY_SERVICES = ["s3", "dynamodb"]
-
 
 class Ec2Backend(RegionBackend):
     prefix_lists: Dict[str, PrefixList]
