@@ -8,6 +8,7 @@ import sys
 import threading
 from typing import Dict, Optional
 
+import xmltodict
 from requests.models import Response
 
 from localstack import config
@@ -203,6 +204,15 @@ class ProxyListenerEdge(ProxyListener):
                     dict(response.headers),
                     response.content,
                 )
+
+        # convert XML responses to JSON - TODO: introduce generalizable response conversion
+        if headers.get("Accept") == "application/json":
+            try:
+                # simple heuristic to detect XML responses
+                if str(response._content or "").startswith("<"):
+                    response._content = xmltodict.parse(to_str(response._content))
+            except Exception as e:
+                LOG.debug("Unable to convert XML response to JSON: %s", e)
 
         if (
             response._content
