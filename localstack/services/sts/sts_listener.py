@@ -1,5 +1,6 @@
 from requests.models import Request
 
+from localstack.constants import APPLICATION_JSON
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import MessageConversion, is_invalid_html_response
 from localstack.utils.http import replace_response_content
@@ -28,14 +29,16 @@ class ProxyListenerSTS(ProxyListener):
             if is_invalid_html_response(response.headers, response._content):
                 response.headers["Content-Type"] = "text/xml"
 
-            # fix error "Expiration" is not a long
-            pattern = r"<Expiration>([^<]+)</Expiration>"
+            if headers.get("Accept") == APPLICATION_JSON:
+                # convert "Expiration" to int for JSON response format (tested against AWS)
+                # TODO: introduce a proper/generic approach that works across arbitrary date fields in JSON
 
-            def _replace(match):
-                timestamp = parse_timestamp(match.group(1).strip())
-                return f"<Expiration>{int(timestamp.timestamp())}</Expiration>"
+                def _replace(match):
+                    timestamp = parse_timestamp(match.group(1).strip())
+                    return f"<Expiration>{int(timestamp.timestamp())}</Expiration>"
 
-            replace_response_content(response, pattern, _replace)
+                pattern = r"<Expiration>([^<]+)</Expiration>"
+                replace_response_content(response, pattern, _replace)
 
 
 # instantiate listener

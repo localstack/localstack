@@ -9,7 +9,7 @@ import xmltodict
 from requests.models import Request as RequestsRequest
 
 from localstack import config
-from localstack.constants import HEADER_LOCALSTACK_EDGE_URL, TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL, TEST_AWS_ACCOUNT_ID
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
     ProxyListener,
@@ -275,7 +275,7 @@ class TestEdgeAPI:
         assert content1_result["Account"] == TEST_AWS_ACCOUNT_ID
 
         headers = aws_stack.mock_aws_request_headers("sts")
-        headers["Accept"] = "application/json"
+        headers["Accept"] = APPLICATION_JSON
         response = requests.post(url, data=data, headers=headers)
         assert response
         content2 = json.loads(to_str(response.content))
