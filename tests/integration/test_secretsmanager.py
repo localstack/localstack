@@ -458,6 +458,93 @@ class TestSecretsManager:
         des = secretsmanager_client.describe_secret(SecretId=secret_name)
         assert des["Description"] == description_v2
 
+    def test_update_secret_version_stages_current_previous(self, secretsmanager_client):
+        secret_name: str = "s-%s" % short_uid()
+        secret_string_v0 = "secret_string_v0"
+        create = secretsmanager_client.create_secret(
+            Name=secret_name, SecretString=secret_string_v0
+        )
+        version_id_v0 = create["VersionId"]
+
+        lst_ids_v0 = secretsmanager_client.list_secret_version_ids(
+            SecretId=secret_name, IncludeDeprecated=True
+        )
+        versions_v0 = lst_ids_v0["Versions"]
+        assert len(versions_v0) == 1
+        versions_v0_v0 = versions_v0[0]
+        assert versions_v0_v0["VersionId"] == version_id_v0
+        assert versions_v0_v0["VersionStages"] == ["AWSCURRENT"]
+
+        secret_string_v1 = "secret_string_v1"
+        update_v1 = secretsmanager_client.update_secret(
+            SecretId=secret_name, SecretString=secret_string_v1
+        )
+        version_id_v1 = update_v1["VersionId"]
+        assert version_id_v0 != version_id_v1
+
+        lst_ids_v1 = secretsmanager_client.list_secret_version_ids(
+            SecretId=secret_name, IncludeDeprecated=True
+        )
+        versions_v1 = lst_ids_v1["Versions"]
+        assert len(versions_v1) == 2
+        versions_v1_v0 = versions_v1[0]
+        assert versions_v1_v0["VersionId"] == version_id_v0
+        assert versions_v1_v0["VersionStages"] == ["AWSPREVIOUS"]
+        versions_v1_v1 = versions_v1[1]
+        assert versions_v1_v1["VersionId"] == version_id_v1
+        assert versions_v1_v1["VersionStages"] == ["AWSCURRENT"]
+
+    def test_update_secret_version_stages_current_pending(self, secretsmanager_client):
+        secret_name: str = "s-%s" % short_uid()
+        create = secretsmanager_client.create_secret(Name=secret_name, SecretString="Something1")
+        version_id_v0 = create["VersionId"]
+
+        put_pending_res = secretsmanager_client.put_secret_value(
+            SecretId=secret_name, SecretString='Something2', VersionStages=['AWSPENDING']
+        )
+        version_id_v1 = put_pending_res["VersionId"]
+        assert version_id_v1 != version_id_v0
+
+        list_ids_res = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(list_ids_res["Versions"]) == 2
+        list_ids_0 = list_ids_res['Versions'][0]
+        assert list_ids_0["VersionId"] == version_id_v0
+        assert list_ids_0["VersionStages"] == ["AWSCURRENT"]
+        list_ids_1 = list_ids_res['Versions'][1]
+        assert list_ids_1["VersionId"] == version_id_v1
+        assert list_ids_1["VersionStages"] == ["AWSPENDING"]
+
+        upd_res = secretsmanager_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=version_id_v0,
+            MoveToVersionId=version_id_v1,
+            VersionStage='AWSCURRENT'
+        )
+        assert "VersionId" not in upd_res
+
+        list_ids_2_res = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(list_ids_2_res["Versions"]) == 2
+        list_ids_2_0 = list_ids_2_res["Versions"][0]
+        assert list_ids_2_0["VersionId"] == version_id_v0
+        assert list_ids_2_0["VersionStages"] == ["AWSPREVIOUS"]
+        list_ids_2_1 = list_ids_2_res["Versions"][1]
+        assert list_ids_2_1["VersionId"] == version_id_v1
+        assert list_ids_2_1["VersionStages"] == ["AWSPENDING", "AWSCURRENT"]
+
+        upd_2_res = secretsmanager_client.put_secret_value(SecretId=secret_name, SecretString='SS3')
+        version_id_v2 = upd_2_res["VersionId"]
+        assert version_id_v2 != version_id_v1
+        assert version_id_v2 != version_id_v0
+
+        list_ids_3_res = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(list_ids_3_res["Versions"]) == 2
+        list_ids_3_0 = list_ids_3_res["Versions"][0]
+        assert list_ids_3_0["VersionId"] == version_id_v1
+        assert list_ids_3_0["VersionStages"] == ["AWSPREVIOUS"]
+        list_ids_3_1 = list_ids_3_res["Versions"][1]
+        assert list_ids_3_1["VersionId"] == version_id_v2
+        assert list_ids_3_1["VersionStages"] == ["AWSCURRENT"]
+
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> Dict:
         headers = aws_stack.mock_aws_request_headers("secretsmanager")
@@ -608,6 +695,25 @@ class TestSecretsManager:
         assert res_json["VersionId"] == client_request_token
         return res_json
 
+    def secretsmanager_http_update_secret(
+        self, secret_id: str, secret_string: str, client_request_token: Optional[str]
+    ):
+        http_body: json = {"SecretId": secret_id, "SecretString": secret_string}
+        if client_request_token:
+            http_body["ClientRequestToken"] = client_request_token
+        return self.secretsmanager_http_json_post("secretsmanager.UpdateSecret", http_body)
+
+    @staticmethod
+    def secretsmanager_http_update_secret_val_res(
+        res: requests.Response, secret_name: str, client_request_token: Optional[str]
+    ):
+        assert res.status_code == 200
+        res_json: json = res.json()
+        assert res_json["Name"] == secret_name
+        if client_request_token:
+            assert res_json["VersionId"] == client_request_token
+        return res_json
+
     def secretsmanager_http_put_secret_value_with_version(
         self,
         secret_id: str,
@@ -641,6 +747,53 @@ class TestSecretsManager:
         )
         assert res_json["VersionStages"] == version_stages
         return res_json
+
+    def test_http_update_secret_with_missing_client_request_token(self):
+        secret_name: str = "s-%s" % short_uid()
+
+        # Create v0.
+        secret_string_v0: str = "secret_string_v0"
+        cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
+            self.secretsmanager_http_create_secret_string(secret_name, secret_string_v0),
+            secret_name,
+        )
+        version_id_v0 = cr_v0_res_json["VersionId"]
+
+        # Update with client request token.
+        secret_string_v1: str = "secret_string_v1"
+        version_id_v1: str = str(uuid.uuid4())
+        self.secretsmanager_http_update_secret_val_res(
+            self.secretsmanager_http_update_secret(secret_name, secret_string_v1, version_id_v1),
+            secret_name,
+            version_id_v1,
+        )
+
+        # Get.
+        self.secretsmanager_http_get_secret_value_val_res(
+            self.secretsmanager_http_get_secret_value(secret_name),
+            secret_name,
+            secret_string_v1,
+            version_id_v1,
+        )
+
+        # Update without client request token.
+        secret_string_v2: str = "secret_string_v2"
+        res_update_json = self.secretsmanager_http_update_secret_val_res(
+            self.secretsmanager_http_update_secret(secret_name, secret_string_v2, None),
+            secret_name,
+            None,
+        )
+        version_id_v2 = res_update_json["VersionId"]
+        assert version_id_v2 != version_id_v1
+        assert version_id_v2 != version_id_v0
+
+        # Get.
+        self.secretsmanager_http_get_secret_value_val_res(
+            self.secretsmanager_http_get_secret_value(secret_name),
+            secret_name,
+            secret_string_v2,
+            version_id_v2,
+        )
 
     def test_http_put_secret_value_with_new_custom_client_request_token(self):
         secret_name: str = "s-%s" % short_uid()
