@@ -264,6 +264,7 @@ class TestEdgeAPI:
         url = config.get_edge_url()
         data = {"Action": "GetCallerIdentity", "Version": "2011-06-15"}
 
+        # receive response as XML (default)
         headers = aws_stack.mock_aws_request_headers("sts")
         response = requests.post(url, data=data, headers=headers)
         assert response
@@ -274,6 +275,7 @@ class TestEdgeAPI:
         content1_result = content1["GetCallerIdentityResponse"]["GetCallerIdentityResult"]
         assert content1_result["Account"] == TEST_AWS_ACCOUNT_ID
 
+        # receive response as JSON (via Accept header)
         headers = aws_stack.mock_aws_request_headers("sts")
         headers["Accept"] = APPLICATION_JSON
         response = requests.post(url, data=data, headers=headers)
