@@ -4,6 +4,13 @@ from localstack.utils.common import select_attributes
 
 
 class Route53RecordSet(GenericBaseModel):
+    # route53_client = None
+    #
+    # @classmethod
+    # def get_route53_client(cls):
+    #     if not cls.route53_client:
+    #         cls.route53_client = aws_stack.connect_to_service("route53")
+    #
     @staticmethod
     def cloudformation_type():
         return "AWS::Route53::RecordSet"
@@ -40,16 +47,35 @@ class Route53RecordSet(GenericBaseModel):
             attrs = select_attributes(params, attr_names)
             alias_target = attrs.get("AliasTarget", {})
             alias_target["EvaluateTargetHealth"] = alias_target.get("EvaluateTargetHealth", False)
+            attrs["ResourceRecords"] = [{"Value": r} for r in attrs["ResourceRecords"]]
             return {
                 "Comment": params.get("Comment", ""),
                 "Changes": [{"Action": "CREATE", "ResourceRecordSet": attrs}],
             }
 
+        def hosted_zone_id_change_batch(params, **kwargs):
+            route53 = aws_stack.connect_to_service("route53")
+            hosted_zone_id = params.get("HostedZoneId")
+            if not hosted_zone_id:
+                hosted_zone_name = params.get("HostedZoneName")
+                # https://docs.aws.amazon.com/Route53/latest/APIReference/API_ChangeResourceRecordSets.html"
+                # "Specify either HostedZoneName or HostedZoneId, but not both. If you have multiple hosted zones with the same domain name, you must specify the hosted zone using HostedZoneId."
+                if not hosted_zone_name:
+                    raise Exception("Either HostedZoneId or HostedZoneName must be present.")
+                hosted_zones = route53.list_hosted_zones_by_name(DNSName=hosted_zone_name)[
+                    "HostedZones"
+                ]
+                if not len(hosted_zones) == 1:
+                    raise Exception(f"Ambiguous HostedZoneName {hosted_zone_name} provided.")
+                hosted_zone = hosted_zones[0]
+                hosted_zone_id = hosted_zone.get("Id")
+            return hosted_zone_id
+
         return {
             "create": {
                 "function": "change_resource_record_sets",
                 "parameters": {
-                    "HostedZoneId": "HostedZoneId",
+                    "HostedZoneId": hosted_zone_id_change_batch,
                     "ChangeBatch": param_change_batch,
                 },
             }

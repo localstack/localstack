@@ -1,0 +1,14 @@
+{
+"Resources": {
+  "myDNSWithNameRecord": {
+    "Type": "AWS::Route53::RecordSet",
+    "Properties": {
+      "HostedZoneName": "%s",
+      "Name": "%s",
+      "ResourceRecords": ["192.0.2.99"],
+      "TTL": 900,
+      "Type": "A"
+    }
+  }
+}
+}
