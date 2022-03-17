@@ -658,8 +658,15 @@ def modify_and_forward(
 
         # make sure we drop "chunked" transfer encoding from the headers to be forwarded
         headers_to_send.pop("Transfer-Encoding", None)
-        if headers_to_send.get("Host") == "localhost":
-            headers_to_send.pop("Host", None)
+
+        # Note: requests seems to prefer the Host header over the request's url= parameter, hence
+        # we're dropping it from the headers here in case of a mismatch to avoid routing errors
+        host_header = headers_to_send.get("Host")
+        if host_header:
+            host_from_url = request_url.partition("://")[2].partition("/")[0]
+            if host_header != host_from_url:
+                headers_to_send.pop("Host")
+
         response = requests.request(
             method_to_send,
             request_url,

@@ -44,6 +44,7 @@ from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.utils.strings import to_bytes, to_str, truncate
 from localstack.utils.sync import sleep_forever
 from localstack.utils.threads import TMP_THREADS, start_thread
+from localstack.utils.xml import strip_xmlns
 
 LOG = logging.getLogger(__name__)
 
@@ -210,7 +211,8 @@ class ProxyListenerEdge(ProxyListener):
             try:
                 # simple heuristic to detect XML responses
                 if str(response._content or "").startswith("<"):
-                    response._content = xmltodict.parse(to_str(response._content))
+                    content = xmltodict.parse(to_str(response._content))
+                    response._content = strip_xmlns(content)
             except Exception as e:
                 LOG.debug("Unable to convert XML response to JSON: %s", e)
 
@@ -260,7 +262,7 @@ def do_forward_request_inmem(api, method, path, data, headers, port=None):
     # TODO determine client address..?
     client_address = LOCALHOST_IP
     server_address = headers.get("host") or LOCALHOST
-    forward_url = "http://%s:%s" % (LOCALHOST, backend_port)
+    forward_url = f"http://{LOCALHOST}:{backend_port}"
     response = modify_and_forward(
         method=method,
         path=path,
