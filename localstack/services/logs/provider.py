@@ -145,8 +145,8 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
     log_group.put_subscription_filter(filter_name, filter_pattern, destination_arn, role_arn)
 
 
-@patch(MotoLogStream.put_log_events)
-def moto_put_log_events(_, self, log_group_name, log_stream_name, log_events, sequence_token):
+@patch(MotoLogStream.put_log_events, pass_target=False)
+def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
     # TODO: call/patch upstream method here, instead of duplicating the code!
     self.last_ingestion_time = int(unix_time_millis())
     self.stored_bytes += sum([len(log_event["message"]) for log_event in log_events])
