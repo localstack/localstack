@@ -159,10 +159,8 @@ def apply_patches():
 
     # patch _key_response_put(..)
     @patch(s3_responses.S3ResponseInstance._key_response_put)
-    def s3_key_response_put(
-        self, fn, request, body, bucket_name, query, key_name, headers, *args, **kwargs
-    ):
-        result = fn(request, body, bucket_name, query, key_name, headers, *args, **kwargs)
+    def s3_key_response_put(self, fn, request, body, bucket_name, query, key_name, *args, **kwargs):
+        result = fn(request, body, bucket_name, query, key_name, *args, **kwargs)
         s3_update_acls(self, request, query, bucket_name, key_name)
         return result
 
@@ -235,7 +233,7 @@ def apply_patches():
     </DeleteResult>"""
 
     @patch(s3_responses.S3ResponseInstance._bucket_response_delete_keys, pass_target=False)
-    def s3_bucket_response_delete_keys(self, request, body, bucket_name):
+    def s3_bucket_response_delete_keys(self, body, bucket_name, *args, **kwargs):
         template = self.response_template(s3_delete_keys_response_template)
         elements = minidom.parseString(body).getElementsByTagName("Object")
         if len(elements) == 0:
