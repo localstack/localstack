@@ -659,17 +659,9 @@ def modify_and_forward(
         # make sure we drop "chunked" transfer encoding from the headers to be forwarded
         headers_to_send.pop("Transfer-Encoding", None)
 
-        # Note: requests seems to prefer the Host header over the request's url= parameter, hence
-        # we're dropping it from the headers here in case of a mismatch to avoid routing errors
-        host_header = headers_to_send.get("Host")
-        if host_header:
-            host_from_url = request_url.partition("://")[2].partition("/")[0]
-            if host_header != host_from_url:
-                headers_to_send.pop("Host")
-
         response = requests.request(
             method_to_send,
-            request_url,
+            url=request_url,
             data=data_to_send,
             headers=headers_to_send,
             stream=True,
@@ -678,9 +670,8 @@ def modify_and_forward(
 
     # prevent requests from processing response body (e.g., to pass-through gzip encoded content
     # unmodified)
-    pass_raw = (
-        hasattr(response, "_content_consumed") and not response._content_consumed
-    ) or response.headers.get("content-encoding") in ["gzip"]
+    not_consumed = not getattr(response, "_content_consumed", True)
+    pass_raw = not_consumed or response.headers.get("content-encoding") in ["gzip"]
     if pass_raw and getattr(response, "raw", None):
         new_content = response.raw.read()
         if new_content:
