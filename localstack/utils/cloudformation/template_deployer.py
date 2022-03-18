@@ -901,6 +901,25 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
         if action_name == "create":
             func_details["boto_client"] = "resource"
 
+    # TODO: probably move to correct cloudformation.model
+    if resource_type == "Cognito::IdentityPoolRoleAttachment":
+        if action_name == "create":
+            if func_details["function"] == "set_identity_pool_roles":
+
+                def _fix_param_mapping(params, **kwargs):
+                    role_mapping = params.get("RoleMappings")
+                    if role_mapping:
+                        fixed_mappings = {}
+                        for key, value in role_mapping.items():
+                            if value.get("IdentityProvider"):
+                                fixed_mappings[value.pop("IdentityProvider")] = value
+                            else:
+                                fixed_mappings[key] = value
+                        params["RoleMappings"] = fixed_mappings
+                    return params
+
+                func_details["parameters"] = _fix_param_mapping
+
     client = get_client(resource, func_details)
     function = getattr(client, func_details["function"])
     params = func_details.get("parameters") or lambda_get_params()
