@@ -548,7 +548,7 @@ def deploy_cfn_template(
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
         assert wait_until(is_change_set_finished(change_set_id))
 
-        outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["Outputs"]
+        outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 
         mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
 
