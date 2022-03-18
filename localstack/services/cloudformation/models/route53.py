@@ -59,7 +59,7 @@ class Route53RecordSet(GenericBaseModel):
                 hosted_zones = route53.list_hosted_zones_by_name(DNSName=hosted_zone_name)[
                     "HostedZones"
                 ]
-                if not len(hosted_zones) == 1:
+                if len(hosted_zones) != 1:
                     raise Exception(f"Ambiguous HostedZoneName {hosted_zone_name} provided.")
                 hosted_zone = hosted_zones[0]
                 hosted_zone_id = hosted_zone.get("Id")
