@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudwatch import CloudWatchClient
-    from mypy_boto3_cognito_identity import CognitoIdentityClient
     from mypy_boto3_dynamodb import DynamoDBClient
     from mypy_boto3_ec2 import EC2Client
     from mypy_boto3_es import ElasticsearchServiceClient
@@ -194,11 +193,6 @@ def rgsa_client() -> "ResourceGroupsTaggingAPIClient":
 @pytest.fixture(scope="class")
 def route53_client() -> "Route53Client":
     return _client("route53")
-
-
-@pytest.fixture(scope="class")
-def cognito_identity_client() -> "CognitoIdentityClient":
-    return _client("cognito-identity")
 
 
 @pytest.fixture
