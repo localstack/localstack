@@ -9,79 +9,11 @@ from localstack import config
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
 from localstack.utils.objects import recurse_object
-from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
-
-
-class DefineDefinition(airspeed.MacroDefinition):
-    START = re.compile(r"#define\b(.*)", re.S + re.I)
-    NAME = re.compile(r"\s*(\$[a-z][a-z_0-9]*)\b(.*)", re.S + re.I)
-
-    def evaluate_raw(self, stream, namespace, loader):
-        global_ns = namespace.top()
-        macro_key = self.macro_name.lower()
-        macro_key = macro_key.lstrip("$")
-        if macro_key in global_ns:
-            raise Exception("cannot redefine macro {0}".format(macro_key))
-
-        class ParamWrapper:
-            def __init__(self, value):
-                self.value = value
-
-            def calculate(self, namespace, loader):
-                return self.value
-
-        class ExecuteFunc:
-            def __call__(_self, *args, **kwargs):
-                args = [ParamWrapper(arg) for arg in args]
-                _stream = airspeed.StoppableStream()
-                self.execute_macro(_stream, namespace, args, loader)
-                return _stream.getvalue()
-
-            def __repr__(self):
-                return self.__call__()
-
-        global_ns[macro_key] = ExecuteFunc()
-
-
-@patch(airspeed.Block.parse, pass_target=False)
-def block_parse(self, *args, **kwargs):
-    self.children = []
-    while True:
-        try:
-            self.children.append(
-                self.next_element(
-                    (
-                        airspeed.Text,
-                        airspeed.FormalReference,
-                        airspeed.Comment,
-                        airspeed.IfDirective,
-                        airspeed.SetDirective,
-                        airspeed.ForeachDirective,
-                        airspeed.IncludeDirective,
-                        airspeed.ParseDirective,
-                        airspeed.MacroDefinition,
-                        DefineDefinition,
-                        airspeed.StopDirective,
-                        airspeed.UserDefinedDirective,
-                        airspeed.EvaluateDirective,
-                        airspeed.MacroCall,
-                        airspeed.FallthroughHashText,
-                    )
-                )
-            )
-        except airspeed.NoMatch:
-            break
-
 
 # remove all the code below after removing references in:
 # - invocations.py
 # - graphql_executor.py
-
-
-class DictWrapper(dict):
-    def keySet(self):
-        return self.keys()
 
 
 class VelocityInput(object):
@@ -90,7 +22,7 @@ class VelocityInput(object):
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
 
     def __init__(self, value):
-        self.value = self._attach_missing_functions(value)
+        self.value = value
 
     def path(self, path):
         if not self.value:
@@ -110,15 +42,6 @@ class VelocityInput(object):
 
     def __repr__(self):
         return "$input"
-
-    def _attach_missing_functions(self, value):
-        if value:
-
-            def _fix(obj, **kwargs):
-                return DictWrapper(obj) if isinstance(obj, dict) else obj
-
-            value = recurse_object(value, _fix)
-        return value
 
 
 class VelocityUtil(object):
