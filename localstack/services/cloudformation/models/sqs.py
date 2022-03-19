@@ -107,10 +107,13 @@ class SQSQueue(GenericBaseModel):
     @staticmethod
     def add_defaults(resource, stack_name: str):
         role_name = resource.get("Properties", {}).get("QueueName")
+
         if not role_name:
             resource["Properties"]["QueueName"] = generate_default_name(
                 stack_name, resource["LogicalResourceId"]
             )
+            if resource["Properties"].get("FifoQueue"):
+                resource["Properties"]["QueueName"] += ".fifo"
 
     @classmethod
     def get_deploy_templates(cls):
