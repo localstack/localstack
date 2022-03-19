@@ -329,6 +329,30 @@ def sns_topic(sns_client, sns_create_topic) -> "GetTopicAttributesResponseTypeDe
 
 
 @pytest.fixture
+def route53_hosted_zone(route53_client):
+    hosted_zones = []
+
+    def factory(**kwargs):
+        if "Name" not in kwargs:
+            kwargs["Name"] = f"www.{short_uid()}.com."
+        if "CallerReference" not in kwargs:
+            kwargs["CallerReference"] = f"caller-ref-{short_uid()}"
+        response = route53_client.create_hosted_zone(
+            Name=kwargs["Name"], CallerReference=kwargs["CallerReference"]
+        )
+        hosted_zones.append(response["HostedZone"]["Id"])
+        return response
+
+    yield factory
+
+    for zone in hosted_zones:
+        try:
+            route53_client.delete_hosted_zone(Id=zone)
+        except Exception as e:
+            LOG.debug(f"error cleaning up route53 HostedZone {zone}: {e}")
+
+
+@pytest.fixture
 def kinesis_create_stream(kinesis_client):
     stream_names = []
 
@@ -524,7 +548,7 @@ def deploy_cfn_template(
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
         assert wait_until(is_change_set_finished(change_set_id))
 
-        outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["Outputs"]
+        outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 
         mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
 
