@@ -12,5 +12,4 @@ class CDKMetadata(GenericBaseModel):
     def get_deploy_templates():
         return {
             "create": {},
-            "delete": {},
         }
