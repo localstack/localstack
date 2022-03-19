@@ -1,4 +1,5 @@
 import base64
+import copy
 import json
 import logging
 import re
@@ -170,7 +171,7 @@ class VtlTemplate:
 
         # loop through the variables and enable certain additional util functions (e.g.,
         # string utils)
-        variables = variables or {}
+        variables = copy.deepcopy(variables or {})
         recurse_object(variables, apply)
 
         # prepare and render template
