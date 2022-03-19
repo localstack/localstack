@@ -505,17 +505,21 @@ def deploy_cfn_template(
     is_change_set_created_and_available,
     is_change_set_finished,
 ):
-    stack_name = f"stack-{short_uid()}"
     state = []
 
     def _deploy(
         *,
         is_update: Optional[bool] = False,
+        stack_name: Optional[str] = None,
         template: Optional[str] = None,
         template_file_name: Optional[str] = None,
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
     ) -> DeployResult:
+        if is_update:
+            assert stack_name
+        else:
+            stack_name = f"stack-{short_uid()}"
         change_set_name = f"change-set-{short_uid()}"
 
         if template_file_name is not None and os.path.exists(template_path(template_file_name)):
