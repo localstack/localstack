@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from mypy_boto3_resourcegroupstaggingapi import ResourceGroupsTaggingAPIClient
     from mypy_boto3_route53 import Route53Client
     from mypy_boto3_s3 import S3Client
+    from mypy_boto3_s3control import S3ControlClient
     from mypy_boto3_secretsmanager import SecretsManagerClient
     from mypy_boto3_ses import SESClient
     from mypy_boto3_sns import SNSClient
@@ -83,6 +84,11 @@ def iam_client() -> "IAMClient":
 @pytest.fixture(scope="class")
 def s3_client() -> "S3Client":
     return _client("s3")
+
+
+@pytest.fixture(scope="class")
+def s3control_client() -> "S3ControlClient":
+    return _client("s3control")
 
 
 @pytest.fixture(scope="class")

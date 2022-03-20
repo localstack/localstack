@@ -203,6 +203,17 @@ def s3():
 
 
 @aws_provider()
+def s3control():
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.s3control.provider import S3ControlProvider
+
+    provider = S3ControlProvider()
+    return Service(
+        "s3control", listener=AwsApiListener("s3control", MotoFallbackDispatcher(provider))
+    )
+
+
+@aws_provider()
 def secretsmanager():
     from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.secretsmanager.provider import SecretsmanagerProvider
