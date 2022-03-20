@@ -308,7 +308,7 @@ def apply_patches():
             is_delete_keys_v3 = (
                 query and ("delete" in query) and get_safe(query, "$.x-id.0") == "DeleteObjects"
             )
-            return is_delete_keys_v3 or is_delete_keys(request, path, bucket_name)
+            return is_delete_keys_v3 or is_delete_keys(request, path)
         else:
             return utils_is_delete_keys(request, path, bucket_name)
 
