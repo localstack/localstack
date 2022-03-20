@@ -1,0 +1,15 @@
+Resources:
+  FooQueueA2A23E59:
+    Type: AWS::SQS::Queue
+    Properties:
+      ContentBasedDeduplication: true
+      FifoQueue: {{ is_fifo }}
+      VisibilityTimeout: 300
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+Outputs:
+  FooQueueName:
+    Value:
+      Fn::GetAtt:
+        - FooQueueA2A23E59
+        - QueueName

@@ -1,4 +1,5 @@
 import base64
+import copy
 import json
 import logging
 import re
@@ -10,7 +11,6 @@ from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.templating import DictWrapper
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
@@ -46,99 +46,91 @@ class SnsIntegration(BackendIntegration):
         )
 
 
+class VelocityUtil(object):
+    """
+    Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
+    velocity templates.
+    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+    """
+
+    def base64Encode(self, s):
+        if not isinstance(s, str):
+            s = json.dumps(s)
+        encoded_str = s.encode(config.DEFAULT_ENCODING)
+        encoded_b64_str = base64.b64encode(encoded_str)
+        return encoded_b64_str.decode(config.DEFAULT_ENCODING)
+
+    def base64Decode(self, s):
+        if not isinstance(s, str):
+            s = json.dumps(s)
+        return base64.b64decode(s)
+
+    def toJson(self, obj):
+        return obj and json.dumps(obj)
+
+    def urlEncode(self, s):
+        return quote_plus(s)
+
+    def urlDecode(self, s):
+        return unquote_plus(s)
+
+    def escapeJavaScript(self, s):
+        try:
+            return json.dumps(json.loads(s))
+        except Exception:
+            primitive_types = (str, int, bool, float, type(None))
+            s = s if isinstance(s, primitive_types) else str(s)
+        if str(s).strip() in ["true", "false"]:
+            s = bool(s)
+        elif s not in [True, False] and is_number(s):
+            s = to_number(s)
+        return json.dumps(s)
+
+
+class VelocityInput(object):
+    """
+    Simple class to mimic the behavior of variable '$input' in AWS API Gateway integration
+    velocity templates.
+    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+    """
+
+    def __init__(self, body, params):
+        self.parameters = params or {}
+        self.value = body
+
+    def path(self, path):
+        if not self.value:
+            return {}
+        value = self.value if isinstance(self.value, dict) else json.loads(self.value)
+        return extract_jsonpath(value, path)
+
+    def json(self, path):
+        path = path or "$"
+        matching = self.path(path)
+        if isinstance(matching, (list, dict)):
+            matching = json_safe(matching)
+        return json.dumps(matching)
+
+    @property
+    def body(self):
+        return self.value
+
+    def params(self, name=None):
+        if not name:
+            return self.parameters
+        for k in ["path", "querystring", "header"]:
+            if val := self.parameters.get(k).get(name):
+                return val
+        return ""
+
+    def __getattr__(self, name):
+        return self.value.get(name)
+
+    def __repr__(self):
+        return "$input"
+
+
 class VtlTemplate:
-    class VelocityUtil(object):
-        """
-        Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
-        velocity templates.
-        See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
-        """
-
-        def base64Encode(self, s):
-            if not isinstance(s, str):
-                s = json.dumps(s)
-            encoded_str = s.encode(config.DEFAULT_ENCODING)
-            encoded_b64_str = base64.b64encode(encoded_str)
-            return encoded_b64_str.decode(config.DEFAULT_ENCODING)
-
-        def base64Decode(self, s):
-            if not isinstance(s, str):
-                s = json.dumps(s)
-            return base64.b64decode(s)
-
-        def toJson(self, obj):
-            return obj and json.dumps(obj)
-
-        def urlEncode(self, s):
-            return quote_plus(s)
-
-        def urlDecode(self, s):
-            return unquote_plus(s)
-
-        def escapeJavaScript(self, s):
-            try:
-                return json.dumps(json.loads(s))
-            except Exception:
-                primitive_types = (str, int, bool, float, type(None))
-                s = s if isinstance(s, primitive_types) else str(s)
-            if str(s).strip() in ["true", "false"]:
-                s = bool(s)
-            elif s not in [True, False] and is_number(s):
-                s = to_number(s)
-            return json.dumps(s)
-
-    class VelocityInput(object):
-        """
-        Simple class to mimic the behavior of variable '$input' in AWS API Gateway integration
-        velocity templates.
-        See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
-        """
-
-        def __init__(self, body, params):
-            self.parameters = self._attach_missing_functions(params or {})
-            self.value = self._attach_missing_functions(body)
-
-        def path(self, path):
-            if not self.value:
-                return {}
-            value = self.value if isinstance(self.value, dict) else json.loads(self.value)
-            return extract_jsonpath(value, path)
-
-        def json(self, path):
-            path = path or "$"
-            matching = self.path(path)
-            if isinstance(matching, (list, dict)):
-                matching = json_safe(matching)
-            return json.dumps(matching)
-
-        @property
-        def body(self):
-            return self.value
-
-        def params(self, name=None):
-            if not name:
-                return self.parameters
-            for k in ["path", "querystring", "header"]:
-                if val := self.parameters.get(k).get(name):
-                    return val
-            return ""
-
-        def __getattr__(self, name):
-            return self.value.get(name)
-
-        def __repr__(self):
-            return "$input"
-
-        @staticmethod
-        def _attach_missing_functions(value):
-            if value:
-
-                def _fix(obj, **kwargs):
-                    return DictWrapper(obj) if isinstance(obj, dict) else obj
-
-                value = recurse_object(value, _fix)
-            return value
-
     def render_vtl(self, template, variables: dict, as_json=False):
         if variables is None:
             variables = {}
@@ -175,14 +167,11 @@ class VtlTemplate:
                 for k, v in obj.items():
                     if isinstance(v, str):
                         obj[k] = ExtendedString(v)
-                    if isinstance(v, dict):
-                        obj[k] = DictWrapper(v)
-                return DictWrapper(obj)
             return obj
 
         # loop through the variables and enable certain additional util functions (e.g.,
         # string utils)
-        variables = variables or {}
+        variables = copy.deepcopy(variables or {})
         recurse_object(variables, apply)
 
         # prepare and render template
@@ -191,8 +180,8 @@ class VtlTemplate:
         stage_var = variables.get("stage_variables") or {}
         t = airspeed.Template(template)
         namespace = {
-            "input": self.VelocityInput(input_var.get("body"), input_var.get("params")),
-            "util": self.VelocityUtil(),
+            "input": VelocityInput(input_var.get("body"), input_var.get("params")),
+            "util": VelocityUtil(),
             "context": context_var,
             "stageVariables": stage_var,
         }

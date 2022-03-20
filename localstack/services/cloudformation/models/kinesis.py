@@ -1,3 +1,4 @@
+from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -37,6 +38,14 @@ class KinesisStream(GenericBaseModel):
         stream_name = self.resolve_refs_recursively(stack_name, self.props["Name"], resources)
         result = aws_stack.connect_to_service("kinesis").describe_stream(StreamName=stream_name)
         return result
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        name = resource["Properties"].get("Name")
+        if not name:
+            resource["Properties"]["Name"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():

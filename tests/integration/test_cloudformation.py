@@ -2525,3 +2525,33 @@ class TestCloudFormation:
 
         # Clean up
         self.cleanup(stack_name)
+
+    def test_default_parameters_kinesis(self):
+        file_path = os.path.join(THIS_FOLDER, "templates", "kinesis_default.yaml")
+
+        template = load_template(
+            file_path,
+        )
+        stack_name = "stack-%s" % short_uid()
+
+        result = create_and_await_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+        )
+
+        assert result["StackStatus"] == "CREATE_COMPLETE"
+        kinesis_client = aws_stack.create_external_boto_client("kinesis")
+        stream_response = kinesis_client.list_streams(ExclusiveStartStreamName=stack_name)
+
+        stream_names = stream_response["StreamNames"]
+        assert len(stream_names) > 0
+
+        found = False
+        for stream_name in stream_names:
+            if stack_name in stream_name:
+                found = True
+                break
+        assert found
+
+        # Clean up
+        self.cleanup(stack_name)

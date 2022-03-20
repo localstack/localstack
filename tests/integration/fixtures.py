@@ -17,6 +17,7 @@ from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.testutil import start_http_server
 from tests.integration.cloudformation.utils import render_template, template_path
+from tests.integration.util import is_aws_cloud
 
 if TYPE_CHECKING:
     from mypy_boto3_acm import ACMClient
@@ -238,7 +239,15 @@ def s3_create_bucket(s3_client):
     # cleanup
     for bucket in buckets:
         try:
-            s3_client.delete_bucket(Bucket=bucket)
+            # TODO we should also delete content of bucket, as the delete_bucket will fail if the bucket is not empty
+            # suggested way is using resource model: https://github.com/boto/boto3/issues/1189#issuecomment-317858880
+            # but this does not work against Localstack (InvalidAccessKeyId) -> xfail: test_delete_bucket_with_content
+            if is_aws_cloud():
+                bucket = boto3.resource("s3").Bucket(bucket)
+                bucket.objects.all().delete()
+                bucket.delete()
+            else:
+                s3_client.delete_bucket(Bucket=bucket)
         except Exception as e:
             LOG.debug("error cleaning up bucket %s: %s", bucket, e)
 
@@ -314,6 +323,30 @@ def sns_topic(sns_client, sns_create_topic) -> "GetTopicAttributesResponseTypeDe
 
 
 @pytest.fixture
+def route53_hosted_zone(route53_client):
+    hosted_zones = []
+
+    def factory(**kwargs):
+        if "Name" not in kwargs:
+            kwargs["Name"] = f"www.{short_uid()}.com."
+        if "CallerReference" not in kwargs:
+            kwargs["CallerReference"] = f"caller-ref-{short_uid()}"
+        response = route53_client.create_hosted_zone(
+            Name=kwargs["Name"], CallerReference=kwargs["CallerReference"]
+        )
+        hosted_zones.append(response["HostedZone"]["Id"])
+        return response
+
+    yield factory
+
+    for zone in hosted_zones:
+        try:
+            route53_client.delete_hosted_zone(Id=zone)
+        except Exception as e:
+            LOG.debug(f"error cleaning up route53 HostedZone {zone}: {e}")
+
+
+@pytest.fixture
 def kinesis_create_stream(kinesis_client):
     stream_names = []
 
@@ -330,7 +363,7 @@ def kinesis_create_stream(kinesis_client):
 
     for stream_name in stream_names:
         try:
-            kinesis_client.delete_stream(StreamName=stream_name)
+            kinesis_client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
         except Exception as e:
             LOG.debug("error cleaning up kinesis stream %s: %s", stream_name, e)
 
@@ -472,17 +505,21 @@ def deploy_cfn_template(
     is_change_set_created_and_available,
     is_change_set_finished,
 ):
-    stack_name = f"stack-{short_uid()}"
     state = []
 
     def _deploy(
         *,
         is_update: Optional[bool] = False,
+        stack_name: Optional[str] = None,
         template: Optional[str] = None,
         template_file_name: Optional[str] = None,
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
     ) -> DeployResult:
+        if is_update:
+            assert stack_name
+        else:
+            stack_name = f"stack-{short_uid()}"
         change_set_name = f"change-set-{short_uid()}"
 
         if template_file_name is not None and os.path.exists(template_path(template_file_name)):
@@ -509,7 +546,7 @@ def deploy_cfn_template(
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
         assert wait_until(is_change_set_finished(change_set_id))
 
-        outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["Outputs"]
+        outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 
         mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
 
