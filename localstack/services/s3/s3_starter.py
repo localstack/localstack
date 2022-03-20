@@ -233,7 +233,7 @@ def apply_patches():
     </DeleteResult>"""
 
     @patch(s3_responses.S3ResponseInstance._bucket_response_delete_keys, pass_target=False)
-    def s3_bucket_response_delete_keys(self, body, bucket_name):
+    def s3_bucket_response_delete_keys(self, body, bucket_name, *args, **kwargs):
         template = self.response_template(s3_delete_keys_response_template)
         elements = minidom.parseString(body).getElementsByTagName("Object")
         if len(elements) == 0:
