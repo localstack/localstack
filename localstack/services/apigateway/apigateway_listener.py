@@ -903,13 +903,12 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
     account_id = account_id or TEST_AWS_ACCOUNT_ID
-    domain_name = f"{api_id}.execute-api.{LOCALHOST_HOSTNAME}"
     request_context = {
         "accountId": account_id,
         "apiId": api_id,
         "resourcePath": resource_path or relative_path,
-        "domainPrefix": api_id,
-        "domainName": domain_name,
+        "domainPrefix": invocation_context.domain_prefix,
+        "domainName": invocation_context.domain_name,
         "resourceId": resource_id,
         "requestId": long_uid(),
         "identity": {
