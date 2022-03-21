@@ -532,6 +532,10 @@ class TestSecretsManager:
         des = secretsmanager_client.describe_secret(SecretId=secret_name)
         assert des["Description"] == description_v2
 
+        secretsmanager_client.update_secret(SecretId=secret_name, SecretString=secret_string_v1 * 2)
+        des = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert des["Description"] == description_v2
+
     def test_update_secret_version_stages_current_previous(self, secretsmanager_client):
         secret_name: str = "s-%s" % short_uid()
         secret_string_v0 = "secret_string_v0"

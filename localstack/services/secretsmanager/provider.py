@@ -341,11 +341,13 @@ def backend_update_secret(
     **kwargs,
 ):
     fn(self, secret_id, **kwargs)
+    secret = self.secrets[secret_id]
 
     # Fix missing update of secret description.
     # Secret exists if this point is reached.
-    secret = self.secrets[secret_id]
-    secret.description = kwargs.get("description", None)
+    new_description = kwargs.get("description", None)
+    if new_description is not None:
+        secret.description = new_description
 
     return secret.to_short_dict()
 
