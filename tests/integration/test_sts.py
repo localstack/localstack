@@ -1,7 +1,15 @@
+import json
 from base64 import b64encode
 
+import requests
+
 from localstack import config
+from localstack.constants import APPLICATION_JSON
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
+from localstack.utils.numbers import is_number
+from localstack.utils.strings import to_str
+from tests.integration.fixtures import only_localstack
 
 TEST_SAML_ASSERTION = """
 <?xml version="1.0"?>
@@ -173,3 +181,16 @@ class TestSTSIntegrations:
         response = iam_client.get_user()
         assert response["User"]["UserName"] == test_name
         assert response["User"]["UserId"] == test_id
+
+    @only_localstack
+    def test_expiration_date_format(self):
+        url = config.get_edge_url()
+        data = {"Action": "GetSessionToken", "Version": "2011-06-15"}
+        headers = aws_stack.mock_aws_request_headers("sts")
+        headers["Accept"] = APPLICATION_JSON
+        response = requests.post(url, data=data, headers=headers)
+        assert response
+        content = json.loads(to_str(response.content))
+        # Expiration field should be numeric (tested against AWS)
+        result = content["GetSessionTokenResponse"]["GetSessionTokenResult"]
+        assert is_number(result["Credentials"]["Expiration"])

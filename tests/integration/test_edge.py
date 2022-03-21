@@ -3,11 +3,13 @@ import json
 import os
 import time
 
+import pytest
 import requests
+import xmltodict
 from requests.models import Request as RequestsRequest
 
 from localstack import config
-from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL, TEST_AWS_ACCOUNT_ID
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
     ProxyListener,
@@ -18,6 +20,7 @@ from localstack.services.messages import Request, Response
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.common import get_free_tcp_port, short_uid, to_str
+from localstack.utils.xml import strip_xmlns
 
 
 class TestEdgeAPI:
@@ -256,3 +259,41 @@ class TestEdgeAPI:
         )
         assert update_path_in_url("http://foo:123/test", "/") == "http://foo:123/"
         assert update_path_in_url("//foo:123/test/123", "bar/1/2/3") == "//foo:123/bar/1/2/3"
+
+    def test_response_content_type(self):
+        url = config.get_edge_url()
+        data = {"Action": "GetCallerIdentity", "Version": "2011-06-15"}
+
+        # receive response as XML (default)
+        headers = aws_stack.mock_aws_request_headers("sts")
+        response = requests.post(url, data=data, headers=headers)
+        assert response
+        content1 = to_str(response.content)
+        with pytest.raises(json.decoder.JSONDecodeError):
+            json.loads(content1)
+        content1 = xmltodict.parse(content1)
+        content1_result = content1["GetCallerIdentityResponse"]["GetCallerIdentityResult"]
+        assert content1_result["Account"] == TEST_AWS_ACCOUNT_ID
+
+        # receive response as JSON (via Accept header)
+        headers = aws_stack.mock_aws_request_headers("sts")
+        headers["Accept"] = APPLICATION_JSON
+        response = requests.post(url, data=data, headers=headers)
+        assert response
+        content2 = json.loads(to_str(response.content))
+        content2_result = content2["GetCallerIdentityResponse"]["GetCallerIdentityResult"]
+        assert content2_result["Account"] == TEST_AWS_ACCOUNT_ID
+        assert strip_xmlns(content1) == content2
+
+    def test_request_with_custom_host_header(self):
+        url = config.get_edge_url()
+
+        headers = aws_stack.mock_aws_request_headers("lambda")
+
+        # using a simple for-loop here (instead of pytest parametrization), for simplicity
+        for host in ["localhost", "example.com"]:
+            for port in ["", ":123", f":{config.EDGE_PORT}"]:
+                headers["Host"] = f"{host}:{port}"
+                response = requests.get(f"{url}/2015-03-31/functions", headers=headers)
+                assert response
+                assert "Functions" in json.loads(to_str(response.content))

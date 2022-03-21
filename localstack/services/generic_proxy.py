@@ -658,9 +658,10 @@ def modify_and_forward(
 
         # make sure we drop "chunked" transfer encoding from the headers to be forwarded
         headers_to_send.pop("Transfer-Encoding", None)
+
         response = requests.request(
             method_to_send,
-            request_url,
+            url=request_url,
             data=data_to_send,
             headers=headers_to_send,
             stream=True,
@@ -669,9 +670,8 @@ def modify_and_forward(
 
     # prevent requests from processing response body (e.g., to pass-through gzip encoded content
     # unmodified)
-    pass_raw = (
-        hasattr(response, "_content_consumed") and not response._content_consumed
-    ) or response.headers.get("content-encoding") in ["gzip"]
+    not_consumed = not getattr(response, "_content_consumed", True)
+    pass_raw = not_consumed or response.headers.get("content-encoding") in ["gzip"]
     if pass_raw and getattr(response, "raw", None):
         new_content = response.raw.read()
         if new_content:
