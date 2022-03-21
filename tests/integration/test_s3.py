@@ -873,6 +873,24 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name)
 
+    def test_s3_delete_object_with_boto3(self):
+        s3_client = boto3.client(
+            "s3",
+            "eu-central-1",
+            endpoint_url=config.get_edge_url(),
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            config=Config(s3={"addressing_style": "auto"}, retries={"total_max_attempts": 1}),
+        )
+        bucket_name = "bucket-%s.s3.amazonaws.com" % short_uid()
+        s3_client.create_bucket(Bucket=bucket_name)
+
+        object_key = "key-%s" % short_uid()
+        s3_client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
+
+        # s3_client.delete_object(Bucket=bucket_name, Key=object_key)
+        s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key}]})
+
     def test_s3_delete_response_content_length_zero(self):
         bucket_name = "test-bucket-%s" % short_uid()
         client = self._get_test_client()
