@@ -10,8 +10,6 @@ from localstack.aws.api.ec2 import (
     Boolean,
     CreateVpcEndpointServiceConfigurationResult,
     CurrencyCodeValues,
-    DeleteVpcEndpointsRequest,
-    DeleteVpcEndpointsResult,
     DescribeReservedInstancesOfferingsRequest,
     DescribeReservedInstancesOfferingsResult,
     DescribeReservedInstancesRequest,
@@ -42,7 +40,6 @@ from localstack.aws.api.ec2 import (
     VpcEndpointSubnetIdList,
     scope,
 )
-from localstack.services import moto
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.strings import long_uid, short_uid
 
@@ -124,12 +121,6 @@ class Ec2Provider(Ec2Api, ABC):
         return PurchaseReservedInstancesOfferingResult(
             ReservedInstancesId=long_uid(),
         )
-
-    @handler("DeleteVpcEndpoints", expand=False)
-    def delete_vpc_endpoints(
-        self, context: RequestContext, delete_vpc_endpoints_request: DeleteVpcEndpointsRequest
-    ) -> DeleteVpcEndpointsResult:
-        return moto.call_moto(context)
 
     @handler("CreateVpcEndpointServiceConfiguration")
     def create_vpc_endpoint_service_configuration(
