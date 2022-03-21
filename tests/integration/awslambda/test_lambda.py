@@ -996,7 +996,10 @@ class TestPythonRuntimes:
         assert payload["errorType"] == "CustomException"
         assert payload["errorMessage"] == "some error occurred"
         assert "stackTrace" in payload
-        if runtime == "python3.9":
+
+        if (
+            runtime == "python3.9" and os.environ.get("PROVIDER_OVERRIDE_LAMBDA") == "asf"
+        ):  # TODO: remove this after the legacy provider is gone
             assert "requestId" in payload
         else:
             assert "requestId" not in payload
