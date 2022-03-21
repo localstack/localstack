@@ -537,6 +537,9 @@ def rotate_secret(
             )
 
         secret.set_default_version_id(new_version_id)
+        version_stages = secret.versions[new_version_id]["version_stages"]
+        if AWSPENDING in version_stages:
+            version_stages.remove(AWSPENDING)
     else:
         secret.reset_default_version(secret.versions[new_version_id], new_version_id)
         secret.versions[new_version_id]["version_stages"] = [AWSCURRENT]

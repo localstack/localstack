@@ -157,8 +157,7 @@ def test_secret(service_client, arn, token):
         token (string): The ClientRequestToken associated with the secret version
 
     """
-    # logger.info("lambda_rotate_secret: test_secret not implemented.")
-    pass
+    logger.info("lambda_rotate_secret: test_secret not implemented.")
 
 
 def finish_secret(service_client, arn, token):

@@ -261,22 +261,28 @@ class TestSecretsManager:
             SecretId=secret_name, VersionId=version_id_1
         )
         assert get_res_v1["VersionId"] == version_id_1
-        secret_string = lambda_rotate_secret.secret_of_rotation_from_version_id(version_id_1)
-        assert get_res_v1["SecretString"] == secret_string
+        secret_string_1 = lambda_rotate_secret.secret_of_rotation_from_version_id(version_id_1)
+        assert get_res_v1["SecretString"] == secret_string_1
 
         get_res = secretsmanager_client.get_secret_value(SecretId=secret_name)
         assert get_res["VersionId"] == version_id_1
-        assert get_res["SecretString"] == secret_string
+        assert get_res["SecretString"] == secret_string_1
 
-        # TODO: add another rotation here.
-        # rot_2_res = secretsmanager_client.rotate_secret(
-        #     SecretId=secret_name,
-        #     RotationLambdaARN=function_arn,
-        #     RotationRules={
-        #         "AutomaticallyAfterDays": 1,
-        #     },
-        #     RotateImmediately=True,
-        # )
+        rot_2_res = secretsmanager_client.rotate_secret(
+            SecretId=secret_name,
+            RotationLambdaARN=function_arn,
+            RotationRules={
+                "AutomaticallyAfterDays": 1,
+            },
+            RotateImmediately=True,
+        )
+        version_id_2 = rot_2_res["VersionId"]
+        assert len({version_id_0, version_id_1, version_id_2}) == 3
+
+        get_res = secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert get_res["VersionId"] == version_id_2
+        secret_string_2 = lambda_rotate_secret.secret_of_rotation_from_version_id(version_id_2)
+        assert get_res["SecretString"] == secret_string_2
 
         # clean up
         secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
@@ -706,12 +712,243 @@ class TestSecretsManager:
         #
         lst_2_u_v_1 = lst_2_u["Versions"][1]
         assert lst_2_u_v_1["VersionId"] == vid_2
-        assert lst_1_u_v_1["VersionStages"] == ["AWSPENDING", "AWSCURRENT"]
+        assert lst_2_u_v_1["VersionStages"] == ["AWSPENDING", "AWSCURRENT"]
 
         get_1_u = secretsmanager_client.get_secret_value(SecretId=secret_name)
         assert get_1_u["VersionId"] == vid_2
         assert get_1_u["SecretString"] == "S3"
         assert get_1_u["VersionStages"] == ["AWSPENDING", "AWSCURRENT"]
+
+    def test_update_secret_version_stages_current_pending_cycle_custom_stages_1(
+        self, secretsmanager_client
+    ):
+        secret_name: str = "s-%s" % short_uid()
+        create = secretsmanager_client.create_secret(Name=secret_name, SecretString="S1")
+        vid_0 = create["VersionId"]
+
+        put_1 = secretsmanager_client.put_secret_value(
+            SecretId=secret_name, SecretString="S2", VersionStages=["AWSPENDING", "PUT1"]
+        )
+        vid_1 = put_1["VersionId"]
+        assert vid_1 != vid_0
+
+        lst_1 = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_1["Versions"]) == 2
+        #
+        lst_1_v_0 = lst_1["Versions"][0]
+        assert lst_1_v_0["VersionId"] == vid_0
+        assert lst_1_v_0["VersionStages"] == ["AWSCURRENT"]
+        #
+        lst_1_v_1 = lst_1["Versions"][1]
+        assert lst_1_v_1["VersionId"] == vid_1
+        assert lst_1_v_1["VersionStages"] == ["AWSPENDING", "PUT1"]
+
+        get_1 = secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert get_1["VersionId"] == vid_0
+        assert get_1["SecretString"] == "S1"
+        assert get_1["VersionStages"] == ["AWSCURRENT"]
+
+        upd_1 = secretsmanager_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=vid_0,
+            MoveToVersionId=vid_1,
+            VersionStage="AWSCURRENT",
+        )
+        assert "VersionId" not in upd_1
+
+        lst_1_u = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_1_u["Versions"]) == 2
+        #
+        lst_1_u_v_0 = lst_1_u["Versions"][0]
+        assert lst_1_u_v_0["VersionId"] == vid_0
+        assert lst_1_u_v_0["VersionStages"] == ["AWSPREVIOUS"]
+        #
+        lst_1_u_v_1 = lst_1_u["Versions"][1]
+        assert lst_1_u_v_1["VersionId"] == vid_1
+        assert lst_1_u_v_1["VersionStages"] == ["AWSPENDING", "PUT1", "AWSCURRENT"]
+
+        get_1_u = secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert get_1_u["VersionId"] == vid_1
+        assert get_1_u["SecretString"] == "S2"
+        assert get_1_u["VersionStages"] == ["AWSPENDING", "PUT1", "AWSCURRENT"]
+
+        put_2 = secretsmanager_client.put_secret_value(
+            SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING", "PUT2"]
+        )
+        vid_2 = put_2["VersionId"]
+        assert len({vid_0, vid_1, vid_2}) == 3
+
+        lst_2 = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_2["Versions"]) == 3
+        #
+        lst_2_v_0 = lst_2["Versions"][0]
+        assert lst_2_v_0["VersionId"] == vid_0
+        assert lst_2_v_0["VersionStages"] == ["AWSPREVIOUS"]
+        #
+        lst_2_v_1 = lst_2["Versions"][1]
+        assert lst_2_v_1["VersionId"] == vid_1
+        assert lst_2_v_1["VersionStages"] == ["PUT1", "AWSCURRENT"]
+        #
+        lst_2_v_2 = lst_2["Versions"][2]
+        assert lst_2_v_2["VersionId"] == vid_2
+        assert lst_2_v_2["VersionStages"] == ["AWSPENDING", "PUT2"]
+
+        get_2 = secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert get_2["VersionId"] == vid_1
+        assert get_2["SecretString"] == "S2"
+        assert get_2["VersionStages"] == ["PUT1", "AWSCURRENT"]
+
+        upd_2 = secretsmanager_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=vid_1,
+            MoveToVersionId=vid_2,
+            VersionStage="AWSCURRENT",
+        )
+        assert "VersionId" not in upd_2
+
+        lst_2_u = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_2_u["Versions"]) == 2
+        #
+        lst_2_u_v_0 = lst_2_u["Versions"][0]
+        assert lst_2_u_v_0["VersionId"] == vid_1
+        assert lst_2_u_v_0["VersionStages"] == ["PUT1", "AWSPREVIOUS"]
+        #
+        lst_2_u_v_1 = lst_2_u["Versions"][1]
+        assert lst_2_u_v_1["VersionId"] == vid_2
+        assert lst_2_u_v_1["VersionStages"] == ["AWSPENDING", "PUT2", "AWSCURRENT"]
+
+        get_1_u = secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert get_1_u["VersionId"] == vid_2
+        assert get_1_u["SecretString"] == "S3"
+        assert get_1_u["VersionStages"] == ["AWSPENDING", "PUT2", "AWSCURRENT"]
+
+    def test_update_secret_version_stages_current_pending_cycle_custom_stages_2(
+        self, secretsmanager_client
+    ):
+        secret_name: str = "s-%s" % short_uid()
+        create = secretsmanager_client.create_secret(Name=secret_name, SecretString="SS")
+        vid_s = create["VersionId"]
+
+        put_0 = secretsmanager_client.put_secret_value(
+            SecretId=secret_name, SecretString="S1", VersionStages=["AWSCURRENT", "PUT0"]
+        )
+        vid_0 = put_0["VersionId"]
+        assert vid_0 != vid_s
+
+        lst_0 = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_0["Versions"]) == 2
+        #
+        lst_0_v_s = lst_0["Versions"][0]
+        assert lst_0_v_s["VersionId"] == vid_s
+        assert lst_0_v_s["VersionStages"] == ["AWSPREVIOUS"]
+        #
+        lst_0_v_0 = lst_0["Versions"][1]
+        assert lst_0_v_0["VersionId"] == vid_0
+        assert lst_0_v_0["VersionStages"] == ["AWSCURRENT", "PUT0"]
+
+        put_1 = secretsmanager_client.put_secret_value(
+            SecretId=secret_name, SecretString="S2", VersionStages=["AWSPENDING", "PUT1"]
+        )
+        vid_1 = put_1["VersionId"]
+        assert len({vid_s, vid_0, vid_1}) == 3
+
+        lst_1 = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_1["Versions"]) == 3
+        #
+        lst_1_v_s = lst_1["Versions"][0]
+        assert lst_1_v_s["VersionId"] == vid_s
+        assert lst_1_v_s["VersionStages"] == ["AWSPREVIOUS"]
+        #
+        lst_1_v_0 = lst_1["Versions"][1]
+        assert lst_1_v_0["VersionId"] == vid_0
+        assert lst_1_v_0["VersionStages"] == ["AWSCURRENT", "PUT0"]
+        #
+        lst_1_v_1 = lst_1["Versions"][2]
+        assert lst_1_v_1["VersionId"] == vid_1
+        assert lst_1_v_1["VersionStages"] == ["AWSPENDING", "PUT1"]
+
+        get_1 = secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert get_1["VersionId"] == vid_0
+        assert get_1["SecretString"] == "S1"
+        assert get_1["VersionStages"] == ["AWSCURRENT", "PUT0"]
+
+        upd_1 = secretsmanager_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=vid_0,
+            MoveToVersionId=vid_1,
+            VersionStage="AWSCURRENT",
+        )
+        assert "VersionId" not in upd_1
+
+        lst_1_u = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_1_u["Versions"]) == 2
+        #
+        lst_1_u_v_0 = lst_1_u["Versions"][0]
+        assert lst_1_u_v_0["VersionId"] == vid_0
+        assert lst_1_u_v_0["VersionStages"] == ["PUT0", "AWSPREVIOUS"]
+        #
+        lst_1_u_v_1 = lst_1_u["Versions"][1]
+        assert lst_1_u_v_1["VersionId"] == vid_1
+        assert lst_1_u_v_1["VersionStages"] == ["AWSPENDING", "PUT1", "AWSCURRENT"]
+
+        get_1_u = secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert get_1_u["VersionId"] == vid_1
+        assert get_1_u["SecretString"] == "S2"
+        assert get_1_u["VersionStages"] == ["AWSPENDING", "PUT1", "AWSCURRENT"]
+
+        put_2 = secretsmanager_client.put_secret_value(
+            SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING", "PUT2"]
+        )
+        vid_2 = put_2["VersionId"]
+        assert len({vid_s, vid_0, vid_1, vid_2}) == 4
+
+        lst_2 = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_2["Versions"]) == 3
+        #
+        lst_2_v_0 = lst_2["Versions"][0]
+        assert lst_2_v_0["VersionId"] == vid_0
+        assert lst_2_v_0["VersionStages"] == ["PUT0", "AWSPREVIOUS"]
+        #
+        lst_2_v_1 = lst_2["Versions"][1]
+        assert lst_2_v_1["VersionId"] == vid_1
+        assert lst_2_v_1["VersionStages"] == ["PUT1", "AWSCURRENT"]
+        #
+        lst_2_v_2 = lst_2["Versions"][2]
+        assert lst_2_v_2["VersionId"] == vid_2
+        assert lst_2_v_2["VersionStages"] == ["AWSPENDING", "PUT2"]
+
+        get_2 = secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert get_2["VersionId"] == vid_1
+        assert get_2["SecretString"] == "S2"
+        assert get_2["VersionStages"] == ["PUT1", "AWSCURRENT"]
+
+        upd_2 = secretsmanager_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=vid_1,
+            MoveToVersionId=vid_2,
+            VersionStage="AWSCURRENT",
+        )
+        assert "VersionId" not in upd_2
+
+        lst_2_u = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_2_u["Versions"]) == 3
+        #
+        lst_2_u_v_0 = lst_2_u["Versions"][0]
+        assert lst_2_u_v_0["VersionId"] == vid_0
+        assert lst_2_u_v_0["VersionStages"] == ["PUT0"]
+        #
+        lst_2_u_v_1 = lst_2_u["Versions"][1]
+        assert lst_2_u_v_1["VersionId"] == vid_1
+        assert lst_2_u_v_1["VersionStages"] == ["PUT1", "AWSPREVIOUS"]
+        #
+        lst_2_u_v_2 = lst_2_u["Versions"][2]
+        assert lst_2_u_v_2["VersionId"] == vid_2
+        assert lst_2_u_v_2["VersionStages"] == ["AWSPENDING", "PUT2", "AWSCURRENT"]
+        #
+        get_1_u = secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert get_1_u["VersionId"] == vid_2
+        assert get_1_u["SecretString"] == "S3"
+        assert get_1_u["VersionStages"] == ["AWSPENDING", "PUT2", "AWSCURRENT"]
 
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> Dict:
