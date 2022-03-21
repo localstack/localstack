@@ -406,7 +406,8 @@ class IAMPolicy(GenericBaseModel):
         iam = aws_stack.connect_to_service("iam")
         props = obj.props
         result = {}
-        policy_name = props["PolicyName"]
+        # Note: util function reused for both IAM::Policy and IAM::ManagedPolicy
+        policy_name = props.get("PolicyName") or props.get("ManagedPolicyName")
         roles = props.get("Roles", [])
         users = props.get("Users", [])
         groups = props.get("Groups", [])
