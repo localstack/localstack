@@ -1,6 +1,5 @@
 from abc import ABC
 from datetime import datetime, timezone
-from typing import Dict
 
 from moto.ec2 import ec2_backends
 from moto.ec2.exceptions import InvalidVpcEndPointIdError
@@ -8,7 +7,6 @@ from moto.ec2.exceptions import InvalidVpcEndPointIdError
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
     Boolean,
-    CreateVpcEndpointServiceConfigurationResult,
     CurrencyCodeValues,
     DescribeReservedInstancesOfferingsRequest,
     DescribeReservedInstancesOfferingsResult,
@@ -19,7 +17,6 @@ from localstack.aws.api.ec2 import (
     ModifyVpcEndpointResult,
     OfferingClassType,
     OfferingTypeValues,
-    PrefixList,
     PricingDetail,
     PurchaseReservedInstancesOfferingRequest,
     PurchaseReservedInstancesOfferingResult,
@@ -29,26 +26,15 @@ from localstack.aws.api.ec2 import (
     ReservedInstancesOffering,
     ReservedInstanceState,
     RIProductDescription,
-    ServiceConfiguration,
     String,
-    TagSpecificationList,
     Tenancy,
-    ValueStringList,
     VpcEndpointId,
     VpcEndpointRouteTableIdList,
     VpcEndpointSecurityGroupIdList,
     VpcEndpointSubnetIdList,
     scope,
 )
-from localstack.services.generic_proxy import RegionBackend
-from localstack.utils.strings import long_uid, short_uid
-
-
-class Ec2Backend(RegionBackend):
-    prefix_lists: Dict[str, PrefixList]
-
-    def __init__(self):
-        self.prefix_lists = {}
+from localstack.utils.strings import long_uid
 
 
 class Ec2Provider(Ec2Api, ABC):
@@ -120,34 +106,6 @@ class Ec2Provider(Ec2Api, ABC):
     ) -> PurchaseReservedInstancesOfferingResult:
         return PurchaseReservedInstancesOfferingResult(
             ReservedInstancesId=long_uid(),
-        )
-
-    @handler("CreateVpcEndpointServiceConfiguration")
-    def create_vpc_endpoint_service_configuration(
-        self,
-        context: RequestContext,
-        dry_run: Boolean = None,
-        acceptance_required: Boolean = None,
-        private_dns_name: String = None,
-        network_load_balancer_arns: ValueStringList = None,
-        gateway_load_balancer_arns: ValueStringList = None,
-        client_token: String = None,
-        tag_specifications: TagSpecificationList = None,
-    ) -> CreateVpcEndpointServiceConfigurationResult:
-        region = Ec2Backend.get()
-
-        service_id = short_uid()
-        service_config = ServiceConfiguration(
-            ServiceId=service_id,
-            AcceptanceRequired=acceptance_required,
-            PrivateDnsName=private_dns_name,
-            NetworkLoadBalancerArns=network_load_balancer_arns,
-            GatewayLoadBalancerArns=gateway_load_balancer_arns,
-        )
-        region.vpc_endpoint_service_configurations[service_id] = service_config
-
-        return CreateVpcEndpointServiceConfigurationResult(
-            ServiceConfiguration=service_config,
         )
 
     @handler("ModifyVpcEndpoint")
