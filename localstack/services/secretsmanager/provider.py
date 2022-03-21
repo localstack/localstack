@@ -4,7 +4,8 @@ import json
 import logging
 import re
 import time
-from typing import Dict, Optional, Union
+import uuid
+from typing import Dict, Final, Optional, Union
 
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
@@ -28,6 +29,8 @@ from localstack.aws.api.secretsmanager import (
     GetResourcePolicyResponse,
     GetSecretValueRequest,
     GetSecretValueResponse,
+    InvalidParameterException,
+    InvalidRequestException,
     ListSecretVersionIdsRequest,
     ListSecretVersionIdsResponse,
     NameType,
@@ -39,6 +42,7 @@ from localstack.aws.api.secretsmanager import (
     RemoveRegionsFromReplicationResponse,
     ReplicateSecretToRegionsRequest,
     ReplicateSecretToRegionsResponse,
+    ResourceNotFoundException,
     RestoreSecretRequest,
     RestoreSecretResponse,
     RotateSecretRequest,
@@ -63,9 +67,14 @@ from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 from localstack.utils.time import today_no_time
 
+# Constants.
+AWSPREVIOUS: Final[str] = "AWSPREVIOUS"
+AWSPENDING: Final[str] = "AWSPENDING"
+AWSCURRENT: Final[str] = "AWSCURRENT"
+
 LOG = logging.getLogger(__name__)
 
-# maps key names to ARNs
+# Maps key names to ARNs.
 SECRET_ARN_STORAGE = {}
 
 
@@ -357,6 +366,182 @@ def response_update_secret(_, self):
         client_request_token=client_request_token,
         kms_key_id=kms_key_id,
     )
+
+
+@patch(SecretsManagerBackend.rotate_secret)
+def secrets_manager_rotate_secret(
+    fn,
+    self,
+    secret_id,
+    client_request_token=None,
+    rotation_lambda_arn=None,
+    rotation_rules=None,
+):
+    # Define here with no validation for retrieval.
+    new_version_id = client_request_token if client_request_token else str(uuid.uuid4())
+    fn(self, secret_id, new_version_id, rotation_lambda_arn, rotation_rules)
+    secret = self.secrets[secret_id]
+    return secret.to_short_dict(version_id=new_version_id)
+
+
+@patch(SecretsManagerBackend.update_secret_version_stage)
+def update_secret_version_stage(
+    fn, self, secret_id, version_stage, remove_from_version_id, move_to_version_id
+):
+    fn(self, secret_id, version_stage, remove_from_version_id, move_to_version_id)
+
+    secret = self.secrets[secret_id]
+    if version_stage == AWSCURRENT:
+        secret.default_version_id = move_to_version_id
+
+        # Ensure only one AWSPREVIOUS tagged version is in the pool.
+        # Remove secret versions with no version stages.
+        versions_no_stages = []
+        update_vid_set = {remove_from_version_id, move_to_version_id}
+        for version_id, version in secret.versions.items():
+            version_stages = version["version_stages"]
+            if version_id not in update_vid_set and AWSPREVIOUS in version_stages:
+                version_stages.remove(AWSPREVIOUS)
+                if not version_stages:
+                    versions_no_stages.append(version_id)
+
+        for version_no_stages in versions_no_stages:
+            del secret.versions[version_no_stages]
+
+    return secret_id
+
+    # TODO: AWS responds with 'ARN' and 'Name', as below:
+    # return {
+    #     "ARN": secret.arn,
+    #     "Name": secret.name
+    # }
+
+
+@patch(FakeSecret.reset_default_version)
+def reset_default_version(fn, self, secret_version, version_id):
+    fn(self, secret_version, version_id)
+    # Remove versions with no version stages.
+    versions_no_stages = [
+        version_id for version_id, version in self.versions.items() if not version["version_stages"]
+    ]
+    for version_no_stages in versions_no_stages:
+        del self.versions[version_no_stages]
+
+
+@patch(SecretsManagerBackend.rotate_secret)
+def rotate_secret(
+    _,
+    self,
+    secret_id,
+    client_request_token=None,
+    rotation_lambda_arn=None,
+    rotation_rules=None,
+):
+    rotation_days = "AutomaticallyAfterDays"
+
+    if not self._is_valid_identifier(secret_id):
+        raise SecretNotFoundException()
+
+    if self.secrets[secret_id].is_deleted():
+        raise InvalidRequestException(
+            "An error occurred (InvalidRequestException) when calling the RotateSecret operation: You tried to \
+            perform the operation on a secret that's currently marked deleted."
+        )
+
+    if rotation_lambda_arn:
+        if len(rotation_lambda_arn) > 2048:
+            msg = "RotationLambdaARN " "must <= 2048 characters long."
+            raise InvalidParameterException(msg)
+
+    if rotation_rules:
+        if rotation_days in rotation_rules:
+            rotation_period = rotation_rules[rotation_days]
+            if rotation_period < 1 or rotation_period > 1000:
+                msg = "RotationRules.AutomaticallyAfterDays " "must be within 1-1000."
+                raise InvalidParameterException(msg)
+
+    secret = self.secrets[secret_id]
+
+    # The rotation function must end with the versions of the secret in
+    # one of two states:
+    #
+    #  - The AWSPENDING and AWSCURRENT staging labels are attached to the
+    #    same version of the secret, or
+    #  - The AWSPENDING staging label is not attached to any version of the secret.
+    #
+    # If the AWSPENDING staging label is present but not attached to the same
+    # version as AWSCURRENT then any later invocation of RotateSecret assumes
+    # that a previous rotation request is still in progress and returns an error.
+    try:
+        version = next(
+            version
+            for version in secret.versions.values()
+            if AWSPENDING in version["version_stages"]
+        )
+        if AWSCURRENT in version["version_stages"]:
+            msg = "Previous rotation request is still in progress."
+            raise InvalidRequestException(msg)
+
+    except StopIteration:
+        # Pending is not present in any version
+        pass
+
+    if client_request_token:
+        self._client_request_token_validator(client_request_token)
+        new_version_id = client_request_token
+    else:
+        new_version_id = str(uuid.uuid4())
+
+    # We add the new secret version as "pending". The previous version remains
+    # as "current" for now. Once we've passed the new secret through the lambda
+    # rotation function (if provided) we can then update the status to "current".
+    self._add_secret(
+        secret_id,
+        None,
+        description=secret.description,
+        tags=secret.tags,
+        version_id=new_version_id,
+        version_stages=[AWSPENDING],
+    )
+    secret.rotation_lambda_arn = rotation_lambda_arn or ""
+    if rotation_rules:
+        secret.auto_rotate_after_days = rotation_rules.get(rotation_days, 0)
+    if secret.auto_rotate_after_days > 0:
+        secret.rotation_enabled = True
+
+    # Begin the rotation process for the given secret by invoking the lambda function.
+    if secret.rotation_lambda_arn:
+        from moto.awslambda.models import lambda_backends
+
+        lambda_backend = lambda_backends[self.region]
+
+        request_headers = {}
+        response_headers = {}
+
+        func = lambda_backend.get_function(secret.rotation_lambda_arn)
+        if not func:
+            msg = "Resource not found for ARN '{}'.".format(secret.rotation_lambda_arn)
+            raise ResourceNotFoundException(msg)
+
+        for step in ["create", "set", "test", "finish"]:
+            func.invoke(
+                json.dumps(
+                    {
+                        "Step": step + "Secret",
+                        "SecretId": secret.name,
+                        "ClientRequestToken": new_version_id,
+                    }
+                ),
+                request_headers,
+                response_headers,
+            )
+
+        secret.set_default_version_id(new_version_id)
+    else:
+        secret.reset_default_version(secret.versions[new_version_id], new_version_id)
+        secret.versions[new_version_id]["version_stages"] = [AWSCURRENT]
+
+    return secret.to_short_dict()
 
 
 def secretsmanager_models_secret_arn(region, secret_id):
