@@ -1,10 +1,8 @@
-import unittest
-
+import pytest
 from moto.ec2 import utils as ec2_utils
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid
 
 DIGICERT_ROOT_CERT = """
 -----BEGIN CERTIFICATE-----
@@ -25,37 +23,41 @@ JjZ91eQ0hjkCMHw2U/Aw5WJjOpnitqM7mzT6HtoQknFekROn3aRukswy1vUhZscv
 """
 
 
-class TestACM(unittest.TestCase):
-    def test_import_certificate(self):
-        acm = aws_stack.create_external_boto_client("acm")
+class TestACM:
+    def test_import_certificate(self, acm_client):
+        certs_before = acm_client.list_certificates().get("CertificateSummaryList", [])
 
-        certs_before = acm.list_certificates().get("CertificateSummaryList", [])
-
-        with self.assertRaises(Exception) as ctx:
-            acm.import_certificate(Certificate=b"CERT123", PrivateKey=b"KEY123")
-        self.assertIn("PEM", str(ctx.exception))
+        with pytest.raises(Exception) as exec_info:
+            acm_client.import_certificate(Certificate=b"CERT123", PrivateKey=b"KEY123")
+        assert "PEM" in str(exec_info)
 
         private_key = ec2_utils.random_key_pair()["material"]
-        result = acm.import_certificate(Certificate=DIGICERT_ROOT_CERT, PrivateKey=private_key)
-        self.assertIn("CertificateArn", result)
+        result = None
+        try:
+            result = acm_client.import_certificate(
+                Certificate=DIGICERT_ROOT_CERT, PrivateKey=private_key
+            )
+            assert "CertificateArn" in result
 
-        expected_arn = "arn:aws:acm:{0}:{1}:certificate".format(
-            aws_stack.get_region(), TEST_AWS_ACCOUNT_ID
-        )
-        acm_cert_arn = result["CertificateArn"].split("/")[0]
-        self.assertEqual(expected_arn, acm_cert_arn)
+            expected_arn = "arn:aws:acm:{0}:{1}:certificate".format(
+                aws_stack.get_region(), TEST_AWS_ACCOUNT_ID
+            )
+            acm_cert_arn = result["CertificateArn"].split("/")[0]
+            assert expected_arn == acm_cert_arn
 
-        certs_after = acm.list_certificates().get("CertificateSummaryList", [])
-        self.assertEqual(len(certs_before) + 1, len(certs_after))
+            certs_after = acm_client.list_certificates().get("CertificateSummaryList", [])
+            assert len(certs_before) + 1 == len(certs_after)
+        finally:
+            if result is not None:
+                acm_client.delete_certificate(CertificateArn=result["CertificateArn"])
 
-    def test_domain_validation(self):
-        acm = aws_stack.create_external_boto_client("acm")
-
-        domain_name = "example-%s.com" % short_uid()
-        options = [{"DomainName": domain_name, "ValidationDomain": domain_name}]
-        result = acm.request_certificate(DomainName=domain_name, DomainValidationOptions=options)
-        self.assertIn("CertificateArn", result)
-
-        result = acm.describe_certificate(CertificateArn=result["CertificateArn"])
+    def test_domain_validation(self, acm_client, acm_request_certificate):
+        certificate_arn = acm_request_certificate()
+        result = acm_client.describe_certificate(CertificateArn=certificate_arn)
         options = result["Certificate"]["DomainValidationOptions"]
-        self.assertEqual(1, len(options))
+        assert len(options) == 1
+
+    def test_boto_wait_for_certificate_validation(self, acm_client, acm_request_certificate):
+        certificate_arn = acm_request_certificate()
+        waiter = acm_client.get_waiter("certificate_validated")
+        waiter.wait(CertificateArn=certificate_arn, WaiterConfig={"Delay": 0, "MaxAttempts": 1})
