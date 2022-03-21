@@ -16,6 +16,11 @@ Resources:
               - Ref: AWS::Partition
               - :iam::aws:policy/AdministratorAccess
       RoleName: {{ role_name }}
+  serviceLinkedRole754232:
+    Type: AWS::IAM::ServiceLinkedRole
+    Properties:
+      AWSServiceName: elasticbeanstalk.amazonaws.com
+      Description: service linked role {{ service_linked_role_id }}
   groupC397F008:
     Type: AWS::IAM::Group
     Properties:
