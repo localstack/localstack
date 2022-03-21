@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional, Union
 
 from responses import Response
 
+from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.utils.aws.aws_responses import parse_query_string
 
 # type definition for data parameters (i.e., invocation payloads)
@@ -159,3 +160,16 @@ class ApiInvocationContext:
             )
         except UnicodeDecodeError:
             return base64.b64encode(self.data)
+
+    def _extract_host_from_header(self):
+        host = self.headers.get(HEADER_LOCALSTACK_EDGE_URL) or self.headers.get("host", "")
+        return host.split("://")[-1].split("/")[0].split(":")[0]
+
+    @property
+    def domain_name(self):
+        return self._extract_host_from_header()
+
+    @property
+    def domain_prefix(self):
+        host = self._extract_host_from_header()
+        return host.split(".")[0]

@@ -16,7 +16,7 @@ from localstack.services.apigateway.helpers import apply_json_patch_safe
 from localstack.services.apigateway.integration import (
     RequestTemplates,
     ResponseTemplates,
-    VtlTemplate,
+    VelocityUtil,
 )
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
@@ -193,7 +193,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
 
 
 def test_render_template_values():
-    util = VtlTemplate.VelocityUtil()
+    util = VelocityUtil()
 
     encoded = util.urlEncode("x=a+b")
     assert encoded == "x%3Da%2Bb"

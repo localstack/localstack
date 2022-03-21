@@ -317,6 +317,13 @@ def test_query_parser_empty_required_members_sqs_with_botocore():
     )
 
 
+def test_query_parser_no_input_shape_autoscaling_with_botocore():
+    _botocore_parser_integration_test(
+        service="autoscaling",
+        action="DescribeMetricCollectionTypes",
+    )
+
+
 def test_query_parser_cloudformation_with_botocore():
     _botocore_parser_integration_test(
         service="cloudformation",

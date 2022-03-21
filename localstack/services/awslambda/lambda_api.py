@@ -596,9 +596,9 @@ def construct_invocation_event(
     method, path, headers, data, query_string_params=None, is_base64_encoded=False
 ):
     query_string_params = query_string_params or parse_request_data(method, path, "")
-    # AWS canonicalizes header names, converting them to lower-case
+    # AWS canonical header names, converting them to lower-case
     headers = canonicalize_headers(headers)
-    event = {
+    return {
         "path": path,
         "headers": dict(headers),
         "multiValueHeaders": multi_value_dict_for_list(headers),
@@ -608,7 +608,6 @@ def construct_invocation_event(
         "queryStringParameters": query_string_params,
         "multiValueQueryStringParameters": multi_value_dict_for_list(query_string_params),
     }
-    return event
 
 
 def process_sns_notification(

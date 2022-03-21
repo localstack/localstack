@@ -1,0 +1,10 @@
+Resources:
+  myDNSWithNameRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: {{HostedZoneId}}
+      Name: {{Name}}
+      ResourceRecords:
+        - 192.0.2.99
+      TTL: 900
+      Type: A

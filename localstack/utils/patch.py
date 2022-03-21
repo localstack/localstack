@@ -32,7 +32,14 @@ def create_patch_proxy(target: Callable, new: Callable):
 
     @functools.wraps(target)
     def proxy(*args, **kwargs):
+        if _is_bound_method:
+            # bound object "self" is passed as first argument if this is a bound method
+            args = args[1:]
         return new(target, *args, **kwargs)
+
+    _is_bound_method = inspect.ismethod(target)
+    if _is_bound_method:
+        proxy = types.MethodType(proxy, target.__self__)
 
     return proxy
 

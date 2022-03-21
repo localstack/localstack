@@ -219,6 +219,8 @@ class RequestParser(abc.ABC):
         :param path_regex: regex of the path. This is necessary to extract members located in the URI. Defaults to None.
         :return: result of the parsing operation, the type depends on the shape
         """
+        if shape is None:
+            return None
         location = shape.serialization.get("location")
         if location is not None:
             if location == "header":
@@ -423,7 +425,10 @@ class QueryRequestParser(RequestParser):
         # Extract the URI for the operation and convert it to a regex
         request_uri_regex = self._get_request_uri_regex(operation)
         input_shape: StructureShape = operation.input_shape
-        return operation, self._parse_shape(request, input_shape, instance, request_uri_regex)
+        parsed = self._parse_shape(request, input_shape, instance, request_uri_regex)
+        if parsed is None:
+            return operation, {}
+        return operation, parsed
 
     def _process_member(
         self,

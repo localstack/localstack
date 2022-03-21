@@ -1,26 +1,9 @@
-from localstack.utils.common import short_uid
-from localstack.utils.generic.wait_utils import wait_until
-from tests.integration.cloudformation.utils import load_template_raw
-
-
-def test_cdk_bootstrap(cfn_client, cleanup_stacks, cleanup_changesets, is_change_set_finished):
-    stack_name = f"stack-{short_uid()}"
-    change_set_name = f"change-set-{short_uid()}"
-
-    response = cfn_client.create_change_set(
-        StackName=stack_name,
-        ChangeSetName=change_set_name,
-        TemplateBody=load_template_raw("cdk_bootstrap_v10.yaml"),
-        ChangeSetType="CREATE",
+def test_cdk_bootstrap(deploy_cfn_template, cfn_client):
+    deploy_cfn_template(template_file_name="cdk_bootstrap_v10.yaml")
+    init_stack_result = deploy_cfn_template(template_file_name="cdk_init_template.yaml")
+    assert init_stack_result.outputs["BootstrapVersionOutput"] == "10"
+    stack_res = cfn_client.describe_stack_resources(
+        StackName=init_stack_result.stack_id, LogicalResourceId="CDKMetadata"
     )
-    change_set_id = response["Id"]
-    stack_id = response["StackId"]
-    assert change_set_id
-    assert stack_id
-
-    try:
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        assert wait_until(is_change_set_finished(change_set_id))
-    finally:
-        cleanup_changesets([change_set_id])
-        cleanup_stacks([stack_id])
+    assert len(stack_res["StackResources"]) == 1
+    assert stack_res["StackResources"][0]["LogicalResourceId"] == "CDKMetadata"

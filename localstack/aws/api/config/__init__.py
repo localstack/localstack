@@ -379,6 +379,8 @@ class ResourceType(str):
     AWS_CodeDeploy_Application = "AWS::CodeDeploy::Application"
     AWS_CodeDeploy_DeploymentConfig = "AWS::CodeDeploy::DeploymentConfig"
     AWS_CodeDeploy_DeploymentGroup = "AWS::CodeDeploy::DeploymentGroup"
+    AWS_EC2_LaunchTemplate = "AWS::EC2::LaunchTemplate"
+    AWS_ECR_PublicRepository = "AWS::ECR::PublicRepository"
 
 
 class ResourceValueType(str):

@@ -145,8 +145,8 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
     log_group.put_subscription_filter(filter_name, filter_pattern, destination_arn, role_arn)
 
 
-@patch(MotoLogStream.put_log_events)
-def moto_put_log_events(_, self, log_group_name, log_stream_name, log_events, sequence_token):
+@patch(MotoLogStream.put_log_events, pass_target=False)
+def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
     # TODO: call/patch upstream method here, instead of duplicating the code!
     self.last_ingestion_time = int(unix_time_millis())
     self.stored_bytes += sum([len(log_event["message"]) for log_event in log_events])
@@ -175,8 +175,8 @@ def moto_put_log_events(_, self, log_group_name, log_stream_name, log_events, se
     output = io.BytesIO()
     with GzipFile(fileobj=output, mode="w") as f:
         f.write(json.dumps(data, separators=(",", ":")).encode("utf-8"))
-    payload_gz_encoded = base64.b64encode(output.getvalue()).decode("utf-8")
-    event = {"awslogs": {"data": payload_gz_encoded}}
+    payload_gz_encoded = output.getvalue()
+    event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
 
     if self.destination_arn:
         if ":lambda:" in self.destination_arn:
@@ -188,7 +188,7 @@ def moto_put_log_events(_, self, log_group_name, log_stream_name, log_events, se
             stream_name = aws_stack.kinesis_stream_name(self.destination_arn)
             client.put_record(
                 StreamName=stream_name,
-                Data=json.dumps(payload_gz_encoded),
+                Data=payload_gz_encoded,
                 PartitionKey=log_group_name,
             )
         if ":firehose:" in self.destination_arn:
@@ -196,34 +196,17 @@ def moto_put_log_events(_, self, log_group_name, log_stream_name, log_events, se
             firehose_name = aws_stack.firehose_name(self.destination_arn)
             client.put_record(
                 DeliveryStreamName=firehose_name,
-                Record={"Data": json.dumps(payload_gz_encoded)},
+                Record={"Data": payload_gz_encoded},
             )
 
 
 @patch(MotoLogStream.filter_log_events)
 def moto_filter_log_events(
-    filter_log_events,
-    self,
-    log_group_name,
-    log_stream_names,
-    start_time,
-    end_time,
-    limit,
-    next_token,
-    filter_pattern,
-    interleaved,
+    filter_log_events, self, start_time, end_time, filter_pattern, *args, **kwargs
 ):
     # moto currently raises an exception if filter_patterns is None, so we skip it
     events = filter_log_events(
-        self,
-        log_group_name,
-        log_stream_names,
-        start_time,
-        end_time,
-        limit,
-        next_token,
-        None,
-        interleaved,
+        self, start_time=start_time, end_time=end_time, filter_pattern=None, *args, **kwargs
     )
 
     if not filter_pattern:
