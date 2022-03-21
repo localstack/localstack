@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Dict
 
 from localstack.services.awslambda.lambda_api import IAM_POLICY_VERSION
 from localstack.services.cloudformation.deployment_utils import (
@@ -12,7 +13,7 @@ from localstack.services.cloudformation.deployment_utils import (
     select_parameters,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.services.iam.iam_starter import SERVICE_LINKED_ROLE_NAME_PREFIX
+from localstack.services.iam.iam_starter import SERVICE_LINKED_ROLE_PATH_PREFIX
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import ensure_list
 
@@ -335,13 +336,13 @@ class IAMServiceLinkedRole(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         iam = aws_stack.connect_to_service("iam")
-        roles = iam.list_roles(MaxItems=100)["Roles"]
+        roles = iam.list_roles(PathPrefix=SERVICE_LINKED_ROLE_PATH_PREFIX)["Roles"]
         service_name = self.resolve_refs_recursively(
             stack_name, self.props["AWSServiceName"], resources
         )
-        matching = [r for r in roles if r["RoleName"].startswith(SERVICE_LINKED_ROLE_NAME_PREFIX)]
-        for role in matching:
-            policy = json.loads(role.get("AssumeRolePolicyDocument") or "{}")
+        for role in roles:
+            policy = role.get("AssumeRolePolicyDocument") or "{}"
+            policy = json.loads(policy or "{}") if isinstance(policy, str) else policy
             statements = policy.get("Statement")
             if statements and statements[0].get("Principal") == {"Service": service_name}:
                 return role
@@ -365,6 +366,9 @@ class IAMPolicy(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=False)
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("PolicyName")
+
     @classmethod
     def get_deploy_templates(cls):
         def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
@@ -386,17 +390,23 @@ class IAMPolicy(GenericBaseModel):
                     GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
                 )
 
-        return {"create": {"function": _create}}
+        def _delete_params(params, *args, **kwargs):
+            return {"PolicyArn": aws_stack.policy_arn(params["PolicyName"])}
 
-    @staticmethod
-    def get_policy_state(obj, stack_name, resources, managed_policy=False):
+        return {
+            "create": {"function": _create},
+            "delete": {"function": "delete_policy", "parameters": _delete_params},
+        }
+
+    @classmethod
+    def get_policy_state(cls, obj, stack_name, resources, managed_policy=False):
         def _filter(pols):
             return [p for p in pols["AttachedPolicies"] if p["PolicyName"] == policy_name]
 
         iam = aws_stack.connect_to_service("iam")
         props = obj.props
-        policy_name = props.get("PolicyName") or props.get("ManagedPolicyName")
         result = {}
+        policy_name = props["PolicyName"]
         roles = props.get("Roles", [])
         users = props.get("Users", [])
         groups = props.get("Groups", [])

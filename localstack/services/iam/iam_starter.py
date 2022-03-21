@@ -29,7 +29,7 @@ from localstack.utils.patch import patch
 
 XMLNS_IAM = "https://iam.amazonaws.com/doc/2010-05-08/"
 
-SERVICE_LINKED_ROLE_NAME_PREFIX = "service-linked-role-"
+SERVICE_LINKED_ROLE_PATH_PREFIX = "/aws-service-role"
 
 USER_RESPONSE_TEMPLATE = """<{{ action }}UserResponse>
    <{{ action }}UserResult>
@@ -382,11 +382,10 @@ def apply_patches():
                     ],
                 }
             )
-            role_name = f"{SERVICE_LINKED_ROLE_NAME_PREFIX}{short_uid()}"
             role = moto_iam_backend.create_role(
-                role_name=role_name,
+                role_name=service_name,
                 assume_role_policy_document=policy_doc,
-                path="/",
+                path=SERVICE_LINKED_ROLE_PATH_PREFIX,
                 permissions_boundary="",
                 description=description,
                 tags={},

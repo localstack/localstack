@@ -2,7 +2,7 @@ import json
 
 import jinja2
 
-from localstack.services.iam.iam_starter import SERVICE_LINKED_ROLE_NAME_PREFIX
+from localstack.services.iam.iam_starter import SERVICE_LINKED_ROLE_PATH_PREFIX
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
@@ -111,9 +111,10 @@ def test_policy_attachments(
     assert len(group_attached_policies["AttachedPolicies"]) == 1
 
     # check service linked roles
-    roles = iam_client.list_roles(MaxItems=100)["Roles"]
-    matching = [r for r in roles if r["RoleName"].startswith(SERVICE_LINKED_ROLE_NAME_PREFIX)]
-    matching = [r for r in matching if r["Description"] == f"service linked role {linked_role_id}"]
+    roles = iam_client.list_roles(PathPrefix=SERVICE_LINKED_ROLE_PATH_PREFIX)["Roles"]
+    matching = [r for r in roles if r["Description"] == f"service linked role {linked_role_id}"]
     assert matching
-    policy = json.loads(matching[0]["AssumeRolePolicyDocument"])
+    policy = matching[0]["AssumeRolePolicyDocument"]
+    policy = json.loads(policy) if isinstance(policy, str) else policy
+    assert matching[0]["RoleName"] == "elasticbeanstalk.amazonaws.com"
     assert policy["Statement"][0]["Principal"] == {"Service": "elasticbeanstalk.amazonaws.com"}
