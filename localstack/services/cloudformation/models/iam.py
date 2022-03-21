@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Dict
 
 from localstack.services.awslambda.lambda_api import IAM_POLICY_VERSION
 from localstack.services.cloudformation.deployment_utils import (
