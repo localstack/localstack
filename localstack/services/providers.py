@@ -82,9 +82,14 @@ def dynamodbstreams():
 
 @aws_provider()
 def ec2():
-    from localstack.services.ec2 import ec2_listener, ec2_starter
+    from localstack.services.ec2.provider import Ec2Provider
+    from localstack.services.moto import MotoFallbackDispatcher
 
-    return Service("ec2", listener=ec2_listener.UPDATE_EC2, start=ec2_starter.start_ec2)
+    provider = Ec2Provider()
+    return Service(
+        "ec2",
+        listener=AwsApiListener("ec2", MotoFallbackDispatcher(provider)),
+    )
 
 
 @aws_provider()

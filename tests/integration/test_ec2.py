@@ -250,6 +250,7 @@ class TestEc2Integrations:
         assert 2 == len(services)
         assert f"com.amazonaws.{region}.dynamodb" in services
         assert f"com.amazonaws.{region}.s3" in services
+
         # test filter of Interface endpoint services
         vpc_endpoint_interface_services = ec2_client.describe_vpc_endpoint_services(
             Filters=[
@@ -260,9 +261,8 @@ class TestEc2Integrations:
         assert 200 == vpc_endpoint_interface_services["ResponseMetadata"]["HTTPStatusCode"]
         services = vpc_endpoint_interface_services["ServiceNames"]
         assert len(services) > 0
-        assert f"com.amazonaws.{region}.dynamodb" in services
-        assert f"com.amazonaws.{region}.s3" in services
-        assert f"com.amazonaws.{region}.firehose" in services
+        assert f"com.amazonaws.{region}.s3" in services  # S3 is both gateway and interface service
+        assert f"com.amazonaws.{region}.kinesis-firehose" in services
 
         # test filter that does not exist
         vpc_endpoint_interface_services = ec2_client.describe_vpc_endpoint_services(
