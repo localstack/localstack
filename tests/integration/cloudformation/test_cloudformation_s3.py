@@ -9,7 +9,7 @@ def test_bucketpolicy(
     deploy_cfn_template,
 ):
     bucket_name = f"ls-bucket-{short_uid()}"
-    deploy_cfn_template(
+    deploy_result = deploy_cfn_template(
         template_file_name="s3_bucketpolicy.yaml",
         template_mapping={"bucket_name": bucket_name, "include_policy": True},
     )
@@ -18,6 +18,7 @@ def test_bucketpolicy(
 
     deploy_cfn_template(
         is_update=True,
+        stack_name=deploy_result.stack_id,
         template_file_name="s3_bucketpolicy.yaml",
         template_mapping={"bucket_name": bucket_name, "include_policy": False},
     )

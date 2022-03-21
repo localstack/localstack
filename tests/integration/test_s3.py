@@ -2629,6 +2629,26 @@ class TestS3New:
         )
         assert buckets["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == TEST_REGION_1
 
+    @pytest.mark.xfail(
+        reason="Deleting content of bucket with objects.all().delete() not working (InvalidAccessKeyId)"
+    )
+    def test_delete_bucket_with_content(self, s3_client, s3_create_bucket):
+        bucket_name = s3_create_bucket()
+        for i in range(0, 10, 1):
+            body = "test-" + str(i)
+            key = "test-key-" + str(i)
+            s3_client.put_object(Bucket=bucket_name, Key=key, Body=body)
+
+        resp = s3_client.list_objects(Bucket=bucket_name, MaxKeys=100)
+        assert 10 == len(resp["Contents"])
+
+        bucket = boto3.resource("s3").Bucket(bucket_name)
+        bucket.objects.all().delete()
+        bucket.delete()
+
+        resp = s3_client.list_buckets()
+        assert len(resp["Buckets"]) == 0
+
 
 @pytest.mark.parametrize(
     "api_version, bucket_name, payload",

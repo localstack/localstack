@@ -1,5 +1,6 @@
 __all__ = [
     "apigateway",
+    "cdk",
     "certificatemanager",
     "cloudformation",
     "cloudwatch",
