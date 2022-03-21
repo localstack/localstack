@@ -954,6 +954,88 @@ class TestSecretsManager:
         assert get_1_u["SecretString"] == "S3"
         assert get_1_u["VersionStages"] == ["AWSPENDING", "PUT2", "AWSCURRENT"]
 
+    def test_non_versioning_version_stages_replacement(self, secretsmanager_client):
+        secret_name: str = "s-%s" % short_uid()
+        create = secretsmanager_client.create_secret(Name=secret_name, SecretString="S0")
+        vid_s = create["VersionId"]
+
+        put_0 = secretsmanager_client.put_secret_value(
+            SecretId=secret_name, SecretString="S1", VersionStages=["one", "two", "three"]
+        )
+        vid_0 = put_0["VersionId"]
+        assert vid_0 != vid_s
+
+        lst_0 = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_0["Versions"]) == 2
+        #
+        lst_0_v_0 = lst_0["Versions"][0]
+        assert lst_0_v_0["VersionId"] == vid_s
+        assert lst_0_v_0["VersionStages"] == ["AWSCURRENT"]
+        #
+        lst_0_v_1 = lst_0["Versions"][1]
+        assert lst_0_v_1["VersionId"] == vid_0
+        assert lst_0_v_1["VersionStages"] == ["one", "two", "three"]
+
+        put_1 = secretsmanager_client.put_secret_value(
+            SecretId=secret_name, SecretString="S2", VersionStages=["one", "two", "three", "four"]
+        )
+        vid_1 = put_1["VersionId"]
+        assert len({vid_s, vid_0, vid_1}) == 3
+
+        lst_1 = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_1["Versions"]) == 2
+        #
+        lst_1_v_0 = lst_1["Versions"][0]
+        assert lst_1_v_0["VersionId"] == vid_s
+        assert lst_1_v_0["VersionStages"] == ["AWSCURRENT"]
+        #
+        lst_1_v_1 = lst_1["Versions"][1]
+        assert lst_1_v_1["VersionId"] == vid_1
+        assert lst_1_v_1["VersionStages"] == ["one", "two", "three", "four"]
+
+    def test_non_versioning_version_stages_no_replacement(self, secretsmanager_client):
+        secret_name: str = "s-%s" % short_uid()
+        create = secretsmanager_client.create_secret(Name=secret_name, SecretString="S0")
+        vid_s = create["VersionId"]
+
+        put_0 = secretsmanager_client.put_secret_value(
+            SecretId=secret_name, SecretString="S1", VersionStages=["one", "two", "three"]
+        )
+        vid_0 = put_0["VersionId"]
+        assert vid_0 != vid_s
+
+        lst_0 = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_0["Versions"]) == 2
+        #
+        lst_0_v_0 = lst_0["Versions"][0]
+        assert lst_0_v_0["VersionId"] == vid_s
+        assert lst_0_v_0["VersionStages"] == ["AWSCURRENT"]
+        #
+        lst_0_v_1 = lst_0["Versions"][1]
+        assert lst_0_v_1["VersionId"] == vid_0
+        assert lst_0_v_1["VersionStages"] == ["one", "two", "three"]
+
+        put_1 = secretsmanager_client.put_secret_value(
+            SecretId=secret_name, SecretString="S2", VersionStages=["one", "two", "four"]
+        )
+        vid_1 = put_1["VersionId"]
+        assert len({vid_s, vid_0, vid_1}) == 3
+
+        lst_1 = secretsmanager_client.list_secret_version_ids(SecretId=secret_name)
+        assert len(lst_1["Versions"]) == 3
+        #
+        lst_1_v_0 = lst_1["Versions"][0]
+        assert lst_1_v_0["VersionId"] == vid_s
+        assert lst_1_v_0["VersionStages"] == ["AWSCURRENT"]
+        #
+        lst_1_v_1 = lst_1["Versions"][1]
+        assert lst_1_v_1["VersionId"] == vid_0
+        assert lst_1_v_1["VersionStages"] == ["three"]
+        #
+        lst_1_v_2 = lst_1["Versions"][2]
+        assert lst_1_v_2["VersionId"] == vid_1
+        assert lst_1_v_2["VersionStages"] == ["one", "two", "four"]
+
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> Dict:
         headers = aws_stack.mock_aws_request_headers("secretsmanager")

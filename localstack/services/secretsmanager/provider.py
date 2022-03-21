@@ -370,24 +370,8 @@ def response_update_secret(_, self):
     )
 
 
-@patch(SecretsManagerBackend.rotate_secret)
-def secrets_manager_rotate_secret(
-    fn,
-    self,
-    secret_id,
-    client_request_token=None,
-    rotation_lambda_arn=None,
-    rotation_rules=None,
-):
-    # Define here with no validation for retrieval.
-    new_version_id = client_request_token if client_request_token else str(uuid.uuid4())
-    fn(self, secret_id, new_version_id, rotation_lambda_arn, rotation_rules)
-    secret = self.secrets[secret_id]
-    return secret.to_short_dict(version_id=new_version_id)
-
-
 @patch(SecretsManagerBackend.update_secret_version_stage)
-def update_secret_version_stage(
+def backend_update_secret_version_stage(
     fn, self, secret_id, version_stage, remove_from_version_id, move_to_version_id
 ):
     fn(self, secret_id, version_stage, remove_from_version_id, move_to_version_id)
@@ -420,7 +404,7 @@ def update_secret_version_stage(
 
 
 @patch(FakeSecret.reset_default_version)
-def reset_default_version(fn, self, secret_version, version_id):
+def fake_secret_reset_default_version(fn, self, secret_version, version_id):
     fn(self, secret_version, version_id)
     # Remove versions with no version stages.
     versions_no_stages = [
@@ -430,8 +414,19 @@ def reset_default_version(fn, self, secret_version, version_id):
         del self.versions[version_no_stages]
 
 
+@patch(FakeSecret.remove_version_stages_from_old_versions)
+def fake_secret_remove_version_stages_from_old_versions(fn, self, version_stages):
+    fn(self, version_stages)
+    # Remove versions with no version stages.
+    versions_no_stages = [
+        version_id for version_id, version in self.versions.items() if not version["version_stages"]
+    ]
+    for version_no_stages in versions_no_stages:
+        del self.versions[version_no_stages]
+
+
 @patch(SecretsManagerBackend.rotate_secret)
-def rotate_secret(
+def backend_rotate_secret(
     _,
     self,
     secret_id,
