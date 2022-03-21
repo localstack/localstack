@@ -33,8 +33,13 @@ role_policy = {
     ],
 }
 
+lambda_asf_only = pytest.mark.skipif(
+    os.environ.get("PROVIDER_OVERRIDE_LAMBDA") != "asf", reason="Skip for non-asf provider"
+)
+
 
 @pytest.fixture
+@pytest.mark.skipif
 def create_lambda_function_aws(
     lambda_client,
     iam_client,
@@ -103,6 +108,8 @@ def handler(event,ctx):
 """
 
 
+@pytest.mark.aws_compatible
+@lambda_asf_only
 class TestLambdaAsfApi:
     def test_create_function(self, lambda_client, create_lambda_function_aws, lambda_su_role):
         fn_name = f"ls-fn-{short_uid()}"
