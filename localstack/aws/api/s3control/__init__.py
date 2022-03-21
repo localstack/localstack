@@ -224,6 +224,13 @@ class S3CannedAccessControlList(str):
     bucket_owner_full_control = "bucket-owner-full-control"
 
 
+class S3ChecksumAlgorithm(str):
+    CRC32 = "CRC32"
+    CRC32C = "CRC32C"
+    SHA1 = "SHA1"
+    SHA256 = "SHA256"
+
+
 class S3GlacierJobTier(str):
     BULK = "BULK"
     STANDARD = "STANDARD"
@@ -722,6 +729,7 @@ class S3CopyObjectOperation(TypedDict, total=False):
     ObjectLockMode: Optional[S3ObjectLockMode]
     ObjectLockRetainUntilDate: Optional[TimeStamp]
     BucketKeyEnabled: Optional[Boolean]
+    ChecksumAlgorithm: Optional[S3ChecksumAlgorithm]
 
 
 class LambdaInvokeOperation(TypedDict, total=False):
@@ -1556,10 +1564,7 @@ class S3ControlApi:
 
     @handler("DeleteAccessPointForObjectLambda")
     def delete_access_point_for_object_lambda(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        name: ObjectLambdaAccessPointName,
+        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
     ) -> None:
         raise NotImplementedError
 
@@ -1571,10 +1576,7 @@ class S3ControlApi:
 
     @handler("DeleteAccessPointPolicyForObjectLambda")
     def delete_access_point_policy_for_object_lambda(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        name: ObjectLambdaAccessPointName,
+        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
     ) -> None:
         raise NotImplementedError
 
@@ -1657,19 +1659,13 @@ class S3ControlApi:
 
     @handler("GetAccessPointConfigurationForObjectLambda")
     def get_access_point_configuration_for_object_lambda(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        name: ObjectLambdaAccessPointName,
+        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
     ) -> GetAccessPointConfigurationForObjectLambdaResult:
         raise NotImplementedError
 
     @handler("GetAccessPointForObjectLambda")
     def get_access_point_for_object_lambda(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        name: ObjectLambdaAccessPointName,
+        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
     ) -> GetAccessPointForObjectLambdaResult:
         raise NotImplementedError
 
@@ -1681,10 +1677,7 @@ class S3ControlApi:
 
     @handler("GetAccessPointPolicyForObjectLambda")
     def get_access_point_policy_for_object_lambda(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        name: ObjectLambdaAccessPointName,
+        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
     ) -> GetAccessPointPolicyForObjectLambdaResult:
         raise NotImplementedError
 
@@ -1696,10 +1689,7 @@ class S3ControlApi:
 
     @handler("GetAccessPointPolicyStatusForObjectLambda")
     def get_access_point_policy_status_for_object_lambda(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        name: ObjectLambdaAccessPointName,
+        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
     ) -> GetAccessPointPolicyStatusForObjectLambdaResult:
         raise NotImplementedError
 
@@ -1735,28 +1725,19 @@ class S3ControlApi:
 
     @handler("GetMultiRegionAccessPoint")
     def get_multi_region_access_point(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        name: MultiRegionAccessPointName,
+        self, context: RequestContext, account_id: AccountId, name: MultiRegionAccessPointName
     ) -> GetMultiRegionAccessPointResult:
         raise NotImplementedError
 
     @handler("GetMultiRegionAccessPointPolicy")
     def get_multi_region_access_point_policy(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        name: MultiRegionAccessPointName,
+        self, context: RequestContext, account_id: AccountId, name: MultiRegionAccessPointName
     ) -> GetMultiRegionAccessPointPolicyResult:
         raise NotImplementedError
 
     @handler("GetMultiRegionAccessPointPolicyStatus")
     def get_multi_region_access_point_policy_status(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        name: MultiRegionAccessPointName,
+        self, context: RequestContext, account_id: AccountId, name: MultiRegionAccessPointName
     ) -> GetMultiRegionAccessPointPolicyStatusResult:
         raise NotImplementedError
 
@@ -1833,10 +1814,7 @@ class S3ControlApi:
 
     @handler("ListStorageLensConfigurations")
     def list_storage_lens_configurations(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        next_token: ContinuationToken = None,
+        self, context: RequestContext, account_id: AccountId, next_token: ContinuationToken = None
     ) -> ListStorageLensConfigurationsResult:
         raise NotImplementedError
 
@@ -1852,11 +1830,7 @@ class S3ControlApi:
 
     @handler("PutAccessPointPolicy")
     def put_access_point_policy(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        name: AccessPointName,
-        policy: Policy,
+        self, context: RequestContext, account_id: AccountId, name: AccessPointName, policy: Policy
     ) -> None:
         raise NotImplementedError
 
@@ -1893,21 +1867,13 @@ class S3ControlApi:
 
     @handler("PutBucketTagging")
     def put_bucket_tagging(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        bucket: BucketName,
-        tagging: Tagging,
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, tagging: Tagging
     ) -> None:
         raise NotImplementedError
 
     @handler("PutJobTagging")
     def put_job_tagging(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        job_id: JobId,
-        tags: S3TagSet,
+        self, context: RequestContext, account_id: AccountId, job_id: JobId, tags: S3TagSet
     ) -> PutJobTaggingResult:
         raise NotImplementedError
 
@@ -1953,11 +1919,7 @@ class S3ControlApi:
 
     @handler("UpdateJobPriority")
     def update_job_priority(
-        self,
-        context: RequestContext,
-        account_id: AccountId,
-        job_id: JobId,
-        priority: JobPriority,
+        self, context: RequestContext, account_id: AccountId, job_id: JobId, priority: JobPriority
     ) -> UpdateJobPriorityResult:
         raise NotImplementedError
 
