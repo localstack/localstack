@@ -29,6 +29,8 @@ from localstack.utils.patch import patch
 
 XMLNS_IAM = "https://iam.amazonaws.com/doc/2010-05-08/"
 
+SERVICE_LINKED_ROLE_NAME_PREFIX = "service-linked-role-"
+
 USER_RESPONSE_TEMPLATE = """<{{ action }}UserResponse>
    <{{ action }}UserResult>
       <User>
@@ -365,7 +367,6 @@ def apply_patches():
         Role.arn = role_arn
 
         def create_service_linked_role(self):
-            name_prefix = "service-linked-role"
             service_name = self._get_param("AWSServiceName")
             description = self._get_param("Description")
             # TODO: how to support "CustomSuffix" API request parameter?
@@ -381,8 +382,9 @@ def apply_patches():
                     ],
                 }
             )
+            role_name = f"{SERVICE_LINKED_ROLE_NAME_PREFIX}{short_uid()}"
             role = moto_iam_backend.create_role(
-                role_name="%s-%s" % (name_prefix, short_uid()),
+                role_name=role_name,
                 assume_role_policy_document=policy_doc,
                 path="/",
                 permissions_boundary="",

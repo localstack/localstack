@@ -12,6 +12,7 @@ from localstack.services.cloudformation.deployment_utils import (
     select_parameters,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
+from localstack.services.iam.iam_starter import SERVICE_LINKED_ROLE_NAME_PREFIX
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import ensure_list
 
@@ -324,6 +325,35 @@ class IAMRole(GenericBaseModel):
                 {"function": IAMRole._pre_delete},
                 {"function": "delete_role", "parameters": {"RoleName": "RoleName"}},
             ],
+        }
+
+
+class IAMServiceLinkedRole(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::IAM::ServiceLinkedRole"
+
+    def fetch_state(self, stack_name, resources):
+        iam = aws_stack.connect_to_service("iam")
+        roles = iam.list_roles(MaxItems=100)["Roles"]
+        service_name = self.resolve_refs_recursively(
+            stack_name, self.props["AWSServiceName"], resources
+        )
+        matching = [r for r in roles if r["RoleName"].startswith(SERVICE_LINKED_ROLE_NAME_PREFIX)]
+        for role in matching:
+            policy = json.loads(role.get("AssumeRolePolicyDocument") or "{}")
+            statements = policy.get("Statement")
+            if statements and statements[0].get("Principal") == {"Service": service_name}:
+                return role
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("RoleName")
+
+    @classmethod
+    def get_deploy_templates(cls):
+        return {
+            "create": {"function": "create_service_linked_role"},
+            "delete": {"function": "delete_service_linked_role", "parameters": ["RoleName"]},
         }
 
 
