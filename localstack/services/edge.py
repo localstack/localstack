@@ -214,7 +214,7 @@ class ProxyListenerEdge(ProxyListener):
                     content = xmltodict.parse(to_str(response._content))
                     response._content = strip_xmlns(content)
             except Exception as e:
-                LOG.debug("Unable to convert XML response to JSON: %s", e)
+                LOG.debug("Unable to convert XML response to JSON", exc_info=e)
 
         if (
             response._content
