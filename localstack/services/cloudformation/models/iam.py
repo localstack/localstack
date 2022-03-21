@@ -335,10 +335,11 @@ class IAMServiceLinkedRole(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         iam = aws_stack.connect_to_service("iam")
-        roles = iam.list_roles(PathPrefix=SERVICE_LINKED_ROLE_PATH_PREFIX)["Roles"]
         service_name = self.resolve_refs_recursively(
             stack_name, self.props["AWSServiceName"], resources
         )
+        path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{service_name}"
+        roles = iam.list_roles(PathPrefix=path)["Roles"]
         for role in roles:
             policy = role.get("AssumeRolePolicyDocument") or "{}"
             policy = json.loads(policy or "{}") if isinstance(policy, str) else policy

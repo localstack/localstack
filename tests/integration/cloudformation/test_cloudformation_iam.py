@@ -116,5 +116,4 @@ def test_policy_attachments(
     assert matching
     policy = matching[0]["AssumeRolePolicyDocument"]
     policy = json.loads(policy) if isinstance(policy, str) else policy
-    assert matching[0]["RoleName"] == "elasticbeanstalk.amazonaws.com"
     assert policy["Statement"][0]["Principal"] == {"Service": "elasticbeanstalk.amazonaws.com"}

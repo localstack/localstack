@@ -382,10 +382,12 @@ def apply_patches():
                     ],
                 }
             )
+            path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{service_name}"
+            role_name = f"r-{short_uid()}"
             role = moto_iam_backend.create_role(
-                role_name=service_name,
+                role_name=role_name,
                 assume_role_policy_document=policy_doc,
-                path=SERVICE_LINKED_ROLE_PATH_PREFIX,
+                path=path,
                 permissions_boundary="",
                 description=description,
                 tags={},
