@@ -12,6 +12,7 @@ from localstack.services.cloudformation.deployment_utils import (
     select_parameters,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
+from localstack.services.iam.iam_starter import SERVICE_LINKED_ROLE_PATH_PREFIX
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import ensure_list
 
@@ -327,6 +328,36 @@ class IAMRole(GenericBaseModel):
         }
 
 
+class IAMServiceLinkedRole(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::IAM::ServiceLinkedRole"
+
+    def fetch_state(self, stack_name, resources):
+        iam = aws_stack.connect_to_service("iam")
+        service_name = self.resolve_refs_recursively(
+            stack_name, self.props["AWSServiceName"], resources
+        )
+        path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{service_name}"
+        roles = iam.list_roles(PathPrefix=path)["Roles"]
+        for role in roles:
+            policy = role.get("AssumeRolePolicyDocument") or "{}"
+            policy = json.loads(policy or "{}") if isinstance(policy, str) else policy
+            statements = policy.get("Statement")
+            if statements and statements[0].get("Principal") == {"Service": service_name}:
+                return role
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("RoleName")
+
+    @classmethod
+    def get_deploy_templates(cls):
+        return {
+            "create": {"function": "create_service_linked_role"},
+            "delete": {"function": "delete_service_linked_role", "parameters": ["RoleName"]},
+        }
+
+
 class IAMPolicy(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
@@ -334,6 +365,9 @@ class IAMPolicy(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=False)
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("PolicyName")
 
     @classmethod
     def get_deploy_templates(cls):
@@ -356,17 +390,24 @@ class IAMPolicy(GenericBaseModel):
                     GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
                 )
 
-        return {"create": {"function": _create}}
+        def _delete_params(params, *args, **kwargs):
+            return {"PolicyArn": aws_stack.policy_arn(params["PolicyName"])}
 
-    @staticmethod
-    def get_policy_state(obj, stack_name, resources, managed_policy=False):
+        return {
+            "create": {"function": _create},
+            "delete": {"function": "delete_policy", "parameters": _delete_params},
+        }
+
+    @classmethod
+    def get_policy_state(cls, obj, stack_name, resources, managed_policy=False):
         def _filter(pols):
             return [p for p in pols["AttachedPolicies"] if p["PolicyName"] == policy_name]
 
         iam = aws_stack.connect_to_service("iam")
         props = obj.props
-        policy_name = props.get("PolicyName") or props.get("ManagedPolicyName")
         result = {}
+        # Note: util function reused for both IAM::Policy and IAM::ManagedPolicy
+        policy_name = props.get("PolicyName") or props.get("ManagedPolicyName")
         roles = props.get("Roles", [])
         users = props.get("Users", [])
         groups = props.get("Groups", [])
