@@ -338,6 +338,7 @@ def backend_update_secret(
     fn,
     self,
     secret_id,
+    description=None,
     **kwargs,
 ):
     fn(self, secret_id, **kwargs)
@@ -345,9 +346,8 @@ def backend_update_secret(
 
     # Fix missing update of secret description.
     # Secret exists if this point is reached.
-    new_description = kwargs.get("description", None)
-    if new_description is not None:
-        secret.description = new_description
+    if description is not None:
+        secret.description = description
 
     return secret.to_short_dict()
 
@@ -359,7 +359,7 @@ def response_update_secret(_, self):
     secret_string = self._get_param("SecretString")
     secret_binary = self._get_param("SecretBinary")
     client_request_token = self._get_param("ClientRequestToken")
-    kms_key_id = self._get_param("KmsKeyId", if_none=None)
+    kms_key_id = self._get_param("KmsKeyId")
     return secretsmanager_backends[self.region].update_secret(
         secret_id=secret_id,
         description=description,
@@ -394,13 +394,7 @@ def backend_update_secret_version_stage(
         for version_no_stages in versions_no_stages:
             del secret.versions[version_no_stages]
 
-    return secret_id
-
-    # TODO: AWS responds with 'ARN' and 'Name', as below:
-    # return {
-    #     "ARN": secret.arn,
-    #     "Name": secret.name
-    # }
+    return json.dumps({"ARN": secret.arn, "Name": secret.name})
 
 
 @patch(FakeSecret.reset_default_version)
