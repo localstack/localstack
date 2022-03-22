@@ -1,5 +1,4 @@
 import logging
-import os
 import platform
 
 from localstack import config
@@ -9,9 +8,6 @@ from localstack.services.install import INSTALL_PATH_KMS_BINARY_PATTERN
 from localstack.utils.common import get_arch, get_free_tcp_port, wait_for_port_open
 
 LOG = logging.getLogger(__name__)
-
-# KMS provider - can be either "local-kms" or "moto"
-KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
 
 
 def start_kms_local(port=None, backend_port=None, asynchronous=None, update_listener=None):

@@ -5,10 +5,9 @@ from typing import Dict, List
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
-from moto.kms.exceptions import ValidationException
 from moto.kms.models import Key, kms_backends
 
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.kms import (
     CreateGrantRequest,
     CreateGrantResponse,
@@ -94,6 +93,13 @@ class KMSBackend(RegionBackend):
         self.key_pairs = {}
 
 
+class ValidationError(CommonServiceException):
+    """General validation error type (defined in the AWS docs, but not part of the botocore spec)"""
+
+    def __init__(self, message=None):
+        super().__init__("ValidationError", message=message)
+
+
 class KmsProvider(KmsApi):
     @handler("CreateKey", expand=False)
     def create_key(
@@ -117,8 +123,7 @@ class KmsProvider(KmsApi):
     def create_grant(
         self, context: RequestContext, create_grant_request: CreateGrantRequest
     ) -> CreateGrantResponse:
-
-        validate_grant(create_grant_request)
+        self._validate_grant(create_grant_request)
         region_details = KMSBackend.get()
 
         grant = dict(create_grant_request)
@@ -135,8 +140,11 @@ class KmsProvider(KmsApi):
     def list_grants(
         self, context: RequestContext, list_grants_request: ListGrantsRequest
     ) -> ListGrantsResponse:
+        key_id = list_grants_request.get(KEY_ID)
+        if not key_id:
+            raise ValidationError(f"Required input parameter '{KEY_ID}' not specified")
         region_details = KMSBackend.get()
-        verify_key_exists(list_grants_request[KEY_ID])
+        self._verify_key_exists(key_id)
 
         limit = list_grants_request.get("Limit", 50)
 
@@ -146,7 +154,7 @@ class KmsProvider(KmsApi):
             filtered = [
                 grant
                 for grant in region_details.grants.values()
-                if grant[KEY_ID] == list_grants_request[KEY_ID]
+                if grant[KEY_ID] == key_id
                 and filter_grant_id(grant, list_grants_request)
                 and filter_grantee_principal(grant, list_grants_request)
             ]
@@ -169,7 +177,8 @@ class KmsProvider(KmsApi):
         self, context: RequestContext, key_id: KeyIdType, grant_id: GrantIdType
     ) -> None:
         grants = KMSBackend.get().grants
-        assert grants[grant_id][KEY_ID] == key_id
+        if grants[grant_id][KEY_ID] != key_id:
+            raise ValidationError(f"Invalid {KEY_ID}={key_id} specified for grant {grant_id}")
         grants.pop(grant_id)
 
     def retire_grant(
@@ -202,6 +211,9 @@ class KmsProvider(KmsApi):
     ) -> ListGrantsResponse:
         region_details = KMSBackend.get()
         grants = region_details.grants
+
+        if not retiring_principal:
+            raise ValidationError(f"Required input parameter '{RETIRING_PRINCIPAL}' not specified")
 
         limit = limit or 50
 
@@ -321,6 +333,25 @@ class KmsProvider(KmsApi):
         }
         return SignResponse(**result)
 
+    def _verify_key_exists(self, key_id):
+        try:
+            kms_backends[aws_stack.get_region()].describe_key(key_id)
+        except Exception:
+            raise ValidationError(f"Invalid key ID '{key_id}'")
+
+    def _validate_grant(self, data: Dict):
+        if KEY_ID not in data or GRANTEE_PRINCIPAL not in data or OPERATIONS not in data:
+            raise ValidationError("Grant ID, key ID and grantee principal must be specified")
+
+        for operation in data[OPERATIONS]:
+            if operation not in VALID_OPERATIONS:
+                raise ValidationError(
+                    f"Value {[OPERATIONS]} at 'operations' failed to satisfy constraint: Member must satisfy"
+                    f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
+                )
+
+        self._verify_key_exists(data[KEY_ID])
+
 
 # ---------------
 # UTIL FUNCTIONS
@@ -391,28 +422,6 @@ def _generate_data_key_pair(data, create_cipher=True):
     result = remove_attributes(dict(result), ["Region", "_key_"])
 
     return result
-
-
-def verify_key_exists(key_id):
-    try:
-        aws_stack.connect_to_service("kms").describe_key(KeyId=key_id)
-    # FIXME catch the proper exception
-    except Exception:
-        raise ValidationException(f"Invalid keyId {key_id}")
-
-
-def validate_grant(data):
-    if KEY_ID not in data or GRANTEE_PRINCIPAL not in data or OPERATIONS not in data:
-        raise ValidationException("Grant ID, key ID and grantee principal must be specified")
-
-    for operation in data[OPERATIONS]:
-        if operation not in VALID_OPERATIONS:
-            raise ValidationException(
-                f"Value {[OPERATIONS]} at 'operations' failed to satisfy constraint: Member must satisfy"
-                f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
-            )
-
-    verify_key_exists(data[KEY_ID])
 
 
 def filter_if_present(grant, data, filter_key):
