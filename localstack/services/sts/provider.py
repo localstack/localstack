@@ -3,6 +3,7 @@ import re
 from typing import Optional
 
 import xmltodict
+import re
 
 from localstack import config
 from localstack.aws.api import RequestContext
@@ -65,3 +66,5 @@ class StsAwsApiListener(AwsApiListener):
 
             pattern = r"<Expiration>([^<]+)</Expiration>"
             _replace_response_content(pattern, _replace)
+
+        return response
