@@ -3,7 +3,6 @@ import re
 from typing import Optional
 
 import xmltodict
-import re
 
 from localstack import config
 from localstack.aws.api import RequestContext
