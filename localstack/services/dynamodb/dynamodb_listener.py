@@ -904,7 +904,7 @@ class SSEUtils:
 
     @classmethod
     def get_sse_kms_managed_key(cls):
-        from localstack.services.kms import kms_listener
+        from localstack.services.kms import provider
 
         existing_key = MANAGED_KMS_KEYS.get(aws_stack.get_region())
         if existing_key:
@@ -913,7 +913,7 @@ class SSEUtils:
         key_data = kms_client.create_key(Description="Default key that protects DynamoDB data")
         key_id = key_data["KeyMetadata"]["KeyId"]
 
-        kms_listener.set_key_managed(key_id)
+        provider.set_key_managed(key_id)
         MANAGED_KMS_KEYS[aws_stack.get_region()] = key_id
         return key_id
 
