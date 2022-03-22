@@ -289,7 +289,7 @@ class KmsProvider(KmsApi):
 
         key_pair = region_details.key_pairs.get(key_id)
         if not key_pair:
-            raise NotFoundException(f"Key ID {key_id} not found")
+            raise NotFoundException(f"Key ID {key_id} not found for signing")
 
         kwargs = {}
         if signing_algorithm.startswith("RSA"):
