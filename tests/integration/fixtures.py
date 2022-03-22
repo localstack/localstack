@@ -753,6 +753,29 @@ def create_secret(secretsmanager_client):
         secretsmanager_client.delete_secret(SecretId=item)
 
 
+@pytest.fixture
+def acm_request_certificate(acm_client):
+    certificate_arns = []
+
+    def factory(**kwargs) -> str:
+        if "DomainName" not in kwargs:
+            kwargs["DomainName"] = f"test-domain-{short_uid()}.localhost.localstack.cloud"
+
+        response = acm_client.request_certificate(**kwargs)
+        created_certificate_arn = response["CertificateArn"]
+        certificate_arns.append(created_certificate_arn)
+        return created_certificate_arn
+
+    yield factory
+
+    # cleanup
+    for certificate_arn in certificate_arns:
+        try:
+            acm_client.delete_certificate(CertificateArn=certificate_arn)
+        except Exception as e:
+            LOG.debug("error cleaning up certificate %s: %s", certificate_arn, e)
+
+
 only_localstack = pytest.mark.skipif(
     os.environ.get("TEST_TARGET") == "AWS_CLOUD",
     reason="test only applicable if run against localstack",
