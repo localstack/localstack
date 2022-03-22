@@ -1,4 +1,4 @@
-# Adepted from: https://github.com/aws-samples/aws-secrets-manager-rotation-lambdas/blob/252449551d58075f353444743e81a8c56d9f96db/SecretsManagerRotationTemplate/lambda_function.py#L72-L104
+# Adepted from: https://github.com/aws-samples/aws-secrets-manager-rotation-lambdas/blob/252449551d58075f353444743e81a8c56d9f96db/SecretsManagerRotationTemplate/lambda_function.py
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
