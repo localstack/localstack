@@ -40,7 +40,8 @@ class Route53RecordSet(GenericBaseModel):
             attrs = select_attributes(params, attr_names)
             alias_target = attrs.get("AliasTarget", {})
             alias_target["EvaluateTargetHealth"] = alias_target.get("EvaluateTargetHealth", False)
-            attrs["ResourceRecords"] = [{"Value": r} for r in attrs["ResourceRecords"]]
+            if "ResourceRecords" in attrs:
+                attrs["ResourceRecords"] = [{"Value": r} for r in attrs["ResourceRecords"]]
             return {
                 "Comment": params.get("Comment", ""),
                 "Changes": [{"Action": "CREATE", "ResourceRecordSet": attrs}],
