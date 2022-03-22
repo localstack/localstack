@@ -14,7 +14,7 @@ import uuid
 from datetime import datetime
 from io import StringIO
 from threading import BoundedSemaphore
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from urllib.parse import urlparse
 
 from flask import Flask, Response, jsonify, request
@@ -770,7 +770,7 @@ def do_update_alias(arn, alias, version, description=None):
 
 
 def run_lambda(
-    func_arn,
+    func_arn: Union[Dict, str],
     event,
     context=None,
     version=None,
@@ -779,9 +779,15 @@ def run_lambda(
     callback=None,
     lock_discriminator: str = None,
 ) -> InvocationResult:
+    # e.g. CustomEmailSender Cognito Trigger can pass something like this {"LambdaArn" : String, "LambdaVersion" : String}
+    if not isinstance(func_arn, str):
+        try:
+            func_arn = func_arn["LambdaArn"]
+        except KeyError:
+            raise
     if context is None:
         context = {}
-    region_name = func_arn.split(":")[3]
+    region_name = str(func_arn).split(":")[3]
     region = LambdaRegion.get(region_name)
     if suppress_output:
         stdout_ = sys.stdout
