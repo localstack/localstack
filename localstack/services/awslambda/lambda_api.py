@@ -75,6 +75,7 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.functions import run_safe
 from localstack.utils.generic.singleton_utils import SubtypesInstanceManager
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
+from localstack.utils.patch import patch
 from localstack.utils.run import FuncThread
 
 # logger
@@ -106,6 +107,13 @@ BATCH_SIZE_RANGES = {
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+00:00"
 
 app = Flask(APP_NAME)
+
+
+@patch(app.route)
+def app_route(self, fn, *args, **kwargs):
+    # make sure all routes can be called with/without trailing slashes, without triggering 308 forwards
+    return fn(*args, strict_slashes=False, **kwargs)
+
 
 # mutex for access to CWD and ENV
 EXEC_MUTEX = threading.RLock()
@@ -1847,7 +1855,7 @@ def invoke_function(function):
     )
 
 
-@app.route("%s/event-source-mappings" % API_PATH_ROOT, methods=["GET"], strict_slashes=False)
+@app.route("%s/event-source-mappings" % API_PATH_ROOT, methods=["GET"])
 def get_event_source_mappings():
     """List event source mappings
     ---
@@ -1886,7 +1894,7 @@ def get_event_source_mapping(mapping_uuid):
     return jsonify(mappings[0])
 
 
-@app.route("%s/event-source-mappings" % API_PATH_ROOT, methods=["POST"], strict_slashes=False)
+@app.route("%s/event-source-mappings" % API_PATH_ROOT, methods=["POST"])
 def create_event_source_mapping():
     """Create new event source mapping
     ---
