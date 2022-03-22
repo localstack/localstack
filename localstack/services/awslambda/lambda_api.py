@@ -805,7 +805,7 @@ def run_lambda(
 
         context = LambdaContext(lambda_function, version, context)
         result = LAMBDA_EXECUTOR.execute(
-            func_arn,
+            str(func_arn),
             lambda_function,
             event,
             context=context,
