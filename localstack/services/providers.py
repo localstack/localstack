@@ -120,9 +120,10 @@ def iam():
 
 @aws_provider()
 def sts():
-    from localstack.services.sts import sts_listener, sts_starter
+    from localstack.services.sts.provider import StsProvider
 
-    return Service("sts", start=sts_starter.start_sts, listener=sts_listener.UPDATE_STS)
+    provider = StsProvider()
+    return Service("firehose", listener=AwsApiListener("firehose", provider))
 
 
 @aws_provider()
