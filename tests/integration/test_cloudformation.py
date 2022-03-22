@@ -2008,6 +2008,9 @@ class TestCloudFormation:
         cfn_client = aws_stack.create_external_boto_client("cloudformation")
         sns_client = aws_stack.create_external_boto_client("sns")
         cw_client = aws_stack.create_external_boto_client("cloudwatch")
+        ec2_client = aws_stack.create_external_boto_client("ec2")
+
+        ec2_client.create_key_pair(KeyName="key-pair-foo123")
 
         # list resources before stack deployment
         metric_alarms = cw_client.describe_alarms().get("MetricAlarms", [])
@@ -2026,7 +2029,6 @@ class TestCloudFormation:
         subnet_id = subnets[0]["Value"]
         instance_id = instances[0]["Value"]
 
-        ec2_client = aws_stack.create_external_boto_client("ec2")
         resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
         assert len(resp["Subnets"]) == 1
 
@@ -2067,6 +2069,7 @@ class TestCloudFormation:
         ]:
             pytest.skip()
         ec2_client = aws_stack.create_external_boto_client("ec2")
+        ec2_client.create_key_pair(KeyName="testkey")
 
         create_and_await_stack(
             StackName=stack_name,
