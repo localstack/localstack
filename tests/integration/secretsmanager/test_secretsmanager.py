@@ -516,6 +516,27 @@ class TestSecretsManager:
         des = sm_client.describe_secret(SecretId=secret_name)
         assert des["Description"] == description_v2
 
+    def test_update_secret_version_stages_return_type(self, sm_client):
+        secret_name = f"s-{short_uid()}"
+        create = sm_client.create_secret(Name=secret_name, SecretString="Something1")
+        version_id_v0 = create["VersionId"]
+
+        put_pending_res = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
+        )
+        version_id_v1 = put_pending_res["VersionId"]
+        assert version_id_v1 != version_id_v0
+
+        upd_res = sm_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=version_id_v0,
+            MoveToVersionId=version_id_v1,
+            VersionStage="AWSCURRENT",
+        )
+        assert upd_res.keys() == {"Name", "ARN", "ResponseMetadata"}
+        assert upd_res["Name"] == create["Name"]
+        assert upd_res["ARN"] == create["ARN"]
+
     def test_update_secret_version_stages_current_previous(self, sm_client):
         secret_name = f"s-{short_uid()}"
         secret_string_v0 = "secret_string_v0"
