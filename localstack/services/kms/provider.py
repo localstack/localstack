@@ -14,7 +14,6 @@ from localstack.aws.api.kms import (
     CreateGrantResponse,
     CreateKeyRequest,
     CreateKeyResponse,
-    DescribeKeyResponse,
     GenerateDataKeyPairRequest,
     GenerateDataKeyPairResponse,
     GenerateDataKeyPairWithoutPlaintextRequest,
@@ -321,24 +320,6 @@ class KmsProvider(KmsApi):
             "SigningAlgorithm": signing_algorithm,
         }
         return SignResponse(**result)
-
-    def describe_key(
-        self, context: RequestContext, key_id: KeyIdType, grant_tokens: GrantTokenList = None
-    ) -> DescribeKeyResponse:
-        try:
-            return call_moto(context)
-        except Exception:
-            key_pairs = KMSBackend.get().key_pairs
-            key = key_pairs.get(key_id)
-            if not key:
-                raise
-            key_object = Key(
-                key["Policy"], key["KeyUsage"], key["KeySpec"], key["Description"], key["Region"]
-            )
-            key_object.id = key["KeyId"]
-            result = key_object.to_dict()
-            result.pop("PrivateKeyPlaintext", None)
-            return DescribeKeyResponse(**result)
 
 
 # ---------------
