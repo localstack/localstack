@@ -65,5 +65,3 @@ class StsAwsApiListener(AwsApiListener):
 
             pattern = r"<Expiration>([^<]+)</Expiration>"
             _replace_response_content(pattern, _replace)
-
-        return response
