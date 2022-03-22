@@ -29,7 +29,6 @@ from localstack.aws.api.kms import (
     LimitType,
     ListGrantsRequest,
     ListGrantsResponse,
-    ListKeysResponse,
     MarkerType,
     MessageType,
     NotFoundException,
@@ -105,15 +104,15 @@ class KmsProvider(KmsApi):
     ) -> CreateKeyResponse:
         descr = create_key_request.get("Description") or ""
         event_publisher.fire_event(EVENT_KMS_CREATE_KEY, {"k": event_publisher.get_hash(descr)})
+        result = call_moto(context)
+
+        # generate keypair for signing, if this is a SIGN_VERIFY key
         key_usage = create_key_request.get("KeyUsage")
         if key_usage == "SIGN_VERIFY":
-            create_key_request["KeyId"] = long_uid()
-            result = _generate_data_key_pair(create_key_request, create_cipher=False)
-            result = remove_attributes(
-                dict(result), ["PublicKey", "PrivateKeyPlaintext", "KeyPairSpec"]
-            )
-            return CreateKeyResponse(KeyMetadata=result)
-        return call_moto(context)
+            create_key_request["KeyId"] = result["KeyMetadata"]["KeyId"]
+            _generate_data_key_pair(create_key_request, create_cipher=False)
+
+        return result
 
     @handler("CreateGrant", expand=False)
     def create_grant(
@@ -340,18 +339,6 @@ class KmsProvider(KmsApi):
             result = key_object.to_dict()
             result.pop("PrivateKeyPlaintext", None)
             return DescribeKeyResponse(**result)
-
-    def list_keys(
-        self, context: RequestContext, limit: LimitType = None, marker: MarkerType = None
-    ) -> ListKeysResponse:
-        result: ListKeysResponse = call_moto(context)
-        keys = result["Keys"]
-
-        key_pairs = KMSBackend.get().key_pairs
-        additional = [{"KeyId": key["KeyId"], "KeyArn": key["Arn"]} for key in key_pairs.values()]
-        keys.extend(additional)
-
-        return result
 
 
 # ---------------
