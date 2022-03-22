@@ -35,47 +35,35 @@ class StsAwsApiListener(AwsApiListener):
         self.provider = StsProvider()
         super().__init__("sts", MotoFallbackDispatcher(self.provider))
 
-
-Function
-`return_response`
-has
-5
-arguments(exceeds
-4
-allowed).Consider
-refactoring.
-
-
-def return_response(
+    def return_response(
         self, method: str, path: str, data: MessagePayload, headers: Headers, response: Response
-) -> Optional[Response]:
-    if headers.get("Accept") == APPLICATION_JSON:
-        try:
-            if response._content or b"".startswith(b"<"):
-                content = xmltodict.parse(to_str(response._content))
-                stripped_content = strip_xmlns(content)
-                response._content = stripped_content
-        except Exception as e:
-            LOG.debug("Unable to convert XML response to JSON", exc_info=e)
-    return super().return_response(method, path, data, headers, response)
+    ) -> Optional[Response]:
+        if headers.get("Accept") == APPLICATION_JSON:
+            try:
+                if response._content or b"".startswith(b"<"):
+                    content = xmltodict.parse(to_str(response._content))
+                    stripped_content = strip_xmlns(content)
+                    response._content = stripped_content
+            except Exception as e:
+                LOG.debug("Unable to convert XML response to JSON", exc_info=e)
+        return super().return_response(method, path, data, headers, response)
 
+    def request(self, request: Request) -> Response:
+        response = super().request(request)
 
-def request(self, request: Request) -> Response:
-    response = super().request(request)
+        if request.headers.get("Accept") == APPLICATION_JSON:
+            # convert "Expiration" to int for JSON response format (tested against AWS)
+            # TODO: introduce a proper/generic approach that works across arbitrary date fields in JSON
 
-    if request.headers.get("Accept") == APPLICATION_JSON:
-        # convert "Expiration" to int for JSON response format (tested against AWS)
-        # TODO: introduce a proper/generic approach that works across arbitrary date fields in JSON
+            def _replace(match):
+                timestamp = parse_timestamp(match.group(1).strip())
+                return f"<Expiration>{int(timestamp.timestamp())}</Expiration>"
 
-        def _replace(match):
-            timestamp = parse_timestamp(match.group(1).strip())
-            return f"<Expiration>{int(timestamp.timestamp())}</Expiration>"
+            def _replace_response_content(_pattern, _replacement):
+                content = to_str(response.data or "")
+                response.data = re.sub(_pattern, _replacement, content)
 
-        def _replace_response_content(_pattern, _replacement):
-            content = to_str(response.data or "")
-            response.data = re.sub(_pattern, _replacement, content)
+            pattern = r"<Expiration>([^<]+)</Expiration>"
+            _replace_response_content(pattern, _replace)
 
-        pattern = r"<Expiration>([^<]+)</Expiration>"
-        _replace_response_content(pattern, _replace)
-
-    return response
+        return response
