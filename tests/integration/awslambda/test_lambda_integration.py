@@ -13,6 +13,7 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.awslambda.lambda_api import (
     BATCH_SIZE_RANGES,
     INVALID_PARAMETER_VALUE_EXCEPTION,
+    run_lambda,
 )
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
@@ -423,3 +424,24 @@ class TestKinesisSource:
         # cleanup
         lambda_client.delete_function(FunctionName=function_name)
         kinesis_client.delete_stream(StreamName=stream_name)
+
+
+class TestCognitoTrigger:
+    def test_cognito_trigger_object(self):
+        # CustomEmailSender and CustomSMSSender pass a dict in the form {"LambdaVersion": "V1_0", "LambdaArn": function_arn}
+        # for 'LambdaVersion' value 'V1_0' is the only possible value
+        function_name = f"lambda_func-{short_uid()}"
+
+        resp = testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PARALLEL_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+        )
+        function_arn = resp["CreateFunctionResponse"]["FunctionArn"]
+        function_dict = {"LambdaVersion": "V1_0", "LambdaArn": function_arn}
+        run_lambda(function_dict, {"test": "test123"})
+
+        # test that lambda function executed correctly without exception
+        events = get_lambda_log_events(function_name)
+        assert len(events) == 1
+        assert events[0]["event"]["test"] == "test123"
