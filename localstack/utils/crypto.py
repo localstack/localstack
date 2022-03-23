@@ -4,11 +4,16 @@ import os
 import re
 import threading
 
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
 from .files import TMP_FILES, load_file, new_tmp_file, save_file
-from .strings import short_uid, to_str
+from .strings import short_uid, to_bytes, to_str
 from .sync import synchronized
 
 LOG = logging.getLogger(__name__)
+
+# block size for symmetric encrypt/decrypt operations
+BLOCK_SIZE = 16
 
 # lock for creating certificate files
 SSL_CERT_LOCK = threading.RLock()
@@ -145,3 +150,28 @@ def generate_ssl_cert(
         if not return_content:
             return target_file, cert_file_name, key_file_name
     return file_content
+
+
+def pad(s: bytes) -> bytes:
+    return s + to_bytes((BLOCK_SIZE - len(s) % BLOCK_SIZE) * chr(BLOCK_SIZE - len(s) % BLOCK_SIZE))
+
+
+def unpad(s: bytes) -> bytes:
+    return s[0 : -s[-1]]
+
+
+def encrypt(key: bytes, message: bytes, iv: bytes = None) -> bytes:
+    iv = iv or b"0" * BLOCK_SIZE
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+    encryptor = cipher.encryptor()
+    encrypted = encryptor.update(pad(message)) + encryptor.finalize()
+    return encrypted
+
+
+def decrypt(key: bytes, encrypted: bytes, iv: bytes = None) -> bytes:
+    iv = iv or b"0" * BLOCK_SIZE
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+    decryptor = cipher.decryptor()
+    decrypted = decryptor.update(encrypted) + decryptor.finalize()
+    decrypted = unpad(decrypted)
+    return decrypted

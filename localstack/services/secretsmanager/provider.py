@@ -54,6 +54,7 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
+from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
@@ -284,19 +285,18 @@ def apply_patches():
     secretsmanager_models.secret_arn = secretsmanager_models_secret_arn
     setattr(SecretsManagerBackend, "get_resource_policy", get_resource_policy_model)
     setattr(SecretsManagerResponse, "get_resource_policy", get_resource_policy_response)
+
     if not hasattr(SecretsManagerBackend, "delete_resource_policy"):
-        setattr(
-            SecretsManagerBackend,
-            "delete_resource_policy",
-            delete_resource_policy_model,
-        )
+        SecretsManagerBackend.delete_resource_policy = delete_resource_policy_model
     if not hasattr(SecretsManagerResponse, "delete_resource_policy"):
-        setattr(
-            SecretsManagerResponse,
-            "delete_resource_policy",
-            delete_resource_policy_response,
-        )
+        SecretsManagerResponse.delete_resource_policy = delete_resource_policy_response
     if not hasattr(SecretsManagerBackend, "put_resource_policy"):
-        setattr(SecretsManagerBackend, "put_resource_policy", put_resource_policy_model)
+        SecretsManagerBackend.put_resource_policy = put_resource_policy_model
     if not hasattr(SecretsManagerResponse, "put_resource_policy"):
-        setattr(SecretsManagerResponse, "put_resource_policy", put_resource_policy_response)
+        SecretsManagerResponse.put_resource_policy = put_resource_policy_response
+
+    @patch(SecretsManagerBackend.rotate_secret)
+    def rotate_secret(fn, self, secret_id, rotation_lambda_arn=None, *args, **kwargs):
+        # make sure we're passing empty rotation Lambda ARN, to avoid ResourceNotFoundException in moto
+        # TODO - should think about adding an enhanced patch that calls Lambda functions from lambda_api.py
+        return fn(self, secret_id, rotation_lambda_arn=None, *args, **kwargs)
