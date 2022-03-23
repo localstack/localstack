@@ -16,13 +16,18 @@ def acm():
 
 @aws_provider()
 def apigateway():
-    from localstack.services.apigateway import apigateway_listener, apigateway_starter
+    # from localstack.services.apigateway import apigateway_listener, apigateway_starter
+    from localstack.services.apigateway.provider import ApigatewayProvider
 
+    provider = ApigatewayProvider()
     return Service(
-        "apigateway",
-        listener=apigateway_listener.UPDATE_APIGATEWAY,
-        start=apigateway_starter.start_apigateway,
+        "apigateway", listener=AwsApiListener("apigateway", MotoFallbackDispatcher(provider))
     )
+    # return Service(
+    #     "apigateway",
+    #     listener=apigateway_listener.UPDATE_APIGATEWAY,
+    #     start=apigateway_starter.start_apigateway,
+    # )
 
 
 @aws_provider()
