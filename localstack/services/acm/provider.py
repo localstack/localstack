@@ -20,9 +20,7 @@ def describe(describe_orig, self):
         "ExtendedKeyUsages": [],
         "Options": {"CertificateTransparencyLoggingPreference": "ENABLED"},
     }
-    addenda["DomainValidationOptions"] = options = (
-        getattr(self, "domain_validation_options", None) or []
-    )
+    addenda["DomainValidationOptions"] = options = cert.get("DomainValidationOptions")
     if not options:
         options = addenda["DomainValidationOptions"] = [
             {"ValidationMethod": cert.get("ValidationMethod")}

@@ -1,7 +1,6 @@
 import os
 import re
 import threading
-import unittest
 
 import pytest
 
@@ -36,40 +35,45 @@ def check_terraform_version():
     return True, ver_string
 
 
+@pytest.fixture(scope="module", autouse=True)
+def setup_test():
+    with INIT_LOCK:
+        if config.DEFAULT_REGION != "us-east-1":
+            pytest.skip("Currently only support us-east-1")
+        available, version = check_terraform_version()
+
+        if not available:
+            msg = "could not find a compatible version of terraform"
+            if version:
+                msg += f" (version = {version})"
+            else:
+                msg += " (command not found)"
+
+            return pytest.skip(msg)
+
+        run("cd %s; %s apply -input=false tfplan" % (get_base_dir(), TERRAFORM_BIN))
+
+    yield
+
+    # clean up
+    run("cd %s; %s destroy -auto-approve" % (get_base_dir(), TERRAFORM_BIN))
+
+
+def get_base_dir():
+    return os.path.join(os.path.dirname(__file__), "terraform")
+
+
 # TODO: replace "clouddrove/api-gateway/aws" with normal apigateway module and update terraform
 # TODO: rework this setup for multiple (potentially parallel) terraform tests by providing variables (see .auto.tfvars)
 # TODO: fetch generated ARNs from terraform instead of static/building ARNs
-# TODO: migrate to pytest
-class TestTerraform(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        with INIT_LOCK:
-            if config.DEFAULT_REGION != "us-east-1":
-                pytest.skip("Currently only support us-east-1")
-            available, version = check_terraform_version()
-
-            if not available:
-                msg = "could not find a compatible version of terraform"
-                if version:
-                    msg += f" (version = {version})"
-                else:
-                    msg += " (command not found)"
-
-                return pytest.skip(msg)
-
-            run("cd %s; %s apply -input=false tfplan" % (cls.get_base_dir(), TERRAFORM_BIN))
-
-    @classmethod
-    def tearDownClass(cls):
-        run("cd %s; %s destroy -auto-approve" % (cls.get_base_dir(), TERRAFORM_BIN))
-
+class TestTerraform:
     @classmethod
     def init_async(cls):
         def _run(*args):
             with INIT_LOCK:
                 install_terraform()
 
-                base_dir = cls.get_base_dir()
+                base_dir = get_base_dir()
                 if not os.path.exists(os.path.join(base_dir, ".terraform", "plugins")):
                     run(f"cd {base_dir}; {TERRAFORM_BIN} init -input=false")
                 # remove any cache files from previous runs
@@ -84,16 +88,12 @@ class TestTerraform(unittest.TestCase):
 
         start_worker_thread(_run)
 
-    @classmethod
-    def get_base_dir(cls):
-        return os.path.join(os.path.dirname(__file__), "terraform")
-
     @pytest.mark.skip_offline
     def test_bucket_exists(self):
         s3_client = aws_stack.create_external_boto_client("s3")
 
         response = s3_client.head_bucket(Bucket=BUCKET_NAME)
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         cors = {
             "AllowedHeaders": ["*"],
@@ -104,10 +104,10 @@ class TestTerraform(unittest.TestCase):
         }
 
         response = s3_client.get_bucket_cors(Bucket=BUCKET_NAME)
-        self.assertEqual(cors, response["CORSRules"][0])
+        assert response["CORSRules"][0] == cors
 
         response = s3_client.get_bucket_versioning(Bucket=BUCKET_NAME)
-        self.assertEqual("Enabled", response["Status"])
+        assert response["Status"] == "Enabled"
 
     @pytest.mark.skip_offline
     def test_sqs(self):
@@ -115,19 +115,19 @@ class TestTerraform(unittest.TestCase):
         queue_url = sqs_client.get_queue_url(QueueName=QUEUE_NAME)["QueueUrl"]
         response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
 
-        self.assertEqual("90", response["Attributes"]["DelaySeconds"])
-        self.assertEqual("2048", response["Attributes"]["MaximumMessageSize"])
-        self.assertEqual("86400", response["Attributes"]["MessageRetentionPeriod"])
-        self.assertEqual("10", response["Attributes"]["ReceiveMessageWaitTimeSeconds"])
+        assert response["Attributes"]["DelaySeconds"] == "90"
+        assert response["Attributes"]["MaximumMessageSize"] == "2048"
+        assert response["Attributes"]["MessageRetentionPeriod"] == "86400"
+        assert response["Attributes"]["ReceiveMessageWaitTimeSeconds"] == "10"
 
     @pytest.mark.skip_offline
     def test_lambda(self):
         lambda_client = aws_stack.create_external_boto_client("lambda")
         response = lambda_client.get_function(FunctionName=LAMBDA_NAME)
-        self.assertEqual(LAMBDA_NAME, response["Configuration"]["FunctionName"])
-        self.assertEqual(LAMBDA_HANDLER, response["Configuration"]["Handler"])
-        self.assertEqual(LAMBDA_RUNTIME, response["Configuration"]["Runtime"])
-        self.assertEqual(LAMBDA_ROLE, response["Configuration"]["Role"])
+        assert response["Configuration"]["FunctionName"] == LAMBDA_NAME
+        assert response["Configuration"]["Handler"] == LAMBDA_HANDLER
+        assert response["Configuration"]["Runtime"] == LAMBDA_RUNTIME
+        assert response["Configuration"]["Role"] == LAMBDA_ROLE
 
     @pytest.mark.skip_offline
     def test_event_source_mapping(self):
@@ -150,37 +150,35 @@ class TestTerraform(unittest.TestCase):
                 rest_id = rest_api["id"]
                 break
 
-        self.assertTrue(rest_id)
+        assert rest_id
         resources = apigateway_client.get_resources(restApiId=rest_id)["items"]
 
         # We always have 1 default root resource (with path "/")
-        self.assertEqual(3, len(resources))
+        assert len(resources) == 3
 
         res1 = [r for r in resources if r.get("pathPart") == "mytestresource"]
-        self.assertTrue(res1)
-        self.assertEqual("/mytestresource", res1[0]["path"])
-        self.assertEqual(2, len(res1[0]["resourceMethods"]))
-        self.assertEqual("MOCK", res1[0]["resourceMethods"]["GET"]["methodIntegration"]["type"])
+        assert res1
+        assert res1[0]["path"] == "/mytestresource"
+        assert len(res1[0]["resourceMethods"]) == 2
+        assert res1[0]["resourceMethods"]["GET"]["methodIntegration"]["type"] == "MOCK"
 
         res2 = [r for r in resources if r.get("pathPart") == "mytestresource1"]
-        self.assertTrue(res2)
-        self.assertEqual("/mytestresource1", res2[0]["path"])
-        self.assertEqual(2, len(res2[0]["resourceMethods"]))
-        self.assertEqual(
-            "AWS_PROXY", res2[0]["resourceMethods"]["GET"]["methodIntegration"]["type"]
-        )
-        self.assertTrue(res2[0]["resourceMethods"]["GET"]["methodIntegration"]["uri"])
+        assert res2
+        assert res2[0]["path"] == "/mytestresource1"
+        assert len(res2[0]["resourceMethods"]) == 2
+        assert res2[0]["resourceMethods"]["GET"]["methodIntegration"]["type"] == "AWS_PROXY"
+        assert res2[0]["resourceMethods"]["GET"]["methodIntegration"]["uri"]
 
     @pytest.mark.skip_offline
     def test_route53(self):
         route53 = aws_stack.create_external_boto_client("route53")
 
         response = route53.create_hosted_zone(Name="zone123", CallerReference="ref123")
-        self.assertEqual(201, response["ResponseMetadata"]["HTTPStatusCode"])
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
         change_id = response.get("ChangeInfo", {}).get("Id", "change123")
 
         response = route53.get_change(Id=change_id)
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @pytest.mark.skip_offline
     def test_acm(self):
@@ -188,7 +186,7 @@ class TestTerraform(unittest.TestCase):
 
         certs = acm.list_certificates()["CertificateSummaryList"]
         certs = [c for c in certs if c.get("DomainName") == "example.com"]
-        self.assertEqual(1, len(certs))
+        assert len(certs) == 1
 
     @pytest.mark.skip_offline
     def test_apigateway_escaped_policy(self):
@@ -201,7 +199,7 @@ class TestTerraform(unittest.TestCase):
             if rest_api["name"] == "service_api":
                 service_apis.append(rest_api)
 
-        self.assertEqual(1, len(service_apis))
+        assert len(service_apis) == 1
 
     @pytest.mark.skip_offline
     def test_dynamodb(self):
@@ -210,6 +208,12 @@ class TestTerraform(unittest.TestCase):
 
         dynamo_client = aws_stack.create_external_boto_client("dynamodb")
         tables = dynamo_client.list_tables()
-        self.assertTrue(_table_exists("tf_dynamotable1", tables))
-        self.assertTrue(_table_exists("tf_dynamotable2", tables))
-        self.assertTrue(_table_exists("tf_dynamotable3", tables))
+        assert _table_exists("tf_dynamotable1", tables)
+        assert _table_exists("tf_dynamotable2", tables)
+        assert _table_exists("tf_dynamotable3", tables)
+
+    @pytest.mark.skip_offline
+    def test_security_groups(self, ec2_client):
+        rules = ec2_client.describe_security_groups(MaxResults=100)["SecurityGroups"]
+        matching = [r for r in rules if r["Description"] == "TF SG with ingress / egress rules"]
+        assert matching
