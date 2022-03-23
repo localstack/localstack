@@ -243,6 +243,11 @@ class TestSecretsManager:
         version_id_1 = rot_res["VersionId"]
         assert version_id_0 != version_id_1
 
+        des = sm_client.describe_secret(SecretId=secret_name)
+        assert des["RotationEnabled"]
+        assert des["RotationRules"] == {"AutomaticallyAfterDays": 1}
+        assert des["RotationLambdaARN"] == function_arn
+
         lst_res = sm_client.list_secret_version_ids(SecretId=secret_name)
         versions = lst_res["Versions"]
         assert len(versions) == 2
@@ -279,6 +284,26 @@ class TestSecretsManager:
         # clean up
         sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
         testutil.delete_lambda_function(function_name)
+
+    def test_rotate_secret_invalid_lambda_arn(self, sm_client):
+        secret_name = f"s-{short_uid()}"
+        sm_client.create_secret(Name=secret_name, SecretString="init")
+        invalid_arn = (
+            "arn:aws:lambda:sa-east-1:000000000000:function:rotate_secret_invalid_lambda_arn"
+        )
+        with pytest.raises(Exception):
+            sm_client.rotate_secret(
+                SecretId=secret_name,
+                RotationLambdaARN=invalid_arn,
+                RotationRules={
+                    "AutomaticallyAfterDays": 1,
+                },
+            )
+
+        des = sm_client.describe_secret(SecretId=secret_name)
+        assert "RotationEnabled" not in des
+        assert "RotationRules" not in des
+        assert "RotationLambdaARN" not in des
 
     def test_put_secret_value_with_version_stages(self, sm_client):
         secret_name = f"s-{short_uid()}"
@@ -491,11 +516,10 @@ class TestSecretsManager:
     def test_update_secret_description(self, sm_client):
         secret_name = f"s-{short_uid()}"
         secret_string_v0 = "MySecretString"
-        description_v0 = ""
         sm_client.create_secret(Name=secret_name, SecretString=secret_string_v0)
 
         des = sm_client.describe_secret(SecretId=secret_name)
-        assert des["Description"] == description_v0
+        assert "Description" not in des
 
         description_v1 = "MyDescription"
         sm_client.update_secret(SecretId=secret_name, Description=description_v1)

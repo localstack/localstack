@@ -7,6 +7,7 @@ import time
 import uuid
 from typing import Dict, Final, Optional, Union
 
+from moto.awslambda.models import lambda_backends
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.exceptions import SecretNotFoundException, ValidationException
@@ -42,7 +43,6 @@ from localstack.aws.api.secretsmanager import (
     RemoveRegionsFromReplicationResponse,
     ReplicateSecretToRegionsRequest,
     ReplicateSecretToRegionsResponse,
-    ResourceNotFoundException,
     RestoreSecretRequest,
     RestoreSecretResponse,
     RotateSecretRequest,
@@ -282,6 +282,10 @@ def fake_secret__init__(fn, self, **kwargs):
     # This value does not include the time.
     # This field is omitted if the secret has never been retrieved.
     self.last_accessed_date = None
+    # Results in RotationEnabled being returned only if rotation was ever overwritten,
+    # in which case this field is non-null, but an integer.
+    self.auto_rotate_after_days = None
+    self.rotation_lambda_arn = None
 
 
 @patch(FakeSecret.update)
@@ -330,6 +334,14 @@ def fake_secret_to_dict(fn, self):
     res_dict = fn(self)
     if self.last_accessed_date:
         res_dict["LastAccessedDate"] = self.last_accessed_date
+    if not self.description and "Description" in res_dict:
+        del res_dict["Description"]
+    if not self.rotation_enabled and "RotationEnabled" in res_dict:
+        del res_dict["RotationEnabled"]
+    if self.auto_rotate_after_days is None and "RotationRules" in res_dict:
+        del res_dict["RotationRules"]
+    for null_field in [key for key, value in res_dict.items() if value is None]:
+        del res_dict[null_field]
     return res_dict
 
 
@@ -451,6 +463,11 @@ def backend_rotate_secret(
                 msg = "RotationRules.AutomaticallyAfterDays " "must be within 1-1000."
                 raise InvalidParameterException(msg)
 
+    lambda_backend = lambda_backends[self.region]
+    rotation_func = lambda_backend.get_function(rotation_lambda_arn)
+    if not rotation_func:
+        raise InvalidRequestException("Lambda does not exist or could not be accessed")
+
     secret = self.secrets[secret_id]
 
     # The rotation function must end with the versions of the secret in
@@ -483,6 +500,8 @@ def backend_rotate_secret(
     else:
         new_version_id = str(uuid.uuid4())
 
+    # Begin the rotation process for the given secret by invoking the lambda function.
+    #
     # We add the new secret version as "pending". The previous version remains
     # as "current" for now. Once we've passed the new secret through the lambda
     # rotation function (if provided) we can then update the status to "current".
@@ -494,46 +513,31 @@ def backend_rotate_secret(
         version_id=new_version_id,
         version_stages=[AWSPENDING],
     )
-    secret.rotation_lambda_arn = rotation_lambda_arn or ""
+    secret.rotation_lambda_arn = rotation_lambda_arn
     if rotation_rules:
         secret.auto_rotate_after_days = rotation_rules.get(rotation_days, 0)
     if secret.auto_rotate_after_days > 0:
         secret.rotation_enabled = True
 
-    # Begin the rotation process for the given secret by invoking the lambda function.
-    if secret.rotation_lambda_arn:
-        from moto.awslambda.models import lambda_backends
+    request_headers = {}
+    response_headers = {}
+    for step in ["create", "set", "test", "finish"]:
+        rotation_func.invoke(
+            json.dumps(
+                {
+                    "Step": step + "Secret",
+                    "SecretId": secret.name,
+                    "ClientRequestToken": new_version_id,
+                }
+            ),
+            request_headers,
+            response_headers,
+        )
 
-        lambda_backend = lambda_backends[self.region]
-
-        request_headers = {}
-        response_headers = {}
-
-        func = lambda_backend.get_function(secret.rotation_lambda_arn)
-        if not func:
-            msg = "Resource not found for ARN '{}'.".format(secret.rotation_lambda_arn)
-            raise ResourceNotFoundException(msg)
-
-        for step in ["create", "set", "test", "finish"]:
-            func.invoke(
-                json.dumps(
-                    {
-                        "Step": step + "Secret",
-                        "SecretId": secret.name,
-                        "ClientRequestToken": new_version_id,
-                    }
-                ),
-                request_headers,
-                response_headers,
-            )
-
-        secret.set_default_version_id(new_version_id)
-        version_stages = secret.versions[new_version_id]["version_stages"]
-        if AWSPENDING in version_stages:
-            version_stages.remove(AWSPENDING)
-    else:
-        secret.reset_default_version(secret.versions[new_version_id], new_version_id)
-        secret.versions[new_version_id]["version_stages"] = [AWSCURRENT]
+    secret.set_default_version_id(new_version_id)
+    version_stages = secret.versions[new_version_id]["version_stages"]
+    if AWSPENDING in version_stages:
+        version_stages.remove(AWSPENDING)
 
     return secret.to_short_dict()
 
