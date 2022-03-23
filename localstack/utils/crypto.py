@@ -12,7 +12,7 @@ from .sync import synchronized
 
 LOG = logging.getLogger(__name__)
 
-# block size and padding utils
+# block size for symmetric encrypt/decrypt operations
 BLOCK_SIZE = 16
 
 # lock for creating certificate files
@@ -160,16 +160,16 @@ def unpad(s: bytes) -> bytes:
     return s[0 : -s[-1]]
 
 
-def encrypt(key: bytes, message: bytes) -> bytes:
-    iv = b"0" * BLOCK_SIZE
+def encrypt(key: bytes, message: bytes, iv: bytes = None) -> bytes:
+    iv = iv or b"0" * BLOCK_SIZE
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
     encryptor = cipher.encryptor()
     encrypted = encryptor.update(pad(message)) + encryptor.finalize()
     return encrypted
 
 
-def decrypt(key: bytes, encrypted: bytes) -> bytes:
-    iv = b"0" * BLOCK_SIZE
+def decrypt(key: bytes, encrypted: bytes, iv: bytes = None) -> bytes:
+    iv = iv or b"0" * BLOCK_SIZE
     cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
     decryptor = cipher.decryptor()
     decrypted = decryptor.update(encrypted) + decryptor.finalize()
