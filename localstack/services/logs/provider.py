@@ -8,6 +8,7 @@ from typing import Callable, Dict
 from moto.core.utils import unix_time_millis
 from moto.logs import models as logs_models
 from moto.logs.exceptions import InvalidParameterException, ResourceNotFoundException
+from moto.logs.models import LogGroup as MotoLogGroup
 from moto.logs.models import LogsBackend
 from moto.logs.models import LogStream as MotoLogStream
 from moto.logs.models import logs_backends
@@ -142,6 +143,10 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
             f"PutSubscriptionFilter operation cannot work with destinationArn for vendor {service}"
         )
 
+    if filter_pattern:
+        for stream in log_group.streams.values():
+            stream.filter_pattern = filter_pattern
+
     log_group.put_subscription_filter(filter_name, filter_pattern, destination_arn, role_arn)
 
 
@@ -154,31 +159,41 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
     self.events += events
     self.upload_sequence_token += 1
 
-    log_events = [
-        {
-            "id": event.event_id,
-            "timestamp": event.timestamp,
-            "message": event.message,
+    # apply filterpattern -> only forward what matches the pattern
+    if self.filter_pattern:
+        # TODO only patched in pro
+        matches = get_pattern_matcher(self.filter_pattern)
+        events = [
+            logs_models.LogEvent(self.last_ingestion_time, event)
+            for event in log_events
+            if matches(self.filter_pattern, event)
+        ]
+
+    if events and self.destination_arn:
+        log_events = [
+            {
+                "id": event.event_id,
+                "timestamp": event.timestamp,
+                "message": event.message,
+            }
+            for event in events
+        ]
+
+        data = {
+            "messageType": "DATA_MESSAGE",
+            "owner": aws_stack.get_account_id(),
+            "logGroup": log_group_name,
+            "logStream": log_stream_name,
+            "subscriptionFilters": [self.filter_name],
+            "logEvents": log_events,
         }
-        for event in events
-    ]
 
-    data = {
-        "messageType": "DATA_MESSAGE",
-        "owner": aws_stack.get_account_id(),
-        "logGroup": log_group_name,
-        "logStream": log_stream_name,
-        "subscriptionFilters": [self.filter_name],
-        "logEvents": log_events,
-    }
+        output = io.BytesIO()
+        with GzipFile(fileobj=output, mode="w") as f:
+            f.write(json.dumps(data, separators=(",", ":")).encode("utf-8"))
+        payload_gz_encoded = output.getvalue()
+        event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
 
-    output = io.BytesIO()
-    with GzipFile(fileobj=output, mode="w") as f:
-        f.write(json.dumps(data, separators=(",", ":")).encode("utf-8"))
-    payload_gz_encoded = output.getvalue()
-    event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
-
-    if self.destination_arn:
         if ":lambda:" in self.destination_arn:
             client = aws_stack.connect_to_service("lambda")
             lambda_name = aws_stack.lambda_function_name(self.destination_arn)
@@ -198,6 +213,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
                 DeliveryStreamName=firehose_name,
                 Record={"Data": payload_gz_encoded},
             )
+    return "{:056d}".format(self.upload_sequence_token)
 
 
 @patch(MotoLogStream.filter_log_events)
@@ -214,3 +230,11 @@ def moto_filter_log_events(
 
     matches = get_pattern_matcher(filter_pattern)
     return [event for event in events if matches(filter_pattern, event)]
+
+
+@patch(MotoLogGroup.create_log_stream)
+def moto_create_log_stream(target, self, log_stream_name):
+    target(self, log_stream_name)
+    stream = self.streams[log_stream_name]
+    filters = self.describe_subscription_filters()
+    stream.filter_pattern = filters[0]["filterPattern"] if filters else None
