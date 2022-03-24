@@ -126,8 +126,12 @@ def process_events(event: Dict, targets: List[Dict]):
     for target in targets:
         arn = target["Arn"]
         changed_event = filter_event_with_target_input_path(target, event)
+        if target.get("Input"):
+            changed_event = json.loads(target.get("Input"))
         try:
-            send_event_to_target(arn, changed_event, aws_stack.get_events_target_attributes(target))
+            send_event_to_target(
+                arn, changed_event, aws_stack.get_events_target_attributes(target), target=target
+            )
         except Exception as e:
             LOG.info(f"Unable to send event notification {truncate(event)} to target {target}: {e}")
 
