@@ -568,6 +568,9 @@ LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
 KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
 
+# KMS provider - can be either "local-kms" or "moto"
+KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
+
 # URL to a custom OpenSearch/Elasticsearch backend cluster. If this is set to a valid URL, then localstack will not
 # create OpenSearch/Elasticsearch cluster instances, but instead forward all domains to the given backend.
 OPENSEARCH_CUSTOM_BACKEND = (

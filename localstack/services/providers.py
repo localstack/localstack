@@ -1,3 +1,4 @@
+from localstack import config
 from localstack.aws.proxy import AwsApiListener
 from localstack.services.moto import MotoFallbackDispatcher
 from localstack.services.plugins import Service, aws_provider
@@ -138,9 +139,16 @@ def kinesis():
 
 @aws_provider()
 def kms():
-    from localstack.services.kms import kms_listener, kms_starter
+    if config.KMS_PROVIDER == "kms-local":
+        from localstack.services.kms import kms_starter
 
-    return Service("kms", listener=kms_listener.UPDATE_KMS, start=kms_starter.start_kms)
+        return Service("kms", start=kms_starter.start_kms_local)
+
+    # fall back to default provider
+    from localstack.services.kms.provider import KmsProvider
+
+    provider = KmsProvider()
+    return Service("kms", listener=AwsApiListener("kms", MotoFallbackDispatcher(provider)))
 
 
 @aws_provider(api="lambda")

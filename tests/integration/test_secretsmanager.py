@@ -146,7 +146,6 @@ class TestSecretsManager:
         )
 
         rs = secretsmanager_client.get_resource_policy(SecretId=secret_name)
-
         policy = json.loads(rs["ResourcePolicy"])
 
         assert policy["Version"] == RESOURCE_POLICY["Version"]
@@ -159,7 +158,7 @@ class TestSecretsManager:
         secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
     def test_rotate_secret_with_lambda(self, secretsmanager_client):
-        secret_name = "s-%s" % short_uid()
+        secret_name = f"s-{short_uid()}"
 
         secretsmanager_client.create_secret(
             Name=secret_name,
@@ -167,7 +166,7 @@ class TestSecretsManager:
             Description="testing rotation of secrets",
         )
 
-        function_name = "s-%s" % short_uid()
+        function_name = f"s-{short_uid()}"
         function_arn = testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_VERSION,
             func_name=function_name,

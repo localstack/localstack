@@ -66,11 +66,9 @@ class KMSKey(GenericBaseModel):
                     for tag in props.get("Tags", [])
                 ]
 
-            if props.get("Description"):
-                params["Description"] = props["Description"]
-
-            if props.get("KeySpec"):
-                params["KeySpec"] = props["KeySpec"]
+            for key in ["Description", "KeySpec", "KeyUsage"]:
+                if props.get(key):
+                    params[key] = props[key]
 
             new_key = kms_client.create_key(**params)
             key_id = new_key["KeyMetadata"]["KeyId"]

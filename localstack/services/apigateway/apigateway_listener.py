@@ -152,13 +152,15 @@ class ProxyListenerApiGateway(ProxyListener):
 
         # add missing implementations
         if response.status_code == 404:
-            data = data and json.loads(to_str(data))
             result = None
             if path == "/account":
+                data = data and json.loads(to_str(data))
                 result = handle_accounts(method, path, data, headers)
             elif path.startswith("/vpclinks"):
+                data = data and json.loads(to_str(data))
                 result = handle_vpc_links(method, path, data, headers)
             elif re.match(PATH_REGEX_CLIENT_CERTS, path):
+                data = data and json.loads(to_str(data))
                 result = handle_client_certificates(method, path, data, headers)
 
             if result is not None:
