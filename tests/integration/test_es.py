@@ -139,7 +139,7 @@ class TestElasticsearchProvider:
         assert "ElasticsearchVersion" in status
         assert status["ElasticsearchVersion"] == "7.10"
 
-    @pytest.mark.potentially_fixed
+    @pytest.mark.skip_offline
     def test_path_endpoint_strategy(self, monkeypatch, opensearch_create_domain, es_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
