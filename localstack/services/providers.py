@@ -1,5 +1,7 @@
+from localstack.services.apigateway import apigateway_listener
+
 from localstack import config
-from localstack.aws.proxy import AwsApiListener
+from localstack.aws.proxy import AwsApiListener, AsfWithFallbackListener
 from localstack.services.moto import MotoFallbackDispatcher
 from localstack.services.plugins import Service, aws_provider
 
@@ -16,18 +18,14 @@ def acm():
 
 @aws_provider()
 def apigateway():
-    # from localstack.services.apigateway import apigateway_listener, apigateway_starter
     from localstack.services.apigateway.provider import ApigatewayProvider
 
     provider = ApigatewayProvider()
     return Service(
-        "apigateway", listener=AwsApiListener("apigateway", MotoFallbackDispatcher(provider))
+        "apigateway", listener=AsfWithFallbackListener(
+            "apigateway", MotoFallbackDispatcher(provider), apigateway_listener.UPDATE_APIGATEWAY
+        )
     )
-    # return Service(
-    #     "apigateway",
-    #     listener=apigateway_listener.UPDATE_APIGATEWAY,
-    #     start=apigateway_starter.start_apigateway,
-    # )
 
 
 @aws_provider()
