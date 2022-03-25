@@ -243,6 +243,15 @@ class TestSecretsManager:
         version_id_1 = rot_res["VersionId"]
         assert version_id_0 != version_id_1
 
+        # Assert secretsmanager promoted the creation of the new secret version by reporting resource not found
+        # exception on pending secret version.
+        sig_rnfe_1 = lambda_rotate_secret.secret_signal_resource_not_found_exception_on_create(
+            version_id_1
+        )
+        get_sig_rnfe_1 = sm_client.get_secret_value(SecretId=sig_rnfe_1)
+        assert get_sig_rnfe_1["Name"] == sig_rnfe_1
+        assert get_sig_rnfe_1["SecretString"] == sig_rnfe_1
+
         des = sm_client.describe_secret(SecretId=secret_name)
         assert des["RotationEnabled"]
         assert des["RotationRules"] == {"AutomaticallyAfterDays": 1}
@@ -276,6 +285,15 @@ class TestSecretsManager:
         version_id_2 = rot_2_res["VersionId"]
         assert len({version_id_0, version_id_1, version_id_2}) == 3
 
+        # Assert secretsmanager promoted the creation of the new secret version by reporting resource not found
+        # exception on pending secret version.
+        sig_rnfe_2 = lambda_rotate_secret.secret_signal_resource_not_found_exception_on_create(
+            version_id_2
+        )
+        get_sig_rnfe_2 = sm_client.get_secret_value(SecretId=sig_rnfe_2)
+        assert get_sig_rnfe_2["Name"] == sig_rnfe_2
+        assert get_sig_rnfe_2["SecretString"] == sig_rnfe_2
+
         get_res = sm_client.get_secret_value(SecretId=secret_name)
         assert get_res["VersionId"] == version_id_2
         secret_string_2 = lambda_rotate_secret.secret_of_rotation_from_version_id(version_id_2)
@@ -291,7 +309,7 @@ class TestSecretsManager:
         invalid_arn = (
             "arn:aws:lambda:sa-east-1:000000000000:function:rotate_secret_invalid_lambda_arn"
         )
-        with pytest.raises(Exception):
+        with pytest.raises(Exception) as res_not_found_ex:
             sm_client.rotate_secret(
                 SecretId=secret_name,
                 RotationLambdaARN=invalid_arn,
@@ -299,6 +317,11 @@ class TestSecretsManager:
                     "AutomaticallyAfterDays": 1,
                 },
             )
+        assert res_not_found_ex.typename == "ResourceNotFoundException"
+        assert (
+            res_not_found_ex.value.response["Error"]["Message"]
+            == "Lambda does not exist or could not be accessed"
+        )
 
         des = sm_client.describe_secret(SecretId=secret_name)
         assert "RotationEnabled" not in des

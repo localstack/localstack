@@ -1,26 +1,39 @@
+import datetime
 import logging
 import time
+from dataclasses import dataclass
 from typing import Dict, List
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from moto.kms.models import Key, kms_backends
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.kms import (
+    AlgorithmSpec,
+    CiphertextType,
     CreateGrantRequest,
     CreateGrantResponse,
     CreateKeyRequest,
     CreateKeyResponse,
+    DateType,
+    DecryptResponse,
+    EncryptionAlgorithmSpec,
+    EncryptionContextType,
+    EncryptResponse,
+    ExpirationModelType,
     GenerateDataKeyPairRequest,
     GenerateDataKeyPairResponse,
     GenerateDataKeyPairWithoutPlaintextRequest,
     GenerateDataKeyPairWithoutPlaintextResponse,
+    GetParametersForImportResponse,
     GetPublicKeyResponse,
     GrantIdType,
     GrantTokenList,
     GrantTokenType,
+    ImportKeyMaterialResponse,
     InvalidGrantTokenException,
     KeyIdType,
     KmsApi,
@@ -34,6 +47,7 @@ from localstack.aws.api.kms import (
     PrincipalIdType,
     SigningAlgorithmSpec,
     SignResponse,
+    WrappingKeySpec,
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
@@ -41,7 +55,8 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import remove_attributes
 from localstack.utils.common import select_attributes
-from localstack.utils.strings import long_uid
+from localstack.utils.crypto import decrypt, encrypt
+from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -79,6 +94,16 @@ ISSUING_ACCOUNT = "IssuingAccount"
 CREATION_DATE = "CreationDate"
 
 
+@dataclass
+class KeyImportState:
+    key_id: str
+    import_token: str
+    wrapping_algo: str
+    public_key: bytes
+    private_key: bytes
+    key_obj: RSAPrivateKey
+
+
 class KMSBackend(RegionBackend):
     # maps grant ID to grant details
     grants: Dict[str, Dict]
@@ -86,11 +111,14 @@ class KMSBackend(RegionBackend):
     markers: Dict[str, List]
     # maps key ID to keypair details
     key_pairs: Dict[str, Dict]
+    # maps import tokens to import states
+    imports: Dict[str, KeyImportState]
 
     def __init__(self):
         self.grants = {}
         self.markers = {}
         self.key_pairs = {}
+        self.imports = {}
 
 
 class ValidationError(CommonServiceException):
@@ -333,6 +361,94 @@ class KmsProvider(KmsApi):
         }
         return SignResponse(**result)
 
+    def encrypt(
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        plaintext: PlaintextType,
+        encryption_context: EncryptionContextType = None,
+        grant_tokens: GrantTokenList = None,
+        encryption_algorithm: EncryptionAlgorithmSpec = None,
+    ) -> EncryptResponse:
+        # check if we have imported custom key material for this key
+        matching = [key for key in KMSBackend.get().imports.values() if key.key_id == key_id]
+        if not matching:
+            return call_moto(context)
+
+        key_obj = kms_backends[context.region].keys.get(key_id)
+        ciphertext_blob = encrypt(key_obj.key_material, plaintext)
+        return EncryptResponse(
+            CiphertextBlob=ciphertext_blob, KeyId=key_id, EncryptionAlgorithm=encryption_algorithm
+        )
+
+    def decrypt(
+        self,
+        context: RequestContext,
+        ciphertext_blob: CiphertextType,
+        encryption_context: EncryptionContextType = None,
+        grant_tokens: GrantTokenList = None,
+        key_id: KeyIdType = None,
+        encryption_algorithm: EncryptionAlgorithmSpec = None,
+    ) -> DecryptResponse:
+        # check if we have imported custom key material for this key
+        matching = [key for key in KMSBackend.get().imports.values() if key.key_id == key_id]
+        if not matching:
+            return call_moto(context)
+
+        key_obj = kms_backends[context.region].keys.get(key_id)
+        plaintext = decrypt(key_obj.key_material, ciphertext_blob)
+        return DecryptResponse(
+            KeyId=key_id, Plaintext=plaintext, EncryptionAlgorithm=encryption_algorithm
+        )
+
+    def get_parameters_for_import(
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        wrapping_algorithm: AlgorithmSpec,
+        wrapping_key_spec: WrappingKeySpec,
+    ) -> GetParametersForImportResponse:
+        key = _generate_data_key_pair(
+            {"KeySpec": wrapping_key_spec}, create_cipher=False, add_to_keys=False
+        )
+        import_token = short_uid()
+        import_state = KeyImportState(
+            key_id=key_id,
+            import_token=import_token,
+            private_key=key["PrivateKeyPlaintext"],
+            public_key=key["PublicKey"],
+            wrapping_algo=wrapping_algorithm,
+            key_obj=key["_key_"],
+        )
+        KMSBackend.get().imports[import_token] = import_state
+        expiry_date = datetime.datetime.now() + datetime.timedelta(days=100)
+        return GetParametersForImportResponse(
+            KeyId=key_id,
+            ImportToken=to_bytes(import_state.import_token),
+            PublicKey=import_state.public_key,
+            ParametersValidTo=expiry_date,
+        )
+
+    def import_key_material(
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        import_token: CiphertextType,
+        encrypted_key_material: CiphertextType,
+        valid_to: DateType = None,
+        expiration_model: ExpirationModelType = None,
+    ) -> ImportKeyMaterialResponse:
+        import_token = to_str(import_token)
+        import_state = KMSBackend.get().imports.get(import_token)
+        if not import_state:
+            raise NotFoundException(f"Unable to find key import token '{import_token}'")
+        key_obj = kms_backends[context.region].keys.get(key_id)
+        if not key_obj:
+            raise NotFoundException(f"Unable to find key '{key_id}'")
+        key_material = import_state.key_obj.decrypt(encrypted_key_material, padding.PKCS1v15())
+        key_obj.key_material = key_material
+        return ImportKeyMaterialResponse()
+
     def _verify_key_exists(self, key_id):
         try:
             kms_backends[aws_stack.get_region()].describe_key(key_id)
@@ -358,7 +474,7 @@ class KmsProvider(KmsApi):
 # ---------------
 
 
-def _generate_data_key_pair(data, create_cipher=True):
+def _generate_data_key_pair(data, create_cipher=True, add_to_keys=True):
     region_details = KMSBackend.get()
     kms = aws_stack.connect_to_service("kms")
 
@@ -410,16 +526,20 @@ def _generate_data_key_pair(data, create_cipher=True):
         "Policy": data.get("Policy"),
         "Region": region,
         "Description": data.get("Description"),
-        "Arn": aws_stack.kms_key_arn(key_id),
+        "Arn": key_id and aws_stack.kms_key_arn(key_id),
         "_key_": key,
     }
-    region_details.key_pairs[key_id] = result
+
+    if add_to_keys:
+        region_details.key_pairs[key_id] = result
 
     key = Key("", result["KeyUsage"], key_spec, result["Description"], region)
     key.id = key_id
 
     result = {**key.to_dict()["KeyMetadata"], **result}
-    result = remove_attributes(dict(result), ["Region", "_key_"])
+    result.pop("Region")
+    if add_to_keys:
+        result.pop("_key_")
 
     return result
 

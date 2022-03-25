@@ -283,6 +283,8 @@ class TestEdgeAPI:
         content2 = json.loads(to_str(response.content))
         content2_result = content2["GetCallerIdentityResponse"]["GetCallerIdentityResult"]
         assert content2_result["Account"] == TEST_AWS_ACCOUNT_ID
+        content1.get("GetCallerIdentityResponse", {}).pop("ResponseMetadata", None)
+        content2.get("GetCallerIdentityResponse", {}).pop("ResponseMetadata", None)
         assert strip_xmlns(content1) == content2
 
     def test_request_with_custom_host_header(self):

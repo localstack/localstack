@@ -120,9 +120,10 @@ def iam():
 
 @aws_provider()
 def sts():
-    from localstack.services.sts import sts_listener, sts_starter
+    from localstack.services.sts.provider import StsAwsApiListener
 
-    return Service("sts", start=sts_starter.start_sts, listener=sts_listener.UPDATE_STS)
+    listener = StsAwsApiListener()
+    return Service("sts", listener=listener)
 
 
 @aws_provider()

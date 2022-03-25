@@ -1,11 +1,17 @@
+from datetime import datetime
+from random import getrandbits
+
 import botocore.exceptions
 import pytest
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding
+from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
+from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.utils.crypto import encrypt
 
 
 class TestKMS:
@@ -156,3 +162,40 @@ class TestKMS:
                 break
 
         assert found is True
+
+    def test_import_key(self, kms_client):
+        # create key
+        key_id = kms_client.create_key()["KeyMetadata"]["KeyId"]
+
+        # get key import params
+        params = kms_client.get_parameters_for_import(
+            KeyId=key_id, WrappingAlgorithm="RSAES_PKCS1_V1_5", WrappingKeySpec="RSA_2048"
+        )
+        assert params["KeyId"] == key_id
+        assert params["ImportToken"]
+        assert params["PublicKey"]
+        assert isinstance(params["ParametersValidTo"], datetime)
+
+        # create 256 bit symmetric key (import_key_material(..) works with symmetric keys, as per the docs)
+        symmetric_key = bytes(getrandbits(8) for _ in range(32))
+        assert len(symmetric_key) == 32
+
+        # import symmetric key (key material) into KMS
+        public_key = load_der_public_key(params["PublicKey"])
+        encrypted_key = public_key.encrypt(symmetric_key, PKCS1v15())
+        kms_client.import_key_material(
+            KeyId=key_id,
+            ImportToken=params["ImportToken"],
+            EncryptedKeyMaterial=encrypted_key,
+            ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+        )
+
+        # use key to encrypt/decrypt data
+        plaintext = b"test content 123 !#"
+        encrypt_result = kms_client.encrypt(Plaintext=plaintext, KeyId=key_id)
+        encrypted = encrypt(symmetric_key, plaintext)
+        assert encrypt_result["CiphertextBlob"] == encrypted
+        api_decrypted = kms_client.decrypt(
+            CiphertextBlob=encrypt_result["CiphertextBlob"], KeyId=key_id
+        )
+        assert api_decrypted["Plaintext"] == plaintext

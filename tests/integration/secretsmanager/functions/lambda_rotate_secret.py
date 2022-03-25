@@ -11,8 +11,17 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
+# Returns the secret string used to update the version of the secret to version bounded to the
+# provided secret id.
 def secret_of_rotation_from_version_id(version_id: str) -> str:
     return f"lambda_rotate_secret_rotation_{version_id}"
+
+
+# Returns the SecretId used when signalling that a ResourceNotFoundException was received when
+# requesting the secret value for a pending secret version during create_secret stage.
+# The version_id given represents the version_id of the current secret value after rotation.
+def secret_signal_resource_not_found_exception_on_create(version_id: str) -> str:
+    return f"ResourceNotFoundException_{version_id}"
 
 
 def handler(event, context):
@@ -110,6 +119,10 @@ def create_secret(service_client, arn, token):
         service_client.get_secret_value(SecretId=arn, VersionId=token, VersionStage="AWSPENDING")
         logger.info(f"createSecret: Successfully retrieved secret for {arn}.")
     except service_client.exceptions.ResourceNotFoundException:
+        # Signal the correct exception was triggered during create_secret stage.
+        sig_exception = secret_signal_resource_not_found_exception_on_create(token)
+        service_client.create_secret(Name=sig_exception, SecretString=sig_exception)
+
         # Generate a random password
         passwd = secret_of_rotation_from_version_id(token)
 

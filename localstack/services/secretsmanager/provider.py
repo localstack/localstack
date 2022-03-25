@@ -4,10 +4,9 @@ import json
 import logging
 import re
 import time
-import uuid
 from typing import Dict, Final, Optional, Union
 
-from moto.awslambda.models import lambda_backends
+from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.exceptions import SecretNotFoundException, ValidationException
@@ -43,6 +42,7 @@ from localstack.aws.api.secretsmanager import (
     RemoveRegionsFromReplicationResponse,
     ReplicateSecretToRegionsRequest,
     ReplicateSecretToRegionsResponse,
+    ResourceNotFoundException,
     RestoreSecretRequest,
     RestoreSecretResponse,
     RotateSecretRequest,
@@ -463,10 +463,19 @@ def backend_rotate_secret(
                 msg = "RotationRules.AutomaticallyAfterDays " "must be within 1-1000."
                 raise InvalidParameterException(msg)
 
-    lambda_backend = lambda_backends[self.region]
-    rotation_func = lambda_backend.get_function(rotation_lambda_arn)
+    rotation_func = None
+    try:
+        lm_client = aws_stack.connect_to_service("lambda", region_name=self.region)
+        get_func_res = lm_client.get_function(FunctionName=rotation_lambda_arn)
+        lm_spec = get_func_res["Configuration"]
+        lm_spec["Code"] = {"ZipFile": str(short_uid())}
+        rotation_func = LambdaFunction(lm_spec, self.region)
+    except Exception:
+        # Fall through to ResourceNotFoundException.
+        pass
+    #
     if not rotation_func:
-        raise InvalidRequestException("Lambda does not exist or could not be accessed")
+        raise ResourceNotFoundException("Lambda does not exist or could not be accessed")
 
     secret = self.secrets[secret_id]
 
@@ -494,17 +503,13 @@ def backend_rotate_secret(
         # Pending is not present in any version
         pass
 
-    if client_request_token:
-        self._client_request_token_validator(client_request_token)
-        new_version_id = client_request_token
-    else:
-        new_version_id = str(uuid.uuid4())
-
     # Begin the rotation process for the given secret by invoking the lambda function.
     #
     # We add the new secret version as "pending". The previous version remains
     # as "current" for now. Once we've passed the new secret through the lambda
     # rotation function (if provided) we can then update the status to "current".
+    new_version_id = self._from_client_request_token(client_request_token)
+    #
     self._add_secret(
         secret_id,
         None,
@@ -619,19 +624,12 @@ def apply_patches():
     secretsmanager_models.secret_arn = secretsmanager_models_secret_arn
     setattr(SecretsManagerBackend, "get_resource_policy", get_resource_policy_model)
     setattr(SecretsManagerResponse, "get_resource_policy", get_resource_policy_response)
+
     if not hasattr(SecretsManagerBackend, "delete_resource_policy"):
-        setattr(
-            SecretsManagerBackend,
-            "delete_resource_policy",
-            delete_resource_policy_model,
-        )
+        SecretsManagerBackend.delete_resource_policy = delete_resource_policy_model
     if not hasattr(SecretsManagerResponse, "delete_resource_policy"):
-        setattr(
-            SecretsManagerResponse,
-            "delete_resource_policy",
-            delete_resource_policy_response,
-        )
+        SecretsManagerResponse.delete_resource_policy = delete_resource_policy_response
     if not hasattr(SecretsManagerBackend, "put_resource_policy"):
-        setattr(SecretsManagerBackend, "put_resource_policy", put_resource_policy_model)
+        SecretsManagerBackend.put_resource_policy = put_resource_policy_model
     if not hasattr(SecretsManagerResponse, "put_resource_policy"):
-        setattr(SecretsManagerResponse, "put_resource_policy", put_resource_policy_response)
+        SecretsManagerResponse.put_resource_policy = put_resource_policy_response
