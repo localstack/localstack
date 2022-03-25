@@ -532,9 +532,14 @@ async def message_to_subscriber(
                 queue_url = aws_stack.get_sqs_queue_url(queue_name)
                 subscriber["sqs_queue_url"] = queue_url
 
+
+
             message_group_id = (
-                req_data.get("MessageGroupId")[0] if req_data.get("MessageGroupId") else ""
+                req_data.get("MessageGroupId") if req_data.get("MessageGroupId") else ""
             )
+
+            if isinstance(message_group_id, list):
+                message_group_id = message_group_id[0]
 
             message_deduplication_id = (
                 req_data.get("MessageDeduplicationId")[0]
