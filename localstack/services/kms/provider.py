@@ -494,11 +494,11 @@ def _generate_data_key_pair(data, create_cipher=True, add_to_keys=True):
     if key_spec.startswith("ECC"):
         curve = None
         if key_spec == "ECC_NIST_P256":
-            curve = ec.BrainpoolP256R1()
+            curve = ec.SECP256R1()
         elif key_spec == "ECC_NIST_P384":
-            curve = ec.BrainpoolP384R1()
+            curve = ec.SECP384R1()
         elif key_spec == "ECC_NIST_P521":
-            curve = ec.BrainpoolP512R1()
+            curve = ec.SECP521R1()
         elif key_spec == "ECC_SECG_P256K1":
             curve = ec.SECP256K1()
         key = ec.generate_private_key(curve)
