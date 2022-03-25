@@ -1081,7 +1081,6 @@ class TestSNS:
         )
 
         queue_url = queue["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
         self.sns_client.subscribe(
             TopicArn=topic_arn,
@@ -1128,12 +1127,15 @@ class TestSNS:
 
         def get_messages(queue_url):
             response = self.sqs_client.receive_message(
-                QueueUrl=queue_url, MessageAttributeNames=["All"]
+                QueueUrl=queue_url,
+                MessageAttributeNames=["All"],
+                AttributeNames=["All"],
+                MaxNumberOfMessages=10,
             )
-            print(response)
             assert len(response["Messages"]) == 3
             for message in response["Messages"]:
                 assert "Body" in message
+                assert message["Attributes"]["MessageGroupId"] == message_group_id
 
                 if message["Body"] == "Test Message with two attributes":
                     assert len(message["MessageAttributes"]) == 2

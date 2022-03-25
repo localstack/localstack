@@ -532,8 +532,6 @@ async def message_to_subscriber(
                 queue_url = aws_stack.get_sqs_queue_url(queue_name)
                 subscriber["sqs_queue_url"] = queue_url
 
-
-
             message_group_id = (
                 req_data.get("MessageGroupId") if req_data.get("MessageGroupId") else ""
             )
