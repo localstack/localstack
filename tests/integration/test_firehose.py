@@ -145,6 +145,7 @@ def test_firehose_http(lambda_processor_enabled: bool):
 
 
 class TestFirehoseIntegration:
+    @pytest.mark.skip_offline
     @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path"])
     def test_kinesis_firehose_elasticsearch_s3_backup(
         self,
@@ -250,6 +251,7 @@ class TestFirehoseIntegration:
             firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
             es_client.delete_elasticsearch_domain(DomainName=domain_name)
 
+    @pytest.mark.skip_offline
     @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path"])
     def test_kinesis_firehose_opensearch_s3_backup(
         self,

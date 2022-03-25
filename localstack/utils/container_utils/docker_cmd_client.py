@@ -416,7 +416,7 @@ class CmdDockerClient(ContainerClient):
         try:
             run(self._docker_cmd() + ["ps"])
             return True
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             return False
 
     def create_container(self, image_name: str, **kwargs) -> str:
