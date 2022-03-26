@@ -6,9 +6,8 @@ from moto.ec2.exceptions import InvalidVpcEndPointIdError
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
-    Boolean,
     AvailabilityZone,
-    AvailabilityZones,
+    Boolean,
     CurrencyCodeValues,
     DescribeAvailabilityZonesRequest,
     DescribeAvailabilityZonesResult,
@@ -45,7 +44,6 @@ from localstack.utils.strings import long_uid
 
 
 class Ec2Provider(Ec2Api, ABC):
-
     @handler("DescribeAvailabilityZones", expand=False)
     def describe_availability_zones(
         self,
@@ -65,13 +63,11 @@ class Ec2Provider(Ec2Api, ABC):
                         Messages=[],
                         RegionName=zone_detail.region_name,
                         ZoneName=zone_detail.name,
-                        ZoneId=zone_detail.zone_id
+                        ZoneId=zone_detail.zone_id,
                     )
                     availability_zones.append(_zone_data)
 
-        return DescribeAvailabilityZonesResult(
-            AvailabilityZones=availability_zones
-        )
+        return DescribeAvailabilityZonesResult(AvailabilityZones=availability_zones)
 
     @handler("DescribeReservedInstancesOfferings", expand=False)
     def describe_reserved_instances_offerings(
