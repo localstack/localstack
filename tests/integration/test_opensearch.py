@@ -76,6 +76,7 @@ def try_cluster_health(cluster_url: str):
     ], "expected cluster state to be in a valid state"
 
 
+@pytest.mark.skip_offline
 class TestOpensearchProvider:
     """
     Because this test reuses the localstack instance for each test, all tests are performed with
@@ -365,6 +366,7 @@ class TestOpensearchProvider:
         )
 
 
+@pytest.mark.skip_offline
 class TestEdgeProxiedOpensearchCluster:
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
@@ -396,8 +398,8 @@ class TestEdgeProxiedOpensearchCluster:
         ), "gave up waiting for cluster to shut down"
 
 
+@pytest.mark.skip_offline
 class TestMultiClusterManager:
-    @pytest.mark.skip_offline
     def test_multi_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
@@ -439,8 +441,8 @@ class TestMultiClusterManager:
             call_safe(cluster_1.shutdown)
 
 
+@pytest.mark.skip_offline
 class TestMultiplexingClusterManager:
-    @pytest.mark.skip_offline
     def test_multiplexing_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
@@ -482,6 +484,7 @@ class TestMultiplexingClusterManager:
             call_safe(cluster_1.shutdown)
 
 
+@pytest.mark.skip_offline
 class TestSingletonClusterManager:
     def test_endpoint_strategy_port_singleton_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
@@ -521,6 +524,7 @@ class TestSingletonClusterManager:
             call_safe(cluster_1.shutdown)
 
 
+@pytest.mark.skip_offline
 class TestCustomBackendManager:
     def test_custom_backend(self, httpserver, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")

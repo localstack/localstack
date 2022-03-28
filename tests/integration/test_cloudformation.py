@@ -1198,6 +1198,7 @@ class TestCloudFormation:
         rs = logs_client.describe_log_groups(logGroupNamePrefix=log_group_prefix)
         assert len(rs["logGroups"]) == 0
 
+    @pytest.mark.skip_offline
     def test_cfn_handle_elasticsearch_domain(self):
         stack_name = "stack-%s" % short_uid()
         domain_name = "es-%s" % short_uid()

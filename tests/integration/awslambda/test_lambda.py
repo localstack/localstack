@@ -1166,6 +1166,7 @@ class TestRubyRuntimes:
 
 
 class TestGolangRuntimes:
+    @pytest.mark.skip
     def test_golang_lambda(self, lambda_client, tmp_path, create_lambda_function):
         # fetch platform-specific example handler
         url = TEST_GOLANG_LAMBDA_URL_TEMPLATE.format(
