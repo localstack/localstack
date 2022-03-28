@@ -193,18 +193,23 @@ def redshift():
 
 @aws_provider()
 def route53():
-    from localstack.services.route53 import route53_listener, route53_starter
+    from localstack.services.route53.provider import Route53Provider
 
-    return Service(
-        "route53", listener=route53_listener.UPDATE_ROUTE53, start=route53_starter.start_route53
-    )
+    provider = Route53Provider()
+
+    return Service("route53", listener=AwsApiListener("route53", MotoFallbackDispatcher(provider)))
 
 
 @aws_provider()
 def route53resolver():
-    from localstack.services.route53 import route53_starter
+    from localstack.services.route53.provider import Route53ResolverApi
 
-    return Service("route53resolver", start=route53_starter.start_route53_resolver)
+    provider = Route53ResolverApi()
+
+    return Service(
+        "route53resolver",
+        listener=AwsApiListener("route53resolver", MotoFallbackDispatcher(provider)),
+    )
 
 
 @aws_provider()

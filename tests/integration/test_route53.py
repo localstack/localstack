@@ -9,14 +9,37 @@ from localstack.utils.common import short_uid
 
 # TODO: add proper cleanup
 class TestRoute53:
-    def test_create_hosted_zone(self):
-        route53 = aws_stack.create_external_boto_client("route53")
-
-        response = route53.create_hosted_zone(Name="zone123", CallerReference="ref123")
+    def test_create_hosted_zone(self, route53_client):
+        response = route53_client.create_hosted_zone(Name="zone123", CallerReference="ref123")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
 
-        response = route53.get_change(Id="string")
+        response = route53_client.get_change(Id="string")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+    def test_crud_health_check(self, route53_client):
+        response = route53_client.create_health_check(
+            CallerReference="test123",
+            HealthCheckConfig={
+                "IPAddress": "10.0.0.25",
+                "Port": 80,
+                "Type": "HTTP",
+                "ResourcePath": "/",
+                "FullyQualifiedDomainName": "example.com",
+                "SearchString": "a good response",
+                "RequestInterval": 10,
+                "FailureThreshold": 2,
+            },
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
+        health_check_id = response["HealthCheck"]["Id"]
+        response = route53_client.get_health_check(HealthCheckId=health_check_id)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert response["HealthCheck"]["Id"] == health_check_id
+        response = route53_client.delete_health_check(HealthCheckId=health_check_id)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        with pytest.raises(Exception) as ctx:
+            route53_client.delete_health_check(HealthCheckId=health_check_id)
+        assert "NoSuchHealthCheck" in str(ctx.value)
 
     def test_associate_vpc_with_hosted_zone(self, ec2_client, route53_client, cleanups):
         name = "zone123"
@@ -114,7 +137,7 @@ class TestRoute53:
 
         with pytest.raises(Exception) as ctx:
             client.get_reusable_delegation_set(Id=set_id_1)
-        assert ctx.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert "NoSuchDelegationSet" in str(ctx.value)
 
 
 class TestRoute53Resolver:
