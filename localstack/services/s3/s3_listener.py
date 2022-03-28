@@ -1491,7 +1491,6 @@ class ProxyListenerS3(PersistingProxyListener):
             )
             append_last_modified_headers(response=response)
             append_list_objects_marker(method, path, data, response)
-            fix_location_constraint(response)
             fix_range_content_type(bucket_name, path, headers, response)
             fix_delete_objects_response(bucket_name, method, parsed, data, headers, response)
             fix_metadata_key_underscores(response=response)
