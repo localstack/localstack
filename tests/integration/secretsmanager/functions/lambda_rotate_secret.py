@@ -45,14 +45,11 @@ def handler(event, context):
         KeyError: If the event parameters do not contain the expected keys
 
     """
-    # Setup the client
-    region_name = "us-east-1"
-    edge_port = 4566
+    # Client setup.
+    edge_port = os.environ.get("EDGE_PORT") or 4566
     protocol = "https" if os.environ.get("USE_SSL") else "http"
-    endpoing_url = f"{protocol}://{os.environ['LOCALSTACK_HOSTNAME']}:{edge_port}"
-    service_client = boto3.client(
-        "secretsmanager", region_name=region_name, endpoint_url=endpoing_url, verify=False
-    )
+    endpoint_url = f"{protocol}://{os.environ['LOCALSTACK_HOSTNAME']}:{edge_port}"
+    service_client = boto3.client("secretsmanager", endpoint_url=endpoint_url, verify=False)
 
     arn = event["SecretId"]
     token = event["ClientRequestToken"]
