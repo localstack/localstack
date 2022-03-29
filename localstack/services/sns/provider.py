@@ -17,7 +17,9 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
     CreateTopicResponse,
+    GetSubscriptionAttributesResponse,
     InvalidParameterException,
+    ListSubscriptionsResponse,
     MessageAttributeMap,
     NotFoundException,
     PublishResponse,
@@ -32,8 +34,10 @@ from localstack.aws.api.sns import (
     endpoint,
     message,
     messageStructure,
+    nextToken,
     protocol,
     subject,
+    subscriptionARN,
     topicARN,
     topicName,
 )
@@ -90,7 +94,9 @@ class SNSBackend(RegionBackend):
         self.sms_messages = []
 
 
-def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_checks=False):
+def publish_message(
+    topic_arn, req_data, headers, subscription_arn=None, skip_checks=False, message_attributes={}
+):
     sns_backend = SNSBackend.get()
     message = req_data["Message"][0]
     message_id = str(uuid.uuid4())
@@ -114,12 +120,27 @@ def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_ch
             headers,
             subscription_arn,
             skip_checks,
+            message_attributes,
         )
     )
     return message_id
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
+    def get_subscription_attributes(
+        self, context: RequestContext, subscription_arn: subscriptionARN
+    ) -> GetSubscriptionAttributesResponse:
+        sub = get_subscription_by_arn(subscription_arn)
+        if not sub:
+            raise NotFoundException(f"Subscription with arn {subscription_arn} not found")
+        return GetSubscriptionAttributesResponse(Attributes=sub)
+
+    def list_subscriptions(
+        self, context: RequestContext, next_token: nextToken = None
+    ) -> ListSubscriptionsResponse:
+        moto_response = call_moto(context)
+        return ListSubscriptionsResponse(**moto_response)
+
     def publish(
         self,
         context: RequestContext,
@@ -154,8 +175,22 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     "Topic does not exist",
                 )
         # Legacy format to easily leverage existing publishing code
-        req_data = {"Action": ["Publish"], "TopicArn": [topic_arn], "Message": [message]}
-        message_id = publish_message(topic_arn, req_data, context.request.headers)
+        # added parameters parsed by ASF. TODO: check/remove
+        req_data = {
+            "Action": ["Publish"],
+            "TopicArn": [topic_arn],
+            "TargetArn": target_arn,
+            "Message": [message],
+            "MessageAttributes": [message_attributes],
+            "MessageDeduplicationId": [message_deduplication_id],
+            "MessageGroupId": [message_group_id],
+            "MessageStructure": [message_structure],
+            "PhoneNumber": [phone_number],
+            "Subject": subject,
+        }
+        message_id = publish_message(
+            topic_arn, req_data, context.request.headers, message_attributes=message_attributes
+        )
         return PublishResponse(MessageId=message_id)
 
     def subscribe(
@@ -345,9 +380,8 @@ async def message_to_subscriber(
         return
 
     filter_policy = json.loads(subscriber.get("FilterPolicy") or "{}")
-    # if not message_attributes:
-    # CHECK
-    # message_attributes = get_message_attributes(req_data)
+    if not message_attributes:
+        message_attributes = get_message_attributes(req_data)
     if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
         LOG.info(
             "SNS filter policy %s does not match attributes %s", filter_policy, message_attributes
@@ -553,6 +587,15 @@ async def message_to_subscriber(
         LOG.warning('Unexpected protocol "%s" for SNS subscription', subscriber["Protocol"])
 
 
+def get_subscription_by_arn(sub_arn):
+    sns_backend = SNSBackend.get()
+    # TODO maintain separate map instead of traversing all items
+    for key, subscriptions in sns_backend.sns_subscriptions.items():
+        for sub in subscriptions:
+            if sub["SubscriptionArn"] == sub_arn:
+                return sub
+
+
 def create_sns_message_body(subscriber, req_data, message_id=None):
     message = req_data["Message"][0]
     protocol = subscriber["Protocol"]
@@ -595,7 +638,6 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
     return json.dumps(data)
 
 
-# Check if it can be removed
 def get_message_attributes(req_data):
     extracted_msg_attrs = parse_urlencoded_data(req_data, "MessageAttributes.entry")
     return prepare_message_attributes(extracted_msg_attrs)
@@ -611,12 +653,21 @@ def create_sqs_message_attributes(subscriber, attributes):
 
     message_attributes = {}
     for key, value in attributes.items():
-        if value.get("Type"):
-            attribute = {"DataType": value["Type"]}
-            if value["Type"] == "Binary":
-                attribute["BinaryValue"] = base64.decodebytes(to_bytes(value["Value"]))
+        # TODO: check if naming differs between ASF and QueryParameters, if not remove .get("Type") and .get("Value")
+        if value.get("Type") or value.get("DataType"):
+            tpe = value.get("Type") or value.get("DataType")
+            attribute = {"DataType": tpe}
+            if tpe == "Binary":
+                val = value.get("BinaryValue") or value.get("Value")
+                attribute["BinaryValue"] = base64.decodebytes(to_bytes(val))
+                # base64 decoding might already have happened, in which decode fails.
+                # If decode fails, fallback to whatever is in there.
+                if not attribute["BinaryValue"]:
+                    attribute["BinaryValue"] = val
+
             else:
-                attribute["StringValue"] = str(value.get("Value", ""))
+                val = value.get("StringValue") or value.get("Value", "")
+                attribute["StringValue"] = str(val)
 
             message_attributes[key] = attribute
 
@@ -719,15 +770,20 @@ def evaluate_filter_policy_conditions(conditions, attribute, message_attributes,
     if type(conditions) is not list:
         conditions = [conditions]
 
-    if attribute is not None and attribute["Type"] == "String.Array":
-        values = ast.literal_eval(attribute["Value"])
+    if attribute is None:
+        return False
+
+    tpe = attribute.get("DataType") or attribute.get("Type")
+    val = attribute.get("StringValue") or attribute.get("Value")
+    if tpe == "String.Array":
+        values = ast.literal_eval(val)
         for value in values:
             for condition in conditions:
                 if evaluate_condition(value, condition, message_attributes, criteria):
                     return True
     else:
         for condition in conditions:
-            value = attribute["Value"] if attribute is not None else None
+            value = val or None
             if evaluate_condition(value, condition, message_attributes, criteria):
                 return True
 
