@@ -139,6 +139,10 @@ class FunctionVersion:
     config: VersionFunctionConfiguration
     provisioned_concurrency_config: Optional[ProvisionedConcurrencyConfiguration] = None
 
+    @property
+    def qualified_arn(self) -> str:
+        return self.id.qualified_arn()
+
 
 @dataclasses.dataclass
 class Function:

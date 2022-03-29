@@ -147,16 +147,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 runtime=runtime,
                 memory_size=memory_size or 128,
                 handler=handler,
-                package_type=PackageType.Zip,
+                package_type=PackageType.Zip,  # TODO
                 reserved_concurrent_executions=0,
-                environment={},
+                environment={},  # TODO
                 # environment={k: v for k,v in environment['Variables'].items()},
                 architectures=[Architecture.x86_64],
                 tracing_config_mode=TracingMode.PassThrough,
                 image_config=None,
                 layers=[],
             ),
-            code=Code(zip_file=code["ZipFile"]),
+            code=Code(zip_file=code["ZipFile"]),  # TODO: s3
         )
         return self._map_config_out(version)
 
@@ -230,7 +230,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         try:
             invocation_result = result.result()
         except Exception as e:
-            LOG.error("Error while invoking lambda: %s", e)
+            LOG.error("Error while invoking lambda", exc_info=e)
             # TODO map to correct exception
             raise ServiceException()
 
@@ -396,9 +396,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         function_name: NamespacedFunctionName,
-        qualifier: Qualifier = None,  # TODO
+        qualifier: Qualifier = None,
     ) -> FunctionConfiguration:
-        ...  # TODO
+        version = self.lambda_service.get_function_version(
+            context.region, function_name, qualifier or "$LATEST"
+        )
+        return self._map_config_out(version)
 
     def get_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias

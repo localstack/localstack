@@ -55,7 +55,7 @@ def get_runtime_split(runtime: str) -> Tuple[str, str]:
 
 def get_path_for_function(function_version: FunctionVersion) -> Path:
     return Path(
-        f"{config.dirs.tmp}/lambda/{function_version.qualified_arn.replace(':', '_').replace('$', '_')}/"
+        f"{config.dirs.tmp}/lambda/{function_version.id.qualified_arn().replace(':', '_').replace('$', '_')}/"
     )
 
 
@@ -64,7 +64,7 @@ def get_code_path_for_function(function_version: FunctionVersion) -> Path:
 
 
 def get_image_name_for_function(function_version: FunctionVersion) -> str:
-    return f"localstack/lambda-{function_version.qualified_arn.replace(':', '_').replace('$', '_').lower()}"
+    return f"localstack/lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
 
 
 def get_image_for_runtime(runtime: str) -> str:
@@ -205,8 +205,8 @@ class RuntimeExecutor:
         )
 
     def stop(self) -> None:
-        CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
-        CONTAINER_CLIENT.remove_container(container_name=self.id)
+        # CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
+        # CONTAINER_CLIENT.remove_container(container_name=self.id)
         try:
             self.executor_endpoint.shutdown()
         except Exception as e:

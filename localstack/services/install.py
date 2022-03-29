@@ -136,7 +136,7 @@ TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
 )
 
-LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/v0.1-pre/aws-lambda-rie-{arch}"
+LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/v0.1.1-pre/aws-lambda-rie-{arch}"
 LAMBDA_RUNTIME_INIT_PATH = os.path.join(config.dirs.static_libs, "aws-lambda-rie")
 
 OS_INSTALL_LOCKS = {}

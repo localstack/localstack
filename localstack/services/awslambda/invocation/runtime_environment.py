@@ -69,7 +69,7 @@ class RuntimeEnvironment:
         self.startup_timer = None
 
     def get_log_group_name(self) -> str:
-        return f"/aws/lambda/{self.function_version.config.name}"
+        return f"/aws/lambda/{self.function_version.id.function_name}"
 
     def get_log_stream_name(self) -> str:
         return f"{date.today():%Y/%m/%d}/[{self.function_version.qualifier}]{self.id}"
@@ -87,7 +87,8 @@ class RuntimeEnvironment:
             "AWS_LAMBDA_LOG_GROUP_NAME": self.get_log_group_name(),
             "AWS_LAMBDA_LOG_STREAM_NAME": self.get_log_stream_name(),
             "AWS_LAMBDA_FUNCTION_NAME": self.function_version.qualified_arn,  # TODO use name instead of arn
-            "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "128",  # TODO use correct memory size
+            "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
+            "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": self.function_version.config.memory_size,  # TODO use correct memory size
             "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.qualified_arn,  # TODO use name instead of arn
             "AWS_DEFAULT_REGION": self.function_version.qualified_arn,  # TODO use region instead of arn
             "AWS_REGION": self.function_version.qualified_arn,  # TODO use region instead of arn
@@ -109,7 +110,7 @@ class RuntimeEnvironment:
             env_vars["_HANDLER"] = self.function_version.config.handler
         if self.function_version.config.runtime:
             env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.config.runtime}"
-        env_vars.update(self.function_version.config.environment.variables)
+        env_vars.update(self.function_version.config.environment)
         return env_vars
 
     # Lifecycle methods

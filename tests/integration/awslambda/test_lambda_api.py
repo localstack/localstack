@@ -109,7 +109,7 @@ def handler(event,ctx):
 
 
 @pytest.mark.aws_compatible
-@lambda_asf_only
+# @lambda_asf_only
 class TestLambdaAsfApi:
     def test_create_function(self, lambda_client, create_lambda_function_aws, lambda_su_role):
         fn_name = f"ls-fn-{short_uid()}"
@@ -159,6 +159,19 @@ class TestLambdaAsfApi:
                 get_function_result = lambda_client.get_function(FunctionName=fn_name)
                 assert 200 == get_function_result["ResponseMetadata"]["HTTPStatusCode"]
                 assert get_function_result["ResponseMetadata"]["RequestId"]
+
+                def _fn_ready():
+                    return (
+                        lambda_client.get_function(FunctionName=fn_name)["Configuration"]["State"]
+                        == "Active"
+                    )
+
+                assert wait_until(_fn_ready)
+
+                invoke_result = lambda_client.invoke(
+                    FunctionName=fn_name, Payload=bytes("{}", "utf-8")
+                )
+                assert 200 == invoke_result["StatusCode"]
             finally:
                 call_safe(lambda_client.delete_function, kwargs={"FunctionName": fn_name})
 
@@ -221,6 +234,13 @@ class TestLambdaAsfApi:
 
     def test_create_alias(self, lambda_client, create_lambda_function_aws, lambda_su_role):
         fn_name = f"ls-fn-{short_uid()}"
+
+        def _fn_ready():
+            return (
+                lambda_client.get_function(FunctionName=fn_name)["Configuration"]["State"]
+                == "Active"
+            )
+
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
             txt = f.read()
             try:
@@ -234,15 +254,33 @@ class TestLambdaAsfApi:
                     Runtime="python3.9",
                 )
 
+                assert wait_until(_fn_ready)
+
                 fn_version = lambda_client.publish_version(FunctionName=fn_name)
-                assert fn_version["Version"]
+                assert fn_version["Version"] == "1"
 
                 alias_result = lambda_client.create_alias(
                     FunctionName=fn_name, Name="myal", FunctionVersion=fn_version["Version"]
                 )
                 assert alias_result["AliasArn"]
+                assert alias_result["FunctionVersion"] == "1"
 
                 aliases = lambda_client.list_aliases(FunctionName=fn_name)
                 assert "myal" in [a["Name"] for a in aliases["Aliases"]]
+
+                assert wait_until(_fn_ready)
+
+                invoke_result_default = lambda_client.invoke(FunctionName=fn_name)
+                assert invoke_result_default["StatusCode"] == 200
+                assert invoke_result_default["ExecutedVersion"] == "$LATEST"
+                invoke_result_version = lambda_client.invoke(
+                    FunctionName=fn_name, Qualifier=fn_version["Version"]
+                )
+                assert invoke_result_version["StatusCode"] == 200
+                assert invoke_result_version["ExecutedVersion"] == fn_version["Version"]
+                invoke_result_alias = lambda_client.invoke(FunctionName=fn_name, Qualifier="myal")
+                assert invoke_result_alias["StatusCode"] == 200
+                assert invoke_result_alias["ExecutedVersion"] == fn_version["Version"]
+
             finally:
                 call_safe(lambda_client.delete_function, kwargs={"FunctionName": fn_name})

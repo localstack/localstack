@@ -65,9 +65,8 @@ class VersionState:
 
 
 # InvocationResultFuture = Future[InvocationResult]
-# InvocationResultFuture = Future[InvocationResult]
 #
-# from typing_extensions import Futur
+# from typing_extensions import Future
 
 
 @dataclasses.dataclass(frozen=True)
@@ -183,7 +182,7 @@ class LambdaVersionManager(ServiceEndpoint):
                 code=StateReasonCode.InternalError,
                 reason=f"Error while creating lambda: {e}",
             )
-            LOG.debug(f"Lambda '{self.function_arn}' changed to failed. Reason: %s", e)
+            LOG.debug(f"Lambda '{self.function_arn}' changed to failed. Reason: %s", e, exc_info=1)
 
     def stop(self) -> None:
         LOG.debug("Stopping lambda version '%s'", self.function_arn)
