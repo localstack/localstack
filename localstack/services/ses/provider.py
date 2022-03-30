@@ -37,7 +37,7 @@ from localstack.aws.api.ses import (
 )
 from localstack.services.moto import call_moto
 from localstack.utils.files import mkdir
-from localstack.utils.strings import to_str
+from localstack.utils.strings import long_uid, to_str
 from localstack.utils.time import timestamp_millis
 
 LOGGER = logging.getLogger(__name__)
@@ -110,9 +110,15 @@ class SesProvider(SesApi, ABC):
         attributes: VerificationAttributes = {}
 
         for identity in identities:
-            attributes[identity] = IdentityVerificationAttributes(
-                VerificationStatus=VerificationStatus.Success,
-            )
+            if "@" in identity:
+                attributes[identity] = IdentityVerificationAttributes(
+                    VerificationStatus=VerificationStatus.Success,
+                )
+            else:
+                attributes[identity] = IdentityVerificationAttributes(
+                    VerificationStatus=VerificationStatus.Success,
+                    VerificationToken=long_uid(),
+                )
 
         return GetIdentityVerificationAttributesResponse(
             VerificationAttributes=attributes,
@@ -139,8 +145,8 @@ class SesProvider(SesApi, ABC):
             context.region,
             Source=source,
             Destinations=destination,
-            Subject=message["Subject"],
-            Body=message["Body"],
+            Subject=message["Subject"].get("Data"),
+            Body=message["Body"].get("Text", {}).get("Data"),
         )
 
         return response
@@ -169,8 +175,8 @@ class SesProvider(SesApi, ABC):
             message.id,
             context.region,
             Source=source,
-            Template=template,
-            TemplateData=template_data,
+            Template=[template],
+            TemplateData=[template_data],
             Destinations=destination,
         )
 
