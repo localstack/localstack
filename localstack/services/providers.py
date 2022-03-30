@@ -241,9 +241,14 @@ def secretsmanager():
 
 @aws_provider()
 def ses():
-    from localstack.services.ses import ses_listener, ses_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.ses.provider import SesProvider
 
-    return Service("ses", listener=ses_listener.UPDATE_SES, start=ses_starter.start_ses)
+    provider = SesProvider()
+    return Service(
+        "ses",
+        listener=AwsApiListener("ses", MotoFallbackDispatcher(provider)),
+    )
 
 
 @aws_provider()
