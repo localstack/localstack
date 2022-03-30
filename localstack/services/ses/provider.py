@@ -124,7 +124,7 @@ class SesProvider(SesApi, ABC):
             VerificationAttributes=attributes,
         )
 
-    @handler("SendEmail", expand=True)
+    @handler("SendEmail")
     def send_email(
         self,
         context: RequestContext,
