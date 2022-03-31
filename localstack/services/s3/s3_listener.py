@@ -630,19 +630,6 @@ def append_metadata_headers(method, query_map, headers):
                 headers[key] = value[0]
 
 
-def fix_location_constraint(response):
-    """Make sure we return a valid non-empty LocationConstraint, as this otherwise breaks Serverless."""
-    try:
-        content = to_str(response.content or "") or ""
-    except Exception:
-        content = ""
-    if "LocationConstraint" in content:
-        pattern = r"<LocationConstraint([^>]*)>\s*</LocationConstraint>"
-        replace = r"<LocationConstraint\1>%s</LocationConstraint>" % aws_stack.get_region()
-        response._content = re.sub(pattern, replace, content)
-        remove_xml_preamble(response)
-
-
 def fix_range_content_type(bucket_name, path, headers, response):
     # Fix content type for Range requests - https://github.com/localstack/localstack/issues/1259
     if "Range" not in headers:

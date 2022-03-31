@@ -170,3 +170,10 @@ class TestServerless(unittest.TestCase):
                 aws_stack.lambda_function_arn(function_name),
                 resource_method["methodIntegration"]["uri"],
             )
+
+    @pytest.mark.skip_offline
+    def test_s3_bucket_deployed(self):
+        s3_client = aws_stack.create_external_boto_client("s3")
+        bucket_name = "testing-bucket"
+        response = s3_client.head_bucket(Bucket=bucket_name)
+        self.assertEqual(response["ResponseMetadata"]["HTTPStatusCode"], 200)
