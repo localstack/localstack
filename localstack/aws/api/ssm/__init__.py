@@ -712,6 +712,7 @@ class OperatingSystem(str):
     DEBIAN = "DEBIAN"
     MACOS = "MACOS"
     RASPBIAN = "RASPBIAN"
+    ROCKY_LINUX = "ROCKY_LINUX"
 
 
 class OpsFilterOperatorType(str):
@@ -930,6 +931,7 @@ class ResourceTypeForTagging(str):
     PatchBaseline = "PatchBaseline"
     OpsItem = "OpsItem"
     OpsMetadata = "OpsMetadata"
+    Automation = "Automation"
 
 
 class ReviewStatus(str):
