@@ -61,6 +61,17 @@ class QueuePolicy(GenericBaseModel):
             },
         }
 
+    def fetch_state(self, stack_name, resources):
+        queues = self.resolve_refs_recursively(stack_name, self.props["Queues"], resources)
+        sqs_client = aws_stack.connect_to_service("sqs")
+        # unsure if the policy needs to be checked for all queues, since it has to be the same with all
+        any_queue_with_policy = next(iter(queues or []), None)
+        if any_queue_with_policy:
+            return sqs_client.get_queue_attributes(
+                QueueUrl=any_queue_with_policy, AttributeNames=["Policy"]
+            )
+        return None
+
 
 class SQSQueue(GenericBaseModel):
     @classmethod
