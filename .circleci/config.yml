@@ -110,8 +110,7 @@ jobs:
             TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
             COVERAGE_ARGS: "-p"
-          # TODO: re-enable the tests below!
-          command: make test-coverage || true
+          command: make test-coverage
       - run:
           name: Test 'docker-reuse' Lambda executor
           environment:
@@ -120,8 +119,7 @@ jobs:
             TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
             COVERAGE_ARGS: "-p"
-          # TODO: re-enable the tests below!
-          command: make test-coverage || true
+          command: make test-coverage
       - run:
           name: Store coverage results
           command: mv .coverage.* target/coverage/
