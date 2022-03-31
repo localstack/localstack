@@ -18,7 +18,7 @@ from localstack.utils.threads import TMP_THREADS, FuncThread, start_worker_threa
 
 LOG = logging.getLogger(__name__)
 
-BUFFER_SIZE = 2 ** 10  # 1024
+BUFFER_SIZE = 2**10  # 1024
 
 PortOrUrl = Union[str, int]
 
