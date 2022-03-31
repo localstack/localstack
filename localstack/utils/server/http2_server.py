@@ -203,12 +203,10 @@ def run_server(
                 if async_gen:
                     return async_gen
                 # prepare and return regular response
+                is_chunked = uses_chunked_encoding(result)
                 result_content = result.content or ""
                 response = await make_response(result_content)
                 response.status_code = result.status_code
-                if response.status_code == 204:
-                    result.headers.pop("Transfer-Encoding", None)
-                is_chunked = uses_chunked_encoding(result)
                 if is_chunked:
                     response.headers.pop("Content-Length", None)
                 result.headers.pop("Server", None)
