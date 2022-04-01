@@ -1,4 +1,5 @@
 import re
+from typing import Dict
 
 from localstack.services.cloudformation.cloudformation_api import Stack
 from localstack.services.cloudformation.deployment_utils import (
@@ -24,11 +25,15 @@ def test_resolve_references():
             ],
         ]
     }
-    stack_name = "test"
-    stack = Stack({"StackName": stack_name})
-    result = template_deployer.resolve_refs_recursively(stack, ref)
+    result = _resolve_refs_in_template(ref)
     pattern = r"arn:aws:apigateway:.*:lambda:path/2015-03-31/functions/test:lambda:arn/invocations"
     assert re.match(pattern, result)
+
+
+def test_sub_numeric_value():
+    template = {"test": {"Sub": "${TestNumValue}"}}
+    result = _resolve_refs_in_template(template, stack_params={"TestNumValue": 1234})
+    assert result == {"test": "1234"}
 
 
 def test_is_local_service_url():
@@ -69,3 +74,12 @@ def test_remove_none_values():
     }
     result = remove_none_values(template)
     assert result == {"Properties": {"prop1": 123, "nested": {}, "list": [1, 2, 3]}}
+
+
+def _resolve_refs_in_template(template, stack_params: Dict = None):
+    stack = Stack({"StackName": "test"})
+    stack.stack_parameters()
+    stack_params = stack_params or {}
+    stack_params = [{"ParameterKey": k, "ParameterValue": v} for k, v in stack_params.items()]
+    stack.metadata["Parameters"].extend(stack_params)
+    return template_deployer.resolve_refs_recursively(stack, template)

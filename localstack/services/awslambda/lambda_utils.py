@@ -262,7 +262,9 @@ def get_zip_bytes(function_code):
             s3_client.download_fileobj(function_code["S3Bucket"], function_code["S3Key"], bytes_io)
             zip_file_content = bytes_io.getvalue()
         except Exception as e:
-            raise ClientError("Unable to fetch Lambda archive from S3: %s" % e, 404)
+            s3_key = str(function_code.get("S3Key") or "")
+            s3_url = f's3://{function_code["S3Bucket"]}{s3_key if s3_key.startswith("/") else f"/{s3_key}"}'
+            raise ClientError(f"Unable to fetch Lambda archive from {s3_url}: {e}", 404)
     elif "ZipFile" in function_code:
         zip_file_content = function_code["ZipFile"]
         zip_file_content = base64.b64decode(zip_file_content)
