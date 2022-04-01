@@ -268,11 +268,11 @@ def add_service_proxy_listener(api: str, listener: ProxyListener, port=None):
     PROXY_LISTENERS[api] = (api, port or get_service_port(api), listener)
 
 
-def start_local_api(name, port, api, method, asynchronous=False):
+def start_local_api(name, port, api, method, asynchronous=False, listener=None):
     log_startup_message(name)
     if config.FORWARD_EDGE_INMEM:
         port = get_free_tcp_port()
-        PROXY_LISTENERS[api] = (api, port, None)
+        PROXY_LISTENERS[api] = (api, port, listener)
     if asynchronous:
         thread = start_thread(method, port, quiet=True)
         return thread

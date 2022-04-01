@@ -37,3 +37,8 @@ exclude_lines = [
     "return NotImplemented",
     "def __repr__",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "aws_parity: test can be run standalone against AWS and has been validated before",
+]

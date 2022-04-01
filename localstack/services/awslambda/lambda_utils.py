@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 from functools import lru_cache
 from io import BytesIO
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 from flask import Response
 
@@ -176,7 +176,7 @@ def store_lambda_logs(
     return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 
 
-def get_main_endpoint_from_container():
+def get_main_endpoint_from_container() -> str:
     global DOCKER_MAIN_CONTAINER_IP
     if not config.HOSTNAME_FROM_LAMBDA and DOCKER_MAIN_CONTAINER_IP is None:
         DOCKER_MAIN_CONTAINER_IP = False
@@ -205,7 +205,7 @@ def get_main_endpoint_from_container():
     )
 
 
-def get_container_network_for_lambda():
+def get_container_network_for_lambda() -> str:
     global LAMBDA_CONTAINER_NETWORK
     if config.LAMBDA_DOCKER_NETWORK:
         return config.LAMBDA_DOCKER_NETWORK
@@ -298,3 +298,12 @@ def error_response(msg, code=500, error_type="InternalFailure"):
     if code != 404:
         LOG.debug(msg)
     return flask_error_response_json(msg, code=code, error_type=error_type)
+
+
+def generate_lambda_arn(
+    account_id: int, region: str, fn_name: str, qualifier: Optional[str] = None
+):
+    if qualifier:
+        return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}:{qualifier}"
+    else:
+        return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}"

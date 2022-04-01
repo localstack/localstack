@@ -164,6 +164,16 @@ def awslambda():
     )
 
 
+@aws_provider(api="lambda", name="asf")
+def awslambda_asf():
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.awslambda.provider import LambdaProvider
+
+    provider = LambdaProvider()
+
+    return Service("lambda", listener=AwsApiListener("lambda", provider), lifecycle_hook=provider)
+
+
 @aws_provider()
 def logs():
     from localstack.services.logs.provider import LogsAwsApiListener
