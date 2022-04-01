@@ -2475,6 +2475,26 @@ class TestS3(unittest.TestCase):
         object = s3_anon_client.get_object(Bucket=bucket_name, Key=object_key)
         self.assertEqual(body, to_str(object["Body"].read()))
 
+    def test_different_location_constraint(self):
+        bucket_1_name = "bucket-%s" % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_1_name)
+        response = self.s3_client.get_bucket_location(Bucket=bucket_1_name)
+        self.assertEqual(None, response["LocationConstraint"])
+
+        region_2 = "us-east-2"
+        client_2 = self._get_test_client(region_name=region_2)
+        bucket_2_name = "bucket-%s" % short_uid()
+        client_2.create_bucket(
+            Bucket=bucket_2_name,
+            CreateBucketConfiguration={"LocationConstraint": region_2},
+        )
+        response = client_2.get_bucket_location(Bucket=bucket_2_name)
+        self.assertEqual(region_2, response["LocationConstraint"])
+
+        # clean up
+        self.s3_client.delete_bucket(Bucket=bucket_1_name)
+        self.s3_client.delete_bucket(Bucket=bucket_2_name)
+
     # ---------------
     # HELPER METHODS
     # ---------------
@@ -2608,12 +2628,13 @@ class TestS3(unittest.TestCase):
         url = url + "&X-Amz-Credential=x&X-Amz-Signature=y"
         requests.put(url, data="something", verify=False)
 
-    def _get_test_client(self):
+    def _get_test_client(self, region_name="us-east-1"):
         return boto3.client(
             "s3",
             endpoint_url=config.get_edge_url(),
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            region_name=region_name,
         )
 
 
