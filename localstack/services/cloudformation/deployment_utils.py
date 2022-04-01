@@ -4,10 +4,9 @@ from typing import Callable
 
 from localstack.config import dirs
 from localstack.utils import common
-
-# URL to "cfn-response" module which is required in some CF Lambdas
 from localstack.utils.common import select_attributes, short_uid
 
+# URL to "cfn-response" module which is required in some CF Lambdas
 CFN_RESPONSE_MODULE_URL = (
     "https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js"
 )
