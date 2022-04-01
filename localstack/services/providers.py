@@ -140,7 +140,7 @@ def kinesis():
 
 @aws_provider()
 def kms():
-    if config.KMS_PROVIDER == "kms-local":
+    if config.KMS_PROVIDER == "local-kms":
         from localstack.services.kms import kms_starter
 
         return Service("kms", start=kms_starter.start_kms_local)
