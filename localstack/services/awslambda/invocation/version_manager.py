@@ -123,6 +123,7 @@ class LogHandler:
     def stop(self) -> None:
         self._shutdown_event.set()
         if self._thread:
+            self.log_queue.put(ShutdownPill())
             self._thread.join(timeout=2)
             if self._thread.is_alive():
                 LOG.error("Could not stop log subscriber in time")
