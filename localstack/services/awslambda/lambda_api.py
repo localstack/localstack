@@ -1693,14 +1693,14 @@ def remove_permission(function, statement):
     if not policy:
         return not_found_error('Unable to find policy for Lambda function "%s"' % function)
 
-    statment_index = next(
+    statement_index = next(
         (i for i, item in enumerate(policy["Statement"]) if item["Sid"] == statement), None
     )
-    if statment_index is None:
+    if statement_index is None:
         return not_found_error("Statement %s is not found in resource policy." % statement)
     iam_client.delete_policy(PolicyArn=policy["PolicyArn"])
 
-    policy["Statement"].pop(statment_index)
+    policy["Statement"].pop(statement_index)
     description = policy.get("Description")
     policy_name = policy.get("PolicyName")
     del policy["PolicyName"]
