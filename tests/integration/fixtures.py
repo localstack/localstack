@@ -812,7 +812,8 @@ def lambda_su_role():
     )["Policy"]["Arn"]
     iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
 
-    time.sleep(10)
+    if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":  # dirty but necessary
+        time.sleep(10)
 
     yield role["Arn"]
 

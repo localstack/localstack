@@ -6,9 +6,6 @@ from dataclasses import replace
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.awslambda import (
-    Alias,
-    AliasConfiguration,
-    AliasRoutingConfiguration,
     Architecture,
     ArchitecturesList,
     Blob,
@@ -20,10 +17,8 @@ from localstack.aws.api.awslambda import (
     EnvironmentResponse,
     FileSystemConfigList,
     FunctionCode,
-    FunctionCodeLocation,
     FunctionConfiguration,
     FunctionName,
-    GetFunctionResponse,
     Handler,
     ImageConfig,
     InvocationResponse,
@@ -32,20 +27,13 @@ from localstack.aws.api.awslambda import (
     LambdaApi,
     LastUpdateStatus,
     LayerList,
-    ListAliasesResponse,
-    ListFunctionsResponse,
     LogType,
-    MasterRegion,
-    MaxListItems,
     MemorySize,
     NamespacedFunctionName,
     PackageType,
     Qualifier,
     RoleArn,
     Runtime,
-    S3Bucket,
-    S3Key,
-    S3ObjectVersion,
     ServiceException,
     State,
     String,
@@ -53,19 +41,16 @@ from localstack.aws.api.awslambda import (
     Timeout,
     TracingConfig,
     TracingMode,
-    Version,
-    VpcConfig,
+    VpcConfig, GetFunctionResponse, FunctionCodeLocation, ListFunctionsResponse, MasterRegion, MaxListItems,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
     Code,
     FunctionVersion,
     InvocationError,
-    VersionAlias,
     VersionFunctionConfiguration,
 )
 from localstack.services.awslambda.invocation.lambda_service import LambdaService
-from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
-from localstack.services.awslambda.lambda_utils import generate_lambda_arn
+from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn, function_name_regex
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_bytes, to_str
 
@@ -263,153 +248,5 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         qualifier: Qualifier = None,
     ) -> None:
-        self.lambda_service.delete_function(context.region, function_name)
-
-    def update_function_code(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        zip_file: Blob = None,
-        s3_bucket: S3Bucket = None,
-        s3_key: S3Key = None,
-        s3_object_version: S3ObjectVersion = None,
-        image_uri: String = None,
-        publish: Boolean = None,
-        dry_run: Boolean = None,
-        revision_id: String = None,
-        architectures: ArchitecturesList = None,
-    ) -> FunctionConfiguration:
-        raise ServiceException("Not implemented (yet). Stay tuned!")  # TODO
-
-    def update_function_configuration(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        role: RoleArn = None,
-        handler: Handler = None,
-        description: Description = None,
-        timeout: Timeout = None,
-        memory_size: MemorySize = None,
-        vpc_config: VpcConfig = None,
-        environment: Environment = None,
-        runtime: Runtime = None,
-        dead_letter_config: DeadLetterConfig = None,
-        kms_key_arn: KMSKeyArn = None,
-        tracing_config: TracingConfig = None,
-        revision_id: String = None,
-        layers: LayerList = None,
-        file_system_configs: FileSystemConfigList = None,
-        image_config: ImageConfig = None,
-    ) -> FunctionConfiguration:
-        raise ServiceException("Not implemented (yet). Stay tuned!")  # TODO
-
-    def publish_version(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        code_sha256: String = None,  # TODO
-        description: Description = None,  # TODO
-        revision_id: String = None,
-    ) -> FunctionConfiguration:
-        version = self.lambda_service.create_version(
-            region_name=context.region, function_name=function_name, description=description
-        )
-        return self._map_config_out(version)
-
-    def _map_alias_to_aliasconfig(
-        self, region: str, function_name: str, alias: VersionAlias
-    ) -> AliasConfiguration:
-        version = self.lambda_service.get_function_version(
-            region_name=region, function_name=function_name, qualifier=str(alias.function_version)
-        )
-        return AliasConfiguration(
-            AliasArn=replace(version.id, qualifier=alias.name).qualified_arn(),
-            Name=alias.name,
-            FunctionVersion=str(alias.function_version),
-            Description=alias.description,
-            # RoutingConfig=None, # TODO
-            RevisionId=version.config_meta.revision_id,
-        )
-
-    def create_alias(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        name: Alias,
-        function_version: Version,
-        description: Description = None,
-        routing_config: AliasRoutingConfiguration = None,
-    ) -> AliasConfiguration:
-        version = self.lambda_service.create_alias(
-            context.region, function_name, function_version, name, description or ""
-        )  # TODO: routing config
-
-        return AliasConfiguration(
-            AliasArn=generate_lambda_arn(
-                account_id=int(context.account_id),
-                region=context.region,
-                fn_name=function_name,
-                qualifier=name,
-            ),
-            Name=name,
-            Description=description or "",
-            RevisionId=version.config_meta.revision_id,
-            FunctionVersion=function_version,
-            RoutingConfig=routing_config,
-        )
-
-    def delete_alias(
-        self, context: RequestContext, function_name: FunctionName, name: Alias
-    ) -> None:
-        self.lambda_service.delete_alias(context.region, function_name, name)
-
-    def update_alias(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        name: Alias,
-        function_version: Version = None,
-        description: Description = None,
-        routing_config: AliasRoutingConfiguration = None,
-        revision_id: String = None,
-    ) -> AliasConfiguration:
-        ...  # TODO
-
-    def list_aliases(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        function_version: Version = None,
-        marker: String = None,
-        max_items: MaxListItems = None,
-    ) -> ListAliasesResponse:
-        aliases = self.lambda_service.list_aliases(
-            region_name=context.region, function_name=function_name
-        )
-        return ListAliasesResponse(
-            Aliases=[
-                self._map_alias_to_aliasconfig(context.region, function_name, a) for a in aliases
-            ]
-        )
-
-    def get_function_configuration(
-        self,
-        context: RequestContext,
-        function_name: NamespacedFunctionName,
-        qualifier: Qualifier = None,
-    ) -> FunctionConfiguration:
-        version = self.lambda_service.get_function_version(
-            context.region, function_name, qualifier or "$LATEST"
-        )
-        return self._map_config_out(version)
-
-    def get_alias(
-        self, context: RequestContext, function_name: FunctionName, name: Alias
-    ) -> AliasConfiguration:
-        return self._map_alias_to_aliasconfig(
-            context.region,
-            function_name,
-            self.lambda_service.get_alias(
-                region_name=context.region, function_name=function_name, alias_name=name
-            ),
-        )
+        really_function_name = function_name_regex.match(function_name).group("name")  # TODO: handle None and raise
+        self.lambda_service.delete_function(context.region, really_function_name)

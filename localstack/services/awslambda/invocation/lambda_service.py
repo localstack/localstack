@@ -80,12 +80,6 @@ class LambdaService:
 
         return version_manager
 
-    # CRUD
-    def _create_version(
-        self, region_name: str, function_name: str, qualifier: str
-    ) -> FunctionVersion:
-        return
-
     def create_function(
         self,
         account_id: str,
@@ -123,22 +117,6 @@ class LambdaService:
         self.create_function_version(version)
         return version
 
-    def create_version(
-        self, region_name: str, function_name: str, description: str
-    ) -> FunctionVersion:
-        state = LambdaServiceBackend.get(region_name)
-        fn = state.functions[function_name]
-        with fn.lock:
-            latest = fn.versions["$LATEST"]
-            qualifier = str(fn.next_version)
-            new_version = replace(
-                latest, qualifier=qualifier, id=replace(latest.id, qualifier=qualifier)
-            )
-            fn.versions[qualifier] = new_version
-            fn.next_version += 1
-            self.create_function_version(new_version)
-            return new_version
-
     # TODO: is this sync?
     def delete_function(self, region_name: str, function_name: str):
         state = LambdaServiceBackend.get(region_name)
@@ -161,39 +139,6 @@ class LambdaService:
         state = LambdaServiceBackend.get(region_name)
         return [f.latest() for f in state.functions.values()]  # TODO: qualifier
 
-    def create_alias(
-        self,
-        region_name: str,
-        function_name: str,
-        qualifier: str,
-        alias_name: str,
-        description: str,
-    ) -> FunctionVersion:
-        state = LambdaServiceBackend.get(region_name)
-        fn = state.functions[function_name]
-        fn.aliases[alias_name] = VersionAlias(int(qualifier), alias_name, description, None, None)
-        return fn.versions[qualifier]
-
-    def list_aliases(self, region_name: str, function_name: str) -> List[VersionAlias]:
-        state = LambdaServiceBackend.get(region_name)
-        return state.functions[function_name].aliases.values()
-
-    def get_alias(self, region_name: str, function_name: str, alias_name: str):
-        state = LambdaServiceBackend.get(region_name)
-        return state.functions[function_name].aliases[alias_name]
-
-    def update_alias(
-        self, region_name: str, function_name: str, alias_name: str, version: int, description
-    ):
-        state = LambdaServiceBackend.get(region_name)
-        fn = state.functions[function_name]
-        del fn.aliases[alias_name]
-
-    def delete_alias(self, region_name: str, function_name: str, alias_name: str):
-        state = LambdaServiceBackend.get(region_name)
-        fn = state.functions[function_name]
-        del fn.aliases[alias_name]
-
     def create_function_version(self, function_version: FunctionVersion) -> None:
         with self.lambda_version_manager_lock:
             qualified_arn = function_version.id.qualified_arn()
@@ -208,7 +153,6 @@ class LambdaService:
             self.task_executor.submit(version_manager.start)
 
     # Commands
-
     def invoke(
         self,
         function_arn_qualified: str,
