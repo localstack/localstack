@@ -22,6 +22,7 @@ from localstack.aws.api.ses import (
     ListTemplatesResponse,
     MaxItems,
     Message,
+    MessageId,
     MessageRejected,
     MessageTagList,
     NextToken,
@@ -42,37 +43,45 @@ from localstack.utils.time import timestamp_millis
 
 LOGGER = logging.getLogger(__name__)
 
+# Keep record of all sent emails
+EMAILS: Dict[MessageId, Dict[str, Any]] = {}
+
+
+def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
+    """Save a message for retrospection.
+
+    The email is saved to filesystem and is also made accessible via a service endpoint.
+
+    kwargs should consist of following keys related to the email:
+    - Body
+    - Subject
+    - Body
+    - RawData
+    - Source
+    - Template
+    - TemplateData
+    - Destinations
+    """
+    ses_dir = os.path.join(config.dirs.data or config.dirs.tmp, "ses")
+
+    mkdir(ses_dir)
+    path = os.path.join(ses_dir, id + ".json")
+
+    email = {"Id": id, "Region": region, **kwargs}
+
+    EMAILS[id] = email
+
+    with open(path, "w") as f:
+        f.write(json.dumps(email))
+
+    LOGGER.debug(f"Email saved at: {path}")
+
 
 class SesProvider(SesApi, ABC):
 
     #
     # Helpers
     #
-
-    def save_email_to_data_dir(self, id: str, region: str, **kwargs: Dict[str, Any]):
-        """Save a copy of a sent email to the filesystem for debugging purposes.
-
-        kwargs should consist of following keys related to the email:
-        - Body
-        - Subject
-        - Body
-        - RawData
-        - Source
-        - Template
-        - TemplateData
-        - Destinations
-        """
-        ses_dir = os.path.join(config.dirs.data or config.dirs.tmp, "ses")
-
-        mkdir(ses_dir)
-        path = os.path.join(ses_dir, id + ".json")
-
-        email = {"Id": id, "Region": region, **kwargs}
-
-        with open(path, "w") as f:
-            f.write(json.dumps(email))
-
-        LOGGER.debug(f"Email saved at: {path}")
 
     def get_source_from_raw(self, raw_data: str) -> Optional[str]:
         """Given a raw representation of email, return the source/from field."""
@@ -140,7 +149,7 @@ class SesProvider(SesApi, ABC):
     ) -> SendEmailResponse:
         response = call_moto(context)
 
-        self.save_email_to_data_dir(
+        save_for_retrospection(
             response["MessageId"],
             context.region,
             Source=source,
@@ -171,7 +180,7 @@ class SesProvider(SesApi, ABC):
             source, [template], template_data, destination, context.region
         )
 
-        self.save_email_to_data_dir(
+        save_for_retrospection(
             message.id,
             context.region,
             Source=source,
@@ -207,7 +216,7 @@ class SesProvider(SesApi, ABC):
 
         message = ses_backend.send_raw_email(source, destinations, raw_data, context.region)
 
-        self.save_email_to_data_dir(
+        save_for_retrospection(
             message.id, context.region, Source=source, Destinations=destinations, RawData=raw_data
         )
 
