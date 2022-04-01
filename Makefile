@@ -43,6 +43,9 @@ install-runtime: venv     ## Install dependencies for the localstack runtime int
 install-test: venv        ## Install requirements to run tests into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test]"
 
+install-test-only: venv
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[test]"
+
 install-dev: venv         ## Install developer requirements into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
 
@@ -179,9 +182,10 @@ docker-create-push-manifests-light:	## Create and push manifests for the light d
 
 docker-run-tests:		  ## Initializes the test environment and runs the tests in a docker container
 	# Remove argparse and dataclasses to fix https://github.com/pytest-dev/pytest/issues/5594
+	# Note: running "install-test-only" below, to avoid pulling in [runtime] extras from transitive dependencies
 	docker run --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ \
 		$(IMAGE_NAME_FULL) \
-	    bash -c "make install-test && make init-testlibs && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) LAMBDA_EXECUTOR=local PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' make test-coverage"
+	    bash -c "make install-test-only && make init-testlibs && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) LAMBDA_EXECUTOR=local PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' make test-coverage"
 
 docker-run:        		  ## Run Docker image locally
 	($(VENV_RUN); bin/localstack start)
