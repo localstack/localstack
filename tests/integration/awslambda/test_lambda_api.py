@@ -1,11 +1,9 @@
 # ALL TESTS IN HERE ARE VALIDATED AGAINST AWS CLOUD
-import json
 import logging
 import os.path
 
 import pytest
 
-from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 
@@ -37,6 +35,7 @@ lambda_asf_only = pytest.mark.skipif(
     os.environ.get("PROVIDER_OVERRIDE_LAMBDA") != "asf", reason="Skip for non-asf provider"
 )
 
+
 # TODO: move this to fixtures / reconcile with ohter fixture usage
 @pytest.fixture
 def create_lambda_function_aws(
@@ -45,7 +44,6 @@ def create_lambda_function_aws(
     lambda_arns = []
 
     def _create_lambda_function(**kwargs):
-
         def _create_function():
             resp = lambda_client.create_function(**kwargs)
             lambda_arns.append(resp["FunctionArn"])
@@ -53,7 +51,7 @@ def create_lambda_function_aws(
             def _is_not_pending():
                 try:
                     result = (
-                        lambda_client.get_function(FunctionName=resp['FunctionName'])[
+                        lambda_client.get_function(FunctionName=resp["FunctionName"])[
                             "Configuration"
                         ]["State"]
                         != "Pending"
@@ -99,8 +97,5 @@ class TestLambdaAsfApi:
                 Runtime="python3.9",
             )
 
-        invoke_result = lambda_client.invoke(
-            FunctionName=fn_name, Payload=bytes("{}", "utf-8")
-        )
+        invoke_result = lambda_client.invoke(FunctionName=fn_name, Payload=bytes("{}", "utf-8"))
         assert 200 == invoke_result["StatusCode"]
-

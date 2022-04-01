@@ -2,7 +2,6 @@ import base64
 import logging
 import threading
 import time
-from dataclasses import replace
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.awslambda import (
@@ -17,8 +16,10 @@ from localstack.aws.api.awslambda import (
     EnvironmentResponse,
     FileSystemConfigList,
     FunctionCode,
+    FunctionCodeLocation,
     FunctionConfiguration,
     FunctionName,
+    GetFunctionResponse,
     Handler,
     ImageConfig,
     InvocationResponse,
@@ -27,7 +28,10 @@ from localstack.aws.api.awslambda import (
     LambdaApi,
     LastUpdateStatus,
     LayerList,
+    ListFunctionsResponse,
     LogType,
+    MasterRegion,
+    MaxListItems,
     MemorySize,
     NamespacedFunctionName,
     PackageType,
@@ -41,7 +45,7 @@ from localstack.aws.api.awslambda import (
     Timeout,
     TracingConfig,
     TracingMode,
-    VpcConfig, GetFunctionResponse, FunctionCodeLocation, ListFunctionsResponse, MasterRegion, MaxListItems,
+    VpcConfig,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
     Code,
@@ -50,7 +54,10 @@ from localstack.services.awslambda.invocation.lambda_models import (
     VersionFunctionConfiguration,
 )
 from localstack.services.awslambda.invocation.lambda_service import LambdaService
-from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn, function_name_regex
+from localstack.services.awslambda.invocation.lambda_util import (
+    function_name_regex,
+    qualified_lambda_arn,
+)
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_bytes, to_str
 
@@ -248,5 +255,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         qualifier: Qualifier = None,
     ) -> None:
-        really_function_name = function_name_regex.match(function_name).group("name")  # TODO: handle None and raise
+        really_function_name = function_name_regex.match(function_name).group(
+            "name"
+        )  # TODO: handle None and raise
         self.lambda_service.delete_function(context.region, really_function_name)
