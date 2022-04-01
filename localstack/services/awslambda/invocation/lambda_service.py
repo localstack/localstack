@@ -3,7 +3,6 @@ import concurrent.futures
 import hashlib
 import logging
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
-from dataclasses import replace
 from threading import RLock
 from typing import Dict, List, Optional
 
@@ -15,7 +14,6 @@ from localstack.services.awslambda.invocation.lambda_models import (
     Invocation,
     InvocationResult,
     UpdateStatus,
-    VersionAlias,
     VersionFunctionConfiguration,
     VersionIdentifier,
 )
