@@ -26,14 +26,14 @@ class InvokeSendError(Exception):
 
 class ExecutorEndpoint(Server):
     service_endpoint: ServiceEndpoint
-    port: Optional[int]
+    port: Optional[str]
 
     def __init__(
         self,
         port: int,
         service_endpoint: ServiceEndpoint,
         host: str = "0.0.0.0",
-        container_address: Optional[int] = None,
+        container_address: Optional[str] = None,
     ) -> None:
         super().__init__(port, host)
         self.service_endpoint = service_endpoint
