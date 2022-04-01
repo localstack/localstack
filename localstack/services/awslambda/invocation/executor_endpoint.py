@@ -26,10 +26,18 @@ class InvokeSendError(Exception):
 
 class ExecutorEndpoint(Server):
     service_endpoint: ServiceEndpoint
+    port: Optional[int]
 
-    def __init__(self, port: int, service_endpoint: ServiceEndpoint, host: str = "0.0.0.0") -> None:
+    def __init__(
+        self,
+        port: int,
+        service_endpoint: ServiceEndpoint,
+        host: str = "0.0.0.0",
+        container_address: Optional[int] = None,
+    ) -> None:
         super().__init__(port, host)
         self.service_endpoint = service_endpoint
+        self.container_address = container_address
 
     def _create_endpoint(self) -> Flask:
         executor_endpoint = Flask(f"executor_endpoint_{self.port}")
@@ -85,8 +93,10 @@ class ExecutorEndpoint(Server):
         if self._thread:
             self._thread.stop()
 
-    def invoke(self, payload: Dict[str, str], invocation_address: str) -> None:
-        invocation_url = f"http://{invocation_address}:{INVOCATION_PORT}/invoke"
+    def invoke(self, payload: Dict[str, str]) -> None:
+        if not self.container_address:
+            raise ValueError("Container address not set, but got an invoke.")
+        invocation_url = f"http://{self.container_address}:{INVOCATION_PORT}/invoke"
         response = requests.post(url=invocation_url, json=payload)
         if not response.ok:
             raise InvokeSendError(

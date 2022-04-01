@@ -96,6 +96,9 @@ class ShutdownPill:
     pass
 
 
+QUEUE_SHUTDOWN = ShutdownPill()
+
+
 class LogHandler:
     log_queue: "Queue[Union[LogItem, ShutdownPill]]"
     _thread: Optional[Thread]
@@ -109,7 +112,7 @@ class LogHandler:
     def run_log_loop(self) -> None:
         while not self._shutdown_event.is_set():
             log_item = self.log_queue.get()
-            if isinstance(log_item, ShutdownPill):
+            if log_item is QUEUE_SHUTDOWN:
                 return
             store_cloudwatch_logs(log_item.log_group, log_item.log_stream, log_item.logs)
 
@@ -123,7 +126,7 @@ class LogHandler:
     def stop(self) -> None:
         self._shutdown_event.set()
         if self._thread:
-            self.log_queue.put(ShutdownPill())
+            self.log_queue.put(QUEUE_SHUTDOWN)
             self._thread.join(timeout=2)
             if self._thread.is_alive():
                 LOG.error("Could not stop log subscriber in time")
@@ -183,7 +186,9 @@ class LambdaVersionManager(ServiceEndpoint):
                 code=StateReasonCode.InternalError,
                 reason=f"Error while creating lambda: {e}",
             )
-            LOG.debug(f"Lambda '{self.function_arn}' changed to failed. Reason: %s", e, exc_info=1)
+            LOG.debug(
+                f"Lambda '{self.function_arn}' changed to failed. Reason: %s", e, exc_info=True
+            )
 
     def stop(self) -> None:
         LOG.debug("Stopping lambda version '%s'", self.function_arn)
@@ -191,14 +196,14 @@ class LambdaVersionManager(ServiceEndpoint):
             state=State.Inactive, code=StateReasonCode.Idle, reason="Shutting down"
         )
         self.shutdown_event.set()
-        self.queued_invocations.put(ShutdownPill())
-        self.available_environments.put(ShutdownPill())
+        self.queued_invocations.put(QUEUE_SHUTDOWN)
+        self.available_environments.put(QUEUE_SHUTDOWN)
         if self.invocation_thread:
             try:
                 self.invocation_thread.join(timeout=5.0)
                 LOG.debug("Thread stopped '%s'", self.function_arn)
             except TimeoutError:
-                LOG.debug("Thread did not stop after 5s '%s'", self.function_arn)
+                LOG.warning("Thread did not stop after 5s '%s'", self.function_arn)
         for environment in list(self.all_environments.values()):
             self.stop_environment(environment)
         self.log_handler.stop()
@@ -250,7 +255,7 @@ class LambdaVersionManager(ServiceEndpoint):
         while not self.shutdown_event.is_set():
             queued_invocation = self.queued_invocations.get()
             try:
-                if self.shutdown_event.is_set() or isinstance(queued_invocation, ShutdownPill):
+                if self.shutdown_event.is_set() or queued_invocation is QUEUE_SHUTDOWN:
                     LOG.debug(
                         "Invocation loop for lambda %s stopped while waiting for invocations",
                         self.function_arn,
@@ -264,7 +269,7 @@ class LambdaVersionManager(ServiceEndpoint):
                 while not environment:
                     try:
                         environment = self.available_environments.get(timeout=1)
-                        if isinstance(environment, ShutdownPill) or self.shutdown_event.is_set():
+                        if environment is QUEUE_SHUTDOWN or self.shutdown_event.is_set():
                             LOG.debug(
                                 "Invocation loop for lambda %s stopped while waiting for environments",
                                 self.function_arn,

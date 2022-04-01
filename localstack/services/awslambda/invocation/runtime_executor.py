@@ -50,7 +50,7 @@ def get_runtime_split(runtime: str) -> Tuple[str, str]:
             runtime = "dotnet"
             version = f"core{version}"
         return runtime, version
-    raise Exception("Cannot process runtime '%s'" % runtime)
+    raise ValueError(f"Unknown/unsupported runtime '{runtime}'")
 
 
 def get_path_for_function(function_version: FunctionVersion) -> Path:
@@ -78,8 +78,7 @@ def get_runtime_client_path() -> Path:
 
 def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
     if not function_version.config.runtime:
-        LOG.error("Images without runtime are currently not supported")
-        raise Exception("Custom images are currently not supported")
+        raise NotImplementedError("Custom images are currently not supported")
     src_init = get_runtime_client_path()
     # copy init file
     target_init = target_path / "aws-lambda-rie"
@@ -100,13 +99,22 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
             image_name=get_image_name_for_function(function_version),
         )
     except Exception as e:
-        LOG.error("Exception: %s", e)
+        if LOG.isEnabledFor(logging.DEBUG):
+            LOG.exception(
+                "Error while building prebuilt lambda image for '%s'",
+                function_version.qualified_arn,
+            )
+        else:
+            LOG.error(
+                "Error while building prebuilt lambda image for '%s', Error: %s",
+                function_version.qualified_arn,
+                e,
+            )
 
 
 def prepare_version(function_version: FunctionVersion) -> None:
     if not function_version.code.zip_file:
-        LOG.error("Images without zip_file are currently not supported")
-        raise Exception("Custom images are currently not supported")
+        raise NotImplementedError("Images without zipfile are currently not supported")
     time_before = time.perf_counter()
     target_path = get_path_for_function(function_version)
     target_path.mkdir(parents=True, exist_ok=True)
@@ -157,8 +165,7 @@ class RuntimeExecutor:
 
     def get_image(self) -> str:
         if not self.function_version.config.runtime:
-            LOG.error("Images without runtime are currently not supported")
-            raise Exception("Custom images are currently not supported")
+            raise NotImplementedError("Custom images are currently not supported")
         return (
             get_image_name_for_function(self.function_version)
             if config.LAMBDA_PREBUILD_IMAGES
@@ -203,10 +210,11 @@ class RuntimeExecutor:
         self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
             container_name_or_id=self.id, container_network=network
         )
+        self.executor_endpoint.container_address = self.ip
 
     def stop(self) -> None:
-        # CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
-        # CONTAINER_CLIENT.remove_container(container_name=self.id)
+        CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
+        CONTAINER_CLIENT.remove_container(container_name=self.id)
         try:
             self.executor_endpoint.shutdown()
         except Exception as e:
@@ -219,7 +227,6 @@ class RuntimeExecutor:
     def get_address(self) -> str:
         if not self.ip:
             raise LambdaRuntimeException(f"IP address of executor '{self.id}' unknown")
-        LOG.debug("LS endpoint: %s", self.ip)
         return self.ip
 
     def get_endpoint_from_executor(self) -> str:
@@ -230,4 +237,4 @@ class RuntimeExecutor:
 
     def invoke(self, payload: Dict[str, str]):
         LOG.debug("Sending invoke-payload '%s' to executor '%s'", payload, self.id)
-        self.executor_endpoint.invoke(payload, self.get_address())
+        self.executor_endpoint.invoke(payload)

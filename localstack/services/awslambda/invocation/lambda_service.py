@@ -63,7 +63,7 @@ class LambdaService:
         LOG.debug("Stopping version %s", qualified_arn)
         version_manager = self.lambda_version_managers.pop(qualified_arn)
         if not version_manager:
-            LOG.error("Could not find version manager for %s", qualified_arn)
+            raise ValueError(f"Unable to find version manager for {qualified_arn}")
         self.task_executor.submit(version_manager.stop)
 
     def get_lambda_version_manager(self, function_arn: str) -> LambdaVersionManager:
@@ -74,7 +74,7 @@ class LambdaService:
         """
         version_manager = self.lambda_version_managers.get(function_arn)
         if not version_manager:
-            raise Exception(f"Version '{function_arn}' not created")
+            raise ValueError(f"Could not find version '{function_arn}'. Is it created?")
 
         return version_manager
 

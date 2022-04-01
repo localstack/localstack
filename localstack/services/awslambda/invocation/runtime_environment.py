@@ -1,5 +1,6 @@
 import logging
 import random
+import string
 from datetime import date, datetime
 from enum import Enum, auto
 from threading import RLock, Timer
@@ -38,7 +39,7 @@ class InvalidStatusException(Exception):
 
 
 def generate_runtime_id() -> str:
-    return "".join([random.choice(HEX_CHARS) for _ in range(32)])
+    return "".join(random.choices(string.hexdigits[:16], k=32)).lower()
 
 
 class RuntimeEnvironment:
@@ -60,11 +61,9 @@ class RuntimeEnvironment:
         self.status_lock = RLock()
         self.function_version = function_version
         self.initialization_type = initialization_type
-        LOG.debug("Creating new executor")
         self.runtime_executor = RuntimeExecutor(
             self.id, function_version, service_endpoint=service_endpoint
         )
-        LOG.debug("Finished new executor")
         self.last_returned = datetime.min
         self.startup_timer = None
 
@@ -89,7 +88,7 @@ class RuntimeEnvironment:
             "AWS_LAMBDA_FUNCTION_NAME": self.function_version.qualified_arn,  # TODO use name instead of arn
             "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
             "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": self.function_version.config.memory_size,  # TODO use correct memory size
-            "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.qualified_arn,  # TODO use name instead of arn
+            "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.qualifier,  # TODO use name instead of arn
             "AWS_DEFAULT_REGION": self.function_version.qualified_arn,  # TODO use region instead of arn
             "AWS_REGION": self.function_version.qualified_arn,  # TODO use region instead of arn
             "TASK_ROOT": "/var/task",  # TODO custom runtimes?
