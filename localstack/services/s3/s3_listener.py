@@ -708,15 +708,25 @@ def fix_creation_date(method, path, response):
     )
 
 
-def fix_delimiter(data, headers, response):
-    if response.status_code == 200 and response._content:
-        c, xml_prefix, delimiter = response._content, "<?xml", "<Delimiter><"
-        pattern = "[<]Delimiter[>]None[<]"
-        if isinstance(c, bytes):
-            xml_prefix, delimiter = xml_prefix.encode(), delimiter.encode()
-            pattern = pattern.encode()
-        if c.startswith(xml_prefix):
-            response._content = re.compile(pattern).sub(delimiter, c)
+def replace_in_xml_response(response, search: str, replace: str):
+    if response.status_code != 200 or not response._content:
+        return
+    c, xml_prefix = response._content, "<?xml"
+    if isinstance(c, bytes):
+        xml_prefix, search, replace = xml_prefix.encode(), search.encode(), replace.encode()
+    if c.startswith(xml_prefix):
+        response._content = re.compile(search).sub(replace, c)
+
+
+def fix_delimiter(response):
+    replace_in_xml_response(response, "<Delimiter>None<", "<Delimiter><")
+
+
+def fix_xml_preamble_newline(response):
+    # some tools (Serverless) require a newline after the "<?xml ...>\n" preamble line, e.g., for LocationConstraint
+    # this is required because upstream moto is generally collapsing all S3 XML responses:
+    # https://github.com/spulec/moto/blob/3718cde444b3e0117072c29b087237e1787c3a66/moto/core/responses.py#L102-L104
+    replace_in_xml_response(response, r"(<\?xml [^>]+>)<", r"\1\n<")
 
 
 def convert_to_chunked_encoding(method, path, response):
@@ -1484,7 +1494,8 @@ class ProxyListenerS3(PersistingProxyListener):
             fix_creation_date(method, path, response=response)
             ret304_on_etag(data, headers, response)
             append_aws_request_troubleshooting_headers(response)
-            fix_delimiter(data, headers, response)
+            fix_delimiter(response)
+            fix_xml_preamble_newline(response)
 
             if method == "PUT":
                 set_object_expiry(path, headers)
@@ -1540,7 +1551,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 # Note: make sure to return XML docs verbatim: https://github.com/localstack/localstack/issues/1037
                 if method != "GET" or not is_object_specific_request(path, headers):
                     response._content = re.sub(
-                        r"([^\?])>\n\s*<",
+                        r"([^?])>\n\s*<",
                         r"\1><",
                         response_content_str,
                         flags=re.MULTILINE,
