@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import ssl
 import time
@@ -1565,7 +1566,7 @@ class TestS3(unittest.TestCase):
         resp = self.s3_client.list_objects(Bucket=bucket_name, Marker="")
         self.assertEqual("", resp["Marker"])
 
-    def test_create_bucket_with_exsisting_name(self):
+    def test_create_bucket_with_existing_name(self):
         bucket_name = "bucket-%s" % short_uid()
         self.s3_client.create_bucket(
             Bucket=bucket_name,
@@ -2476,20 +2477,27 @@ class TestS3(unittest.TestCase):
         self.assertEqual(body, to_str(object["Body"].read()))
 
     def test_different_location_constraint(self):
-        bucket_1_name = "bucket-%s" % short_uid()
+        bucket_1_name = f"bucket-{short_uid()}"
         self.s3_client.create_bucket(Bucket=bucket_1_name)
         response = self.s3_client.get_bucket_location(Bucket=bucket_1_name)
         self.assertEqual(None, response["LocationConstraint"])
 
         region_2 = "us-east-2"
         client_2 = self._get_test_client(region_name=region_2)
-        bucket_2_name = "bucket-%s" % short_uid()
+        bucket_2_name = f"bucket-{short_uid()}"
         client_2.create_bucket(
             Bucket=bucket_2_name,
             CreateBucketConfiguration={"LocationConstraint": region_2},
         )
         response = client_2.get_bucket_location(Bucket=bucket_2_name)
         self.assertEqual(region_2, response["LocationConstraint"])
+
+        # make raw request, assert that newline is contained after XML preamble: <?xml ...>\n
+        url = f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_2_name}?location="
+        response = requests.get(url)
+        assert response.ok
+        content = to_str(response.content)
+        assert re.match(r"^<\?xml [^>]+>\n<.*", content, flags=re.MULTILINE)
 
         # clean up
         self.s3_client.delete_bucket(Bucket=bucket_1_name)
