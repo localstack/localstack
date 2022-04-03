@@ -60,7 +60,7 @@ class SchemaExtractor:
 
     @classmethod
     def get_key_schema(cls, table_name: str) -> Optional[List[Dict]]:
-        from localstack.services.dynamodb.dynamodb_listener import DynamoDBRegion
+        from localstack.services.dynamodb.provider import DynamoDBRegion
 
         table_definitions = DynamoDBRegion.get().table_definitions
         table_def = table_definitions.get(table_name)

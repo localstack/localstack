@@ -1,5 +1,5 @@
-from localstack.services.dynamodb.dynamodb_listener import ItemSet
 from localstack.services.dynamodb.provider import DynamoDBProvider
+from localstack.services.dynamodb.utils import ItemSet
 from localstack.utils.aws import aws_stack
 
 
