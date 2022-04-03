@@ -67,7 +67,7 @@ def get_stream_for_table(table_arn):
 def forward_events(records):
     kinesis = aws_stack.connect_to_service("kinesis")
     for record in records:
-        table_arn = record["eventSourceARN"]
+        table_arn = record.pop("eventSourceARN", "")
         stream = get_stream_for_table(table_arn)
         if stream:
             table_name = table_name_from_stream_arn(stream["StreamArn"])

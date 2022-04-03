@@ -3,13 +3,17 @@ from typing import Optional
 
 from localstack.services.dynamodb import dynamodb_listener
 from localstack.services.dynamodb.server import DynamodbServer, create_dynamodb_server
-from localstack.services.infra import log_startup_message, start_proxy_for_service
 from localstack.utils.aws import aws_stack
+from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
 # server singleton
 _server: Optional[DynamodbServer] = None
+
+
+def wait_for_dynamodb():
+    retry(check_dynamodb, sleep=0.4, retries=10)
 
 
 def check_dynamodb(expect_shutdown=False, print_error=False):
@@ -37,13 +41,6 @@ def start_dynamodb(port=None, asynchronous=True, update_listener=None):
 
     _server.start()
 
-    log_startup_message("DynamoDB")
-    start_proxy_for_service(
-        "dynamodb",
-        port,
-        backend_port=_server.port,
-        update_listener=update_listener,
-    )
     return _server
 
 
