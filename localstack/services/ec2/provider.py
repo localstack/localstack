@@ -58,29 +58,19 @@ class Ec2Provider(Ec2Api, ABC):
             for zone in zone_names:
                 zone_detail = backend.get_zone_by_name(zone)
                 if zone_detail:
-                    _zone_data = AvailabilityZone(
-                        State="available",
-                        Messages=[],
-                        RegionName=zone_detail.region_name,
-                        ZoneName=zone_detail.name,
-                        ZoneId=zone_detail.zone_id,
+                    availability_zones.append(
+                        AvailabilityZone(
+                            State="available",
+                            Messages=[],
+                            RegionName=zone_detail.region_name,
+                            ZoneName=zone_detail.name,
+                            ZoneId=zone_detail.zone_id,
+                        )
                     )
-                    availability_zones.append(_zone_data)
 
             return DescribeAvailabilityZonesResult(AvailabilityZones=availability_zones)
-        else:
-            all_zones_detail = backend.describe_availability_zones()
-            for zone_detail in all_zones_detail:
-                _zone_data = AvailabilityZone(
-                    State="available",
-                    Messages=[],
-                    RegionName=zone_detail.region_name,
-                    ZoneName=zone_detail.name,
-                    ZoneId=zone_detail.zone_id,
-                )
-                availability_zones.append(_zone_data)
 
-            return DescribeAvailabilityZonesResult(AvailabilityZones=availability_zones)
+        return call_moto(context)
 
     @handler("DescribeReservedInstancesOfferings", expand=False)
     def describe_reserved_instances_offerings(
