@@ -5,6 +5,8 @@ import re
 import time
 from typing import Dict, List
 
+import requests
+
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.dynamodb import (
@@ -45,6 +47,8 @@ from localstack.aws.api.dynamodb import (
     ResourceArnString,
     ResourceInUseException,
     ResourceNotFoundException,
+    ScanInput,
+    ScanOutput,
     StreamArn,
     TableName,
     TagKeyList,
@@ -61,6 +65,7 @@ from localstack.aws.api.dynamodb import (
 )
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import LOCALHOST
+from localstack.services.dynamodb import dynamodb_starter
 from localstack.services.dynamodb.dynamodb_listener import (
     ACTION_PREFIX,
     READ_THROTTLED_ACTIONS,
@@ -73,7 +78,6 @@ from localstack.services.dynamodb.dynamodb_listener import (
     dynamodb_get_table_stream_specification,
     fix_headers_for_updated_response,
     get_updated_records,
-    handle_special_request,
     has_event_sources_or_streams_enabled,
     is_index_query_valid,
 )
@@ -91,7 +95,7 @@ from localstack.services.forwarder import (
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import event_publisher
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import select_attributes
 from localstack.utils.strings import long_uid, short_uid, to_str
@@ -110,7 +114,7 @@ class DynamoDBApiListener(AwsApiListener):
         )
 
     def forward_request(self, method, path, data, headers):
-        result = handle_special_request(method, path, data, headers)
+        result = self.provider.handle_special_request(method, path, data, headers)
         if result is not None:
             return result
 
@@ -160,11 +164,24 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def get_forward_url(self):
         """Return the URL of the backend DynamoDBLocal server to forward requests to"""
-        return f"http://{LOCALHOST}:{self.server.port}"
+        return f"http://{LOCALHOST}:{dynamodb_starter._server.port}"
 
     def on_before_start(self):
-        self.server = start_dynamodb()
+        start_dynamodb()
         wait_for_dynamodb()
+
+    def handle_special_request(self, method, path, data, headers):
+        if path.startswith("/shell") or method == "GET":
+            if path == "/shell":
+                headers = {"Refresh": f"0; url={config.service_url('dynamodb')}/shell/"}
+                return aws_responses.requests_response("", headers=headers)
+            if path.startswith("/shell"):
+                url = f"{self.get_forward_url()}{path}"
+                return requests.request(method=method, url=url, headers=headers, data=data)
+            return True
+
+        if method == "OPTIONS":
+            return 200
 
     @handler("CreateTable", expand=False)
     def create_table(
@@ -204,11 +221,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result["TableDescription"].pop("Tags", None)
         if tags:
             table_arn = result["TableDescription"]["TableArn"]
-            table_arn = re.sub(
-                "arn:aws:dynamodb:ddblocal:",
-                f"arn:aws:dynamodb:{aws_stack.get_region()}:",
-                table_arn,
-            )
+            table_arn = self.fix_table_arn(table_arn)
             DynamoDBRegion.TABLE_TAGS[table_arn] = {tag["Key"]: tag["Value"] for tag in tags}
 
         event_publisher.fire_event(
@@ -231,6 +244,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             payload={"n": event_publisher.get_hash(table_name)},
         )
         table_arn = result.get("TableDescription", {}).get("TableArn")
+        table_arn = self.fix_table_arn(table_arn)
         self.delete_all_event_source_mappings(table_arn)
         dynamodbstreams_api.delete_streams(table_arn)
         DynamoDBRegion.TABLE_TAGS.pop(table_arn, None)
@@ -437,6 +451,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result = self.forward_request(context)
         self.fix_consumed_capacity(query_input, result)
         return result
+
+    @handler("Scan", expand=False)
+    def scan(self, context: RequestContext, scan_input: ScanInput) -> ScanOutput:
+        return self.forward_request(context)
 
     @handler("BatchWriteItem", expand=False)
     def batch_write_item(
@@ -815,6 +833,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "ReadCapacityUnits": 2,
                 "WriteCapacityUnits": 3,
             }
+
+    def fix_table_arn(self, table_arn: str) -> str:
+        return re.sub(
+            "arn:aws:dynamodb:ddblocal:",
+            f"arn:aws:dynamodb:{aws_stack.get_region()}:",
+            table_arn,
+        )
 
     def prepare_transact_write_item_records(self, transact_items, existing_items):
         records = []

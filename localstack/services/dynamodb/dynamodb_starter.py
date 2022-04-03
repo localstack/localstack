@@ -1,7 +1,6 @@
 import logging
 from typing import Optional
 
-from localstack.services.dynamodb import dynamodb_listener
 from localstack.services.dynamodb.server import DynamodbServer, create_dynamodb_server
 from localstack.utils.aws import aws_stack
 from localstack.utils.sync import retry
@@ -52,4 +51,5 @@ def restart_dynamodb():
         _server = None
 
     LOG.debug("Restarting DynamoDB process ...")
-    start_dynamodb(asynchronous=True, update_listener=dynamodb_listener.UPDATE_DYNAMODB)
+    start_dynamodb()
+    wait_for_dynamodb()

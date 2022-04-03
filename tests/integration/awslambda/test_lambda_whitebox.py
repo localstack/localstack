@@ -133,7 +133,7 @@ class TestLambdaFallbackUrl(unittest.TestCase):
         ddb_client = aws_stack.create_external_boto_client("dynamodb")
 
         db_table = "lambda-records"
-        config.LAMBDA_FALLBACK_URL = "dynamodb://%s" % db_table
+        config.LAMBDA_FALLBACK_URL = f"dynamodb://{db_table}"
 
         lambda_client.invoke(
             FunctionName="non-existing-lambda",
@@ -141,8 +141,11 @@ class TestLambdaFallbackUrl(unittest.TestCase):
             InvocationType="RequestResponse",
         )
 
-        result = run_safe(ddb_client.scan, TableName=db_table)
-        self.assertEqual("non-existing-lambda", result["Items"][0]["function_name"]["S"])
+        def check_item():
+            result = run_safe(ddb_client.scan, TableName=db_table)
+            self.assertEqual("non-existing-lambda", result["Items"][0]["function_name"]["S"])
+
+        retry(check_item)
 
 
 class TestDockerExecutors(unittest.TestCase):
