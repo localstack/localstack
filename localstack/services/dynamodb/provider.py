@@ -80,8 +80,8 @@ from localstack.services.dynamodb.utils import (
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.services.forwarder import (
     ExternalProcessFallbackDispatcher,
-    ServiceRequestType,
-    request_forwarder,
+    ServiceRequestOrMapping,
+    get_request_forwarder_http,
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
@@ -332,9 +332,11 @@ class DynamoDBApiListener(AwsApiListener):
 
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def __init__(self):
-        self.request_forwarder = request_forwarder(self.get_forward_url)
+        self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
 
-    def forward_request(self, context: RequestContext, service_request: ServiceRequestType = None):
+    def forward_request(
+        self, context: RequestContext, service_request: ServiceRequestOrMapping = None
+    ):
         # note: modifying headers in-place here before forwarding the request
         self.prepare_request_headers(context.request.headers)
         return self.request_forwarder(context, service_request=service_request)
