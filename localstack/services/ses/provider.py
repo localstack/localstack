@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from abc import ABC
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import Any, Dict, Optional
 
 from moto.ses import ses_backend
@@ -71,8 +71,14 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
 
     EMAILS[id] = email
 
+    def _serialize(obj):
+        """JSON serializer for timestamps."""
+        if isinstance(obj, (datetime, date, time)):
+            return obj.isoformat()
+        return obj.__dict__
+
     with open(path, "w") as f:
-        f.write(json.dumps(email))
+        f.write(json.dumps(email, default=_serialize))
 
     LOGGER.debug(f"Email saved at: {path}")
 
