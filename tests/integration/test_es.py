@@ -152,3 +152,34 @@ class TestElasticsearchProvider:
         assert "Endpoint" in status
         endpoint = status["Endpoint"]
         assert endpoint.endswith(f"/{domain_name}")
+
+    def test_update_domain_config(self, es_client, opensearch_domain):
+        initial_response = es_client.describe_elasticsearch_domain_config(
+            DomainName=opensearch_domain
+        )
+        update_response = es_client.update_elasticsearch_domain_config(
+            DomainName=opensearch_domain,
+            ElasticsearchClusterConfig={"InstanceType": "r4.16xlarge.elasticsearch"},
+        )
+        final_response = es_client.describe_elasticsearch_domain_config(
+            DomainName=opensearch_domain
+        )
+
+        assert (
+            initial_response["DomainConfig"]["ElasticsearchClusterConfig"]["Options"][
+                "InstanceType"
+            ]
+            != update_response["DomainConfig"]["ElasticsearchClusterConfig"]["Options"][
+                "InstanceType"
+            ]
+        )
+        assert (
+            update_response["DomainConfig"]["ElasticsearchClusterConfig"]["Options"]["InstanceType"]
+            == "r4.16xlarge.elasticsearch"
+        )
+        assert (
+            update_response["DomainConfig"]["ElasticsearchClusterConfig"]["Options"]["InstanceType"]
+            == final_response["DomainConfig"]["ElasticsearchClusterConfig"]["Options"][
+                "InstanceType"
+            ]
+        )

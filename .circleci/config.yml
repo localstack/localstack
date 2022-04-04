@@ -167,6 +167,33 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-lambda-provider:
+    machine:
+      image: ubuntu-2004:202107-02
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Test ASF Lambda provider
+          environment:
+            DEBUG: 1
+            PROVIDER_OVERRIDE_LAMBDA: "asf"
+            TEST_PATH: "tests/integration/awslambda/test_lambda_api.py"
+            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/lambda_asf.xml -o junit_suite_name='lambda_asf'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
   itest-bootstrap:
     machine:
       image: ubuntu-2004:202107-02
@@ -397,6 +424,9 @@ workflows:
       - itest-sqs-provider:
           requires:
             - preflight
+      - itest-lambda-provider:
+          requires:
+            - preflight
       - itest-bootstrap:
           requires:
             - preflight
@@ -437,6 +467,7 @@ workflows:
           requires:
             - itest-lambda-docker
             - itest-sqs-provider
+            - itest-lambda-provider
             - itest-bootstrap
             - docker-test-amd64
             - docker-test-arm64
@@ -448,6 +479,7 @@ workflows:
           requires:
             - itest-lambda-docker
             - itest-sqs-provider
+            - itest-lambda-provider
             - itest-bootstrap
             - docker-test-amd64
             - docker-test-arm64

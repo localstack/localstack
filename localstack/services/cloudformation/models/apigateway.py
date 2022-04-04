@@ -480,6 +480,11 @@ class GatewayUsagePlan(GenericBaseModel):
                     "throttle": lambda_keys_to_lower("Throttle"),
                     "tags": params_list_to_dict("Tags"),
                 },
+                "types": {
+                    "limit": int,
+                    "burstLimit": int,
+                    "rateLimit": float,
+                },
             }
         }
 

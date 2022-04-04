@@ -140,7 +140,7 @@ def kinesis():
 
 @aws_provider()
 def kms():
-    if config.KMS_PROVIDER == "kms-local":
+    if config.KMS_PROVIDER == "local-kms":
         from localstack.services.kms import kms_starter
 
         return Service("kms", start=kms_starter.start_kms_local)
@@ -162,6 +162,16 @@ def awslambda():
         stop=lambda_starter.stop_lambda,
         check=lambda_starter.check_lambda,
     )
+
+
+@aws_provider(api="lambda", name="asf")
+def awslambda_asf():
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.awslambda.provider import LambdaProvider
+
+    provider = LambdaProvider()
+
+    return Service("lambda", listener=AwsApiListener("lambda", provider), lifecycle_hook=provider)
 
 
 @aws_provider()

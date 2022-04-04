@@ -97,7 +97,7 @@ class Server(abc.ABC):
         except Exception:
             return False
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """
         Attempts to shut down the server by calling the internal do_shutdown method. It only does this if the server
         has been started. Repeated calls to this function have no effect.

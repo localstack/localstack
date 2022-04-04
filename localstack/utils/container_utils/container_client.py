@@ -553,6 +553,32 @@ class ContainerClient(metaclass=ABCMeta):
         """
         pass
 
+    def create_container_from_config(self, container_config: ContainerConfiguration) -> str:
+        """
+        Similar to create_container, but allows passing the whole ContainerConfiguration
+        :param container_config: ContainerConfiguration how to start the container
+        :return: Container ID
+        """
+        return self.create_container(
+            image_name=container_config.image_name,
+            name=container_config.name,
+            entrypoint=container_config.entrypoint,
+            remove=container_config.remove,
+            interactive=container_config.interactive,
+            tty=container_config.tty,
+            detach=container_config.detach,
+            command=container_config.command,
+            mount_volumes=container_config.volumes,
+            ports=container_config.ports,
+            env_vars=container_config.env_vars,
+            user=container_config.user,
+            cap_add=container_config.cap_add,
+            network=container_config.network,
+            dns=container_config.dns,
+            additional_flags=container_config.additional_flags,
+            workdir=container_config.workdir,
+        )
+
     @abstractmethod
     def create_container(
         self,

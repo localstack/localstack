@@ -630,19 +630,6 @@ def append_metadata_headers(method, query_map, headers):
                 headers[key] = value[0]
 
 
-def fix_location_constraint(response):
-    """Make sure we return a valid non-empty LocationConstraint, as this otherwise breaks Serverless."""
-    try:
-        content = to_str(response.content or "") or ""
-    except Exception:
-        content = ""
-    if "LocationConstraint" in content:
-        pattern = r"<LocationConstraint([^>]*)>\s*</LocationConstraint>"
-        replace = r"<LocationConstraint\1>%s</LocationConstraint>" % aws_stack.get_region()
-        response._content = re.sub(pattern, replace, content)
-        remove_xml_preamble(response)
-
-
 def fix_range_content_type(bucket_name, path, headers, response):
     # Fix content type for Range requests - https://github.com/localstack/localstack/issues/1259
     if "Range" not in headers:
@@ -721,15 +708,25 @@ def fix_creation_date(method, path, response):
     )
 
 
-def fix_delimiter(data, headers, response):
-    if response.status_code == 200 and response._content:
-        c, xml_prefix, delimiter = response._content, "<?xml", "<Delimiter><"
-        pattern = "[<]Delimiter[>]None[<]"
-        if isinstance(c, bytes):
-            xml_prefix, delimiter = xml_prefix.encode(), delimiter.encode()
-            pattern = pattern.encode()
-        if c.startswith(xml_prefix):
-            response._content = re.compile(pattern).sub(delimiter, c)
+def replace_in_xml_response(response, search: str, replace: str):
+    if response.status_code != 200 or not response._content:
+        return
+    c, xml_prefix = response._content, "<?xml"
+    if isinstance(c, bytes):
+        xml_prefix, search, replace = xml_prefix.encode(), search.encode(), replace.encode()
+    if c.startswith(xml_prefix):
+        response._content = re.compile(search).sub(replace, c)
+
+
+def fix_delimiter(response):
+    replace_in_xml_response(response, "<Delimiter>None<", "<Delimiter><")
+
+
+def fix_xml_preamble_newline(response):
+    # some tools (Serverless) require a newline after the "<?xml ...>\n" preamble line, e.g., for LocationConstraint
+    # this is required because upstream moto is generally collapsing all S3 XML responses:
+    # https://github.com/spulec/moto/blob/3718cde444b3e0117072c29b087237e1787c3a66/moto/core/responses.py#L102-L104
+    replace_in_xml_response(response, r"(<\?xml [^>]+>)<", r"\1\n<")
 
 
 def convert_to_chunked_encoding(method, path, response):
@@ -1491,14 +1488,14 @@ class ProxyListenerS3(PersistingProxyListener):
             )
             append_last_modified_headers(response=response)
             append_list_objects_marker(method, path, data, response)
-            fix_location_constraint(response)
             fix_range_content_type(bucket_name, path, headers, response)
             fix_delete_objects_response(bucket_name, method, parsed, data, headers, response)
             fix_metadata_key_underscores(response=response)
             fix_creation_date(method, path, response=response)
             ret304_on_etag(data, headers, response)
             append_aws_request_troubleshooting_headers(response)
-            fix_delimiter(data, headers, response)
+            fix_delimiter(response)
+            fix_xml_preamble_newline(response)
 
             if method == "PUT":
                 set_object_expiry(path, headers)
@@ -1554,7 +1551,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 # Note: make sure to return XML docs verbatim: https://github.com/localstack/localstack/issues/1037
                 if method != "GET" or not is_object_specific_request(path, headers):
                     response._content = re.sub(
-                        r"([^\?])>\n\s*<",
+                        r"([^?])>\n\s*<",
                         r"\1><",
                         response_content_str,
                         flags=re.MULTILINE,

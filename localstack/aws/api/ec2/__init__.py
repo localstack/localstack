@@ -961,6 +961,11 @@ class InstanceAttributeName(str):
     enclaveOptions = "enclaveOptions"
 
 
+class InstanceAutoRecoveryState(str):
+    disabled = "disabled"
+    default = "default"
+
+
 class InstanceEventWindowState(str):
     creating = "creating"
     deleting = "deleting"
@@ -1646,6 +1651,11 @@ class Ipv6SupportValue(str):
 class KeyType(str):
     rsa = "rsa"
     ed25519 = "ed25519"
+
+
+class LaunchTemplateAutoRecoveryState(str):
+    default = "default"
+    disabled = "disabled"
 
 
 class LaunchTemplateErrorCode(str):
@@ -5282,6 +5292,10 @@ class CreateKeyPairRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
 
 
+class LaunchTemplateInstanceMaintenanceOptionsRequest(TypedDict, total=False):
+    AutoRecovery: Optional[LaunchTemplateAutoRecoveryState]
+
+
 class LaunchTemplatePrivateDnsNameOptionsRequest(TypedDict, total=False):
     HostnameType: Optional[HostnameType]
     EnableResourceNameDnsARecord: Optional[Boolean]
@@ -5494,6 +5508,7 @@ class RequestLaunchTemplateData(TypedDict, total=False):
     EnclaveOptions: Optional[LaunchTemplateEnclaveOptionsRequest]
     InstanceRequirements: Optional[InstanceRequirementsRequest]
     PrivateDnsNameOptions: Optional[LaunchTemplatePrivateDnsNameOptionsRequest]
+    MaintenanceOptions: Optional[LaunchTemplateInstanceMaintenanceOptionsRequest]
 
 
 class CreateLaunchTemplateRequest(ServiceRequest):
@@ -5540,6 +5555,10 @@ class CreateLaunchTemplateVersionRequest(ServiceRequest):
     SourceVersion: Optional[String]
     VersionDescription: Optional[VersionDescription]
     LaunchTemplateData: RequestLaunchTemplateData
+
+
+class LaunchTemplateInstanceMaintenanceOptions(TypedDict, total=False):
+    AutoRecovery: Optional[LaunchTemplateAutoRecoveryState]
 
 
 class LaunchTemplatePrivateDnsNameOptions(TypedDict, total=False):
@@ -5745,6 +5764,7 @@ class ResponseLaunchTemplateData(TypedDict, total=False):
     EnclaveOptions: Optional[LaunchTemplateEnclaveOptions]
     InstanceRequirements: Optional[InstanceRequirements]
     PrivateDnsNameOptions: Optional[LaunchTemplatePrivateDnsNameOptions]
+    MaintenanceOptions: Optional[LaunchTemplateInstanceMaintenanceOptions]
 
 
 class LaunchTemplateVersion(TypedDict, total=False):
@@ -9370,6 +9390,10 @@ class DescribeInstancesRequest(ServiceRequest):
     NextToken: Optional[String]
 
 
+class InstanceMaintenanceOptions(TypedDict, total=False):
+    AutoRecovery: Optional[InstanceAutoRecoveryState]
+
+
 class PrivateDnsNameOptionsResponse(TypedDict, total=False):
     HostnameType: Optional[HostnameType]
     EnableResourceNameDnsARecord: Optional[Boolean]
@@ -9559,6 +9583,7 @@ class Instance(TypedDict, total=False):
     UsageOperationUpdateTime: Optional[MillisecondDateTime]
     PrivateDnsNameOptions: Optional[PrivateDnsNameOptionsResponse]
     Ipv6Address: Optional[String]
+    MaintenanceOptions: Optional[InstanceMaintenanceOptions]
 
 
 InstanceList = List[Instance]
@@ -13275,6 +13300,10 @@ InstanceCreditSpecificationListRequest = List[InstanceCreditSpecificationRequest
 InstanceIdSet = List[InstanceId]
 
 
+class InstanceMaintenanceOptionsRequest(TypedDict, total=False):
+    AutoRecovery: Optional[InstanceAutoRecoveryState]
+
+
 class SpotMarketOptions(TypedDict, total=False):
     MaxPrice: Optional[String]
     SpotInstanceType: Optional[SpotInstanceType]
@@ -13643,6 +13672,17 @@ class ModifyInstanceEventWindowRequest(ServiceRequest):
 
 class ModifyInstanceEventWindowResult(TypedDict, total=False):
     InstanceEventWindow: Optional[InstanceEventWindow]
+
+
+class ModifyInstanceMaintenanceOptionsRequest(ServiceRequest):
+    InstanceId: InstanceId
+    AutoRecovery: Optional[InstanceAutoRecoveryState]
+    DryRun: Optional[Boolean]
+
+
+class ModifyInstanceMaintenanceOptionsResult(TypedDict, total=False):
+    InstanceId: Optional[String]
+    AutoRecovery: Optional[InstanceAutoRecoveryState]
 
 
 class ModifyInstanceMetadataOptionsRequest(ServiceRequest):
@@ -14808,6 +14848,7 @@ class RunInstancesRequest(ServiceRequest):
     MetadataOptions: Optional[InstanceMetadataOptionsRequest]
     EnclaveOptions: Optional[EnclaveOptionsRequest]
     PrivateDnsNameOptions: Optional[PrivateDnsNameOptionsRequest]
+    MaintenanceOptions: Optional[InstanceMaintenanceOptionsRequest]
 
 
 ScheduledInstancesSecurityGroupIdSet = List[SecurityGroupId]
@@ -19706,6 +19747,16 @@ class Ec2Api:
     ) -> ModifyInstanceEventWindowResult:
         raise NotImplementedError
 
+    @handler("ModifyInstanceMaintenanceOptions")
+    def modify_instance_maintenance_options(
+        self,
+        context: RequestContext,
+        instance_id: InstanceId,
+        auto_recovery: InstanceAutoRecoveryState = None,
+        dry_run: Boolean = None,
+    ) -> ModifyInstanceMaintenanceOptionsResult:
+        raise NotImplementedError
+
     @handler("ModifyInstanceMetadataOptions")
     def modify_instance_metadata_options(
         self,
@@ -20688,6 +20739,7 @@ class Ec2Api:
         metadata_options: InstanceMetadataOptionsRequest = None,
         enclave_options: EnclaveOptionsRequest = None,
         private_dns_name_options: PrivateDnsNameOptionsRequest = None,
+        maintenance_options: InstanceMaintenanceOptionsRequest = None,
     ) -> Reservation:
         raise NotImplementedError
 

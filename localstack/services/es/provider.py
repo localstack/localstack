@@ -1,10 +1,10 @@
 from contextlib import contextmanager
-from typing import Optional, cast
+from typing import Dict, Optional, cast
 
 from botocore.exceptions import ClientError
 
 from localstack import constants
-from localstack.aws.api import RequestContext
+from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.es import (
     ARN,
     AccessDeniedException,
@@ -57,6 +57,8 @@ from localstack.aws.api.es import (
     SnapshotOptions,
     StringList,
     TagList,
+    UpdateElasticsearchDomainConfigRequest,
+    UpdateElasticsearchDomainConfigResponse,
     ValidationException,
     VPCOptions,
 )
@@ -300,6 +302,26 @@ class EsProvider(EsApi):
 
         status = _domainstatus_from_opensearch(opensearch_status)
         return DescribeElasticsearchDomainResponse(DomainStatus=status)
+
+    @handler("UpdateElasticsearchDomainConfig", expand=False)
+    def update_elasticsearch_domain_config(
+        self, context: RequestContext, payload: UpdateElasticsearchDomainConfigRequest
+    ) -> UpdateElasticsearchDomainConfigResponse:
+        opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
+
+        payload: Dict
+        if "ElasticsearchClusterConfig" in payload:
+            payload["ClusterConfig"] = payload["ElasticsearchClusterConfig"]
+            payload["ClusterConfig"]["InstanceType"] = _instancetype_to_opensearch(
+                payload["ClusterConfig"]["InstanceType"]
+            )
+            payload.pop("ElasticsearchClusterConfig")
+
+        with exception_mapper():
+            opensearch_config = opensearch_client.update_domain_config(**payload)["DomainConfig"]
+
+        config = _domainconfig_from_opensearch(opensearch_config)
+        return UpdateElasticsearchDomainConfigResponse(DomainConfig=config)
 
     def describe_elasticsearch_domains(
         self, context: RequestContext, domain_names: DomainNameList

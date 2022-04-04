@@ -3,6 +3,8 @@ import logging
 import os
 import tarfile
 import zipfile
+from subprocess import Popen
+from typing import Optional, Union
 
 from .run import run
 from .strings import truncate
@@ -21,7 +23,7 @@ def get_unzipped_size(path: str):
         return sum(f.file_size for f in zip_ref.infolist())
 
 
-def unzip(path, target_dir, overwrite=True):
+def unzip(path: str, target_dir: str, overwrite: bool = True) -> Optional[Union[str, Popen]]:
     from localstack.utils.platform import is_debian
 
     is_in_debian = is_debian()
