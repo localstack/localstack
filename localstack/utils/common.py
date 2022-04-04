@@ -1,7 +1,7 @@
 from localstack import config
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
-from localstack.utils.archives import is_zip_file, untar, unzip  # noqa
+from localstack.utils.archives import get_unzipped_size, is_zip_file, untar, unzip  # noqa
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.collections import (  # noqa
