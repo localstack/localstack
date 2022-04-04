@@ -1697,7 +1697,7 @@ def remove_permission(function, statement):
         (i for i, item in enumerate(policy["Statement"]) if item["Sid"] == statement), None
     )
     if statement_index is None:
-        return not_found_error("Statement %s is not found in resource policy." % statement)
+        return not_found_error(f"Statement {statement} is not found in resource policy.")
     iam_client.delete_policy(PolicyArn=policy["PolicyArn"])
 
     policy["Statement"].pop(statement_index)
