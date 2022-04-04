@@ -147,7 +147,8 @@ class EventForwarder:
 
             # forward to lambda and ddb_streams
             forward_records = cls.prepare_records_to_forward_to_ddb_stream(records)
-            cls.forward_to_ddb_stream(forward_records)
+            records_to_ddb = copy.deepcopy(forward_records)
+            cls.forward_to_ddb_stream(records_to_ddb)
             # lambda receives the same records as the ddb streams
             cls.forward_to_lambda(forward_records)
 
@@ -158,7 +159,10 @@ class EventForwarder:
     @staticmethod
     def forward_to_lambda(records):
         for record in records:
-            sources = lambda_api.get_event_sources(source_arn=record.get("eventSourceARN"))
+            event_source_arn = record.get("eventSourceARN")
+            if not event_source_arn:
+                continue
+            sources = lambda_api.get_event_sources(source_arn=event_source_arn)
             event = {"Records": [record]}
             for src in sources:
                 if src.get("State") != "Enabled":
@@ -179,24 +183,25 @@ class EventForwarder:
         kinesis = aws_stack.connect_to_service("kinesis")
         table_definitions = DynamoDBRegion.get().table_definitions
         for record in records:
-            if record.get("eventSourceARN"):
-                table_name = record["eventSourceARN"].split("/", 1)[-1]
-                table_def = table_definitions.get(table_name) or {}
-                if table_def.get("KinesisDataStreamDestinationStatus") == "ACTIVE":
-                    stream_name = table_def["KinesisDataStreamDestinations"][-1]["StreamArn"].split(
-                        "/", 1
-                    )[-1]
-                    record["tableName"] = table_name
-                    record.pop("eventSourceARN", None)
-                    record["dynamodb"].pop("StreamViewType", None)
-                    partition_key = list(
-                        filter(lambda key: key["KeyType"] == "HASH", table_def["KeySchema"])
-                    )[0]["AttributeName"]
-                    kinesis.put_record(
-                        StreamName=stream_name,
-                        Data=json.dumps(record),
-                        PartitionKey=partition_key,
-                    )
+            event_source_arn = record.get("eventSourceARN")
+            if not event_source_arn:
+                continue
+            table_name = event_source_arn.split("/", 1)[-1]
+            table_def = table_definitions.get(table_name) or {}
+            if table_def.get("KinesisDataStreamDestinationStatus") != "ACTIVE":
+                continue
+            stream_arn = table_def["KinesisDataStreamDestinations"][-1]["StreamArn"]
+            stream_name = stream_arn.split("/", 1)[-1]
+            record["tableName"] = table_name
+            record.pop("eventSourceARN", None)
+            record["dynamodb"].pop("StreamViewType", None)
+            hash_keys = list(filter(lambda key: key["KeyType"] == "HASH", table_def["KeySchema"]))
+            partition_key = hash_keys[0]["AttributeName"]
+            kinesis.put_record(
+                StreamName=stream_name,
+                Data=json.dumps(record),
+                PartitionKey=partition_key,
+            )
 
     @classmethod
     def prepare_records_to_forward_to_ddb_stream(cls, records):
@@ -204,22 +209,25 @@ class EventForwarder:
         # When an item in the table is inserted, updated or deleted
         for record in records:
             record.pop("eventID", None)
-            if record["dynamodb"].get("StreamViewType"):
-                if "SequenceNumber" not in record["dynamodb"]:
-                    record["dynamodb"]["SequenceNumber"] = str(
-                        dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER
-                    )
-                    dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER += 1
-                # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
-                if record["dynamodb"]["StreamViewType"] == "KEYS_ONLY":
-                    record["dynamodb"].pop("OldImage", None)
-                    record["dynamodb"].pop("NewImage", None)
-                # NEW_IMAGE - The entire item, as it appears after it was modified, is written to the stream
-                elif record["dynamodb"]["StreamViewType"] == "NEW_IMAGE":
-                    record["dynamodb"].pop("OldImage", None)
-                # OLD_IMAGE - The entire item, as it appeared before it was modified, is written to the stream
-                elif record["dynamodb"]["StreamViewType"] == "OLD_IMAGE":
-                    record["dynamodb"].pop("NewImage", None)
+            ddb_record = record["dynamodb"]
+            stream_type = ddb_record.get("StreamViewType")
+            if not stream_type:
+                continue
+            if "SequenceNumber" not in ddb_record:
+                ddb_record["SequenceNumber"] = str(
+                    dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER
+                )
+                dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER += 1
+            # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
+            if stream_type == "KEYS_ONLY":
+                ddb_record.pop("OldImage", None)
+                ddb_record.pop("NewImage", None)
+            # NEW_IMAGE - The entire item, as it appears after it was modified, is written to the stream
+            elif stream_type == "NEW_IMAGE":
+                ddb_record.pop("OldImage", None)
+            # OLD_IMAGE - The entire item, as it appeared before it was modified, is written to the stream
+            elif stream_type == "OLD_IMAGE":
+                ddb_record.pop("NewImage", None)
         return records
 
     @classmethod

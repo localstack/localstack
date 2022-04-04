@@ -192,6 +192,9 @@ class IntegrationTest(unittest.TestCase):
 
         # subscribe to inbound Kinesis stream
         def process_records(records, shard_id):
+            records = [
+                json.loads(base64.b64decode(r["data"])) if r.get("data") else r for r in records
+            ]
             events.extend(records)
 
         # start the KCL client process in the background
@@ -267,18 +270,18 @@ class IntegrationTest(unittest.TestCase):
         LOGGER.info("Putting %s items to table...", num_events_ddb)
         table = dynamodb.Table(table_name)
         for i in range(0, num_put_new_items):
-            table.put_item(Item={PARTITION_KEY: "testId%s" % i, "data": "foobar123"})
+            table.put_item(Item={PARTITION_KEY: f"testId{i}", "data": "foobar123"})
         # Put items with an already existing ID (fix https://github.com/localstack/localstack/issues/522)
         for i in range(0, num_put_existing_items):
-            table.put_item(Item={PARTITION_KEY: "testId%s" % i, "data": "foobar123_put_existing"})
+            table.put_item(Item={PARTITION_KEY: f"testId{i}", "data": "foobar_put_existing"})
 
         # batch write some items containing non-ASCII characters
         dynamodb.batch_write_item(
             RequestItems={
                 table_name: [
-                    {"PutRequest": {"Item": {PARTITION_KEY: short_uid(), "data": "foobar123 ✓"}}},
-                    {"PutRequest": {"Item": {PARTITION_KEY: short_uid(), "data": "foobar123 £"}}},
-                    {"PutRequest": {"Item": {PARTITION_KEY: short_uid(), "data": "foobar123 ¢"}}},
+                    {"PutRequest": {"Item": {PARTITION_KEY: short_uid(), "data": "foobaz123 ✓"}}},
+                    {"PutRequest": {"Item": {PARTITION_KEY: short_uid(), "data": "foobaz123 £"}}},
+                    {"PutRequest": {"Item": {PARTITION_KEY: short_uid(), "data": "foobaz123 ¢"}}},
                 ]
             }
         )
@@ -286,8 +289,8 @@ class IntegrationTest(unittest.TestCase):
         for i in range(0, num_updates_ddb):
             dynamodb_service.update_item(
                 TableName=table_name,
-                Key={PARTITION_KEY: {"S": "testId%s" % i}},
-                AttributeUpdates={"data": {"Action": "PUT", "Value": {"S": "foobar123_updated"}}},
+                Key={PARTITION_KEY: {"S": f"testId{i}"}},
+                AttributeUpdates={"data": {"Action": "PUT", "Value": {"S": "foo_updated"}}},
             )
 
         # put items to stream
@@ -298,8 +301,7 @@ class IntegrationTest(unittest.TestCase):
         )
         kinesis.put_records(
             Records=[
-                {"Data": "{}", "PartitionKey": "testId%s" % i}
-                for i in range(0, num_kinesis_records)
+                {"Data": "{}", "PartitionKey": f"testId{i}"} for i in range(0, num_kinesis_records)
             ],
             StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME,
         )
@@ -325,7 +327,7 @@ class IntegrationTest(unittest.TestCase):
             sns.publish(
                 TopicArn=response["TopicArn"],
                 Subject="test_subject",
-                Message="test message %s" % i,
+                Message=f"test message {i}",
             )
 
         # get latest records
@@ -353,10 +355,9 @@ class IntegrationTest(unittest.TestCase):
                 )
                 LOGGER.warning(msg)
             self.assertEqual(num_events, len(events))
-            event_items = [json.loads(base64.b64decode(e["data"])) for e in events]
             # make sure the we have the right amount of INSERT/MODIFY event types
-            inserts = [e for e in event_items if e.get("__action_type") == "INSERT"]
-            modifies = [e for e in event_items if e.get("__action_type") == "MODIFY"]
+            inserts = [e for e in events if e.get("__action_type") == "INSERT"]
+            modifies = [e for e in events if e.get("__action_type") == "MODIFY"]
             self.assertEqual(num_put_new_items + num_batch_items, len(inserts))
             self.assertEqual(num_put_existing_items + num_updates_ddb, len(modifies))
 
