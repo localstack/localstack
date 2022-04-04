@@ -40,6 +40,9 @@ def get_cluster_health_status(url: str) -> Optional[str]:
     Queries the health endpoint of OpenSearch/Elasticsearch and returns either the status ('green', 'yellow',
     ...) or None if the response returned a non-200 response.
     """
+    if not config.is_emulation_mode_full():
+        return "mocked"
+
     resp = requests.get(url + "/_cluster/health")
 
     if resp and resp.ok:
@@ -155,6 +158,22 @@ class OpensearchCluster(Server):
     @property
     def os_user(self):
         return constants.OS_USER_OPENSEARCH
+
+    def start(self) -> bool:
+        if not config.is_emulation_mode_full():
+            return False
+        return super(OpensearchCluster, self).start()
+
+    def is_up(self) -> bool:
+        if not config.is_emulation_mode_full():
+            return True
+        return super(OpensearchCluster, self).is_up()
+
+    def shutdown(self) -> None:
+        if not config.is_emulation_mode_full():
+            self._stopped.set()
+            return
+        return super(OpensearchCluster, self).shutdown()
 
     def health(self) -> Optional[str]:
         return get_cluster_health_status(self.url)

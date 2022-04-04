@@ -21,6 +21,7 @@ from localstack.constants import (
     LOCALHOST,
     LOCALHOST_IP,
     LOG_LEVELS,
+    S3_VIRTUAL_HOSTNAME,
     TRACE_LOG_LEVELS,
     TRUE_STRINGS,
 )
@@ -302,10 +303,10 @@ DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
 # whether to enable debugpy
 DEVELOP = is_env_true("DEVELOP")
 
-# PORT FOR DEBUGGER
+# port for debugger
 DEVELOP_PORT = int(os.environ.get("DEVELOP_PORT", "").strip() or DEFAULT_DEVELOP_PORT)
 
-# whether to make debugpy wait for a debbuger client
+# whether to make debugpy wait for a debugger client
 WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 
 # whether to use SSL encryption for the services
@@ -322,17 +323,13 @@ TF_COMPAT_MODE = is_env_true("TF_COMPAT_MODE")
 # default encoding used to convert strings to byte arrays (mainly for Python 3 compatibility)
 DEFAULT_ENCODING = "utf-8"
 
-# path to local Docker UNIX domain socket
-DOCKER_SOCK = os.environ.get("DOCKER_SOCK", "").strip() or "/var/run/docker.sock"
+# level of emulation - "full" (default) or "mock" (light-weight mode only). TODO: potentially enable per-service
+EMULATION_MODE = os.environ.get("EMULATION_MODE", "").strip() or "full"
 
-# additional flags to pass to "docker run" when starting the stack in Docker
-DOCKER_FLAGS = os.environ.get("DOCKER_FLAGS", "").strip()
 
-# command used to run Docker containers (e.g., set to "sudo docker" to run as sudo)
-DOCKER_CMD = os.environ.get("DOCKER_CMD", "").strip() or "docker"
+def is_emulation_mode_full():
+    return EMULATION_MODE == "full"
 
-# use the command line docker client instead of the new sdk version, might get removed in the future
-LEGACY_DOCKER_CLIENT = is_env_true("LEGACY_DOCKER_CLIENT")
 
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
@@ -345,9 +342,6 @@ EDGE_PORT = int(os.environ.get("EDGE_PORT") or 0) or DEFAULT_PORT_EDGE
 EDGE_PORT_HTTP = int(os.environ.get("EDGE_PORT_HTTP") or 0)
 # optional target URL to forward all edge requests to
 EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
-
-# IP of the docker bridge used to enable access between containers
-DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
 # whether to enable API-based updates of configuration variables at runtime
 ENABLE_CONFIG_UPDATES = is_env_true("ENABLE_CONFIG_UPDATES")
@@ -401,7 +395,7 @@ FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
 MOCK_UNIMPLEMENTED = is_env_true("MOCK_UNIMPLEMENTED")
 
 # set variables no_proxy, i.e., run internal service calls directly
-no_proxy = ",".join([LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]"])
+no_proxy = ",".join([LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]", S3_VIRTUAL_HOSTNAME])
 if os.environ.get("no_proxy"):
     os.environ["no_proxy"] += "," + no_proxy
 elif os.environ.get("NO_PROXY"):
@@ -409,8 +403,25 @@ elif os.environ.get("NO_PROXY"):
 else:
     os.environ["no_proxy"] = no_proxy
 
-# additional CLI commands, can be set by plugins
-CLI_COMMANDS = {}
+
+# -----
+# DOCKER CONFIGS BELOW
+# -----
+
+# path to local Docker UNIX domain socket
+DOCKER_SOCK = os.environ.get("DOCKER_SOCK", "").strip() or "/var/run/docker.sock"
+
+# additional flags to pass to "docker run" when starting the stack in Docker
+DOCKER_FLAGS = os.environ.get("DOCKER_FLAGS", "").strip()
+
+# command used to run Docker containers (e.g., set to "sudo docker" to run as sudo)
+DOCKER_CMD = os.environ.get("DOCKER_CMD", "").strip() or "docker"
+
+# IP of the docker bridge used to enable access between containers
+DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
+
+# use the command line docker client instead of the new sdk version, might get removed in the future
+LEGACY_DOCKER_CLIENT = is_env_true("LEGACY_DOCKER_CLIENT")
 
 # determine IP of Docker bridge
 if not DOCKER_BRIDGE_IP:
