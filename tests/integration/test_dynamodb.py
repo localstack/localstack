@@ -271,15 +271,17 @@ class TestDynamoDB:
             ],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             Tags=TEST_DDB_TAGS,
-            GlobalSecondaryIndexes=[{
-                "IndexName": "field_a_index",
-                "KeySchema": [{"AttributeName": "field_a", "KeyType": "HASH"}],
-                "Projection": {"ProjectionType": "KEYS_ONLY"},
-                "ProvisionedThroughput": {
-                    "ReadCapacityUnits": 1,
-                    "WriteCapacityUnits": 1,
+            GlobalSecondaryIndexes=[
+                {
+                    "IndexName": "field_a_index",
+                    "KeySchema": [{"AttributeName": "field_a", "KeyType": "HASH"}],
+                    "Projection": {"ProjectionType": "KEYS_ONLY"},
+                    "ProvisionedThroughput": {
+                        "ReadCapacityUnits": 1,
+                        "WriteCapacityUnits": 1,
+                    },
                 },
-            }]
+            ],
         )
 
         with pytest.raises(Exception) as ctx:
@@ -305,23 +307,26 @@ class TestDynamoDB:
             ],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             Tags=TEST_DDB_TAGS,
-            GlobalSecondaryIndexes=[{
-                "IndexName": "field_a_index",
-                "KeySchema": [{"AttributeName": "field_a", "KeyType": "HASH"}],
-                "Projection": {"ProjectionType": "KEYS_ONLY"},
-                "ProvisionedThroughput": {
-                    "ReadCapacityUnits": 1,
-                    "WriteCapacityUnits": 1,
+            GlobalSecondaryIndexes=[
+                {
+                    "IndexName": "field_a_index",
+                    "KeySchema": [{"AttributeName": "field_a", "KeyType": "HASH"}],
+                    "Projection": {"ProjectionType": "KEYS_ONLY"},
+                    "ProvisionedThroughput": {
+                        "ReadCapacityUnits": 1,
+                        "WriteCapacityUnits": 1,
+                    },
                 },
-            }, {
-                "IndexName": "field_b_index",
-                "KeySchema": [{"AttributeName": "field_b", "KeyType": "HASH"}],
-                "Projection": {"ProjectionType": "ALL"},
-                "ProvisionedThroughput": {
-                    "ReadCapacityUnits": 1,
-                    "WriteCapacityUnits": 1,
+                {
+                    "IndexName": "field_b_index",
+                    "KeySchema": [{"AttributeName": "field_b", "KeyType": "HASH"}],
+                    "Projection": {"ProjectionType": "ALL"},
+                    "ProvisionedThroughput": {
+                        "ReadCapacityUnits": 1,
+                        "WriteCapacityUnits": 1,
+                    },
                 },
-            }]
+            ],
         )
 
         table.query(
