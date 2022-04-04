@@ -38,6 +38,7 @@ def dynamodb():
 
 class TestDynamoDB:
     def test_non_ascii_chars(self, dynamodb):
+        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
         # write some items containing non-ASCII characters
@@ -292,7 +293,7 @@ class TestDynamoDB:
 
     def test_valid_query_index(self, dynamodb):
         """Query requests ALL_ATTRIBUTES and the named index has a ProjectionType of ALL,
-        no exception is should be raised."""
+        no exception should be raised."""
         table_name = f"test-table-{short_uid()}"
         table = dynamodb.create_table(
             TableName=table_name,

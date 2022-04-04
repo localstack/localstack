@@ -1031,7 +1031,7 @@ def get_global_secondary_index(table_name, index_name):
 def is_index_query_valid(query_data: dict) -> bool:
     table_name = to_str(query_data["TableName"])
     index_name = to_str(query_data["IndexName"])
-    index_query_type = query_data.get('Select')
+    index_query_type = query_data.get("Select")
     index = get_global_secondary_index(table_name, index_name)
     index_projection_type = index.get("Projection").get("ProjectionType")
     if index_query_type == "ALL_ATTRIBUTES" and index_projection_type != "ALL":
