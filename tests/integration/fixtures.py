@@ -898,6 +898,29 @@ def lambda_su_role():
 
 
 @pytest.fixture
+def iam_create_role_with_policy(iam_client):
+    roles = {}
+
+    def _create_role_and_policy(**kwargs):
+        role = kwargs["RoleName"]
+        policy = kwargs["PolicyName"]
+        role_policy = json.dumps(kwargs["RoleDefinition"])
+
+        result = iam_client.create_role(RoleName=role, AssumeRolePolicyDocument=role_policy)
+        role_arn = result["Role"]["Arn"]
+        policy_document = json.dumps(kwargs["PolicyDefinition"])
+        iam_client.put_role_policy(RoleName=role, PolicyName=policy, PolicyDocument=policy_document)
+        roles[role] = policy
+        return role_arn
+
+    yield _create_role_and_policy
+
+    for role_name, policy_name in roles.items():
+        iam_client.delete_role_policy(RoleName=role_name, PolicyName=policy_name)
+        iam_client.delete_role(RoleName=role_name)
+
+
+@pytest.fixture
 def cleanups(ec2_client):
     cleanup_fns = []
 

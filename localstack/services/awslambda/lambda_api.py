@@ -46,6 +46,7 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
+from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import (
     TMP_FILES,
     empty_context_manager,
@@ -453,6 +454,10 @@ def build_mapping_obj(data) -> Dict:
         mapping["StartingPosition"] = LAMBDA_DEFAULT_STARTING_POSITION
     batch_size = check_batch_size_range(source_arn, batch_size)
     mapping["BatchSize"] = batch_size
+
+    if data.get("DestinationConfig"):
+        mapping["DestinationConfig"] = data.get("DestinationConfig")
+
     return mapping
 
 
@@ -700,12 +705,54 @@ def process_kinesis_records(records, stream_name):
                     lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
                         lock_discriminator, BoundedSemaphore(source["ParallelizationFactor"])
                     )
+
+                def on_failure_callback(
+                    result, func_arn, event, error=None, dlq_sent=None, **kwargs
+                ):
+                    # kinesis only supports "OnFailure"
+                    if not error:
+                        return
+                    payload = {
+                        "version": "1.0",
+                        "timestamp": timestamp_millis(),
+                        "requestContext": {
+                            "requestId": long_uid(),
+                            "functionArn": func_arn,
+                            "condition": "RetryAttemptsExhausted",
+                            "approximateInvokeCount": 1,
+                        },
+                        "responseContext": {
+                            "statusCode": 200,
+                            "executedVersion": "$LATEST",
+                            "functionError": "Unhandled",
+                        },
+                        "KinesisBatchInfo": {
+                            "shardId": shard_id,
+                            "startSequenceNumber": chunk[0]["sequenceNumber"],
+                            "endSequenceNumber": chunk[-1]["sequenceNumber"],
+                            "approximateArrivalOfFirstRecord": timestamp_millis(
+                                chunk[0]["approximateArrivalTimestamp"]
+                            ),
+                            "approximateArrivalOfLastRecord": timestamp_millis(
+                                chunk[-1]["approximateArrivalTimestamp"]
+                            ),
+                            "batchSize": source["BatchSize"],
+                            "streamArn": stream_arn,
+                        },
+                    }
+                    target = source["DestinationConfig"]["OnFailure"]["Destination"]
+                    send_event_to_target(target, payload)
+
                 run_lambda(
                     func_arn=arn,
                     event=event,
                     context={},
                     asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS,
                     lock_discriminator=lock_discriminator,
+                    callback=on_failure_callback
+                    if source.get("DestinationConfig")
+                    and source["DestinationConfig"].get("OnFailure")
+                    else None,
                 )
     except Exception as e:
         LOG.warning(

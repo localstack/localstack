@@ -59,29 +59,6 @@ def logs_log_stream(logs_client, logs_log_group):
     logs_client.delete_log_stream(logStreamName=name, logGroupName=logs_log_group)
 
 
-@pytest.fixture
-def iam_create_role_and_policy(iam_client):
-    roles = {}
-
-    def _create_role_and_policy(**kwargs):
-        role = kwargs["RoleName"]
-        policy = kwargs["PolicyName"]
-        role_policy = json.dumps(kwargs["RoleDefinition"])
-
-        result = iam_client.create_role(RoleName=role, AssumeRolePolicyDocument=role_policy)
-        role_arn = result["Role"]["Arn"]
-        policy_document = json.dumps(kwargs["PolicyDefinition"])
-        iam_client.put_role_policy(RoleName=role, PolicyName=policy, PolicyDocument=policy_document)
-        roles[role] = policy
-        return role_arn
-
-    yield _create_role_and_policy
-
-    for role_name, policy_name in roles.items():
-        iam_client.delete_role_policy(RoleName=role_name, PolicyName=policy_name)
-        iam_client.delete_role(RoleName=role_name)
-
-
 class TestCloudWatchLogs:
     # TODO make creation and description atomic to avoid possible flake?
     def test_create_and_delete_log_group(self, logs_client):
@@ -251,7 +228,7 @@ class TestCloudWatchLogs:
         s3_client,
         firehose_client,
         iam_client,
-        iam_create_role_and_policy,
+        iam_create_role_with_policy,
     ):
         try:
             firehose_name = f"test-firehose-{short_uid()}"
@@ -259,7 +236,7 @@ class TestCloudWatchLogs:
 
             role = f"test-firehose-s3-role-{short_uid()}"
             policy_name = f"test-firehose-s3-role-policy-{short_uid()}"
-            role_arn = iam_create_role_and_policy(
+            role_arn = iam_create_role_with_policy(
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=s3_firehose_role,
@@ -285,7 +262,7 @@ class TestCloudWatchLogs:
 
             role = f"test-firehose-role-{short_uid()}"
             policy_name = f"test-firehose-role-policy-{short_uid()}"
-            role_arn_logs = iam_create_role_and_policy(
+            role_arn_logs = iam_create_role_with_policy(
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=logs_role,
@@ -344,7 +321,7 @@ class TestCloudWatchLogs:
         logs_log_stream,
         kinesis_client,
         iam_client,
-        iam_create_role_and_policy,
+        iam_create_role_with_policy,
     ):
 
         kinesis_name = f"test-kinesis-{short_uid()}"
@@ -356,7 +333,7 @@ class TestCloudWatchLogs:
             kinesis_arn = result["StreamARN"]
             role = f"test-kinesis-role-{short_uid()}"
             policy_name = f"test-kinesis-role-policy-{short_uid()}"
-            role_arn = iam_create_role_and_policy(
+            role_arn = iam_create_role_with_policy(
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=logs_role,
