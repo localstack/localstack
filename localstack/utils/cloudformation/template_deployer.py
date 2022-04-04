@@ -712,6 +712,8 @@ def resolve_placeholders_in_string(result, stack):
                 )
             # make sure we resolve any functions/placeholders in the extracted string
             result = resolve_refs_recursively(stack, result)
+            # make sure we convert the result to string
+            result = "" if result is None else str(result)
             return result
         # TODO raise exception here?
         return match.group(0)
@@ -807,8 +809,8 @@ def convert_data_types(func_details, params):
             if isinstance(_obj, bool):
                 return str(_obj).lower()
             return str(_obj)
-        if _type == int:
-            return int(_obj)
+        if _type in (int, float):
+            return _type(_obj)
         return _obj
 
     def fix_types(o, **kwargs):

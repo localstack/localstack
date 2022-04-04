@@ -1,5 +1,3 @@
-# noqa: W605
-
 import sys
 from datetime import datetime
 from typing import List, Optional
@@ -148,6 +146,7 @@ IpamNetmaskLength = int
 IpamPoolAllocationId = str
 IpamPoolId = str
 IpamScopeId = str
+Ipv4PoolCoipId = str
 Ipv4PoolEc2Id = str
 Ipv6Address = str
 Ipv6Flag = bool
@@ -160,6 +159,7 @@ KmsKeyId = str
 LaunchTemplateElasticInferenceAcceleratorCount = int
 LaunchTemplateId = str
 LaunchTemplateName = str
+ListImagesInRecycleBinMaxResults = int
 ListSnapshotsInRecycleBinMaxResults = int
 LocalGatewayId = str
 LocalGatewayMaxResults = int
@@ -924,6 +924,7 @@ class ImageAttributeName(str):
     blockDeviceMapping = "blockDeviceMapping"
     sriovNetSupport = "sriovNetSupport"
     bootMode = "bootMode"
+    lastLaunchedTime = "lastLaunchedTime"
 
 
 class ImageState(str):
@@ -1802,6 +1803,19 @@ class NetworkInterfaceType(str):
     natGateway = "natGateway"
     efa = "efa"
     trunk = "trunk"
+    load_balancer = "load_balancer"
+    network_load_balancer = "network_load_balancer"
+    vpc_endpoint = "vpc_endpoint"
+    branch = "branch"
+    transit_gateway = "transit_gateway"
+    lambda_ = "lambda"
+    quicksight = "quicksight"
+    global_accelerator_managed = "global_accelerator_managed"
+    api_gateway_managed = "api_gateway_managed"
+    gateway_load_balancer = "gateway_load_balancer"
+    gateway_load_balancer_endpoint = "gateway_load_balancer_endpoint"
+    iot_rules_managed = "iot_rules_managed"
+    aws_codestar_connections_managed = "aws_codestar_connections_managed"
 
 
 class OfferingClassType(str):
@@ -2030,6 +2044,7 @@ class ResourceType(str):
     spot_fleet_request = "spot-fleet-request"
     spot_instances_request = "spot-instances-request"
     subnet = "subnet"
+    subnet_cidr_reservation = "subnet-cidr-reservation"
     traffic_mirror_filter = "traffic-mirror-filter"
     traffic_mirror_session = "traffic-mirror-session"
     traffic_mirror_target = "traffic-mirror-target"
@@ -2535,20 +2550,11 @@ class scope(str):
 
 
 class AcceleratorCount(TypedDict, total=False):
-    """The minimum and maximum number of accelerators (GPUs, FPGAs, or Amazon
-    Web Services Inferentia chips) on an instance.
-    """
-
     Min: Optional[Integer]
     Max: Optional[Integer]
 
 
 class AcceleratorCountRequest(TypedDict, total=False):
-    """The minimum and maximum number of accelerators (GPUs, FPGAs, or Amazon
-    Web Services Inferentia chips) on an instance. To exclude
-    accelerator-enabled instance types, set ``Max`` to ``0``.
-    """
-
     Min: Optional[Integer]
     Max: Optional[Integer]
 
@@ -2558,15 +2564,11 @@ AcceleratorNameSet = List[AcceleratorName]
 
 
 class AcceleratorTotalMemoryMiB(TypedDict, total=False):
-    """The minimum and maximum amount of total accelerator memory, in MiB."""
-
     Min: Optional[Integer]
     Max: Optional[Integer]
 
 
 class AcceleratorTotalMemoryMiBRequest(TypedDict, total=False):
-    """The minimum and maximum amount of total accelerator memory, in MiB."""
-
     Min: Optional[Integer]
     Max: Optional[Integer]
 
@@ -2575,8 +2577,6 @@ AcceleratorTypeSet = List[AcceleratorType]
 
 
 class TargetConfigurationRequest(TypedDict, total=False):
-    """Details about the target configuration."""
-
     InstanceCount: Optional[Integer]
     OfferingId: ReservedInstancesOfferingId
 
@@ -2586,16 +2586,12 @@ ReservedInstanceIdSet = List[ReservationId]
 
 
 class AcceptReservedInstancesExchangeQuoteRequest(ServiceRequest):
-    """Contains the parameters for accepting the quote."""
-
     DryRun: Optional[Boolean]
     ReservedInstanceIds: ReservedInstanceIdSet
     TargetConfigurations: Optional[TargetConfigurationRequestSet]
 
 
 class AcceptReservedInstancesExchangeQuoteResult(TypedDict, total=False):
-    """The result of the exchange and whether it was ``successful``."""
-
     ExchangeId: Optional[String]
 
 
@@ -2610,10 +2606,6 @@ class AcceptTransitGatewayMulticastDomainAssociationsRequest(ServiceRequest):
 
 
 class SubnetAssociation(TypedDict, total=False):
-    """Describes the subnet association with the transit gateway multicast
-    domain.
-    """
-
     SubnetId: Optional[String]
     State: Optional[TransitGatewayMulitcastDomainAssociationState]
 
@@ -2622,8 +2614,6 @@ SubnetAssociationList = List[SubnetAssociation]
 
 
 class TransitGatewayMulticastDomainAssociations(TypedDict, total=False):
-    """Describes the multicast domain associations."""
-
     TransitGatewayMulticastDomainId: Optional[String]
     TransitGatewayAttachmentId: Optional[String]
     ResourceId: Optional[String]
@@ -2642,8 +2632,6 @@ class AcceptTransitGatewayPeeringAttachmentRequest(ServiceRequest):
 
 
 class Tag(TypedDict, total=False):
-    """Describes a tag."""
-
     Key: Optional[String]
     Value: Optional[String]
 
@@ -2653,23 +2641,17 @@ DateTime = datetime
 
 
 class PeeringAttachmentStatus(TypedDict, total=False):
-    """The status of the transit gateway peering attachment."""
-
     Code: Optional[String]
     Message: Optional[String]
 
 
 class PeeringTgwInfo(TypedDict, total=False):
-    """Information about the transit gateway in the peering attachment."""
-
     TransitGatewayId: Optional[String]
     OwnerId: Optional[String]
     Region: Optional[String]
 
 
 class TransitGatewayPeeringAttachment(TypedDict, total=False):
-    """Describes the transit gateway peering attachment."""
-
     TransitGatewayAttachmentId: Optional[String]
     RequesterTgwInfo: Optional[PeeringTgwInfo]
     AccepterTgwInfo: Optional[PeeringTgwInfo]
@@ -2689,16 +2671,12 @@ class AcceptTransitGatewayVpcAttachmentRequest(ServiceRequest):
 
 
 class TransitGatewayVpcAttachmentOptions(TypedDict, total=False):
-    """Describes the VPC attachment options."""
-
     DnsSupport: Optional[DnsSupportValue]
     Ipv6Support: Optional[Ipv6SupportValue]
     ApplianceModeSupport: Optional[ApplianceModeSupportValue]
 
 
 class TransitGatewayVpcAttachment(TypedDict, total=False):
-    """Describes a VPC attachment."""
-
     TransitGatewayAttachmentId: Optional[String]
     TransitGatewayId: Optional[String]
     VpcId: Optional[String]
@@ -2724,20 +2702,11 @@ class AcceptVpcEndpointConnectionsRequest(ServiceRequest):
 
 
 class UnsuccessfulItemError(TypedDict, total=False):
-    """Information about the error that occurred. For more information about
-    errors, see `Error
-    codes <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/errors-overview.html>`__.
-    """
-
     Code: Optional[String]
     Message: Optional[String]
 
 
 class UnsuccessfulItem(TypedDict, total=False):
-    """Information about items that were not successfully processed in a batch
-    call.
-    """
-
     Error: Optional[UnsuccessfulItemError]
     ResourceId: Optional[String]
 
@@ -2755,23 +2724,17 @@ class AcceptVpcPeeringConnectionRequest(ServiceRequest):
 
 
 class VpcPeeringConnectionStateReason(TypedDict, total=False):
-    """Describes the status of a VPC peering connection."""
-
     Code: Optional[VpcPeeringConnectionStateReasonCode]
     Message: Optional[String]
 
 
 class VpcPeeringConnectionOptionsDescription(TypedDict, total=False):
-    """Describes the VPC peering connection options."""
-
     AllowDnsResolutionFromRemoteVpc: Optional[Boolean]
     AllowEgressFromLocalClassicLinkToRemoteVpc: Optional[Boolean]
     AllowEgressFromLocalVpcToRemoteClassicLink: Optional[Boolean]
 
 
 class CidrBlock(TypedDict, total=False):
-    """Describes an IPv4 CIDR block."""
-
     CidrBlock: Optional[String]
 
 
@@ -2779,8 +2742,6 @@ CidrBlockSet = List[CidrBlock]
 
 
 class Ipv6CidrBlock(TypedDict, total=False):
-    """Describes an IPv6 CIDR block."""
-
     Ipv6CidrBlock: Optional[String]
 
 
@@ -2788,8 +2749,6 @@ Ipv6CidrBlockSet = List[Ipv6CidrBlock]
 
 
 class VpcPeeringConnectionVpcInfo(TypedDict, total=False):
-    """Describes a VPC in a VPC peering connection."""
-
     CidrBlock: Optional[String]
     Ipv6CidrBlockSet: Optional[Ipv6CidrBlockSet]
     CidrBlockSet: Optional[CidrBlockSet]
@@ -2800,8 +2759,6 @@ class VpcPeeringConnectionVpcInfo(TypedDict, total=False):
 
 
 class VpcPeeringConnection(TypedDict, total=False):
-    """Describes a VPC peering connection."""
-
     AccepterVpcInfo: Optional[VpcPeeringConnectionVpcInfo]
     ExpirationTime: Optional[DateTime]
     RequesterVpcInfo: Optional[VpcPeeringConnectionVpcInfo]
@@ -2814,24 +2771,36 @@ class AcceptVpcPeeringConnectionResult(TypedDict, total=False):
     VpcPeeringConnection: Optional[VpcPeeringConnection]
 
 
-class AnalysisComponent(TypedDict, total=False):
-    """Describes a path component."""
+class TransitGatewayRouteTableRoute(TypedDict, total=False):
+    DestinationCidr: Optional[String]
+    State: Optional[String]
+    RouteOrigin: Optional[String]
+    PrefixListId: Optional[String]
+    AttachmentId: Optional[String]
+    ResourceId: Optional[String]
+    ResourceType: Optional[String]
 
+
+class AnalysisComponent(TypedDict, total=False):
     Id: Optional[String]
     Arn: Optional[String]
     Name: Optional[String]
 
 
-class PortRange(TypedDict, total=False):
-    """Describes a range of ports."""
+class AdditionalDetail(TypedDict, total=False):
+    AdditionalDetailType: Optional[String]
+    Component: Optional[AnalysisComponent]
 
+
+AdditionalDetailList = List[AdditionalDetail]
+
+
+class PortRange(TypedDict, total=False):
     From: Optional[Integer]
     To: Optional[Integer]
 
 
 class AnalysisSecurityGroupRule(TypedDict, total=False):
-    """Describes a security group rule."""
-
     Cidr: Optional[String]
     Direction: Optional[String]
     SecurityGroupId: Optional[String]
@@ -2841,8 +2810,6 @@ class AnalysisSecurityGroupRule(TypedDict, total=False):
 
 
 class AnalysisRouteTableRoute(TypedDict, total=False):
-    """Describes a route table route."""
-
     DestinationCidr: Optional[String]
     DestinationPrefixListId: Optional[String]
     EgressOnlyInternetGatewayId: Optional[String]
@@ -2860,11 +2827,6 @@ IpAddressList = List[IpAddress]
 
 
 class AnalysisPacketHeader(TypedDict, total=False):
-    """Describes a header. Reflects any changes made by a component as traffic
-    passes through. The fields of an inbound header are null except for the
-    first component of a path.
-    """
-
     DestinationAddresses: Optional[IpAddressList]
     DestinationPortRanges: Optional[PortRangeList]
     Protocol: Optional[String]
@@ -2873,8 +2835,6 @@ class AnalysisPacketHeader(TypedDict, total=False):
 
 
 class AnalysisAclRule(TypedDict, total=False):
-    """Describes a network access control (ACL) rule."""
-
     Cidr: Optional[String]
     Egress: Optional[Boolean]
     PortRange: Optional[PortRange]
@@ -2884,8 +2844,6 @@ class AnalysisAclRule(TypedDict, total=False):
 
 
 class PathComponent(TypedDict, total=False):
-    """Describes a path component."""
-
     SequenceNumber: Optional[Integer]
     AclRule: Optional[AnalysisAclRule]
     AttachedTo: Optional[AnalysisComponent]
@@ -2898,14 +2856,15 @@ class PathComponent(TypedDict, total=False):
     SourceVpc: Optional[AnalysisComponent]
     Subnet: Optional[AnalysisComponent]
     Vpc: Optional[AnalysisComponent]
+    AdditionalDetails: Optional[AdditionalDetailList]
+    TransitGateway: Optional[AnalysisComponent]
+    TransitGatewayRouteTableRoute: Optional[TransitGatewayRouteTableRoute]
 
 
 PathComponentList = List[PathComponent]
 
 
 class AccessScopeAnalysisFinding(TypedDict, total=False):
-    """Describes a finding for a Network Access Scope."""
-
     NetworkInsightsAccessScopeAnalysisId: Optional[NetworkInsightsAccessScopeAnalysisId]
     NetworkInsightsAccessScopeId: Optional[NetworkInsightsAccessScopeId]
     FindingId: Optional[String]
@@ -2916,15 +2875,11 @@ AccessScopeAnalysisFindingList = List[AccessScopeAnalysisFinding]
 
 
 class ResourceStatement(TypedDict, total=False):
-    """Describes a resource statement."""
-
     Resources: Optional[ValueStringList]
     ResourceTypes: Optional[ValueStringList]
 
 
 class ThroughResourcesStatement(TypedDict, total=False):
-    """Describes a through resource statement."""
-
     ResourceStatement: Optional[ResourceStatement]
 
 
@@ -2933,8 +2888,6 @@ ProtocolList = List[Protocol]
 
 
 class PacketHeaderStatement(TypedDict, total=False):
-    """Describes a packet header statement."""
-
     SourceAddresses: Optional[ValueStringList]
     DestinationAddresses: Optional[ValueStringList]
     SourcePorts: Optional[ValueStringList]
@@ -2945,15 +2898,11 @@ class PacketHeaderStatement(TypedDict, total=False):
 
 
 class PathStatement(TypedDict, total=False):
-    """Describes a path statement."""
-
     PacketHeaderStatement: Optional[PacketHeaderStatement]
     ResourceStatement: Optional[ResourceStatement]
 
 
 class AccessScopePath(TypedDict, total=False):
-    """Describes a path."""
-
     Source: Optional[PathStatement]
     Destination: Optional[PathStatement]
     ThroughResources: Optional[ThroughResourcesStatementList]
@@ -2963,15 +2912,11 @@ AccessScopePathList = List[AccessScopePath]
 
 
 class ResourceStatementRequest(TypedDict, total=False):
-    """Describes a resource statement."""
-
     Resources: Optional[ValueStringList]
     ResourceTypes: Optional[ValueStringList]
 
 
 class ThroughResourcesStatementRequest(TypedDict, total=False):
-    """Describes a through resource statement."""
-
     ResourceStatement: Optional[ResourceStatementRequest]
 
 
@@ -2979,8 +2924,6 @@ ThroughResourcesStatementRequestList = List[ThroughResourcesStatementRequest]
 
 
 class PacketHeaderStatementRequest(TypedDict, total=False):
-    """Describes a packet header statement."""
-
     SourceAddresses: Optional[ValueStringList]
     DestinationAddresses: Optional[ValueStringList]
     SourcePorts: Optional[ValueStringList]
@@ -2991,15 +2934,11 @@ class PacketHeaderStatementRequest(TypedDict, total=False):
 
 
 class PathStatementRequest(TypedDict, total=False):
-    """Describes a path statement."""
-
     PacketHeaderStatement: Optional[PacketHeaderStatementRequest]
     ResourceStatement: Optional[ResourceStatementRequest]
 
 
 class AccessScopePathRequest(TypedDict, total=False):
-    """Describes a path."""
-
     Source: Optional[PathStatementRequest]
     Destination: Optional[PathStatementRequest]
     ThroughResources: Optional[ThroughResourcesStatementRequestList]
@@ -3009,8 +2948,6 @@ AccessScopePathListRequest = List[AccessScopePathRequest]
 
 
 class AccountAttributeValue(TypedDict, total=False):
-    """Describes a value of an account attribute."""
-
     AttributeValue: Optional[String]
 
 
@@ -3018,8 +2955,6 @@ AccountAttributeValueList = List[AccountAttributeValue]
 
 
 class AccountAttribute(TypedDict, total=False):
-    """Describes an account attribute."""
-
     AttributeName: Optional[String]
     AttributeValues: Optional[AccountAttributeValueList]
 
@@ -3029,8 +2964,6 @@ AccountAttributeNameStringList = List[AccountAttributeName]
 
 
 class ActiveInstance(TypedDict, total=False):
-    """Describes a running instance in a Spot Fleet."""
-
     InstanceId: Optional[String]
     InstanceType: Optional[String]
     SpotInstanceRequestId: Optional[String]
@@ -3041,16 +2974,6 @@ ActiveInstanceSet = List[ActiveInstance]
 
 
 class AddIpamOperatingRegion(TypedDict, total=False):
-    """Add an operating Region to an IPAM. Operating Regions are Amazon Web
-    Services Regions where the IPAM is allowed to manage IP address CIDRs.
-    IPAM only discovers and monitors resources in the Amazon Web Services
-    Regions you select as operating Regions.
-
-    For more information about operating Regions, see `Create an
-    IPAM </vpc/latest/ipam/create-ipam.html>`__ in the *Amazon VPC IPAM User
-    Guide*.
-    """
-
     RegionName: Optional[String]
 
 
@@ -3058,8 +2981,6 @@ AddIpamOperatingRegionSet = List[AddIpamOperatingRegion]
 
 
 class AddPrefixListEntry(TypedDict, total=False):
-    """An entry for a prefix list."""
-
     Cidr: String
     Description: Optional[String]
 
@@ -3068,8 +2989,6 @@ AddPrefixListEntries = List[AddPrefixListEntry]
 
 
 class Address(TypedDict, total=False):
-    """Describes an Elastic IP address, or a carrier IP address."""
-
     InstanceId: Optional[String]
     PublicIp: Optional[String]
     AllocationId: Optional[String]
@@ -3087,16 +3006,12 @@ class Address(TypedDict, total=False):
 
 
 class PtrUpdateStatus(TypedDict, total=False):
-    """The status of an updated pointer (PTR) record for an Elastic IP address."""
-
     Value: Optional[String]
     Status: Optional[String]
     Reason: Optional[String]
 
 
 class AddressAttribute(TypedDict, total=False):
-    """The attributes associated with an Elastic IP address."""
-
     PublicIp: Optional[PublicIpAddress]
     AllocationId: Optional[AllocationId]
     PtrRecord: Optional[String]
@@ -3113,11 +3028,6 @@ class AdvertiseByoipCidrRequest(ServiceRequest):
 
 
 class ByoipCidr(TypedDict, total=False):
-    """Information about an address range that is provisioned for use with your
-    Amazon Web Services resources through bring your own IP addresses
-    (BYOIP).
-    """
-
     Cidr: Optional[String]
     Description: Optional[String]
     StatusMessage: Optional[String]
@@ -3129,8 +3039,6 @@ class AdvertiseByoipCidrResult(TypedDict, total=False):
 
 
 class TagSpecification(TypedDict, total=False):
-    """The tags to apply to a resource when the resource is being created."""
-
     ResourceType: Optional[ResourceType]
     Tags: Optional[TagList]
 
@@ -3174,8 +3082,6 @@ ResponseHostIdList = List[String]
 
 
 class AllocateHostsResult(TypedDict, total=False):
-    """Contains the output of AllocateHosts."""
-
     HostIds: Optional[ResponseHostIdList]
 
 
@@ -3194,10 +3100,6 @@ class AllocateIpamPoolCidrRequest(ServiceRequest):
 
 
 class IpamPoolAllocation(TypedDict, total=False):
-    """In IPAM, an allocation is a CIDR assignment from an IPAM pool to another
-    resource or IPAM pool.
-    """
-
     Cidr: Optional[String]
     IpamPoolAllocationId: Optional[IpamPoolAllocationId]
     Description: Optional[String]
@@ -3216,8 +3118,6 @@ AllocationIds = List[AllocationId]
 
 
 class AllowedPrincipal(TypedDict, total=False):
-    """Describes a principal."""
-
     PrincipalType: Optional[PrincipalType]
     Principal: Optional[String]
 
@@ -3226,8 +3126,6 @@ AllowedPrincipalSet = List[AllowedPrincipal]
 
 
 class AlternatePathHint(TypedDict, total=False):
-    """Describes an potential intermediate component of a feasible path."""
-
     ComponentId: Optional[String]
     ComponentArn: Optional[String]
 
@@ -3237,15 +3135,11 @@ AnalysisComponentList = List[AnalysisComponent]
 
 
 class AnalysisLoadBalancerListener(TypedDict, total=False):
-    """Describes a load balancer listener."""
-
     LoadBalancerPort: Optional[Port]
     InstancePort: Optional[Port]
 
 
 class AnalysisLoadBalancerTarget(TypedDict, total=False):
-    """Describes a load balancer target."""
-
     Address: Optional[IpAddress]
     AvailabilityZone: Optional[String]
     Instance: Optional[AnalysisComponent]
@@ -3291,8 +3185,6 @@ PrivateIpAddressStringList = List[String]
 
 
 class AssignPrivateIpAddressesRequest(ServiceRequest):
-    """Contains the parameters for AssignPrivateIpAddresses."""
-
     AllowReassignment: Optional[Boolean]
     NetworkInterfaceId: NetworkInterfaceId
     PrivateIpAddresses: Optional[PrivateIpAddressStringList]
@@ -3302,8 +3194,6 @@ class AssignPrivateIpAddressesRequest(ServiceRequest):
 
 
 class Ipv4PrefixSpecification(TypedDict, total=False):
-    """Describes an IPv4 prefix."""
-
     Ipv4Prefix: Optional[String]
 
 
@@ -3311,8 +3201,6 @@ Ipv4PrefixesList = List[Ipv4PrefixSpecification]
 
 
 class AssignedPrivateIpAddress(TypedDict, total=False):
-    """Describes the private IP addresses assigned to a network interface."""
-
     PrivateIpAddress: Optional[String]
 
 
@@ -3347,8 +3235,6 @@ class AssociateClientVpnTargetNetworkRequest(ServiceRequest):
 
 
 class AssociationStatus(TypedDict, total=False):
-    """Describes the state of a target network association."""
-
     Code: Optional[AssociationStatusCode]
     Message: Optional[String]
 
@@ -3377,8 +3263,6 @@ class AssociateEnclaveCertificateIamRoleResult(TypedDict, total=False):
 
 
 class IamInstanceProfileSpecification(TypedDict, total=False):
-    """Describes an IAM instance profile."""
-
     Arn: Optional[String]
     Name: Optional[String]
 
@@ -3389,17 +3273,11 @@ class AssociateIamInstanceProfileRequest(ServiceRequest):
 
 
 class IamInstanceProfile(TypedDict, total=False):
-    """Describes an IAM instance profile."""
-
     Arn: Optional[String]
     Id: Optional[String]
 
 
 class IamInstanceProfileAssociation(TypedDict, total=False):
-    """Describes an association between an IAM instance profile and an
-    instance.
-    """
-
     AssociationId: Optional[String]
     InstanceId: Optional[String]
     IamInstanceProfile: Optional[IamInstanceProfile]
@@ -3416,11 +3294,6 @@ InstanceIdList = List[InstanceId]
 
 
 class InstanceEventWindowAssociationRequest(TypedDict, total=False):
-    """One or more targets associated with the specified event window. Only one
-    *type* of target (instance ID, instance tag, or Dedicated Host ID) can
-    be associated with an event window.
-    """
-
     InstanceIds: Optional[InstanceIdList]
     InstanceTags: Optional[TagList]
     DedicatedHostIds: Optional[DedicatedHostIdList]
@@ -3433,18 +3306,12 @@ class AssociateInstanceEventWindowRequest(ServiceRequest):
 
 
 class InstanceEventWindowAssociationTarget(TypedDict, total=False):
-    """One or more targets associated with the event window."""
-
     InstanceIds: Optional[InstanceIdList]
     Tags: Optional[TagList]
     DedicatedHostIds: Optional[DedicatedHostIdList]
 
 
 class InstanceEventWindowTimeRange(TypedDict, total=False):
-    """The start day and time and the end day and time of the time range, in
-    UTC.
-    """
-
     StartWeekDay: Optional[WeekDay]
     StartHour: Optional[Hour]
     EndWeekDay: Optional[WeekDay]
@@ -3455,8 +3322,6 @@ InstanceEventWindowTimeRangeList = List[InstanceEventWindowTimeRange]
 
 
 class InstanceEventWindow(TypedDict, total=False):
-    """The event window."""
-
     InstanceEventWindowId: Optional[InstanceEventWindowId]
     TimeRanges: Optional[InstanceEventWindowTimeRangeList]
     Name: Optional[String]
@@ -3478,10 +3343,6 @@ class AssociateRouteTableRequest(ServiceRequest):
 
 
 class RouteTableAssociationState(TypedDict, total=False):
-    """Describes the state of an association between a route table and a subnet
-    or gateway.
-    """
-
     State: Optional[RouteTableAssociationStateCode]
     StatusMessage: Optional[String]
 
@@ -3497,15 +3358,11 @@ class AssociateSubnetCidrBlockRequest(ServiceRequest):
 
 
 class SubnetCidrBlockState(TypedDict, total=False):
-    """Describes the state of a CIDR block."""
-
     State: Optional[SubnetCidrBlockStateCode]
     StatusMessage: Optional[String]
 
 
 class SubnetIpv6CidrBlockAssociation(TypedDict, total=False):
-    """Describes an association between a subnet and an IPv6 CIDR block."""
-
     AssociationId: Optional[SubnetCidrAssociationId]
     Ipv6CidrBlock: Optional[String]
     Ipv6CidrBlockState: Optional[SubnetCidrBlockState]
@@ -3537,10 +3394,6 @@ class AssociateTransitGatewayRouteTableRequest(ServiceRequest):
 
 
 class TransitGatewayAssociation(TypedDict, total=False):
-    """Describes an association between a resource attachment and a transit
-    gateway route table.
-    """
-
     TransitGatewayRouteTableId: Optional[TransitGatewayRouteTableId]
     TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
     ResourceId: Optional[String]
@@ -3562,13 +3415,6 @@ class AssociateTrunkInterfaceRequest(ServiceRequest):
 
 
 class TrunkInterfaceAssociation(TypedDict, total=False):
-    """Currently available in **limited preview only**. If you are interested
-    in using this feature, contact your account manager.
-
-    Information about an association between a branch network interface with
-    a trunk network interface.
-    """
-
     AssociationId: Optional[TrunkInterfaceAssociationId]
     BranchInterfaceId: Optional[String]
     TrunkInterfaceId: Optional[String]
@@ -3597,23 +3443,17 @@ class AssociateVpcCidrBlockRequest(ServiceRequest):
 
 
 class VpcCidrBlockState(TypedDict, total=False):
-    """Describes the state of a CIDR block."""
-
     State: Optional[VpcCidrBlockStateCode]
     StatusMessage: Optional[String]
 
 
 class VpcCidrBlockAssociation(TypedDict, total=False):
-    """Describes an IPv4 CIDR block associated with a VPC."""
-
     AssociationId: Optional[String]
     CidrBlock: Optional[String]
     CidrBlockState: Optional[VpcCidrBlockState]
 
 
 class VpcIpv6CidrBlockAssociation(TypedDict, total=False):
-    """Describes an IPv6 CIDR block associated with a VPC."""
-
     AssociationId: Optional[String]
     Ipv6CidrBlock: Optional[String]
     Ipv6CidrBlockState: Optional[VpcCidrBlockState]
@@ -3628,8 +3468,6 @@ class AssociateVpcCidrBlockResult(TypedDict, total=False):
 
 
 class AssociatedRole(TypedDict, total=False):
-    """Information about the associated IAM roles."""
-
     AssociatedRoleArn: Optional[ResourceArn]
     CertificateS3BucketName: Optional[String]
     CertificateS3ObjectKey: Optional[String]
@@ -3640,10 +3478,6 @@ AssociatedRolesList = List[AssociatedRole]
 
 
 class AssociatedTargetNetwork(TypedDict, total=False):
-    """Describes a target network that is associated with a Client VPN
-    endpoint. A target network is a subnet in a VPC.
-    """
-
     NetworkId: Optional[String]
     NetworkType: Optional[AssociatedNetworkType]
 
@@ -3654,8 +3488,6 @@ MillisecondDateTime = datetime
 
 
 class AthenaIntegration(TypedDict, total=False):
-    """Describes integration options for Amazon Athena."""
-
     IntegrationResultS3DestinationArn: String
     PartitionLoadFrequency: PartitionLoadFrequency
     PartitionStartDate: Optional[MillisecondDateTime]
@@ -3684,8 +3516,6 @@ class AttachInternetGatewayRequest(ServiceRequest):
 
 
 class AttachNetworkInterfaceRequest(ServiceRequest):
-    """Contains the parameters for AttachNetworkInterface."""
-
     DeviceIndex: Integer
     DryRun: Optional[Boolean]
     InstanceId: InstanceId
@@ -3694,8 +3524,6 @@ class AttachNetworkInterfaceRequest(ServiceRequest):
 
 
 class AttachNetworkInterfaceResult(TypedDict, total=False):
-    """Contains the output of AttachNetworkInterface."""
-
     AttachmentId: Optional[String]
     NetworkCardIndex: Optional[Integer]
 
@@ -3708,48 +3536,34 @@ class AttachVolumeRequest(ServiceRequest):
 
 
 class AttachVpnGatewayRequest(ServiceRequest):
-    """Contains the parameters for AttachVpnGateway."""
-
     VpcId: VpcId
     VpnGatewayId: VpnGatewayId
     DryRun: Optional[Boolean]
 
 
 class VpcAttachment(TypedDict, total=False):
-    """Describes an attachment between a virtual private gateway and a VPC."""
-
     State: Optional[AttachmentStatus]
     VpcId: Optional[String]
 
 
 class AttachVpnGatewayResult(TypedDict, total=False):
-    """Contains the output of AttachVpnGateway."""
-
     VpcAttachment: Optional[VpcAttachment]
 
 
 class AttributeBooleanValue(TypedDict, total=False):
-    """Describes a value for a resource attribute that is a Boolean value."""
-
     Value: Optional[Boolean]
 
 
 class AttributeValue(TypedDict, total=False):
-    """Describes a value for a resource attribute that is a String."""
-
     Value: Optional[String]
 
 
 class ClientVpnAuthorizationRuleStatus(TypedDict, total=False):
-    """Describes the state of an authorization rule."""
-
     Code: Optional[ClientVpnAuthorizationRuleStatusCode]
     Message: Optional[String]
 
 
 class AuthorizationRule(TypedDict, total=False):
-    """Information about an authorization rule."""
-
     ClientVpnEndpointId: Optional[String]
     Description: Optional[String]
     GroupId: Optional[String]
@@ -3776,8 +3590,6 @@ class AuthorizeClientVpnIngressResult(TypedDict, total=False):
 
 
 class UserIdGroupPair(TypedDict, total=False):
-    """Describes a security group and Amazon Web Services account ID pair."""
-
     Description: Optional[String]
     GroupId: Optional[String]
     GroupName: Optional[String]
@@ -3791,8 +3603,6 @@ UserIdGroupPairList = List[UserIdGroupPair]
 
 
 class PrefixListId(TypedDict, total=False):
-    """Describes a prefix list ID."""
-
     Description: Optional[String]
     PrefixListId: Optional[String]
 
@@ -3801,8 +3611,6 @@ PrefixListIdList = List[PrefixListId]
 
 
 class Ipv6Range(TypedDict, total=False):
-    """[EC2-VPC only] Describes an IPv6 range."""
-
     CidrIpv6: Optional[String]
     Description: Optional[String]
 
@@ -3811,8 +3619,6 @@ Ipv6RangeList = List[Ipv6Range]
 
 
 class IpRange(TypedDict, total=False):
-    """Describes an IPv4 range."""
-
     CidrIp: Optional[String]
     Description: Optional[String]
 
@@ -3821,8 +3627,6 @@ IpRangeList = List[IpRange]
 
 
 class IpPermission(TypedDict, total=False):
-    """Describes a set of permissions for a security group rule."""
-
     FromPort: Optional[Integer]
     IpProtocol: Optional[String]
     IpRanges: Optional[IpRangeList]
@@ -3849,10 +3653,6 @@ class AuthorizeSecurityGroupEgressRequest(ServiceRequest):
 
 
 class ReferencedSecurityGroup(TypedDict, total=False):
-    """Describes the security group that is referenced in the security group
-    rule.
-    """
-
     GroupId: Optional[String]
     PeeringStatus: Optional[String]
     UserId: Optional[String]
@@ -3861,8 +3661,6 @@ class ReferencedSecurityGroup(TypedDict, total=False):
 
 
 class SecurityGroupRule(TypedDict, total=False):
-    """Describes a security group rule."""
-
     SecurityGroupRuleId: Optional[SecurityGroupRuleId]
     GroupId: Optional[SecurityGroupId]
     GroupOwnerId: Optional[String]
@@ -3906,10 +3704,6 @@ class AuthorizeSecurityGroupIngressResult(TypedDict, total=False):
 
 
 class AvailabilityZoneMessage(TypedDict, total=False):
-    """Describes a message about an Availability Zone, Local Zone, or
-    Wavelength Zone.
-    """
-
     Message: Optional[String]
 
 
@@ -3917,8 +3711,6 @@ AvailabilityZoneMessageList = List[AvailabilityZoneMessage]
 
 
 class AvailabilityZone(TypedDict, total=False):
-    """Describes Availability Zones, Local Zones, and Wavelength Zones."""
-
     State: Optional[AvailabilityZoneState]
     OptInStatus: Optional[AvailabilityZoneOptInStatus]
     Messages: Optional[AvailabilityZoneMessageList]
@@ -3937,10 +3729,6 @@ AvailabilityZoneStringList = List[String]
 
 
 class InstanceCapacity(TypedDict, total=False):
-    """Information about the number of instances that can be launched onto the
-    Dedicated Host.
-    """
-
     AvailableCapacity: Optional[Integer]
     InstanceType: Optional[String]
     TotalCapacity: Optional[Integer]
@@ -3950,32 +3738,16 @@ AvailableInstanceCapacityList = List[InstanceCapacity]
 
 
 class AvailableCapacity(TypedDict, total=False):
-    """The capacity information for instances that can be launched onto the
-    Dedicated Host.
-    """
-
     AvailableInstanceCapacity: Optional[AvailableInstanceCapacityList]
     AvailableVCpus: Optional[Integer]
 
 
 class BaselineEbsBandwidthMbps(TypedDict, total=False):
-    """The minimum and maximum baseline bandwidth to Amazon EBS, in Mbps. For
-    more information, see `Amazon EBS–optimized
-    instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-optimized.html>`__
-    in the *Amazon EC2 User Guide*.
-    """
-
     Min: Optional[Integer]
     Max: Optional[Integer]
 
 
 class BaselineEbsBandwidthMbpsRequest(TypedDict, total=False):
-    """The minimum and maximum baseline bandwidth to Amazon EBS, in Mbps. For
-    more information, see `Amazon EBS–optimized
-    instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-optimized.html>`__
-    in the *Amazon EC2 User Guide*.
-    """
-
     Min: Optional[Integer]
     Max: Optional[Integer]
 
@@ -3989,8 +3761,6 @@ class BlobAttributeValue(TypedDict, total=False):
 
 
 class EbsBlockDevice(TypedDict, total=False):
-    """Describes a block device for an EBS volume."""
-
     DeleteOnTermination: Optional[Boolean]
     Iops: Optional[Integer]
     SnapshotId: Optional[SnapshotId]
@@ -4003,10 +3773,6 @@ class EbsBlockDevice(TypedDict, total=False):
 
 
 class BlockDeviceMapping(TypedDict, total=False):
-    """Describes a block device mapping, which defines the EBS volumes and
-    instance store volumes to attach to an instance at launch.
-    """
-
     DeviceName: Optional[String]
     VirtualName: Optional[String]
     Ebs: Optional[EbsBlockDevice]
@@ -4020,10 +3786,6 @@ BundleIdStringList = List[BundleId]
 
 
 class S3Storage(TypedDict, total=False):
-    """Describes the storage parameters for Amazon S3 and Amazon S3 buckets for
-    an instance store-backed AMI.
-    """
-
     AWSAccessKeyId: Optional[String]
     Bucket: Optional[String]
     Prefix: Optional[String]
@@ -4032,29 +3794,21 @@ class S3Storage(TypedDict, total=False):
 
 
 class Storage(TypedDict, total=False):
-    """Describes the storage location for an instance store-backed AMI."""
-
     S3: Optional[S3Storage]
 
 
 class BundleInstanceRequest(ServiceRequest):
-    """Contains the parameters for BundleInstance."""
-
     InstanceId: InstanceId
     Storage: Storage
     DryRun: Optional[Boolean]
 
 
 class BundleTaskError(TypedDict, total=False):
-    """Describes an error for BundleInstance."""
-
     Code: Optional[String]
     Message: Optional[String]
 
 
 class BundleTask(TypedDict, total=False):
-    """Describes a bundle task."""
-
     BundleId: Optional[String]
     BundleTaskError: Optional[BundleTaskError]
     InstanceId: Optional[String]
@@ -4066,8 +3820,6 @@ class BundleTask(TypedDict, total=False):
 
 
 class BundleInstanceResult(TypedDict, total=False):
-    """Contains the output of BundleInstance."""
-
     BundleTask: Optional[BundleTask]
 
 
@@ -4076,21 +3828,15 @@ ByoipCidrSet = List[ByoipCidr]
 
 
 class CancelBundleTaskRequest(ServiceRequest):
-    """Contains the parameters for CancelBundleTask."""
-
     BundleId: BundleId
     DryRun: Optional[Boolean]
 
 
 class CancelBundleTaskResult(TypedDict, total=False):
-    """Contains the output of CancelBundleTask."""
-
     BundleTask: Optional[BundleTask]
 
 
 class CancelCapacityReservationFleetError(TypedDict, total=False):
-    """Describes a Capacity Reservation Fleet cancellation error."""
-
     Code: Optional[CancelCapacityReservationFleetErrorCode]
     Message: Optional[CancelCapacityReservationFleetErrorMessage]
 
@@ -4104,8 +3850,6 @@ class CancelCapacityReservationFleetsRequest(ServiceRequest):
 
 
 class FailedCapacityReservationFleetCancellationResult(TypedDict, total=False):
-    """Describes a Capacity Reservation Fleet that could not be cancelled."""
-
     CapacityReservationFleetId: Optional[CapacityReservationFleetId]
     CancelCapacityReservationFleetError: Optional[CancelCapacityReservationFleetError]
 
@@ -4116,8 +3860,6 @@ FailedCapacityReservationFleetCancellationResultSet = List[
 
 
 class CapacityReservationFleetCancellationState(TypedDict, total=False):
-    """Describes a Capacity Reservation Fleet that was successfully cancelled."""
-
     CurrentFleetState: Optional[CapacityReservationFleetState]
     PreviousFleetState: Optional[CapacityReservationFleetState]
     CapacityReservationFleetId: Optional[CapacityReservationFleetId]
@@ -4163,8 +3905,6 @@ class CancelImportTaskResult(TypedDict, total=False):
 
 
 class CancelReservedInstancesListingRequest(ServiceRequest):
-    """Contains the parameters for CancelReservedInstancesListing."""
-
     ReservedInstancesListingId: ReservedInstancesListingId
 
 
@@ -4172,8 +3912,6 @@ Long = int
 
 
 class PriceSchedule(TypedDict, total=False):
-    """Describes the price for a Reserved Instance."""
-
     Active: Optional[Boolean]
     CurrencyCode: Optional[CurrencyCodeValues]
     Price: Optional[Double]
@@ -4184,8 +3922,6 @@ PriceScheduleList = List[PriceSchedule]
 
 
 class InstanceCount(TypedDict, total=False):
-    """Describes a Reserved Instance listing state."""
-
     InstanceCount: Optional[Integer]
     State: Optional[ListingState]
 
@@ -4194,8 +3930,6 @@ InstanceCountList = List[InstanceCount]
 
 
 class ReservedInstancesListing(TypedDict, total=False):
-    """Describes a Reserved Instance listing."""
-
     ClientToken: Optional[String]
     CreateDate: Optional[DateTime]
     InstanceCounts: Optional[InstanceCountList]
@@ -4212,21 +3946,15 @@ ReservedInstancesListingList = List[ReservedInstancesListing]
 
 
 class CancelReservedInstancesListingResult(TypedDict, total=False):
-    """Contains the output of CancelReservedInstancesListing."""
-
     ReservedInstancesListings: Optional[ReservedInstancesListingList]
 
 
 class CancelSpotFleetRequestsError(TypedDict, total=False):
-    """Describes a Spot Fleet error."""
-
     Code: Optional[CancelBatchErrorCode]
     Message: Optional[String]
 
 
 class CancelSpotFleetRequestsErrorItem(TypedDict, total=False):
-    """Describes a Spot Fleet request that was not successfully canceled."""
-
     Error: Optional[CancelSpotFleetRequestsError]
     SpotFleetRequestId: Optional[String]
 
@@ -4236,16 +3964,12 @@ SpotFleetRequestIdList = List[SpotFleetRequestId]
 
 
 class CancelSpotFleetRequestsRequest(ServiceRequest):
-    """Contains the parameters for CancelSpotFleetRequests."""
-
     DryRun: Optional[Boolean]
     SpotFleetRequestIds: SpotFleetRequestIdList
     TerminateInstances: Boolean
 
 
 class CancelSpotFleetRequestsSuccessItem(TypedDict, total=False):
-    """Describes a Spot Fleet request that was successfully canceled."""
-
     CurrentSpotFleetRequestState: Optional[BatchState]
     PreviousSpotFleetRequestState: Optional[BatchState]
     SpotFleetRequestId: Optional[String]
@@ -4255,8 +3979,6 @@ CancelSpotFleetRequestsSuccessSet = List[CancelSpotFleetRequestsSuccessItem]
 
 
 class CancelSpotFleetRequestsResponse(TypedDict, total=False):
-    """Contains the output of CancelSpotFleetRequests."""
-
     SuccessfulFleetRequests: Optional[CancelSpotFleetRequestsSuccessSet]
     UnsuccessfulFleetRequests: Optional[CancelSpotFleetRequestsErrorSet]
 
@@ -4265,15 +3987,11 @@ SpotInstanceRequestIdList = List[SpotInstanceRequestId]
 
 
 class CancelSpotInstanceRequestsRequest(ServiceRequest):
-    """Contains the parameters for CancelSpotInstanceRequests."""
-
     DryRun: Optional[Boolean]
     SpotInstanceRequestIds: SpotInstanceRequestIdList
 
 
 class CancelledSpotInstanceRequest(TypedDict, total=False):
-    """Describes a request to cancel a Spot Instance."""
-
     SpotInstanceRequestId: Optional[String]
     State: Optional[CancelSpotInstanceRequestState]
 
@@ -4282,14 +4000,10 @@ CancelledSpotInstanceRequestList = List[CancelledSpotInstanceRequest]
 
 
 class CancelSpotInstanceRequestsResult(TypedDict, total=False):
-    """Contains the output of CancelSpotInstanceRequests."""
-
     CancelledSpotInstanceRequests: Optional[CancelledSpotInstanceRequestList]
 
 
 class CapacityReservation(TypedDict, total=False):
-    """Describes a Capacity Reservation."""
-
     CapacityReservationId: Optional[String]
     OwnerId: Optional[String]
     CapacityReservationArn: Optional[String]
@@ -4315,10 +4029,6 @@ class CapacityReservation(TypedDict, total=False):
 
 
 class FleetCapacityReservation(TypedDict, total=False):
-    """Information about a Capacity Reservation in a Capacity Reservation
-    Fleet.
-    """
-
     CapacityReservationId: Optional[CapacityReservationId]
     AvailabilityZoneId: Optional[String]
     InstanceType: Optional[InstanceType]
@@ -4336,8 +4046,6 @@ FleetCapacityReservationSet = List[FleetCapacityReservation]
 
 
 class CapacityReservationFleet(TypedDict, total=False):
-    """Information about a Capacity Reservation Fleet."""
-
     CapacityReservationFleetId: Optional[CapacityReservationFleetId]
     CapacityReservationFleetArn: Optional[String]
     State: Optional[CapacityReservationFleetState]
@@ -4356,10 +4064,6 @@ CapacityReservationFleetSet = List[CapacityReservationFleet]
 
 
 class CapacityReservationGroup(TypedDict, total=False):
-    """Describes a resource group to which a Capacity Reservation has been
-    added.
-    """
-
     GroupArn: Optional[String]
     OwnerId: Optional[String]
 
@@ -4369,38 +4073,10 @@ CapacityReservationIdSet = List[CapacityReservationId]
 
 
 class CapacityReservationOptions(TypedDict, total=False):
-    """Describes the strategy for using unused Capacity Reservations for
-    fulfilling On-Demand capacity.
-
-    This strategy can only be used if the EC2 Fleet is of type ``instant``.
-
-    For more information about Capacity Reservations, see `On-Demand
-    Capacity
-    Reservations <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-reservations.html>`__
-    in the *Amazon EC2 User Guide*. For examples of using Capacity
-    Reservations in an EC2 Fleet, see `EC2 Fleet example
-    configurations <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet-examples.html>`__
-    in the *Amazon EC2 User Guide*.
-    """
-
     UsageStrategy: Optional[FleetCapacityReservationUsageStrategy]
 
 
 class CapacityReservationOptionsRequest(TypedDict, total=False):
-    """Describes the strategy for using unused Capacity Reservations for
-    fulfilling On-Demand capacity.
-
-    This strategy can only be used if the EC2 Fleet is of type ``instant``.
-
-    For more information about Capacity Reservations, see `On-Demand
-    Capacity
-    Reservations <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-reservations.html>`__
-    in the *Amazon EC2 User Guide*. For examples of using Capacity
-    Reservations in an EC2 Fleet, see `EC2 Fleet example
-    configurations <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet-examples.html>`__
-    in the *Amazon EC2 User Guide*.
-    """
-
     UsageStrategy: Optional[FleetCapacityReservationUsageStrategy]
 
 
@@ -4408,55 +4084,26 @@ CapacityReservationSet = List[CapacityReservation]
 
 
 class CapacityReservationTarget(TypedDict, total=False):
-    """Describes a target Capacity Reservation or Capacity Reservation group."""
-
     CapacityReservationId: Optional[CapacityReservationId]
     CapacityReservationResourceGroupArn: Optional[String]
 
 
 class CapacityReservationSpecification(TypedDict, total=False):
-    """Describes an instance's Capacity Reservation targeting option. You can
-    specify only one parameter at a time. If you specify
-    ``CapacityReservationPreference`` and ``CapacityReservationTarget``, the
-    request fails.
-
-    Use the ``CapacityReservationPreference`` parameter to configure the
-    instance to run as an On-Demand Instance or to run in any ``open``
-    Capacity Reservation that has matching attributes (instance type,
-    platform, Availability Zone). Use the ``CapacityReservationTarget``
-    parameter to explicitly target a specific Capacity Reservation or a
-    Capacity Reservation group.
-    """
-
     CapacityReservationPreference: Optional[CapacityReservationPreference]
     CapacityReservationTarget: Optional[CapacityReservationTarget]
 
 
 class CapacityReservationTargetResponse(TypedDict, total=False):
-    """Describes a target Capacity Reservation or Capacity Reservation group."""
-
     CapacityReservationId: Optional[String]
     CapacityReservationResourceGroupArn: Optional[String]
 
 
 class CapacityReservationSpecificationResponse(TypedDict, total=False):
-    """Describes the instance's Capacity Reservation targeting preferences. The
-    action returns the ``capacityReservationPreference`` response element if
-    the instance is configured to run in On-Demand capacity, or if it is
-    configured in run in any ``open`` Capacity Reservation that has matching
-    attributes (instance type, platform, Availability Zone). The action
-    returns the ``capacityReservationTarget`` response element if the
-    instance explicily targets a specific Capacity Reservation or Capacity
-    Reservation group.
-    """
-
     CapacityReservationPreference: Optional[CapacityReservationPreference]
     CapacityReservationTarget: Optional[CapacityReservationTargetResponse]
 
 
 class CarrierGateway(TypedDict, total=False):
-    """Describes a carrier gateway."""
-
     CarrierGatewayId: Optional[CarrierGatewayId]
     VpcId: Optional[VpcId]
     State: Optional[CarrierGatewayState]
@@ -4469,33 +4116,19 @@ CarrierGatewaySet = List[CarrierGateway]
 
 
 class CertificateAuthentication(TypedDict, total=False):
-    """Information about the client certificate used for authentication."""
-
     ClientRootCertificateChain: Optional[String]
 
 
 class CertificateAuthenticationRequest(TypedDict, total=False):
-    """Information about the client certificate to be used for authentication."""
-
     ClientRootCertificateChainArn: Optional[String]
 
 
 class CidrAuthorizationContext(TypedDict, total=False):
-    """Provides authorization for Amazon to bring a specific IP address range
-    to a specific Amazon Web Services account using bring your own IP
-    addresses (BYOIP). For more information, see `Configuring your BYOIP
-    address
-    range <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-byoip.html#prepare-for-byoip>`__
-    in the *Amazon Elastic Compute Cloud User Guide*.
-    """
-
     Message: String
     Signature: String
 
 
 class ClassicLinkDnsSupport(TypedDict, total=False):
-    """Describes the ClassicLink DNS support status of a VPC."""
-
     ClassicLinkDnsSupported: Optional[Boolean]
     VpcId: Optional[String]
 
@@ -4504,8 +4137,6 @@ ClassicLinkDnsSupportList = List[ClassicLinkDnsSupport]
 
 
 class GroupIdentifier(TypedDict, total=False):
-    """Describes a security group."""
-
     GroupName: Optional[String]
     GroupId: Optional[String]
 
@@ -4514,8 +4145,6 @@ GroupIdentifierList = List[GroupIdentifier]
 
 
 class ClassicLinkInstance(TypedDict, total=False):
-    """Describes a linked EC2-Classic instance."""
-
     Groups: Optional[GroupIdentifierList]
     InstanceId: Optional[String]
     Tags: Optional[TagList]
@@ -4526,8 +4155,6 @@ ClassicLinkInstanceList = List[ClassicLinkInstance]
 
 
 class ClassicLoadBalancer(TypedDict, total=False):
-    """Describes a Classic Load Balancer."""
-
     Name: Optional[String]
 
 
@@ -4535,50 +4162,31 @@ ClassicLoadBalancers = List[ClassicLoadBalancer]
 
 
 class ClassicLoadBalancersConfig(TypedDict, total=False):
-    """Describes the Classic Load Balancers to attach to a Spot Fleet. Spot
-    Fleet registers the running Spot Instances with these Classic Load
-    Balancers.
-    """
-
     ClassicLoadBalancers: Optional[ClassicLoadBalancers]
 
 
 class ClientCertificateRevocationListStatus(TypedDict, total=False):
-    """Describes the state of a client certificate revocation list."""
-
     Code: Optional[ClientCertificateRevocationListStatusCode]
     Message: Optional[String]
 
 
 class ClientConnectOptions(TypedDict, total=False):
-    """The options for managing connection authorization for new client
-    connections.
-    """
-
     Enabled: Optional[Boolean]
     LambdaFunctionArn: Optional[String]
 
 
 class ClientVpnEndpointAttributeStatus(TypedDict, total=False):
-    """Describes the status of the Client VPN endpoint attribute."""
-
     Code: Optional[ClientVpnEndpointAttributeStatusCode]
     Message: Optional[String]
 
 
 class ClientConnectResponseOptions(TypedDict, total=False):
-    """The options for managing connection authorization for new client
-    connections.
-    """
-
     Enabled: Optional[Boolean]
     LambdaFunctionArn: Optional[String]
     Status: Optional[ClientVpnEndpointAttributeStatus]
 
 
 class ClientData(TypedDict, total=False):
-    """Describes the client-specific data."""
-
     Comment: Optional[String]
     UploadEnd: Optional[DateTime]
     UploadSize: Optional[Double]
@@ -4596,27 +4204,15 @@ class ClientLoginBannerResponseOptions(TypedDict, total=False):
 
 
 class FederatedAuthentication(TypedDict, total=False):
-    """Describes the IAM SAML identity providers used for federated
-    authentication.
-    """
-
     SamlProviderArn: Optional[String]
     SelfServiceSamlProviderArn: Optional[String]
 
 
 class DirectoryServiceAuthentication(TypedDict, total=False):
-    """Describes an Active Directory."""
-
     DirectoryId: Optional[String]
 
 
 class ClientVpnAuthentication(TypedDict, total=False):
-    """Describes the authentication methods used by a Client VPN endpoint. For
-    more information, see
-    `Authentication <https://docs.aws.amazon.com/vpn/latest/clientvpn-admin/client-authentication.html>`__
-    in the *Client VPN Administrator Guide*.
-    """
-
     Type: Optional[ClientVpnAuthenticationType]
     ActiveDirectory: Optional[DirectoryServiceAuthentication]
     MutualAuthentication: Optional[CertificateAuthentication]
@@ -4627,25 +4223,15 @@ ClientVpnAuthenticationList = List[ClientVpnAuthentication]
 
 
 class FederatedAuthenticationRequest(TypedDict, total=False):
-    """The IAM SAML identity provider used for federated authentication."""
-
     SAMLProviderArn: Optional[String]
     SelfServiceSAMLProviderArn: Optional[String]
 
 
 class DirectoryServiceAuthenticationRequest(TypedDict, total=False):
-    """Describes the Active Directory to be used for client authentication."""
-
     DirectoryId: Optional[String]
 
 
 class ClientVpnAuthenticationRequest(TypedDict, total=False):
-    """Describes the authentication method to be used by a Client VPN endpoint.
-    For more information, see
-    `Authentication <https://docs.aws.amazon.com/vpn/latest/clientvpn-admin/authentication-authrization.html#client-authentication>`__
-    in the *Client VPN Administrator Guide*.
-    """
-
     Type: Optional[ClientVpnAuthenticationType]
     ActiveDirectory: Optional[DirectoryServiceAuthenticationRequest]
     MutualAuthentication: Optional[CertificateAuthenticationRequest]
@@ -4656,15 +4242,11 @@ ClientVpnAuthenticationRequestList = List[ClientVpnAuthenticationRequest]
 
 
 class ClientVpnConnectionStatus(TypedDict, total=False):
-    """Describes the status of a client connection."""
-
     Code: Optional[ClientVpnConnectionStatusCode]
     Message: Optional[String]
 
 
 class ClientVpnConnection(TypedDict, total=False):
-    """Describes a client connection."""
-
     ClientVpnEndpointId: Optional[String]
     Timestamp: Optional[String]
     ConnectionId: Optional[String]
@@ -4685,25 +4267,17 @@ ClientVpnConnectionSet = List[ClientVpnConnection]
 
 
 class ConnectionLogResponseOptions(TypedDict, total=False):
-    """Information about the client connection logging options for a Client VPN
-    endpoint.
-    """
-
     Enabled: Optional[Boolean]
     CloudwatchLogGroup: Optional[String]
     CloudwatchLogStream: Optional[String]
 
 
 class ClientVpnEndpointStatus(TypedDict, total=False):
-    """Describes the state of a Client VPN endpoint."""
-
     Code: Optional[ClientVpnEndpointStatusCode]
     Message: Optional[String]
 
 
 class ClientVpnEndpoint(TypedDict, total=False):
-    """Describes a Client VPN endpoint."""
-
     ClientVpnEndpointId: Optional[String]
     Description: Optional[String]
     Status: Optional[ClientVpnEndpointStatus]
@@ -4733,15 +4307,11 @@ ClientVpnEndpointIdList = List[ClientVpnEndpointId]
 
 
 class ClientVpnRouteStatus(TypedDict, total=False):
-    """Describes the state of a Client VPN endpoint route."""
-
     Code: Optional[ClientVpnRouteStatusCode]
     Message: Optional[String]
 
 
 class ClientVpnRoute(TypedDict, total=False):
-    """Information about a Client VPN endpoint route."""
-
     ClientVpnEndpointId: Optional[String]
     DestinationCidr: Optional[String]
     TargetSubnet: Optional[String]
@@ -4755,8 +4325,6 @@ ClientVpnRouteSet = List[ClientVpnRoute]
 
 
 class CoipAddressUsage(TypedDict, total=False):
-    """Describes address usage for a customer-owned address pool."""
-
     AllocationId: Optional[String]
     AwsAccountId: Optional[String]
     AwsService: Optional[String]
@@ -4767,16 +4335,14 @@ CoipAddressUsageSet = List[CoipAddressUsage]
 
 
 class CoipPool(TypedDict, total=False):
-    """Describes a customer-owned address pool."""
-
-    PoolId: Optional[CoipPoolId]
+    PoolId: Optional[Ipv4PoolCoipId]
     PoolCidrs: Optional[ValueStringList]
     LocalGatewayRouteTableId: Optional[LocalGatewayRoutetableId]
     Tags: Optional[TagList]
     PoolArn: Optional[ResourceArn]
 
 
-CoipPoolIdSet = List[CoipPoolId]
+CoipPoolIdSet = List[Ipv4PoolCoipId]
 CoipPoolSet = List[CoipPool]
 
 
@@ -4792,20 +4358,12 @@ class ConfirmProductInstanceResult(TypedDict, total=False):
 
 
 class ConnectionLogOptions(TypedDict, total=False):
-    """Describes the client connection logging options for the Client VPN
-    endpoint.
-    """
-
     Enabled: Optional[Boolean]
     CloudwatchLogGroup: Optional[String]
     CloudwatchLogStream: Optional[String]
 
 
 class ConnectionNotification(TypedDict, total=False):
-    """Describes a connection notification for a VPC endpoint or VPC endpoint
-    service.
-    """
-
     ConnectionNotificationId: Optional[String]
     ServiceId: Optional[String]
     VpcEndpointId: Optional[String]
@@ -4821,15 +4379,11 @@ ConversionIdStringList = List[ConversionTaskId]
 
 
 class DiskImageVolumeDescription(TypedDict, total=False):
-    """Describes a disk image volume."""
-
     Id: Optional[String]
     Size: Optional[Long]
 
 
 class DiskImageDescription(TypedDict, total=False):
-    """Describes a disk image."""
-
     Checksum: Optional[String]
     Format: Optional[DiskImageFormat]
     ImportManifestUrl: Optional[String]
@@ -4837,8 +4391,6 @@ class DiskImageDescription(TypedDict, total=False):
 
 
 class ImportVolumeTaskDetails(TypedDict, total=False):
-    """Describes an import volume task."""
-
     AvailabilityZone: Optional[String]
     BytesConverted: Optional[Long]
     Description: Optional[String]
@@ -4847,8 +4399,6 @@ class ImportVolumeTaskDetails(TypedDict, total=False):
 
 
 class ImportInstanceVolumeDetailItem(TypedDict, total=False):
-    """Describes an import volume task."""
-
     AvailabilityZone: Optional[String]
     BytesConverted: Optional[Long]
     Description: Optional[String]
@@ -4862,8 +4412,6 @@ ImportInstanceVolumeDetailSet = List[ImportInstanceVolumeDetailItem]
 
 
 class ImportInstanceTaskDetails(TypedDict, total=False):
-    """Describes an import instance task."""
-
     Description: Optional[String]
     InstanceId: Optional[String]
     Platform: Optional[PlatformValues]
@@ -4871,8 +4419,6 @@ class ImportInstanceTaskDetails(TypedDict, total=False):
 
 
 class ConversionTask(TypedDict, total=False):
-    """Describes a conversion task."""
-
     ConversionTaskId: Optional[String]
     ExpirationTime: Optional[String]
     ImportInstance: Optional[ImportInstanceTaskDetails]
@@ -4896,8 +4442,6 @@ class CopyFpgaImageResult(TypedDict, total=False):
 
 
 class CopyImageRequest(ServiceRequest):
-    """Contains the parameters for CopyImage."""
-
     ClientToken: Optional[String]
     Description: Optional[String]
     Encrypted: Optional[Boolean]
@@ -4910,8 +4454,6 @@ class CopyImageRequest(ServiceRequest):
 
 
 class CopyImageResult(TypedDict, total=False):
-    """Contains the output of CopyImage."""
-
     ImageId: Optional[String]
 
 
@@ -4938,26 +4480,16 @@ CpuManufacturerSet = List[CpuManufacturer]
 
 
 class CpuOptions(TypedDict, total=False):
-    """The CPU options for the instance."""
-
     CoreCount: Optional[Integer]
     ThreadsPerCore: Optional[Integer]
 
 
 class CpuOptionsRequest(TypedDict, total=False):
-    """The CPU options for the instance. Both the core count and threads per
-    core must be specified in the request.
-    """
-
     CoreCount: Optional[Integer]
     ThreadsPerCore: Optional[Integer]
 
 
 class ReservationFleetInstanceSpecification(TypedDict, total=False):
-    """Information about an instance type to use in a Capacity Reservation
-    Fleet.
-    """
-
     InstanceType: Optional[InstanceType]
     InstancePlatform: Optional[CapacityReservationInstancePlatform]
     Weight: Optional[DoubleWithConstraints]
@@ -5071,8 +4603,6 @@ class CreateClientVpnRouteResult(TypedDict, total=False):
 
 
 class CreateCustomerGatewayRequest(ServiceRequest):
-    """Contains the parameters for CreateCustomerGateway."""
-
     BgpAsn: Integer
     PublicIp: Optional[String]
     CertificateArn: Optional[String]
@@ -5083,8 +4613,6 @@ class CreateCustomerGatewayRequest(ServiceRequest):
 
 
 class CustomerGateway(TypedDict, total=False):
-    """Describes a customer gateway."""
-
     BgpAsn: Optional[String]
     CustomerGatewayId: Optional[String]
     IpAddress: Optional[String]
@@ -5096,8 +4624,6 @@ class CustomerGateway(TypedDict, total=False):
 
 
 class CreateCustomerGatewayResult(TypedDict, total=False):
-    """Contains the output of CreateCustomerGateway."""
-
     CustomerGateway: Optional[CustomerGateway]
 
 
@@ -5108,8 +4634,6 @@ class CreateDefaultSubnetRequest(ServiceRequest):
 
 
 class PrivateDnsNameOptionsOnLaunch(TypedDict, total=False):
-    """Describes the options for instance hostnames."""
-
     HostnameType: Optional[HostnameType]
     EnableResourceNameDnsARecord: Optional[Boolean]
     EnableResourceNameDnsAAAARecord: Optional[Boolean]
@@ -5119,8 +4643,6 @@ SubnetIpv6CidrBlockAssociationSet = List[SubnetIpv6CidrBlockAssociation]
 
 
 class Subnet(TypedDict, total=False):
-    """Describes a subnet."""
-
     AvailabilityZone: Optional[String]
     AvailabilityZoneId: Optional[String]
     AvailableIpAddressCount: Optional[Integer]
@@ -5157,8 +4679,6 @@ VpcIpv6CidrBlockAssociationSet = List[VpcIpv6CidrBlockAssociation]
 
 
 class Vpc(TypedDict, total=False):
-    """Describes a VPC."""
-
     CidrBlock: Optional[String]
     DhcpOptionsId: Optional[String]
     State: Optional[VpcState]
@@ -5193,8 +4713,6 @@ DhcpConfigurationValueList = List[AttributeValue]
 
 
 class DhcpConfiguration(TypedDict, total=False):
-    """Describes a DHCP configuration option."""
-
     Key: Optional[String]
     Values: Optional[DhcpConfigurationValueList]
 
@@ -5203,8 +4721,6 @@ DhcpConfigurationList = List[DhcpConfiguration]
 
 
 class DhcpOptions(TypedDict, total=False):
-    """Describes a set of DHCP options."""
-
     DhcpConfigurations: Optional[DhcpConfigurationList]
     DhcpOptionsId: Optional[String]
     OwnerId: Optional[String]
@@ -5223,10 +4739,6 @@ class CreateEgressOnlyInternetGatewayRequest(ServiceRequest):
 
 
 class InternetGatewayAttachment(TypedDict, total=False):
-    """Describes the attachment of a VPC to an internet gateway or an
-    egress-only internet gateway.
-    """
-
     State: Optional[AttachmentStatus]
     VpcId: Optional[String]
 
@@ -5235,8 +4747,6 @@ InternetGatewayAttachmentList = List[InternetGatewayAttachment]
 
 
 class EgressOnlyInternetGateway(TypedDict, total=False):
-    """Describes an egress-only internet gateway."""
-
     Attachments: Optional[InternetGatewayAttachmentList]
     EgressOnlyInternetGatewayId: Optional[EgressOnlyInternetGatewayId]
     Tags: Optional[TagList]
@@ -5248,8 +4758,6 @@ class CreateEgressOnlyInternetGatewayResult(TypedDict, total=False):
 
 
 class TotalLocalStorageGB(TypedDict, total=False):
-    """The minimum and maximum amount of total local storage, in GB."""
-
     Min: Optional[Double]
     Max: Optional[Double]
 
@@ -5258,8 +4766,6 @@ LocalStorageTypeSet = List[LocalStorageType]
 
 
 class NetworkInterfaceCount(TypedDict, total=False):
-    """The minimum and maximum number of network interfaces."""
-
     Min: Optional[Integer]
     Max: Optional[Integer]
 
@@ -5269,49 +4775,21 @@ ExcludedInstanceTypeSet = List[ExcludedInstanceType]
 
 
 class MemoryGiBPerVCpu(TypedDict, total=False):
-    """The minimum and maximum amount of memory per vCPU, in GiB."""
-
     Min: Optional[Double]
     Max: Optional[Double]
 
 
 class MemoryMiB(TypedDict, total=False):
-    """The minimum and maximum amount of memory, in MiB."""
-
     Min: Optional[Integer]
     Max: Optional[Integer]
 
 
 class VCpuCountRange(TypedDict, total=False):
-    """The minimum and maximum number of vCPUs."""
-
     Min: Optional[Integer]
     Max: Optional[Integer]
 
 
 class InstanceRequirements(TypedDict, total=False):
-    """The attributes for the instance types. When you specify instance
-    attributes, Amazon EC2 will identify instance types with these
-    attributes.
-
-    When you specify multiple parameters, you get instance types that
-    satisfy all of the specified parameters. If you specify multiple values
-    for a parameter, you get instance types that satisfy any of the
-    specified values.
-
-    You must specify ``VCpuCount`` and ``MemoryMiB``. All other parameters
-    are optional. Any unspecified optional parameter is set to its default.
-
-    For more information, see `Attribute-based instance type selection for
-    EC2
-    Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet-attribute-based-instance-type-selection.html>`__,
-    `Attribute-based instance type selection for Spot
-    Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet-attribute-based-instance-type-selection.html>`__,
-    and `Spot placement
-    score <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-placement-score.html>`__
-    in the *Amazon EC2 User Guide*.
-    """
-
     VCpuCount: Optional[VCpuCountRange]
     MemoryMiB: Optional[MemoryMiB]
     CpuManufacturers: Optional[CpuManufacturerSet]
@@ -5336,14 +4814,10 @@ class InstanceRequirements(TypedDict, total=False):
 
 
 class PlacementResponse(TypedDict, total=False):
-    """Describes the placement of an instance."""
-
     GroupName: Optional[PlacementGroupName]
 
 
 class FleetLaunchTemplateOverrides(TypedDict, total=False):
-    """Describes overrides for a launch template."""
-
     InstanceType: Optional[InstanceType]
     MaxPrice: Optional[String]
     SubnetId: Optional[String]
@@ -5355,29 +4829,17 @@ class FleetLaunchTemplateOverrides(TypedDict, total=False):
 
 
 class FleetLaunchTemplateSpecification(TypedDict, total=False):
-    """Describes the Amazon EC2 launch template and the launch template version
-    that can be used by a Spot Fleet request to configure Amazon EC2
-    instances. For information about launch templates, see `Launching an
-    instance from a launch
-    template <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html>`__
-    in the *Amazon EC2 User Guide for Linux Instances*.
-    """
-
     LaunchTemplateId: Optional[String]
     LaunchTemplateName: Optional[LaunchTemplateName]
     Version: Optional[String]
 
 
 class LaunchTemplateAndOverridesResponse(TypedDict, total=False):
-    """Describes a launch template and overrides."""
-
     LaunchTemplateSpecification: Optional[FleetLaunchTemplateSpecification]
     Overrides: Optional[FleetLaunchTemplateOverrides]
 
 
 class CreateFleetError(TypedDict, total=False):
-    """Describes the instances that could not be launched by the fleet."""
-
     LaunchTemplateAndOverrides: Optional[LaunchTemplateAndOverridesResponse]
     Lifecycle: Optional[InstanceLifecycle]
     ErrorCode: Optional[String]
@@ -5389,8 +4851,6 @@ InstanceIdsSet = List[InstanceId]
 
 
 class CreateFleetInstance(TypedDict, total=False):
-    """Describes the instances that were launched by the fleet."""
-
     LaunchTemplateAndOverrides: Optional[LaunchTemplateAndOverridesResponse]
     Lifecycle: Optional[InstanceLifecycle]
     InstanceIds: Optional[InstanceIdsSet]
@@ -5402,26 +4862,6 @@ CreateFleetInstancesSet = List[CreateFleetInstance]
 
 
 class TargetCapacitySpecificationRequest(TypedDict, total=False):
-    """The number of units to request. You can choose to set the target
-    capacity as the number of instances. Or you can set the target capacity
-    to a performance characteristic that is important to your application
-    workload, such as vCPUs, memory, or I/O. If the request type is
-    ``maintain``, you can specify a target capacity of 0 and add capacity
-    later.
-
-    You can use the On-Demand Instance ``MaxTotalPrice`` parameter, the Spot
-    Instance ``MaxTotalPrice`` parameter, or both parameters to ensure that
-    your fleet cost does not exceed your budget. If you set a maximum price
-    per hour for the On-Demand Instances and Spot Instances in your request,
-    EC2 Fleet will launch instances until it reaches the maximum amount that
-    you're willing to pay. When the maximum amount you're willing to pay is
-    reached, the fleet stops launching instances even if it hasn’t met the
-    target capacity. The ``MaxTotalPrice`` parameters are located in
-    `OnDemandOptionsRequest <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_OnDemandOptionsRequest>`__
-    and
-    `SpotOptionsRequest <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_SpotOptionsRequest>`__.
-    """
-
     TotalTargetCapacity: Integer
     OnDemandTargetCapacity: Optional[Integer]
     SpotTargetCapacity: Optional[Integer]
@@ -5430,63 +4870,31 @@ class TargetCapacitySpecificationRequest(TypedDict, total=False):
 
 
 class TotalLocalStorageGBRequest(TypedDict, total=False):
-    """The minimum and maximum amount of total local storage, in GB."""
-
     Min: Optional[Double]
     Max: Optional[Double]
 
 
 class NetworkInterfaceCountRequest(TypedDict, total=False):
-    """The minimum and maximum number of network interfaces."""
-
     Min: Optional[Integer]
     Max: Optional[Integer]
 
 
 class MemoryGiBPerVCpuRequest(TypedDict, total=False):
-    """The minimum and maximum amount of memory per vCPU, in GiB."""
-
     Min: Optional[Double]
     Max: Optional[Double]
 
 
 class MemoryMiBRequest(TypedDict, total=False):
-    """The minimum and maximum amount of memory, in MiB."""
-
     Min: Integer
     Max: Optional[Integer]
 
 
 class VCpuCountRangeRequest(TypedDict, total=False):
-    """The minimum and maximum number of vCPUs."""
-
     Min: Integer
     Max: Optional[Integer]
 
 
 class InstanceRequirementsRequest(TypedDict, total=False):
-    """The attributes for the instance types. When you specify instance
-    attributes, Amazon EC2 will identify instance types with these
-    attributes.
-
-    When you specify multiple parameters, you get instance types that
-    satisfy all of the specified parameters. If you specify multiple values
-    for a parameter, you get instance types that satisfy any of the
-    specified values.
-
-    You must specify ``VCpuCount`` and ``MemoryMiB``. All other parameters
-    are optional. Any unspecified optional parameter is set to its default.
-
-    For more information, see `Attribute-based instance type selection for
-    EC2
-    Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet-attribute-based-instance-type-selection.html>`__,
-    `Attribute-based instance type selection for Spot
-    Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet-attribute-based-instance-type-selection.html>`__,
-    and `Spot placement
-    score <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-placement-score.html>`__
-    in the *Amazon EC2 User Guide*.
-    """
-
     VCpuCount: VCpuCountRangeRequest
     MemoryMiB: MemoryMiBRequest
     CpuManufacturers: Optional[CpuManufacturerSet]
@@ -5511,8 +4919,6 @@ class InstanceRequirementsRequest(TypedDict, total=False):
 
 
 class Placement(TypedDict, total=False):
-    """Describes the placement of an instance."""
-
     AvailabilityZone: Optional[String]
     Affinity: Optional[String]
     GroupName: Optional[PlacementGroupName]
@@ -5524,8 +4930,6 @@ class Placement(TypedDict, total=False):
 
 
 class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
-    """Describes overrides for a launch template."""
-
     InstanceType: Optional[InstanceType]
     MaxPrice: Optional[String]
     SubnetId: Optional[SubnetId]
@@ -5540,22 +4944,12 @@ FleetLaunchTemplateOverridesListRequest = List[FleetLaunchTemplateOverridesReque
 
 
 class FleetLaunchTemplateSpecificationRequest(TypedDict, total=False):
-    """Describes the Amazon EC2 launch template and the launch template version
-    that can be used by an EC2 Fleet to configure Amazon EC2 instances. For
-    information about launch templates, see `Launching an instance from a
-    launch
-    template <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html>`__
-    in the *Amazon EC2 User Guide*.
-    """
-
     LaunchTemplateId: Optional[LaunchTemplateId]
     LaunchTemplateName: Optional[LaunchTemplateName]
     Version: Optional[String]
 
 
 class FleetLaunchTemplateConfigRequest(TypedDict, total=False):
-    """Describes a launch template and overrides."""
-
     LaunchTemplateSpecification: Optional[FleetLaunchTemplateSpecificationRequest]
     Overrides: Optional[FleetLaunchTemplateOverridesListRequest]
 
@@ -5564,8 +4958,6 @@ FleetLaunchTemplateConfigListRequest = List[FleetLaunchTemplateConfigRequest]
 
 
 class OnDemandOptionsRequest(TypedDict, total=False):
-    """Describes the configuration of On-Demand Instances in an EC2 Fleet."""
-
     AllocationStrategy: Optional[FleetOnDemandAllocationStrategy]
     CapacityReservationOptions: Optional[CapacityReservationOptionsRequest]
     SingleInstanceType: Optional[Boolean]
@@ -5575,28 +4967,15 @@ class OnDemandOptionsRequest(TypedDict, total=False):
 
 
 class FleetSpotCapacityRebalanceRequest(TypedDict, total=False):
-    """The Spot Instance replacement strategy to use when Amazon EC2 emits a
-    rebalance notification signal that your Spot Instance is at an elevated
-    risk of being interrupted. For more information, see `Capacity
-    rebalancing <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet-capacity-rebalance.html>`__
-    in the *Amazon EC2 User Guide*.
-    """
-
     ReplacementStrategy: Optional[FleetReplacementStrategy]
     TerminationDelay: Optional[Integer]
 
 
 class FleetSpotMaintenanceStrategiesRequest(TypedDict, total=False):
-    """The strategies for managing your Spot Instances that are at an elevated
-    risk of being interrupted.
-    """
-
     CapacityRebalance: Optional[FleetSpotCapacityRebalanceRequest]
 
 
 class SpotOptionsRequest(TypedDict, total=False):
-    """Describes the configuration of Spot Instances in an EC2 Fleet request."""
-
     AllocationStrategy: Optional[SpotAllocationStrategy]
     MaintenanceStrategies: Optional[FleetSpotMaintenanceStrategiesRequest]
     InstanceInterruptionBehavior: Optional[SpotInstanceInterruptionBehavior]
@@ -5631,8 +5010,6 @@ class CreateFleetResult(TypedDict, total=False):
 
 
 class DestinationOptionsRequest(TypedDict, total=False):
-    """Describes the destination options for a flow log."""
-
     FileFormat: Optional[DestinationFileFormat]
     HiveCompatiblePartitions: Optional[Boolean]
     PerHourPartition: Optional[Boolean]
@@ -5664,8 +5041,6 @@ class CreateFlowLogsResult(TypedDict, total=False):
 
 
 class StorageLocation(TypedDict, total=False):
-    """Describes a storage location in Amazon S3."""
-
     Bucket: Optional[String]
     Key: Optional[String]
 
@@ -5700,10 +5075,6 @@ class CreateImageResult(TypedDict, total=False):
 
 
 class InstanceEventWindowTimeRangeRequest(TypedDict, total=False):
-    """The start day and time and the end day and time of the time range, in
-    UTC.
-    """
-
     StartWeekDay: Optional[WeekDay]
     StartHour: Optional[Hour]
     EndWeekDay: Optional[WeekDay]
@@ -5726,8 +5097,6 @@ class CreateInstanceEventWindowResult(TypedDict, total=False):
 
 
 class ExportToS3TaskSpecification(TypedDict, total=False):
-    """Describes an export instance task."""
-
     ContainerFormat: Optional[ContainerFormat]
     DiskImageFormat: Optional[DiskImageFormat]
     S3Bucket: Optional[String]
@@ -5743,15 +5112,11 @@ class CreateInstanceExportTaskRequest(ServiceRequest):
 
 
 class InstanceExportDetails(TypedDict, total=False):
-    """Describes an instance to export."""
-
     InstanceId: Optional[String]
     TargetEnvironment: Optional[ExportEnvironment]
 
 
 class ExportToS3Task(TypedDict, total=False):
-    """Describes the format and location for the export task."""
-
     ContainerFormat: Optional[ContainerFormat]
     DiskImageFormat: Optional[DiskImageFormat]
     S3Bucket: Optional[String]
@@ -5759,8 +5124,6 @@ class ExportToS3Task(TypedDict, total=False):
 
 
 class ExportTask(TypedDict, total=False):
-    """Describes an export instance task."""
-
     Description: Optional[String]
     ExportTaskId: Optional[String]
     ExportToS3Task: Optional[ExportToS3Task]
@@ -5780,8 +5143,6 @@ class CreateInternetGatewayRequest(ServiceRequest):
 
 
 class InternetGateway(TypedDict, total=False):
-    """Describes an internet gateway."""
-
     Attachments: Optional[InternetGatewayAttachmentList]
     InternetGatewayId: Optional[String]
     OwnerId: Optional[String]
@@ -5793,8 +5154,6 @@ class CreateInternetGatewayResult(TypedDict, total=False):
 
 
 class RequestIpamResourceTag(TypedDict, total=False):
-    """A tag on an IPAM resource."""
-
     Key: Optional[String]
     Value: Optional[String]
 
@@ -5808,7 +5167,7 @@ class CreateIpamPoolRequest(ServiceRequest):
     Locale: Optional[String]
     SourceIpamPoolId: Optional[IpamPoolId]
     Description: Optional[String]
-    AddressFamily: Optional[AddressFamily]
+    AddressFamily: AddressFamily
     AutoImport: Optional[Boolean]
     PubliclyAdvertisable: Optional[Boolean]
     AllocationMinNetmaskLength: Optional[IpamNetmaskLength]
@@ -5821,13 +5180,6 @@ class CreateIpamPoolRequest(ServiceRequest):
 
 
 class IpamResourceTag(TypedDict, total=False):
-    """The key/value combination of a tag assigned to the resource. Use the tag
-    key in the filter name and the tag value as the filter value. For
-    example, to find all resources that have a tag with the key ``Owner``
-    and the value ``TeamA``, specify ``tag:Owner`` for the filter name and
-    ``TeamA`` for the filter value.
-    """
-
     Key: Optional[String]
     Value: Optional[String]
 
@@ -5836,13 +5188,6 @@ IpamResourceTagList = List[IpamResourceTag]
 
 
 class IpamPool(TypedDict, total=False):
-    """In IPAM, a pool is a collection of contiguous IP addresses CIDRs. Pools
-    enable you to organize your IP addresses according to your routing and
-    security needs. For example, if you have separate routing and security
-    needs for development and production applications, you can create a pool
-    for each.
-    """
-
     OwnerId: Optional[String]
     IpamPoolId: Optional[IpamPoolId]
     SourceIpamPoolId: Optional[IpamPoolId]
@@ -5880,16 +5225,6 @@ class CreateIpamRequest(ServiceRequest):
 
 
 class IpamOperatingRegion(TypedDict, total=False):
-    """The operating Regions for an IPAM. Operating Regions are Amazon Web
-    Services Regions where the IPAM is allowed to manage IP address CIDRs.
-    IPAM only discovers and monitors resources in the Amazon Web Services
-    Regions you select as operating Regions.
-
-    For more information about operating Regions, see `Create an
-    IPAM </vpc/latest/ipam/create-ipam.html>`__ in the *Amazon VPC IPAM User
-    Guide*.
-    """
-
     RegionName: Optional[String]
 
 
@@ -5897,14 +5232,6 @@ IpamOperatingRegionSet = List[IpamOperatingRegion]
 
 
 class Ipam(TypedDict, total=False):
-    """IPAM is a VPC feature that you can use to automate your IP address
-    management workflows including assigning, tracking, troubleshooting, and
-    auditing IP addresses across Amazon Web Services Regions and accounts
-    throughout your Amazon Web Services Organization. For more information,
-    see `What is IPAM? </vpc/latest/ipam/what-is-it-ipam.html>`__ in the
-    *Amazon VPC IPAM User Guide*.
-    """
-
     OwnerId: Optional[String]
     IpamId: Optional[IpamId]
     IpamArn: Optional[ResourceArn]
@@ -5931,18 +5258,6 @@ class CreateIpamScopeRequest(ServiceRequest):
 
 
 class IpamScope(TypedDict, total=False):
-    """In IPAM, a scope is the highest-level container within IPAM. An IPAM
-    contains two default scopes. Each scope represents the IP space for a
-    single network. The private scope is intended for all private IP address
-    space. The public scope is intended for all public IP address space.
-    Scopes enable you to reuse IP addresses across multiple unconnected
-    networks without causing IP address overlap or conflict.
-
-    For more information, see `How IPAM
-    works </vpc/latest/ipam/how-it-works-ipam.html>`__ in the *Amazon VPC
-    IPAM User Guide*
-    """
-
     OwnerId: Optional[String]
     IpamScopeId: Optional[IpamScopeId]
     IpamScopeArn: Optional[ResourceArn]
@@ -5968,30 +5283,16 @@ class CreateKeyPairRequest(ServiceRequest):
 
 
 class LaunchTemplatePrivateDnsNameOptionsRequest(TypedDict, total=False):
-    """Describes the options for instance hostnames."""
-
     HostnameType: Optional[HostnameType]
     EnableResourceNameDnsARecord: Optional[Boolean]
     EnableResourceNameDnsAAAARecord: Optional[Boolean]
 
 
 class LaunchTemplateEnclaveOptionsRequest(TypedDict, total=False):
-    """Indicates whether the instance is enabled for Amazon Web Services Nitro
-    Enclaves. For more information, see `What is Amazon Web Services Nitro
-    Enclaves? <https://docs.aws.amazon.com/enclaves/latest/user/nitro-enclave.html>`__
-    in the *Amazon Web Services Nitro Enclaves User Guide*.
-    """
-
     Enabled: Optional[Boolean]
 
 
 class LaunchTemplateInstanceMetadataOptionsRequest(TypedDict, total=False):
-    """The metadata options for the instance. For more information, see
-    `Instance Metadata and User
-    Data <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html>`__
-    in the *Amazon Elastic Compute Cloud User Guide*.
-    """
-
     HttpTokens: Optional[LaunchTemplateHttpTokensState]
     HttpPutResponseHopLimit: Optional[Integer]
     HttpEndpoint: Optional[LaunchTemplateInstanceMetadataEndpointState]
@@ -6000,17 +5301,10 @@ class LaunchTemplateInstanceMetadataOptionsRequest(TypedDict, total=False):
 
 
 class LaunchTemplateHibernationOptionsRequest(TypedDict, total=False):
-    """Indicates whether the instance is configured for hibernation. This
-    parameter is valid only if the instance meets the `hibernation
-    prerequisites <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html#hibernating-prerequisites>`__.
-    """
-
     Configured: Optional[Boolean]
 
 
 class LaunchTemplateLicenseConfigurationRequest(TypedDict, total=False):
-    """Describes a license configuration."""
-
     LicenseConfigurationArn: Optional[String]
 
 
@@ -6018,37 +5312,20 @@ LaunchTemplateLicenseSpecificationListRequest = List[LaunchTemplateLicenseConfig
 
 
 class LaunchTemplateCapacityReservationSpecificationRequest(TypedDict, total=False):
-    """Describes an instance's Capacity Reservation targeting option. You can
-    specify only one option at a time. Use the
-    ``CapacityReservationPreference`` parameter to configure the instance to
-    run in On-Demand capacity or to run in any ``open`` Capacity Reservation
-    that has matching attributes (instance type, platform, Availability
-    Zone). Use the ``CapacityReservationTarget`` parameter to explicitly
-    target a specific Capacity Reservation or a Capacity Reservation group.
-    """
-
     CapacityReservationPreference: Optional[CapacityReservationPreference]
     CapacityReservationTarget: Optional[CapacityReservationTarget]
 
 
 class LaunchTemplateCpuOptionsRequest(TypedDict, total=False):
-    """The CPU options for the instance. Both the core count and threads per
-    core must be specified in the request.
-    """
-
     CoreCount: Optional[Integer]
     ThreadsPerCore: Optional[Integer]
 
 
 class CreditSpecificationRequest(TypedDict, total=False):
-    """The credit option for CPU usage of a T2, T3, or T3a instance."""
-
     CpuCredits: String
 
 
 class LaunchTemplateSpotMarketOptionsRequest(TypedDict, total=False):
-    """The options for Spot Instances."""
-
     MaxPrice: Optional[String]
     SpotInstanceType: Optional[SpotInstanceType]
     BlockDurationMinutes: Optional[Integer]
@@ -6057,8 +5334,6 @@ class LaunchTemplateSpotMarketOptionsRequest(TypedDict, total=False):
 
 
 class LaunchTemplateInstanceMarketOptionsRequest(TypedDict, total=False):
-    """The market (purchasing) option for the instances."""
-
     MarketType: Optional[MarketType]
     SpotOptions: Optional[LaunchTemplateSpotMarketOptionsRequest]
 
@@ -6068,8 +5343,6 @@ SecurityGroupIdStringList = List[SecurityGroupId]
 
 
 class LaunchTemplateElasticInferenceAccelerator(TypedDict, total=False):
-    """Describes an elastic inference accelerator."""
-
     Type: String
     Count: Optional[LaunchTemplateElasticInferenceAcceleratorCount]
 
@@ -6078,8 +5351,6 @@ LaunchTemplateElasticInferenceAcceleratorList = List[LaunchTemplateElasticInfere
 
 
 class ElasticGpuSpecification(TypedDict, total=False):
-    """A specification for an Elastic Graphics accelerator."""
-
     Type: String
 
 
@@ -6087,8 +5358,6 @@ ElasticGpuSpecificationList = List[ElasticGpuSpecification]
 
 
 class LaunchTemplateTagSpecificationRequest(TypedDict, total=False):
-    """The tags specification for the launch template."""
-
     ResourceType: Optional[ResourceType]
     Tags: Optional[TagList]
 
@@ -6097,8 +5366,6 @@ LaunchTemplateTagSpecificationRequestList = List[LaunchTemplateTagSpecificationR
 
 
 class LaunchTemplatePlacementRequest(TypedDict, total=False):
-    """Describes the placement of an instance."""
-
     AvailabilityZone: Optional[String]
     Affinity: Optional[String]
     GroupName: Optional[PlacementGroupName]
@@ -6110,14 +5377,10 @@ class LaunchTemplatePlacementRequest(TypedDict, total=False):
 
 
 class LaunchTemplatesMonitoringRequest(TypedDict, total=False):
-    """Describes the monitoring for the instance."""
-
     Enabled: Optional[Boolean]
 
 
 class Ipv6PrefixSpecificationRequest(TypedDict, total=False):
-    """Describes the IPv4 prefix option for a network interface."""
-
     Ipv6Prefix: Optional[String]
 
 
@@ -6125,8 +5388,6 @@ Ipv6PrefixList = List[Ipv6PrefixSpecificationRequest]
 
 
 class Ipv4PrefixSpecificationRequest(TypedDict, total=False):
-    """Describes the IPv4 prefix option for a network interface."""
-
     Ipv4Prefix: Optional[String]
 
 
@@ -6134,8 +5395,6 @@ Ipv4PrefixList = List[Ipv4PrefixSpecificationRequest]
 
 
 class PrivateIpAddressSpecification(TypedDict, total=False):
-    """Describes a secondary private IPv4 address for a network interface."""
-
     Primary: Optional[Boolean]
     PrivateIpAddress: Optional[String]
 
@@ -6144,8 +5403,6 @@ PrivateIpAddressSpecificationList = List[PrivateIpAddressSpecification]
 
 
 class InstanceIpv6AddressRequest(TypedDict, total=False):
-    """Describes an IPv6 address."""
-
     Ipv6Address: Optional[String]
 
 
@@ -6153,8 +5410,6 @@ InstanceIpv6AddressListRequest = List[InstanceIpv6AddressRequest]
 
 
 class LaunchTemplateInstanceNetworkInterfaceSpecificationRequest(TypedDict, total=False):
-    """The parameters for a network interface."""
-
     AssociateCarrierIpAddress: Optional[Boolean]
     AssociatePublicIpAddress: Optional[Boolean]
     DeleteOnTermination: Optional[Boolean]
@@ -6182,8 +5437,6 @@ LaunchTemplateInstanceNetworkInterfaceSpecificationRequestList = List[
 
 
 class LaunchTemplateEbsBlockDeviceRequest(TypedDict, total=False):
-    """The parameters for a block device for an EBS volume."""
-
     Encrypted: Optional[Boolean]
     DeleteOnTermination: Optional[Boolean]
     Iops: Optional[Integer]
@@ -6195,8 +5448,6 @@ class LaunchTemplateEbsBlockDeviceRequest(TypedDict, total=False):
 
 
 class LaunchTemplateBlockDeviceMappingRequest(TypedDict, total=False):
-    """Describes a block device mapping."""
-
     DeviceName: Optional[String]
     VirtualName: Optional[String]
     Ebs: Optional[LaunchTemplateEbsBlockDeviceRequest]
@@ -6207,15 +5458,11 @@ LaunchTemplateBlockDeviceMappingRequestList = List[LaunchTemplateBlockDeviceMapp
 
 
 class LaunchTemplateIamInstanceProfileSpecificationRequest(TypedDict, total=False):
-    """An IAM instance profile."""
-
     Arn: Optional[String]
     Name: Optional[String]
 
 
 class RequestLaunchTemplateData(TypedDict, total=False):
-    """The information to include in the launch template."""
-
     KernelId: Optional[KernelId]
     EbsOptimized: Optional[Boolean]
     IamInstanceProfile: Optional[LaunchTemplateIamInstanceProfileSpecificationRequest]
@@ -6259,11 +5506,6 @@ class CreateLaunchTemplateRequest(ServiceRequest):
 
 
 class ValidationError(TypedDict, total=False):
-    """The error code and error message that is returned for a parameter or
-    parameter combination that is not valid when a new launch template or
-    new version of a launch template is created.
-    """
-
     Code: Optional[String]
     Message: Optional[String]
 
@@ -6272,17 +5514,10 @@ ErrorSet = List[ValidationError]
 
 
 class ValidationWarning(TypedDict, total=False):
-    """The error codes and error messages that are returned for the parameters
-    or parameter combinations that are not valid when a new launch template
-    or new version of a launch template is created.
-    """
-
     Errors: Optional[ErrorSet]
 
 
 class LaunchTemplate(TypedDict, total=False):
-    """Describes a launch template."""
-
     LaunchTemplateId: Optional[String]
     LaunchTemplateName: Optional[LaunchTemplateName]
     CreateTime: Optional[DateTime]
@@ -6308,28 +5543,16 @@ class CreateLaunchTemplateVersionRequest(ServiceRequest):
 
 
 class LaunchTemplatePrivateDnsNameOptions(TypedDict, total=False):
-    """Describes the options for instance hostnames."""
-
     HostnameType: Optional[HostnameType]
     EnableResourceNameDnsARecord: Optional[Boolean]
     EnableResourceNameDnsAAAARecord: Optional[Boolean]
 
 
 class LaunchTemplateEnclaveOptions(TypedDict, total=False):
-    """Indicates whether the instance is enabled for Amazon Web Services Nitro
-    Enclaves.
-    """
-
     Enabled: Optional[Boolean]
 
 
 class LaunchTemplateInstanceMetadataOptions(TypedDict, total=False):
-    """The metadata options for the instance. For more information, see
-    `Instance Metadata and User
-    Data <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html>`__
-    in the *Amazon Elastic Compute Cloud User Guide*.
-    """
-
     State: Optional[LaunchTemplateInstanceMetadataOptionsState]
     HttpTokens: Optional[LaunchTemplateHttpTokensState]
     HttpPutResponseHopLimit: Optional[Integer]
@@ -6339,14 +5562,10 @@ class LaunchTemplateInstanceMetadataOptions(TypedDict, total=False):
 
 
 class LaunchTemplateHibernationOptions(TypedDict, total=False):
-    """Indicates whether an instance is configured for hibernation."""
-
     Configured: Optional[Boolean]
 
 
 class LaunchTemplateLicenseConfiguration(TypedDict, total=False):
-    """Describes a license configuration."""
-
     LicenseConfigurationArn: Optional[String]
 
 
@@ -6354,28 +5573,20 @@ LaunchTemplateLicenseList = List[LaunchTemplateLicenseConfiguration]
 
 
 class LaunchTemplateCapacityReservationSpecificationResponse(TypedDict, total=False):
-    """Information about the Capacity Reservation targeting option."""
-
     CapacityReservationPreference: Optional[CapacityReservationPreference]
     CapacityReservationTarget: Optional[CapacityReservationTargetResponse]
 
 
 class LaunchTemplateCpuOptions(TypedDict, total=False):
-    """The CPU options for the instance."""
-
     CoreCount: Optional[Integer]
     ThreadsPerCore: Optional[Integer]
 
 
 class CreditSpecification(TypedDict, total=False):
-    """Describes the credit option for CPU usage of a T2, T3, or T3a instance."""
-
     CpuCredits: Optional[String]
 
 
 class LaunchTemplateSpotMarketOptions(TypedDict, total=False):
-    """The options for Spot Instances."""
-
     MaxPrice: Optional[String]
     SpotInstanceType: Optional[SpotInstanceType]
     BlockDurationMinutes: Optional[Integer]
@@ -6384,15 +5595,11 @@ class LaunchTemplateSpotMarketOptions(TypedDict, total=False):
 
 
 class LaunchTemplateInstanceMarketOptions(TypedDict, total=False):
-    """The market (purchasing) option for the instances."""
-
     MarketType: Optional[MarketType]
     SpotOptions: Optional[LaunchTemplateSpotMarketOptions]
 
 
 class LaunchTemplateElasticInferenceAcceleratorResponse(TypedDict, total=False):
-    """Describes an elastic inference accelerator."""
-
     Type: Optional[String]
     Count: Optional[Integer]
 
@@ -6403,8 +5610,6 @@ LaunchTemplateElasticInferenceAcceleratorResponseList = List[
 
 
 class ElasticGpuSpecificationResponse(TypedDict, total=False):
-    """Describes an elastic GPU."""
-
     Type: Optional[String]
 
 
@@ -6412,8 +5617,6 @@ ElasticGpuSpecificationResponseList = List[ElasticGpuSpecificationResponse]
 
 
 class LaunchTemplateTagSpecification(TypedDict, total=False):
-    """The tag specification for the launch template."""
-
     ResourceType: Optional[ResourceType]
     Tags: Optional[TagList]
 
@@ -6422,8 +5625,6 @@ LaunchTemplateTagSpecificationList = List[LaunchTemplateTagSpecification]
 
 
 class LaunchTemplatePlacement(TypedDict, total=False):
-    """Describes the placement of an instance."""
-
     AvailabilityZone: Optional[String]
     Affinity: Optional[String]
     GroupName: Optional[String]
@@ -6435,16 +5636,10 @@ class LaunchTemplatePlacement(TypedDict, total=False):
 
 
 class LaunchTemplatesMonitoring(TypedDict, total=False):
-    """Describes the monitoring for the instance."""
-
     Enabled: Optional[Boolean]
 
 
 class Ipv6PrefixSpecificationResponse(TypedDict, total=False):
-    """Information about the IPv6 delegated prefixes assigned to a network
-    interface.
-    """
-
     Ipv6Prefix: Optional[String]
 
 
@@ -6452,10 +5647,6 @@ Ipv6PrefixListResponse = List[Ipv6PrefixSpecificationResponse]
 
 
 class Ipv4PrefixSpecificationResponse(TypedDict, total=False):
-    """Information about the IPv4 delegated prefixes assigned to a network
-    interface.
-    """
-
     Ipv4Prefix: Optional[String]
 
 
@@ -6463,8 +5654,6 @@ Ipv4PrefixListResponse = List[Ipv4PrefixSpecificationResponse]
 
 
 class InstanceIpv6Address(TypedDict, total=False):
-    """Describes an IPv6 address."""
-
     Ipv6Address: Optional[String]
 
 
@@ -6472,8 +5661,6 @@ InstanceIpv6AddressList = List[InstanceIpv6Address]
 
 
 class LaunchTemplateInstanceNetworkInterfaceSpecification(TypedDict, total=False):
-    """Describes a network interface."""
-
     AssociateCarrierIpAddress: Optional[Boolean]
     AssociatePublicIpAddress: Optional[Boolean]
     DeleteOnTermination: Optional[Boolean]
@@ -6501,8 +5688,6 @@ LaunchTemplateInstanceNetworkInterfaceSpecificationList = List[
 
 
 class LaunchTemplateEbsBlockDevice(TypedDict, total=False):
-    """Describes a block device for an EBS volume."""
-
     Encrypted: Optional[Boolean]
     DeleteOnTermination: Optional[Boolean]
     Iops: Optional[Integer]
@@ -6514,8 +5699,6 @@ class LaunchTemplateEbsBlockDevice(TypedDict, total=False):
 
 
 class LaunchTemplateBlockDeviceMapping(TypedDict, total=False):
-    """Describes a block device mapping."""
-
     DeviceName: Optional[String]
     VirtualName: Optional[String]
     Ebs: Optional[LaunchTemplateEbsBlockDevice]
@@ -6526,15 +5709,11 @@ LaunchTemplateBlockDeviceMappingList = List[LaunchTemplateBlockDeviceMapping]
 
 
 class LaunchTemplateIamInstanceProfileSpecification(TypedDict, total=False):
-    """Describes an IAM instance profile."""
-
     Arn: Optional[String]
     Name: Optional[String]
 
 
 class ResponseLaunchTemplateData(TypedDict, total=False):
-    """The information for a launch template."""
-
     KernelId: Optional[String]
     EbsOptimized: Optional[Boolean]
     IamInstanceProfile: Optional[LaunchTemplateIamInstanceProfileSpecification]
@@ -6569,8 +5748,6 @@ class ResponseLaunchTemplateData(TypedDict, total=False):
 
 
 class LaunchTemplateVersion(TypedDict, total=False):
-    """Describes a launch template version."""
-
     LaunchTemplateId: Optional[String]
     LaunchTemplateName: Optional[LaunchTemplateName]
     VersionNumber: Optional[Long]
@@ -6594,8 +5771,6 @@ class CreateLocalGatewayRouteRequest(ServiceRequest):
 
 
 class LocalGatewayRoute(TypedDict, total=False):
-    """Describes a route for a local gateway route table."""
-
     DestinationCidrBlock: Optional[String]
     LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
     Type: Optional[LocalGatewayRouteType]
@@ -6617,8 +5792,6 @@ class CreateLocalGatewayRouteTableVpcAssociationRequest(ServiceRequest):
 
 
 class LocalGatewayRouteTableVpcAssociation(TypedDict, total=False):
-    """Describes an association between a local gateway route table and a VPC."""
-
     LocalGatewayRouteTableVpcAssociationId: Optional[LocalGatewayRouteTableVpcAssociationId]
     LocalGatewayRouteTableId: Optional[String]
     LocalGatewayRouteTableArn: Optional[ResourceArn]
@@ -6644,8 +5817,6 @@ class CreateManagedPrefixListRequest(ServiceRequest):
 
 
 class ManagedPrefixList(TypedDict, total=False):
-    """Describes a managed prefix list."""
-
     PrefixListId: Optional[PrefixListResourceId]
     AddressFamily: Optional[String]
     State: Optional[PrefixListState]
@@ -6672,12 +5843,6 @@ class CreateNatGatewayRequest(ServiceRequest):
 
 
 class ProvisionedBandwidth(TypedDict, total=False):
-    """Reserved. If you need to sustain traffic greater than the `documented
-    limits <https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html>`__,
-    contact us through the `Support
-    Center <https://console.aws.amazon.com/support/home?>`__.
-    """
-
     ProvisionTime: Optional[DateTime]
     Provisioned: Optional[String]
     RequestTime: Optional[DateTime]
@@ -6686,10 +5851,6 @@ class ProvisionedBandwidth(TypedDict, total=False):
 
 
 class NatGatewayAddress(TypedDict, total=False):
-    """Describes the IP addresses and network interface associated with a NAT
-    gateway.
-    """
-
     AllocationId: Optional[String]
     NetworkInterfaceId: Optional[String]
     PrivateIp: Optional[String]
@@ -6700,8 +5861,6 @@ NatGatewayAddressList = List[NatGatewayAddress]
 
 
 class NatGateway(TypedDict, total=False):
-    """Describes a NAT gateway."""
-
     CreateTime: Optional[DateTime]
     DeleteTime: Optional[DateTime]
     FailureCode: Optional[String]
@@ -6722,8 +5881,6 @@ class CreateNatGatewayResult(TypedDict, total=False):
 
 
 class IcmpTypeCode(TypedDict, total=False):
-    """Describes the ICMP type and code."""
-
     Code: Optional[Integer]
     Type: Optional[Integer]
 
@@ -6748,8 +5905,6 @@ class CreateNetworkAclRequest(ServiceRequest):
 
 
 class NetworkAclEntry(TypedDict, total=False):
-    """Describes an entry in a network ACL."""
-
     CidrBlock: Optional[String]
     Egress: Optional[Boolean]
     IcmpTypeCode: Optional[IcmpTypeCode]
@@ -6764,8 +5919,6 @@ NetworkAclEntryList = List[NetworkAclEntry]
 
 
 class NetworkAclAssociation(TypedDict, total=False):
-    """Describes an association between a network ACL and a subnet."""
-
     NetworkAclAssociationId: Optional[String]
     NetworkAclId: Optional[String]
     SubnetId: Optional[String]
@@ -6775,8 +5928,6 @@ NetworkAclAssociationList = List[NetworkAclAssociation]
 
 
 class NetworkAcl(TypedDict, total=False):
-    """Describes a network ACL."""
-
     Associations: Optional[NetworkAclAssociationList]
     Entries: Optional[NetworkAclEntryList]
     IsDefault: Optional[Boolean]
@@ -6799,16 +5950,12 @@ class CreateNetworkInsightsAccessScopeRequest(ServiceRequest):
 
 
 class NetworkInsightsAccessScopeContent(TypedDict, total=False):
-    """Describes the Network Access Scope content."""
-
     NetworkInsightsAccessScopeId: Optional[NetworkInsightsAccessScopeId]
     MatchPaths: Optional[AccessScopePathList]
     ExcludePaths: Optional[AccessScopePathList]
 
 
 class NetworkInsightsAccessScope(TypedDict, total=False):
-    """Describes a Network Access Scope."""
-
     NetworkInsightsAccessScopeId: Optional[NetworkInsightsAccessScopeId]
     NetworkInsightsAccessScopeArn: Optional[ResourceArn]
     CreatedDate: Optional[MillisecondDateTime]
@@ -6834,8 +5981,6 @@ class CreateNetworkInsightsPathRequest(ServiceRequest):
 
 
 class NetworkInsightsPath(TypedDict, total=False):
-    """Describes a path."""
-
     NetworkInsightsPathId: Optional[NetworkInsightsPathId]
     NetworkInsightsPathArn: Optional[ResourceArn]
     CreatedDate: Optional[MillisecondDateTime]
@@ -6853,8 +5998,6 @@ class CreateNetworkInsightsPathResult(TypedDict, total=False):
 
 
 class CreateNetworkInterfacePermissionRequest(ServiceRequest):
-    """Contains the parameters for CreateNetworkInterfacePermission."""
-
     NetworkInterfaceId: NetworkInterfaceId
     AwsAccountId: Optional[String]
     AwsService: Optional[String]
@@ -6863,15 +6006,11 @@ class CreateNetworkInterfacePermissionRequest(ServiceRequest):
 
 
 class NetworkInterfacePermissionState(TypedDict, total=False):
-    """Describes the state of a network interface permission."""
-
     State: Optional[NetworkInterfacePermissionStateCode]
     StatusMessage: Optional[String]
 
 
 class NetworkInterfacePermission(TypedDict, total=False):
-    """Describes a permission for a network interface."""
-
     NetworkInterfacePermissionId: Optional[String]
     NetworkInterfaceId: Optional[String]
     AwsAccountId: Optional[String]
@@ -6881,14 +6020,10 @@ class NetworkInterfacePermission(TypedDict, total=False):
 
 
 class CreateNetworkInterfacePermissionResult(TypedDict, total=False):
-    """Contains the output of CreateNetworkInterfacePermission."""
-
     InterfacePermission: Optional[NetworkInterfacePermission]
 
 
 class CreateNetworkInterfaceRequest(ServiceRequest):
-    """Contains the parameters for CreateNetworkInterface."""
-
     Description: Optional[String]
     DryRun: Optional[Boolean]
     Groups: Optional[SecurityGroupIdStringList]
@@ -6908,8 +6043,6 @@ class CreateNetworkInterfaceRequest(ServiceRequest):
 
 
 class Ipv6PrefixSpecification(TypedDict, total=False):
-    """Describes the IPv6 prefix."""
-
     Ipv6Prefix: Optional[String]
 
 
@@ -6917,11 +6050,6 @@ Ipv6PrefixesList = List[Ipv6PrefixSpecification]
 
 
 class NetworkInterfaceAssociation(TypedDict, total=False):
-    """Describes association information for an Elastic IP address (IPv4 only),
-    or a Carrier IP address (for a network interface which resides in a
-    subnet in a Wavelength Zone).
-    """
-
     AllocationId: Optional[String]
     AssociationId: Optional[String]
     IpOwnerId: Optional[String]
@@ -6932,8 +6060,6 @@ class NetworkInterfaceAssociation(TypedDict, total=False):
 
 
 class NetworkInterfacePrivateIpAddress(TypedDict, total=False):
-    """Describes the private IPv4 address of a network interface."""
-
     Association: Optional[NetworkInterfaceAssociation]
     Primary: Optional[Boolean]
     PrivateDnsName: Optional[String]
@@ -6944,8 +6070,6 @@ NetworkInterfacePrivateIpAddressList = List[NetworkInterfacePrivateIpAddress]
 
 
 class NetworkInterfaceIpv6Address(TypedDict, total=False):
-    """Describes an IPv6 address associated with a network interface."""
-
     Ipv6Address: Optional[String]
 
 
@@ -6953,8 +6077,6 @@ NetworkInterfaceIpv6AddressesList = List[NetworkInterfaceIpv6Address]
 
 
 class NetworkInterfaceAttachment(TypedDict, total=False):
-    """Describes a network interface attachment."""
-
     AttachTime: Optional[DateTime]
     AttachmentId: Optional[String]
     DeleteOnTermination: Optional[Boolean]
@@ -6966,8 +6088,6 @@ class NetworkInterfaceAttachment(TypedDict, total=False):
 
 
 class NetworkInterface(TypedDict, total=False):
-    """Describes a network interface."""
-
     Association: Optional[NetworkInterfaceAssociation]
     Attachment: Optional[NetworkInterfaceAttachment]
     AvailabilityZone: Optional[String]
@@ -6997,8 +6117,6 @@ class NetworkInterface(TypedDict, total=False):
 
 
 class CreateNetworkInterfaceResult(TypedDict, total=False):
-    """Contains the output of CreateNetworkInterface."""
-
     NetworkInterface: Optional[NetworkInterface]
     ClientToken: Optional[String]
 
@@ -7012,8 +6130,6 @@ class CreatePlacementGroupRequest(ServiceRequest):
 
 
 class PlacementGroup(TypedDict, total=False):
-    """Describes a placement group."""
-
     GroupName: Optional[String]
     State: Optional[PlacementGroupState]
     Strategy: Optional[PlacementStrategy]
@@ -7045,8 +6161,6 @@ class CreateReplaceRootVolumeTaskRequest(ServiceRequest):
 
 
 class ReplaceRootVolumeTask(TypedDict, total=False):
-    """Information about a root volume replacement task."""
-
     ReplaceRootVolumeTaskId: Optional[ReplaceRootVolumeTaskId]
     InstanceId: Optional[String]
     TaskState: Optional[ReplaceRootVolumeTaskState]
@@ -7060,8 +6174,6 @@ class CreateReplaceRootVolumeTaskResult(TypedDict, total=False):
 
 
 class PriceScheduleSpecification(TypedDict, total=False):
-    """Describes the price for a Reserved Instance."""
-
     CurrencyCode: Optional[CurrencyCodeValues]
     Price: Optional[Double]
     Term: Optional[Long]
@@ -7071,8 +6183,6 @@ PriceScheduleSpecificationList = List[PriceScheduleSpecification]
 
 
 class CreateReservedInstancesListingRequest(ServiceRequest):
-    """Contains the parameters for CreateReservedInstancesListing."""
-
     ClientToken: String
     InstanceCount: Integer
     PriceSchedules: PriceScheduleSpecificationList
@@ -7080,8 +6190,6 @@ class CreateReservedInstancesListingRequest(ServiceRequest):
 
 
 class CreateReservedInstancesListingResult(TypedDict, total=False):
-    """Contains the output of CreateReservedInstancesListing."""
-
     ReservedInstancesListings: Optional[ReservedInstancesListingList]
 
 
@@ -7127,8 +6235,6 @@ class CreateRouteTableRequest(ServiceRequest):
 
 
 class Route(TypedDict, total=False):
-    """Describes a route in a route table."""
-
     DestinationCidrBlock: Optional[String]
     DestinationIpv6CidrBlock: Optional[String]
     DestinationPrefixListId: Optional[String]
@@ -7151,8 +6257,6 @@ RouteList = List[Route]
 
 
 class PropagatingVgw(TypedDict, total=False):
-    """Describes a virtual private gateway propagating route."""
-
     GatewayId: Optional[String]
 
 
@@ -7160,8 +6264,6 @@ PropagatingVgwList = List[PropagatingVgw]
 
 
 class RouteTableAssociation(TypedDict, total=False):
-    """Describes an association between a route table and a subnet or gateway."""
-
     Main: Optional[Boolean]
     RouteTableAssociationId: Optional[String]
     RouteTableId: Optional[String]
@@ -7174,8 +6276,6 @@ RouteTableAssociationList = List[RouteTableAssociation]
 
 
 class RouteTable(TypedDict, total=False):
-    """Describes a route table."""
-
     Associations: Optional[RouteTableAssociationList]
     PropagatingVgws: Optional[PropagatingVgwList]
     RouteTableId: Optional[String]
@@ -7211,8 +6311,6 @@ class CreateSnapshotRequest(ServiceRequest):
 
 
 class InstanceSpecification(TypedDict, total=False):
-    """The instance details to specify which volumes should be snapshotted."""
-
     InstanceId: Optional[InstanceId]
     ExcludeBootVolume: Optional[Boolean]
 
@@ -7227,8 +6325,6 @@ class CreateSnapshotsRequest(ServiceRequest):
 
 
 class SnapshotInfo(TypedDict, total=False):
-    """Information about a snapshot."""
-
     Description: Optional[String]
     Tags: Optional[TagList]
     Encrypted: Optional[Boolean]
@@ -7250,23 +6346,17 @@ class CreateSnapshotsResult(TypedDict, total=False):
 
 
 class CreateSpotDatafeedSubscriptionRequest(ServiceRequest):
-    """Contains the parameters for CreateSpotDatafeedSubscription."""
-
     Bucket: String
     DryRun: Optional[Boolean]
     Prefix: Optional[String]
 
 
 class SpotInstanceStateFault(TypedDict, total=False):
-    """Describes a Spot Instance state change."""
-
     Code: Optional[String]
     Message: Optional[String]
 
 
 class SpotDatafeedSubscription(TypedDict, total=False):
-    """Describes the data feed for a Spot Instance."""
-
     Bucket: Optional[String]
     Fault: Optional[SpotInstanceStateFault]
     OwnerId: Optional[String]
@@ -7275,18 +6365,10 @@ class SpotDatafeedSubscription(TypedDict, total=False):
 
 
 class CreateSpotDatafeedSubscriptionResult(TypedDict, total=False):
-    """Contains the output of CreateSpotDatafeedSubscription."""
-
     SpotDatafeedSubscription: Optional[SpotDatafeedSubscription]
 
 
 class S3ObjectTag(TypedDict, total=False):
-    """The tags to apply to the AMI object that will be stored in the Amazon S3
-    bucket. For more information, see `Categorizing your storage using
-    tags <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-tagging.html>`__
-    in the *Amazon Simple Storage Service User Guide*.
-    """
-
     Key: Optional[String]
     Value: Optional[String]
 
@@ -7315,8 +6397,6 @@ class CreateSubnetCidrReservationRequest(ServiceRequest):
 
 
 class SubnetCidrReservation(TypedDict, total=False):
-    """Describes a subnet CIDR reservation."""
-
     SubnetCidrReservationId: Optional[SubnetCidrReservationId]
     SubnetId: Optional[SubnetId]
     Cidr: Optional[String]
@@ -7366,15 +6446,11 @@ TrafficMirrorNetworkServiceList = List[TrafficMirrorNetworkService]
 
 
 class TrafficMirrorPortRange(TypedDict, total=False):
-    """Describes the Traffic Mirror port range."""
-
     FromPort: Optional[Integer]
     ToPort: Optional[Integer]
 
 
 class TrafficMirrorFilterRule(TypedDict, total=False):
-    """Describes the Traffic Mirror rule."""
-
     TrafficMirrorFilterRuleId: Optional[String]
     TrafficMirrorFilterId: Optional[String]
     TrafficDirection: Optional[TrafficDirection]
@@ -7392,8 +6468,6 @@ TrafficMirrorFilterRuleList = List[TrafficMirrorFilterRule]
 
 
 class TrafficMirrorFilter(TypedDict, total=False):
-    """Describes the Traffic Mirror filter."""
-
     TrafficMirrorFilterId: Optional[String]
     IngressFilterRules: Optional[TrafficMirrorFilterRuleList]
     EgressFilterRules: Optional[TrafficMirrorFilterRuleList]
@@ -7408,8 +6482,6 @@ class CreateTrafficMirrorFilterResult(TypedDict, total=False):
 
 
 class TrafficMirrorPortRangeRequest(TypedDict, total=False):
-    """Information about the Traffic Mirror filter rule port range."""
-
     FromPort: Optional[Integer]
     ToPort: Optional[Integer]
 
@@ -7448,8 +6520,6 @@ class CreateTrafficMirrorSessionRequest(ServiceRequest):
 
 
 class TrafficMirrorSession(TypedDict, total=False):
-    """Describes a Traffic Mirror session."""
-
     TrafficMirrorSessionId: Optional[String]
     TrafficMirrorTargetId: Optional[String]
     TrafficMirrorFilterId: Optional[String]
@@ -7477,8 +6547,6 @@ class CreateTrafficMirrorTargetRequest(ServiceRequest):
 
 
 class TrafficMirrorTarget(TypedDict, total=False):
-    """Describes a Traffic Mirror target."""
-
     TrafficMirrorTargetId: Optional[String]
     NetworkInterfaceId: Optional[String]
     NetworkLoadBalancerArn: Optional[String]
@@ -7497,8 +6565,6 @@ InsideCidrBlocksStringList = List[String]
 
 
 class TransitGatewayConnectRequestBgpOptions(TypedDict, total=False):
-    """The BGP options for the Connect attachment."""
-
     PeerAsn: Optional[Long]
 
 
@@ -7513,8 +6579,6 @@ class CreateTransitGatewayConnectPeerRequest(ServiceRequest):
 
 
 class TransitGatewayAttachmentBgpConfiguration(TypedDict, total=False):
-    """The BGP configuration information."""
-
     TransitGatewayAsn: Optional[Long]
     PeerAsn: Optional[Long]
     TransitGatewayAddress: Optional[String]
@@ -7526,8 +6590,6 @@ TransitGatewayAttachmentBgpConfigurationList = List[TransitGatewayAttachmentBgpC
 
 
 class TransitGatewayConnectPeerConfiguration(TypedDict, total=False):
-    """Describes the Connect peer details."""
-
     TransitGatewayAddress: Optional[String]
     PeerAddress: Optional[String]
     InsideCidrBlocks: Optional[InsideCidrBlocksStringList]
@@ -7536,8 +6598,6 @@ class TransitGatewayConnectPeerConfiguration(TypedDict, total=False):
 
 
 class TransitGatewayConnectPeer(TypedDict, total=False):
-    """Describes a transit gateway Connect peer."""
-
     TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
     TransitGatewayConnectPeerId: Optional[TransitGatewayConnectPeerId]
     State: Optional[TransitGatewayConnectPeerState]
@@ -7551,8 +6611,6 @@ class CreateTransitGatewayConnectPeerResult(TypedDict, total=False):
 
 
 class CreateTransitGatewayConnectRequestOptions(TypedDict, total=False):
-    """The options for a Connect attachment."""
-
     Protocol: ProtocolValue
 
 
@@ -7564,14 +6622,10 @@ class CreateTransitGatewayConnectRequest(ServiceRequest):
 
 
 class TransitGatewayConnectOptions(TypedDict, total=False):
-    """Describes the Connect attachment options."""
-
     Protocol: Optional[ProtocolValue]
 
 
 class TransitGatewayConnect(TypedDict, total=False):
-    """Describes a transit gateway Connect attachment."""
-
     TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
     TransportTransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
     TransitGatewayId: Optional[TransitGatewayId]
@@ -7586,8 +6640,6 @@ class CreateTransitGatewayConnectResult(TypedDict, total=False):
 
 
 class CreateTransitGatewayMulticastDomainRequestOptions(TypedDict, total=False):
-    """The options for the transit gateway multicast domain."""
-
     Igmpv2Support: Optional[Igmpv2SupportValue]
     StaticSourcesSupport: Optional[StaticSourcesSupportValue]
     AutoAcceptSharedAssociations: Optional[AutoAcceptSharedAssociationsValue]
@@ -7601,16 +6653,12 @@ class CreateTransitGatewayMulticastDomainRequest(ServiceRequest):
 
 
 class TransitGatewayMulticastDomainOptions(TypedDict, total=False):
-    """Describes the options for a transit gateway multicast domain."""
-
     Igmpv2Support: Optional[Igmpv2SupportValue]
     StaticSourcesSupport: Optional[StaticSourcesSupportValue]
     AutoAcceptSharedAssociations: Optional[AutoAcceptSharedAssociationsValue]
 
 
 class TransitGatewayMulticastDomain(TypedDict, total=False):
-    """Describes the transit gateway multicast domain."""
-
     TransitGatewayMulticastDomainId: Optional[String]
     TransitGatewayId: Optional[String]
     TransitGatewayMulticastDomainArn: Optional[String]
@@ -7647,16 +6695,12 @@ class CreateTransitGatewayPrefixListReferenceRequest(ServiceRequest):
 
 
 class TransitGatewayPrefixListAttachment(TypedDict, total=False):
-    """Describes a transit gateway prefix list attachment."""
-
     TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
     ResourceType: Optional[TransitGatewayAttachmentResourceType]
     ResourceId: Optional[String]
 
 
 class TransitGatewayPrefixListReference(TypedDict, total=False):
-    """Describes a prefix list reference."""
-
     TransitGatewayRouteTableId: Optional[TransitGatewayRouteTableId]
     PrefixListId: Optional[PrefixListResourceId]
     PrefixListOwnerId: Optional[String]
@@ -7673,8 +6717,6 @@ TransitGatewayCidrBlockStringList = List[String]
 
 
 class TransitGatewayRequestOptions(TypedDict, total=False):
-    """Describes the options for a transit gateway."""
-
     AmazonSideAsn: Optional[Long]
     AutoAcceptSharedAttachments: Optional[AutoAcceptSharedAttachmentsValue]
     DefaultRouteTableAssociation: Optional[DefaultRouteTableAssociationValue]
@@ -7693,8 +6735,6 @@ class CreateTransitGatewayRequest(ServiceRequest):
 
 
 class TransitGatewayOptions(TypedDict, total=False):
-    """Describes the options for a transit gateway."""
-
     AmazonSideAsn: Optional[Long]
     TransitGatewayCidrBlocks: Optional[ValueStringList]
     AutoAcceptSharedAttachments: Optional[AutoAcceptSharedAttachmentsValue]
@@ -7708,8 +6748,6 @@ class TransitGatewayOptions(TypedDict, total=False):
 
 
 class TransitGateway(TypedDict, total=False):
-    """Describes a transit gateway."""
-
     TransitGatewayId: Optional[String]
     TransitGatewayArn: Optional[String]
     State: Optional[TransitGatewayState]
@@ -7733,8 +6771,6 @@ class CreateTransitGatewayRouteRequest(ServiceRequest):
 
 
 class TransitGatewayRouteAttachment(TypedDict, total=False):
-    """Describes a route attachment."""
-
     ResourceId: Optional[String]
     TransitGatewayAttachmentId: Optional[String]
     ResourceType: Optional[TransitGatewayAttachmentResourceType]
@@ -7744,8 +6780,6 @@ TransitGatewayRouteAttachmentList = List[TransitGatewayRouteAttachment]
 
 
 class TransitGatewayRoute(TypedDict, total=False):
-    """Describes a route for a transit gateway route table."""
-
     DestinationCidrBlock: Optional[String]
     PrefixListId: Optional[PrefixListResourceId]
     TransitGatewayAttachments: Optional[TransitGatewayRouteAttachmentList]
@@ -7764,8 +6798,6 @@ class CreateTransitGatewayRouteTableRequest(ServiceRequest):
 
 
 class TransitGatewayRouteTable(TypedDict, total=False):
-    """Describes a transit gateway route table."""
-
     TransitGatewayRouteTableId: Optional[String]
     TransitGatewayId: Optional[String]
     State: Optional[TransitGatewayRouteTableState]
@@ -7780,8 +6812,6 @@ class CreateTransitGatewayRouteTableResult(TypedDict, total=False):
 
 
 class CreateTransitGatewayVpcAttachmentRequestOptions(TypedDict, total=False):
-    """Describes the options for a VPC attachment."""
-
     DnsSupport: Optional[DnsSupportValue]
     Ipv6Support: Optional[Ipv6SupportValue]
     ApplianceModeSupport: Optional[ApplianceModeSupportValue]
@@ -7801,10 +6831,6 @@ class CreateTransitGatewayVpcAttachmentResult(TypedDict, total=False):
 
 
 class CreateVolumePermission(TypedDict, total=False):
-    """Describes the user or group to be added or removed from the list of
-    create volume permissions for a volume.
-    """
-
     Group: Optional[PermissionGroup]
     UserId: Optional[String]
 
@@ -7813,10 +6839,6 @@ CreateVolumePermissionList = List[CreateVolumePermission]
 
 
 class CreateVolumePermissionModifications(TypedDict, total=False):
-    """Describes modifications to the list of create volume permissions for a
-    volume.
-    """
-
     Add: Optional[CreateVolumePermissionList]
     Remove: Optional[CreateVolumePermissionList]
 
@@ -7857,8 +6879,6 @@ VpcEndpointRouteTableIdList = List[RouteTableId]
 
 
 class CreateVpcEndpointRequest(ServiceRequest):
-    """Contains the parameters for CreateVpcEndpoint."""
-
     DryRun: Optional[Boolean]
     VpcEndpointType: Optional[VpcEndpointType]
     VpcId: VpcId
@@ -7873,15 +6893,11 @@ class CreateVpcEndpointRequest(ServiceRequest):
 
 
 class LastError(TypedDict, total=False):
-    """The last error that occurred for a VPC endpoint."""
-
     Message: Optional[String]
     Code: Optional[String]
 
 
 class DnsEntry(TypedDict, total=False):
-    """Describes a DNS entry."""
-
     DnsName: Optional[String]
     HostedZoneId: Optional[String]
 
@@ -7890,8 +6906,6 @@ DnsEntrySet = List[DnsEntry]
 
 
 class SecurityGroupIdentifier(TypedDict, total=False):
-    """Describes a security group."""
-
     GroupId: Optional[String]
     GroupName: Optional[String]
 
@@ -7900,8 +6914,6 @@ GroupIdentifierSet = List[SecurityGroupIdentifier]
 
 
 class VpcEndpoint(TypedDict, total=False):
-    """Describes a VPC endpoint."""
-
     VpcEndpointId: Optional[String]
     VpcEndpointType: Optional[VpcEndpointType]
     VpcId: Optional[String]
@@ -7922,8 +6934,6 @@ class VpcEndpoint(TypedDict, total=False):
 
 
 class CreateVpcEndpointResult(TypedDict, total=False):
-    """Contains the output of CreateVpcEndpoint."""
-
     VpcEndpoint: Optional[VpcEndpoint]
     ClientToken: Optional[String]
 
@@ -7939,13 +6949,6 @@ class CreateVpcEndpointServiceConfigurationRequest(ServiceRequest):
 
 
 class PrivateDnsNameConfiguration(TypedDict, total=False):
-    """Information about the private DNS name for the service endpoint. For
-    more information about these parameters, see `VPC Endpoint Service
-    Private DNS Name
-    Verification <https://docs.aws.amazon.com/vpc/latest/userguide/ndpoint-services-dns-validation.html>`__
-    in the *Amazon Virtual Private Cloud User Guide*.
-    """
-
     State: Optional[DnsNameState]
     Type: Optional[String]
     Value: Optional[String]
@@ -7953,8 +6956,6 @@ class PrivateDnsNameConfiguration(TypedDict, total=False):
 
 
 class ServiceTypeDetail(TypedDict, total=False):
-    """Describes the type of service for a VPC endpoint."""
-
     ServiceType: Optional[ServiceType]
 
 
@@ -7962,8 +6963,6 @@ ServiceTypeDetailSet = List[ServiceTypeDetail]
 
 
 class ServiceConfiguration(TypedDict, total=False):
-    """Describes a service configuration for a VPC endpoint service."""
-
     ServiceType: Optional[ServiceTypeDetailSet]
     ServiceId: Optional[String]
     ServiceName: Optional[String]
@@ -8018,8 +7017,6 @@ class CreateVpcResult(TypedDict, total=False):
 
 
 class IKEVersionsRequestListValue(TypedDict, total=False):
-    """The IKE version that is permitted for the VPN tunnel."""
-
     Value: Optional[String]
 
 
@@ -8027,10 +7024,6 @@ IKEVersionsRequestList = List[IKEVersionsRequestListValue]
 
 
 class Phase2DHGroupNumbersRequestListValue(TypedDict, total=False):
-    """Specifies a Diffie-Hellman group number for the VPN tunnel for phase 2
-    IKE negotiations.
-    """
-
     Value: Optional[Integer]
 
 
@@ -8038,10 +7031,6 @@ Phase2DHGroupNumbersRequestList = List[Phase2DHGroupNumbersRequestListValue]
 
 
 class Phase1DHGroupNumbersRequestListValue(TypedDict, total=False):
-    """Specifies a Diffie-Hellman group number for the VPN tunnel for phase 1
-    IKE negotiations.
-    """
-
     Value: Optional[Integer]
 
 
@@ -8049,10 +7038,6 @@ Phase1DHGroupNumbersRequestList = List[Phase1DHGroupNumbersRequestListValue]
 
 
 class Phase2IntegrityAlgorithmsRequestListValue(TypedDict, total=False):
-    """Specifies the integrity algorithm for the VPN tunnel for phase 2 IKE
-    negotiations.
-    """
-
     Value: Optional[String]
 
 
@@ -8060,10 +7045,6 @@ Phase2IntegrityAlgorithmsRequestList = List[Phase2IntegrityAlgorithmsRequestList
 
 
 class Phase1IntegrityAlgorithmsRequestListValue(TypedDict, total=False):
-    """Specifies the integrity algorithm for the VPN tunnel for phase 1 IKE
-    negotiations.
-    """
-
     Value: Optional[String]
 
 
@@ -8071,10 +7052,6 @@ Phase1IntegrityAlgorithmsRequestList = List[Phase1IntegrityAlgorithmsRequestList
 
 
 class Phase2EncryptionAlgorithmsRequestListValue(TypedDict, total=False):
-    """Specifies the encryption algorithm for the VPN tunnel for phase 2 IKE
-    negotiations.
-    """
-
     Value: Optional[String]
 
 
@@ -8082,10 +7059,6 @@ Phase2EncryptionAlgorithmsRequestList = List[Phase2EncryptionAlgorithmsRequestLi
 
 
 class Phase1EncryptionAlgorithmsRequestListValue(TypedDict, total=False):
-    """Specifies the encryption algorithm for the VPN tunnel for phase 1 IKE
-    negotiations.
-    """
-
     Value: Optional[String]
 
 
@@ -8093,8 +7066,6 @@ Phase1EncryptionAlgorithmsRequestList = List[Phase1EncryptionAlgorithmsRequestLi
 
 
 class VpnTunnelOptionsSpecification(TypedDict, total=False):
-    """The tunnel options for a single VPN tunnel."""
-
     TunnelInsideCidr: Optional[String]
     TunnelInsideIpv6Cidr: Optional[String]
     PreSharedKey: Optional[String]
@@ -8119,8 +7090,6 @@ VpnTunnelOptionsSpecificationsList = List[VpnTunnelOptionsSpecification]
 
 
 class VpnConnectionOptionsSpecification(TypedDict, total=False):
-    """Describes VPN connection options."""
-
     EnableAcceleration: Optional[Boolean]
     StaticRoutesOnly: Optional[Boolean]
     TunnelInsideIpVersion: Optional[TunnelInsideIpVersion]
@@ -8132,8 +7101,6 @@ class VpnConnectionOptionsSpecification(TypedDict, total=False):
 
 
 class CreateVpnConnectionRequest(ServiceRequest):
-    """Contains the parameters for CreateVpnConnection."""
-
     CustomerGatewayId: CustomerGatewayId
     Type: String
     VpnGatewayId: Optional[VpnGatewayId]
@@ -8144,8 +7111,6 @@ class CreateVpnConnectionRequest(ServiceRequest):
 
 
 class VgwTelemetry(TypedDict, total=False):
-    """Describes telemetry for a VPN tunnel."""
-
     AcceptedRouteCount: Optional[Integer]
     LastStatusChange: Optional[DateTime]
     OutsideIpAddress: Optional[String]
@@ -8158,8 +7123,6 @@ VgwTelemetryList = List[VgwTelemetry]
 
 
 class VpnStaticRoute(TypedDict, total=False):
-    """Describes a static route for a VPN connection."""
-
     DestinationCidrBlock: Optional[String]
     Source: Optional[VpnStaticRouteSource]
     State: Optional[VpnState]
@@ -8169,8 +7132,6 @@ VpnStaticRouteList = List[VpnStaticRoute]
 
 
 class IKEVersionsListValue(TypedDict, total=False):
-    """The internet key exchange (IKE) version permitted for the VPN tunnel."""
-
     Value: Optional[String]
 
 
@@ -8178,8 +7139,6 @@ IKEVersionsList = List[IKEVersionsListValue]
 
 
 class Phase2DHGroupNumbersListValue(TypedDict, total=False):
-    """The Diffie-Hellmann group number for phase 2 IKE negotiations."""
-
     Value: Optional[Integer]
 
 
@@ -8187,8 +7146,6 @@ Phase2DHGroupNumbersList = List[Phase2DHGroupNumbersListValue]
 
 
 class Phase1DHGroupNumbersListValue(TypedDict, total=False):
-    """The Diffie-Hellmann group number for phase 1 IKE negotiations."""
-
     Value: Optional[Integer]
 
 
@@ -8196,8 +7153,6 @@ Phase1DHGroupNumbersList = List[Phase1DHGroupNumbersListValue]
 
 
 class Phase2IntegrityAlgorithmsListValue(TypedDict, total=False):
-    """The integrity algorithm for phase 2 IKE negotiations."""
-
     Value: Optional[String]
 
 
@@ -8205,8 +7160,6 @@ Phase2IntegrityAlgorithmsList = List[Phase2IntegrityAlgorithmsListValue]
 
 
 class Phase1IntegrityAlgorithmsListValue(TypedDict, total=False):
-    """The integrity algorithm for phase 1 IKE negotiations."""
-
     Value: Optional[String]
 
 
@@ -8214,8 +7167,6 @@ Phase1IntegrityAlgorithmsList = List[Phase1IntegrityAlgorithmsListValue]
 
 
 class Phase2EncryptionAlgorithmsListValue(TypedDict, total=False):
-    """The encryption algorithm for phase 2 IKE negotiations."""
-
     Value: Optional[String]
 
 
@@ -8223,8 +7174,6 @@ Phase2EncryptionAlgorithmsList = List[Phase2EncryptionAlgorithmsListValue]
 
 
 class Phase1EncryptionAlgorithmsListValue(TypedDict, total=False):
-    """The encryption algorithm for phase 1 IKE negotiations."""
-
     Value: Optional[String]
 
 
@@ -8232,8 +7181,6 @@ Phase1EncryptionAlgorithmsList = List[Phase1EncryptionAlgorithmsListValue]
 
 
 class TunnelOption(TypedDict, total=False):
-    """The VPN tunnel options."""
-
     OutsideIpAddress: Optional[String]
     TunnelInsideCidr: Optional[String]
     TunnelInsideIpv6Cidr: Optional[String]
@@ -8259,8 +7206,6 @@ TunnelOptionsList = List[TunnelOption]
 
 
 class VpnConnectionOptions(TypedDict, total=False):
-    """Describes VPN connection options."""
-
     EnableAcceleration: Optional[Boolean]
     StaticRoutesOnly: Optional[Boolean]
     LocalIpv4NetworkCidr: Optional[String]
@@ -8272,8 +7217,6 @@ class VpnConnectionOptions(TypedDict, total=False):
 
 
 class VpnConnection(TypedDict, total=False):
-    """Describes a VPN connection."""
-
     CustomerGatewayConfiguration: Optional[String]
     CustomerGatewayId: Optional[String]
     Category: Optional[String]
@@ -8292,21 +7235,15 @@ class VpnConnection(TypedDict, total=False):
 
 
 class CreateVpnConnectionResult(TypedDict, total=False):
-    """Contains the output of CreateVpnConnection."""
-
     VpnConnection: Optional[VpnConnection]
 
 
 class CreateVpnConnectionRouteRequest(ServiceRequest):
-    """Contains the parameters for CreateVpnConnectionRoute."""
-
     DestinationCidrBlock: String
     VpnConnectionId: VpnConnectionId
 
 
 class CreateVpnGatewayRequest(ServiceRequest):
-    """Contains the parameters for CreateVpnGateway."""
-
     AvailabilityZone: Optional[String]
     Type: GatewayType
     TagSpecifications: Optional[TagSpecificationList]
@@ -8318,8 +7255,6 @@ VpcAttachmentList = List[VpcAttachment]
 
 
 class VpnGateway(TypedDict, total=False):
-    """Describes a virtual private gateway."""
-
     AvailabilityZone: Optional[String]
     State: Optional[VpnState]
     Type: Optional[GatewayType]
@@ -8330,8 +7265,6 @@ class VpnGateway(TypedDict, total=False):
 
 
 class CreateVpnGatewayResult(TypedDict, total=False):
-    """Contains the output of CreateVpnGateway."""
-
     VpnGateway: Optional[VpnGateway]
 
 
@@ -8369,8 +7302,6 @@ class DeleteClientVpnRouteResult(TypedDict, total=False):
 
 
 class DeleteCustomerGatewayRequest(ServiceRequest):
-    """Contains the parameters for DeleteCustomerGateway."""
-
     CustomerGatewayId: CustomerGatewayId
     DryRun: Optional[Boolean]
 
@@ -8390,15 +7321,11 @@ class DeleteEgressOnlyInternetGatewayResult(TypedDict, total=False):
 
 
 class DeleteFleetError(TypedDict, total=False):
-    """Describes an EC2 Fleet error."""
-
     Code: Optional[DeleteFleetErrorCode]
     Message: Optional[String]
 
 
 class DeleteFleetErrorItem(TypedDict, total=False):
-    """Describes an EC2 Fleet that was not successfully deleted."""
-
     Error: Optional[DeleteFleetError]
     FleetId: Optional[FleetId]
 
@@ -8407,8 +7334,6 @@ DeleteFleetErrorSet = List[DeleteFleetErrorItem]
 
 
 class DeleteFleetSuccessItem(TypedDict, total=False):
-    """Describes an EC2 Fleet that was successfully deleted."""
-
     CurrentFleetState: Optional[FleetStateCode]
     PreviousFleetState: Optional[FleetStateCode]
     FleetId: Optional[FleetId]
@@ -8457,8 +7382,6 @@ class DeleteInstanceEventWindowRequest(ServiceRequest):
 
 
 class InstanceEventWindowStateChange(TypedDict, total=False):
-    """The state of the event window."""
-
     InstanceEventWindowId: Optional[InstanceEventWindowId]
     State: Optional[InstanceEventWindowState]
 
@@ -8484,6 +7407,7 @@ class DeleteIpamPoolResult(TypedDict, total=False):
 class DeleteIpamRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     IpamId: IpamId
+    Cascade: Optional[Boolean]
 
 
 class DeleteIpamResult(TypedDict, total=False):
@@ -8526,17 +7450,11 @@ class DeleteLaunchTemplateVersionsRequest(ServiceRequest):
 
 
 class ResponseError(TypedDict, total=False):
-    """Describes the error that's returned when you cannot delete a launch
-    template version.
-    """
-
     Code: Optional[LaunchTemplateErrorCode]
     Message: Optional[String]
 
 
 class DeleteLaunchTemplateVersionsResponseErrorItem(TypedDict, total=False):
-    """Describes a launch template version that could not be deleted."""
-
     LaunchTemplateId: Optional[String]
     LaunchTemplateName: Optional[String]
     VersionNumber: Optional[Long]
@@ -8547,8 +7465,6 @@ DeleteLaunchTemplateVersionsResponseErrorSet = List[DeleteLaunchTemplateVersions
 
 
 class DeleteLaunchTemplateVersionsResponseSuccessItem(TypedDict, total=False):
-    """Describes a launch template version that was successfully deleted."""
-
     LaunchTemplateId: Optional[String]
     LaunchTemplateName: Optional[String]
     VersionNumber: Optional[Long]
@@ -8654,22 +7570,16 @@ class DeleteNetworkInsightsPathResult(TypedDict, total=False):
 
 
 class DeleteNetworkInterfacePermissionRequest(ServiceRequest):
-    """Contains the parameters for DeleteNetworkInterfacePermission."""
-
     NetworkInterfacePermissionId: NetworkInterfacePermissionId
     Force: Optional[Boolean]
     DryRun: Optional[Boolean]
 
 
 class DeleteNetworkInterfacePermissionResult(TypedDict, total=False):
-    """Contains the output for DeleteNetworkInterfacePermission."""
-
     Return: Optional[Boolean]
 
 
 class DeleteNetworkInterfaceRequest(ServiceRequest):
-    """Contains the parameters for DeleteNetworkInterface."""
-
     DryRun: Optional[Boolean]
     NetworkInterfaceId: NetworkInterfaceId
 
@@ -8689,10 +7599,6 @@ class DeletePublicIpv4PoolResult(TypedDict, total=False):
 
 
 class DeleteQueuedReservedInstancesError(TypedDict, total=False):
-    """Describes the error for a Reserved Instance whose queued purchase could
-    not be deleted.
-    """
-
     Code: Optional[DeleteQueuedReservedInstancesErrorCode]
     Message: Optional[String]
 
@@ -8706,8 +7612,6 @@ class DeleteQueuedReservedInstancesRequest(ServiceRequest):
 
 
 class FailedQueuedPurchaseDeletion(TypedDict, total=False):
-    """Describes a Reserved Instance whose queued purchase was not deleted."""
-
     Error: Optional[DeleteQueuedReservedInstancesError]
     ReservedInstancesId: Optional[String]
 
@@ -8716,10 +7620,6 @@ FailedQueuedPurchaseDeletionSet = List[FailedQueuedPurchaseDeletion]
 
 
 class SuccessfulQueuedPurchaseDeletion(TypedDict, total=False):
-    """Describes a Reserved Instance whose queued purchase was successfully
-    deleted.
-    """
-
     ReservedInstancesId: Optional[String]
 
 
@@ -8756,8 +7656,6 @@ class DeleteSnapshotRequest(ServiceRequest):
 
 
 class DeleteSpotDatafeedSubscriptionRequest(ServiceRequest):
-    """Contains the parameters for DeleteSpotDatafeedSubscription."""
-
     DryRun: Optional[Boolean]
 
 
@@ -8927,15 +7825,11 @@ class DeleteVpcEndpointServiceConfigurationsResult(TypedDict, total=False):
 
 
 class DeleteVpcEndpointsRequest(ServiceRequest):
-    """Contains the parameters for DeleteVpcEndpoints."""
-
     DryRun: Optional[Boolean]
     VpcEndpointIds: VpcEndpointIdList
 
 
 class DeleteVpcEndpointsResult(TypedDict, total=False):
-    """Contains the output of DeleteVpcEndpoints."""
-
     Unsuccessful: Optional[UnsuccessfulItemSet]
 
 
@@ -8954,22 +7848,16 @@ class DeleteVpcRequest(ServiceRequest):
 
 
 class DeleteVpnConnectionRequest(ServiceRequest):
-    """Contains the parameters for DeleteVpnConnection."""
-
     VpnConnectionId: VpnConnectionId
     DryRun: Optional[Boolean]
 
 
 class DeleteVpnConnectionRouteRequest(ServiceRequest):
-    """Contains the parameters for DeleteVpnConnectionRoute."""
-
     DestinationCidrBlock: String
     VpnConnectionId: VpnConnectionId
 
 
 class DeleteVpnGatewayRequest(ServiceRequest):
-    """Contains the parameters for DeleteVpnGateway."""
-
     VpnGatewayId: VpnGatewayId
     DryRun: Optional[Boolean]
 
@@ -8990,15 +7878,11 @@ class DeprovisionIpamPoolCidrRequest(ServiceRequest):
 
 
 class IpamPoolCidrFailureReason(TypedDict, total=False):
-    """Details related to why an IPAM pool CIDR failed to be provisioned."""
-
     Code: Optional[IpamPoolCidrFailureCode]
     Message: Optional[String]
 
 
 class IpamPoolCidr(TypedDict, total=False):
-    """A CIDR provisioned to an IPAM pool."""
-
     Cidr: Optional[String]
     State: Optional[IpamPoolCidrState]
     FailureReason: Optional[IpamPoolCidrFailureReason]
@@ -9023,8 +7907,6 @@ class DeprovisionPublicIpv4PoolCidrResult(TypedDict, total=False):
 
 
 class DeregisterImageRequest(ServiceRequest):
-    """Contains the parameters for DeregisterImage."""
-
     ImageId: ImageId
     DryRun: Optional[Boolean]
 
@@ -9033,12 +7915,6 @@ InstanceTagKeySet = List[String]
 
 
 class DeregisterInstanceTagAttributeRequest(TypedDict, total=False):
-    """Information about the tag keys to deregister for the current Region. You
-    can either specify individual tag keys or deregister all tag keys in the
-    current Region. You must specify either ``IncludeAllTagsOfInstance`` or
-    ``InstanceTagKeys`` in the request
-    """
-
     IncludeAllTagsOfInstance: Optional[Boolean]
     InstanceTagKeys: Optional[InstanceTagKeySet]
 
@@ -9049,8 +7925,6 @@ class DeregisterInstanceEventNotificationAttributesRequest(ServiceRequest):
 
 
 class InstanceTagNotificationAttribute(TypedDict, total=False):
-    """Describes the registered tag keys for the current Region."""
-
     InstanceTagKeys: Optional[InstanceTagKeySet]
     IncludeAllTagsOfInstance: Optional[Boolean]
 
@@ -9070,8 +7944,6 @@ class DeregisterTransitGatewayMulticastGroupMembersRequest(ServiceRequest):
 
 
 class TransitGatewayMulticastDeregisteredGroupMembers(TypedDict, total=False):
-    """Describes the deregistered transit gateway multicast group members."""
-
     TransitGatewayMulticastDomainId: Optional[String]
     DeregisteredNetworkInterfaceIds: Optional[ValueStringList]
     GroupIpAddress: Optional[String]
@@ -9089,8 +7961,6 @@ class DeregisterTransitGatewayMulticastGroupSourcesRequest(ServiceRequest):
 
 
 class TransitGatewayMulticastDeregisteredGroupSources(TypedDict, total=False):
-    """Describes the deregistered transit gateway multicast group sources."""
-
     TransitGatewayMulticastDomainId: Optional[String]
     DeregisteredNetworkInterfaceIds: Optional[ValueStringList]
     GroupIpAddress: Optional[String]
@@ -9126,15 +7996,6 @@ PublicIpStringList = List[String]
 
 
 class Filter(TypedDict, total=False):
-    """A filter name and value pair that is used to return a more specific list
-    of results from a describe operation. Filters can be used to match a set
-    of resources by specific criteria, such as tags, attributes, or IDs.
-
-    If you specify multiple filters, the filters are joined with an ``AND``,
-    and the request returns only results that match all of the specified
-    filters.
-    """
-
     Name: Optional[String]
     Values: Optional[ValueStringList]
 
@@ -9158,8 +8019,6 @@ class DescribeAggregateIdFormatRequest(ServiceRequest):
 
 
 class IdFormat(TypedDict, total=False):
-    """Describes the ID format for a resource."""
-
     Deadline: Optional[DateTime]
     Resource: Optional[String]
     UseLongIds: Optional[Boolean]
@@ -9330,8 +8189,6 @@ class DescribeClientVpnTargetNetworksRequest(ServiceRequest):
 
 
 class TargetNetwork(TypedDict, total=False):
-    """Describes a target network associated with a Client VPN endpoint."""
-
     AssociationId: Optional[String]
     VpcId: Optional[String]
     TargetNetworkId: Optional[String]
@@ -9374,16 +8231,12 @@ class DescribeConversionTasksResult(TypedDict, total=False):
 
 
 class DescribeCustomerGatewaysRequest(ServiceRequest):
-    """Contains the parameters for DescribeCustomerGateways."""
-
     CustomerGatewayIds: Optional[CustomerGatewayIdStringList]
     Filters: Optional[FilterList]
     DryRun: Optional[Boolean]
 
 
 class DescribeCustomerGatewaysResult(TypedDict, total=False):
-    """Contains the output of DescribeCustomerGateways."""
-
     CustomerGateways: Optional[CustomerGatewayList]
 
 
@@ -9437,14 +8290,10 @@ class DescribeElasticGpusRequest(ServiceRequest):
 
 
 class ElasticGpuHealth(TypedDict, total=False):
-    """Describes the status of an Elastic Graphics accelerator."""
-
     Status: Optional[ElasticGpuStatus]
 
 
 class ElasticGpus(TypedDict, total=False):
-    """Describes an Elastic Graphics accelerator."""
-
     ElasticGpuId: Optional[String]
     AvailabilityZone: Optional[String]
     ElasticGpuType: Optional[String]
@@ -9475,15 +8324,11 @@ class DescribeExportImageTasksRequest(ServiceRequest):
 
 
 class ExportTaskS3Location(TypedDict, total=False):
-    """Describes the destination for an export image task."""
-
     S3Bucket: Optional[String]
     S3Prefix: Optional[String]
 
 
 class ExportImageTask(TypedDict, total=False):
-    """Describes an export image task."""
-
     Description: Optional[String]
     ExportImageTaskId: Optional[String]
     ImageId: Optional[String]
@@ -9529,29 +8374,16 @@ class DescribeFastLaunchImagesRequest(ServiceRequest):
 
 
 class FastLaunchLaunchTemplateSpecificationResponse(TypedDict, total=False):
-    """Identifies the launch template to use for faster launching of the
-    Windows AMI.
-    """
-
     LaunchTemplateId: Optional[LaunchTemplateId]
     LaunchTemplateName: Optional[String]
     Version: Optional[String]
 
 
 class FastLaunchSnapshotConfigurationResponse(TypedDict, total=False):
-    """Configuration settings for creating and managing pre-provisioned
-    snapshots for a fast-launch enabled Windows AMI.
-    """
-
     TargetResourceCount: Optional[Integer]
 
 
 class DescribeFastLaunchImagesSuccessItem(TypedDict, total=False):
-    """Describe details about a fast-launch enabled Windows image that meets
-    the requested criteria. Criteria are defined by the
-    ``DescribeFastLaunchImages`` action filters.
-    """
-
     ImageId: Optional[ImageId]
     ResourceType: Optional[FastLaunchResourceType]
     SnapshotConfiguration: Optional[FastLaunchSnapshotConfigurationResponse]
@@ -9572,8 +8404,6 @@ class DescribeFastLaunchImagesResult(TypedDict, total=False):
 
 
 class DescribeFastSnapshotRestoreSuccessItem(TypedDict, total=False):
-    """Describes fast snapshot restores for a snapshot."""
-
     SnapshotId: Optional[String]
     AvailabilityZone: Optional[String]
     State: Optional[FastSnapshotRestoreStateCode]
@@ -9603,8 +8433,6 @@ class DescribeFastSnapshotRestoresResult(TypedDict, total=False):
 
 
 class DescribeFleetError(TypedDict, total=False):
-    """Describes the instances that could not be launched by the fleet."""
-
     LaunchTemplateAndOverrides: Optional[LaunchTemplateAndOverridesResponse]
     Lifecycle: Optional[InstanceLifecycle]
     ErrorCode: Optional[String]
@@ -9621,16 +8449,12 @@ class DescribeFleetHistoryRequest(ServiceRequest):
 
 
 class EventInformation(TypedDict, total=False):
-    """Describes an EC2 Fleet or Spot Fleet event."""
-
     EventDescription: Optional[String]
     EventSubType: Optional[String]
     InstanceId: Optional[String]
 
 
 class HistoryRecordEntry(TypedDict, total=False):
-    """Describes an event in the history of an EC2 Fleet."""
-
     EventInformation: Optional[EventInformation]
     EventType: Optional[FleetEventType]
     Timestamp: Optional[DateTime]
@@ -9665,8 +8489,6 @@ DescribeFleetsErrorSet = List[DescribeFleetError]
 
 
 class DescribeFleetsInstances(TypedDict, total=False):
-    """Describes the instances that were launched by the fleet."""
-
     LaunchTemplateAndOverrides: Optional[LaunchTemplateAndOverridesResponse]
     Lifecycle: Optional[InstanceLifecycle]
     InstanceIds: Optional[InstanceIdsSet]
@@ -9686,8 +8508,6 @@ class DescribeFleetsRequest(ServiceRequest):
 
 
 class OnDemandOptions(TypedDict, total=False):
-    """Describes the configuration of On-Demand Instances in an EC2 Fleet."""
-
     AllocationStrategy: Optional[FleetOnDemandAllocationStrategy]
     CapacityReservationOptions: Optional[CapacityReservationOptions]
     SingleInstanceType: Optional[Boolean]
@@ -9697,25 +8517,15 @@ class OnDemandOptions(TypedDict, total=False):
 
 
 class FleetSpotCapacityRebalance(TypedDict, total=False):
-    """The strategy to use when Amazon EC2 emits a signal that your Spot
-    Instance is at an elevated risk of being interrupted.
-    """
-
     ReplacementStrategy: Optional[FleetReplacementStrategy]
     TerminationDelay: Optional[Integer]
 
 
 class FleetSpotMaintenanceStrategies(TypedDict, total=False):
-    """The strategies for managing your Spot Instances that are at an elevated
-    risk of being interrupted.
-    """
-
     CapacityRebalance: Optional[FleetSpotCapacityRebalance]
 
 
 class SpotOptions(TypedDict, total=False):
-    """Describes the configuration of Spot Instances in an EC2 Fleet."""
-
     AllocationStrategy: Optional[SpotAllocationStrategy]
     MaintenanceStrategies: Optional[FleetSpotMaintenanceStrategies]
     InstanceInterruptionBehavior: Optional[SpotInstanceInterruptionBehavior]
@@ -9727,25 +8537,6 @@ class SpotOptions(TypedDict, total=False):
 
 
 class TargetCapacitySpecification(TypedDict, total=False):
-    """The number of units to request. You can choose to set the target
-    capacity in terms of instances or a performance characteristic that is
-    important to your application workload, such as vCPUs, memory, or I/O.
-    If the request type is ``maintain``, you can specify a target capacity
-    of 0 and add capacity later.
-
-    You can use the On-Demand Instance ``MaxTotalPrice`` parameter, the Spot
-    Instance ``MaxTotalPrice``, or both to ensure that your fleet cost does
-    not exceed your budget. If you set a maximum price per hour for the
-    On-Demand Instances and Spot Instances in your request, EC2 Fleet will
-    launch instances until it reaches the maximum amount that you're willing
-    to pay. When the maximum amount you're willing to pay is reached, the
-    fleet stops launching instances even if it hasn’t met the target
-    capacity. The ``MaxTotalPrice`` parameters are located in
-    `OnDemandOptions <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_OnDemandOptions.html>`__
-    and
-    `SpotOptions <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_SpotOptions>`__.
-    """
-
     TotalTargetCapacity: Optional[Integer]
     OnDemandTargetCapacity: Optional[Integer]
     SpotTargetCapacity: Optional[Integer]
@@ -9757,8 +8548,6 @@ FleetLaunchTemplateOverridesList = List[FleetLaunchTemplateOverrides]
 
 
 class FleetLaunchTemplateConfig(TypedDict, total=False):
-    """Describes a launch template and overrides."""
-
     LaunchTemplateSpecification: Optional[FleetLaunchTemplateSpecification]
     Overrides: Optional[FleetLaunchTemplateOverridesList]
 
@@ -9767,8 +8556,6 @@ FleetLaunchTemplateConfigList = List[FleetLaunchTemplateConfig]
 
 
 class FleetData(TypedDict, total=False):
-    """Describes an EC2 Fleet."""
-
     ActivityStatus: Optional[FleetActivityStatus]
     CreateTime: Optional[DateTime]
     FleetId: Optional[FleetId]
@@ -9809,16 +8596,12 @@ class DescribeFlowLogsRequest(ServiceRequest):
 
 
 class DestinationOptionsResponse(TypedDict, total=False):
-    """Describes the destination options for a flow log."""
-
     FileFormat: Optional[DestinationFileFormat]
     HiveCompatiblePartitions: Optional[Boolean]
     PerHourPartition: Optional[Boolean]
 
 
 class FlowLog(TypedDict, total=False):
-    """Describes a flow log."""
-
     CreationTime: Optional[MillisecondDateTime]
     DeliverLogsErrorMessage: Optional[String]
     DeliverLogsPermissionArn: Optional[String]
@@ -9851,8 +8634,6 @@ class DescribeFpgaImageAttributeRequest(ServiceRequest):
 
 
 class ProductCode(TypedDict, total=False):
-    """Describes a product code."""
-
     ProductCodeId: Optional[String]
     ProductCodeType: Optional[ProductCodeValues]
 
@@ -9861,8 +8642,6 @@ ProductCodeList = List[ProductCode]
 
 
 class LoadPermission(TypedDict, total=False):
-    """Describes a load permission."""
-
     UserId: Optional[String]
     Group: Optional[PermissionGroup]
 
@@ -9871,8 +8650,6 @@ LoadPermissionList = List[LoadPermission]
 
 
 class FpgaImageAttribute(TypedDict, total=False):
-    """Describes an Amazon FPGA image (AFI) attribute."""
-
     FpgaImageId: Optional[String]
     Name: Optional[String]
     Description: Optional[String]
@@ -9898,19 +8675,11 @@ class DescribeFpgaImagesRequest(ServiceRequest):
 
 
 class FpgaImageState(TypedDict, total=False):
-    """Describes the state of the bitstream generation process for an Amazon
-    FPGA image (AFI).
-    """
-
     Code: Optional[FpgaImageStateCode]
     Message: Optional[String]
 
 
 class PciId(TypedDict, total=False):
-    """Describes the data that identifies an Amazon FPGA image (AFI) on the PCI
-    bus.
-    """
-
     DeviceId: Optional[String]
     VendorId: Optional[String]
     SubsystemId: Optional[String]
@@ -9918,8 +8687,6 @@ class PciId(TypedDict, total=False):
 
 
 class FpgaImage(TypedDict, total=False):
-    """Describes an Amazon FPGA image (AFI)."""
-
     FpgaImageId: Optional[String]
     FpgaImageGlobalId: Optional[String]
     Name: Optional[String]
@@ -9955,8 +8722,6 @@ class DescribeHostReservationOfferingsRequest(ServiceRequest):
 
 
 class HostOffering(TypedDict, total=False):
-    """Details about the Dedicated Host Reservation offering."""
-
     CurrencyCode: Optional[CurrencyCodeValues]
     Duration: Optional[Integer]
     HourlyPrice: Optional[String]
@@ -9988,10 +8753,6 @@ ResponseHostIdSet = List[String]
 
 
 class HostReservation(TypedDict, total=False):
-    """Details about the Dedicated Host Reservation and associated Dedicated
-    Hosts.
-    """
-
     Count: Optional[Integer]
     CurrencyCode: Optional[CurrencyCodeValues]
     Duration: Optional[Integer]
@@ -10027,8 +8788,6 @@ class DescribeHostsRequest(ServiceRequest):
 
 
 class HostInstance(TypedDict, total=False):
-    """Describes an instance running on a Dedicated Host."""
-
     InstanceId: Optional[String]
     InstanceType: Optional[String]
     OwnerId: Optional[String]
@@ -10038,8 +8797,6 @@ HostInstanceList = List[HostInstance]
 
 
 class HostProperties(TypedDict, total=False):
-    """Describes the properties of a Dedicated Host."""
-
     Cores: Optional[Integer]
     InstanceType: Optional[String]
     InstanceFamily: Optional[String]
@@ -10048,8 +8805,6 @@ class HostProperties(TypedDict, total=False):
 
 
 class Host(TypedDict, total=False):
-    """Describes the properties of the Dedicated Host."""
-
     AutoPlacement: Optional[AutoPlacement]
     AvailabilityZone: Optional[String]
     AvailableCapacity: Optional[AvailableCapacity]
@@ -10110,8 +8865,6 @@ class DescribeIdentityIdFormatResult(TypedDict, total=False):
 
 
 class DescribeImageAttributeRequest(ServiceRequest):
-    """Contains the parameters for DescribeImageAttribute."""
-
     Attribute: ImageAttributeName
     ImageId: ImageId
     DryRun: Optional[Boolean]
@@ -10131,15 +8884,11 @@ class DescribeImagesRequest(ServiceRequest):
 
 
 class StateReason(TypedDict, total=False):
-    """Describes a state change."""
-
     Code: Optional[String]
     Message: Optional[String]
 
 
 class Image(TypedDict, total=False):
-    """Describes an image."""
-
     Architecture: Optional[ArchitectureValues]
     CreationDate: Optional[String]
     ImageId: Optional[String]
@@ -10189,8 +8938,6 @@ class DescribeImportImageTasksRequest(ServiceRequest):
 
 
 class ImportImageLicenseConfigurationResponse(TypedDict, total=False):
-    """The response information for license configurations."""
-
     LicenseConfigurationArn: Optional[String]
 
 
@@ -10198,15 +8945,11 @@ ImportImageLicenseSpecificationListResponse = List[ImportImageLicenseConfigurati
 
 
 class UserBucketDetails(TypedDict, total=False):
-    """Describes the Amazon S3 bucket for the disk image."""
-
     S3Bucket: Optional[String]
     S3Key: Optional[String]
 
 
 class SnapshotDetail(TypedDict, total=False):
-    """Describes the snapshot created from the imported disk."""
-
     Description: Optional[String]
     DeviceName: Optional[String]
     DiskImageSize: Optional[Double]
@@ -10223,8 +8966,6 @@ SnapshotDetailList = List[SnapshotDetail]
 
 
 class ImportImageTask(TypedDict, total=False):
-    """Describes an import image task."""
-
     Architecture: Optional[String]
     Description: Optional[String]
     Encrypted: Optional[Boolean]
@@ -10264,8 +9005,6 @@ class DescribeImportSnapshotTasksRequest(ServiceRequest):
 
 
 class SnapshotTaskDetail(TypedDict, total=False):
-    """Details about the import snapshot task."""
-
     Description: Optional[String]
     DiskImageSize: Optional[Double]
     Encrypted: Optional[Boolean]
@@ -10280,8 +9019,6 @@ class SnapshotTaskDetail(TypedDict, total=False):
 
 
 class ImportSnapshotTask(TypedDict, total=False):
-    """Describes an import snapshot task."""
-
     Description: Optional[String]
     ImportTaskId: Optional[String]
     SnapshotTaskDetail: Optional[SnapshotTaskDetail]
@@ -10311,10 +9048,6 @@ class DescribeInstanceCreditSpecificationsRequest(ServiceRequest):
 
 
 class InstanceCreditSpecification(TypedDict, total=False):
-    """Describes the credit option for CPU usage of a burstable performance
-    instance.
-    """
-
     InstanceId: Optional[String]
     CpuCredits: Optional[String]
 
@@ -10339,8 +9072,6 @@ InstanceEventWindowIdSet = List[InstanceEventWindowId]
 
 
 class DescribeInstanceEventWindowsRequest(ServiceRequest):
-    """Describe instance event windows by InstanceEventWindow."""
-
     DryRun: Optional[Boolean]
     InstanceEventWindowIds: Optional[InstanceEventWindowIdSet]
     Filters: Optional[FilterList]
@@ -10366,8 +9097,6 @@ class DescribeInstanceStatusRequest(ServiceRequest):
 
 
 class InstanceStatusDetails(TypedDict, total=False):
-    """Describes the instance status."""
-
     ImpairedSince: Optional[DateTime]
     Name: Optional[StatusName]
     Status: Optional[StatusType]
@@ -10377,22 +9106,16 @@ InstanceStatusDetailsList = List[InstanceStatusDetails]
 
 
 class InstanceStatusSummary(TypedDict, total=False):
-    """Describes the status of an instance."""
-
     Details: Optional[InstanceStatusDetailsList]
     Status: Optional[SummaryStatus]
 
 
 class InstanceState(TypedDict, total=False):
-    """Describes the current state of an instance."""
-
     Code: Optional[Integer]
     Name: Optional[InstanceStateName]
 
 
 class InstanceStatusEvent(TypedDict, total=False):
-    """Describes a scheduled event for an instance."""
-
     InstanceEventId: Optional[InstanceEventId]
     Code: Optional[EventCode]
     Description: Optional[String]
@@ -10405,8 +9128,6 @@ InstanceStatusEventList = List[InstanceStatusEvent]
 
 
 class InstanceStatus(TypedDict, total=False):
-    """Describes the status of an instance."""
-
     AvailabilityZone: Optional[String]
     OutpostArn: Optional[String]
     Events: Optional[InstanceStatusEventList]
@@ -10433,8 +9154,6 @@ class DescribeInstanceTypeOfferingsRequest(ServiceRequest):
 
 
 class InstanceTypeOffering(TypedDict, total=False):
-    """The instance types offered."""
-
     InstanceType: Optional[InstanceType]
     LocationType: Optional[LocationType]
     Location: Optional[Location]
@@ -10460,8 +9179,6 @@ class DescribeInstanceTypesRequest(ServiceRequest):
 
 
 class InferenceDeviceInfo(TypedDict, total=False):
-    """Describes the Inference accelerators for the instance type."""
-
     Count: Optional[InferenceDeviceCount]
     Name: Optional[InferenceDeviceName]
     Manufacturer: Optional[InferenceDeviceManufacturerName]
@@ -10471,8 +9188,6 @@ InferenceDeviceInfoList = List[InferenceDeviceInfo]
 
 
 class InferenceAcceleratorInfo(TypedDict, total=False):
-    """Describes the Inference accelerators for the instance type."""
-
     Accelerators: Optional[InferenceDeviceInfoList]
 
 
@@ -10480,20 +9195,14 @@ PlacementGroupStrategyList = List[PlacementGroupStrategy]
 
 
 class PlacementGroupInfo(TypedDict, total=False):
-    """Describes the placement group support of the instance type."""
-
     SupportedStrategies: Optional[PlacementGroupStrategyList]
 
 
 class FpgaDeviceMemoryInfo(TypedDict, total=False):
-    """Describes the memory for the FPGA accelerator for the instance type."""
-
     SizeInMiB: Optional[FpgaDeviceMemorySize]
 
 
 class FpgaDeviceInfo(TypedDict, total=False):
-    """Describes the FPGA accelerator for the instance type."""
-
     Name: Optional[FpgaDeviceName]
     Manufacturer: Optional[FpgaDeviceManufacturerName]
     Count: Optional[FpgaDeviceCount]
@@ -10504,21 +9213,15 @@ FpgaDeviceInfoList = List[FpgaDeviceInfo]
 
 
 class FpgaInfo(TypedDict, total=False):
-    """Describes the FPGAs for the instance type."""
-
     Fpgas: Optional[FpgaDeviceInfoList]
     TotalFpgaMemoryInMiB: Optional[totalFpgaMemory]
 
 
 class GpuDeviceMemoryInfo(TypedDict, total=False):
-    """Describes the memory available to the GPU accelerator."""
-
     SizeInMiB: Optional[GpuDeviceMemorySize]
 
 
 class GpuDeviceInfo(TypedDict, total=False):
-    """Describes the GPU accelerators for the instance type."""
-
     Name: Optional[GpuDeviceName]
     Manufacturer: Optional[GpuDeviceManufacturerName]
     Count: Optional[GpuDeviceCount]
@@ -10529,21 +9232,15 @@ GpuDeviceInfoList = List[GpuDeviceInfo]
 
 
 class GpuInfo(TypedDict, total=False):
-    """Describes the GPU accelerators for the instance type."""
-
     Gpus: Optional[GpuDeviceInfoList]
     TotalGpuMemoryInMiB: Optional[totalGpuMemory]
 
 
 class EfaInfo(TypedDict, total=False):
-    """Describes the Elastic Fabric Adapters for the instance type."""
-
     MaximumEfaInterfaces: Optional[MaximumEfaInterfaces]
 
 
 class NetworkCardInfo(TypedDict, total=False):
-    """Describes the network card support of the instance type."""
-
     NetworkCardIndex: Optional[NetworkCardIndex]
     NetworkPerformance: Optional[NetworkPerformance]
     MaximumNetworkInterfaces: Optional[MaxNetworkInterfaces]
@@ -10553,8 +9250,6 @@ NetworkCardInfoList = List[NetworkCardInfo]
 
 
 class NetworkInfo(TypedDict, total=False):
-    """Describes the networking features of the instance type."""
-
     NetworkPerformance: Optional[NetworkPerformance]
     MaximumNetworkInterfaces: Optional[MaxNetworkInterfaces]
     MaximumNetworkCards: Optional[MaximumNetworkCards]
@@ -10570,8 +9265,6 @@ class NetworkInfo(TypedDict, total=False):
 
 
 class EbsOptimizedInfo(TypedDict, total=False):
-    """Describes the optimized EBS performance for supported instance types."""
-
     BaselineBandwidthInMbps: Optional[BaselineBandwidthInMbps]
     BaselineThroughputInMBps: Optional[BaselineThroughputInMBps]
     BaselineIops: Optional[BaselineIops]
@@ -10581,8 +9274,6 @@ class EbsOptimizedInfo(TypedDict, total=False):
 
 
 class EbsInfo(TypedDict, total=False):
-    """Describes the Amazon EBS features supported by the instance type."""
-
     EbsOptimizedSupport: Optional[EbsOptimizedSupport]
     EncryptionSupport: Optional[EbsEncryptionSupport]
     EbsOptimizedInfo: Optional[EbsOptimizedInfo]
@@ -10593,8 +9284,6 @@ DiskSize = int
 
 
 class DiskInfo(TypedDict, total=False):
-    """Describes a disk."""
-
     SizeInGB: Optional[DiskSize]
     Count: Optional[DiskCount]
     Type: Optional[DiskType]
@@ -10604,10 +9293,6 @@ DiskInfoList = List[DiskInfo]
 
 
 class InstanceStorageInfo(TypedDict, total=False):
-    """Describes the instance store features that are supported by the instance
-    type.
-    """
-
     TotalSizeInGB: Optional[DiskSize]
     Disks: Optional[DiskInfoList]
     NvmeSupport: Optional[EphemeralNvmeSupport]
@@ -10618,8 +9303,6 @@ MemorySize = int
 
 
 class MemoryInfo(TypedDict, total=False):
-    """Describes the memory for the instance type."""
-
     SizeInMiB: Optional[MemorySize]
 
 
@@ -10627,8 +9310,6 @@ ThreadsPerCoreList = List[ThreadsPerCore]
 
 
 class VCpuInfo(TypedDict, total=False):
-    """Describes the vCPU configurations for the instance type."""
-
     DefaultVCpus: Optional[VCpuCount]
     DefaultCores: Optional[CoreCount]
     DefaultThreadsPerCore: Optional[ThreadsPerCore]
@@ -10637,8 +9318,6 @@ class VCpuInfo(TypedDict, total=False):
 
 
 class ProcessorInfo(TypedDict, total=False):
-    """Describes the processor used by the instance type."""
-
     SupportedArchitectures: Optional[ArchitectureTypeList]
     SustainedClockSpeedInGhz: Optional[ProcessorSustainedClockSpeed]
 
@@ -10649,8 +9328,6 @@ UsageClassTypeList = List[UsageClassType]
 
 
 class InstanceTypeInfo(TypedDict, total=False):
-    """Describes the instance type."""
-
     InstanceType: Optional[InstanceType]
     CurrentGeneration: Optional[CurrentGenerationFlag]
     FreeTierEligible: Optional[FreeTierEligibleFlag]
@@ -10694,24 +9371,16 @@ class DescribeInstancesRequest(ServiceRequest):
 
 
 class PrivateDnsNameOptionsResponse(TypedDict, total=False):
-    """Describes the options for instance hostnames."""
-
     HostnameType: Optional[HostnameType]
     EnableResourceNameDnsARecord: Optional[Boolean]
     EnableResourceNameDnsAAAARecord: Optional[Boolean]
 
 
 class EnclaveOptions(TypedDict, total=False):
-    """Indicates whether the instance is enabled for Amazon Web Services Nitro
-    Enclaves.
-    """
-
     Enabled: Optional[Boolean]
 
 
 class InstanceMetadataOptionsResponse(TypedDict, total=False):
-    """The metadata options for the instance."""
-
     State: Optional[InstanceMetadataOptionsState]
     HttpTokens: Optional[HttpTokensState]
     HttpPutResponseHopLimit: Optional[Integer]
@@ -10721,8 +9390,6 @@ class InstanceMetadataOptionsResponse(TypedDict, total=False):
 
 
 class LicenseConfiguration(TypedDict, total=False):
-    """Describes a license configuration."""
-
     LicenseConfigurationArn: Optional[String]
 
 
@@ -10730,20 +9397,10 @@ LicenseList = List[LicenseConfiguration]
 
 
 class HibernationOptions(TypedDict, total=False):
-    """Indicates whether your instance is configured for hibernation. This
-    parameter is valid only if the instance meets the `hibernation
-    prerequisites <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html#hibernating-prerequisites>`__.
-    For more information, see `Hibernate your
-    instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html>`__
-    in the *Amazon EC2 User Guide*.
-    """
-
     Configured: Optional[Boolean]
 
 
 class InstanceIpv6Prefix(TypedDict, total=False):
-    """Information about an IPv6 prefix."""
-
     Ipv6Prefix: Optional[String]
 
 
@@ -10751,8 +9408,6 @@ InstanceIpv6PrefixList = List[InstanceIpv6Prefix]
 
 
 class InstanceIpv4Prefix(TypedDict, total=False):
-    """Information about an IPv4 prefix."""
-
     Ipv4Prefix: Optional[String]
 
 
@@ -10760,8 +9415,6 @@ InstanceIpv4PrefixList = List[InstanceIpv4Prefix]
 
 
 class InstanceNetworkInterfaceAssociation(TypedDict, total=False):
-    """Describes association information for an Elastic IP address (IPv4)."""
-
     CarrierIp: Optional[String]
     CustomerOwnedIp: Optional[String]
     IpOwnerId: Optional[String]
@@ -10770,8 +9423,6 @@ class InstanceNetworkInterfaceAssociation(TypedDict, total=False):
 
 
 class InstancePrivateIpAddress(TypedDict, total=False):
-    """Describes a private IPv4 address."""
-
     Association: Optional[InstanceNetworkInterfaceAssociation]
     Primary: Optional[Boolean]
     PrivateDnsName: Optional[String]
@@ -10782,8 +9433,6 @@ InstancePrivateIpAddressList = List[InstancePrivateIpAddress]
 
 
 class InstanceNetworkInterfaceAttachment(TypedDict, total=False):
-    """Describes a network interface attachment."""
-
     AttachTime: Optional[DateTime]
     AttachmentId: Optional[String]
     DeleteOnTermination: Optional[Boolean]
@@ -10793,8 +9442,6 @@ class InstanceNetworkInterfaceAttachment(TypedDict, total=False):
 
 
 class InstanceNetworkInterface(TypedDict, total=False):
-    """Describes a network interface."""
-
     Association: Optional[InstanceNetworkInterfaceAssociation]
     Attachment: Optional[InstanceNetworkInterfaceAttachment]
     Description: Optional[String]
@@ -10819,10 +9466,6 @@ InstanceNetworkInterfaceList = List[InstanceNetworkInterface]
 
 
 class ElasticInferenceAcceleratorAssociation(TypedDict, total=False):
-    """Describes the association between an instance and an elastic inference
-    accelerator.
-    """
-
     ElasticInferenceAcceleratorArn: Optional[String]
     ElasticInferenceAcceleratorAssociationId: Optional[String]
     ElasticInferenceAcceleratorAssociationState: Optional[String]
@@ -10833,10 +9476,6 @@ ElasticInferenceAcceleratorAssociationList = List[ElasticInferenceAcceleratorAss
 
 
 class ElasticGpuAssociation(TypedDict, total=False):
-    """Describes the association between an instance and an Elastic Graphics
-    accelerator.
-    """
-
     ElasticGpuId: Optional[ElasticGpuId]
     ElasticGpuAssociationId: Optional[String]
     ElasticGpuAssociationState: Optional[String]
@@ -10847,10 +9486,6 @@ ElasticGpuAssociationList = List[ElasticGpuAssociation]
 
 
 class EbsInstanceBlockDevice(TypedDict, total=False):
-    """Describes a parameter used to set up an EBS volume in a block device
-    mapping.
-    """
-
     AttachTime: Optional[DateTime]
     DeleteOnTermination: Optional[Boolean]
     Status: Optional[AttachmentStatus]
@@ -10858,8 +9493,6 @@ class EbsInstanceBlockDevice(TypedDict, total=False):
 
 
 class InstanceBlockDeviceMapping(TypedDict, total=False):
-    """Describes a block device mapping."""
-
     DeviceName: Optional[String]
     Ebs: Optional[EbsInstanceBlockDevice]
 
@@ -10868,14 +9501,10 @@ InstanceBlockDeviceMappingList = List[InstanceBlockDeviceMapping]
 
 
 class Monitoring(TypedDict, total=False):
-    """Describes the monitoring of an instance."""
-
     State: Optional[MonitoringState]
 
 
 class Instance(TypedDict, total=False):
-    """Describes an instance."""
-
     AmiLaunchIndex: Optional[Integer]
     ImageId: Optional[String]
     InstanceId: Optional[String]
@@ -10936,11 +9565,6 @@ InstanceList = List[Instance]
 
 
 class Reservation(TypedDict, total=False):
-    """Describes a launch request for one or more instances, and includes
-    owner, requester, and security group information that applies to all
-    instances in the launch request.
-    """
-
     Groups: Optional[GroupIdentifierList]
     Instances: Optional[InstanceList]
     OwnerId: Optional[String]
@@ -11035,8 +9659,6 @@ class DescribeIpv6PoolsRequest(ServiceRequest):
 
 
 class PoolCidrBlock(TypedDict, total=False):
-    """Describes a CIDR block for an address pool."""
-
     Cidr: Optional[String]
 
 
@@ -11044,8 +9666,6 @@ PoolCidrBlocksSet = List[PoolCidrBlock]
 
 
 class Ipv6Pool(TypedDict, total=False):
-    """Describes an IPv6 address pool."""
-
     PoolId: Optional[String]
     Description: Optional[String]
     PoolCidrBlocks: Optional[PoolCidrBlocksSet]
@@ -11072,8 +9692,6 @@ class DescribeKeyPairsRequest(ServiceRequest):
 
 
 class KeyPairInfo(TypedDict, total=False):
-    """Describes a key pair."""
-
     KeyPairId: Optional[String]
     KeyFingerprint: Optional[String]
     KeyName: Optional[String]
@@ -11145,10 +9763,6 @@ class DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociationsRequest(Ser
 
 
 class LocalGatewayRouteTableVirtualInterfaceGroupAssociation(TypedDict, total=False):
-    """Describes an association between a local gateway route table and a
-    virtual interface group.
-    """
-
     LocalGatewayRouteTableVirtualInterfaceGroupAssociationId: Optional[
         LocalGatewayRouteTableVirtualInterfaceGroupAssociationId
     ]
@@ -11204,8 +9818,6 @@ class DescribeLocalGatewayRouteTablesRequest(ServiceRequest):
 
 
 class LocalGatewayRouteTable(TypedDict, total=False):
-    """Describes a local gateway route table."""
-
     LocalGatewayRouteTableId: Optional[String]
     LocalGatewayRouteTableArn: Optional[ResourceArn]
     LocalGatewayId: Optional[LocalGatewayId]
@@ -11238,8 +9850,6 @@ LocalGatewayVirtualInterfaceIdSet = List[LocalGatewayVirtualInterfaceId]
 
 
 class LocalGatewayVirtualInterfaceGroup(TypedDict, total=False):
-    """Describes a local gateway virtual interface group."""
-
     LocalGatewayVirtualInterfaceGroupId: Optional[LocalGatewayVirtualInterfaceGroupId]
     LocalGatewayVirtualInterfaceIds: Optional[LocalGatewayVirtualInterfaceIdSet]
     LocalGatewayId: Optional[String]
@@ -11264,8 +9874,6 @@ class DescribeLocalGatewayVirtualInterfacesRequest(ServiceRequest):
 
 
 class LocalGatewayVirtualInterface(TypedDict, total=False):
-    """Describes a local gateway virtual interface."""
-
     LocalGatewayVirtualInterfaceId: Optional[LocalGatewayVirtualInterfaceId]
     LocalGatewayId: Optional[String]
     Vlan: Optional[Integer]
@@ -11297,8 +9905,6 @@ class DescribeLocalGatewaysRequest(ServiceRequest):
 
 
 class LocalGateway(TypedDict, total=False):
-    """Describes a local gateway."""
-
     LocalGatewayId: Optional[LocalGatewayId]
     OutpostArn: Optional[String]
     OwnerId: Optional[String]
@@ -11339,8 +9945,6 @@ class DescribeMovingAddressesRequest(ServiceRequest):
 
 
 class MovingAddressStatus(TypedDict, total=False):
-    """Describes the status of a moving Elastic IP address."""
-
     MoveStatus: Optional[MoveStatus]
     PublicIp: Optional[String]
 
@@ -11406,8 +10010,6 @@ class DescribeNetworkInsightsAccessScopeAnalysesRequest(ServiceRequest):
 
 
 class NetworkInsightsAccessScopeAnalysis(TypedDict, total=False):
-    """Describes a Network Access Scope analysis."""
-
     NetworkInsightsAccessScopeAnalysisId: Optional[NetworkInsightsAccessScopeAnalysisId]
     NetworkInsightsAccessScopeAnalysisArn: Optional[ResourceArn]
     NetworkInsightsAccessScopeId: Optional[NetworkInsightsAccessScopeId]
@@ -11466,11 +10068,6 @@ StringList = List[String]
 
 
 class Explanation(TypedDict, total=False):
-    """Describes an explanation code for an unreachable path. For more
-    information, see `Reachability Analyzer explanation
-    codes <https://docs.aws.amazon.com/vpc/latest/reachability/explanation-codes.html>`__.
-    """
-
     Acl: Optional[AnalysisComponent]
     AclRule: Optional[AnalysisAclRule]
     Address: Optional[IpAddress]
@@ -11516,14 +10113,16 @@ class Explanation(TypedDict, total=False):
     VpcEndpoint: Optional[AnalysisComponent]
     VpnConnection: Optional[AnalysisComponent]
     VpnGateway: Optional[AnalysisComponent]
+    TransitGateway: Optional[AnalysisComponent]
+    TransitGatewayRouteTable: Optional[AnalysisComponent]
+    TransitGatewayRouteTableRoute: Optional[TransitGatewayRouteTableRoute]
+    TransitGatewayAttachment: Optional[AnalysisComponent]
 
 
 ExplanationList = List[Explanation]
 
 
 class NetworkInsightsAnalysis(TypedDict, total=False):
-    """Describes a network insights analysis."""
-
     NetworkInsightsAnalysisId: Optional[NetworkInsightsAnalysisId]
     NetworkInsightsAnalysisArn: Optional[ResourceArn]
     NetworkInsightsPathId: Optional[NetworkInsightsPathId]
@@ -11568,16 +10167,12 @@ class DescribeNetworkInsightsPathsResult(TypedDict, total=False):
 
 
 class DescribeNetworkInterfaceAttributeRequest(ServiceRequest):
-    """Contains the parameters for DescribeNetworkInterfaceAttribute."""
-
     Attribute: Optional[NetworkInterfaceAttribute]
     DryRun: Optional[Boolean]
     NetworkInterfaceId: NetworkInterfaceId
 
 
 class DescribeNetworkInterfaceAttributeResult(TypedDict, total=False):
-    """Contains the output of DescribeNetworkInterfaceAttribute."""
-
     Attachment: Optional[NetworkInterfaceAttachment]
     Description: Optional[AttributeValue]
     Groups: Optional[GroupIdentifierList]
@@ -11589,8 +10184,6 @@ NetworkInterfacePermissionIdList = List[NetworkInterfacePermissionId]
 
 
 class DescribeNetworkInterfacePermissionsRequest(ServiceRequest):
-    """Contains the parameters for DescribeNetworkInterfacePermissions."""
-
     NetworkInterfacePermissionIds: Optional[NetworkInterfacePermissionIdList]
     Filters: Optional[FilterList]
     NextToken: Optional[String]
@@ -11601,8 +10194,6 @@ NetworkInterfacePermissionList = List[NetworkInterfacePermission]
 
 
 class DescribeNetworkInterfacePermissionsResult(TypedDict, total=False):
-    """Contains the output for DescribeNetworkInterfacePermissions."""
-
     NetworkInterfacePermissions: Optional[NetworkInterfacePermissionList]
     NextToken: Optional[String]
 
@@ -11611,8 +10202,6 @@ NetworkInterfaceIdList = List[NetworkInterfaceId]
 
 
 class DescribeNetworkInterfacesRequest(ServiceRequest):
-    """Contains the parameters for DescribeNetworkInterfaces."""
-
     Filters: Optional[FilterList]
     DryRun: Optional[Boolean]
     NetworkInterfaceIds: Optional[NetworkInterfaceIdList]
@@ -11624,8 +10213,6 @@ NetworkInterfaceList = List[NetworkInterface]
 
 
 class DescribeNetworkInterfacesResult(TypedDict, total=False):
-    """Contains the output of DescribeNetworkInterfaces."""
-
     NetworkInterfaces: Optional[NetworkInterfaceList]
     NextToken: Optional[String]
 
@@ -11660,8 +10247,6 @@ class DescribePrefixListsRequest(ServiceRequest):
 
 
 class PrefixList(TypedDict, total=False):
-    """Describes prefixes for Amazon Web Services services."""
-
     Cidrs: Optional[ValueStringList]
     PrefixListId: Optional[String]
     PrefixListName: Optional[String]
@@ -11686,8 +10271,6 @@ class DescribePrincipalIdFormatRequest(ServiceRequest):
 
 
 class PrincipalIdFormat(TypedDict, total=False):
-    """PrincipalIdFormat description"""
-
     Arn: Optional[String]
     Statuses: Optional[IdFormatList]
 
@@ -11711,8 +10294,6 @@ class DescribePublicIpv4PoolsRequest(ServiceRequest):
 
 
 class PublicIpv4PoolRange(TypedDict, total=False):
-    """Describes an address range of an IPv4 address pool."""
-
     FirstAddress: Optional[String]
     LastAddress: Optional[String]
     AddressCount: Optional[Integer]
@@ -11723,8 +10304,6 @@ PublicIpv4PoolRangeSet = List[PublicIpv4PoolRange]
 
 
 class PublicIpv4Pool(TypedDict, total=False):
-    """Describes an IPv4 address pool."""
-
     PoolId: Optional[String]
     Description: Optional[String]
     PoolAddressRanges: Optional[PublicIpv4PoolRangeSet]
@@ -11753,8 +10332,6 @@ class DescribeRegionsRequest(ServiceRequest):
 
 
 class Region(TypedDict, total=False):
-    """Describes a Region."""
-
     Endpoint: Optional[String]
     RegionName: Optional[String]
     OptInStatus: Optional[String]
@@ -11787,16 +10364,12 @@ class DescribeReplaceRootVolumeTasksResult(TypedDict, total=False):
 
 
 class DescribeReservedInstancesListingsRequest(ServiceRequest):
-    """Contains the parameters for DescribeReservedInstancesListings."""
-
     Filters: Optional[FilterList]
     ReservedInstancesId: Optional[ReservationId]
     ReservedInstancesListingId: Optional[ReservedInstancesListingId]
 
 
 class DescribeReservedInstancesListingsResult(TypedDict, total=False):
-    """Contains the output of DescribeReservedInstancesListings."""
-
     ReservedInstancesListings: Optional[ReservedInstancesListingList]
 
 
@@ -11804,16 +10377,12 @@ ReservedInstancesModificationIdStringList = List[ReservedInstancesModificationId
 
 
 class DescribeReservedInstancesModificationsRequest(ServiceRequest):
-    """Contains the parameters for DescribeReservedInstancesModifications."""
-
     Filters: Optional[FilterList]
     ReservedInstancesModificationIds: Optional[ReservedInstancesModificationIdStringList]
     NextToken: Optional[String]
 
 
 class ReservedInstancesId(TypedDict, total=False):
-    """Describes the ID of a Reserved Instance."""
-
     ReservedInstancesId: Optional[String]
 
 
@@ -11821,10 +10390,6 @@ ReservedIntancesIds = List[ReservedInstancesId]
 
 
 class ReservedInstancesConfiguration(TypedDict, total=False):
-    """Describes the configuration settings for the modified Reserved
-    Instances.
-    """
-
     AvailabilityZone: Optional[String]
     InstanceCount: Optional[Integer]
     InstanceType: Optional[InstanceType]
@@ -11833,8 +10398,6 @@ class ReservedInstancesConfiguration(TypedDict, total=False):
 
 
 class ReservedInstancesModificationResult(TypedDict, total=False):
-    """Describes the modification request/s."""
-
     ReservedInstancesId: Optional[String]
     TargetConfiguration: Optional[ReservedInstancesConfiguration]
 
@@ -11843,8 +10406,6 @@ ReservedInstancesModificationResultList = List[ReservedInstancesModificationResu
 
 
 class ReservedInstancesModification(TypedDict, total=False):
-    """Describes a Reserved Instance modification."""
-
     ClientToken: Optional[String]
     CreateDate: Optional[DateTime]
     EffectiveDate: Optional[DateTime]
@@ -11860,8 +10421,6 @@ ReservedInstancesModificationList = List[ReservedInstancesModification]
 
 
 class DescribeReservedInstancesModificationsResult(TypedDict, total=False):
-    """Contains the output of DescribeReservedInstancesModifications."""
-
     NextToken: Optional[String]
     ReservedInstancesModifications: Optional[ReservedInstancesModificationList]
 
@@ -11870,8 +10429,6 @@ ReservedInstancesOfferingIdStringList = List[ReservedInstancesOfferingId]
 
 
 class DescribeReservedInstancesOfferingsRequest(ServiceRequest):
-    """Contains the parameters for DescribeReservedInstancesOfferings."""
-
     AvailabilityZone: Optional[String]
     Filters: Optional[FilterList]
     IncludeMarketplace: Optional[Boolean]
@@ -11890,8 +10447,6 @@ class DescribeReservedInstancesOfferingsRequest(ServiceRequest):
 
 
 class RecurringCharge(TypedDict, total=False):
-    """Describes a recurring charge."""
-
     Amount: Optional[Double]
     Frequency: Optional[RecurringChargeFrequency]
 
@@ -11900,8 +10455,6 @@ RecurringChargesList = List[RecurringCharge]
 
 
 class PricingDetail(TypedDict, total=False):
-    """Describes a Reserved Instance offering."""
-
     Count: Optional[Integer]
     Price: Optional[Double]
 
@@ -11910,8 +10463,6 @@ PricingDetailsList = List[PricingDetail]
 
 
 class ReservedInstancesOffering(TypedDict, total=False):
-    """Describes a Reserved Instance offering."""
-
     AvailabilityZone: Optional[String]
     Duration: Optional[Long]
     FixedPrice: Optional[Float]
@@ -11933,8 +10484,6 @@ ReservedInstancesOfferingList = List[ReservedInstancesOffering]
 
 
 class DescribeReservedInstancesOfferingsResult(TypedDict, total=False):
-    """Contains the output of DescribeReservedInstancesOfferings."""
-
     ReservedInstancesOfferings: Optional[ReservedInstancesOfferingList]
     NextToken: Optional[String]
 
@@ -11943,8 +10492,6 @@ ReservedInstancesIdStringList = List[ReservationId]
 
 
 class DescribeReservedInstancesRequest(ServiceRequest):
-    """Contains the parameters for DescribeReservedInstances."""
-
     Filters: Optional[FilterList]
     OfferingClass: Optional[OfferingClassType]
     ReservedInstancesIds: Optional[ReservedInstancesIdStringList]
@@ -11953,8 +10500,6 @@ class DescribeReservedInstancesRequest(ServiceRequest):
 
 
 class ReservedInstances(TypedDict, total=False):
-    """Describes a Reserved Instance."""
-
     AvailabilityZone: Optional[String]
     Duration: Optional[Long]
     End: Optional[DateTime]
@@ -11979,8 +10524,6 @@ ReservedInstancesList = List[ReservedInstances]
 
 
 class DescribeReservedInstancesResult(TypedDict, total=False):
-    """Contains the output for DescribeReservedInstances."""
-
     ReservedInstances: Optional[ReservedInstancesList]
 
 
@@ -11999,8 +10542,6 @@ RouteTableList = List[RouteTable]
 
 
 class DescribeRouteTablesResult(TypedDict, total=False):
-    """Contains the output of DescribeRouteTables."""
-
     RouteTables: Optional[RouteTableList]
     NextToken: Optional[String]
 
@@ -12009,8 +10550,6 @@ OccurrenceDayRequestSet = List[Integer]
 
 
 class ScheduledInstanceRecurrenceRequest(TypedDict, total=False):
-    """Describes the recurring schedule for a Scheduled Instance."""
-
     Frequency: Optional[String]
     Interval: Optional[Integer]
     OccurrenceDays: Optional[OccurrenceDayRequestSet]
@@ -12019,17 +10558,11 @@ class ScheduledInstanceRecurrenceRequest(TypedDict, total=False):
 
 
 class SlotDateTimeRangeRequest(TypedDict, total=False):
-    """Describes the time period for a Scheduled Instance to start its first
-    schedule. The time period must span less than one day.
-    """
-
     EarliestTime: DateTime
     LatestTime: DateTime
 
 
 class DescribeScheduledInstanceAvailabilityRequest(ServiceRequest):
-    """Contains the parameters for DescribeScheduledInstanceAvailability."""
-
     DryRun: Optional[Boolean]
     Filters: Optional[FilterList]
     FirstSlotStartTimeRange: SlotDateTimeRangeRequest
@@ -12044,8 +10577,6 @@ OccurrenceDaySet = List[Integer]
 
 
 class ScheduledInstanceRecurrence(TypedDict, total=False):
-    """Describes the recurring schedule for a Scheduled Instance."""
-
     Frequency: Optional[String]
     Interval: Optional[Integer]
     OccurrenceDaySet: Optional[OccurrenceDaySet]
@@ -12054,8 +10585,6 @@ class ScheduledInstanceRecurrence(TypedDict, total=False):
 
 
 class ScheduledInstanceAvailability(TypedDict, total=False):
-    """Describes a schedule that is available for your Scheduled Instances."""
-
     AvailabilityZone: Optional[String]
     AvailableInstanceCount: Optional[Integer]
     FirstSlotStartTime: Optional[DateTime]
@@ -12075,17 +10604,11 @@ ScheduledInstanceAvailabilitySet = List[ScheduledInstanceAvailability]
 
 
 class DescribeScheduledInstanceAvailabilityResult(TypedDict, total=False):
-    """Contains the output of DescribeScheduledInstanceAvailability."""
-
     NextToken: Optional[String]
     ScheduledInstanceAvailabilitySet: Optional[ScheduledInstanceAvailabilitySet]
 
 
 class SlotStartTimeRangeRequest(TypedDict, total=False):
-    """Describes the time period for a Scheduled Instance to start its first
-    schedule.
-    """
-
     EarliestTime: Optional[DateTime]
     LatestTime: Optional[DateTime]
 
@@ -12094,8 +10617,6 @@ ScheduledInstanceIdRequestSet = List[ScheduledInstanceId]
 
 
 class DescribeScheduledInstancesRequest(ServiceRequest):
-    """Contains the parameters for DescribeScheduledInstances."""
-
     DryRun: Optional[Boolean]
     Filters: Optional[FilterList]
     MaxResults: Optional[Integer]
@@ -12105,8 +10626,6 @@ class DescribeScheduledInstancesRequest(ServiceRequest):
 
 
 class ScheduledInstance(TypedDict, total=False):
-    """Describes a Scheduled Instance."""
-
     AvailabilityZone: Optional[String]
     CreateDate: Optional[DateTime]
     HourlyPrice: Optional[String]
@@ -12128,8 +10647,6 @@ ScheduledInstanceSet = List[ScheduledInstance]
 
 
 class DescribeScheduledInstancesResult(TypedDict, total=False):
-    """Contains the output of DescribeScheduledInstances."""
-
     NextToken: Optional[String]
     ScheduledInstanceSet: Optional[ScheduledInstanceSet]
 
@@ -12143,10 +10660,6 @@ class DescribeSecurityGroupReferencesRequest(ServiceRequest):
 
 
 class SecurityGroupReference(TypedDict, total=False):
-    """Describes a VPC with a security group that references your security
-    group.
-    """
-
     GroupId: Optional[String]
     ReferencingVpcId: Optional[String]
     VpcPeeringConnectionId: Optional[String]
@@ -12188,8 +10701,6 @@ class DescribeSecurityGroupsRequest(ServiceRequest):
 
 
 class SecurityGroup(TypedDict, total=False):
-    """Describes a security group."""
-
     Description: Optional[String]
     GroupName: Optional[String]
     IpPermissions: Optional[IpPermissionList]
@@ -12228,8 +10739,6 @@ class DescribeSnapshotTierStatusRequest(ServiceRequest):
 
 
 class SnapshotTierStatus(TypedDict, total=False):
-    """Provides information about a snapshot's storage tier."""
-
     SnapshotId: Optional[SnapshotId]
     VolumeId: Optional[VolumeId]
     Status: Optional[SnapshotState]
@@ -12267,8 +10776,6 @@ class DescribeSnapshotsRequest(ServiceRequest):
 
 
 class Snapshot(TypedDict, total=False):
-    """Describes a snapshot."""
-
     DataEncryptionKeyId: Optional[String]
     Description: Optional[String]
     Encrypted: Optional[Boolean]
@@ -12297,20 +10804,14 @@ class DescribeSnapshotsResult(TypedDict, total=False):
 
 
 class DescribeSpotDatafeedSubscriptionRequest(ServiceRequest):
-    """Contains the parameters for DescribeSpotDatafeedSubscription."""
-
     DryRun: Optional[Boolean]
 
 
 class DescribeSpotDatafeedSubscriptionResult(TypedDict, total=False):
-    """Contains the output of DescribeSpotDatafeedSubscription."""
-
     SpotDatafeedSubscription: Optional[SpotDatafeedSubscription]
 
 
 class DescribeSpotFleetInstancesRequest(ServiceRequest):
-    """Contains the parameters for DescribeSpotFleetInstances."""
-
     DryRun: Optional[Boolean]
     MaxResults: Optional[DescribeSpotFleetInstancesMaxResults]
     NextToken: Optional[String]
@@ -12318,16 +10819,12 @@ class DescribeSpotFleetInstancesRequest(ServiceRequest):
 
 
 class DescribeSpotFleetInstancesResponse(TypedDict, total=False):
-    """Contains the output of DescribeSpotFleetInstances."""
-
     ActiveInstances: Optional[ActiveInstanceSet]
     NextToken: Optional[String]
     SpotFleetRequestId: Optional[String]
 
 
 class DescribeSpotFleetRequestHistoryRequest(ServiceRequest):
-    """Contains the parameters for DescribeSpotFleetRequestHistory."""
-
     DryRun: Optional[Boolean]
     EventType: Optional[EventType]
     MaxResults: Optional[DescribeSpotFleetRequestHistoryMaxResults]
@@ -12337,8 +10834,6 @@ class DescribeSpotFleetRequestHistoryRequest(ServiceRequest):
 
 
 class HistoryRecord(TypedDict, total=False):
-    """Describes an event in the history of the Spot Fleet request."""
-
     EventInformation: Optional[EventInformation]
     EventType: Optional[EventType]
     Timestamp: Optional[DateTime]
@@ -12348,8 +10843,6 @@ HistoryRecords = List[HistoryRecord]
 
 
 class DescribeSpotFleetRequestHistoryResponse(TypedDict, total=False):
-    """Contains the output of DescribeSpotFleetRequestHistory."""
-
     HistoryRecords: Optional[HistoryRecords]
     LastEvaluatedTime: Optional[DateTime]
     NextToken: Optional[String]
@@ -12358,8 +10851,6 @@ class DescribeSpotFleetRequestHistoryResponse(TypedDict, total=False):
 
 
 class DescribeSpotFleetRequestsRequest(ServiceRequest):
-    """Contains the parameters for DescribeSpotFleetRequests."""
-
     DryRun: Optional[Boolean]
     MaxResults: Optional[Integer]
     NextToken: Optional[String]
@@ -12367,8 +10858,6 @@ class DescribeSpotFleetRequestsRequest(ServiceRequest):
 
 
 class TargetGroup(TypedDict, total=False):
-    """Describes a load balancer target group."""
-
     Arn: Optional[String]
 
 
@@ -12376,25 +10865,15 @@ TargetGroups = List[TargetGroup]
 
 
 class TargetGroupsConfig(TypedDict, total=False):
-    """Describes the target groups to attach to a Spot Fleet. Spot Fleet
-    registers the running Spot Instances with these target groups.
-    """
-
     TargetGroups: Optional[TargetGroups]
 
 
 class LoadBalancersConfig(TypedDict, total=False):
-    """Describes the Classic Load Balancers and target groups to attach to a
-    Spot Fleet request.
-    """
-
     ClassicLoadBalancersConfig: Optional[ClassicLoadBalancersConfig]
     TargetGroupsConfig: Optional[TargetGroupsConfig]
 
 
 class LaunchTemplateOverrides(TypedDict, total=False):
-    """Describes overrides for a launch template."""
-
     InstanceType: Optional[InstanceType]
     SpotPrice: Optional[String]
     SubnetId: Optional[SubnetId]
@@ -12408,8 +10887,6 @@ LaunchTemplateOverridesList = List[LaunchTemplateOverrides]
 
 
 class LaunchTemplateConfig(TypedDict, total=False):
-    """Describes a launch template and overrides."""
-
     LaunchTemplateSpecification: Optional[FleetLaunchTemplateSpecification]
     Overrides: Optional[LaunchTemplateOverridesList]
 
@@ -12418,8 +10895,6 @@ LaunchTemplateConfigList = List[LaunchTemplateConfig]
 
 
 class SpotFleetTagSpecification(TypedDict, total=False):
-    """The tags for a Spot Fleet resource."""
-
     ResourceType: Optional[ResourceType]
     Tags: Optional[TagList]
 
@@ -12428,16 +10903,12 @@ SpotFleetTagSpecificationList = List[SpotFleetTagSpecification]
 
 
 class SpotPlacement(TypedDict, total=False):
-    """Describes Spot Instance placement."""
-
     AvailabilityZone: Optional[String]
     GroupName: Optional[PlacementGroupName]
     Tenancy: Optional[Tenancy]
 
 
 class InstanceNetworkInterfaceSpecification(TypedDict, total=False):
-    """Describes a network interface."""
-
     AssociatePublicIpAddress: Optional[Boolean]
     DeleteOnTermination: Optional[Boolean]
     Description: Optional[String]
@@ -12463,19 +10934,10 @@ InstanceNetworkInterfaceSpecificationList = List[InstanceNetworkInterfaceSpecifi
 
 
 class SpotFleetMonitoring(TypedDict, total=False):
-    """Describes whether monitoring is enabled."""
-
     Enabled: Optional[Boolean]
 
 
 class SpotFleetLaunchSpecification(TypedDict, total=False):
-    """Describes the launch specification for one or more Spot Instances. If
-    you include On-Demand capacity in your fleet request or want to specify
-    an EFA network device, you can't use ``SpotFleetLaunchSpecification``;
-    you must use
-    `LaunchTemplateConfig <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_LaunchTemplateConfig.html>`__.
-    """
-
     SecurityGroups: Optional[GroupIdentifierList]
     AddressingType: Optional[String]
     BlockDeviceMappings: Optional[BlockDeviceMappingList]
@@ -12501,28 +10963,15 @@ LaunchSpecsList = List[SpotFleetLaunchSpecification]
 
 
 class SpotCapacityRebalance(TypedDict, total=False):
-    """The Spot Instance replacement strategy to use when Amazon EC2 emits a
-    signal that your Spot Instance is at an elevated risk of being
-    interrupted. For more information, see `Capacity
-    rebalancing <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet-capacity-rebalance.html>`__
-    in the *Amazon EC2 User Guide for Linux Instances*.
-    """
-
     ReplacementStrategy: Optional[ReplacementStrategy]
     TerminationDelay: Optional[Integer]
 
 
 class SpotMaintenanceStrategies(TypedDict, total=False):
-    """The strategies for managing your Spot Instances that are at an elevated
-    risk of being interrupted.
-    """
-
     CapacityRebalance: Optional[SpotCapacityRebalance]
 
 
 class SpotFleetRequestConfigData(TypedDict, total=False):
-    """Describes the configuration of a Spot Fleet request."""
-
     AllocationStrategy: Optional[AllocationStrategy]
     OnDemandAllocationStrategy: Optional[OnDemandAllocationStrategy]
     SpotMaintenanceStrategies: Optional[SpotMaintenanceStrategies]
@@ -12552,8 +11001,6 @@ class SpotFleetRequestConfigData(TypedDict, total=False):
 
 
 class SpotFleetRequestConfig(TypedDict, total=False):
-    """Describes a Spot Fleet request."""
-
     ActivityStatus: Optional[ActivityStatus]
     CreateTime: Optional[MillisecondDateTime]
     SpotFleetRequestConfig: Optional[SpotFleetRequestConfigData]
@@ -12566,15 +11013,11 @@ SpotFleetRequestConfigSet = List[SpotFleetRequestConfig]
 
 
 class DescribeSpotFleetRequestsResponse(TypedDict, total=False):
-    """Contains the output of DescribeSpotFleetRequests."""
-
     NextToken: Optional[String]
     SpotFleetRequestConfigs: Optional[SpotFleetRequestConfigSet]
 
 
 class DescribeSpotInstanceRequestsRequest(ServiceRequest):
-    """Contains the parameters for DescribeSpotInstanceRequests."""
-
     Filters: Optional[FilterList]
     DryRun: Optional[Boolean]
     SpotInstanceRequestIds: Optional[SpotInstanceRequestIdList]
@@ -12583,22 +11026,16 @@ class DescribeSpotInstanceRequestsRequest(ServiceRequest):
 
 
 class SpotInstanceStatus(TypedDict, total=False):
-    """Describes the status of a Spot Instance request."""
-
     Code: Optional[String]
     Message: Optional[String]
     UpdateTime: Optional[DateTime]
 
 
 class RunInstancesMonitoringEnabled(TypedDict, total=False):
-    """Describes the monitoring of an instance."""
-
     Enabled: Boolean
 
 
 class LaunchSpecification(TypedDict, total=False):
-    """Describes the launch specification for an instance."""
-
     UserData: Optional[String]
     SecurityGroups: Optional[GroupIdentifierList]
     AddressingType: Optional[String]
@@ -12617,8 +11054,6 @@ class LaunchSpecification(TypedDict, total=False):
 
 
 class SpotInstanceRequest(TypedDict, total=False):
-    """Describes a Spot Instance request."""
-
     ActualBlockHourlyPrice: Optional[String]
     AvailabilityZoneGroup: Optional[String]
     BlockDurationMinutes: Optional[Integer]
@@ -12644,8 +11079,6 @@ SpotInstanceRequestList = List[SpotInstanceRequest]
 
 
 class DescribeSpotInstanceRequestsResult(TypedDict, total=False):
-    """Contains the output of DescribeSpotInstanceRequests."""
-
     SpotInstanceRequests: Optional[SpotInstanceRequestList]
     NextToken: Optional[String]
 
@@ -12655,8 +11088,6 @@ InstanceTypeList = List[InstanceType]
 
 
 class DescribeSpotPriceHistoryRequest(ServiceRequest):
-    """Contains the parameters for DescribeSpotPriceHistory."""
-
     Filters: Optional[FilterList]
     AvailabilityZone: Optional[String]
     DryRun: Optional[Boolean]
@@ -12669,10 +11100,6 @@ class DescribeSpotPriceHistoryRequest(ServiceRequest):
 
 
 class SpotPrice(TypedDict, total=False):
-    """Describes the maximum price per hour that you are willing to pay for a
-    Spot Instance.
-    """
-
     AvailabilityZone: Optional[String]
     InstanceType: Optional[InstanceType]
     ProductDescription: Optional[RIProductDescription]
@@ -12684,8 +11111,6 @@ SpotPriceHistoryList = List[SpotPrice]
 
 
 class DescribeSpotPriceHistoryResult(TypedDict, total=False):
-    """Contains the output of DescribeSpotPriceHistory."""
-
     NextToken: Optional[String]
     SpotPriceHistory: Optional[SpotPriceHistoryList]
 
@@ -12703,8 +11128,6 @@ IpRanges = List[String]
 
 
 class StaleIpPermission(TypedDict, total=False):
-    """Describes a stale rule in a security group."""
-
     FromPort: Optional[Integer]
     IpProtocol: Optional[String]
     IpRanges: Optional[IpRanges]
@@ -12717,10 +11140,6 @@ StaleIpPermissionSet = List[StaleIpPermission]
 
 
 class StaleSecurityGroup(TypedDict, total=False):
-    """Describes a stale security group (a security group that contains stale
-    rules).
-    """
-
     Description: Optional[String]
     GroupId: Optional[String]
     GroupName: Optional[String]
@@ -12749,10 +11168,6 @@ class DescribeStoreImageTasksRequest(ServiceRequest):
 
 
 class StoreImageTaskResult(TypedDict, total=False):
-    """The information about the AMI store task, including the progress of the
-    task.
-    """
-
     AmiId: Optional[String]
     TaskStartTime: Optional[MillisecondDateTime]
     Bucket: Optional[String]
@@ -12797,8 +11212,6 @@ class DescribeTagsRequest(ServiceRequest):
 
 
 class TagDescription(TypedDict, total=False):
-    """Describes a tag."""
-
     Key: Optional[String]
     ResourceId: Optional[String]
     ResourceType: Optional[ResourceType]
@@ -12882,15 +11295,11 @@ class DescribeTransitGatewayAttachmentsRequest(ServiceRequest):
 
 
 class TransitGatewayAttachmentAssociation(TypedDict, total=False):
-    """Describes an association."""
-
     TransitGatewayRouteTableId: Optional[String]
     State: Optional[TransitGatewayAssociationState]
 
 
 class TransitGatewayAttachment(TypedDict, total=False):
-    """Describes an attachment between a resource and a transit gateway."""
-
     TransitGatewayAttachmentId: Optional[String]
     TransitGatewayId: Optional[String]
     TransitGatewayOwnerId: Optional[String]
@@ -13078,8 +11487,6 @@ class DescribeVolumeStatusRequest(ServiceRequest):
 
 
 class VolumeStatusAttachmentStatus(TypedDict, total=False):
-    """Information about the instances to which the volume is attached."""
-
     IoPerformance: Optional[String]
     InstanceId: Optional[String]
 
@@ -13088,8 +11495,6 @@ VolumeStatusAttachmentStatusList = List[VolumeStatusAttachmentStatus]
 
 
 class VolumeStatusDetails(TypedDict, total=False):
-    """Describes a volume status."""
-
     Name: Optional[VolumeStatusName]
     Status: Optional[String]
 
@@ -13098,15 +11503,11 @@ VolumeStatusDetailsList = List[VolumeStatusDetails]
 
 
 class VolumeStatusInfo(TypedDict, total=False):
-    """Describes the status of a volume."""
-
     Details: Optional[VolumeStatusDetailsList]
     Status: Optional[VolumeStatusInfoStatus]
 
 
 class VolumeStatusEvent(TypedDict, total=False):
-    """Describes a volume status event."""
-
     Description: Optional[String]
     EventId: Optional[String]
     EventType: Optional[String]
@@ -13119,8 +11520,6 @@ VolumeStatusEventsList = List[VolumeStatusEvent]
 
 
 class VolumeStatusAction(TypedDict, total=False):
-    """Describes a volume status operation code."""
-
     Code: Optional[String]
     Description: Optional[String]
     EventId: Optional[String]
@@ -13131,8 +11530,6 @@ VolumeStatusActionsList = List[VolumeStatusAction]
 
 
 class VolumeStatusItem(TypedDict, total=False):
-    """Describes the volume status."""
-
     Actions: Optional[VolumeStatusActionsList]
     AvailabilityZone: Optional[String]
     OutpostArn: Optional[String]
@@ -13159,11 +11556,6 @@ class DescribeVolumesModificationsRequest(ServiceRequest):
 
 
 class VolumeModification(TypedDict, total=False):
-    """Describes the modification status of an EBS volume.
-
-    If the volume has never been modified, some element values will be null.
-    """
-
     VolumeId: Optional[String]
     ModificationState: Optional[VolumeModificationState]
     StatusMessage: Optional[String]
@@ -13199,8 +11591,6 @@ class DescribeVolumesRequest(ServiceRequest):
 
 
 class VolumeAttachment(TypedDict, total=False):
-    """Describes volume attachment details."""
-
     AttachTime: Optional[DateTime]
     Device: Optional[String]
     InstanceId: Optional[String]
@@ -13213,8 +11603,6 @@ VolumeAttachmentList = List[VolumeAttachment]
 
 
 class Volume(TypedDict, total=False):
-    """Describes a volume."""
-
     Attachments: Optional[VolumeAttachmentList]
     AvailabilityZone: Optional[String]
     CreateTime: Optional[DateTime]
@@ -13274,8 +11662,6 @@ class DescribeVpcClassicLinkRequest(ServiceRequest):
 
 
 class VpcClassicLink(TypedDict, total=False):
-    """Describes whether a VPC is enabled for ClassicLink."""
-
     ClassicLinkEnabled: Optional[Boolean]
     Tags: Optional[TagList]
     VpcId: Optional[String]
@@ -13309,8 +11695,6 @@ class DescribeVpcEndpointConnectionsRequest(ServiceRequest):
 
 
 class VpcEndpointConnection(TypedDict, total=False):
-    """Describes a VPC endpoint connection to a service."""
-
     ServiceId: Optional[String]
     VpcEndpointId: Optional[String]
     VpcEndpointOwner: Optional[String]
@@ -13359,8 +11743,6 @@ class DescribeVpcEndpointServicePermissionsResult(TypedDict, total=False):
 
 
 class DescribeVpcEndpointServicesRequest(ServiceRequest):
-    """Contains the parameters for DescribeVpcEndpointServices."""
-
     DryRun: Optional[Boolean]
     ServiceNames: Optional[ValueStringList]
     Filters: Optional[FilterList]
@@ -13369,8 +11751,6 @@ class DescribeVpcEndpointServicesRequest(ServiceRequest):
 
 
 class PrivateDnsDetails(TypedDict, total=False):
-    """Information about the Private DNS name for interface endpoints."""
-
     PrivateDnsName: Optional[String]
 
 
@@ -13378,8 +11758,6 @@ PrivateDnsDetailsSet = List[PrivateDnsDetails]
 
 
 class ServiceDetail(TypedDict, total=False):
-    """Describes a VPC endpoint service."""
-
     ServiceName: Optional[String]
     ServiceId: Optional[String]
     ServiceType: Optional[ServiceTypeDetailSet]
@@ -13400,16 +11778,12 @@ ServiceDetailSet = List[ServiceDetail]
 
 
 class DescribeVpcEndpointServicesResult(TypedDict, total=False):
-    """Contains the output of DescribeVpcEndpointServices."""
-
     ServiceNames: Optional[ValueStringList]
     ServiceDetails: Optional[ServiceDetailSet]
     NextToken: Optional[String]
 
 
 class DescribeVpcEndpointsRequest(ServiceRequest):
-    """Contains the parameters for DescribeVpcEndpoints."""
-
     DryRun: Optional[Boolean]
     VpcEndpointIds: Optional[VpcEndpointIdList]
     Filters: Optional[FilterList]
@@ -13421,8 +11795,6 @@ VpcEndpointSet = List[VpcEndpoint]
 
 
 class DescribeVpcEndpointsResult(TypedDict, total=False):
-    """Contains the output of DescribeVpcEndpoints."""
-
     VpcEndpoints: Optional[VpcEndpointSet]
     NextToken: Optional[String]
 
@@ -13469,8 +11841,6 @@ VpnConnectionIdStringList = List[VpnConnectionId]
 
 
 class DescribeVpnConnectionsRequest(ServiceRequest):
-    """Contains the parameters for DescribeVpnConnections."""
-
     Filters: Optional[FilterList]
     VpnConnectionIds: Optional[VpnConnectionIdStringList]
     DryRun: Optional[Boolean]
@@ -13480,8 +11850,6 @@ VpnConnectionList = List[VpnConnection]
 
 
 class DescribeVpnConnectionsResult(TypedDict, total=False):
-    """Contains the output of DescribeVpnConnections."""
-
     VpnConnections: Optional[VpnConnectionList]
 
 
@@ -13489,8 +11857,6 @@ VpnGatewayIdStringList = List[VpnGatewayId]
 
 
 class DescribeVpnGatewaysRequest(ServiceRequest):
-    """Contains the parameters for DescribeVpnGateways."""
-
     Filters: Optional[FilterList]
     VpnGatewayIds: Optional[VpnGatewayIdStringList]
     DryRun: Optional[Boolean]
@@ -13500,8 +11866,6 @@ VpnGatewayList = List[VpnGateway]
 
 
 class DescribeVpnGatewaysResult(TypedDict, total=False):
-    """Contains the output of DescribeVpnGateways."""
-
     VpnGateways: Optional[VpnGatewayList]
 
 
@@ -13522,8 +11886,6 @@ class DetachInternetGatewayRequest(ServiceRequest):
 
 
 class DetachNetworkInterfaceRequest(ServiceRequest):
-    """Contains the parameters for DetachNetworkInterface."""
-
     AttachmentId: NetworkInterfaceAttachmentId
     DryRun: Optional[Boolean]
     Force: Optional[Boolean]
@@ -13538,8 +11900,6 @@ class DetachVolumeRequest(ServiceRequest):
 
 
 class DetachVpnGatewayRequest(ServiceRequest):
-    """Contains the parameters for DetachVpnGateway."""
-
     VpcId: VpcId
     VpnGatewayId: VpnGatewayId
     DryRun: Optional[Boolean]
@@ -13572,17 +11932,11 @@ class DisableFastLaunchResult(TypedDict, total=False):
 
 
 class DisableFastSnapshotRestoreStateError(TypedDict, total=False):
-    """Describes an error that occurred when disabling fast snapshot restores."""
-
     Code: Optional[String]
     Message: Optional[String]
 
 
 class DisableFastSnapshotRestoreStateErrorItem(TypedDict, total=False):
-    """Contains information about an error that occurred when disabling fast
-    snapshot restores.
-    """
-
     AvailabilityZone: Optional[String]
     Error: Optional[DisableFastSnapshotRestoreStateError]
 
@@ -13591,10 +11945,6 @@ DisableFastSnapshotRestoreStateErrorSet = List[DisableFastSnapshotRestoreStateEr
 
 
 class DisableFastSnapshotRestoreErrorItem(TypedDict, total=False):
-    """Contains information about the errors that occurred when disabling fast
-    snapshot restores.
-    """
-
     SnapshotId: Optional[String]
     FastSnapshotRestoreStateErrors: Optional[DisableFastSnapshotRestoreStateErrorSet]
 
@@ -13603,8 +11953,6 @@ DisableFastSnapshotRestoreErrorSet = List[DisableFastSnapshotRestoreErrorItem]
 
 
 class DisableFastSnapshotRestoreSuccessItem(TypedDict, total=False):
-    """Describes fast snapshot restores that were successfully disabled."""
-
     SnapshotId: Optional[String]
     AvailabilityZone: Optional[String]
     State: Optional[FastSnapshotRestoreStateCode]
@@ -13665,8 +12013,6 @@ class DisableTransitGatewayRouteTablePropagationRequest(ServiceRequest):
 
 
 class TransitGatewayPropagation(TypedDict, total=False):
-    """Describes route propagation."""
-
     TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
     ResourceId: Optional[String]
     ResourceType: Optional[TransitGatewayAttachmentResourceType]
@@ -13679,8 +12025,6 @@ class DisableTransitGatewayRouteTablePropagationResult(TypedDict, total=False):
 
 
 class DisableVgwRoutePropagationRequest(ServiceRequest):
-    """Contains the parameters for DisableVgwRoutePropagation."""
-
     GatewayId: VpnGatewayId
     RouteTableId: RouteTableId
     DryRun: Optional[Boolean]
@@ -13739,8 +12083,6 @@ class DisassociateIamInstanceProfileResult(TypedDict, total=False):
 
 
 class InstanceEventWindowDisassociationRequest(TypedDict, total=False):
-    """The targets to disassociate from the specified event window."""
-
     InstanceIds: Optional[InstanceIdList]
     InstanceTags: Optional[TagList]
     DedicatedHostIds: Optional[DedicatedHostIdList]
@@ -13813,22 +12155,16 @@ class DisassociateVpcCidrBlockResult(TypedDict, total=False):
 
 
 class VolumeDetail(TypedDict, total=False):
-    """Describes an EBS volume."""
-
     Size: Long
 
 
 class DiskImageDetail(TypedDict, total=False):
-    """Describes a disk image."""
-
     Bytes: Long
     Format: DiskImageFormat
     ImportManifestUrl: String
 
 
 class DiskImage(TypedDict, total=False):
-    """Describes a disk image."""
-
     Description: Optional[String]
     Image: Optional[DiskImageDetail]
     Volume: Optional[VolumeDetail]
@@ -13838,17 +12174,11 @@ DiskImageList = List[DiskImage]
 
 
 class DnsServersOptionsModifyStructure(TypedDict, total=False):
-    """Information about the DNS server to be used."""
-
     CustomDnsServers: Optional[ValueStringList]
     Enabled: Optional[Boolean]
 
 
 class EbsInstanceBlockDeviceSpecification(TypedDict, total=False):
-    """Describes information used to set up an EBS volume specified in a block
-    device mapping.
-    """
-
     DeleteOnTermination: Optional[Boolean]
     VolumeId: Optional[VolumeId]
 
@@ -13857,8 +12187,6 @@ ElasticGpuSpecifications = List[ElasticGpuSpecification]
 
 
 class ElasticInferenceAccelerator(TypedDict, total=False):
-    """Describes an elastic inference accelerator."""
-
     Type: String
     Count: Optional[ElasticInferenceAcceleratorCount]
 
@@ -13875,23 +12203,12 @@ class EnableEbsEncryptionByDefaultResult(TypedDict, total=False):
 
 
 class FastLaunchLaunchTemplateSpecificationRequest(TypedDict, total=False):
-    """Request to create a launch template for a fast-launch enabled Windows
-    AMI.
-
-    Note - You can specify either the ``LaunchTemplateName`` or the
-    ``LaunchTemplateId``, but not both.
-    """
-
     LaunchTemplateId: Optional[LaunchTemplateId]
     LaunchTemplateName: Optional[String]
     Version: String
 
 
 class FastLaunchSnapshotConfigurationRequest(TypedDict, total=False):
-    """Configuration settings for creating and managing pre-provisioned
-    snapshots for a fast-launch enabled Windows AMI.
-    """
-
     TargetResourceCount: Optional[Integer]
 
 
@@ -13917,17 +12234,11 @@ class EnableFastLaunchResult(TypedDict, total=False):
 
 
 class EnableFastSnapshotRestoreStateError(TypedDict, total=False):
-    """Describes an error that occurred when enabling fast snapshot restores."""
-
     Code: Optional[String]
     Message: Optional[String]
 
 
 class EnableFastSnapshotRestoreStateErrorItem(TypedDict, total=False):
-    """Contains information about an error that occurred when enabling fast
-    snapshot restores.
-    """
-
     AvailabilityZone: Optional[String]
     Error: Optional[EnableFastSnapshotRestoreStateError]
 
@@ -13936,10 +12247,6 @@ EnableFastSnapshotRestoreStateErrorSet = List[EnableFastSnapshotRestoreStateErro
 
 
 class EnableFastSnapshotRestoreErrorItem(TypedDict, total=False):
-    """Contains information about the errors that occurred when enabling fast
-    snapshot restores.
-    """
-
     SnapshotId: Optional[String]
     FastSnapshotRestoreStateErrors: Optional[EnableFastSnapshotRestoreStateErrorSet]
 
@@ -13948,8 +12255,6 @@ EnableFastSnapshotRestoreErrorSet = List[EnableFastSnapshotRestoreErrorItem]
 
 
 class EnableFastSnapshotRestoreSuccessItem(TypedDict, total=False):
-    """Describes fast snapshot restores that were successfully enabled."""
-
     SnapshotId: Optional[String]
     AvailabilityZone: Optional[String]
     State: Optional[FastSnapshotRestoreStateCode]
@@ -14015,8 +12320,6 @@ class EnableTransitGatewayRouteTablePropagationResult(TypedDict, total=False):
 
 
 class EnableVgwRoutePropagationRequest(ServiceRequest):
-    """Contains the parameters for EnableVgwRoutePropagation."""
-
     GatewayId: VpnGatewayId
     RouteTableId: RouteTableId
     DryRun: Optional[Boolean]
@@ -14045,12 +12348,6 @@ class EnableVpcClassicLinkResult(TypedDict, total=False):
 
 
 class EnclaveOptionsRequest(TypedDict, total=False):
-    """Indicates whether the instance is enabled for Amazon Web Services Nitro
-    Enclaves. For more information, see `What is Amazon Web Services Nitro
-    Enclaves? <https://docs.aws.amazon.com/enclaves/latest/user/nitro-enclave.html>`__
-    in the *Amazon Web Services Nitro Enclaves User Guide*.
-    """
-
     Enabled: Optional[Boolean]
 
 
@@ -14074,8 +12371,6 @@ class ExportClientVpnClientConfigurationResult(TypedDict, total=False):
 
 
 class ExportTaskS3LocationRequest(TypedDict, total=False):
-    """Describes the destination for an export image task."""
-
     S3Bucket: String
     S3Prefix: Optional[String]
 
@@ -14132,8 +12427,6 @@ class GetAssociatedIpv6PoolCidrsRequest(ServiceRequest):
 
 
 class Ipv6CidrAssociation(TypedDict, total=False):
-    """Describes an IPv6 CIDR block association."""
-
     Ipv6Cidr: Optional[String]
     AssociatedResource: Optional[String]
 
@@ -14154,8 +12447,6 @@ class GetCapacityReservationUsageRequest(ServiceRequest):
 
 
 class InstanceUsage(TypedDict, total=False):
-    """Information about the Capacity Reservation usage."""
-
     AccountId: Optional[String]
     UsedInstanceCount: Optional[Integer]
 
@@ -14174,7 +12465,7 @@ class GetCapacityReservationUsageResult(TypedDict, total=False):
 
 
 class GetCoipPoolUsageRequest(ServiceRequest):
-    PoolId: CoipPoolId
+    PoolId: Ipv4PoolCoipId
     Filters: Optional[FilterList]
     MaxResults: Optional[CoipPoolMaxResults]
     NextToken: Optional[String]
@@ -14216,10 +12507,6 @@ class GetDefaultCreditSpecificationRequest(ServiceRequest):
 
 
 class InstanceFamilyCreditSpecification(TypedDict, total=False):
-    """Describes the default credit option for CPU usage of a burstable
-    performance instance family.
-    """
-
     InstanceFamily: Optional[UnlimitedSupportedInstanceFamily]
     CpuCredits: Optional[String]
 
@@ -14245,8 +12532,6 @@ class GetEbsEncryptionByDefaultResult(TypedDict, total=False):
 
 
 class IntegrateServices(TypedDict, total=False):
-    """Describes service integrations with VPC Flow logs."""
-
     AthenaIntegrations: Optional[AthenaIntegrationsSet]
 
 
@@ -14282,8 +12567,6 @@ class GetHostReservationPurchasePreviewRequest(ServiceRequest):
 
 
 class Purchase(TypedDict, total=False):
-    """Describes the result of the purchase."""
-
     CurrencyCode: Optional[CurrencyCodeValues]
     Duration: Optional[Integer]
     HostIdSet: Optional[ResponseHostIdSet]
@@ -14317,8 +12600,6 @@ class GetInstanceTypesFromInstanceRequirementsRequest(ServiceRequest):
 
 
 class InstanceTypeInfoFromInstanceRequirements(TypedDict, total=False):
-    """The list of instance types with the specified instance attributes."""
-
     InstanceType: Optional[String]
 
 
@@ -14342,12 +12623,6 @@ class GetIpamAddressHistoryRequest(ServiceRequest):
 
 
 class IpamAddressHistoryRecord(TypedDict, total=False):
-    """The historical record of a CIDR within an IPAM scope. For more
-    information, see `View the history of IP
-    addresses </vpc/latest/ipam/view-history-cidr-ipam.html>`__ in the
-    *Amazon VPC IPAM User Guide*.
-    """
-
     ResourceOwnerId: Optional[String]
     ResourceRegion: Optional[String]
     ResourceType: Optional[IpamAddressHistoryResourceType]
@@ -14416,8 +12691,6 @@ class GetIpamResourceCidrsRequest(ServiceRequest):
 
 
 class IpamResourceCidr(TypedDict, total=False):
-    """The CIDR for an IPAM resource."""
-
     IpamId: Optional[IpamId]
     IpamScopeId: Optional[IpamScopeId]
     IpamPoolId: Optional[IpamPoolId]
@@ -14460,8 +12733,6 @@ class GetManagedPrefixListAssociationsRequest(ServiceRequest):
 
 
 class PrefixListAssociation(TypedDict, total=False):
-    """Describes the resource with which a prefix list is associated."""
-
     ResourceId: Optional[String]
     ResourceOwner: Optional[String]
 
@@ -14483,8 +12754,6 @@ class GetManagedPrefixListEntriesRequest(ServiceRequest):
 
 
 class PrefixListEntry(TypedDict, total=False):
-    """Describes a prefix list entry."""
-
     Cidr: Optional[String]
     Description: Optional[String]
 
@@ -14532,31 +12801,23 @@ class GetPasswordDataResult(TypedDict, total=False):
 
 
 class GetReservedInstancesExchangeQuoteRequest(ServiceRequest):
-    """Contains the parameters for GetReservedInstanceExchangeQuote."""
-
     DryRun: Optional[Boolean]
     ReservedInstanceIds: ReservedInstanceIdSet
     TargetConfigurations: Optional[TargetConfigurationRequestSet]
 
 
 class TargetConfiguration(TypedDict, total=False):
-    """Information about the Convertible Reserved Instance offering."""
-
     InstanceCount: Optional[Integer]
     OfferingId: Optional[String]
 
 
 class ReservationValue(TypedDict, total=False):
-    """The cost associated with the Reserved Instance."""
-
     HourlyPrice: Optional[String]
     RemainingTotalValue: Optional[String]
     RemainingUpfrontValue: Optional[String]
 
 
 class TargetReservationValue(TypedDict, total=False):
-    """The total value of the new Convertible Reserved Instances."""
-
     ReservationValue: Optional[ReservationValue]
     TargetConfiguration: Optional[TargetConfiguration]
 
@@ -14565,8 +12826,6 @@ TargetReservationValueSet = List[TargetReservationValue]
 
 
 class ReservedInstanceReservationValue(TypedDict, total=False):
-    """The total value of the Convertible Reserved Instance."""
-
     ReservationValue: Optional[ReservationValue]
     ReservedInstanceId: Optional[String]
 
@@ -14575,8 +12834,6 @@ ReservedInstanceReservationValueSet = List[ReservedInstanceReservationValue]
 
 
 class GetReservedInstancesExchangeQuoteResult(TypedDict, total=False):
-    """Contains the output of GetReservedInstancesExchangeQuote."""
-
     CurrencyCode: Optional[String]
     IsValidExchange: Optional[Boolean]
     OutputReservedInstancesWillExpireAt: Optional[DateTime]
@@ -14597,14 +12854,6 @@ class GetSerialConsoleAccessStatusResult(TypedDict, total=False):
 
 
 class InstanceRequirementsWithMetadataRequest(TypedDict, total=False):
-    """The architecture type, virtualization type, and other attributes for the
-    instance types. When you specify instance attributes, Amazon EC2 will
-    identify instance types with those attributes.
-
-    If you specify ``InstanceRequirementsWithMetadataRequest``, you can't
-    specify ``InstanceTypes``.
-    """
-
     ArchitectureTypes: Optional[ArchitectureTypeSet]
     VirtualizationTypes: Optional[VirtualizationTypeSet]
     InstanceRequirements: Optional[InstanceRequirementsRequest]
@@ -14627,12 +12876,6 @@ class GetSpotPlacementScoresRequest(ServiceRequest):
 
 
 class SpotPlacementScore(TypedDict, total=False):
-    """The Spot placement score for this Region or Availability Zone. The score
-    is calculated based on the assumption that the ``capacity-optimized``
-    allocation strategy is used and that all of the Availability Zones in
-    the Region can be used.
-    """
-
     Region: Optional[String]
     AvailabilityZoneId: Optional[String]
     Score: Optional[Integer]
@@ -14672,8 +12915,6 @@ class GetTransitGatewayAttachmentPropagationsRequest(ServiceRequest):
 
 
 class TransitGatewayAttachmentPropagation(TypedDict, total=False):
-    """Describes a propagation route table."""
-
     TransitGatewayRouteTableId: Optional[String]
     State: Optional[TransitGatewayPropagationState]
 
@@ -14695,10 +12936,6 @@ class GetTransitGatewayMulticastDomainAssociationsRequest(ServiceRequest):
 
 
 class TransitGatewayMulticastDomainAssociation(TypedDict, total=False):
-    """Describes the resources associated with the transit gateway multicast
-    domain.
-    """
-
     TransitGatewayAttachmentId: Optional[String]
     ResourceId: Optional[String]
     ResourceType: Optional[TransitGatewayAttachmentResourceType]
@@ -14739,10 +12976,6 @@ class GetTransitGatewayRouteTableAssociationsRequest(ServiceRequest):
 
 
 class TransitGatewayRouteTableAssociation(TypedDict, total=False):
-    """Describes an association between a route table and a resource
-    attachment.
-    """
-
     TransitGatewayAttachmentId: Optional[String]
     ResourceId: Optional[String]
     ResourceType: Optional[TransitGatewayAttachmentResourceType]
@@ -14766,8 +12999,6 @@ class GetTransitGatewayRouteTablePropagationsRequest(ServiceRequest):
 
 
 class TransitGatewayRouteTablePropagation(TypedDict, total=False):
-    """Describes a route table propagation."""
-
     TransitGatewayAttachmentId: Optional[String]
     ResourceId: Optional[String]
     ResourceType: Optional[TransitGatewayAttachmentResourceType]
@@ -14800,13 +13031,6 @@ class GetVpnConnectionDeviceTypesRequest(ServiceRequest):
 
 
 class VpnConnectionDeviceType(TypedDict, total=False):
-    """List of customer gateway devices that have a sample configuration file
-    available for use. You can also see the list of device types with sample
-    configuration files available under `Your customer gateway
-    device <https://docs.aws.amazon.com/vpn/latest/s2svpn/your-cgw.html>`__
-    in the *Amazon Web Services Site-to-Site VPN User Guide*.
-    """
-
     VpnConnectionDeviceTypeId: Optional[String]
     Vendor: Optional[String]
     Platform: Optional[String]
@@ -14822,20 +13046,10 @@ class GetVpnConnectionDeviceTypesResult(TypedDict, total=False):
 
 
 class HibernationOptionsRequest(TypedDict, total=False):
-    """Indicates whether your instance is configured for hibernation. This
-    parameter is valid only if the instance meets the `hibernation
-    prerequisites <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html#hibernating-prerequisites>`__.
-    For more information, see `Hibernate your
-    instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html>`__
-    in the *Amazon EC2 User Guide*.
-    """
-
     Configured: Optional[Boolean]
 
 
 class LaunchPermission(TypedDict, total=False):
-    """Describes a launch permission."""
-
     Group: Optional[PermissionGroup]
     UserId: Optional[String]
     OrganizationArn: Optional[String]
@@ -14846,8 +13060,6 @@ LaunchPermissionList = List[LaunchPermission]
 
 
 class ImageAttribute(TypedDict, total=False):
-    """Describes an image attribute."""
-
     BlockDeviceMappings: Optional[BlockDeviceMappingList]
     ImageId: Optional[String]
     LaunchPermissions: Optional[LaunchPermissionList]
@@ -14857,18 +13069,15 @@ class ImageAttribute(TypedDict, total=False):
     RamdiskId: Optional[AttributeValue]
     SriovNetSupport: Optional[AttributeValue]
     BootMode: Optional[AttributeValue]
+    LastLaunchedTime: Optional[AttributeValue]
 
 
 class UserBucket(TypedDict, total=False):
-    """Describes the Amazon S3 bucket for the disk image."""
-
     S3Bucket: Optional[String]
     S3Key: Optional[String]
 
 
 class ImageDiskContainer(TypedDict, total=False):
-    """Describes the disk container object for an import image task."""
-
     Description: Optional[String]
     DeviceName: Optional[String]
     Format: Optional[String]
@@ -14878,6 +13087,17 @@ class ImageDiskContainer(TypedDict, total=False):
 
 
 ImageDiskContainerList = List[ImageDiskContainer]
+
+
+class ImageRecycleBinInfo(TypedDict, total=False):
+    ImageId: Optional[String]
+    Name: Optional[String]
+    Description: Optional[String]
+    RecycleBinEnterTime: Optional[MillisecondDateTime]
+    RecycleBinExitTime: Optional[MillisecondDateTime]
+
+
+ImageRecycleBinInfoList = List[ImageRecycleBinInfo]
 
 
 class ImportClientVpnClientCertificateRevocationListRequest(ServiceRequest):
@@ -14891,8 +13111,6 @@ class ImportClientVpnClientCertificateRevocationListResult(TypedDict, total=Fals
 
 
 class ImportImageLicenseConfigurationRequest(TypedDict, total=False):
-    """The request information of license configurations."""
-
     LicenseConfigurationArn: Optional[String]
 
 
@@ -14938,14 +13156,10 @@ class ImportImageResult(TypedDict, total=False):
 
 
 class UserData(TypedDict, total=False):
-    """Describes the user data for an instance."""
-
     Data: Optional[String]
 
 
 class ImportInstanceLaunchSpecification(TypedDict, total=False):
-    """Describes the launch specification for VM import."""
-
     AdditionalInfo: Optional[String]
     Architecture: Optional[ArchitectureValues]
     GroupIds: Optional[SecurityGroupIdStringList]
@@ -14986,8 +13200,6 @@ class ImportKeyPairResult(TypedDict, total=False):
 
 
 class SnapshotDiskContainer(TypedDict, total=False):
-    """The disk container object for the import snapshot request."""
-
     Description: Optional[String]
     Format: Optional[String]
     Url: Optional[String]
@@ -15026,8 +13238,6 @@ class ImportVolumeResult(TypedDict, total=False):
 
 
 class InstanceAttribute(TypedDict, total=False):
-    """Describes an instance attribute."""
-
     Groups: Optional[GroupIdentifierList]
     BlockDeviceMappings: Optional[InstanceBlockDeviceMappingList]
     DisableApiTermination: Optional[AttributeBooleanValue]
@@ -15047,8 +13257,6 @@ class InstanceAttribute(TypedDict, total=False):
 
 
 class InstanceBlockDeviceMappingSpecification(TypedDict, total=False):
-    """Describes a block device mapping entry."""
-
     DeviceName: Optional[String]
     Ebs: Optional[EbsInstanceBlockDeviceSpecification]
     NoDevice: Optional[String]
@@ -15059,10 +13267,6 @@ InstanceBlockDeviceMappingSpecificationList = List[InstanceBlockDeviceMappingSpe
 
 
 class InstanceCreditSpecificationRequest(TypedDict, total=False):
-    """Describes the credit option for CPU usage of a burstable performance
-    instance.
-    """
-
     InstanceId: Optional[InstanceId]
     CpuCredits: Optional[String]
 
@@ -15072,8 +13276,6 @@ InstanceIdSet = List[InstanceId]
 
 
 class SpotMarketOptions(TypedDict, total=False):
-    """The options for Spot Instances."""
-
     MaxPrice: Optional[String]
     SpotInstanceType: Optional[SpotInstanceType]
     BlockDurationMinutes: Optional[Integer]
@@ -15082,15 +13284,11 @@ class SpotMarketOptions(TypedDict, total=False):
 
 
 class InstanceMarketOptionsRequest(TypedDict, total=False):
-    """Describes the market (purchasing) option for the instances."""
-
     MarketType: Optional[MarketType]
     SpotOptions: Optional[SpotMarketOptions]
 
 
 class InstanceMetadataOptionsRequest(TypedDict, total=False):
-    """The metadata options for the instance."""
-
     HttpTokens: Optional[HttpTokensState]
     HttpPutResponseHopLimit: Optional[Integer]
     HttpEndpoint: Optional[InstanceMetadataEndpointState]
@@ -15099,8 +13297,6 @@ class InstanceMetadataOptionsRequest(TypedDict, total=False):
 
 
 class InstanceMonitoring(TypedDict, total=False):
-    """Describes the monitoring of an instance."""
-
     InstanceId: Optional[String]
     Monitoring: Optional[Monitoring]
 
@@ -15109,8 +13305,6 @@ InstanceMonitoringList = List[InstanceMonitoring]
 
 
 class InstanceStateChange(TypedDict, total=False):
-    """Describes an instance state change."""
-
     CurrentState: Optional[InstanceState]
     InstanceId: Optional[String]
     PreviousState: Optional[InstanceState]
@@ -15120,17 +13314,11 @@ InstanceStateChangeList = List[InstanceStateChange]
 
 
 class IpamCidrAuthorizationContext(TypedDict, total=False):
-    """A signed document that proves that you are authorized to bring the
-    specified IP address range to Amazon using BYOIP.
-    """
-
     Message: Optional[String]
     Signature: Optional[String]
 
 
 class KeyPair(TypedDict, total=False):
-    """Describes a key pair."""
-
     KeyFingerprint: Optional[String]
     KeyMaterial: Optional[SensitiveUserData]
     KeyName: Optional[String]
@@ -15139,29 +13327,33 @@ class KeyPair(TypedDict, total=False):
 
 
 class LaunchPermissionModifications(TypedDict, total=False):
-    """Describes a launch permission modification."""
-
     Add: Optional[LaunchPermissionList]
     Remove: Optional[LaunchPermissionList]
 
 
 class LaunchTemplateSpecification(TypedDict, total=False):
-    """The launch template to use. You must specify either the launch template
-    ID or launch template name in the request, but not both.
-    """
-
     LaunchTemplateId: Optional[LaunchTemplateId]
     LaunchTemplateName: Optional[String]
     Version: Optional[String]
 
 
 class LicenseConfigurationRequest(TypedDict, total=False):
-    """Describes a license configuration."""
-
     LicenseConfigurationArn: Optional[String]
 
 
 LicenseSpecificationListRequest = List[LicenseConfigurationRequest]
+
+
+class ListImagesInRecycleBinRequest(ServiceRequest):
+    ImageIds: Optional[ImageIdStringList]
+    NextToken: Optional[String]
+    MaxResults: Optional[ListImagesInRecycleBinMaxResults]
+    DryRun: Optional[Boolean]
+
+
+class ListImagesInRecycleBinResult(TypedDict, total=False):
+    Images: Optional[ImageRecycleBinInfoList]
+    NextToken: Optional[String]
 
 
 class ListSnapshotsInRecycleBinRequest(ServiceRequest):
@@ -15172,8 +13364,6 @@ class ListSnapshotsInRecycleBinRequest(ServiceRequest):
 
 
 class SnapshotRecycleBinInfo(TypedDict, total=False):
-    """Information about a snapshot that is currently in the Recycle Bin."""
-
     SnapshotId: Optional[String]
     RecycleBinEnterTime: Optional[MillisecondDateTime]
     RecycleBinExitTime: Optional[MillisecondDateTime]
@@ -15190,8 +13380,6 @@ class ListSnapshotsInRecycleBinResult(TypedDict, total=False):
 
 
 class LoadPermissionRequest(TypedDict, total=False):
-    """Describes a load permission."""
-
     Group: Optional[PermissionGroup]
     UserId: Optional[String]
 
@@ -15200,10 +13388,6 @@ LoadPermissionListRequest = List[LoadPermissionRequest]
 
 
 class LoadPermissionModifications(TypedDict, total=False):
-    """Describes modifications to the load permissions of an Amazon FPGA image
-    (AFI).
-    """
-
     Add: Optional[LoadPermissionListRequest]
     Remove: Optional[LoadPermissionListRequest]
 
@@ -15364,8 +13548,6 @@ OrganizationArnStringList = List[String]
 
 
 class ModifyImageAttributeRequest(ServiceRequest):
-    """Contains the parameters for ModifyImageAttribute."""
-
     Attribute: Optional[String]
     Description: Optional[AttributeValue]
     ImageId: ImageId
@@ -15416,19 +13598,11 @@ class ModifyInstanceCreditSpecificationRequest(ServiceRequest):
 
 
 class UnsuccessfulInstanceCreditSpecificationItemError(TypedDict, total=False):
-    """Information about the error for the burstable performance instance whose
-    credit option for CPU usage was not modified.
-    """
-
     Code: Optional[UnsuccessfulInstanceCreditSpecificationErrorCode]
     Message: Optional[String]
 
 
 class UnsuccessfulInstanceCreditSpecificationItem(TypedDict, total=False):
-    """Describes the burstable performance instance whose credit option for CPU
-    usage was not modified.
-    """
-
     InstanceId: Optional[String]
     Error: Optional[UnsuccessfulInstanceCreditSpecificationItemError]
 
@@ -15437,10 +13611,6 @@ UnsuccessfulInstanceCreditSpecificationSet = List[UnsuccessfulInstanceCreditSpec
 
 
 class SuccessfulInstanceCreditSpecificationItem(TypedDict, total=False):
-    """Describes the burstable performance instance whose credit option for CPU
-    usage was successfully modified.
-    """
-
     InstanceId: Optional[String]
 
 
@@ -15522,16 +13692,6 @@ class ModifyIpamPoolResult(TypedDict, total=False):
 
 
 class RemoveIpamOperatingRegion(TypedDict, total=False):
-    """Remove an operating Region from an IPAM. Operating Regions are Amazon
-    Web Services Regions where the IPAM is allowed to manage IP address
-    CIDRs. IPAM only discovers and monitors resources in the Amazon Web
-    Services Regions you select as operating Regions.
-
-    For more information about operating Regions, see `Create an
-    IPAM </vpc/latest/ipam/create-ipam.html>`__ in the *Amazon VPC IPAM User
-    Guide*
-    """
-
     RegionName: Optional[String]
 
 
@@ -15587,8 +13747,6 @@ class ModifyLaunchTemplateResult(TypedDict, total=False):
 
 
 class RemovePrefixListEntry(TypedDict, total=False):
-    """An entry for a prefix list."""
-
     Cidr: String
 
 
@@ -15610,15 +13768,11 @@ class ModifyManagedPrefixListResult(TypedDict, total=False):
 
 
 class NetworkInterfaceAttachmentChanges(TypedDict, total=False):
-    """Describes an attachment change."""
-
     AttachmentId: Optional[NetworkInterfaceAttachmentId]
     DeleteOnTermination: Optional[Boolean]
 
 
 class ModifyNetworkInterfaceAttributeRequest(ServiceRequest):
-    """Contains the parameters for ModifyNetworkInterfaceAttribute."""
-
     Attachment: Optional[NetworkInterfaceAttachmentChanges]
     Description: Optional[AttributeValue]
     DryRun: Optional[Boolean]
@@ -15643,38 +13797,16 @@ ReservedInstancesConfigurationList = List[ReservedInstancesConfiguration]
 
 
 class ModifyReservedInstancesRequest(ServiceRequest):
-    """Contains the parameters for ModifyReservedInstances."""
-
     ReservedInstancesIds: ReservedInstancesIdStringList
     ClientToken: Optional[String]
     TargetConfigurations: ReservedInstancesConfigurationList
 
 
 class ModifyReservedInstancesResult(TypedDict, total=False):
-    """Contains the output of ModifyReservedInstances."""
-
     ReservedInstancesModificationId: Optional[String]
 
 
 class SecurityGroupRuleRequest(TypedDict, total=False):
-    """Describes a security group rule.
-
-    You must specify exactly one of the following parameters, based on the
-    rule type:
-
-    -  CidrIpv4
-
-    -  CidrIpv6
-
-    -  PrefixListId
-
-    -  ReferencedGroupId
-
-    When you modify a rule, you cannot change the rule type. For example, if
-    the rule uses an IPv4 address range, you must use ``CidrIpv4`` to
-    specify a new IPv4 address range.
-    """
-
     IpProtocol: Optional[String]
     FromPort: Optional[Integer]
     ToPort: Optional[Integer]
@@ -15686,8 +13818,6 @@ class SecurityGroupRuleRequest(TypedDict, total=False):
 
 
 class SecurityGroupRuleUpdate(TypedDict, total=False):
-    """Describes an update to a security group rule."""
-
     SecurityGroupRuleId: Optional[SecurityGroupRuleId]
     SecurityGroupRule: Optional[SecurityGroupRuleRequest]
 
@@ -15727,8 +13857,6 @@ class ModifySnapshotTierResult(TypedDict, total=False):
 
 
 class ModifySpotFleetRequestRequest(ServiceRequest):
-    """Contains the parameters for ModifySpotFleetRequest."""
-
     ExcessCapacityTerminationPolicy: Optional[ExcessCapacityTerminationPolicy]
     LaunchTemplateConfigs: Optional[LaunchTemplateConfigList]
     SpotFleetRequestId: SpotFleetRequestId
@@ -15738,8 +13866,6 @@ class ModifySpotFleetRequestRequest(ServiceRequest):
 
 
 class ModifySpotFleetRequestResponse(TypedDict, total=False):
-    """Contains the output of ModifySpotFleetRequest."""
-
     Return: Optional[Boolean]
 
 
@@ -15810,8 +13936,6 @@ class ModifyTrafficMirrorSessionResult(TypedDict, total=False):
 
 
 class ModifyTransitGatewayOptions(TypedDict, total=False):
-    """The transit gateway options."""
-
     AddTransitGatewayCidrBlocks: Optional[TransitGatewayCidrBlockStringList]
     RemoveTransitGatewayCidrBlocks: Optional[TransitGatewayCidrBlockStringList]
     VpnEcmpSupport: Optional[VpnEcmpSupportValue]
@@ -15847,8 +13971,6 @@ class ModifyTransitGatewayResult(TypedDict, total=False):
 
 
 class ModifyTransitGatewayVpcAttachmentRequestOptions(TypedDict, total=False):
-    """Describes the options for a VPC attachment."""
-
     DnsSupport: Optional[DnsSupportValue]
     Ipv6Support: Optional[Ipv6SupportValue]
     ApplianceModeSupport: Optional[ApplianceModeSupportValue]
@@ -15904,8 +14026,6 @@ class ModifyVpcEndpointConnectionNotificationResult(TypedDict, total=False):
 
 
 class ModifyVpcEndpointRequest(ServiceRequest):
-    """Contains the parameters for ModifyVpcEndpoint."""
-
     DryRun: Optional[Boolean]
     VpcEndpointId: VpcEndpointId
     ResetPolicy: Optional[Boolean]
@@ -15961,8 +14081,6 @@ class ModifyVpcEndpointServicePermissionsResult(TypedDict, total=False):
 
 
 class PeeringConnectionOptionsRequest(TypedDict, total=False):
-    """The VPC peering connection options."""
-
     AllowDnsResolutionFromRemoteVpc: Optional[Boolean]
     AllowEgressFromLocalClassicLinkToRemoteVpc: Optional[Boolean]
     AllowEgressFromLocalVpcToRemoteClassicLink: Optional[Boolean]
@@ -15976,8 +14094,6 @@ class ModifyVpcPeeringConnectionOptionsRequest(ServiceRequest):
 
 
 class PeeringConnectionOptions(TypedDict, total=False):
-    """Describes the VPC peering connection options."""
-
     AllowDnsResolutionFromRemoteVpc: Optional[Boolean]
     AllowEgressFromLocalClassicLinkToRemoteVpc: Optional[Boolean]
     AllowEgressFromLocalVpcToRemoteClassicLink: Optional[Boolean]
@@ -16034,8 +14150,6 @@ class ModifyVpnTunnelCertificateResult(TypedDict, total=False):
 
 
 class ModifyVpnTunnelOptionsSpecification(TypedDict, total=False):
-    """The Amazon Web Services Site-to-Site VPN tunnel options to modify."""
-
     TunnelInsideCidr: Optional[String]
     TunnelInsideIpv6Cidr: Optional[String]
     PreSharedKey: Optional[String]
@@ -16098,16 +14212,12 @@ class MoveByoipCidrToIpamResult(TypedDict, total=False):
 
 
 class PrivateDnsNameOptionsRequest(TypedDict, total=False):
-    """Describes the options for instance hostnames."""
-
     HostnameType: Optional[HostnameType]
     EnableResourceNameDnsARecord: Optional[Boolean]
     EnableResourceNameDnsAAAARecord: Optional[Boolean]
 
 
 class ScheduledInstancesPrivateIpAddressConfig(TypedDict, total=False):
-    """Describes a private IPv4 address for a Scheduled Instance."""
-
     Primary: Optional[Boolean]
     PrivateIpAddress: Optional[String]
 
@@ -16170,8 +14280,6 @@ class PurchaseHostReservationResult(TypedDict, total=False):
 
 
 class PurchaseRequest(TypedDict, total=False):
-    """Describes a request to purchase Scheduled Instances."""
-
     InstanceCount: Integer
     PurchaseToken: String
 
@@ -16180,15 +14288,11 @@ PurchaseRequestSet = List[PurchaseRequest]
 
 
 class ReservedInstanceLimitPrice(TypedDict, total=False):
-    """Describes the limit price of a Reserved Instance offering."""
-
     Amount: Optional[Double]
     CurrencyCode: Optional[CurrencyCodeValues]
 
 
 class PurchaseReservedInstancesOfferingRequest(ServiceRequest):
-    """Contains the parameters for PurchaseReservedInstancesOffering."""
-
     InstanceCount: Integer
     ReservedInstancesOfferingId: ReservedInstancesOfferingId
     DryRun: Optional[Boolean]
@@ -16197,14 +14301,10 @@ class PurchaseReservedInstancesOfferingRequest(ServiceRequest):
 
 
 class PurchaseReservedInstancesOfferingResult(TypedDict, total=False):
-    """Contains the output of PurchaseReservedInstancesOffering."""
-
     ReservedInstancesId: Optional[String]
 
 
 class PurchaseScheduledInstancesRequest(ServiceRequest):
-    """Contains the parameters for PurchaseScheduledInstances."""
-
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
     PurchaseRequests: PurchaseRequestSet
@@ -16214,8 +14314,6 @@ PurchasedScheduledInstanceSet = List[ScheduledInstance]
 
 
 class PurchaseScheduledInstancesResult(TypedDict, total=False):
-    """Contains the output of PurchaseScheduledInstances."""
-
     ScheduledInstanceSet: Optional[PurchasedScheduledInstanceSet]
 
 
@@ -16228,8 +14326,6 @@ class RebootInstancesRequest(ServiceRequest):
 
 
 class RegisterImageRequest(ServiceRequest):
-    """Contains the parameters for RegisterImage."""
-
     ImageLocation: Optional[String]
     Architecture: Optional[ArchitectureValues]
     BlockDeviceMappings: Optional[BlockDeviceMappingRequestList]
@@ -16247,18 +14343,10 @@ class RegisterImageRequest(ServiceRequest):
 
 
 class RegisterImageResult(TypedDict, total=False):
-    """Contains the output of RegisterImage."""
-
     ImageId: Optional[String]
 
 
 class RegisterInstanceTagAttributeRequest(TypedDict, total=False):
-    """Information about the tag keys to register for the current Region. You
-    can either specify individual tag keys or register all tag keys in the
-    current Region. You must specify either ``IncludeAllTagsOfInstance`` or
-    ``InstanceTagKeys`` in the request
-    """
-
     IncludeAllTagsOfInstance: Optional[Boolean]
     InstanceTagKeys: Optional[InstanceTagKeySet]
 
@@ -16280,8 +14368,6 @@ class RegisterTransitGatewayMulticastGroupMembersRequest(ServiceRequest):
 
 
 class TransitGatewayMulticastRegisteredGroupMembers(TypedDict, total=False):
-    """Describes the registered transit gateway multicast group members."""
-
     TransitGatewayMulticastDomainId: Optional[String]
     RegisteredNetworkInterfaceIds: Optional[ValueStringList]
     GroupIpAddress: Optional[String]
@@ -16299,10 +14385,6 @@ class RegisterTransitGatewayMulticastGroupSourcesRequest(ServiceRequest):
 
 
 class TransitGatewayMulticastRegisteredGroupSources(TypedDict, total=False):
-    """Describes the members registered with the transit gateway multicast
-    group.
-    """
-
     TransitGatewayMulticastDomainId: Optional[String]
     RegisteredNetworkInterfaceIds: Optional[ValueStringList]
     GroupIpAddress: Optional[String]
@@ -16380,7 +14462,7 @@ class ReleaseIpamPoolAllocationRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     IpamPoolId: IpamPoolId
     Cidr: String
-    IpamPoolAllocationId: Optional[IpamPoolAllocationId]
+    IpamPoolAllocationId: IpamPoolAllocationId
 
 
 class ReleaseIpamPoolAllocationResult(TypedDict, total=False):
@@ -16473,15 +14555,11 @@ class ReportInstanceStatusRequest(ServiceRequest):
 
 
 class RequestSpotFleetRequest(ServiceRequest):
-    """Contains the parameters for RequestSpotFleet."""
-
     DryRun: Optional[Boolean]
     SpotFleetRequestConfig: SpotFleetRequestConfigData
 
 
 class RequestSpotFleetResponse(TypedDict, total=False):
-    """Contains the output of RequestSpotFleet."""
-
     SpotFleetRequestId: Optional[String]
 
 
@@ -16490,8 +14568,6 @@ RequestSpotLaunchSpecificationSecurityGroupIdList = List[SecurityGroupId]
 
 
 class RequestSpotLaunchSpecification(TypedDict, total=False):
-    """Describes the launch specification for an instance."""
-
     SecurityGroupIds: Optional[RequestSpotLaunchSpecificationSecurityGroupIdList]
     SecurityGroups: Optional[RequestSpotLaunchSpecificationSecurityGroupList]
     AddressingType: Optional[String]
@@ -16511,8 +14587,6 @@ class RequestSpotLaunchSpecification(TypedDict, total=False):
 
 
 class RequestSpotInstancesRequest(ServiceRequest):
-    """Contains the parameters for RequestSpotInstances."""
-
     AvailabilityZoneGroup: Optional[String]
     BlockDurationMinutes: Optional[Integer]
     ClientToken: Optional[String]
@@ -16529,8 +14603,6 @@ class RequestSpotInstancesRequest(ServiceRequest):
 
 
 class RequestSpotInstancesResult(TypedDict, total=False):
-    """Contains the output of RequestSpotInstances."""
-
     SpotInstanceRequests: Optional[SpotInstanceRequestList]
 
 
@@ -16563,8 +14635,6 @@ class ResetFpgaImageAttributeResult(TypedDict, total=False):
 
 
 class ResetImageAttributeRequest(ServiceRequest):
-    """Contains the parameters for ResetImageAttribute."""
-
     Attribute: ResetImageAttributeName
     ImageId: ImageId
     DryRun: Optional[Boolean]
@@ -16577,8 +14647,6 @@ class ResetInstanceAttributeRequest(ServiceRequest):
 
 
 class ResetNetworkInterfaceAttributeRequest(ServiceRequest):
-    """Contains the parameters for ResetNetworkInterfaceAttribute."""
-
     DryRun: Optional[Boolean]
     NetworkInterfaceId: NetworkInterfaceId
     SourceDestCheck: Optional[String]
@@ -16598,6 +14666,15 @@ class RestoreAddressToClassicRequest(ServiceRequest):
 class RestoreAddressToClassicResult(TypedDict, total=False):
     PublicIp: Optional[String]
     Status: Optional[Status]
+
+
+class RestoreImageFromRecycleBinRequest(ServiceRequest):
+    ImageId: ImageId
+    DryRun: Optional[Boolean]
+
+
+class RestoreImageFromRecycleBinResult(TypedDict, total=False):
+    Return: Optional[Boolean]
 
 
 class RestoreManagedPrefixListVersionRequest(ServiceRequest):
@@ -16737,15 +14814,11 @@ ScheduledInstancesSecurityGroupIdSet = List[SecurityGroupId]
 
 
 class ScheduledInstancesPlacement(TypedDict, total=False):
-    """Describes the placement for a Scheduled Instance."""
-
     AvailabilityZone: Optional[String]
     GroupName: Optional[PlacementGroupName]
 
 
 class ScheduledInstancesIpv6Address(TypedDict, total=False):
-    """Describes an IPv6 address."""
-
     Ipv6Address: Optional[Ipv6Address]
 
 
@@ -16753,8 +14826,6 @@ ScheduledInstancesIpv6AddressList = List[ScheduledInstancesIpv6Address]
 
 
 class ScheduledInstancesNetworkInterface(TypedDict, total=False):
-    """Describes a network interface for a Scheduled Instance."""
-
     AssociatePublicIpAddress: Optional[Boolean]
     DeleteOnTermination: Optional[Boolean]
     Description: Optional[String]
@@ -16773,21 +14844,15 @@ ScheduledInstancesNetworkInterfaceSet = List[ScheduledInstancesNetworkInterface]
 
 
 class ScheduledInstancesMonitoring(TypedDict, total=False):
-    """Describes whether monitoring is enabled for a Scheduled Instance."""
-
     Enabled: Optional[Boolean]
 
 
 class ScheduledInstancesIamInstanceProfile(TypedDict, total=False):
-    """Describes an IAM instance profile for a Scheduled Instance."""
-
     Arn: Optional[String]
     Name: Optional[String]
 
 
 class ScheduledInstancesEbs(TypedDict, total=False):
-    """Describes an EBS volume for a Scheduled Instance."""
-
     DeleteOnTermination: Optional[Boolean]
     Encrypted: Optional[Boolean]
     Iops: Optional[Integer]
@@ -16797,8 +14862,6 @@ class ScheduledInstancesEbs(TypedDict, total=False):
 
 
 class ScheduledInstancesBlockDeviceMapping(TypedDict, total=False):
-    """Describes a block device mapping for a Scheduled Instance."""
-
     DeviceName: Optional[String]
     Ebs: Optional[ScheduledInstancesEbs]
     NoDevice: Optional[String]
@@ -16809,13 +14872,6 @@ ScheduledInstancesBlockDeviceMappingSet = List[ScheduledInstancesBlockDeviceMapp
 
 
 class ScheduledInstancesLaunchSpecification(TypedDict, total=False):
-    """Describes the launch specification for a Scheduled Instance.
-
-    If you are launching the Scheduled Instance in EC2-VPC, you must specify
-    the ID of the subnet. You can specify the subnet using either
-    ``SubnetId`` or ``NetworkInterface``.
-    """
-
     BlockDeviceMappings: Optional[ScheduledInstancesBlockDeviceMappingSet]
     EbsOptimized: Optional[Boolean]
     IamInstanceProfile: Optional[ScheduledInstancesIamInstanceProfile]
@@ -16833,8 +14889,6 @@ class ScheduledInstancesLaunchSpecification(TypedDict, total=False):
 
 
 class RunScheduledInstancesRequest(ServiceRequest):
-    """Contains the parameters for RunScheduledInstances."""
-
     ClientToken: Optional[String]
     DryRun: Optional[Boolean]
     InstanceCount: Optional[Integer]
@@ -16843,8 +14897,6 @@ class RunScheduledInstancesRequest(ServiceRequest):
 
 
 class RunScheduledInstancesResult(TypedDict, total=False):
-    """Contains the output of RunScheduledInstances."""
-
     InstanceIdSet: Optional[InstanceIdSet]
 
 
@@ -16870,8 +14922,6 @@ class SearchTransitGatewayMulticastGroupsRequest(ServiceRequest):
 
 
 class TransitGatewayMulticastGroup(TypedDict, total=False):
-    """Describes the transit gateway multicast group resources."""
-
     GroupIpAddress: Optional[String]
     TransitGatewayAttachmentId: Optional[String]
     SubnetId: Optional[String]
@@ -16909,12 +14959,6 @@ class SearchTransitGatewayRoutesResult(TypedDict, total=False):
 
 
 class SecurityGroupRuleDescription(TypedDict, total=False):
-    """Describes the description of a security group rule.
-
-    You can use this when you want to update the security group rule
-    description for either an inbound or outbound rule.
-    """
-
     SecurityGroupRuleId: Optional[String]
     Description: Optional[String]
 
@@ -16988,8 +15032,6 @@ class TerminateClientVpnConnectionsRequest(ServiceRequest):
 
 
 class TerminateConnectionStatus(TypedDict, total=False):
-    """Information about a terminated Client VPN endpoint client connection."""
-
     ConnectionId: Optional[String]
     PreviousStatus: Optional[ClientVpnConnectionStatus]
     CurrentStatus: Optional[ClientVpnConnectionStatus]
@@ -17026,8 +15068,6 @@ class UnassignIpv6AddressesResult(TypedDict, total=False):
 
 
 class UnassignPrivateIpAddressesRequest(ServiceRequest):
-    """Contains the parameters for UnassignPrivateIpAddresses."""
-
     NetworkInterfaceId: NetworkInterfaceId
     PrivateIpAddresses: Optional[PrivateIpAddressStringList]
     Ipv4Prefixes: Optional[IpPrefixList]
@@ -17088,17 +15128,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         target_configurations: TargetConfigurationRequestSet = None,
     ) -> AcceptReservedInstancesExchangeQuoteResult:
-        """Accepts the Convertible Reserved Instance exchange quote described in
-        the GetReservedInstancesExchangeQuote call.
-
-        :param reserved_instance_ids: The IDs of the Convertible Reserved Instances to exchange for another
-        Convertible Reserved Instance of the same or higher value.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param target_configurations: The configuration of the target Convertible Reserved Instance to
-        exchange for your current Convertible Reserved Instances.
-        :returns: AcceptReservedInstancesExchangeQuoteResult
-        """
         raise NotImplementedError
 
     @handler("AcceptTransitGatewayMulticastDomainAssociations")
@@ -17110,17 +15139,6 @@ class Ec2Api:
         subnet_ids: ValueStringList = None,
         dry_run: Boolean = None,
     ) -> AcceptTransitGatewayMulticastDomainAssociationsResult:
-        """Accepts a request to associate subnets with a transit gateway multicast
-        domain.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param transit_gateway_attachment_id: The ID of the transit gateway attachment.
-        :param subnet_ids: The IDs of the subnets to associate with the transit gateway multicast
-        domain.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AcceptTransitGatewayMulticastDomainAssociationsResult
-        """
         raise NotImplementedError
 
     @handler("AcceptTransitGatewayPeeringAttachment")
@@ -17130,14 +15148,6 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> AcceptTransitGatewayPeeringAttachmentResult:
-        """Accepts a transit gateway peering attachment request. The peering
-        attachment must be in the ``pendingAcceptance`` state.
-
-        :param transit_gateway_attachment_id: The ID of the transit gateway attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AcceptTransitGatewayPeeringAttachmentResult
-        """
         raise NotImplementedError
 
     @handler("AcceptTransitGatewayVpcAttachment")
@@ -17147,18 +15157,6 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> AcceptTransitGatewayVpcAttachmentResult:
-        """Accepts a request to attach a VPC to a transit gateway.
-
-        The VPC attachment must be in the ``pendingAcceptance`` state. Use
-        DescribeTransitGatewayVpcAttachments to view your pending VPC attachment
-        requests. Use RejectTransitGatewayVpcAttachment to reject a VPC
-        attachment request.
-
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AcceptTransitGatewayVpcAttachmentResult
-        """
         raise NotImplementedError
 
     @handler("AcceptVpcEndpointConnections")
@@ -17169,15 +15167,6 @@ class Ec2Api:
         vpc_endpoint_ids: VpcEndpointIdList,
         dry_run: Boolean = None,
     ) -> AcceptVpcEndpointConnectionsResult:
-        """Accepts one or more interface VPC endpoint connection requests to your
-        VPC endpoint service.
-
-        :param service_id: The ID of the VPC endpoint service.
-        :param vpc_endpoint_ids: The IDs of one or more interface VPC endpoints.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AcceptVpcEndpointConnectionsResult
-        """
         raise NotImplementedError
 
     @handler("AcceptVpcPeeringConnection")
@@ -17187,49 +15176,12 @@ class Ec2Api:
         dry_run: Boolean = None,
         vpc_peering_connection_id: VpcPeeringConnectionId = None,
     ) -> AcceptVpcPeeringConnectionResult:
-        """Accept a VPC peering connection request. To accept a request, the VPC
-        peering connection must be in the ``pending-acceptance`` state, and you
-        must be the owner of the peer VPC. Use DescribeVpcPeeringConnections to
-        view your outstanding VPC peering connection requests.
-
-        For an inter-Region VPC peering connection request, you must accept the
-        VPC peering connection in the Region of the accepter VPC.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param vpc_peering_connection_id: The ID of the VPC peering connection.
-        :returns: AcceptVpcPeeringConnectionResult
-        """
         raise NotImplementedError
 
     @handler("AdvertiseByoipCidr")
     def advertise_byoip_cidr(
         self, context: RequestContext, cidr: String, dry_run: Boolean = None
     ) -> AdvertiseByoipCidrResult:
-        """Advertises an IPv4 or IPv6 address range that is provisioned for use
-        with your Amazon Web Services resources through bring your own IP
-        addresses (BYOIP).
-
-        You can perform this operation at most once every 10 seconds, even if
-        you specify different address ranges each time.
-
-        We recommend that you stop advertising the BYOIP CIDR from other
-        locations when you advertise it from Amazon Web Services. To minimize
-        down time, you can configure your Amazon Web Services resources to use
-        an address from a BYOIP CIDR before it is advertised, and then
-        simultaneously stop advertising it from the current location and start
-        advertising it through Amazon Web Services.
-
-        It can take a few minutes before traffic to the specified addresses
-        starts routing to Amazon Web Services because of BGP propagation delays.
-
-        To stop advertising the BYOIP CIDR, use WithdrawByoipCidr.
-
-        :param cidr: The address range, in CIDR notation.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AdvertiseByoipCidrResult
-        """
         raise NotImplementedError
 
     @handler("AllocateAddress")
@@ -17244,52 +15196,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> AllocateAddressResult:
-        """Allocates an Elastic IP address to your Amazon Web Services account.
-        After you allocate the Elastic IP address you can associate it with an
-        instance or network interface. After you release an Elastic IP address,
-        it is released to the IP address pool and can be allocated to a
-        different Amazon Web Services account.
-
-        You can allocate an Elastic IP address from an address pool owned by
-        Amazon Web Services or from an address pool created from a public IPv4
-        address range that you have brought to Amazon Web Services for use with
-        your Amazon Web Services resources using bring your own IP addresses
-        (BYOIP). For more information, see `Bring Your Own IP Addresses
-        (BYOIP) <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-byoip.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        [EC2-VPC] If you release an Elastic IP address, you might be able to
-        recover it. You cannot recover an Elastic IP address that you released
-        after it is allocated to another Amazon Web Services account. You cannot
-        recover an Elastic IP address for EC2-Classic. To attempt to recover an
-        Elastic IP address that you released, specify it in this operation.
-
-        An Elastic IP address is for use either in the EC2-Classic platform or
-        in a VPC. By default, you can allocate 5 Elastic IP addresses for
-        EC2-Classic per Region and 5 Elastic IP addresses for EC2-VPC per
-        Region.
-
-        For more information, see `Elastic IP
-        Addresses <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        You can allocate a carrier IP address which is a public IP address from
-        a telecommunication carrier, to a network interface which resides in a
-        subnet in a Wavelength Zone (for example an EC2 instance).
-
-        :param domain: Indicates whether the Elastic IP address is for use with instances in a
-        VPC or instances in EC2-Classic.
-        :param address: [EC2-VPC] The Elastic IP address to recover or an IPv4 address from an
-        address pool.
-        :param public_ipv4_pool: The ID of an address pool that you own.
-        :param network_border_group: A unique set of Availability Zones, Local Zones, or Wavelength Zones
-        from which Amazon Web Services advertises IP addresses.
-        :param customer_owned_ipv4_pool: The ID of a customer-owned address pool.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: The tags to assign to the Elastic IP address.
-        :returns: AllocateAddressResult
-        """
         raise NotImplementedError
 
     @handler("AllocateHosts")
@@ -17305,25 +15211,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         host_recovery: HostRecovery = None,
     ) -> AllocateHostsResult:
-        """Allocates a Dedicated Host to your account. At a minimum, specify the
-        supported instance type or instance family, the Availability Zone in
-        which to allocate the host, and the number of hosts to allocate.
-
-        :param availability_zone: The Availability Zone in which to allocate the Dedicated Host.
-        :param quantity: The number of Dedicated Hosts to allocate to your account with these
-        parameters.
-        :param auto_placement: Indicates whether the host accepts any untargeted instance launches that
-        match its instance type configuration, or if it only accepts Host
-        tenancy instance launches that specify its unique host ID.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param instance_type: Specifies the instance type to be supported by the Dedicated Hosts.
-        :param instance_family: Specifies the instance family to be supported by the Dedicated Hosts.
-        :param tag_specifications: The tags to apply to the Dedicated Host during creation.
-        :param host_recovery: Indicates whether to enable or disable host recovery for the Dedicated
-        Host.
-        :returns: AllocateHostsResult
-        """
         raise NotImplementedError
 
     @handler("AllocateIpamPoolCidr")
@@ -17339,25 +15226,6 @@ class Ec2Api:
         preview_next_cidr: Boolean = None,
         disallowed_cidrs: IpamPoolAllocationDisallowedCidrs = None,
     ) -> AllocateIpamPoolCidrResult:
-        """Allocate a CIDR from an IPAM pool. In IPAM, an allocation is a CIDR
-        assignment from an IPAM pool to another resource or IPAM pool. For more
-        information, see `Allocate
-        CIDRs </vpc/latest/ipam/allocate-cidrs-ipam.html>`__ in the *Amazon VPC
-        IPAM User Guide*.
-
-        :param ipam_pool_id: The ID of the IPAM pool from which you would like to allocate a CIDR.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param cidr: The CIDR you would like to allocate from the IPAM pool.
-        :param netmask_length: The netmask length of the CIDR you would like to allocate from the IPAM
-        pool.
-        :param client_token: A unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param description: A description for the allocation.
-        :param preview_next_cidr: A preview of the next available CIDR in a pool.
-        :param disallowed_cidrs: Exclude a particular CIDR range from being returned by the pool.
-        :returns: AllocateIpamPoolCidrResult
-        """
         raise NotImplementedError
 
     @handler("ApplySecurityGroupsToClientVpnTargetNetwork")
@@ -17369,18 +15237,6 @@ class Ec2Api:
         security_group_ids: ClientVpnSecurityGroupIdSet,
         dry_run: Boolean = None,
     ) -> ApplySecurityGroupsToClientVpnTargetNetworkResult:
-        """Applies a security group to the association between the target network
-        and the Client VPN endpoint. This action replaces the existing security
-        groups with the specified security groups.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint.
-        :param vpc_id: The ID of the VPC in which the associated target network is located.
-        :param security_group_ids: The IDs of the security groups to apply to the associated target
-        network.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ApplySecurityGroupsToClientVpnTargetNetworkResult
-        """
         raise NotImplementedError
 
     @handler("AssignIpv6Addresses")
@@ -17393,36 +15249,6 @@ class Ec2Api:
         ipv6_prefix_count: Integer = None,
         ipv6_prefixes: IpPrefixList = None,
     ) -> AssignIpv6AddressesResult:
-        """Assigns one or more IPv6 addresses to the specified network interface.
-        You can specify one or more specific IPv6 addresses, or you can specify
-        the number of IPv6 addresses to be automatically assigned from within
-        the subnet's IPv6 CIDR block range. You can assign as many IPv6
-        addresses to a network interface as you can assign private IPv4
-        addresses, and the limit varies per instance type. For information, see
-        `IP Addresses Per Network Interface Per Instance
-        Type <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#AvailableIpPerENI>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        You must specify either the IPv6 addresses or the IPv6 address count in
-        the request.
-
-        You can optionally use Prefix Delegation on the network interface. You
-        must specify either the IPV6 Prefix Delegation prefixes, or the IPv6
-        Prefix Delegation count. For information, see `Assigning prefixes to
-        Amazon EC2 network
-        interfaces <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-prefix-eni.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param network_interface_id: The ID of the network interface.
-        :param ipv6_address_count: The number of additional IPv6 addresses to assign to the network
-        interface.
-        :param ipv6_addresses: One or more specific IPv6 addresses to be assigned to the network
-        interface.
-        :param ipv6_prefix_count: The number of IPv6 prefixes that Amazon Web Services automatically
-        assigns to the network interface.
-        :param ipv6_prefixes: One or more IPv6 prefixes assigned to the network interface.
-        :returns: AssignIpv6AddressesResult
-        """
         raise NotImplementedError
 
     @handler("AssignPrivateIpAddresses")
@@ -17436,51 +15262,6 @@ class Ec2Api:
         ipv4_prefixes: IpPrefixList = None,
         ipv4_prefix_count: Integer = None,
     ) -> AssignPrivateIpAddressesResult:
-        """Assigns one or more secondary private IP addresses to the specified
-        network interface.
-
-        You can specify one or more specific secondary IP addresses, or you can
-        specify the number of secondary IP addresses to be automatically
-        assigned within the subnet's CIDR block range. The number of secondary
-        IP addresses that you can assign to an instance varies by instance type.
-        For information about instance types, see `Instance
-        Types <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*. For more information
-        about Elastic IP addresses, see `Elastic IP
-        Addresses <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        When you move a secondary private IP address to another network
-        interface, any Elastic IP address that is associated with the IP address
-        is also moved.
-
-        Remapping an IP address is an asynchronous operation. When you move an
-        IP address from one network interface to another, check
-        ``network/interfaces/macs/mac/local-ipv4s`` in the instance metadata to
-        confirm that the remapping is complete.
-
-        You must specify either the IP addresses or the IP address count in the
-        request.
-
-        You can optionally use Prefix Delegation on the network interface. You
-        must specify either the IPv4 Prefix Delegation prefixes, or the IPv4
-        Prefix Delegation count. For information, see `Assigning prefixes to
-        Amazon EC2 network
-        interfaces <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-prefix-eni.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param network_interface_id: The ID of the network interface.
-        :param allow_reassignment: Indicates whether to allow an IP address that is already assigned to
-        another network interface or instance to be reassigned to the specified
-        network interface.
-        :param private_ip_addresses: One or more IP addresses to be assigned as a secondary private IP
-        address to the network interface.
-        :param secondary_private_ip_address_count: The number of secondary IP addresses to assign to the network interface.
-        :param ipv4_prefixes: One or more IPv4 prefixes assigned to the network interface.
-        :param ipv4_prefix_count: The number of IPv4 prefixes that Amazon Web Services automatically
-        assigns to the network interface.
-        :returns: AssignPrivateIpAddressesResult
-        """
         raise NotImplementedError
 
     @handler("AssociateAddress")
@@ -17495,56 +15276,6 @@ class Ec2Api:
         network_interface_id: NetworkInterfaceId = None,
         private_ip_address: String = None,
     ) -> AssociateAddressResult:
-        """Associates an Elastic IP address, or carrier IP address (for instances
-        that are in subnets in Wavelength Zones) with an instance or a network
-        interface. Before you can use an Elastic IP address, you must allocate
-        it to your account.
-
-        An Elastic IP address is for use in either the EC2-Classic platform or
-        in a VPC. For more information, see `Elastic IP
-        Addresses <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        [EC2-Classic, VPC in an EC2-VPC-only account] If the Elastic IP address
-        is already associated with a different instance, it is disassociated
-        from that instance and associated with the specified instance. If you
-        associate an Elastic IP address with an instance that has an existing
-        Elastic IP address, the existing address is disassociated from the
-        instance, but remains allocated to your account.
-
-        [VPC in an EC2-Classic account] If you don't specify a private IP
-        address, the Elastic IP address is associated with the primary IP
-        address. If the Elastic IP address is already associated with a
-        different instance or a network interface, you get an error unless you
-        allow reassociation. You cannot associate an Elastic IP address with an
-        instance or network interface that has an existing Elastic IP address.
-
-        [Subnets in Wavelength Zones] You can associate an IP address from the
-        telecommunication carrier to the instance or network interface.
-
-        You cannot associate an Elastic IP address with an interface in a
-        different network border group.
-
-        This is an idempotent operation. If you perform the operation more than
-        once, Amazon EC2 doesn't return an error, and you may be charged for
-        each time the Elastic IP address is remapped to the same instance. For
-        more information, see the *Elastic IP Addresses* section of `Amazon EC2
-        Pricing <http://aws.amazon.com/ec2/pricing/>`__.
-
-        :param allocation_id: [EC2-VPC] The allocation ID.
-        :param instance_id: The ID of the instance.
-        :param public_ip: [EC2-Classic] The Elastic IP address to associate with the instance.
-        :param allow_reassociation: [EC2-VPC] For a VPC in an EC2-Classic account, specify true to allow an
-        Elastic IP address that is already associated with an instance or
-        network interface to be reassociated with the specified instance or
-        network interface.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param network_interface_id: [EC2-VPC] The ID of the network interface.
-        :param private_ip_address: [EC2-VPC] The primary or secondary private IP address to associate with
-        the Elastic IP address.
-        :returns: AssociateAddressResult
-        """
         raise NotImplementedError
 
     @handler("AssociateClientVpnTargetNetwork")
@@ -17556,26 +15287,6 @@ class Ec2Api:
         client_token: String = None,
         dry_run: Boolean = None,
     ) -> AssociateClientVpnTargetNetworkResult:
-        """Associates a target network with a Client VPN endpoint. A target network
-        is a subnet in a VPC. You can associate multiple subnets from the same
-        VPC with a Client VPN endpoint. You can associate only one subnet in
-        each Availability Zone. We recommend that you associate at least two
-        subnets to provide Availability Zone redundancy.
-
-        If you specified a VPC when you created the Client VPN endpoint or if
-        you have previous subnet associations, the specified subnet must be in
-        the same VPC. To specify a subnet that's in a different VPC, you must
-        first modify the Client VPN endpoint (ModifyClientVpnEndpoint) and
-        change the VPC that's associated with it.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint.
-        :param subnet_id: The ID of the subnet to associate with the Client VPN endpoint.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AssociateClientVpnTargetNetworkResult
-        """
         raise NotImplementedError
 
     @handler("AssociateDhcpOptions")
@@ -17586,26 +15297,6 @@ class Ec2Api:
         vpc_id: VpcId,
         dry_run: Boolean = None,
     ) -> None:
-        """Associates a set of DHCP options (that you've previously created) with
-        the specified VPC, or associates no DHCP options with the VPC.
-
-        After you associate the options with the VPC, any existing instances and
-        all new instances that you launch in that VPC use the options. You don't
-        need to restart or relaunch the instances. They automatically pick up
-        the changes within a few hours, depending on how frequently the instance
-        renews its DHCP lease. You can explicitly renew the lease using the
-        operating system on the instance.
-
-        For more information, see `DHCP options
-        sets <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_DHCP_Options.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param dhcp_options_id: The ID of the DHCP options set, or ``default`` to associate no DHCP
-        options with the VPC.
-        :param vpc_id: The ID of the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("AssociateEnclaveCertificateIamRole")
@@ -17616,34 +15307,6 @@ class Ec2Api:
         role_arn: ResourceArn = None,
         dry_run: Boolean = None,
     ) -> AssociateEnclaveCertificateIamRoleResult:
-        """Associates an Identity and Access Management (IAM) role with an
-        Certificate Manager (ACM) certificate. This enables the certificate to
-        be used by the ACM for Nitro Enclaves application inside an enclave. For
-        more information, see `Certificate Manager for Nitro
-        Enclaves <https://docs.aws.amazon.com/enclaves/latest/user/nitro-enclave-refapp.html>`__
-        in the *Amazon Web Services Nitro Enclaves User Guide*.
-
-        When the IAM role is associated with the ACM certificate, the
-        certificate, certificate chain, and encrypted private key are placed in
-        an Amazon S3 bucket that only the associated IAM role can access. The
-        private key of the certificate is encrypted with an Amazon Web Services
-        managed key that has an attached attestation-based key policy.
-
-        To enable the IAM role to access the Amazon S3 object, you must grant it
-        permission to call ``s3:GetObject`` on the Amazon S3 bucket returned by
-        the command. To enable the IAM role to access the KMS key, you must
-        grant it permission to call ``kms:Decrypt`` on the KMS key returned by
-        the command. For more information, see `Grant the role permission to
-        access the certificate and encryption
-        key <https://docs.aws.amazon.com/enclaves/latest/user/nitro-enclave-refapp.html#add-policy>`__
-        in the *Amazon Web Services Nitro Enclaves User Guide*.
-
-        :param certificate_arn: The ARN of the ACM certificate with which to associate the IAM role.
-        :param role_arn: The ARN of the IAM role to associate with the ACM certificate.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AssociateEnclaveCertificateIamRoleResult
-        """
         raise NotImplementedError
 
     @handler("AssociateIamInstanceProfile")
@@ -17653,14 +15316,6 @@ class Ec2Api:
         iam_instance_profile: IamInstanceProfileSpecification,
         instance_id: InstanceId,
     ) -> AssociateIamInstanceProfileResult:
-        """Associates an IAM instance profile with a running or stopped instance.
-        You cannot associate more than one IAM instance profile with an
-        instance.
-
-        :param iam_instance_profile: The IAM instance profile.
-        :param instance_id: The ID of the instance.
-        :returns: AssociateIamInstanceProfileResult
-        """
         raise NotImplementedError
 
     @handler("AssociateInstanceEventWindow")
@@ -17671,20 +15326,6 @@ class Ec2Api:
         association_target: InstanceEventWindowAssociationRequest,
         dry_run: Boolean = None,
     ) -> AssociateInstanceEventWindowResult:
-        """Associates one or more targets with an event window. Only one type of
-        target (instance IDs, Dedicated Host IDs, or tags) can be specified with
-        an event window.
-
-        For more information, see `Define event windows for scheduled
-        events <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/event-windows.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_event_window_id: The ID of the event window.
-        :param association_target: One or more targets associated with the specified event window.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AssociateInstanceEventWindowResult
-        """
         raise NotImplementedError
 
     @handler("AssociateRouteTable")
@@ -17696,38 +15337,12 @@ class Ec2Api:
         subnet_id: SubnetId = None,
         gateway_id: RouteGatewayId = None,
     ) -> AssociateRouteTableResult:
-        """Associates a subnet in your VPC or an internet gateway or virtual
-        private gateway attached to your VPC with a route table in your VPC.
-        This association causes traffic from the subnet or gateway to be routed
-        according to the routes in the route table. The action returns an
-        association ID, which you need in order to disassociate the route table
-        later. A route table can be associated with multiple subnets.
-
-        For more information, see `Route
-        tables <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param route_table_id: The ID of the route table.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param subnet_id: The ID of the subnet.
-        :param gateway_id: The ID of the internet gateway or virtual private gateway.
-        :returns: AssociateRouteTableResult
-        """
         raise NotImplementedError
 
     @handler("AssociateSubnetCidrBlock")
     def associate_subnet_cidr_block(
         self, context: RequestContext, ipv6_cidr_block: String, subnet_id: SubnetId
     ) -> AssociateSubnetCidrBlockResult:
-        """Associates a CIDR block with your subnet. You can only associate a
-        single IPv6 CIDR block with your subnet. An IPv6 CIDR block must have a
-        prefix length of /64.
-
-        :param ipv6_cidr_block: The IPv6 CIDR block for your subnet.
-        :param subnet_id: The ID of your subnet.
-        :returns: AssociateSubnetCidrBlockResult
-        """
         raise NotImplementedError
 
     @handler("AssociateTransitGatewayMulticastDomain")
@@ -17739,23 +15354,6 @@ class Ec2Api:
         subnet_ids: TransitGatewaySubnetIdList = None,
         dry_run: Boolean = None,
     ) -> AssociateTransitGatewayMulticastDomainResult:
-        """Associates the specified subnets and transit gateway attachments with
-        the specified transit gateway multicast domain.
-
-        The transit gateway attachment must be in the available state before you
-        can add a resource. Use
-        `DescribeTransitGatewayAttachments <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeTransitGatewayAttachments.html>`__
-        to see the state of the attachment.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param transit_gateway_attachment_id: The ID of the transit gateway attachment to associate with the transit
-        gateway multicast domain.
-        :param subnet_ids: The IDs of the subnets to associate with the transit gateway multicast
-        domain.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AssociateTransitGatewayMulticastDomainResult
-        """
         raise NotImplementedError
 
     @handler("AssociateTransitGatewayRouteTable")
@@ -17766,15 +15364,6 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> AssociateTransitGatewayRouteTableResult:
-        """Associates the specified attachment with the specified transit gateway
-        route table. You can associate only one route table with an attachment.
-
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AssociateTransitGatewayRouteTableResult
-        """
         raise NotImplementedError
 
     @handler("AssociateTrunkInterface")
@@ -17788,27 +15377,6 @@ class Ec2Api:
         client_token: String = None,
         dry_run: Boolean = None,
     ) -> AssociateTrunkInterfaceResult:
-        """This API action is currently in **limited preview only**. If you are
-        interested in using this feature, contact your account manager.
-
-        Associates a branch network interface with a trunk network interface.
-
-        Before you create the association, run the
-        `create-network-interface <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateNetworkInterface.html>`__
-        command and set ``--interface-type`` to ``trunk``. You must also create
-        a network interface for each branch network interface that you want to
-        associate with the trunk network interface.
-
-        :param branch_interface_id: The ID of the branch network interface.
-        :param trunk_interface_id: The ID of the trunk network interface.
-        :param vlan_id: The ID of the VLAN.
-        :param gre_key: The application key.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AssociateTrunkInterfaceResult
-        """
         raise NotImplementedError
 
     @handler("AssociateVpcCidrBlock")
@@ -17826,37 +15394,6 @@ class Ec2Api:
         ipv6_ipam_pool_id: IpamPoolId = None,
         ipv6_netmask_length: NetmaskLength = None,
     ) -> AssociateVpcCidrBlockResult:
-        """Associates a CIDR block with your VPC. You can associate a secondary
-        IPv4 CIDR block, an Amazon-provided IPv6 CIDR block, or an IPv6 CIDR
-        block from an IPv6 address pool that you provisioned through bring your
-        own IP addresses
-        (`BYOIP <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-byoip.html>`__).
-        The IPv6 CIDR block size is fixed at /56.
-
-        You must specify one of the following in the request: an IPv4 CIDR
-        block, an IPv6 pool, or an Amazon-provided IPv6 CIDR block.
-
-        For more information about associating CIDR blocks with your VPC and
-        applicable restrictions, see `VPC and subnet
-        sizing <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Subnets.html#VPC_Sizing>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param vpc_id: The ID of the VPC.
-        :param amazon_provided_ipv6_cidr_block: Requests an Amazon-provided IPv6 CIDR block with a /56 prefix length for
-        the VPC.
-        :param cidr_block: An IPv4 CIDR block to associate with the VPC.
-        :param ipv6_cidr_block_network_border_group: The name of the location from which we advertise the IPV6 CIDR block.
-        :param ipv6_pool: The ID of an IPv6 address pool from which to allocate the IPv6 CIDR
-        block.
-        :param ipv6_cidr_block: An IPv6 CIDR block from the IPv6 address pool.
-        :param ipv4_ipam_pool_id: Associate a CIDR allocated from an IPv4 IPAM pool to a VPC.
-        :param ipv4_netmask_length: The netmask length of the IPv4 CIDR you would like to associate from an
-        Amazon VPC IP Address Manager (IPAM) pool.
-        :param ipv6_ipam_pool_id: Associates a CIDR allocated from an IPv6 IPAM pool to a VPC.
-        :param ipv6_netmask_length: The netmask length of the IPv6 CIDR you would like to associate from an
-        Amazon VPC IP Address Manager (IPAM) pool.
-        :returns: AssociateVpcCidrBlockResult
-        """
         raise NotImplementedError
 
     @handler("AttachClassicLinkVpc")
@@ -17868,28 +15405,6 @@ class Ec2Api:
         vpc_id: VpcId,
         dry_run: Boolean = None,
     ) -> AttachClassicLinkVpcResult:
-        """Links an EC2-Classic instance to a ClassicLink-enabled VPC through one
-        or more of the VPC's security groups. You cannot link an EC2-Classic
-        instance to more than one VPC at a time. You can only link an instance
-        that's in the ``running`` state. An instance is automatically unlinked
-        from a VPC when it's stopped - you can link it to the VPC again when you
-        restart it.
-
-        After you've linked an instance, you cannot change the VPC security
-        groups that are associated with it. To change the security groups, you
-        must first unlink the instance, and then link it again.
-
-        Linking your instance to a VPC is sometimes referred to as *attaching*
-        your instance.
-
-        :param groups: The ID of one or more of the VPC's security groups.
-        :param instance_id: The ID of an EC2-Classic instance to link to the ClassicLink-enabled
-        VPC.
-        :param vpc_id: The ID of a ClassicLink-enabled VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AttachClassicLinkVpcResult
-        """
         raise NotImplementedError
 
     @handler("AttachInternetGateway")
@@ -17900,17 +15415,6 @@ class Ec2Api:
         vpc_id: VpcId,
         dry_run: Boolean = None,
     ) -> None:
-        """Attaches an internet gateway or a virtual private gateway to a VPC,
-        enabling connectivity between the internet and the VPC. For more
-        information about your VPC and internet gateway, see the `Amazon Virtual
-        Private Cloud User
-        Guide <https://docs.aws.amazon.com/vpc/latest/userguide/>`__.
-
-        :param internet_gateway_id: The ID of the internet gateway.
-        :param vpc_id: The ID of the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("AttachNetworkInterface")
@@ -17923,16 +15427,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         network_card_index: Integer = None,
     ) -> AttachNetworkInterfaceResult:
-        """Attaches a network interface to an instance.
-
-        :param device_index: The index of the device for the network interface attachment.
-        :param instance_id: The ID of the instance.
-        :param network_interface_id: The ID of the network interface.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param network_card_index: The index of the network card.
-        :returns: AttachNetworkInterfaceResult
-        """
         raise NotImplementedError
 
     @handler("AttachVolume")
@@ -17944,42 +15438,6 @@ class Ec2Api:
         volume_id: VolumeId,
         dry_run: Boolean = None,
     ) -> VolumeAttachment:
-        """Attaches an EBS volume to a running or stopped instance and exposes it
-        to the instance with the specified device name.
-
-        Encrypted EBS volumes must be attached to instances that support Amazon
-        EBS encryption. For more information, see `Amazon EBS
-        encryption <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        After you attach an EBS volume, you must make it available. For more
-        information, see `Make an EBS volume available for
-        use <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-using-volumes.html>`__.
-
-        If a volume has an Amazon Web Services Marketplace product code:
-
-        -  The volume can be attached only to a stopped instance.
-
-        -  Amazon Web Services Marketplace product codes are copied from the
-           volume to the instance.
-
-        -  You must be subscribed to the product.
-
-        -  The instance type and operating system of the instance must support
-           the product. For example, you can't detach a volume from a Windows
-           instance and attach it to a Linux instance.
-
-        For more information, see `Attach an Amazon EBS volume to an
-        instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-attaching-volume.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param device: The device name (for example, ``/dev/sdh`` or ``xvdh``).
-        :param instance_id: The ID of the instance.
-        :param volume_id: The ID of the EBS volume.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: VolumeAttachment
-        """
         raise NotImplementedError
 
     @handler("AttachVpnGateway")
@@ -17990,19 +15448,6 @@ class Ec2Api:
         vpn_gateway_id: VpnGatewayId,
         dry_run: Boolean = None,
     ) -> AttachVpnGatewayResult:
-        """Attaches a virtual private gateway to a VPC. You can attach one virtual
-        private gateway to one VPC at a time.
-
-        For more information, see `Amazon Web Services Site-to-Site
-        VPN <https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html>`__ in
-        the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        :param vpc_id: The ID of the VPC.
-        :param vpn_gateway_id: The ID of the virtual private gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AttachVpnGatewayResult
-        """
         raise NotImplementedError
 
     @handler("AuthorizeClientVpnIngress")
@@ -18017,24 +15462,6 @@ class Ec2Api:
         client_token: String = None,
         dry_run: Boolean = None,
     ) -> AuthorizeClientVpnIngressResult:
-        """Adds an ingress authorization rule to a Client VPN endpoint. Ingress
-        authorization rules act as firewall rules that grant access to networks.
-        You must configure ingress authorization rules to enable clients to
-        access resources in Amazon Web Services or on-premises networks.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint.
-        :param target_network_cidr: The IPv4 address range, in CIDR notation, of the network for which
-        access is being authorized.
-        :param access_group_id: The ID of the group to grant access to, for example, the Active
-        Directory group or identity provider (IdP) group.
-        :param authorize_all_groups: Indicates whether to grant access to all clients.
-        :param description: A brief description of the authorization rule.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: AuthorizeClientVpnIngressResult
-        """
         raise NotImplementedError
 
     @handler("AuthorizeSecurityGroupEgress")
@@ -18052,37 +15479,6 @@ class Ec2Api:
         source_security_group_name: String = None,
         source_security_group_owner_id: String = None,
     ) -> AuthorizeSecurityGroupEgressResult:
-        """[VPC only] Adds the specified outbound (egress) rules to a security
-        group for use with a VPC.
-
-        An outbound rule permits instances to send traffic to the specified IPv4
-        or IPv6 CIDR address ranges, or to the instances that are associated
-        with the specified source security groups.
-
-        You specify a protocol for each rule (for example, TCP). For the TCP and
-        UDP protocols, you must also specify the destination port or port range.
-        For the ICMP protocol, you must also specify the ICMP type and code. You
-        can use -1 for the type or code to mean all types or all codes.
-
-        Rule changes are propagated to affected instances as quickly as
-        possible. However, a small delay might occur.
-
-        For information about VPC security group quotas, see `Amazon VPC
-        quotas <https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html>`__.
-
-        :param group_id: The ID of the security group.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param ip_permissions: The sets of IP permissions.
-        :param tag_specifications: The tags applied to the security group rule.
-        :param cidr_ip: Not supported.
-        :param from_port: Not supported.
-        :param ip_protocol: Not supported.
-        :param to_port: Not supported.
-        :param source_security_group_name: Not supported.
-        :param source_security_group_owner_id: Not supported.
-        :returns: AuthorizeSecurityGroupEgressResult
-        """
         raise NotImplementedError
 
     @handler("AuthorizeSecurityGroupIngress")
@@ -18101,42 +15497,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> AuthorizeSecurityGroupIngressResult:
-        """Adds the specified inbound (ingress) rules to a security group.
-
-        An inbound rule permits instances to receive traffic from the specified
-        IPv4 or IPv6 CIDR address range, or from the instances that are
-        associated with the specified destination security groups.
-
-        You specify a protocol for each rule (for example, TCP). For TCP and
-        UDP, you must also specify the destination port or port range. For
-        ICMP/ICMPv6, you must also specify the ICMP/ICMPv6 type and code. You
-        can use -1 to mean all types or all codes.
-
-        Rule changes are propagated to instances within the security group as
-        quickly as possible. However, a small delay might occur.
-
-        For more information about VPC security group quotas, see `Amazon VPC
-        quotas <https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html>`__.
-
-        :param cidr_ip: The IPv4 address range, in CIDR format.
-        :param from_port: The start of port range for the TCP and UDP protocols, or an ICMP type
-        number.
-        :param group_id: The ID of the security group.
-        :param group_name: [EC2-Classic, default VPC] The name of the security group.
-        :param ip_permissions: The sets of IP permissions.
-        :param ip_protocol: The IP protocol name (``tcp``, ``udp``, ``icmp``) or number (see
-        `Protocol
-        Numbers <http://www.
-        :param source_security_group_name: [EC2-Classic, default VPC] The name of the source security group.
-        :param source_security_group_owner_id: [nondefault VPC] The Amazon Web Services account ID for the source
-        security group, if the source security group is in a different account.
-        :param to_port: The end of port range for the TCP and UDP protocols, or an ICMP code
-        number.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: [VPC Only] The tags applied to the security group rule.
-        :returns: AuthorizeSecurityGroupIngressResult
-        """
         raise NotImplementedError
 
     @handler("BundleInstance")
@@ -18147,34 +15507,12 @@ class Ec2Api:
         storage: Storage,
         dry_run: Boolean = None,
     ) -> BundleInstanceResult:
-        """Bundles an Amazon instance store-backed Windows instance.
-
-        During bundling, only the root device volume (C:) is bundled. Data on
-        other instance store volumes is not preserved.
-
-        This action is not applicable for Linux/Unix instances or Windows
-        instances that are backed by Amazon EBS.
-
-        :param instance_id: The ID of the instance to bundle.
-        :param storage: The bucket in which to store the AMI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: BundleInstanceResult
-        """
         raise NotImplementedError
 
     @handler("CancelBundleTask")
     def cancel_bundle_task(
         self, context: RequestContext, bundle_id: BundleId, dry_run: Boolean = None
     ) -> CancelBundleTaskResult:
-        """Cancels a bundling operation for an instance store-backed Windows
-        instance.
-
-        :param bundle_id: The ID of the bundle task.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CancelBundleTaskResult
-        """
         raise NotImplementedError
 
     @handler("CancelCapacityReservation")
@@ -18184,21 +15522,6 @@ class Ec2Api:
         capacity_reservation_id: CapacityReservationId,
         dry_run: Boolean = None,
     ) -> CancelCapacityReservationResult:
-        """Cancels the specified Capacity Reservation, releases the reserved
-        capacity, and changes the Capacity Reservation's state to ``cancelled``.
-
-        Instances running in the reserved capacity continue running until you
-        stop them. Stopped instances that target the Capacity Reservation can no
-        longer launch. Modify these instances to either target a different
-        Capacity Reservation, launch On-Demand Instance capacity, or run in any
-        open Capacity Reservation that has matching attributes and sufficient
-        capacity.
-
-        :param capacity_reservation_id: The ID of the Capacity Reservation to be cancelled.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CancelCapacityReservationResult
-        """
         raise NotImplementedError
 
     @handler("CancelCapacityReservationFleets")
@@ -18208,22 +15531,6 @@ class Ec2Api:
         capacity_reservation_fleet_ids: CapacityReservationFleetIdSet,
         dry_run: Boolean = None,
     ) -> CancelCapacityReservationFleetsResult:
-        """Cancels one or more Capacity Reservation Fleets. When you cancel a
-        Capacity Reservation Fleet, the following happens:
-
-        -  The Capacity Reservation Fleet's status changes to ``cancelled``.
-
-        -  The individual Capacity Reservations in the Fleet are cancelled.
-           Instances running in the Capacity Reservations at the time of
-           cancelling the Fleet continue to run in shared capacity.
-
-        -  The Fleet stops creating new Capacity Reservations.
-
-        :param capacity_reservation_fleet_ids: The IDs of the Capacity Reservation Fleets to cancel.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CancelCapacityReservationFleetsResult
-        """
         raise NotImplementedError
 
     @handler("CancelConversionTask")
@@ -18234,32 +15541,10 @@ class Ec2Api:
         dry_run: Boolean = None,
         reason_message: String = None,
     ) -> None:
-        """Cancels an active conversion task. The task can be the import of an
-        instance or volume. The action removes all artifacts of the conversion,
-        including a partially uploaded volume or instance. If the conversion is
-        complete or is in the process of transferring the final disk image, the
-        command fails and returns an exception.
-
-        For more information, see `Importing a Virtual Machine Using the Amazon
-        EC2
-        CLI <https://docs.aws.amazon.com/AWSEC2/latest/CommandLineReference/ec2-cli-vmimport-export.html>`__.
-
-        :param conversion_task_id: The ID of the conversion task.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param reason_message: The reason for canceling the conversion task.
-        """
         raise NotImplementedError
 
     @handler("CancelExportTask")
     def cancel_export_task(self, context: RequestContext, export_task_id: ExportVmTaskId) -> None:
-        """Cancels an active export task. The request removes all artifacts of the
-        export, including any partially-created Amazon S3 objects. If the export
-        task is complete or is in the process of transferring the final disk
-        image, the command fails and returns an error.
-
-        :param export_task_id: The ID of the export task.
-        """
         raise NotImplementedError
 
     @handler("CancelImportTask")
@@ -18270,30 +15555,12 @@ class Ec2Api:
         dry_run: Boolean = None,
         import_task_id: ImportTaskId = None,
     ) -> CancelImportTaskResult:
-        """Cancels an in-process import virtual machine or import snapshot task.
-
-        :param cancel_reason: The reason for canceling the task.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param import_task_id: The ID of the import image or import snapshot task to be canceled.
-        :returns: CancelImportTaskResult
-        """
         raise NotImplementedError
 
     @handler("CancelReservedInstancesListing")
     def cancel_reserved_instances_listing(
         self, context: RequestContext, reserved_instances_listing_id: ReservedInstancesListingId
     ) -> CancelReservedInstancesListingResult:
-        """Cancels the specified Reserved Instance listing in the Reserved Instance
-        Marketplace.
-
-        For more information, see `Reserved Instance
-        Marketplace <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ri-market-general.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param reserved_instances_listing_id: The ID of the Reserved Instance listing.
-        :returns: CancelReservedInstancesListingResult
-        """
         raise NotImplementedError
 
     @handler("CancelSpotFleetRequests")
@@ -18304,23 +15571,6 @@ class Ec2Api:
         terminate_instances: Boolean,
         dry_run: Boolean = None,
     ) -> CancelSpotFleetRequestsResponse:
-        """Cancels the specified Spot Fleet requests.
-
-        After you cancel a Spot Fleet request, the Spot Fleet launches no new
-        Spot Instances. You must specify whether the Spot Fleet should also
-        terminate its Spot Instances. If you terminate the instances, the Spot
-        Fleet request enters the ``cancelled_terminating`` state. Otherwise, the
-        Spot Fleet request enters the ``cancelled_running`` state and the
-        instances continue to run until they are interrupted or you terminate
-        them manually.
-
-        :param spot_fleet_request_ids: The IDs of the Spot Fleet requests.
-        :param terminate_instances: Indicates whether to terminate instances for a Spot Fleet request if it
-        is canceled successfully.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CancelSpotFleetRequestsResponse
-        """
         raise NotImplementedError
 
     @handler("CancelSpotInstanceRequests")
@@ -18330,16 +15580,6 @@ class Ec2Api:
         spot_instance_request_ids: SpotInstanceRequestIdList,
         dry_run: Boolean = None,
     ) -> CancelSpotInstanceRequestsResult:
-        """Cancels one or more Spot Instance requests.
-
-        Canceling a Spot Instance request does not terminate running Spot
-        Instances associated with the request.
-
-        :param spot_instance_request_ids: One or more Spot Instance request IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CancelSpotInstanceRequestsResult
-        """
         raise NotImplementedError
 
     @handler("ConfirmProductInstance")
@@ -18350,17 +15590,6 @@ class Ec2Api:
         product_code: String,
         dry_run: Boolean = None,
     ) -> ConfirmProductInstanceResult:
-        """Determines whether a product code is associated with an instance. This
-        action can only be used by the owner of the product code. It is useful
-        when a product code owner must verify whether another user's instance is
-        eligible for support.
-
-        :param instance_id: The ID of the instance.
-        :param product_code: The product code.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ConfirmProductInstanceResult
-        """
         raise NotImplementedError
 
     @handler("CopyFpgaImage")
@@ -18374,18 +15603,6 @@ class Ec2Api:
         name: String = None,
         client_token: String = None,
     ) -> CopyFpgaImageResult:
-        """Copies the specified Amazon FPGA Image (AFI) to the current Region.
-
-        :param source_fpga_image_id: The ID of the source AFI.
-        :param source_region: The Region that contains the source AFI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param description: The description for the new AFI.
-        :param name: The name for the new AFI.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: CopyFpgaImageResult
-        """
         raise NotImplementedError
 
     @handler("CopyImage")
@@ -18402,49 +15619,6 @@ class Ec2Api:
         destination_outpost_arn: String = None,
         dry_run: Boolean = None,
     ) -> CopyImageResult:
-        """Initiates the copy of an AMI. You can copy an AMI from one Region to
-        another, or from a Region to an Outpost. You can't copy an AMI from an
-        Outpost to a Region, from one Outpost to another, or within the same
-        Outpost. To copy an AMI to another partition, see
-        `CreateStoreImageTask <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateStoreImageTask.html>`__.
-
-        To copy an AMI from one Region to another, specify the source Region
-        using the **SourceRegion** parameter, and specify the destination Region
-        using its endpoint. Copies of encrypted backing snapshots for the AMI
-        are encrypted. Copies of unencrypted backing snapshots remain
-        unencrypted, unless you set ``Encrypted`` during the copy operation. You
-        cannot create an unencrypted copy of an encrypted backing snapshot.
-
-        To copy an AMI from a Region to an Outpost, specify the source Region
-        using the **SourceRegion** parameter, and specify the ARN of the
-        destination Outpost using **DestinationOutpostArn**. Backing snapshots
-        copied to an Outpost are encrypted by default using the default
-        encryption key for the Region, or a different key that you specify in
-        the request using **KmsKeyId**. Outposts do not support unencrypted
-        snapshots. For more information, `Amazon EBS local snapshots on
-        Outposts <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snapshots-outposts.html#ami>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        For more information about the prerequisites and limits when copying an
-        AMI, see `Copying an
-        AMI <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param name: The name of the new AMI in the destination Region.
-        :param source_image_id: The ID of the AMI to copy.
-        :param source_region: The name of the Region that contains the AMI to copy.
-        :param client_token: Unique, case-sensitive identifier you provide to ensure idempotency of
-        the request.
-        :param description: A description for the new AMI in the destination Region.
-        :param encrypted: Specifies whether the destination snapshots of the copied image should
-        be encrypted.
-        :param kms_key_id: The identifier of the symmetric Key Management Service (KMS) KMS key to
-        use when creating encrypted volumes.
-        :param destination_outpost_arn: The Amazon Resource Name (ARN) of the Outpost to which to copy the AMI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CopyImageResult
-        """
         raise NotImplementedError
 
     @handler("CopySnapshot")
@@ -18462,56 +15636,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CopySnapshotResult:
-        """Copies a point-in-time snapshot of an EBS volume and stores it in Amazon
-        S3. You can copy a snapshot within the same Region, from one Region to
-        another, or from a Region to an Outpost. You can't copy a snapshot from
-        an Outpost to a Region, from one Outpost to another, or within the same
-        Outpost.
-
-        You can use the snapshot to create EBS volumes or Amazon Machine Images
-        (AMIs).
-
-        When copying snapshots to a Region, copies of encrypted EBS snapshots
-        remain encrypted. Copies of unencrypted snapshots remain unencrypted,
-        unless you enable encryption for the snapshot copy operation. By
-        default, encrypted snapshot copies use the default Key Management
-        Service (KMS) KMS key; however, you can specify a different KMS key. To
-        copy an encrypted snapshot that has been shared from another account,
-        you must have permissions for the KMS key used to encrypt the snapshot.
-
-        Snapshots copied to an Outpost are encrypted by default using the
-        default encryption key for the Region, or a different key that you
-        specify in the request using **KmsKeyId**. Outposts do not support
-        unencrypted snapshots. For more information, `Amazon EBS local snapshots
-        on
-        Outposts <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snapshots-outposts.html#ami>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        Snapshots created by copying another snapshot have an arbitrary volume
-        ID that should not be used for any purpose.
-
-        For more information, see `Copy an Amazon EBS
-        snapshot <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-copy-snapshot.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param source_region: The ID of the Region that contains the snapshot to be copied.
-        :param source_snapshot_id: The ID of the EBS snapshot to copy.
-        :param description: A description for the EBS snapshot.
-        :param destination_outpost_arn: The Amazon Resource Name (ARN) of the Outpost to which to copy the
-        snapshot.
-        :param destination_region: The destination Region to use in the ``PresignedUrl`` parameter of a
-        snapshot copy operation.
-        :param encrypted: To encrypt a copy of an unencrypted snapshot if encryption by default is
-        not enabled, enable encryption using this parameter.
-        :param kms_key_id: The identifier of the Key Management Service (KMS) KMS key to use for
-        Amazon EBS encryption.
-        :param presigned_url: When you copy an encrypted source snapshot using the Amazon EC2 Query
-        API, you must supply a pre-signed URL.
-        :param tag_specifications: The tags to apply to the new snapshot.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CopySnapshotResult
-        """
         raise NotImplementedError
 
     @handler("CreateCapacityReservation")
@@ -18535,60 +15659,6 @@ class Ec2Api:
         outpost_arn: OutpostArn = None,
         placement_group_arn: PlacementGroupArn = None,
     ) -> CreateCapacityReservationResult:
-        """Creates a new Capacity Reservation with the specified attributes.
-
-        Capacity Reservations enable you to reserve capacity for your Amazon EC2
-        instances in a specific Availability Zone for any duration. This gives
-        you the flexibility to selectively add capacity reservations and still
-        get the Regional RI discounts for that usage. By creating Capacity
-        Reservations, you ensure that you always have access to Amazon EC2
-        capacity when you need it, for as long as you need it. For more
-        information, see `Capacity
-        Reservations <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-reservations.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        Your request to create a Capacity Reservation could fail if Amazon EC2
-        does not have sufficient capacity to fulfill the request. If your
-        request fails due to Amazon EC2 capacity constraints, either try again
-        at a later time, try in a different Availability Zone, or request a
-        smaller capacity reservation. If your application is flexible across
-        instance types and sizes, try to create a Capacity Reservation with
-        different instance attributes.
-
-        Your request could also fail if the requested quantity exceeds your
-        On-Demand Instance limit for the selected instance type. If your request
-        fails due to limit constraints, increase your On-Demand Instance limit
-        for the required instance type and try again. For more information about
-        increasing your instance limits, see `Amazon EC2 Service
-        Quotas <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_type: The instance type for which to reserve capacity.
-        :param instance_platform: The type of operating system for which to reserve capacity.
-        :param instance_count: The number of instances for which to reserve capacity.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param availability_zone: The Availability Zone in which to create the Capacity Reservation.
-        :param availability_zone_id: The ID of the Availability Zone in which to create the Capacity
-        Reservation.
-        :param tenancy: Indicates the tenancy of the Capacity Reservation.
-        :param ebs_optimized: Indicates whether the Capacity Reservation supports EBS-optimized
-        instances.
-        :param ephemeral_storage: Indicates whether the Capacity Reservation supports instances with
-        temporary, block-level storage.
-        :param end_date: The date and time at which the Capacity Reservation expires.
-        :param end_date_type: Indicates the way in which the Capacity Reservation ends.
-        :param instance_match_criteria: Indicates the type of instance launches that the Capacity Reservation
-        accepts.
-        :param tag_specifications: The tags to apply to the Capacity Reservation during launch.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param outpost_arn: The Amazon Resource Name (ARN) of the Outpost on which to create the
-        Capacity Reservation.
-        :param placement_group_arn: The Amazon Resource Name (ARN) of the cluster placement group in which
-        to create the Capacity Reservation.
-        :returns: CreateCapacityReservationResult
-        """
         raise NotImplementedError
 
     @handler("CreateCapacityReservationFleet")
@@ -18605,27 +15675,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateCapacityReservationFleetResult:
-        """Creates a Capacity Reservation Fleet. For more information, see `Create
-        a Capacity Reservation
-        Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/work-with-cr-fleets.html#create-crfleet>`__
-        in the Amazon EC2 User Guide.
-
-        :param instance_type_specifications: Information about the instance types for which to reserve the capacity.
-        :param total_target_capacity: The total number of capacity units to be reserved by the Capacity
-        Reservation Fleet.
-        :param allocation_strategy: The strategy used by the Capacity Reservation Fleet to determine which
-        of the specified instance types to use.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param tenancy: Indicates the tenancy of the Capacity Reservation Fleet.
-        :param end_date: The date and time at which the Capacity Reservation Fleet expires.
-        :param instance_match_criteria: Indicates the type of instance launches that the Capacity Reservation
-        Fleet accepts.
-        :param tag_specifications: The tags to assign to the Capacity Reservation Fleet.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateCapacityReservationFleetResult
-        """
         raise NotImplementedError
 
     @handler("CreateCarrierGateway")
@@ -18637,19 +15686,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         client_token: String = None,
     ) -> CreateCarrierGatewayResult:
-        """Creates a carrier gateway. For more information about carrier gateways,
-        see `Carrier
-        gateways <https://docs.aws.amazon.com/wavelength/latest/developerguide/how-wavelengths-work.html#wavelength-carrier-gateway>`__
-        in the *Amazon Web Services Wavelength Developer Guide*.
-
-        :param vpc_id: The ID of the VPC to associate with the carrier gateway.
-        :param tag_specifications: The tags to associate with the carrier gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: CreateCarrierGatewayResult
-        """
         raise NotImplementedError
 
     @handler("CreateClientVpnEndpoint")
@@ -18675,37 +15711,6 @@ class Ec2Api:
         session_timeout_hours: Integer = None,
         client_login_banner_options: ClientLoginBannerOptions = None,
     ) -> CreateClientVpnEndpointResult:
-        """Creates a Client VPN endpoint. A Client VPN endpoint is the resource you
-        create and configure to enable and manage client VPN sessions. It is the
-        destination endpoint at which all client VPN sessions are terminated.
-
-        :param client_cidr_block: The IPv4 address range, in CIDR notation, from which to assign client IP
-        addresses.
-        :param server_certificate_arn: The ARN of the server certificate.
-        :param authentication_options: Information about the authentication method to be used to authenticate
-        clients.
-        :param connection_log_options: Information about the client connection logging options.
-        :param dns_servers: Information about the DNS servers to be used for DNS resolution.
-        :param transport_protocol: The transport protocol to be used by the VPN session.
-        :param vpn_port: The port number to assign to the Client VPN endpoint for TCP and UDP
-        traffic.
-        :param description: A brief description of the Client VPN endpoint.
-        :param split_tunnel: Indicates whether split-tunnel is enabled on the Client VPN endpoint.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param tag_specifications: The tags to apply to the Client VPN endpoint during creation.
-        :param security_group_ids: The IDs of one or more security groups to apply to the target network.
-        :param vpc_id: The ID of the VPC to associate with the Client VPN endpoint.
-        :param self_service_portal: Specify whether to enable the self-service portal for the Client VPN
-        endpoint.
-        :param client_connect_options: The options for managing connection authorization for new client
-        connections.
-        :param session_timeout_hours: .
-        :param client_login_banner_options: .
-        :returns: CreateClientVpnEndpointResult
-        """
         raise NotImplementedError
 
     @handler("CreateClientVpnRoute")
@@ -18719,72 +15724,12 @@ class Ec2Api:
         client_token: String = None,
         dry_run: Boolean = None,
     ) -> CreateClientVpnRouteResult:
-        """Adds a route to a network to a Client VPN endpoint. Each Client VPN
-        endpoint has a route table that describes the available destination
-        network routes. Each route in the route table specifies the path for
-        traﬃc to speciﬁc resources or networks.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint to which to add the route.
-        :param destination_cidr_block: The IPv4 address range, in CIDR notation, of the route destination.
-        :param target_vpc_subnet_id: The ID of the subnet through which you want to route traffic.
-        :param description: A brief description of the route.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateClientVpnRouteResult
-        """
         raise NotImplementedError
 
     @handler("CreateCustomerGateway", expand=False)
     def create_customer_gateway(
         self, context: RequestContext, request: CreateCustomerGatewayRequest
     ) -> CreateCustomerGatewayResult:
-        """Provides information to Amazon Web Services about your VPN customer
-        gateway device. The customer gateway is the appliance at your end of the
-        VPN connection. (The device on the Amazon Web Services side of the VPN
-        connection is the virtual private gateway.) You must provide the
-        internet-routable IP address of the customer gateway's external
-        interface. The IP address must be static and can be behind a device
-        performing network address translation (NAT).
-
-        For devices that use Border Gateway Protocol (BGP), you can also provide
-        the device's BGP Autonomous System Number (ASN). You can use an existing
-        ASN assigned to your network. If you don't have an ASN already, you can
-        use a private ASN (in the 64512 - 65534 range).
-
-        Amazon EC2 supports all 4-byte ASN numbers in the range of 1 -
-        2147483647, with the exception of the following:
-
-        -  7224 - reserved in the ``us-east-1`` Region
-
-        -  9059 - reserved in the ``eu-west-1`` Region
-
-        -  17943 - reserved in the ``ap-southeast-1`` Region
-
-        -  10124 - reserved in the ``ap-northeast-1`` Region
-
-        For more information, see `Amazon Web Services Site-to-Site
-        VPN <https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html>`__ in
-        the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        To create more than one customer gateway with the same VPN type, IP
-        address, and BGP ASN, specify a unique device name for each customer
-        gateway. Identical requests return information about the existing
-        customer gateway and do not create new customer gateways.
-
-        :param bgp_asn: For devices that support BGP, the customer gateway's BGP ASN.
-        :param type: The type of VPN connection that this customer gateway supports
-        (``ipsec.
-        :param public_ip: The Internet-routable IP address for the customer gateway's outside
-        interface.
-        :param certificate_arn: The Amazon Resource Name (ARN) for the customer gateway certificate.
-        :param tag_specifications: The tags to apply to the customer gateway.
-        :param device_name: A name for the customer gateway device.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateCustomerGatewayResult
-        """
         raise NotImplementedError
 
     @handler("CreateDefaultSubnet")
@@ -18795,45 +15740,12 @@ class Ec2Api:
         dry_run: Boolean = None,
         ipv6_native: Boolean = None,
     ) -> CreateDefaultSubnetResult:
-        """Creates a default subnet with a size ``/20`` IPv4 CIDR block in the
-        specified Availability Zone in your default VPC. You can have only one
-        default subnet per Availability Zone. For more information, see
-        `Creating a default
-        subnet <https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc.html#create-default-subnet>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param availability_zone: The Availability Zone in which to create the default subnet.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param ipv6_native: Indicates whether to create an IPv6 only subnet.
-        :returns: CreateDefaultSubnetResult
-        """
         raise NotImplementedError
 
     @handler("CreateDefaultVpc")
     def create_default_vpc(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> CreateDefaultVpcResult:
-        """Creates a default VPC with a size ``/16`` IPv4 CIDR block and a default
-        subnet in each Availability Zone. For more information about the
-        components of a default VPC, see `Default VPC and default
-        subnets <https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*. You cannot specify the
-        components of the default VPC yourself.
-
-        If you deleted your previous default VPC, you can create a default VPC.
-        You cannot have more than one default VPC per Region.
-
-        If your account supports EC2-Classic, you cannot use this action to
-        create a default VPC in a Region that supports EC2-Classic. If you want
-        a default VPC in a Region that supports EC2-Classic, see "I really want
-        a default VPC for my existing EC2 account. Is that possible?" in the
-        `Default VPCs FAQ <http://aws.amazon.com/vpc/faqs/#Default_VPCs>`__.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateDefaultVpcResult
-        """
         raise NotImplementedError
 
     @handler("CreateDhcpOptions")
@@ -18844,59 +15756,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateDhcpOptionsResult:
-        """Creates a set of DHCP options for your VPC. After creating the set, you
-        must associate it with the VPC, causing all existing and new instances
-        that you launch in the VPC to use this set of DHCP options. The
-        following are the individual DHCP options you can specify. For more
-        information about the options, see `RFC
-        2132 <http://www.ietf.org/rfc/rfc2132.txt>`__.
-
-        -  ``domain-name-servers`` - The IP addresses of up to four domain name
-           servers, or AmazonProvidedDNS. The default DHCP option set specifies
-           AmazonProvidedDNS. If specifying more than one domain name server,
-           specify the IP addresses in a single parameter, separated by commas.
-           To have your instance receive a custom DNS hostname as specified in
-           ``domain-name``, you must set ``domain-name-servers`` to a custom DNS
-           server.
-
-        -  ``domain-name`` - If you're using AmazonProvidedDNS in ``us-east-1``,
-           specify ``ec2.internal``. If you're using AmazonProvidedDNS in
-           another Region, specify ``region.compute.internal`` (for example,
-           ``ap-northeast-1.compute.internal``). Otherwise, specify a domain
-           name (for example, ``ExampleCompany.com``). This value is used to
-           complete unqualified DNS hostnames. **Important**: Some Linux
-           operating systems accept multiple domain names separated by spaces.
-           However, Windows and other Linux operating systems treat the value as
-           a single domain, which results in unexpected behavior. If your DHCP
-           options set is associated with a VPC that has instances with multiple
-           operating systems, specify only one domain name.
-
-        -  ``ntp-servers`` - The IP addresses of up to four Network Time
-           Protocol (NTP) servers.
-
-        -  ``netbios-name-servers`` - The IP addresses of up to four NetBIOS
-           name servers.
-
-        -  ``netbios-node-type`` - The NetBIOS node type (1, 2, 4, or 8). We
-           recommend that you specify 2 (broadcast and multicast are not
-           currently supported). For more information about these node types,
-           see `RFC 2132 <http://www.ietf.org/rfc/rfc2132.txt>`__.
-
-        Your VPC automatically starts out with a set of DHCP options that
-        includes only a DNS server that we provide (AmazonProvidedDNS). If you
-        create a set of options, and if your VPC has an internet gateway, make
-        sure to set the ``domain-name-servers`` option either to
-        ``AmazonProvidedDNS`` or to a domain name server of your choice. For
-        more information, see `DHCP options
-        sets <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_DHCP_Options.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param dhcp_configurations: A DHCP configuration option.
-        :param tag_specifications: The tags to assign to the DHCP option.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateDhcpOptionsResult
-        """
         raise NotImplementedError
 
     @handler("CreateEgressOnlyInternetGateway")
@@ -18908,59 +15767,12 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateEgressOnlyInternetGatewayResult:
-        """[IPv6 only] Creates an egress-only internet gateway for your VPC. An
-        egress-only internet gateway is used to enable outbound communication
-        over IPv6 from instances in your VPC to the internet, and prevents hosts
-        outside of your VPC from initiating an IPv6 connection with your
-        instance.
-
-        :param vpc_id: The ID of the VPC for which to create the egress-only internet gateway.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: The tags to assign to the egress-only internet gateway.
-        :returns: CreateEgressOnlyInternetGatewayResult
-        """
         raise NotImplementedError
 
     @handler("CreateFleet", expand=False)
     def create_fleet(
         self, context: RequestContext, request: CreateFleetRequest
     ) -> CreateFleetResult:
-        """Launches an EC2 Fleet.
-
-        You can create a single EC2 Fleet that includes multiple launch
-        specifications that vary by instance type, AMI, Availability Zone, or
-        subnet.
-
-        For more information, see `Launching an EC2
-        Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param launch_template_configs: The configuration for the EC2 Fleet.
-        :param target_capacity_specification: The number of units to request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param spot_options: Describes the configuration of Spot Instances in an EC2 Fleet.
-        :param on_demand_options: Describes the configuration of On-Demand Instances in an EC2 Fleet.
-        :param excess_capacity_termination_policy: Indicates whether running instances should be terminated if the total
-        target capacity of the EC2 Fleet is decreased below the current size of
-        the EC2 Fleet.
-        :param terminate_instances_with_expiration: Indicates whether running instances should be terminated when the EC2
-        Fleet expires.
-        :param type: The fleet type.
-        :param valid_from: The start date and time of the request, in UTC format (for example,
-        *YYYY*-*MM*-*DD* T *HH*:*MM*:*SS* Z).
-        :param valid_until: The end date and time of the request, in UTC format (for example,
-        *YYYY*-*MM*-*DD* T *HH*:*MM*:*SS* Z).
-        :param replace_unhealthy_instances: Indicates whether EC2 Fleet should replace unhealthy Spot Instances.
-        :param tag_specifications: The key-value pair for tagging the EC2 Fleet request on creation.
-        :param context: Reserved.
-        :returns: CreateFleetResult
-        """
         raise NotImplementedError
 
     @handler("CreateFlowLogs")
@@ -18981,47 +15793,6 @@ class Ec2Api:
         max_aggregation_interval: Integer = None,
         destination_options: DestinationOptionsRequest = None,
     ) -> CreateFlowLogsResult:
-        """Creates one or more flow logs to capture information about IP traffic
-        for a specific network interface, subnet, or VPC.
-
-        Flow log data for a monitored network interface is recorded as flow log
-        records, which are log events consisting of fields that describe the
-        traffic flow. For more information, see `Flow log
-        records <https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html#flow-log-records>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        When publishing to CloudWatch Logs, flow log records are published to a
-        log group, and each network interface has a unique log stream in the log
-        group. When publishing to Amazon S3, flow log records for all of the
-        monitored network interfaces are published to a single log file object
-        that is stored in the specified bucket.
-
-        For more information, see `VPC Flow
-        Logs <https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param resource_ids: The ID of the subnet, network interface, or VPC for which you want to
-        create a flow log.
-        :param resource_type: The type of resource for which to create the flow log.
-        :param traffic_type: The type of traffic to log.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param deliver_logs_permission_arn: The ARN for the IAM role that permits Amazon EC2 to publish flow logs to
-        a CloudWatch Logs log group in your account.
-        :param log_group_name: The name of a new or existing CloudWatch Logs log group where Amazon EC2
-        publishes your flow logs.
-        :param log_destination_type: The type of destination to which the flow log data is to be published.
-        :param log_destination: The destination to which the flow log data is to be published.
-        :param log_format: The fields to include in the flow log record, in the order in which they
-        should appear.
-        :param tag_specifications: The tags to apply to the flow logs.
-        :param max_aggregation_interval: The maximum interval of time during which a flow of packets is captured
-        and aggregated into a flow log record.
-        :param destination_options: The destination options.
-        :returns: CreateFlowLogsResult
-        """
         raise NotImplementedError
 
     @handler("CreateFpgaImage")
@@ -19036,28 +15807,6 @@ class Ec2Api:
         client_token: String = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateFpgaImageResult:
-        """Creates an Amazon FPGA Image (AFI) from the specified design checkpoint
-        (DCP).
-
-        The create operation is asynchronous. To verify that the AFI is ready
-        for use, check the output logs.
-
-        An AFI contains the FPGA bitstream that is ready to download to an FPGA.
-        You can securely deploy an AFI on multiple FPGA-accelerated instances.
-        For more information, see the `Amazon Web Services FPGA Hardware
-        Development Kit <https://github.com/aws/aws-fpga/>`__.
-
-        :param input_storage_location: The location of the encrypted design checkpoint in Amazon S3.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param logs_storage_location: The location in Amazon S3 for the output logs.
-        :param description: A description for the AFI.
-        :param name: A name for the AFI.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param tag_specifications: The tags to apply to the FPGA image during creation.
-        :returns: CreateFpgaImageResult
-        """
         raise NotImplementedError
 
     @handler("CreateImage")
@@ -19072,30 +15821,6 @@ class Ec2Api:
         no_reboot: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateImageResult:
-        """Creates an Amazon EBS-backed AMI from an Amazon EBS-backed instance that
-        is either running or stopped.
-
-        If you customized your instance with instance store volumes or Amazon
-        EBS volumes in addition to the root device volume, the new AMI contains
-        block device mapping information for those volumes. When you launch an
-        instance from this new AMI, the instance automatically launches with
-        those additional volumes.
-
-        For more information, see `Creating Amazon EBS-Backed Linux
-        AMIs <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param instance_id: The ID of the instance.
-        :param name: A name for the new image.
-        :param block_device_mappings: The block device mappings.
-        :param description: A description for the new image.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param no_reboot: By default, Amazon EC2 attempts to shut down and reboot the instance
-        before creating the image.
-        :param tag_specifications: The tags to apply to the AMI and snapshots on creation.
-        :returns: CreateImageResult
-        """
         raise NotImplementedError
 
     @handler("CreateInstanceEventWindow")
@@ -19108,42 +15833,6 @@ class Ec2Api:
         cron_expression: InstanceEventWindowCronExpression = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateInstanceEventWindowResult:
-        """Creates an event window in which scheduled events for the associated
-        Amazon EC2 instances can run.
-
-        You can define either a set of time ranges or a cron expression when
-        creating the event window, but not both. All event window times are in
-        UTC.
-
-        You can create up to 200 event windows per Amazon Web Services Region.
-
-        When you create the event window, targets (instance IDs, Dedicated Host
-        IDs, or tags) are not yet associated with it. To ensure that the event
-        window can be used, you must associate one or more targets with it by
-        using the AssociateInstanceEventWindow API.
-
-        Event windows are applicable only for scheduled events that stop,
-        reboot, or terminate instances.
-
-        Event windows are *not* applicable for:
-
-        -  Expedited scheduled events and network maintenance events.
-
-        -  Unscheduled maintenance such as AutoRecovery and unplanned reboots.
-
-        For more information, see `Define event windows for scheduled
-        events <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/event-windows.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param name: The name of the event window.
-        :param time_ranges: The time range for the event window.
-        :param cron_expression: The cron expression for the event window, for example,
-        ``* 0-4,20-23 * * 1,5``.
-        :param tag_specifications: The tags to apply to the event window.
-        :returns: CreateInstanceEventWindowResult
-        """
         raise NotImplementedError
 
     @handler("CreateInstanceExportTask")
@@ -19156,21 +15845,6 @@ class Ec2Api:
         description: String = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateInstanceExportTaskResult:
-        """Exports a running or stopped instance to an Amazon S3 bucket.
-
-        For information about the supported operating systems, image formats,
-        and known limitations for the types of instances you can export, see
-        `Exporting an instance as a VM Using VM
-        Import/Export <https://docs.aws.amazon.com/vm-import/latest/userguide/vmexport.html>`__
-        in the *VM Import/Export User Guide*.
-
-        :param export_to_s3_task: The format and location for an export instance task.
-        :param instance_id: The ID of the instance.
-        :param target_environment: The target virtualization environment.
-        :param description: A description for the conversion task or the resource being exported.
-        :param tag_specifications: The tags to apply to the export instance task during creation.
-        :returns: CreateInstanceExportTaskResult
-        """
         raise NotImplementedError
 
     @handler("CreateInternetGateway")
@@ -19180,18 +15854,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateInternetGatewayResult:
-        """Creates an internet gateway for use with a VPC. After creating the
-        internet gateway, you attach it to a VPC using AttachInternetGateway.
-
-        For more information about your VPC and internet gateway, see the
-        `Amazon Virtual Private Cloud User
-        Guide <https://docs.aws.amazon.com/vpc/latest/userguide/>`__.
-
-        :param tag_specifications: The tags to assign to the internet gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateInternetGatewayResult
-        """
         raise NotImplementedError
 
     @handler("CreateIpam")
@@ -19204,25 +15866,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
     ) -> CreateIpamResult:
-        """Create an IPAM. Amazon VCP IP Address Manager (IPAM) is a VPC feature
-        that you can use to automate your IP address management workflows
-        including assigning, tracking, troubleshooting, and auditing IP
-        addresses across Amazon Web Services Regions and accounts throughout
-        your Amazon Web Services Organization.
-
-        For more information, see `Create an
-        IPAM </vpc/latest/ipam/create-ipam.html>`__ in the *Amazon VPC IPAM User
-        Guide*.
-
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param description: A description for the IPAM.
-        :param operating_regions: The operating Regions for the IPAM.
-        :param tag_specifications: The key/value combination of a tag assigned to the resource.
-        :param client_token: A unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: CreateIpamResult
-        """
         raise NotImplementedError
 
     @handler("CreateIpamPool")
@@ -19230,11 +15873,11 @@ class Ec2Api:
         self,
         context: RequestContext,
         ipam_scope_id: IpamScopeId,
+        address_family: AddressFamily,
         dry_run: Boolean = None,
         locale: String = None,
         source_ipam_pool_id: IpamPoolId = None,
         description: String = None,
-        address_family: AddressFamily = None,
         auto_import: Boolean = None,
         publicly_advertisable: Boolean = None,
         allocation_min_netmask_length: IpamNetmaskLength = None,
@@ -19245,42 +15888,6 @@ class Ec2Api:
         client_token: String = None,
         aws_service: IpamPoolAwsService = None,
     ) -> CreateIpamPoolResult:
-        """Create an IP address pool for Amazon VPC IP Address Manager (IPAM). In
-        IPAM, a pool is a collection of contiguous IP addresses CIDRs. Pools
-        enable you to organize your IP addresses according to your routing and
-        security needs. For example, if you have separate routing and security
-        needs for development and production applications, you can create a pool
-        for each.
-
-        For more information, see `Create a top-level
-        pool </vpc/latest/ipam/create-top-ipam.html>`__ in the *Amazon VPC IPAM
-        User Guide*.
-
-        :param ipam_scope_id: The ID of the scope in which you would like to create the IPAM pool.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param locale: In IPAM, the locale is the Amazon Web Services Region where you want to
-        make an IPAM pool available for allocations.
-        :param source_ipam_pool_id: The ID of the source IPAM pool.
-        :param description: A description for the IPAM pool.
-        :param address_family: The IP protocol assigned to this IPAM pool.
-        :param auto_import: If selected, IPAM will continuously look for resources within the CIDR
-        range of this pool and automatically import them as allocations into
-        your IPAM.
-        :param publicly_advertisable: Determines if the pool is publicly advertisable.
-        :param allocation_min_netmask_length: The minimum netmask length required for CIDR allocations in this IPAM
-        pool to be compliant.
-        :param allocation_max_netmask_length: The maximum netmask length possible for CIDR allocations in this IPAM
-        pool to be compliant.
-        :param allocation_default_netmask_length: The default netmask length for allocations added to this pool.
-        :param allocation_resource_tags: Tags that are required for resources that use CIDRs from this IPAM pool.
-        :param tag_specifications: The key/value combination of a tag assigned to the resource.
-        :param client_token: A unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param aws_service: Limits which service in Amazon Web Services that the pool can be used
-        in.
-        :returns: CreateIpamPoolResult
-        """
         raise NotImplementedError
 
     @handler("CreateIpamScope")
@@ -19293,26 +15900,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
     ) -> CreateIpamScopeResult:
-        """Create an IPAM scope. In IPAM, a scope is the highest-level container
-        within IPAM. An IPAM contains two default scopes. Each scope represents
-        the IP space for a single network. The private scope is intended for all
-        private IP address space. The public scope is intended for all public IP
-        address space. Scopes enable you to reuse IP addresses across multiple
-        unconnected networks without causing IP address overlap or conflict.
-
-        For more information, see `Add a
-        scope </vpc/latest/ipam/add-scope-ipam.html>`__ in the *Amazon VPC IPAM
-        User Guide*.
-
-        :param ipam_id: The ID of the IPAM for which you're creating this scope.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param description: A description for the scope you're creating.
-        :param tag_specifications: The key/value combination of a tag assigned to the resource.
-        :param client_token: A unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: CreateIpamScopeResult
-        """
         raise NotImplementedError
 
     @handler("CreateKeyPair")
@@ -19324,30 +15911,6 @@ class Ec2Api:
         key_type: KeyType = None,
         tag_specifications: TagSpecificationList = None,
     ) -> KeyPair:
-        """Creates an ED25519 or 2048-bit RSA key pair with the specified name.
-        Amazon EC2 stores the public key and displays the private key for you to
-        save to a file. The private key is returned as an unencrypted PEM
-        encoded PKCS#1 private key. If a key with the specified name already
-        exists, Amazon EC2 returns an error.
-
-        The key pair returned to you is available only in the Amazon Web
-        Services Region in which you create it. If you prefer, you can create
-        your own key pair using a third-party tool and upload it to any Region
-        using ImportKeyPair.
-
-        You can have up to 5,000 key pairs per Amazon Web Services Region.
-
-        For more information, see `Amazon EC2 key
-        pairs <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param key_name: A unique name for the key pair.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param key_type: The type of key pair.
-        :param tag_specifications: The tags to apply to the new key pair.
-        :returns: KeyPair
-        """
         raise NotImplementedError
 
     @handler("CreateLaunchTemplate")
@@ -19361,24 +15924,6 @@ class Ec2Api:
         version_description: VersionDescription = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateLaunchTemplateResult:
-        """Creates a launch template. A launch template contains the parameters to
-        launch an instance. When you launch an instance using RunInstances, you
-        can specify a launch template instead of providing the launch parameters
-        in the request. For more information, see `Launching an instance from a
-        launch
-        template <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param launch_template_name: A name for the launch template.
-        :param launch_template_data: The information for the launch template.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier you provide to ensure the idempotency
-        of the request.
-        :param version_description: A description for the first version of the launch template.
-        :param tag_specifications: The tags to apply to the launch template during creation.
-        :returns: CreateLaunchTemplateResult
-        """
         raise NotImplementedError
 
     @handler("CreateLaunchTemplateVersion")
@@ -19393,29 +15938,6 @@ class Ec2Api:
         source_version: String = None,
         version_description: VersionDescription = None,
     ) -> CreateLaunchTemplateVersionResult:
-        """Creates a new version for a launch template. You can specify an existing
-        version of launch template from which to base the new version.
-
-        Launch template versions are numbered in the order in which they are
-        created. You cannot specify, change, or replace the numbering of launch
-        template versions.
-
-        For more information, see `Managing launch template
-        versions <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html#manage-launch-template-versions>`__ in
-        the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param launch_template_data: The information for the launch template.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier you provide to ensure the idempotency
-        of the request.
-        :param launch_template_id: The ID of the launch template.
-        :param launch_template_name: The name of the launch template.
-        :param source_version: The version number of the launch template version on which to base the
-        new version.
-        :param version_description: A description for the version of the launch template.
-        :returns: CreateLaunchTemplateVersionResult
-        """
         raise NotImplementedError
 
     @handler("CreateLocalGatewayRoute")
@@ -19427,15 +15949,6 @@ class Ec2Api:
         local_gateway_virtual_interface_group_id: LocalGatewayVirtualInterfaceGroupId,
         dry_run: Boolean = None,
     ) -> CreateLocalGatewayRouteResult:
-        """Creates a static route for the specified local gateway route table.
-
-        :param destination_cidr_block: The CIDR range used for destination matches.
-        :param local_gateway_route_table_id: The ID of the local gateway route table.
-        :param local_gateway_virtual_interface_group_id: The ID of the virtual interface group.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateLocalGatewayRouteResult
-        """
         raise NotImplementedError
 
     @handler("CreateLocalGatewayRouteTableVpcAssociation")
@@ -19447,16 +15960,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateLocalGatewayRouteTableVpcAssociationResult:
-        """Associates the specified VPC with the specified local gateway route
-        table.
-
-        :param local_gateway_route_table_id: The ID of the local gateway route table.
-        :param vpc_id: The ID of the VPC.
-        :param tag_specifications: The tags to assign to the local gateway route table VPC association.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateLocalGatewayRouteTableVpcAssociationResult
-        """
         raise NotImplementedError
 
     @handler("CreateManagedPrefixList")
@@ -19471,21 +15974,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
     ) -> CreateManagedPrefixListResult:
-        """Creates a managed prefix list. You can specify one or more entries for
-        the prefix list. Each entry consists of a CIDR block and an optional
-        description.
-
-        :param prefix_list_name: A name for the prefix list.
-        :param max_entries: The maximum number of entries for the prefix list.
-        :param address_family: The IP address type.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param entries: One or more entries for the prefix list.
-        :param tag_specifications: The tags to apply to the prefix list during creation.
-        :param client_token: Unique, case-sensitive identifier you provide to ensure the idempotency
-        of the request.
-        :returns: CreateManagedPrefixListResult
-        """
         raise NotImplementedError
 
     @handler("CreateNatGateway")
@@ -19499,37 +15987,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         connectivity_type: ConnectivityType = None,
     ) -> CreateNatGatewayResult:
-        """Creates a NAT gateway in the specified subnet. This action creates a
-        network interface in the specified subnet with a private IP address from
-        the IP address range of the subnet. You can create either a public NAT
-        gateway or a private NAT gateway.
-
-        With a public NAT gateway, internet-bound traffic from a private subnet
-        can be routed to the NAT gateway, so that instances in a private subnet
-        can connect to the internet.
-
-        With a private NAT gateway, private communication is routed across VPCs
-        and on-premises networks through a transit gateway or virtual private
-        gateway. Common use cases include running large workloads behind a small
-        pool of allowlisted IPv4 addresses, preserving private IPv4 addresses,
-        and communicating between overlapping networks.
-
-        For more information, see `NAT
-        gateways <https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param subnet_id: The subnet in which to create the NAT gateway.
-        :param allocation_id: [Public NAT gateways only] The allocation ID of an Elastic IP address to
-        associate with the NAT gateway.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: The tags to assign to the NAT gateway.
-        :param connectivity_type: Indicates whether the NAT gateway supports public or private
-        connectivity.
-        :returns: CreateNatGatewayResult
-        """
         raise NotImplementedError
 
     @handler("CreateNetworkAcl")
@@ -19540,20 +15997,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateNetworkAclResult:
-        """Creates a network ACL in a VPC. Network ACLs provide an optional layer
-        of security (in addition to security groups) for the instances in your
-        VPC.
-
-        For more information, see `Network
-        ACLs <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_ACLs.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param vpc_id: The ID of the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: The tags to assign to the network ACL.
-        :returns: CreateNetworkAclResult
-        """
         raise NotImplementedError
 
     @handler("CreateNetworkAclEntry")
@@ -19571,41 +16014,6 @@ class Ec2Api:
         ipv6_cidr_block: String = None,
         port_range: PortRange = None,
     ) -> None:
-        """Creates an entry (a rule) in a network ACL with the specified rule
-        number. Each network ACL has a set of numbered ingress rules and a
-        separate set of numbered egress rules. When determining whether a packet
-        should be allowed in or out of a subnet associated with the ACL, we
-        process the entries in the ACL according to the rule numbers, in
-        ascending order. Each network ACL has a set of ingress rules and a
-        separate set of egress rules.
-
-        We recommend that you leave room between the rule numbers (for example,
-        100, 110, 120, ...), and not number them one right after the other (for
-        example, 101, 102, 103, ...). This makes it easier to add a rule between
-        existing ones without having to renumber the rules.
-
-        After you add an entry, you can't modify it; you must either replace it,
-        or create an entry and delete the old one.
-
-        For more information about network ACLs, see `Network
-        ACLs <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_ACLs.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param egress: Indicates whether this is an egress rule (rule is applied to traffic
-        leaving the subnet).
-        :param network_acl_id: The ID of the network ACL.
-        :param protocol: The protocol number.
-        :param rule_action: Indicates whether to allow or deny the traffic that matches the rule.
-        :param rule_number: The rule number for the entry (for example, 100).
-        :param cidr_block: The IPv4 network range to allow or deny, in CIDR notation (for example
-        ``172.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param icmp_type_code: ICMP protocol: The ICMP or ICMPv6 type and code.
-        :param ipv6_cidr_block: The IPv6 network range to allow or deny, in CIDR notation (for example
-        ``2001:db8:1234:1a00::/64``).
-        :param port_range: TCP or UDP protocols: The range of ports the rule applies to.
-        """
         raise NotImplementedError
 
     @handler("CreateNetworkInsightsAccessScope")
@@ -19618,24 +16026,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateNetworkInsightsAccessScopeResult:
-        """Creates a Network Access Scope.
-
-        Amazon Web Services Network Access Analyzer enables cloud networking and
-        cloud operations teams to verify that their networks on Amazon Web
-        Services conform to their network security and governance objectives.
-        For more information, see the `Amazon Web Services Network Access
-        Analyzer
-        Guide <https://docs.aws.amazon.com/vpc/latest/network-access-analyzer/>`__.
-
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param match_paths: The paths to match.
-        :param exclude_paths: The paths to exclude.
-        :param tag_specifications: The tags to apply.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateNetworkInsightsAccessScopeResult
-        """
         raise NotImplementedError
 
     @handler("CreateNetworkInsightsPath")
@@ -19652,28 +16042,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateNetworkInsightsPathResult:
-        """Creates a path to analyze for reachability.
-
-        Reachability Analyzer enables you to analyze and debug network
-        reachability between two resources in your virtual private cloud (VPC).
-        For more information, see `What is Reachability
-        Analyzer <https://docs.aws.amazon.com/vpc/latest/reachability/>`__.
-
-        :param source: The Amazon Web Services resource that is the source of the path.
-        :param destination: The Amazon Web Services resource that is the destination of the path.
-        :param protocol: The protocol.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param source_ip: The IP address of the Amazon Web Services resource that is the source of
-        the path.
-        :param destination_ip: The IP address of the Amazon Web Services resource that is the
-        destination of the path.
-        :param destination_port: The destination port.
-        :param tag_specifications: The tags to add to the path.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateNetworkInsightsPathResult
-        """
         raise NotImplementedError
 
     @handler("CreateNetworkInterface")
@@ -19697,36 +16065,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         client_token: String = None,
     ) -> CreateNetworkInterfaceResult:
-        """Creates a network interface in the specified subnet.
-
-        For more information about network interfaces, see `Elastic Network
-        Interfaces <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param subnet_id: The ID of the subnet to associate with the network interface.
-        :param description: A description for the network interface.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param groups: The IDs of one or more security groups.
-        :param ipv6_address_count: The number of IPv6 addresses to assign to a network interface.
-        :param ipv6_addresses: One or more specific IPv6 addresses from the IPv6 CIDR block range of
-        your subnet.
-        :param private_ip_address: The primary private IPv4 address of the network interface.
-        :param private_ip_addresses: One or more private IPv4 addresses.
-        :param secondary_private_ip_address_count: The number of secondary private IPv4 addresses to assign to a network
-        interface.
-        :param ipv4_prefixes: One or more IPv4 prefixes assigned to the network interface.
-        :param ipv4_prefix_count: The number of IPv4 prefixes that Amazon Web Services automatically
-        assigns to the network interface.
-        :param ipv6_prefixes: One or more IPv6 prefixes assigned to the network interface.
-        :param ipv6_prefix_count: The number of IPv6 prefixes that Amazon Web Services automatically
-        assigns to the network interface.
-        :param interface_type: Indicates the type of network interface.
-        :param tag_specifications: The tags to apply to the new network interface.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: CreateNetworkInterfaceResult
-        """
         raise NotImplementedError
 
     @handler("CreateNetworkInterfacePermission")
@@ -19739,20 +16077,6 @@ class Ec2Api:
         aws_service: String = None,
         dry_run: Boolean = None,
     ) -> CreateNetworkInterfacePermissionResult:
-        """Grants an Amazon Web Services-authorized account permission to attach
-        the specified network interface to an instance in their account.
-
-        You can grant permission to a single Amazon Web Services account only,
-        and only one account at a time.
-
-        :param network_interface_id: The ID of the network interface.
-        :param permission: The type of permission to grant.
-        :param aws_account_id: The Amazon Web Services account ID.
-        :param aws_service: The Amazon Web Service.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateNetworkInterfacePermissionResult
-        """
         raise NotImplementedError
 
     @handler("CreatePlacementGroup")
@@ -19765,29 +16089,6 @@ class Ec2Api:
         partition_count: Integer = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreatePlacementGroupResult:
-        """Creates a placement group in which to launch instances. The strategy of
-        the placement group determines how the instances are organized within
-        the group.
-
-        A ``cluster`` placement group is a logical grouping of instances within
-        a single Availability Zone that benefit from low network latency, high
-        network throughput. A ``spread`` placement group places instances on
-        distinct hardware. A ``partition`` placement group places groups of
-        instances in different partitions, where instances in one partition do
-        not share the same hardware with instances in another partition.
-
-        For more information, see `Placement
-        groups <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param group_name: A name for the placement group.
-        :param strategy: The placement strategy.
-        :param partition_count: The number of partitions.
-        :param tag_specifications: The tags to apply to the new placement group.
-        :returns: CreatePlacementGroupResult
-        """
         raise NotImplementedError
 
     @handler("CreatePublicIpv4Pool")
@@ -19797,18 +16098,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreatePublicIpv4PoolResult:
-        """Creates a public IPv4 address pool. A public IPv4 pool is an EC2 IP
-        address pool required for the public IPv4 CIDRs that you own and bring
-        to Amazon Web Services to manage with IPAM. IPv6 addresses you bring to
-        Amazon Web Services, however, use IPAM pools only. To monitor the status
-        of pool creation, use
-        `DescribePublicIpv4Pools <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribePublicIpv4Pools.html>`__.
-
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param tag_specifications: The key/value combination of a tag assigned to the resource.
-        :returns: CreatePublicIpv4PoolResult
-        """
         raise NotImplementedError
 
     @handler("CreateReplaceRootVolumeTask")
@@ -19821,24 +16110,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateReplaceRootVolumeTaskResult:
-        """Creates a root volume replacement task for an Amazon EC2 instance. The
-        root volume can either be restored to its initial launch state, or it
-        can be restored using a specific snapshot.
-
-        For more information, see `Replace a root
-        volume <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-restoring-volume.html#replace-root>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param instance_id: The ID of the instance for which to replace the root volume.
-        :param snapshot_id: The ID of the snapshot from which to restore the replacement root
-        volume.
-        :param client_token: Unique, case-sensitive identifier you provide to ensure the idempotency
-        of the request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: The tags to apply to the root volume replacement task.
-        :returns: CreateReplaceRootVolumeTaskResult
-        """
         raise NotImplementedError
 
     @handler("CreateReservedInstancesListing")
@@ -19850,42 +16121,6 @@ class Ec2Api:
         price_schedules: PriceScheduleSpecificationList,
         reserved_instances_id: ReservationId,
     ) -> CreateReservedInstancesListingResult:
-        """Creates a listing for Amazon EC2 Standard Reserved Instances to be sold
-        in the Reserved Instance Marketplace. You can submit one Standard
-        Reserved Instance listing at a time. To get a list of your Standard
-        Reserved Instances, you can use the DescribeReservedInstances operation.
-
-        Only Standard Reserved Instances can be sold in the Reserved Instance
-        Marketplace. Convertible Reserved Instances cannot be sold.
-
-        The Reserved Instance Marketplace matches sellers who want to resell
-        Standard Reserved Instance capacity that they no longer need with buyers
-        who want to purchase additional capacity. Reserved Instances bought and
-        sold through the Reserved Instance Marketplace work like any other
-        Reserved Instances.
-
-        To sell your Standard Reserved Instances, you must first register as a
-        seller in the Reserved Instance Marketplace. After completing the
-        registration process, you can create a Reserved Instance Marketplace
-        listing of some or all of your Standard Reserved Instances, and specify
-        the upfront price to receive for them. Your Standard Reserved Instance
-        listings then become available for purchase. To view the details of your
-        Standard Reserved Instance listing, you can use the
-        DescribeReservedInstancesListings operation.
-
-        For more information, see `Reserved Instance
-        Marketplace <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ri-market-general.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param client_token: Unique, case-sensitive identifier you provide to ensure idempotency of
-        your listings.
-        :param instance_count: The number of instances that are a part of a Reserved Instance account
-        to be listed in the Reserved Instance Marketplace.
-        :param price_schedules: A list specifying the price of the Standard Reserved Instance for each
-        month remaining in the Reserved Instance term.
-        :param reserved_instances_id: The ID of the active Standard Reserved Instance.
-        :returns: CreateReservedInstancesListingResult
-        """
         raise NotImplementedError
 
     @handler("CreateRestoreImageTask")
@@ -19898,28 +16133,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateRestoreImageTaskResult:
-        """Starts a task that restores an AMI from an Amazon S3 object that was
-        previously created by using
-        `CreateStoreImageTask <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateStoreImageTask.html>`__.
-
-        To use this API, you must have the required permissions. For more
-        information, see `Permissions for storing and restoring AMIs using
-        Amazon
-        S3 <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ami-store-restore.html#ami-s3-permissions>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        For more information, see `Store and restore an AMI using Amazon
-        S3 <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ami-store-restore.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param bucket: The name of the Amazon S3 bucket that contains the stored AMI object.
-        :param object_key: The name of the stored AMI object in the bucket.
-        :param name: The name for the restored AMI.
-        :param tag_specifications: The tags to apply to the AMI and snapshots on restoration.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateRestoreImageTaskResult
-        """
         raise NotImplementedError
 
     @handler("CreateRoute")
@@ -19943,51 +16156,6 @@ class Ec2Api:
         vpc_peering_connection_id: VpcPeeringConnectionId = None,
         core_network_arn: CoreNetworkArn = None,
     ) -> CreateRouteResult:
-        """Creates a route in a route table within a VPC.
-
-        You must specify one of the following targets: internet gateway or
-        virtual private gateway, NAT instance, NAT gateway, VPC peering
-        connection, network interface, egress-only internet gateway, or transit
-        gateway.
-
-        When determining how to route traffic, we use the route with the most
-        specific match. For example, traffic is destined for the IPv4 address
-        ``192.0.2.3``, and the route table includes the following two IPv4
-        routes:
-
-        -  ``192.0.2.0/24`` (goes to some target A)
-
-        -  ``192.0.2.0/28`` (goes to some target B)
-
-        Both routes apply to the traffic destined for ``192.0.2.3``. However,
-        the second route in the list covers a smaller number of IP addresses and
-        is therefore more specific, so we use that route to determine where to
-        target the traffic.
-
-        For more information about route tables, see `Route
-        tables <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param route_table_id: The ID of the route table for the route.
-        :param destination_cidr_block: The IPv4 CIDR address block used for the destination match.
-        :param destination_ipv6_cidr_block: The IPv6 CIDR block used for the destination match.
-        :param destination_prefix_list_id: The ID of a prefix list used for the destination match.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param vpc_endpoint_id: The ID of a VPC endpoint.
-        :param egress_only_internet_gateway_id: [IPv6 traffic only] The ID of an egress-only internet gateway.
-        :param gateway_id: The ID of an internet gateway or virtual private gateway attached to
-        your VPC.
-        :param instance_id: The ID of a NAT instance in your VPC.
-        :param nat_gateway_id: [IPv4 traffic only] The ID of a NAT gateway.
-        :param transit_gateway_id: The ID of a transit gateway.
-        :param local_gateway_id: The ID of the local gateway.
-        :param carrier_gateway_id: The ID of the carrier gateway.
-        :param network_interface_id: The ID of a network interface.
-        :param vpc_peering_connection_id: The ID of a VPC peering connection.
-        :param core_network_arn: The Amazon Resource Name (ARN) of the core network.
-        :returns: CreateRouteResult
-        """
         raise NotImplementedError
 
     @handler("CreateRouteTable")
@@ -19998,19 +16166,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateRouteTableResult:
-        """Creates a route table for the specified VPC. After you create a route
-        table, you can add routes and associate the table with a subnet.
-
-        For more information, see `Route
-        tables <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param vpc_id: The ID of the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: The tags to assign to the route table.
-        :returns: CreateRouteTableResult
-        """
         raise NotImplementedError
 
     @handler("CreateSecurityGroup")
@@ -20023,45 +16178,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateSecurityGroupResult:
-        """Creates a security group.
-
-        A security group acts as a virtual firewall for your instance to control
-        inbound and outbound traffic. For more information, see `Amazon EC2
-        security
-        groups <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide* and `Security groups
-        for your
-        VPC <https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_SecurityGroups.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        When you create a security group, you specify a friendly name of your
-        choice. You can have a security group for use in EC2-Classic with the
-        same name as a security group for use in a VPC. However, you can't have
-        two security groups for use in EC2-Classic with the same name or two
-        security groups for use in a VPC with the same name.
-
-        You have a default security group for use in EC2-Classic and a default
-        security group for use in your VPC. If you don't specify a security
-        group when you launch an instance, the instance is launched into the
-        appropriate default security group. A default security group includes a
-        default rule that grants instances unrestricted network access to each
-        other.
-
-        You can add or remove rules from your security groups using
-        AuthorizeSecurityGroupIngress, AuthorizeSecurityGroupEgress,
-        RevokeSecurityGroupIngress, and RevokeSecurityGroupEgress.
-
-        For more information about VPC security group limits, see `Amazon VPC
-        Limits <https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html>`__.
-
-        :param description: A description for the security group.
-        :param group_name: The name of the security group.
-        :param vpc_id: [EC2-VPC] The ID of the VPC.
-        :param tag_specifications: The tags to assign to the security group.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateSecurityGroupResult
-        """
         raise NotImplementedError
 
     @handler("CreateSnapshot")
@@ -20074,59 +16190,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> Snapshot:
-        """Creates a snapshot of an EBS volume and stores it in Amazon S3. You can
-        use snapshots for backups, to make copies of EBS volumes, and to save
-        data before shutting down an instance.
-
-        You can create snapshots of volumes in a Region and volumes on an
-        Outpost. If you create a snapshot of a volume in a Region, the snapshot
-        must be stored in the same Region as the volume. If you create a
-        snapshot of a volume on an Outpost, the snapshot can be stored on the
-        same Outpost as the volume, or in the Region for that Outpost.
-
-        When a snapshot is created, any Amazon Web Services Marketplace product
-        codes that are associated with the source volume are propagated to the
-        snapshot.
-
-        You can take a snapshot of an attached volume that is in use. However,
-        snapshots only capture data that has been written to your Amazon EBS
-        volume at the time the snapshot command is issued; this might exclude
-        any data that has been cached by any applications or the operating
-        system. If you can pause any file systems on the volume long enough to
-        take a snapshot, your snapshot should be complete. However, if you
-        cannot pause all file writes to the volume, you should unmount the
-        volume from within the instance, issue the snapshot command, and then
-        remount the volume to ensure a consistent and complete snapshot. You may
-        remount and use your volume while the snapshot status is ``pending``.
-
-        To create a snapshot for Amazon EBS volumes that serve as root devices,
-        you should stop the instance before taking the snapshot.
-
-        Snapshots that are taken from encrypted volumes are automatically
-        encrypted. Volumes that are created from encrypted snapshots are also
-        automatically encrypted. Your encrypted volumes and any associated
-        snapshots always remain protected.
-
-        You can tag your snapshots during creation. For more information, see
-        `Tag your Amazon EC2
-        resources <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        For more information, see `Amazon Elastic Block
-        Store <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AmazonEBS.html>`__
-        and `Amazon EBS
-        encryption <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param volume_id: The ID of the Amazon EBS volume.
-        :param description: A description for the snapshot.
-        :param outpost_arn: The Amazon Resource Name (ARN) of the Outpost on which to create a local
-        snapshot.
-        :param tag_specifications: The tags to apply to the snapshot during creation.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: Snapshot
-        """
         raise NotImplementedError
 
     @handler("CreateSnapshots")
@@ -20140,30 +16203,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         copy_tags_from_source: CopyTagsFromSource = None,
     ) -> CreateSnapshotsResult:
-        """Creates crash-consistent snapshots of multiple EBS volumes and stores
-        the data in S3. Volumes are chosen by specifying an instance. Any
-        attached volumes will produce one snapshot each that is crash-consistent
-        across the instance. Boot volumes can be excluded by changing the
-        parameters.
-
-        You can create multi-volume snapshots of instances in a Region and
-        instances on an Outpost. If you create snapshots from an instance in a
-        Region, the snapshots must be stored in the same Region as the instance.
-        If you create snapshots from an instance on an Outpost, the snapshots
-        can be stored on the same Outpost as the instance, or in the Region for
-        that Outpost.
-
-        :param instance_specification: The instance to specify which volumes should be included in the
-        snapshots.
-        :param description: A description propagated to every snapshot specified by the instance.
-        :param outpost_arn: The Amazon Resource Name (ARN) of the Outpost on which to create the
-        local snapshots.
-        :param tag_specifications: Tags to apply to every snapshot specified by the instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param copy_tags_from_source: Copies the tags from the specified volume to corresponding snapshot.
-        :returns: CreateSnapshotsResult
-        """
         raise NotImplementedError
 
     @handler("CreateSpotDatafeedSubscription")
@@ -20174,19 +16213,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         prefix: String = None,
     ) -> CreateSpotDatafeedSubscriptionResult:
-        """Creates a data feed for Spot Instances, enabling you to view Spot
-        Instance usage logs. You can create one data feed per Amazon Web
-        Services account. For more information, see `Spot Instance data
-        feed <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-data-feeds.html>`__
-        in the *Amazon EC2 User Guide for Linux Instances*.
-
-        :param bucket: The name of the Amazon S3 bucket in which to store the Spot Instance
-        data feed.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param prefix: The prefix for the data feed file names.
-        :returns: CreateSpotDatafeedSubscriptionResult
-        """
         raise NotImplementedError
 
     @handler("CreateStoreImageTask")
@@ -20198,26 +16224,6 @@ class Ec2Api:
         s3_object_tags: S3ObjectTagList = None,
         dry_run: Boolean = None,
     ) -> CreateStoreImageTaskResult:
-        """Stores an AMI as a single object in an Amazon S3 bucket.
-
-        To use this API, you must have the required permissions. For more
-        information, see `Permissions for storing and restoring AMIs using
-        Amazon
-        S3 <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ami-store-restore.html#ami-s3-permissions>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        For more information, see `Store and restore an AMI using Amazon
-        S3 <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ami-store-restore.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param image_id: The ID of the AMI.
-        :param bucket: The name of the Amazon S3 bucket in which the AMI object will be stored.
-        :param s3_object_tags: The tags to apply to the AMI object that will be stored in the Amazon S3
-        bucket.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateStoreImageTaskResult
-        """
         raise NotImplementedError
 
     @handler("CreateSubnet")
@@ -20234,44 +16240,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         ipv6_native: Boolean = None,
     ) -> CreateSubnetResult:
-        """Creates a subnet in a specified VPC.
-
-        You must specify an IPv4 CIDR block for the subnet. After you create a
-        subnet, you can't change its CIDR block. The allowed block size is
-        between a /16 netmask (65,536 IP addresses) and /28 netmask (16 IP
-        addresses). The CIDR block must not overlap with the CIDR block of an
-        existing subnet in the VPC.
-
-        If you've associated an IPv6 CIDR block with your VPC, you can create a
-        subnet with an IPv6 CIDR block that uses a /64 prefix length.
-
-        Amazon Web Services reserves both the first four and the last IPv4
-        address in each subnet's CIDR block. They're not available for use.
-
-        If you add more than one subnet to a VPC, they're set up in a star
-        topology with a logical router in the middle.
-
-        When you stop an instance in a subnet, it retains its private IPv4
-        address. It's therefore possible to have a subnet with no running
-        instances (they're all stopped), but no remaining IP addresses
-        available.
-
-        For more information about subnets, see `Your VPC and
-        subnets <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Subnets.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param vpc_id: The ID of the VPC.
-        :param tag_specifications: The tags to assign to the subnet.
-        :param availability_zone: The Availability Zone or Local Zone for the subnet.
-        :param availability_zone_id: The AZ ID or the Local Zone ID of the subnet.
-        :param cidr_block: The IPv4 network range for the subnet, in CIDR notation.
-        :param ipv6_cidr_block: The IPv6 network range for the subnet, in CIDR notation.
-        :param outpost_arn: The Amazon Resource Name (ARN) of the Outpost.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param ipv6_native: Indicates whether to create an IPv6 only subnet.
-        :returns: CreateSubnetResult
-        """
         raise NotImplementedError
 
     @handler("CreateSubnetCidrReservation")
@@ -20285,20 +16253,6 @@ class Ec2Api:
         description: String = None,
         dry_run: Boolean = None,
     ) -> CreateSubnetCidrReservationResult:
-        """Creates a subnet CIDR reservation. For information about subnet CIDR
-        reservations, see `Subnet CIDR
-        reservations <https://docs.aws.amazon.com/vpc/latest/userguide/subnet-cidr-reservation.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param subnet_id: The ID of the subnet.
-        :param cidr: The IPv4 or IPV6 CIDR range to reserve.
-        :param reservation_type: The type of reservation.
-        :param tag_specifications: The tags to assign to the subnet CIDR reservation.
-        :param description: The description to assign to the subnet CIDR reservation.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateSubnetCidrReservationResult
-        """
         raise NotImplementedError
 
     @handler("CreateTags")
@@ -20309,26 +16263,6 @@ class Ec2Api:
         tags: TagList,
         dry_run: Boolean = None,
     ) -> None:
-        """Adds or overwrites only the specified tags for the specified Amazon EC2
-        resource or resources. When you specify an existing tag key, the value
-        is overwritten with the new value. Each resource can have a maximum of
-        50 tags. Each tag consists of a key and optional value. Tag keys must be
-        unique per resource.
-
-        For more information about tags, see `Tagging Your
-        Resources <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*. For more information
-        about creating IAM policies that control users' access to resources
-        based on tags, see `Supported Resource-Level Permissions for Amazon EC2
-        API
-        Actions <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-supported-iam-actions-resources.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param resources: The IDs of the resources, separated by spaces.
-        :param tags: The tags.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("CreateTrafficMirrorFilter")
@@ -20340,26 +16274,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         client_token: String = None,
     ) -> CreateTrafficMirrorFilterResult:
-        """Creates a Traffic Mirror filter.
-
-        A Traffic Mirror filter is a set of rules that defines the traffic to
-        mirror.
-
-        By default, no traffic is mirrored. To mirror traffic, use
-        `CreateTrafficMirrorFilterRule <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateTrafficMirrorFilterRule.htm>`__
-        to add Traffic Mirror rules to the filter. The rules you add define what
-        traffic gets mirrored. You can also use
-        `ModifyTrafficMirrorFilterNetworkServices <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_ModifyTrafficMirrorFilterNetworkServices.html>`__
-        to mirror supported network services.
-
-        :param description: The description of the Traffic Mirror filter.
-        :param tag_specifications: The tags to assign to a Traffic Mirror filter.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: CreateTrafficMirrorFilterResult
-        """
         raise NotImplementedError
 
     @handler("CreateTrafficMirrorFilterRule")
@@ -20379,29 +16293,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         client_token: String = None,
     ) -> CreateTrafficMirrorFilterRuleResult:
-        """Creates a Traffic Mirror filter rule.
-
-        A Traffic Mirror rule defines the Traffic Mirror source traffic to
-        mirror.
-
-        You need the Traffic Mirror filter ID when you create the rule.
-
-        :param traffic_mirror_filter_id: The ID of the filter that this rule is associated with.
-        :param traffic_direction: The type of traffic.
-        :param rule_number: The number of the Traffic Mirror rule.
-        :param rule_action: The action to take on the filtered traffic.
-        :param destination_cidr_block: The destination CIDR block to assign to the Traffic Mirror rule.
-        :param source_cidr_block: The source CIDR block to assign to the Traffic Mirror rule.
-        :param destination_port_range: The destination port range.
-        :param source_port_range: The source port range.
-        :param protocol: The protocol, for example UDP, to assign to the Traffic Mirror rule.
-        :param description: The description of the Traffic Mirror rule.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: CreateTrafficMirrorFilterRuleResult
-        """
         raise NotImplementedError
 
     @handler("CreateTrafficMirrorSession")
@@ -20419,36 +16310,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         client_token: String = None,
     ) -> CreateTrafficMirrorSessionResult:
-        """Creates a Traffic Mirror session.
-
-        A Traffic Mirror session actively copies packets from a Traffic Mirror
-        source to a Traffic Mirror target. Create a filter, and then assign it
-        to the session to define a subset of the traffic to mirror, for example
-        all TCP traffic.
-
-        The Traffic Mirror source and the Traffic Mirror target (monitoring
-        appliances) can be in the same VPC, or in a different VPC connected via
-        VPC peering or a transit gateway.
-
-        By default, no traffic is mirrored. Use
-        `CreateTrafficMirrorFilter <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateTrafficMirrorFilter.htm>`__
-        to create filter rules that specify the traffic to mirror.
-
-        :param network_interface_id: The ID of the source network interface.
-        :param traffic_mirror_target_id: The ID of the Traffic Mirror target.
-        :param traffic_mirror_filter_id: The ID of the Traffic Mirror filter.
-        :param session_number: The session number determines the order in which sessions are evaluated
-        when an interface is used by multiple sessions.
-        :param packet_length: The number of bytes in each packet to mirror.
-        :param virtual_network_id: The VXLAN ID for the Traffic Mirror session.
-        :param description: The description of the Traffic Mirror session.
-        :param tag_specifications: The tags to assign to a Traffic Mirror session.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: CreateTrafficMirrorSessionResult
-        """
         raise NotImplementedError
 
     @handler("CreateTrafficMirrorTarget")
@@ -20462,30 +16323,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         client_token: String = None,
     ) -> CreateTrafficMirrorTargetResult:
-        """Creates a target for your Traffic Mirror session.
-
-        A Traffic Mirror target is the destination for mirrored traffic. The
-        Traffic Mirror source and the Traffic Mirror target (monitoring
-        appliances) can be in the same VPC, or in different VPCs connected via
-        VPC peering or a transit gateway.
-
-        A Traffic Mirror target can be a network interface, or a Network Load
-        Balancer.
-
-        To use the target in a Traffic Mirror session, use
-        `CreateTrafficMirrorSession <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateTrafficMirrorSession.htm>`__.
-
-        :param network_interface_id: The network interface ID that is associated with the target.
-        :param network_load_balancer_arn: The Amazon Resource Name (ARN) of the Network Load Balancer that is
-        associated with the target.
-        :param description: The description of the Traffic Mirror target.
-        :param tag_specifications: The tags to assign to the Traffic Mirror target.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: CreateTrafficMirrorTargetResult
-        """
         raise NotImplementedError
 
     @handler("CreateTransitGateway")
@@ -20497,37 +16334,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayResult:
-        """Creates a transit gateway.
-
-        You can use a transit gateway to interconnect your virtual private
-        clouds (VPC) and on-premises networks. After the transit gateway enters
-        the ``available`` state, you can attach your VPCs and VPN connections to
-        the transit gateway.
-
-        To attach your VPCs, use CreateTransitGatewayVpcAttachment.
-
-        To attach a VPN connection, use CreateCustomerGateway to create a
-        customer gateway and specify the ID of the customer gateway and the ID
-        of the transit gateway in a call to CreateVpnConnection.
-
-        When you create a transit gateway, we create a default transit gateway
-        route table and use it as the default association route table and the
-        default propagation route table. You can use
-        CreateTransitGatewayRouteTable to create additional transit gateway
-        route tables. If you disable automatic route propagation, we do not
-        create a default transit gateway route table. You can use
-        EnableTransitGatewayRouteTablePropagation to propagate routes from a
-        resource attachment to a transit gateway route table. If you disable
-        automatic associations, you can use AssociateTransitGatewayRouteTable to
-        associate a resource attachment with a transit gateway route table.
-
-        :param description: A description of the transit gateway.
-        :param options: The transit gateway options.
-        :param tag_specifications: The tags to apply to the transit gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateTransitGatewayResult
-        """
         raise NotImplementedError
 
     @handler("CreateTransitGatewayConnect")
@@ -20539,21 +16345,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayConnectResult:
-        """Creates a Connect attachment from a specified transit gateway
-        attachment. A Connect attachment is a GRE-based tunnel attachment that
-        you can use to establish a connection between a transit gateway and an
-        appliance.
-
-        A Connect attachment uses an existing VPC or Amazon Web Services Direct
-        Connect attachment as the underlying transport mechanism.
-
-        :param transport_transit_gateway_attachment_id: The ID of the transit gateway attachment.
-        :param options: The Connect attachment options.
-        :param tag_specifications: The tags to apply to the Connect attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateTransitGatewayConnectResult
-        """
         raise NotImplementedError
 
     @handler("CreateTransitGatewayConnectPeer")
@@ -20568,29 +16359,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayConnectPeerResult:
-        """Creates a Connect peer for a specified transit gateway Connect
-        attachment between a transit gateway and an appliance.
-
-        The peer address and transit gateway address must be the same IP address
-        family (IPv4 or IPv6).
-
-        For more information, see `Connect
-        peers <https://docs.aws.amazon.com/vpc/latest/tgw/tgw-connect.html#tgw-connect-peer>`__
-        in the *Transit Gateways Guide*.
-
-        :param transit_gateway_attachment_id: The ID of the Connect attachment.
-        :param peer_address: The peer IP address (GRE outer IP address) on the appliance side of the
-        Connect peer.
-        :param inside_cidr_blocks: The range of inside IP addresses that are used for BGP peering.
-        :param transit_gateway_address: The peer IP address (GRE outer IP address) on the transit gateway side
-        of the Connect peer, which must be specified from a transit gateway CIDR
-        block.
-        :param bgp_options: The BGP options for the Connect peer.
-        :param tag_specifications: The tags to apply to the Connect peer.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateTransitGatewayConnectPeerResult
-        """
         raise NotImplementedError
 
     @handler("CreateTransitGatewayMulticastDomain")
@@ -20602,20 +16370,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayMulticastDomainResult:
-        """Creates a multicast domain using the specified transit gateway.
-
-        The transit gateway must be in the available state before you create a
-        domain. Use
-        `DescribeTransitGateways <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeTransitGateways.html>`__
-        to see the state of transit gateway.
-
-        :param transit_gateway_id: The ID of the transit gateway.
-        :param options: The options for the transit gateway multicast domain.
-        :param tag_specifications: The tags for the transit gateway multicast domain.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateTransitGatewayMulticastDomainResult
-        """
         raise NotImplementedError
 
     @handler("CreateTransitGatewayPeeringAttachment")
@@ -20629,25 +16383,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayPeeringAttachmentResult:
-        """Requests a transit gateway peering attachment between the specified
-        transit gateway (requester) and a peer transit gateway (accepter). The
-        transit gateways must be in different Regions. The peer transit gateway
-        can be in your account or a different Amazon Web Services account.
-
-        After you create the peering attachment, the owner of the accepter
-        transit gateway must accept the attachment request.
-
-        :param transit_gateway_id: The ID of the transit gateway.
-        :param peer_transit_gateway_id: The ID of the peer transit gateway with which to create the peering
-        attachment.
-        :param peer_account_id: The ID of the Amazon Web Services account that owns the peer transit
-        gateway.
-        :param peer_region: The Region where the peer transit gateway is located.
-        :param tag_specifications: The tags to apply to the transit gateway peering attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateTransitGatewayPeeringAttachmentResult
-        """
         raise NotImplementedError
 
     @handler("CreateTransitGatewayPrefixListReference")
@@ -20660,17 +16395,6 @@ class Ec2Api:
         blackhole: Boolean = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayPrefixListReferenceResult:
-        """Creates a reference (route) to a prefix list in a specified transit
-        gateway route table.
-
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param prefix_list_id: The ID of the prefix list that is used for destination matches.
-        :param transit_gateway_attachment_id: The ID of the attachment to which traffic is routed.
-        :param blackhole: Indicates whether to drop traffic that matches this route.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateTransitGatewayPrefixListReferenceResult
-        """
         raise NotImplementedError
 
     @handler("CreateTransitGatewayRoute")
@@ -20683,16 +16407,6 @@ class Ec2Api:
         blackhole: Boolean = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayRouteResult:
-        """Creates a static route for the specified transit gateway route table.
-
-        :param destination_cidr_block: The CIDR range used for destination matches.
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param blackhole: Indicates whether to drop traffic that matches this route.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateTransitGatewayRouteResult
-        """
         raise NotImplementedError
 
     @handler("CreateTransitGatewayRouteTable")
@@ -20703,14 +16417,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayRouteTableResult:
-        """Creates a route table for the specified transit gateway.
-
-        :param transit_gateway_id: The ID of the transit gateway.
-        :param tag_specifications: The tags to apply to the transit gateway route table.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateTransitGatewayRouteTableResult
-        """
         raise NotImplementedError
 
     @handler("CreateTransitGatewayVpcAttachment")
@@ -20724,24 +16430,6 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayVpcAttachmentResult:
-        """Attaches the specified VPC to the specified transit gateway.
-
-        If you attach a VPC with a CIDR range that overlaps the CIDR range of a
-        VPC that is already attached, the new VPC CIDR range is not propagated
-        to the default propagation route table.
-
-        To send VPC traffic to an attached transit gateway, add a route to the
-        VPC route table using CreateRoute.
-
-        :param transit_gateway_id: The ID of the transit gateway.
-        :param vpc_id: The ID of the VPC.
-        :param subnet_ids: The IDs of one or more subnets.
-        :param options: The VPC attachment options.
-        :param tag_specifications: The tags to apply to the VPC attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateTransitGatewayVpcAttachmentResult
-        """
         raise NotImplementedError
 
     @handler("CreateVolume")
@@ -20762,47 +16450,6 @@ class Ec2Api:
         throughput: Integer = None,
         client_token: String = None,
     ) -> Volume:
-        """Creates an EBS volume that can be attached to an instance in the same
-        Availability Zone.
-
-        You can create a new empty volume or restore a volume from an EBS
-        snapshot. Any Amazon Web Services Marketplace product codes from the
-        snapshot are propagated to the volume.
-
-        You can create encrypted volumes. Encrypted volumes must be attached to
-        instances that support Amazon EBS encryption. Volumes that are created
-        from encrypted snapshots are also automatically encrypted. For more
-        information, see `Amazon EBS
-        encryption <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        You can tag your volumes during creation. For more information, see `Tag
-        your Amazon EC2
-        resources <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        For more information, see `Create an Amazon EBS
-        volume <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-creating-volume.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param availability_zone: The Availability Zone in which to create the volume.
-        :param encrypted: Indicates whether the volume should be encrypted.
-        :param iops: The number of I/O operations per second (IOPS).
-        :param kms_key_id: The identifier of the Key Management Service (KMS) KMS key to use for
-        Amazon EBS encryption.
-        :param outpost_arn: The Amazon Resource Name (ARN) of the Outpost.
-        :param size: The size of the volume, in GiBs.
-        :param snapshot_id: The snapshot from which to create the volume.
-        :param volume_type: The volume type.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: The tags to apply to the volume during creation.
-        :param multi_attach_enabled: Indicates whether to enable Amazon EBS Multi-Attach.
-        :param throughput: The throughput to provision for a volume, with a maximum of 1,000 MiB/s.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: Volume
-        """
         raise NotImplementedError
 
     @handler("CreateVpc")
@@ -20822,52 +16469,6 @@ class Ec2Api:
         ipv6_cidr_block_network_border_group: String = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateVpcResult:
-        """Creates a VPC with the specified IPv4 CIDR block. The smallest VPC you
-        can create uses a /28 netmask (16 IPv4 addresses), and the largest uses
-        a /16 netmask (65,536 IPv4 addresses). For more information about how
-        large to make your VPC, see `Your VPC and
-        subnets <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Subnets.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        You can optionally request an IPv6 CIDR block for the VPC. You can
-        request an Amazon-provided IPv6 CIDR block from Amazon's pool of IPv6
-        addresses, or an IPv6 CIDR block from an IPv6 address pool that you
-        provisioned through bring your own IP addresses
-        (`BYOIP <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-byoip.html>`__).
-
-        By default, each instance you launch in the VPC has the default DHCP
-        options, which include only a default DNS server that we provide
-        (AmazonProvidedDNS). For more information, see `DHCP options
-        sets <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_DHCP_Options.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        You can specify the instance tenancy value for the VPC when you create
-        it. You can't change this value for the VPC after you create it. For
-        more information, see `Dedicated
-        Instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dedicated-instance.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param cidr_block: The IPv4 network range for the VPC, in CIDR notation.
-        :param amazon_provided_ipv6_cidr_block: Requests an Amazon-provided IPv6 CIDR block with a /56 prefix length for
-        the VPC.
-        :param ipv6_pool: The ID of an IPv6 address pool from which to allocate the IPv6 CIDR
-        block.
-        :param ipv6_cidr_block: The IPv6 CIDR block from the IPv6 address pool.
-        :param ipv4_ipam_pool_id: The ID of an IPv4 IPAM pool you want to use for allocating this VPC's
-        CIDR.
-        :param ipv4_netmask_length: The netmask length of the IPv4 CIDR you want to allocate to this VPC
-        from an Amazon VPC IP Address Manager (IPAM) pool.
-        :param ipv6_ipam_pool_id: The ID of an IPv6 IPAM pool which will be used to allocate this VPC an
-        IPv6 CIDR.
-        :param ipv6_netmask_length: The netmask length of the IPv6 CIDR you want to allocate to this VPC
-        from an Amazon VPC IP Address Manager (IPAM) pool.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param instance_tenancy: The tenancy options for instances launched into the VPC.
-        :param ipv6_cidr_block_network_border_group: The name of the location from which we advertise the IPV6 CIDR block.
-        :param tag_specifications: The tags to assign to the VPC.
-        :returns: CreateVpcResult
-        """
         raise NotImplementedError
 
     @handler("CreateVpcEndpoint")
@@ -20886,50 +16487,6 @@ class Ec2Api:
         private_dns_enabled: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateVpcEndpointResult:
-        """Creates a VPC endpoint for a specified service. An endpoint enables you
-        to create a private connection between your VPC and the service. The
-        service may be provided by Amazon Web Services, an Amazon Web Services
-        Marketplace Partner, or another Amazon Web Services account. For more
-        information, see `VPC
-        Endpoints <https://docs.aws.amazon.com/vpc/latest/userguide/vpc-endpoints.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        A ``gateway`` endpoint serves as a target for a route in your route
-        table for traffic destined for the Amazon Web Service. You can specify
-        an endpoint policy to attach to the endpoint, which will control access
-        to the service from your VPC. You can also specify the VPC route tables
-        that use the endpoint.
-
-        An ``interface`` endpoint is a network interface in your subnet that
-        serves as an endpoint for communicating with the specified service. You
-        can specify the subnets in which to create an endpoint, and the security
-        groups to associate with the endpoint network interface.
-
-        A ``GatewayLoadBalancer`` endpoint is a network interface in your subnet
-        that serves an endpoint for communicating with a Gateway Load Balancer
-        that you've configured as a VPC endpoint service.
-
-        Use DescribeVpcEndpointServices to get a list of supported services.
-
-        :param vpc_id: The ID of the VPC in which the endpoint will be used.
-        :param service_name: The service name.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param vpc_endpoint_type: The type of endpoint.
-        :param policy_document: (Interface and gateway endpoints) A policy to attach to the endpoint
-        that controls access to the service.
-        :param route_table_ids: (Gateway endpoint) One or more route table IDs.
-        :param subnet_ids: (Interface and Gateway Load Balancer endpoints) The ID of one or more
-        subnets in which to create an endpoint network interface.
-        :param security_group_ids: (Interface endpoint) The ID of one or more security groups to associate
-        with the endpoint network interface.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param private_dns_enabled: (Interface endpoint) Indicates whether to associate a private hosted
-        zone with the specified VPC.
-        :param tag_specifications: The tags to associate with the endpoint.
-        :returns: CreateVpcEndpointResult
-        """
         raise NotImplementedError
 
     @handler("CreateVpcEndpointConnectionNotification")
@@ -20943,25 +16500,6 @@ class Ec2Api:
         vpc_endpoint_id: VpcEndpointId = None,
         client_token: String = None,
     ) -> CreateVpcEndpointConnectionNotificationResult:
-        """Creates a connection notification for a specified VPC endpoint or VPC
-        endpoint service. A connection notification notifies you of specific
-        endpoint events. You must create an SNS topic to receive notifications.
-        For more information, see `Create a
-        Topic <https://docs.aws.amazon.com/sns/latest/dg/CreateTopic.html>`__ in
-        the *Amazon Simple Notification Service Developer Guide*.
-
-        You can create a connection notification for interface endpoints only.
-
-        :param connection_notification_arn: The ARN of the SNS topic for the notifications.
-        :param connection_events: One or more endpoint events for which to receive notifications.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param service_id: The ID of the endpoint service.
-        :param vpc_endpoint_id: The ID of the endpoint.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :returns: CreateVpcEndpointConnectionNotificationResult
-        """
         raise NotImplementedError
 
     @handler("CreateVpcEndpointServiceConfiguration")
@@ -20976,46 +16514,6 @@ class Ec2Api:
         client_token: String = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateVpcEndpointServiceConfigurationResult:
-        """Creates a VPC endpoint service configuration to which service consumers
-        (Amazon Web Services accounts, IAM users, and IAM roles) can connect.
-
-        To create an endpoint service configuration, you must first create one
-        of the following for your service:
-
-        -  A `Network Load
-           Balancer <https://docs.aws.amazon.com/elasticloadbalancing/latest/network/introduction.html>`__.
-           Service consumers connect to your service using an interface
-           endpoint.
-
-        -  A `Gateway Load
-           Balancer <https://docs.aws.amazon.com/elasticloadbalancing/latest/gateway/introduction.html>`__.
-           Service consumers connect to your service using a Gateway Load
-           Balancer endpoint.
-
-        For more information, see `VPC Endpoint
-        Services <https://docs.aws.amazon.com/vpc/latest/userguide/endpoint-service.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        If you set the private DNS name, you must prove that you own the private
-        DNS domain name. For more information, see `VPC Endpoint Service Private
-        DNS Name
-        Verification <https://docs.aws.amazon.com/vpc/latest/userguide/endpoint-services-dns-validation.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param acceptance_required: Indicates whether requests from service consumers to create an endpoint
-        to your service must be accepted.
-        :param private_dns_name: (Interface endpoint configuration) The private DNS name to assign to the
-        VPC endpoint service.
-        :param network_load_balancer_arns: The Amazon Resource Names (ARNs) of one or more Network Load Balancers
-        for your service.
-        :param gateway_load_balancer_arns: The Amazon Resource Names (ARNs) of one or more Gateway Load Balancers.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param tag_specifications: The tags to associate with the service.
-        :returns: CreateVpcEndpointServiceConfigurationResult
-        """
         raise NotImplementedError
 
     @handler("CreateVpcPeeringConnection")
@@ -21029,74 +16527,12 @@ class Ec2Api:
         peer_region: String = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateVpcPeeringConnectionResult:
-        """Requests a VPC peering connection between two VPCs: a requester VPC that
-        you own and an accepter VPC with which to create the connection. The
-        accepter VPC can belong to another Amazon Web Services account and can
-        be in a different Region to the requester VPC. The requester VPC and
-        accepter VPC cannot have overlapping CIDR blocks.
-
-        Limitations and rules apply to a VPC peering connection. For more
-        information, see the
-        `limitations <https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-basics.html#vpc-peering-limitations>`__
-        section in the *VPC Peering Guide*.
-
-        The owner of the accepter VPC must accept the peering request to
-        activate the peering connection. The VPC peering connection request
-        expires after 7 days, after which it cannot be accepted or rejected.
-
-        If you create a VPC peering connection request between VPCs with
-        overlapping CIDR blocks, the VPC peering connection has a status of
-        ``failed``.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param peer_owner_id: The Amazon Web Services account ID of the owner of the accepter VPC.
-        :param peer_vpc_id: The ID of the VPC with which you are creating the VPC peering
-        connection.
-        :param vpc_id: The ID of the requester VPC.
-        :param peer_region: The Region code for the accepter VPC, if the accepter VPC is located in
-        a Region other than the Region in which you make the request.
-        :param tag_specifications: The tags to assign to the peering connection.
-        :returns: CreateVpcPeeringConnectionResult
-        """
         raise NotImplementedError
 
     @handler("CreateVpnConnection", expand=False)
     def create_vpn_connection(
         self, context: RequestContext, request: CreateVpnConnectionRequest
     ) -> CreateVpnConnectionResult:
-        """Creates a VPN connection between an existing virtual private gateway or
-        transit gateway and a customer gateway. The supported connection type is
-        ``ipsec.1``.
-
-        The response includes information that you need to give to your network
-        administrator to configure your customer gateway.
-
-        We strongly recommend that you use HTTPS when calling this operation
-        because the response contains sensitive cryptographic information for
-        configuring your customer gateway device.
-
-        If you decide to shut down your VPN connection for any reason and later
-        create a new VPN connection, you must reconfigure your customer gateway
-        with the new information returned from this call.
-
-        This is an idempotent operation. If you perform the operation more than
-        once, Amazon EC2 doesn't return an error.
-
-        For more information, see `Amazon Web Services Site-to-Site
-        VPN <https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html>`__ in
-        the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        :param customer_gateway_id: The ID of the customer gateway.
-        :param type: The type of VPN connection (``ipsec.
-        :param vpn_gateway_id: The ID of the virtual private gateway.
-        :param transit_gateway_id: The ID of the transit gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param options: The options for the VPN connection.
-        :param tag_specifications: The tags to apply to the VPN connection.
-        :returns: CreateVpnConnectionResult
-        """
         raise NotImplementedError
 
     @handler("CreateVpnConnectionRoute")
@@ -21106,59 +16542,18 @@ class Ec2Api:
         destination_cidr_block: String,
         vpn_connection_id: VpnConnectionId,
     ) -> None:
-        """Creates a static route associated with a VPN connection between an
-        existing virtual private gateway and a VPN customer gateway. The static
-        route allows traffic to be routed from the virtual private gateway to
-        the VPN customer gateway.
-
-        For more information, see `Amazon Web Services Site-to-Site
-        VPN <https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html>`__ in
-        the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        :param destination_cidr_block: The CIDR block associated with the local subnet of the customer network.
-        :param vpn_connection_id: The ID of the VPN connection.
-        """
         raise NotImplementedError
 
     @handler("CreateVpnGateway", expand=False)
     def create_vpn_gateway(
         self, context: RequestContext, request: CreateVpnGatewayRequest
     ) -> CreateVpnGatewayResult:
-        """Creates a virtual private gateway. A virtual private gateway is the
-        endpoint on the VPC side of your VPN connection. You can create a
-        virtual private gateway before creating the VPC itself.
-
-        For more information, see `Amazon Web Services Site-to-Site
-        VPN <https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html>`__ in
-        the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        :param type: The type of VPN connection this virtual private gateway supports.
-        :param availability_zone: The Availability Zone for the virtual private gateway.
-        :param tag_specifications: The tags to apply to the virtual private gateway.
-        :param amazon_side_asn: A private Autonomous System Number (ASN) for the Amazon side of a BGP
-        session.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: CreateVpnGatewayResult
-        """
         raise NotImplementedError
 
     @handler("DeleteCarrierGateway")
     def delete_carrier_gateway(
         self, context: RequestContext, carrier_gateway_id: CarrierGatewayId, dry_run: Boolean = None
     ) -> DeleteCarrierGatewayResult:
-        """Deletes a carrier gateway.
-
-        If you do not delete the route that contains the carrier gateway as the
-        Target, the route is a blackhole route. For information about how to
-        delete a route, see
-        `DeleteRoute <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DeleteRoute.html>`__.
-
-        :param carrier_gateway_id: The ID of the carrier gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteCarrierGatewayResult
-        """
         raise NotImplementedError
 
     @handler("DeleteClientVpnEndpoint")
@@ -21168,14 +16563,6 @@ class Ec2Api:
         client_vpn_endpoint_id: ClientVpnEndpointId,
         dry_run: Boolean = None,
     ) -> DeleteClientVpnEndpointResult:
-        """Deletes the specified Client VPN endpoint. You must disassociate all
-        target networks before you can delete a Client VPN endpoint.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN to be deleted.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteClientVpnEndpointResult
-        """
         raise NotImplementedError
 
     @handler("DeleteClientVpnRoute")
@@ -21187,19 +16574,6 @@ class Ec2Api:
         target_vpc_subnet_id: SubnetId = None,
         dry_run: Boolean = None,
     ) -> DeleteClientVpnRouteResult:
-        """Deletes a route from a Client VPN endpoint. You can only delete routes
-        that you manually added using the **CreateClientVpnRoute** action. You
-        cannot delete routes that were automatically added when associating a
-        subnet. To remove routes that have been automatically added,
-        disassociate the target subnet from the Client VPN endpoint.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint from which the route is to be deleted.
-        :param destination_cidr_block: The IPv4 address range, in CIDR notation, of the route to be deleted.
-        :param target_vpc_subnet_id: The ID of the target subnet used by the route.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteClientVpnRouteResult
-        """
         raise NotImplementedError
 
     @handler("DeleteCustomerGateway")
@@ -21209,28 +16583,12 @@ class Ec2Api:
         customer_gateway_id: CustomerGatewayId,
         dry_run: Boolean = None,
     ) -> None:
-        """Deletes the specified customer gateway. You must delete the VPN
-        connection before you can delete the customer gateway.
-
-        :param customer_gateway_id: The ID of the customer gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteDhcpOptions")
     def delete_dhcp_options(
         self, context: RequestContext, dhcp_options_id: DhcpOptionsId, dry_run: Boolean = None
     ) -> None:
-        """Deletes the specified set of DHCP options. You must disassociate the set
-        of DHCP options before you can delete it. You can disassociate the set
-        of DHCP options by associating either a new set of options or the
-        default set of options with the VPC.
-
-        :param dhcp_options_id: The ID of the DHCP options set.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteEgressOnlyInternetGateway")
@@ -21240,13 +16598,6 @@ class Ec2Api:
         egress_only_internet_gateway_id: EgressOnlyInternetGatewayId,
         dry_run: Boolean = None,
     ) -> DeleteEgressOnlyInternetGatewayResult:
-        """Deletes an egress-only internet gateway.
-
-        :param egress_only_internet_gateway_id: The ID of the egress-only internet gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteEgressOnlyInternetGatewayResult
-        """
         raise NotImplementedError
 
     @handler("DeleteFleets")
@@ -21257,68 +16608,18 @@ class Ec2Api:
         terminate_instances: Boolean,
         dry_run: Boolean = None,
     ) -> DeleteFleetsResult:
-        """Deletes the specified EC2 Fleet.
-
-        After you delete an EC2 Fleet, it launches no new instances.
-
-        You must specify whether a deleted EC2 Fleet should also terminate its
-        instances. If you choose to terminate the instances, the EC2 Fleet
-        enters the ``deleted_terminating`` state. Otherwise, the EC2 Fleet
-        enters the ``deleted_running`` state, and the instances continue to run
-        until they are interrupted or you terminate them manually.
-
-        For ``instant`` fleets, EC2 Fleet must terminate the instances when the
-        fleet is deleted. A deleted ``instant`` fleet with running instances is
-        not supported.
-
-        **Restrictions**
-
-        -  You can delete up to 25 ``instant`` fleets in a single request. If
-           you exceed this number, no ``instant`` fleets are deleted and an
-           error is returned. There is no restriction on the number of fleets of
-           type ``maintain`` or ``request`` that can be deleted in a single
-           request.
-
-        -  Up to 1000 instances can be terminated in a single request to delete
-           ``instant`` fleets.
-
-        For more information, see `Deleting an EC2
-        Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/manage-ec2-fleet.html#delete-fleet>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param fleet_ids: The IDs of the EC2 Fleets.
-        :param terminate_instances: Indicates whether to terminate the instances when the EC2 Fleet is
-        deleted.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteFleetsResult
-        """
         raise NotImplementedError
 
     @handler("DeleteFlowLogs")
     def delete_flow_logs(
         self, context: RequestContext, flow_log_ids: FlowLogIdList, dry_run: Boolean = None
     ) -> DeleteFlowLogsResult:
-        """Deletes one or more flow logs.
-
-        :param flow_log_ids: One or more flow log IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteFlowLogsResult
-        """
         raise NotImplementedError
 
     @handler("DeleteFpgaImage")
     def delete_fpga_image(
         self, context: RequestContext, fpga_image_id: FpgaImageId, dry_run: Boolean = None
     ) -> DeleteFpgaImageResult:
-        """Deletes the specified Amazon FPGA Image (AFI).
-
-        :param fpga_image_id: The ID of the AFI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteFpgaImageResult
-        """
         raise NotImplementedError
 
     @handler("DeleteInstanceEventWindow")
@@ -21329,18 +16630,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         force_delete: Boolean = None,
     ) -> DeleteInstanceEventWindowResult:
-        """Deletes the specified event window.
-
-        For more information, see `Define event windows for scheduled
-        events <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/event-windows.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_event_window_id: The ID of the event window.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param force_delete: Specify ``true`` to force delete the event window.
-        :returns: DeleteInstanceEventWindowResult
-        """
         raise NotImplementedError
 
     @handler("DeleteInternetGateway")
@@ -21350,78 +16639,28 @@ class Ec2Api:
         internet_gateway_id: InternetGatewayId,
         dry_run: Boolean = None,
     ) -> None:
-        """Deletes the specified internet gateway. You must detach the internet
-        gateway from the VPC before you can delete it.
-
-        :param internet_gateway_id: The ID of the internet gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteIpam")
     def delete_ipam(
-        self, context: RequestContext, ipam_id: IpamId, dry_run: Boolean = None
+        self,
+        context: RequestContext,
+        ipam_id: IpamId,
+        dry_run: Boolean = None,
+        cascade: Boolean = None,
     ) -> DeleteIpamResult:
-        """Delete an IPAM. Deleting an IPAM removes all monitored data associated
-        with the IPAM including the historical data for CIDRs.
-
-        You cannot delete an IPAM if there are CIDRs provisioned to pools or if
-        there are allocations in the pools within the IPAM. To deprovision pool
-        CIDRs, see
-        `DeprovisionIpamPoolCidr <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DeprovisionIpamPoolCidr.html>`__.
-        To release allocations, see
-        `ReleaseIpamPoolAllocation <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_ReleaseIpamPoolAllocation.html>`__.
-
-        For more information, see `Delete an
-        IPAM </vpc/latest/ipam/delete-ipam.html>`__ in the *Amazon VPC IPAM User
-        Guide*.
-
-        :param ipam_id: The ID of the IPAM to delete.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :returns: DeleteIpamResult
-        """
         raise NotImplementedError
 
     @handler("DeleteIpamPool")
     def delete_ipam_pool(
         self, context: RequestContext, ipam_pool_id: IpamPoolId, dry_run: Boolean = None
     ) -> DeleteIpamPoolResult:
-        """Delete an IPAM pool.
-
-        You cannot delete an IPAM pool if there are allocations in it or CIDRs
-        provisioned to it. To release allocations, see
-        `ReleaseIpamPoolAllocation <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_ReleaseIpamPoolAllocation.html>`__.
-        To deprovision pool CIDRs, see
-        `DeprovisionIpamPoolCidr <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DeprovisionIpamPoolCidr.html>`__.
-
-        For more information, see `Delete a
-        pool </vpc/latest/ipam/delete-pool-ipam.html>`__ in the *Amazon VPC IPAM
-        User Guide*.
-
-        :param ipam_pool_id: The ID of the pool to delete.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :returns: DeleteIpamPoolResult
-        """
         raise NotImplementedError
 
     @handler("DeleteIpamScope")
     def delete_ipam_scope(
         self, context: RequestContext, ipam_scope_id: IpamScopeId, dry_run: Boolean = None
     ) -> DeleteIpamScopeResult:
-        """Delete the scope for an IPAM. You cannot delete the default scopes.
-
-        For more information, see `Delete a
-        scope </vpc/latest/ipam/delete-scope-ipam.html>`__ in the *Amazon VPC
-        IPAM User Guide*.
-
-        :param ipam_scope_id: The ID of the scope to delete.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :returns: DeleteIpamScopeResult
-        """
         raise NotImplementedError
 
     @handler("DeleteKeyPair")
@@ -21432,14 +16671,6 @@ class Ec2Api:
         key_pair_id: KeyPairId = None,
         dry_run: Boolean = None,
     ) -> None:
-        """Deletes the specified key pair, by removing the public key from Amazon
-        EC2.
-
-        :param key_name: The name of the key pair.
-        :param key_pair_id: The ID of the key pair.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteLaunchTemplate")
@@ -21450,15 +16681,6 @@ class Ec2Api:
         launch_template_id: LaunchTemplateId = None,
         launch_template_name: LaunchTemplateName = None,
     ) -> DeleteLaunchTemplateResult:
-        """Deletes a launch template. Deleting a launch template deletes all of its
-        versions.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param launch_template_id: The ID of the launch template.
-        :param launch_template_name: The name of the launch template.
-        :returns: DeleteLaunchTemplateResult
-        """
         raise NotImplementedError
 
     @handler("DeleteLaunchTemplateVersions")
@@ -21470,19 +16692,6 @@ class Ec2Api:
         launch_template_id: LaunchTemplateId = None,
         launch_template_name: LaunchTemplateName = None,
     ) -> DeleteLaunchTemplateVersionsResult:
-        """Deletes one or more versions of a launch template. You cannot delete the
-        default version of a launch template; you must first assign a different
-        version as the default. If the default version is the only version for
-        the launch template, you must delete the entire launch template using
-        DeleteLaunchTemplate.
-
-        :param versions: The version numbers of one or more launch template versions to delete.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param launch_template_id: The ID of the launch template.
-        :param launch_template_name: The name of the launch template.
-        :returns: DeleteLaunchTemplateVersionsResult
-        """
         raise NotImplementedError
 
     @handler("DeleteLocalGatewayRoute")
@@ -21493,15 +16702,6 @@ class Ec2Api:
         local_gateway_route_table_id: LocalGatewayRoutetableId,
         dry_run: Boolean = None,
     ) -> DeleteLocalGatewayRouteResult:
-        """Deletes the specified route from the specified local gateway route
-        table.
-
-        :param destination_cidr_block: The CIDR range for the route.
-        :param local_gateway_route_table_id: The ID of the local gateway route table.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteLocalGatewayRouteResult
-        """
         raise NotImplementedError
 
     @handler("DeleteLocalGatewayRouteTableVpcAssociation")
@@ -21511,57 +16711,24 @@ class Ec2Api:
         local_gateway_route_table_vpc_association_id: LocalGatewayRouteTableVpcAssociationId,
         dry_run: Boolean = None,
     ) -> DeleteLocalGatewayRouteTableVpcAssociationResult:
-        """Deletes the specified association between a VPC and local gateway route
-        table.
-
-        :param local_gateway_route_table_vpc_association_id: The ID of the association.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteLocalGatewayRouteTableVpcAssociationResult
-        """
         raise NotImplementedError
 
     @handler("DeleteManagedPrefixList")
     def delete_managed_prefix_list(
         self, context: RequestContext, prefix_list_id: PrefixListResourceId, dry_run: Boolean = None
     ) -> DeleteManagedPrefixListResult:
-        """Deletes the specified managed prefix list. You must first remove all
-        references to the prefix list in your resources.
-
-        :param prefix_list_id: The ID of the prefix list.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteManagedPrefixListResult
-        """
         raise NotImplementedError
 
     @handler("DeleteNatGateway")
     def delete_nat_gateway(
         self, context: RequestContext, nat_gateway_id: NatGatewayId, dry_run: Boolean = None
     ) -> DeleteNatGatewayResult:
-        """Deletes the specified NAT gateway. Deleting a public NAT gateway
-        disassociates its Elastic IP address, but does not release the address
-        from your account. Deleting a NAT gateway does not delete any NAT
-        gateway routes in your route tables.
-
-        :param nat_gateway_id: The ID of the NAT gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteNatGatewayResult
-        """
         raise NotImplementedError
 
     @handler("DeleteNetworkAcl")
     def delete_network_acl(
         self, context: RequestContext, network_acl_id: NetworkAclId, dry_run: Boolean = None
     ) -> None:
-        """Deletes the specified network ACL. You can't delete the ACL if it's
-        associated with any subnets. You can't delete the default network ACL.
-
-        :param network_acl_id: The ID of the network ACL.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteNetworkAclEntry")
@@ -21573,15 +16740,6 @@ class Ec2Api:
         rule_number: Integer,
         dry_run: Boolean = None,
     ) -> None:
-        """Deletes the specified ingress or egress entry (rule) from the specified
-        network ACL.
-
-        :param egress: Indicates whether the rule is an egress rule.
-        :param network_acl_id: The ID of the network ACL.
-        :param rule_number: The rule number of the entry to delete.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteNetworkInsightsAccessScope")
@@ -21591,13 +16749,6 @@ class Ec2Api:
         network_insights_access_scope_id: NetworkInsightsAccessScopeId,
         dry_run: Boolean = None,
     ) -> DeleteNetworkInsightsAccessScopeResult:
-        """Deletes the specified Network Access Scope.
-
-        :param network_insights_access_scope_id: The ID of the Network Access Scope.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteNetworkInsightsAccessScopeResult
-        """
         raise NotImplementedError
 
     @handler("DeleteNetworkInsightsAccessScopeAnalysis")
@@ -21607,13 +16758,6 @@ class Ec2Api:
         network_insights_access_scope_analysis_id: NetworkInsightsAccessScopeAnalysisId,
         dry_run: Boolean = None,
     ) -> DeleteNetworkInsightsAccessScopeAnalysisResult:
-        """Deletes the specified Network Access Scope analysis.
-
-        :param network_insights_access_scope_analysis_id: The ID of the Network Access Scope analysis.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteNetworkInsightsAccessScopeAnalysisResult
-        """
         raise NotImplementedError
 
     @handler("DeleteNetworkInsightsAnalysis")
@@ -21623,13 +16767,6 @@ class Ec2Api:
         network_insights_analysis_id: NetworkInsightsAnalysisId,
         dry_run: Boolean = None,
     ) -> DeleteNetworkInsightsAnalysisResult:
-        """Deletes the specified network insights analysis.
-
-        :param network_insights_analysis_id: The ID of the network insights analysis.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteNetworkInsightsAnalysisResult
-        """
         raise NotImplementedError
 
     @handler("DeleteNetworkInsightsPath")
@@ -21639,13 +16776,6 @@ class Ec2Api:
         network_insights_path_id: NetworkInsightsPathId,
         dry_run: Boolean = None,
     ) -> DeleteNetworkInsightsPathResult:
-        """Deletes the specified path.
-
-        :param network_insights_path_id: The ID of the path.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteNetworkInsightsPathResult
-        """
         raise NotImplementedError
 
     @handler("DeleteNetworkInterface")
@@ -21655,13 +16785,6 @@ class Ec2Api:
         network_interface_id: NetworkInterfaceId,
         dry_run: Boolean = None,
     ) -> None:
-        """Deletes the specified network interface. You must detach the network
-        interface before you can delete it.
-
-        :param network_interface_id: The ID of the network interface.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteNetworkInterfacePermission")
@@ -21672,50 +16795,18 @@ class Ec2Api:
         force: Boolean = None,
         dry_run: Boolean = None,
     ) -> DeleteNetworkInterfacePermissionResult:
-        """Deletes a permission for a network interface. By default, you cannot
-        delete the permission if the account for which you're removing the
-        permission has attached the network interface to an instance. However,
-        you can force delete the permission, regardless of any attachment.
-
-        :param network_interface_permission_id: The ID of the network interface permission.
-        :param force: Specify ``true`` to remove the permission even if the network interface
-        is attached to an instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteNetworkInterfacePermissionResult
-        """
         raise NotImplementedError
 
     @handler("DeletePlacementGroup")
     def delete_placement_group(
         self, context: RequestContext, group_name: PlacementGroupName, dry_run: Boolean = None
     ) -> None:
-        """Deletes the specified placement group. You must terminate all instances
-        in the placement group before you can delete the placement group. For
-        more information, see `Placement
-        groups <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param group_name: The name of the placement group.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeletePublicIpv4Pool")
     def delete_public_ipv4_pool(
         self, context: RequestContext, pool_id: Ipv4PoolEc2Id, dry_run: Boolean = None
     ) -> DeletePublicIpv4PoolResult:
-        """Delete a public IPv4 pool. A public IPv4 pool is an EC2 IP address pool
-        required for the public IPv4 CIDRs that you own and bring to Amazon Web
-        Services to manage with IPAM. IPv6 addresses you bring to Amazon Web
-        Services, however, use IPAM pools only.
-
-        :param pool_id: The ID of the public IPv4 pool you want to delete.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :returns: DeletePublicIpv4PoolResult
-        """
         raise NotImplementedError
 
     @handler("DeleteQueuedReservedInstances")
@@ -21725,13 +16816,6 @@ class Ec2Api:
         reserved_instances_ids: DeleteQueuedReservedInstancesIdList,
         dry_run: Boolean = None,
     ) -> DeleteQueuedReservedInstancesResult:
-        """Deletes the queued purchases for the specified Reserved Instances.
-
-        :param reserved_instances_ids: The IDs of the Reserved Instances.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteQueuedReservedInstancesResult
-        """
         raise NotImplementedError
 
     @handler("DeleteRoute")
@@ -21744,29 +16828,12 @@ class Ec2Api:
         destination_prefix_list_id: PrefixListResourceId = None,
         dry_run: Boolean = None,
     ) -> None:
-        """Deletes the specified route from the specified route table.
-
-        :param route_table_id: The ID of the route table.
-        :param destination_cidr_block: The IPv4 CIDR range for the route.
-        :param destination_ipv6_cidr_block: The IPv6 CIDR range for the route.
-        :param destination_prefix_list_id: The ID of the prefix list for the route.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteRouteTable")
     def delete_route_table(
         self, context: RequestContext, route_table_id: RouteTableId, dry_run: Boolean = None
     ) -> None:
-        """Deletes the specified route table. You must disassociate the route table
-        from any subnets before you can delete it. You can't delete the main
-        route table.
-
-        :param route_table_id: The ID of the route table.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteSecurityGroup")
@@ -21777,70 +16844,24 @@ class Ec2Api:
         group_name: SecurityGroupName = None,
         dry_run: Boolean = None,
     ) -> None:
-        """Deletes a security group.
-
-        If you attempt to delete a security group that is associated with an
-        instance, or is referenced by another security group, the operation
-        fails with ``InvalidGroup.InUse`` in EC2-Classic or
-        ``DependencyViolation`` in EC2-VPC.
-
-        :param group_id: The ID of the security group.
-        :param group_name: [EC2-Classic, default VPC] The name of the security group.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteSnapshot")
     def delete_snapshot(
         self, context: RequestContext, snapshot_id: SnapshotId, dry_run: Boolean = None
     ) -> None:
-        """Deletes the specified snapshot.
-
-        When you make periodic snapshots of a volume, the snapshots are
-        incremental, and only the blocks on the device that have changed since
-        your last snapshot are saved in the new snapshot. When you delete a
-        snapshot, only the data not needed for any other snapshot is removed. So
-        regardless of which prior snapshots have been deleted, all active
-        snapshots will have access to all the information needed to restore the
-        volume.
-
-        You cannot delete a snapshot of the root device of an EBS volume used by
-        a registered AMI. You must first de-register the AMI before you can
-        delete the snapshot.
-
-        For more information, see `Delete an Amazon EBS
-        snapshot <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-deleting-snapshot.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param snapshot_id: The ID of the EBS snapshot.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteSpotDatafeedSubscription")
     def delete_spot_datafeed_subscription(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> None:
-        """Deletes the data feed for Spot Instances.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteSubnet")
     def delete_subnet(
         self, context: RequestContext, subnet_id: SubnetId, dry_run: Boolean = None
     ) -> None:
-        """Deletes the specified subnet. You must terminate all running instances
-        in the subnet before you can delete the subnet.
-
-        :param subnet_id: The ID of the subnet.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteSubnetCidrReservation")
@@ -21850,13 +16871,6 @@ class Ec2Api:
         subnet_cidr_reservation_id: SubnetCidrReservationId,
         dry_run: Boolean = None,
     ) -> DeleteSubnetCidrReservationResult:
-        """Deletes a subnet CIDR reservation.
-
-        :param subnet_cidr_reservation_id: The ID of the subnet CIDR reservation.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteSubnetCidrReservationResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTags")
@@ -21867,18 +16881,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         tags: TagList = None,
     ) -> None:
-        """Deletes the specified set of tags from the specified set of resources.
-
-        To list the current tags, use DescribeTags. For more information about
-        tags, see `Tagging Your
-        Resources <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param resources: The IDs of the resources, separated by spaces.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tags: The tags to delete.
-        """
         raise NotImplementedError
 
     @handler("DeleteTrafficMirrorFilter")
@@ -21888,16 +16890,6 @@ class Ec2Api:
         traffic_mirror_filter_id: TrafficMirrorFilterId,
         dry_run: Boolean = None,
     ) -> DeleteTrafficMirrorFilterResult:
-        """Deletes the specified Traffic Mirror filter.
-
-        You cannot delete a Traffic Mirror filter that is in use by a Traffic
-        Mirror session.
-
-        :param traffic_mirror_filter_id: The ID of the Traffic Mirror filter.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTrafficMirrorFilterResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTrafficMirrorFilterRule")
@@ -21907,13 +16899,6 @@ class Ec2Api:
         traffic_mirror_filter_rule_id: TrafficMirrorFilterRuleId,
         dry_run: Boolean = None,
     ) -> DeleteTrafficMirrorFilterRuleResult:
-        """Deletes the specified Traffic Mirror rule.
-
-        :param traffic_mirror_filter_rule_id: The ID of the Traffic Mirror rule.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTrafficMirrorFilterRuleResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTrafficMirrorSession")
@@ -21923,13 +16908,6 @@ class Ec2Api:
         traffic_mirror_session_id: TrafficMirrorSessionId,
         dry_run: Boolean = None,
     ) -> DeleteTrafficMirrorSessionResult:
-        """Deletes the specified Traffic Mirror session.
-
-        :param traffic_mirror_session_id: The ID of the Traffic Mirror session.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTrafficMirrorSessionResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTrafficMirrorTarget")
@@ -21939,29 +16917,12 @@ class Ec2Api:
         traffic_mirror_target_id: TrafficMirrorTargetId,
         dry_run: Boolean = None,
     ) -> DeleteTrafficMirrorTargetResult:
-        """Deletes the specified Traffic Mirror target.
-
-        You cannot delete a Traffic Mirror target that is in use by a Traffic
-        Mirror session.
-
-        :param traffic_mirror_target_id: The ID of the Traffic Mirror target.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTrafficMirrorTargetResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTransitGateway")
     def delete_transit_gateway(
         self, context: RequestContext, transit_gateway_id: TransitGatewayId, dry_run: Boolean = None
     ) -> DeleteTransitGatewayResult:
-        """Deletes the specified transit gateway.
-
-        :param transit_gateway_id: The ID of the transit gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTransitGatewayResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTransitGatewayConnect")
@@ -21971,14 +16932,6 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> DeleteTransitGatewayConnectResult:
-        """Deletes the specified Connect attachment. You must first delete any
-        Connect peers for the attachment.
-
-        :param transit_gateway_attachment_id: The ID of the Connect attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTransitGatewayConnectResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTransitGatewayConnectPeer")
@@ -21988,13 +16941,6 @@ class Ec2Api:
         transit_gateway_connect_peer_id: TransitGatewayConnectPeerId,
         dry_run: Boolean = None,
     ) -> DeleteTransitGatewayConnectPeerResult:
-        """Deletes the specified Connect peer.
-
-        :param transit_gateway_connect_peer_id: The ID of the Connect peer.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTransitGatewayConnectPeerResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTransitGatewayMulticastDomain")
@@ -22004,13 +16950,6 @@ class Ec2Api:
         transit_gateway_multicast_domain_id: TransitGatewayMulticastDomainId,
         dry_run: Boolean = None,
     ) -> DeleteTransitGatewayMulticastDomainResult:
-        """Deletes the specified transit gateway multicast domain.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTransitGatewayMulticastDomainResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTransitGatewayPeeringAttachment")
@@ -22020,13 +16959,6 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> DeleteTransitGatewayPeeringAttachmentResult:
-        """Deletes a transit gateway peering attachment.
-
-        :param transit_gateway_attachment_id: The ID of the transit gateway peering attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTransitGatewayPeeringAttachmentResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTransitGatewayPrefixListReference")
@@ -22037,15 +16969,6 @@ class Ec2Api:
         prefix_list_id: PrefixListResourceId,
         dry_run: Boolean = None,
     ) -> DeleteTransitGatewayPrefixListReferenceResult:
-        """Deletes a reference (route) to a prefix list in a specified transit
-        gateway route table.
-
-        :param transit_gateway_route_table_id: The ID of the route table.
-        :param prefix_list_id: The ID of the prefix list.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTransitGatewayPrefixListReferenceResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTransitGatewayRoute")
@@ -22056,15 +16979,6 @@ class Ec2Api:
         destination_cidr_block: String,
         dry_run: Boolean = None,
     ) -> DeleteTransitGatewayRouteResult:
-        """Deletes the specified route from the specified transit gateway route
-        table.
-
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param destination_cidr_block: The CIDR range for the route.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTransitGatewayRouteResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTransitGatewayRouteTable")
@@ -22074,15 +16988,6 @@ class Ec2Api:
         transit_gateway_route_table_id: TransitGatewayRouteTableId,
         dry_run: Boolean = None,
     ) -> DeleteTransitGatewayRouteTableResult:
-        """Deletes the specified transit gateway route table. You must disassociate
-        the route table from any transit gateway route tables before you can
-        delete it.
-
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTransitGatewayRouteTableResult
-        """
         raise NotImplementedError
 
     @handler("DeleteTransitGatewayVpcAttachment")
@@ -22092,47 +16997,16 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> DeleteTransitGatewayVpcAttachmentResult:
-        """Deletes the specified VPC attachment.
-
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteTransitGatewayVpcAttachmentResult
-        """
         raise NotImplementedError
 
     @handler("DeleteVolume")
     def delete_volume(
         self, context: RequestContext, volume_id: VolumeId, dry_run: Boolean = None
     ) -> None:
-        """Deletes the specified EBS volume. The volume must be in the
-        ``available`` state (not attached to an instance).
-
-        The volume can remain in the ``deleting`` state for several minutes.
-
-        For more information, see `Delete an Amazon EBS
-        volume <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-deleting-volume.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param volume_id: The ID of the volume.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteVpc")
     def delete_vpc(self, context: RequestContext, vpc_id: VpcId, dry_run: Boolean = None) -> None:
-        """Deletes the specified VPC. You must detach or delete all gateways and
-        resources that are associated with the VPC before you can delete it. For
-        example, you must terminate all instances running in the VPC, delete all
-        security groups associated with the VPC (except the default one), delete
-        all route tables associated with the VPC (except the default one), and
-        so on.
-
-        :param vpc_id: The ID of the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteVpcEndpointConnectionNotifications")
@@ -22142,13 +17016,6 @@ class Ec2Api:
         connection_notification_ids: ConnectionNotificationIdsList,
         dry_run: Boolean = None,
     ) -> DeleteVpcEndpointConnectionNotificationsResult:
-        """Deletes one or more VPC endpoint connection notifications.
-
-        :param connection_notification_ids: One or more notification IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteVpcEndpointConnectionNotificationsResult
-        """
         raise NotImplementedError
 
     @handler("DeleteVpcEndpointServiceConfigurations")
@@ -22158,50 +17025,12 @@ class Ec2Api:
         service_ids: VpcEndpointServiceIdList,
         dry_run: Boolean = None,
     ) -> DeleteVpcEndpointServiceConfigurationsResult:
-        """Deletes one or more VPC endpoint service configurations in your account.
-        Before you delete the endpoint service configuration, you must reject
-        any ``Available`` or ``PendingAcceptance`` interface endpoint
-        connections that are attached to the service.
-
-        :param service_ids: The IDs of one or more services.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteVpcEndpointServiceConfigurationsResult
-        """
         raise NotImplementedError
 
     @handler("DeleteVpcEndpoints")
     def delete_vpc_endpoints(
         self, context: RequestContext, vpc_endpoint_ids: VpcEndpointIdList, dry_run: Boolean = None
     ) -> DeleteVpcEndpointsResult:
-        """Deletes one or more specified VPC endpoints. You can delete any of the
-        following types of VPC endpoints.
-
-        -  Gateway endpoint,
-
-        -  Gateway Load Balancer endpoint,
-
-        -  Interface endpoint
-
-        The following rules apply when you delete a VPC endpoint:
-
-        -  When you delete a gateway endpoint, we delete the endpoint routes in
-           the route tables that are associated with the endpoint.
-
-        -  When you delete a Gateway Load Balancer endpoint, we delete the
-           endpoint network interfaces.
-
-           You can only delete Gateway Load Balancer endpoints when the routes
-           that are associated with the endpoint are deleted.
-
-        -  When you delete an interface endpoint, we delete the endpoint network
-           interfaces.
-
-        :param vpc_endpoint_ids: One or more VPC endpoint IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteVpcEndpointsResult
-        """
         raise NotImplementedError
 
     @handler("DeleteVpcPeeringConnection")
@@ -22211,43 +17040,12 @@ class Ec2Api:
         vpc_peering_connection_id: VpcPeeringConnectionId,
         dry_run: Boolean = None,
     ) -> DeleteVpcPeeringConnectionResult:
-        """Deletes a VPC peering connection. Either the owner of the requester VPC
-        or the owner of the accepter VPC can delete the VPC peering connection
-        if it's in the ``active`` state. The owner of the requester VPC can
-        delete a VPC peering connection in the ``pending-acceptance`` state. You
-        cannot delete a VPC peering connection that's in the ``failed`` state.
-
-        :param vpc_peering_connection_id: The ID of the VPC peering connection.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeleteVpcPeeringConnectionResult
-        """
         raise NotImplementedError
 
     @handler("DeleteVpnConnection")
     def delete_vpn_connection(
         self, context: RequestContext, vpn_connection_id: VpnConnectionId, dry_run: Boolean = None
     ) -> None:
-        """Deletes the specified VPN connection.
-
-        If you're deleting the VPC and its associated components, we recommend
-        that you detach the virtual private gateway from the VPC and delete the
-        VPC before deleting the VPN connection. If you believe that the tunnel
-        credentials for your VPN connection have been compromised, you can
-        delete the VPN connection and create a new one that has new keys,
-        without needing to delete the VPC or virtual private gateway. If you
-        create a new VPN connection, you must reconfigure the customer gateway
-        device using the new configuration information returned with the new VPN
-        connection ID.
-
-        For certificate-based authentication, delete all Certificate Manager
-        (ACM) private certificates used for the Amazon Web Services-side tunnel
-        endpoints for the VPN connection before deleting the VPN connection.
-
-        :param vpn_connection_id: The ID of the VPN connection.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeleteVpnConnectionRoute")
@@ -22257,48 +17055,18 @@ class Ec2Api:
         destination_cidr_block: String,
         vpn_connection_id: VpnConnectionId,
     ) -> None:
-        """Deletes the specified static route associated with a VPN connection
-        between an existing virtual private gateway and a VPN customer gateway.
-        The static route allows traffic to be routed from the virtual private
-        gateway to the VPN customer gateway.
-
-        :param destination_cidr_block: The CIDR block associated with the local subnet of the customer network.
-        :param vpn_connection_id: The ID of the VPN connection.
-        """
         raise NotImplementedError
 
     @handler("DeleteVpnGateway")
     def delete_vpn_gateway(
         self, context: RequestContext, vpn_gateway_id: VpnGatewayId, dry_run: Boolean = None
     ) -> None:
-        """Deletes the specified virtual private gateway. You must first detach the
-        virtual private gateway from the VPC. Note that you don't need to delete
-        the virtual private gateway if you plan to delete and recreate the VPN
-        connection between your VPC and your network.
-
-        :param vpn_gateway_id: The ID of the virtual private gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeprovisionByoipCidr")
     def deprovision_byoip_cidr(
         self, context: RequestContext, cidr: String, dry_run: Boolean = None
     ) -> DeprovisionByoipCidrResult:
-        """Releases the specified address range that you provisioned for use with
-        your Amazon Web Services resources through bring your own IP addresses
-        (BYOIP) and deletes the corresponding address pool.
-
-        Before you can release an address range, you must stop advertising it
-        using WithdrawByoipCidr and you must not have any IP addresses allocated
-        from its address range.
-
-        :param cidr: The address range, in CIDR notation.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeprovisionByoipCidrResult
-        """
         raise NotImplementedError
 
     @handler("DeprovisionIpamPoolCidr")
@@ -22309,53 +17077,18 @@ class Ec2Api:
         dry_run: Boolean = None,
         cidr: String = None,
     ) -> DeprovisionIpamPoolCidrResult:
-        """Deprovision a CIDR provisioned from an IPAM pool. If you deprovision a
-        CIDR from a pool that has a source pool, the CIDR is recycled back into
-        the source pool. For more information, see `Deprovision pool
-        CIDRs </vpc/latest/ipam/depro-pool-cidr-ipam.html>`__ in the *Amazon VPC
-        IPAM User Guide*.
-
-        :param ipam_pool_id: The ID of the pool that has the CIDR you want to deprovision.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param cidr: The CIDR which you want to deprovision from the pool.
-        :returns: DeprovisionIpamPoolCidrResult
-        """
         raise NotImplementedError
 
     @handler("DeprovisionPublicIpv4PoolCidr")
     def deprovision_public_ipv4_pool_cidr(
         self, context: RequestContext, pool_id: Ipv4PoolEc2Id, cidr: String, dry_run: Boolean = None
     ) -> DeprovisionPublicIpv4PoolCidrResult:
-        """Deprovision a CIDR from a public IPv4 pool.
-
-        :param pool_id: The ID of the pool that you want to deprovision the CIDR from.
-        :param cidr: The CIDR you want to deprovision from the pool.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :returns: DeprovisionPublicIpv4PoolCidrResult
-        """
         raise NotImplementedError
 
     @handler("DeregisterImage")
     def deregister_image(
         self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None
     ) -> None:
-        """Deregisters the specified AMI. After you deregister an AMI, it can't be
-        used to launch new instances; however, it doesn't affect any instances
-        that you've already launched from the AMI. You'll continue to incur
-        usage costs for those instances until you terminate them.
-
-        When you deregister an Amazon EBS-backed AMI, it doesn't affect the
-        snapshot that was created for the root volume of the instance during the
-        AMI creation process. When you deregister an instance store-backed AMI,
-        it doesn't affect the files that you uploaded to Amazon S3 when you
-        created the AMI.
-
-        :param image_id: The ID of the AMI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DeregisterInstanceEventNotificationAttributes")
@@ -22365,17 +17098,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         instance_tag_attribute: DeregisterInstanceTagAttributeRequest = None,
     ) -> DeregisterInstanceEventNotificationAttributesResult:
-        """c
-
-        Deregisters tag keys to prevent tags that have the specified tag keys
-        from being included in scheduled event notifications for resources in
-        the Region.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param instance_tag_attribute: Information about the tag keys to deregister.
-        :returns: DeregisterInstanceEventNotificationAttributesResult
-        """
         raise NotImplementedError
 
     @handler("DeregisterTransitGatewayMulticastGroupMembers")
@@ -22387,16 +17109,6 @@ class Ec2Api:
         network_interface_ids: TransitGatewayNetworkInterfaceIdList = None,
         dry_run: Boolean = None,
     ) -> DeregisterTransitGatewayMulticastGroupMembersResult:
-        """Deregisters the specified members (network interfaces) from the transit
-        gateway multicast group.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param group_ip_address: The IP address assigned to the transit gateway multicast group.
-        :param network_interface_ids: The IDs of the group members' network interfaces.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeregisterTransitGatewayMulticastGroupMembersResult
-        """
         raise NotImplementedError
 
     @handler("DeregisterTransitGatewayMulticastGroupSources")
@@ -22408,16 +17120,6 @@ class Ec2Api:
         network_interface_ids: TransitGatewayNetworkInterfaceIdList = None,
         dry_run: Boolean = None,
     ) -> DeregisterTransitGatewayMulticastGroupSourcesResult:
-        """Deregisters the specified sources (network interfaces) from the transit
-        gateway multicast group.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param group_ip_address: The IP address assigned to the transit gateway multicast group.
-        :param network_interface_ids: The IDs of the group sources' network interfaces.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DeregisterTransitGatewayMulticastGroupSourcesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeAccountAttributes")
@@ -22427,35 +17129,6 @@ class Ec2Api:
         attribute_names: AccountAttributeNameStringList = None,
         dry_run: Boolean = None,
     ) -> DescribeAccountAttributesResult:
-        """Describes attributes of your Amazon Web Services account. The following
-        are the supported account attributes:
-
-        -  ``supported-platforms``: Indicates whether your account can launch
-           instances into EC2-Classic and EC2-VPC, or only into EC2-VPC.
-
-        -  ``default-vpc``: The ID of the default VPC for your account, or
-           ``none``.
-
-        -  ``max-instances``: This attribute is no longer supported. The
-           returned value does not reflect your actual vCPU limit for running
-           On-Demand Instances. For more information, see `On-Demand Instance
-           Limits <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-on-demand-instances.html#ec2-on-demand-instances-limits>`__
-           in the *Amazon Elastic Compute Cloud User Guide*.
-
-        -  ``vpc-max-security-groups-per-interface``: The maximum number of
-           security groups that you can assign to a network interface.
-
-        -  ``max-elastic-ips``: The maximum number of Elastic IP addresses that
-           you can allocate for use with EC2-Classic.
-
-        -  ``vpc-max-elastic-ips``: The maximum number of Elastic IP addresses
-           that you can allocate for use with EC2-VPC.
-
-        :param attribute_names: The account attribute names.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeAccountAttributesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeAddresses")
@@ -22467,21 +17140,6 @@ class Ec2Api:
         allocation_ids: AllocationIdList = None,
         dry_run: Boolean = None,
     ) -> DescribeAddressesResult:
-        """Describes the specified Elastic IP addresses or all of your Elastic IP
-        addresses.
-
-        An Elastic IP address is for use in either the EC2-Classic platform or
-        in a VPC. For more information, see `Elastic IP
-        Addresses <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param filters: One or more filters.
-        :param public_ips: One or more Elastic IP addresses.
-        :param allocation_ids: [EC2-VPC] Information about the allocation IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeAddressesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeAddressesAttribute")
@@ -22494,49 +17152,12 @@ class Ec2Api:
         max_results: AddressMaxResults = None,
         dry_run: Boolean = None,
     ) -> DescribeAddressesAttributeResult:
-        """Describes the attributes of the specified Elastic IP addresses. For
-        requirements, see `Using reverse DNS for email
-        applications <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html#Using_Elastic_Addressing_Reverse_DNS>`__.
-
-        :param allocation_ids: [EC2-VPC] The allocation IDs.
-        :param attribute: The attribute of the IP address.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeAddressesAttributeResult
-        """
         raise NotImplementedError
 
     @handler("DescribeAggregateIdFormat")
     def describe_aggregate_id_format(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> DescribeAggregateIdFormatResult:
-        """Describes the longer ID format settings for all resource types in a
-        specific Region. This request is useful for performing a quick audit to
-        determine whether a specific Region is fully opted in for longer IDs
-        (17-character IDs).
-
-        This request only returns information about resource types that support
-        longer IDs.
-
-        The following resource types support longer IDs: ``bundle`` |
-        ``conversion-task`` | ``customer-gateway`` | ``dhcp-options`` |
-        ``elastic-ip-allocation`` | ``elastic-ip-association`` |
-        ``export-task`` | ``flow-log`` | ``image`` | ``import-task`` |
-        ``instance`` | ``internet-gateway`` | ``network-acl`` |
-        ``network-acl-association`` | ``network-interface`` |
-        ``network-interface-attachment`` | ``prefix-list`` | ``reservation``
-        | ``route-table`` | ``route-table-association`` | ``security-group``
-        | ``snapshot`` | ``subnet`` | ``subnet-cidr-block-association`` |
-        ``volume`` | ``vpc`` | ``vpc-cidr-block-association`` |
-        ``vpc-endpoint`` | ``vpc-peering-connection`` | ``vpn-connection`` |
-        ``vpn-gateway``.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeAggregateIdFormatResult
-        """
         raise NotImplementedError
 
     @handler("DescribeAvailabilityZones")
@@ -22549,24 +17170,6 @@ class Ec2Api:
         all_availability_zones: Boolean = None,
         dry_run: Boolean = None,
     ) -> DescribeAvailabilityZonesResult:
-        """Describes the Availability Zones, Local Zones, and Wavelength Zones that
-        are available to you. If there is an event impacting a zone, you can use
-        this request to view the state and any provided messages for that zone.
-
-        For more information about Availability Zones, Local Zones, and
-        Wavelength Zones, see `Regions and
-        zones <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param filters: The filters.
-        :param zone_names: The names of the Availability Zones, Local Zones, and Wavelength Zones.
-        :param zone_ids: The IDs of the Availability Zones, Local Zones, and Wavelength Zones.
-        :param all_availability_zones: Include all Availability Zones, Local Zones, and Wavelength Zones
-        regardless of your opt-in status.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeAvailabilityZonesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeBundleTasks")
@@ -22577,19 +17180,6 @@ class Ec2Api:
         filters: FilterList = None,
         dry_run: Boolean = None,
     ) -> DescribeBundleTasksResult:
-        """Describes the specified bundle tasks or all of your bundle tasks.
-
-        Completed bundle tasks are listed for only a limited time. If your
-        bundle task is no longer in the list, you can still register an AMI from
-        it. Just use ``RegisterImage`` with the Amazon S3 bucket name and image
-        manifest name you provided to the bundle task.
-
-        :param bundle_ids: The bundle task IDs.
-        :param filters: The filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeBundleTasksResult
-        """
         raise NotImplementedError
 
     @handler("DescribeByoipCidrs")
@@ -22600,18 +17190,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         next_token: NextToken = None,
     ) -> DescribeByoipCidrsResult:
-        """Describes the IP address ranges that were specified in calls to
-        ProvisionByoipCidr.
-
-        To describe the address pools that were created when you provisioned the
-        address ranges, use DescribePublicIpv4Pools or DescribeIpv6Pools.
-
-        :param max_results: The maximum number of results to return with a single call.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeByoipCidrsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeCapacityReservationFleets")
@@ -22624,17 +17202,6 @@ class Ec2Api:
         filters: FilterList = None,
         dry_run: Boolean = None,
     ) -> DescribeCapacityReservationFleetsResult:
-        """Describes one or more Capacity Reservation Fleets.
-
-        :param capacity_reservation_fleet_ids: The IDs of the Capacity Reservation Fleets to describe.
-        :param next_token: The token to use to retrieve the next page of results.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeCapacityReservationFleetsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeCapacityReservations")
@@ -22647,19 +17214,6 @@ class Ec2Api:
         filters: FilterList = None,
         dry_run: Boolean = None,
     ) -> DescribeCapacityReservationsResult:
-        """Describes one or more of your Capacity Reservations. The results
-        describe only the Capacity Reservations in the Amazon Web Services
-        Region that you're currently using.
-
-        :param capacity_reservation_ids: The ID of the Capacity Reservation.
-        :param next_token: The token to use to retrieve the next page of results.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeCapacityReservationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeCarrierGateways")
@@ -22672,16 +17226,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeCarrierGatewaysResult:
-        """Describes one or more of your carrier gateways.
-
-        :param carrier_gateway_ids: One or more carrier gateway IDs.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeCarrierGatewaysResult
-        """
         raise NotImplementedError
 
     @handler("DescribeClassicLinkInstances")
@@ -22694,19 +17238,6 @@ class Ec2Api:
         max_results: DescribeClassicLinkInstancesMaxResults = None,
         next_token: String = None,
     ) -> DescribeClassicLinkInstancesResult:
-        """Describes one or more of your linked EC2-Classic instances. This request
-        only returns information about EC2-Classic instances linked to a VPC
-        through ClassicLink. You cannot use this request to return information
-        about other instances.
-
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param instance_ids: One or more instance IDs.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeClassicLinkInstancesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeClientVpnAuthorizationRules")
@@ -22719,17 +17250,6 @@ class Ec2Api:
         filters: FilterList = None,
         max_results: DescribeClientVpnAuthorizationRulesMaxResults = None,
     ) -> DescribeClientVpnAuthorizationRulesResult:
-        """Describes the authorization rules for a specified Client VPN endpoint.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token to retrieve the next page of results.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :returns: DescribeClientVpnAuthorizationRulesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeClientVpnConnections")
@@ -22742,19 +17262,6 @@ class Ec2Api:
         max_results: DescribeClientVpnConnectionsMaxResults = None,
         dry_run: Boolean = None,
     ) -> DescribeClientVpnConnectionsResult:
-        """Describes active client connections and connections that have been
-        terminated within the last 60 minutes for the specified Client VPN
-        endpoint.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint.
-        :param filters: One or more filters.
-        :param next_token: The token to retrieve the next page of results.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeClientVpnConnectionsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeClientVpnEndpoints")
@@ -22767,17 +17274,6 @@ class Ec2Api:
         filters: FilterList = None,
         dry_run: Boolean = None,
     ) -> DescribeClientVpnEndpointsResult:
-        """Describes one or more Client VPN endpoints in the account.
-
-        :param client_vpn_endpoint_ids: The ID of the Client VPN endpoint.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to retrieve the next page of results.
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeClientVpnEndpointsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeClientVpnRoutes")
@@ -22790,17 +17286,6 @@ class Ec2Api:
         next_token: NextToken = None,
         dry_run: Boolean = None,
     ) -> DescribeClientVpnRoutesResult:
-        """Describes the routes for the specified Client VPN endpoint.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to retrieve the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeClientVpnRoutesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeClientVpnTargetNetworks")
@@ -22814,19 +17299,6 @@ class Ec2Api:
         filters: FilterList = None,
         dry_run: Boolean = None,
     ) -> DescribeClientVpnTargetNetworksResult:
-        """Describes the target networks associated with the specified Client VPN
-        endpoint.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint.
-        :param association_ids: The IDs of the target network associations.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to retrieve the next page of results.
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeClientVpnTargetNetworksResult
-        """
         raise NotImplementedError
 
     @handler("DescribeCoipPools")
@@ -22839,17 +17311,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeCoipPoolsResult:
-        """Describes the specified customer-owned address pools or all of your
-        customer-owned address pools.
-
-        :param pool_ids: The IDs of the address pools.
-        :param filters: The filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeCoipPoolsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeConversionTasks")
@@ -22859,19 +17320,6 @@ class Ec2Api:
         conversion_task_ids: ConversionIdStringList = None,
         dry_run: Boolean = None,
     ) -> DescribeConversionTasksResult:
-        """Describes the specified conversion tasks or all your conversion tasks.
-        For more information, see the `VM Import/Export User
-        Guide <https://docs.aws.amazon.com/vm-import/latest/userguide/>`__.
-
-        For information about the import manifest referenced by this API action,
-        see `VM Import
-        Manifest <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/manifest.html>`__.
-
-        :param conversion_task_ids: The conversion task IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeConversionTasksResult
-        """
         raise NotImplementedError
 
     @handler("DescribeCustomerGateways")
@@ -22882,18 +17330,6 @@ class Ec2Api:
         filters: FilterList = None,
         dry_run: Boolean = None,
     ) -> DescribeCustomerGatewaysResult:
-        """Describes one or more of your VPN customer gateways.
-
-        For more information, see `Amazon Web Services Site-to-Site
-        VPN <https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html>`__ in
-        the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        :param customer_gateway_ids: One or more customer gateway IDs.
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeCustomerGatewaysResult
-        """
         raise NotImplementedError
 
     @handler("DescribeDhcpOptions")
@@ -22906,20 +17342,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeDhcpOptionsMaxResults = None,
     ) -> DescribeDhcpOptionsResult:
-        """Describes one or more of your DHCP options sets.
-
-        For more information, see `DHCP options
-        sets <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_DHCP_Options.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param dhcp_options_ids: The IDs of one or more DHCP options sets.
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :returns: DescribeDhcpOptionsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeEgressOnlyInternetGateways")
@@ -22932,16 +17354,6 @@ class Ec2Api:
         next_token: String = None,
         filters: FilterList = None,
     ) -> DescribeEgressOnlyInternetGatewaysResult:
-        """Describes one or more of your egress-only internet gateways.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param egress_only_internet_gateway_ids: One or more egress-only internet gateway IDs.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param filters: One or more filters.
-        :returns: DescribeEgressOnlyInternetGatewaysResult
-        """
         raise NotImplementedError
 
     @handler("DescribeElasticGpus")
@@ -22954,19 +17366,6 @@ class Ec2Api:
         max_results: DescribeElasticGpusMaxResults = None,
         next_token: String = None,
     ) -> DescribeElasticGpusResult:
-        """Describes the Elastic Graphics accelerator associated with your
-        instances. For more information about Elastic Graphics, see `Amazon
-        Elastic
-        Graphics <https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/elastic-graphics.html>`__.
-
-        :param elastic_gpu_ids: The Elastic Graphics accelerator IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: The filters.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token to request the next page of results.
-        :returns: DescribeElasticGpusResult
-        """
         raise NotImplementedError
 
     @handler("DescribeExportImageTasks")
@@ -22979,18 +17378,6 @@ class Ec2Api:
         max_results: DescribeExportImageTasksMaxResults = None,
         next_token: NextToken = None,
     ) -> DescribeExportImageTasksResult:
-        """Describes the specified export image tasks or all of your export image
-        tasks.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: Filter tasks using the ``task-state`` filter and one of the following
-        values: ``active``, ``completed``, ``deleting``, or ``deleted``.
-        :param export_image_task_ids: The IDs of the export image tasks.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: A token that indicates the next page of results.
-        :returns: DescribeExportImageTasksResult
-        """
         raise NotImplementedError
 
     @handler("DescribeExportTasks")
@@ -23000,13 +17387,6 @@ class Ec2Api:
         export_task_ids: ExportTaskIdStringList = None,
         filters: FilterList = None,
     ) -> DescribeExportTasksResult:
-        """Describes the specified export instance tasks or all of your export
-        instance tasks.
-
-        :param export_task_ids: The export task IDs.
-        :param filters: the filters for the export tasks.
-        :returns: DescribeExportTasksResult
-        """
         raise NotImplementedError
 
     @handler("DescribeFastLaunchImages")
@@ -23019,17 +17399,6 @@ class Ec2Api:
         next_token: NextToken = None,
         dry_run: Boolean = None,
     ) -> DescribeFastLaunchImagesResult:
-        """Describe details for Windows AMIs that are configured for faster
-        launching.
-
-        :param image_ids: Details for one or more Windows AMI image IDs.
-        :param filters: Use the following filters to streamline results.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeFastLaunchImagesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeFastSnapshotRestores")
@@ -23041,15 +17410,6 @@ class Ec2Api:
         next_token: NextToken = None,
         dry_run: Boolean = None,
     ) -> DescribeFastSnapshotRestoresResult:
-        """Describes the state of fast snapshot restores for your snapshots.
-
-        :param filters: The filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeFastSnapshotRestoresResult
-        """
         raise NotImplementedError
 
     @handler("DescribeFleetHistory")
@@ -23063,28 +17423,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeFleetHistoryResult:
-        """Describes the events for the specified EC2 Fleet during the specified
-        time.
-
-        EC2 Fleet events are delayed by up to 30 seconds before they can be
-        described. This ensures that you can query by the last evaluated time
-        and not miss a recorded event. EC2 Fleet events are available for 48
-        hours.
-
-        For more information, see `Monitor fleet events using Amazon
-        EventBridge <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/fleet-monitor.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param fleet_id: The ID of the EC2 Fleet.
-        :param start_time: The start date and time for the events, in UTC format (for example,
-        *YYYY*-*MM*-*DD* T *HH*:*MM*:*SS* Z).
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param event_type: The type of events to describe.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :returns: DescribeFleetHistoryResult
-        """
         raise NotImplementedError
 
     @handler("DescribeFleetInstances")
@@ -23097,20 +17435,6 @@ class Ec2Api:
         next_token: String = None,
         filters: FilterList = None,
     ) -> DescribeFleetInstancesResult:
-        """Describes the running instances for the specified EC2 Fleet.
-
-        For more information, see `Monitoring your EC2
-        Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet.html#monitor-ec2-fleet>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param fleet_id: The ID of the EC2 Fleet.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :param filters: The filters.
-        :returns: DescribeFleetInstancesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeFleets")
@@ -23123,20 +17447,6 @@ class Ec2Api:
         fleet_ids: FleetIdSet = None,
         filters: FilterList = None,
     ) -> DescribeFleetsResult:
-        """Describes the specified EC2 Fleets or all of your EC2 Fleets.
-
-        For more information, see `Monitoring your EC2
-        Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet.html#monitor-ec2-fleet>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :param fleet_ids: The ID of the EC2 Fleets.
-        :param filters: The filters.
-        :returns: DescribeFleetsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeFlowLogs")
@@ -23149,18 +17459,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeFlowLogsResult:
-        """Describes one or more flow logs. To view the information in your flow
-        logs (the log streams for the network interfaces), you must use the
-        CloudWatch Logs console or the CloudWatch Logs API.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filter: One or more filters.
-        :param flow_log_ids: One or more flow log IDs.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeFlowLogsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeFpgaImageAttribute")
@@ -23171,15 +17469,6 @@ class Ec2Api:
         attribute: FpgaImageAttributeName,
         dry_run: Boolean = None,
     ) -> DescribeFpgaImageAttributeResult:
-        """Describes the specified attribute of the specified Amazon FPGA Image
-        (AFI).
-
-        :param fpga_image_id: The ID of the AFI.
-        :param attribute: The AFI attribute.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeFpgaImageAttributeResult
-        """
         raise NotImplementedError
 
     @handler("DescribeFpgaImages")
@@ -23193,19 +17482,6 @@ class Ec2Api:
         next_token: NextToken = None,
         max_results: DescribeFpgaImagesMaxResults = None,
     ) -> DescribeFpgaImagesResult:
-        """Describes the Amazon FPGA Images (AFIs) available to you. These include
-        public AFIs, private AFIs that you own, and AFIs owned by other Amazon
-        Web Services accounts for which you have load permissions.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param fpga_image_ids: The AFI IDs.
-        :param owners: Filters the AFI by owner.
-        :param filters: The filters.
-        :param next_token: The token to retrieve the next page of results.
-        :param max_results: The maximum number of results to return in a single call.
-        :returns: DescribeFpgaImagesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeHostReservationOfferings")
@@ -23219,29 +17495,6 @@ class Ec2Api:
         next_token: String = None,
         offering_id: OfferingId = None,
     ) -> DescribeHostReservationOfferingsResult:
-        """Describes the Dedicated Host reservations that are available to
-        purchase.
-
-        The results describe all of the Dedicated Host reservation offerings,
-        including offerings that might not match the instance family and Region
-        of your Dedicated Hosts. When purchasing an offering, ensure that the
-        instance family and Region of the offering matches that of the Dedicated
-        Hosts with which it is to be associated. For more information about
-        supported instance types, see `Dedicated
-        Hosts <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dedicated-hosts-overview.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param filter: The filters.
-        :param max_duration: This is the maximum duration of the reservation to purchase, specified
-        in seconds.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param min_duration: This is the minimum duration of the reservation you'd like to purchase,
-        specified in seconds.
-        :param next_token: The token to use to retrieve the next page of results.
-        :param offering_id: The ID of the reservation offering.
-        :returns: DescribeHostReservationOfferingsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeHostReservations")
@@ -23253,16 +17506,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeHostReservationsResult:
-        """Describes reservations that are associated with Dedicated Hosts in your
-        account.
-
-        :param filter: The filters.
-        :param host_reservation_id_set: The host reservation IDs.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to use to retrieve the next page of results.
-        :returns: DescribeHostReservationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeHosts")
@@ -23274,20 +17517,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeHostsResult:
-        """Describes the specified Dedicated Hosts or all your Dedicated Hosts.
-
-        The results describe only the Dedicated Hosts in the Region you're
-        currently using. All listed instances consume capacity on your Dedicated
-        Host. Dedicated Hosts that have recently been released are listed with
-        the state ``released``.
-
-        :param filter: The filters.
-        :param host_ids: The IDs of the Dedicated Hosts.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to use to retrieve the next page of results.
-        :returns: DescribeHostsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeIamInstanceProfileAssociations")
@@ -23299,106 +17528,18 @@ class Ec2Api:
         max_results: DescribeIamInstanceProfileAssociationsMaxResults = None,
         next_token: NextToken = None,
     ) -> DescribeIamInstanceProfileAssociationsResult:
-        """Describes your IAM instance profile associations.
-
-        :param association_ids: The IAM instance profile associations.
-        :param filters: The filters.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token to request the next page of results.
-        :returns: DescribeIamInstanceProfileAssociationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeIdFormat")
     def describe_id_format(
         self, context: RequestContext, resource: String = None
     ) -> DescribeIdFormatResult:
-        """Describes the ID format settings for your resources on a per-Region
-        basis, for example, to view which resource types are enabled for longer
-        IDs. This request only returns information about resource types whose ID
-        formats can be modified; it does not return information about other
-        resource types.
-
-        The following resource types support longer IDs: ``bundle`` |
-        ``conversion-task`` | ``customer-gateway`` | ``dhcp-options`` |
-        ``elastic-ip-allocation`` | ``elastic-ip-association`` |
-        ``export-task`` | ``flow-log`` | ``image`` | ``import-task`` |
-        ``instance`` | ``internet-gateway`` | ``network-acl`` |
-        ``network-acl-association`` | ``network-interface`` |
-        ``network-interface-attachment`` | ``prefix-list`` | ``reservation``
-        | ``route-table`` | ``route-table-association`` | ``security-group``
-        | ``snapshot`` | ``subnet`` | ``subnet-cidr-block-association`` |
-        ``volume`` | ``vpc`` | ``vpc-cidr-block-association`` |
-        ``vpc-endpoint`` | ``vpc-peering-connection`` | ``vpn-connection`` |
-        ``vpn-gateway``.
-
-        These settings apply to the IAM user who makes the request; they do not
-        apply to the entire Amazon Web Services account. By default, an IAM user
-        defaults to the same settings as the root user, unless they explicitly
-        override the settings by running the ModifyIdFormat command. Resources
-        created with longer IDs are visible to all IAM users, regardless of
-        these settings and provided that they have permission to use the
-        relevant ``Describe`` command for the resource type.
-
-        :param resource: The type of resource: ``bundle`` | ``conversion-task`` |
-        ``customer-gateway`` | ``dhcp-options`` | ``elastic-ip-allocation`` |
-        ``elastic-ip-association`` | ``export-task`` | ``flow-log`` |
-        ``image`` | ``import-task`` | ``instance`` | ``internet-gateway`` |
-        ``network-acl`` | ``network-acl-association`` | ``network-interface``
-        | ``network-interface-attachment`` | ``prefix-list`` |
-        ``reservation`` | ``route-table`` | ``route-table-association`` |
-        ``security-group`` | ``snapshot`` | ``subnet`` |
-        ``subnet-cidr-block-association`` | ``volume`` | ``vpc`` |
-        ``vpc-cidr-block-association`` | ``vpc-endpoint`` |
-        ``vpc-peering-connection`` | ``vpn-connection`` | ``vpn-gateway``.
-        :returns: DescribeIdFormatResult
-        """
         raise NotImplementedError
 
     @handler("DescribeIdentityIdFormat")
     def describe_identity_id_format(
         self, context: RequestContext, principal_arn: String, resource: String = None
     ) -> DescribeIdentityIdFormatResult:
-        """Describes the ID format settings for resources for the specified IAM
-        user, IAM role, or root user. For example, you can view the resource
-        types that are enabled for longer IDs. This request only returns
-        information about resource types whose ID formats can be modified; it
-        does not return information about other resource types. For more
-        information, see `Resource
-        IDs <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/resource-ids.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        The following resource types support longer IDs: ``bundle`` |
-        ``conversion-task`` | ``customer-gateway`` | ``dhcp-options`` |
-        ``elastic-ip-allocation`` | ``elastic-ip-association`` |
-        ``export-task`` | ``flow-log`` | ``image`` | ``import-task`` |
-        ``instance`` | ``internet-gateway`` | ``network-acl`` |
-        ``network-acl-association`` | ``network-interface`` |
-        ``network-interface-attachment`` | ``prefix-list`` | ``reservation``
-        | ``route-table`` | ``route-table-association`` | ``security-group``
-        | ``snapshot`` | ``subnet`` | ``subnet-cidr-block-association`` |
-        ``volume`` | ``vpc`` | ``vpc-cidr-block-association`` |
-        ``vpc-endpoint`` | ``vpc-peering-connection`` | ``vpn-connection`` |
-        ``vpn-gateway``.
-
-        These settings apply to the principal specified in the request. They do
-        not apply to the principal that makes the request.
-
-        :param principal_arn: The ARN of the principal, which can be an IAM role, IAM user, or the
-        root user.
-        :param resource: The type of resource: ``bundle`` | ``conversion-task`` |
-        ``customer-gateway`` | ``dhcp-options`` | ``elastic-ip-allocation`` |
-        ``elastic-ip-association`` | ``export-task`` | ``flow-log`` |
-        ``image`` | ``import-task`` | ``instance`` | ``internet-gateway`` |
-        ``network-acl`` | ``network-acl-association`` | ``network-interface``
-        | ``network-interface-attachment`` | ``prefix-list`` |
-        ``reservation`` | ``route-table`` | ``route-table-association`` |
-        ``security-group`` | ``snapshot`` | ``subnet`` |
-        ``subnet-cidr-block-association`` | ``volume`` | ``vpc`` |
-        ``vpc-cidr-block-association`` | ``vpc-endpoint`` |
-        ``vpc-peering-connection`` | ``vpn-connection`` | ``vpn-gateway``.
-        :returns: DescribeIdentityIdFormatResult
-        """
         raise NotImplementedError
 
     @handler("DescribeImageAttribute")
@@ -23409,15 +17550,6 @@ class Ec2Api:
         image_id: ImageId,
         dry_run: Boolean = None,
     ) -> ImageAttribute:
-        """Describes the specified attribute of the specified AMI. You can specify
-        only one attribute at a time.
-
-        :param attribute: The AMI attribute.
-        :param image_id: The ID of the AMI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ImageAttribute
-        """
         raise NotImplementedError
 
     @handler("DescribeImages")
@@ -23431,28 +17563,6 @@ class Ec2Api:
         include_deprecated: Boolean = None,
         dry_run: Boolean = None,
     ) -> DescribeImagesResult:
-        """Describes the specified images (AMIs, AKIs, and ARIs) available to you
-        or all of the images available to you.
-
-        The images available to you include public images, private images that
-        you own, and private images owned by other Amazon Web Services accounts
-        for which you have explicit launch permissions.
-
-        Recently deregistered images appear in the returned results for a short
-        interval and then return empty results. After all instances that
-        reference a deregistered AMI are terminated, specifying the ID of the
-        image will eventually return an error indicating that the AMI ID cannot
-        be found.
-
-        :param executable_users: Scopes the images by users with explicit launch permissions.
-        :param filters: The filters.
-        :param image_ids: The image IDs.
-        :param owners: Scopes the results to images with the specified owners.
-        :param include_deprecated: If ``true``, all deprecated AMIs are included in the response.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeImagesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeImportImageTasks")
@@ -23465,18 +17575,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeImportImageTasksResult:
-        """Displays details about an import virtual machine or import snapshot
-        tasks that are already created.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: Filter tasks using the ``task-state`` filter and one of the following
-        values: ``active``, ``completed``, ``deleting``, or ``deleted``.
-        :param import_task_ids: The IDs of the import image tasks.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: A token that indicates the next page of results.
-        :returns: DescribeImportImageTasksResult
-        """
         raise NotImplementedError
 
     @handler("DescribeImportSnapshotTasks")
@@ -23489,16 +17587,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeImportSnapshotTasksResult:
-        """Describes your import snapshot tasks.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: The filters.
-        :param import_task_ids: A list of import snapshot task IDs.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: A token that indicates the next page of results.
-        :returns: DescribeImportSnapshotTasksResult
-        """
         raise NotImplementedError
 
     @handler("DescribeInstanceAttribute")
@@ -23509,20 +17597,6 @@ class Ec2Api:
         instance_id: InstanceId,
         dry_run: Boolean = None,
     ) -> InstanceAttribute:
-        """Describes the specified attribute of the specified instance. You can
-        specify only one attribute at a time. Valid attribute values are:
-        ``instanceType`` | ``kernel`` | ``ramdisk`` | ``userData`` |
-        ``disableApiTermination`` | ``instanceInitiatedShutdownBehavior`` |
-        ``rootDeviceName`` | ``blockDeviceMapping`` | ``productCodes`` |
-        ``sourceDestCheck`` | ``groupSet`` | ``ebsOptimized`` |
-        ``sriovNetSupport``
-
-        :param attribute: The instance attribute.
-        :param instance_id: The ID of the instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: InstanceAttribute
-        """
         raise NotImplementedError
 
     @handler("DescribeInstanceCreditSpecifications")
@@ -23535,55 +17609,12 @@ class Ec2Api:
         max_results: DescribeInstanceCreditSpecificationsMaxResults = None,
         next_token: String = None,
     ) -> DescribeInstanceCreditSpecificationsResult:
-        """Describes the credit option for CPU usage of the specified burstable
-        performance instances. The credit options are ``standard`` and
-        ``unlimited``.
-
-        If you do not specify an instance ID, Amazon EC2 returns burstable
-        performance instances with the ``unlimited`` credit option, as well as
-        instances that were previously configured as T2, T3, and T3a with the
-        ``unlimited`` credit option. For example, if you resize a T2 instance,
-        while it is configured as ``unlimited``, to an M4 instance, Amazon EC2
-        returns the M4 instance.
-
-        If you specify one or more instance IDs, Amazon EC2 returns the credit
-        option (``standard`` or ``unlimited``) of those instances. If you
-        specify an instance ID that is not valid, such as an instance that is
-        not a burstable performance instance, an error is returned.
-
-        Recently terminated instances might appear in the returned results. This
-        interval is usually less than one hour.
-
-        If an Availability Zone is experiencing a service disruption and you
-        specify instance IDs in the affected zone, or do not specify any
-        instance IDs at all, the call fails. If you specify only instance IDs in
-        an unaffected zone, the call works normally.
-
-        For more information, see `Burstable performance
-        instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/burstable-performance-instances.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: The filters.
-        :param instance_ids: The instance IDs.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token to retrieve the next page of results.
-        :returns: DescribeInstanceCreditSpecificationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeInstanceEventNotificationAttributes")
     def describe_instance_event_notification_attributes(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> DescribeInstanceEventNotificationAttributesResult:
-        """Describes the tag keys that are registered to appear in scheduled event
-        notifications for resources in the current Region.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeInstanceEventNotificationAttributesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeInstanceEventWindows")
@@ -23596,28 +17627,6 @@ class Ec2Api:
         max_results: ResultRange = None,
         next_token: String = None,
     ) -> DescribeInstanceEventWindowsResult:
-        """Describes the specified event windows or all event windows.
-
-        If you specify event window IDs, the output includes information for
-        only the specified event windows. If you specify filters, the output
-        includes information for only those event windows that meet the filter
-        criteria. If you do not specify event windows IDs or filters, the output
-        includes information for all event windows, which can affect
-        performance. We recommend that you use pagination to ensure that the
-        operation returns quickly and successfully.
-
-        For more information, see `Define event windows for scheduled
-        events <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/event-windows.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param instance_event_window_ids: The IDs of the event windows.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token to request the next page of results.
-        :returns: DescribeInstanceEventWindowsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeInstanceStatus")
@@ -23631,42 +17640,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         include_all_instances: Boolean = None,
     ) -> DescribeInstanceStatusResult:
-        """Describes the status of the specified instances or all of your
-        instances. By default, only running instances are described, unless you
-        specifically indicate to return the status of all instances.
-
-        Instance status includes the following components:
-
-        -  **Status checks** - Amazon EC2 performs status checks on running EC2
-           instances to identify hardware and software issues. For more
-           information, see `Status checks for your
-           instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-system-instance-status-check.html>`__
-           and `Troubleshoot instances with failed status
-           checks <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstances.html>`__
-           in the *Amazon EC2 User Guide*.
-
-        -  **Scheduled events** - Amazon EC2 can schedule events (such as
-           reboot, stop, or terminate) for your instances related to hardware
-           issues, software updates, or system maintenance. For more
-           information, see `Scheduled events for your
-           instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-instances-status-check_sched.html>`__
-           in the *Amazon EC2 User Guide*.
-
-        -  **Instance state** - You can manage your instances from the moment
-           you launch them through their termination. For more information, see
-           `Instance
-           lifecycle <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html>`__
-           in the *Amazon EC2 User Guide*.
-
-        :param filters: The filters.
-        :param instance_ids: The instance IDs.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token to retrieve the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param include_all_instances: When ``true``, includes the health status for all instances.
-        :returns: DescribeInstanceStatusResult
-        """
         raise NotImplementedError
 
     @handler("DescribeInstanceTypeOfferings")
@@ -23679,20 +17652,6 @@ class Ec2Api:
         max_results: DITOMaxResults = None,
         next_token: NextToken = None,
     ) -> DescribeInstanceTypeOfferingsResult:
-        """Returns a list of all instance types offered. The results can be
-        filtered by location (Region or Availability Zone). If no location is
-        specified, the instance types offered in the current Region are
-        returned.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param location_type: The location type.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to retrieve the next page of results.
-        :returns: DescribeInstanceTypeOfferingsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeInstanceTypes")
@@ -23705,19 +17664,6 @@ class Ec2Api:
         max_results: DITMaxResults = None,
         next_token: NextToken = None,
     ) -> DescribeInstanceTypesResult:
-        """Describes the details of the instance types that are offered in a
-        location. The results can be filtered by the attributes of the instance
-        types.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param instance_types: The instance types.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to retrieve the next page of results.
-        :returns: DescribeInstanceTypesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeInstances")
@@ -23730,37 +17676,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeInstancesResult:
-        """Describes the specified instances or all instances.
-
-        If you specify instance IDs, the output includes information for only
-        the specified instances. If you specify filters, the output includes
-        information for only those instances that meet the filter criteria. If
-        you do not specify instance IDs or filters, the output includes
-        information for all instances, which can affect performance. We
-        recommend that you use pagination to ensure that the operation returns
-        quickly and successfully.
-
-        If you specify an instance ID that is not valid, an error is returned.
-        If you specify an instance that you do not own, it is not included in
-        the output.
-
-        Recently terminated instances might appear in the returned results. This
-        interval is usually less than one hour.
-
-        If you describe instances in the rare case where an Availability Zone is
-        experiencing a service disruption and you specify instance IDs that are
-        in the affected zone, or do not specify any instance IDs at all, the
-        call fails. If you describe instances and specify only instance IDs that
-        are in an unaffected zone, the call works normally.
-
-        :param filters: The filters.
-        :param instance_ids: The instance IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token to request the next page of results.
-        :returns: DescribeInstancesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeInternetGateways")
@@ -23773,16 +17688,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeInternetGatewaysMaxResults = None,
     ) -> DescribeInternetGatewaysResult:
-        """Describes one or more of your internet gateways.
-
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param internet_gateway_ids: One or more internet gateway IDs.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :returns: DescribeInternetGatewaysResult
-        """
         raise NotImplementedError
 
     @handler("DescribeIpamPools")
@@ -23795,16 +17700,6 @@ class Ec2Api:
         next_token: NextToken = None,
         ipam_pool_ids: ValueStringList = None,
     ) -> DescribeIpamPoolsResult:
-        """Get information about your IPAM pools.
-
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param filters: One or more filters for the request.
-        :param max_results: The maximum number of results to return in the request.
-        :param next_token: The token for the next page of results.
-        :param ipam_pool_ids: The IDs of the IPAM pools you would like information on.
-        :returns: DescribeIpamPoolsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeIpamScopes")
@@ -23817,16 +17712,6 @@ class Ec2Api:
         next_token: NextToken = None,
         ipam_scope_ids: ValueStringList = None,
     ) -> DescribeIpamScopesResult:
-        """Get information about your IPAM scopes.
-
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param filters: One or more filters for the request.
-        :param max_results: The maximum number of results to return in the request.
-        :param next_token: The token for the next page of results.
-        :param ipam_scope_ids: The IDs of the scopes you want information on.
-        :returns: DescribeIpamScopesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeIpams")
@@ -23839,20 +17724,6 @@ class Ec2Api:
         next_token: NextToken = None,
         ipam_ids: ValueStringList = None,
     ) -> DescribeIpamsResult:
-        """Get information about your IPAM pools.
-
-        For more information, see `What is
-        IPAM? </vpc/latest/ipam/what-is-it-ipam.html>`__ in the *Amazon VPC IPAM
-        User Guide*.
-
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param filters: One or more filters for the request.
-        :param max_results: The maximum number of results to return in the request.
-        :param next_token: The token for the next page of results.
-        :param ipam_ids: The IDs of the IPAMs you want information on.
-        :returns: DescribeIpamsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeIpv6Pools")
@@ -23865,16 +17736,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         filters: FilterList = None,
     ) -> DescribeIpv6PoolsResult:
-        """Describes your IPv6 address pools.
-
-        :param pool_ids: The IDs of the IPv6 address pools.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: One or more filters.
-        :returns: DescribeIpv6PoolsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeKeyPairs")
@@ -23886,19 +17747,6 @@ class Ec2Api:
         key_pair_ids: KeyPairIdStringList = None,
         dry_run: Boolean = None,
     ) -> DescribeKeyPairsResult:
-        """Describes the specified key pairs or all of your key pairs.
-
-        For more information about key pairs, see `Amazon EC2 key
-        pairs <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param filters: The filters.
-        :param key_names: The key pair names.
-        :param key_pair_ids: The IDs of the key pairs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeKeyPairsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeLaunchTemplateVersions")
@@ -23915,23 +17763,6 @@ class Ec2Api:
         max_results: Integer = None,
         filters: FilterList = None,
     ) -> DescribeLaunchTemplateVersionsResult:
-        """Describes one or more versions of a specified launch template. You can
-        describe all versions, individual versions, or a range of versions. You
-        can also describe all the latest versions or all the default versions of
-        all the launch templates in your account.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param launch_template_id: The ID of the launch template.
-        :param launch_template_name: The name of the launch template.
-        :param versions: One or more versions of the launch template.
-        :param min_version: The version number after which to describe launch template versions.
-        :param max_version: The version number up to which to describe launch template versions.
-        :param next_token: The token to request the next page of results.
-        :param max_results: The maximum number of results to return in a single call.
-        :param filters: One or more filters.
-        :returns: DescribeLaunchTemplateVersionsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeLaunchTemplates")
@@ -23945,17 +17776,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeLaunchTemplatesMaxResults = None,
     ) -> DescribeLaunchTemplatesResult:
-        """Describes one or more launch templates.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param launch_template_ids: One or more launch template IDs.
-        :param launch_template_names: One or more launch template names.
-        :param filters: One or more filters.
-        :param next_token: The token to request the next page of results.
-        :param max_results: The maximum number of results to return in a single call.
-        :returns: DescribeLaunchTemplatesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociations")
@@ -23968,17 +17788,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociationsResult:
-        """Describes the associations between virtual interface groups and local
-        gateway route tables.
-
-        :param local_gateway_route_table_virtual_interface_group_association_ids: The IDs of the associations.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeLocalGatewayRouteTableVpcAssociations")
@@ -23991,17 +17800,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeLocalGatewayRouteTableVpcAssociationsResult:
-        """Describes the specified associations between VPCs and local gateway
-        route tables.
-
-        :param local_gateway_route_table_vpc_association_ids: The IDs of the associations.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeLocalGatewayRouteTableVpcAssociationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeLocalGatewayRouteTables")
@@ -24014,18 +17812,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeLocalGatewayRouteTablesResult:
-        """Describes one or more local gateway route tables. By default, all local
-        gateway route tables are described. Alternatively, you can filter the
-        results.
-
-        :param local_gateway_route_table_ids: The IDs of the local gateway route tables.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeLocalGatewayRouteTablesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeLocalGatewayVirtualInterfaceGroups")
@@ -24038,16 +17824,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeLocalGatewayVirtualInterfaceGroupsResult:
-        """Describes the specified local gateway virtual interface groups.
-
-        :param local_gateway_virtual_interface_group_ids: The IDs of the virtual interface groups.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeLocalGatewayVirtualInterfaceGroupsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeLocalGatewayVirtualInterfaces")
@@ -24060,16 +17836,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeLocalGatewayVirtualInterfacesResult:
-        """Describes the specified local gateway virtual interfaces.
-
-        :param local_gateway_virtual_interface_ids: The IDs of the virtual interfaces.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeLocalGatewayVirtualInterfacesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeLocalGateways")
@@ -24082,17 +17848,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeLocalGatewaysResult:
-        """Describes one or more local gateways. By default, all local gateways are
-        described. Alternatively, you can filter the results.
-
-        :param local_gateway_ids: One or more filters.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeLocalGatewaysResult
-        """
         raise NotImplementedError
 
     @handler("DescribeManagedPrefixLists")
@@ -24105,20 +17860,6 @@ class Ec2Api:
         next_token: NextToken = None,
         prefix_list_ids: ValueStringList = None,
     ) -> DescribeManagedPrefixListsResult:
-        """Describes your managed prefix lists and any Amazon Web Services-managed
-        prefix lists.
-
-        To view the entries for your prefix list, use
-        GetManagedPrefixListEntries.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param prefix_list_ids: One or more prefix list IDs.
-        :returns: DescribeManagedPrefixListsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeMovingAddresses")
@@ -24131,20 +17872,6 @@ class Ec2Api:
         next_token: String = None,
         public_ips: ValueStringList = None,
     ) -> DescribeMovingAddressesResult:
-        """Describes your Elastic IP addresses that are being moved to the EC2-VPC
-        platform, or that are being restored to the EC2-Classic platform. This
-        request does not return information about any other Elastic IP addresses
-        in your account.
-
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token for the next page of results.
-        :param public_ips: One or more Elastic IP addresses.
-        :returns: DescribeMovingAddressesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeNatGateways")
@@ -24157,16 +17884,6 @@ class Ec2Api:
         nat_gateway_ids: NatGatewayIdStringList = None,
         next_token: String = None,
     ) -> DescribeNatGatewaysResult:
-        """Describes one or more of your NAT gateways.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filter: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param nat_gateway_ids: One or more NAT gateway IDs.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeNatGatewaysResult
-        """
         raise NotImplementedError
 
     @handler("DescribeNetworkAcls")
@@ -24179,20 +17896,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeNetworkAclsMaxResults = None,
     ) -> DescribeNetworkAclsResult:
-        """Describes one or more of your network ACLs.
-
-        For more information, see `Network
-        ACLs <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_ACLs.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param network_acl_ids: One or more network ACL IDs.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :returns: DescribeNetworkAclsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeNetworkInsightsAccessScopeAnalyses")
@@ -24208,19 +17911,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         next_token: NextToken = None,
     ) -> DescribeNetworkInsightsAccessScopeAnalysesResult:
-        """Describes the specified Network Access Scope analyses.
-
-        :param network_insights_access_scope_analysis_ids: The IDs of the Network Access Scope analyses.
-        :param network_insights_access_scope_id: The ID of the Network Access Scope.
-        :param analysis_start_time_begin: Filters the results based on the start time.
-        :param analysis_start_time_end: Filters the results based on the start time.
-        :param filters: There are no supported filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeNetworkInsightsAccessScopeAnalysesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeNetworkInsightsAccessScopes")
@@ -24233,16 +17923,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         next_token: NextToken = None,
     ) -> DescribeNetworkInsightsAccessScopesResult:
-        """Describes the specified Network Access Scopes.
-
-        :param network_insights_access_scope_ids: The IDs of the Network Access Scopes.
-        :param filters: There are no supported filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeNetworkInsightsAccessScopesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeNetworkInsightsAnalyses")
@@ -24258,19 +17938,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         next_token: NextToken = None,
     ) -> DescribeNetworkInsightsAnalysesResult:
-        """Describes one or more of your network insights analyses.
-
-        :param network_insights_analysis_ids: The ID of the network insights analyses.
-        :param network_insights_path_id: The ID of the path.
-        :param analysis_start_time: The time when the network insights analyses started.
-        :param analysis_end_time: The time when the network insights analyses ended.
-        :param filters: The filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeNetworkInsightsAnalysesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeNetworkInsightsPaths")
@@ -24283,16 +17950,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         next_token: NextToken = None,
     ) -> DescribeNetworkInsightsPathsResult:
-        """Describes one or more of your paths.
-
-        :param network_insights_path_ids: The IDs of the paths.
-        :param filters: The filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeNetworkInsightsPathsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeNetworkInterfaceAttribute")
@@ -24303,15 +17960,6 @@ class Ec2Api:
         attribute: NetworkInterfaceAttribute = None,
         dry_run: Boolean = None,
     ) -> DescribeNetworkInterfaceAttributeResult:
-        """Describes a network interface attribute. You can specify only one
-        attribute at a time.
-
-        :param network_interface_id: The ID of the network interface.
-        :param attribute: The attribute of the network interface.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeNetworkInterfaceAttributeResult
-        """
         raise NotImplementedError
 
     @handler("DescribeNetworkInterfacePermissions")
@@ -24323,14 +17971,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeNetworkInterfacePermissionsMaxResults = None,
     ) -> DescribeNetworkInterfacePermissionsResult:
-        """Describes the permissions for your network interfaces.
-
-        :param network_interface_permission_ids: One or more network interface permission IDs.
-        :param filters: One or more filters.
-        :param next_token: The token to request the next page of results.
-        :param max_results: The maximum number of results to return in a single call.
-        :returns: DescribeNetworkInterfacePermissionsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeNetworkInterfaces")
@@ -24343,16 +17983,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeNetworkInterfacesMaxResults = None,
     ) -> DescribeNetworkInterfacesResult:
-        """Describes one or more of your network interfaces.
-
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param network_interface_ids: One or more network interface IDs.
-        :param next_token: The token to retrieve the next page of results.
-        :param max_results: The maximum number of items to return for this request.
-        :returns: DescribeNetworkInterfacesResult
-        """
         raise NotImplementedError
 
     @handler("DescribePlacementGroups")
@@ -24364,18 +17994,6 @@ class Ec2Api:
         group_names: PlacementGroupStringList = None,
         group_ids: PlacementGroupIdStringList = None,
     ) -> DescribePlacementGroupsResult:
-        """Describes the specified placement groups or all of your placement
-        groups. For more information, see `Placement
-        groups <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param filters: The filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param group_names: The names of the placement groups.
-        :param group_ids: The IDs of the placement groups.
-        :returns: DescribePlacementGroupsResult
-        """
         raise NotImplementedError
 
     @handler("DescribePrefixLists")
@@ -24388,20 +18006,6 @@ class Ec2Api:
         next_token: String = None,
         prefix_list_ids: PrefixListResourceIdStringList = None,
     ) -> DescribePrefixListsResult:
-        """Describes available Amazon Web Services services in a prefix list
-        format, which includes the prefix list name and prefix list ID of the
-        service and the IP address range for the service.
-
-        We recommend that you use DescribeManagedPrefixLists instead.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param prefix_list_ids: One or more prefix list IDs.
-        :returns: DescribePrefixListsResult
-        """
         raise NotImplementedError
 
     @handler("DescribePrincipalIdFormat")
@@ -24413,45 +18017,6 @@ class Ec2Api:
         max_results: DescribePrincipalIdFormatMaxResults = None,
         next_token: String = None,
     ) -> DescribePrincipalIdFormatResult:
-        """Describes the ID format settings for the root user and all IAM roles and
-        IAM users that have explicitly specified a longer ID (17-character ID)
-        preference.
-
-        By default, all IAM roles and IAM users default to the same ID settings
-        as the root user, unless they explicitly override the settings. This
-        request is useful for identifying those IAM users and IAM roles that
-        have overridden the default ID settings.
-
-        The following resource types support longer IDs: ``bundle`` |
-        ``conversion-task`` | ``customer-gateway`` | ``dhcp-options`` |
-        ``elastic-ip-allocation`` | ``elastic-ip-association`` |
-        ``export-task`` | ``flow-log`` | ``image`` | ``import-task`` |
-        ``instance`` | ``internet-gateway`` | ``network-acl`` |
-        ``network-acl-association`` | ``network-interface`` |
-        ``network-interface-attachment`` | ``prefix-list`` | ``reservation``
-        | ``route-table`` | ``route-table-association`` | ``security-group``
-        | ``snapshot`` | ``subnet`` | ``subnet-cidr-block-association`` |
-        ``volume`` | ``vpc`` | ``vpc-cidr-block-association`` |
-        ``vpc-endpoint`` | ``vpc-peering-connection`` | ``vpn-connection`` |
-        ``vpn-gateway``.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param resources: The type of resource: ``bundle`` | ``conversion-task`` |
-        ``customer-gateway`` | ``dhcp-options`` | ``elastic-ip-allocation`` |
-        ``elastic-ip-association`` | ``export-task`` | ``flow-log`` |
-        ``image`` | ``import-task`` | ``instance`` | ``internet-gateway`` |
-        ``network-acl`` | ``network-acl-association`` | ``network-interface``
-        | ``network-interface-attachment`` | ``prefix-list`` |
-        ``reservation`` | ``route-table`` | ``route-table-association`` |
-        ``security-group`` | ``snapshot`` | ``subnet`` |
-        ``subnet-cidr-block-association`` | ``volume`` | ``vpc`` |
-        ``vpc-cidr-block-association`` | ``vpc-endpoint`` |
-        ``vpc-peering-connection`` | ``vpn-connection`` | ``vpn-gateway``.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token to request the next page of results.
-        :returns: DescribePrincipalIdFormatResult
-        """
         raise NotImplementedError
 
     @handler("DescribePublicIpv4Pools")
@@ -24463,14 +18028,6 @@ class Ec2Api:
         max_results: PoolMaxResults = None,
         filters: FilterList = None,
     ) -> DescribePublicIpv4PoolsResult:
-        """Describes the specified IPv4 address pools.
-
-        :param pool_ids: The IDs of the address pools.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :param filters: One or more filters.
-        :returns: DescribePublicIpv4PoolsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeRegions")
@@ -24482,25 +18039,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         all_regions: Boolean = None,
     ) -> DescribeRegionsResult:
-        """Describes the Regions that are enabled for your account, or all Regions.
-
-        For a list of the Regions supported by Amazon EC2, see `Amazon Elastic
-        Compute Cloud endpoints and
-        quotas <https://docs.aws.amazon.com/general/latest/gr/ec2-service.html>`__.
-
-        For information about enabling and disabling Regions for your account,
-        see `Managing Amazon Web Services
-        Regions <https://docs.aws.amazon.com/general/latest/gr/rande-manage.html>`__
-        in the *Amazon Web Services General Reference*.
-
-        :param filters: The filters.
-        :param region_names: The names of the Regions.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param all_regions: Indicates whether to display all Regions, including Regions that are
-        disabled for your account.
-        :returns: DescribeRegionsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeReplaceRootVolumeTasks")
@@ -24513,22 +18051,6 @@ class Ec2Api:
         next_token: NextToken = None,
         dry_run: Boolean = None,
     ) -> DescribeReplaceRootVolumeTasksResult:
-        """Describes a root volume replacement task. For more information, see
-        `Replace a root
-        volume <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-restoring-volume.html#replace-root>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param replace_root_volume_task_ids: The ID of the root volume replacement task to view.
-        :param filters: Filter to use:
-
-        -  ``instance-id`` - The ID of the instance for which the root volume
-           replacement task was created.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeReplaceRootVolumeTasksResult
-        """
         raise NotImplementedError
 
     @handler("DescribeReservedInstances")
@@ -24541,20 +18063,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         offering_type: OfferingTypeValues = None,
     ) -> DescribeReservedInstancesResult:
-        """Describes one or more of the Reserved Instances that you purchased.
-
-        For more information about Reserved Instances, see `Reserved
-        Instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts-on-demand-reserved-instances.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param filters: One or more filters.
-        :param offering_class: Describes whether the Reserved Instance is Standard or Convertible.
-        :param reserved_instances_ids: One or more Reserved Instance IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param offering_type: The Reserved Instance offering type.
-        :returns: DescribeReservedInstancesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeReservedInstancesListings")
@@ -24565,36 +18073,6 @@ class Ec2Api:
         reserved_instances_id: ReservationId = None,
         reserved_instances_listing_id: ReservedInstancesListingId = None,
     ) -> DescribeReservedInstancesListingsResult:
-        """Describes your account's Reserved Instance listings in the Reserved
-        Instance Marketplace.
-
-        The Reserved Instance Marketplace matches sellers who want to resell
-        Reserved Instance capacity that they no longer need with buyers who want
-        to purchase additional capacity. Reserved Instances bought and sold
-        through the Reserved Instance Marketplace work like any other Reserved
-        Instances.
-
-        As a seller, you choose to list some or all of your Reserved Instances,
-        and you specify the upfront price to receive for them. Your Reserved
-        Instances are then listed in the Reserved Instance Marketplace and are
-        available for purchase.
-
-        As a buyer, you specify the configuration of the Reserved Instance to
-        purchase, and the Marketplace matches what you're searching for with
-        what's available. The Marketplace first sells the lowest priced Reserved
-        Instances to you, and continues to sell available Reserved Instance
-        listings to you until your demand is met. You are charged based on the
-        total price of all of the listings that you purchase.
-
-        For more information, see `Reserved Instance
-        Marketplace <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ri-market-general.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param filters: One or more filters.
-        :param reserved_instances_id: One or more Reserved Instance IDs.
-        :param reserved_instances_listing_id: One or more Reserved Instance listing IDs.
-        :returns: DescribeReservedInstancesListingsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeReservedInstancesModifications")
@@ -24605,20 +18083,6 @@ class Ec2Api:
         reserved_instances_modification_ids: ReservedInstancesModificationIdStringList = None,
         next_token: String = None,
     ) -> DescribeReservedInstancesModificationsResult:
-        """Describes the modifications made to your Reserved Instances. If no
-        parameter is specified, information about all your Reserved Instances
-        modification requests is returned. If a modification ID is specified,
-        only information about the specific modification is returned.
-
-        For more information, see `Modifying Reserved
-        Instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ri-modifying.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param filters: One or more filters.
-        :param reserved_instances_modification_ids: IDs for the submitted modification request.
-        :param next_token: The token to retrieve the next page of results.
-        :returns: DescribeReservedInstancesModificationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeReservedInstancesOfferings")
@@ -24641,42 +18105,6 @@ class Ec2Api:
         next_token: String = None,
         offering_type: OfferingTypeValues = None,
     ) -> DescribeReservedInstancesOfferingsResult:
-        """Describes Reserved Instance offerings that are available for purchase.
-        With Reserved Instances, you purchase the right to launch instances for
-        a period of time. During that time period, you do not receive
-        insufficient capacity errors, and you pay a lower usage rate than the
-        rate charged for On-Demand instances for the actual time used.
-
-        If you have listed your own Reserved Instances for sale in the Reserved
-        Instance Marketplace, they will be excluded from these results. This is
-        to ensure that you do not purchase your own Reserved Instances.
-
-        For more information, see `Reserved Instance
-        Marketplace <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ri-market-general.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param availability_zone: The Availability Zone in which the Reserved Instance can be used.
-        :param filters: One or more filters.
-        :param include_marketplace: Include Reserved Instance Marketplace offerings in the response.
-        :param instance_type: The instance type that the reservation will cover (for example,
-        ``m1.
-        :param max_duration: The maximum duration (in seconds) to filter when searching for
-        offerings.
-        :param max_instance_count: The maximum number of instances to filter when searching for offerings.
-        :param min_duration: The minimum duration (in seconds) to filter when searching for
-        offerings.
-        :param offering_class: The offering class of the Reserved Instance.
-        :param product_description: The Reserved Instance product platform description.
-        :param reserved_instances_offering_ids: One or more Reserved Instances offering IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param instance_tenancy: The tenancy of the instances covered by the reservation.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to retrieve the next page of results.
-        :param offering_type: The Reserved Instance offering type.
-        :returns: DescribeReservedInstancesOfferingsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeRouteTables")
@@ -24689,25 +18117,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeRouteTablesMaxResults = None,
     ) -> DescribeRouteTablesResult:
-        """Describes one or more of your route tables.
-
-        Each subnet in your VPC must be associated with a route table. If a
-        subnet is not explicitly associated with any route table, it is
-        implicitly associated with the main route table. This command does not
-        return the subnet ID for implicit associations.
-
-        For more information, see `Route
-        tables <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param route_table_ids: One or more route table IDs.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :returns: DescribeRouteTablesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeScheduledInstanceAvailability")
@@ -24723,29 +18132,6 @@ class Ec2Api:
         min_slot_duration_in_hours: Integer = None,
         next_token: String = None,
     ) -> DescribeScheduledInstanceAvailabilityResult:
-        """Finds available schedules that meet the specified criteria.
-
-        You can search for an available schedule no more than 3 months in
-        advance. You must meet the minimum required duration of 1,200 hours per
-        year. For example, the minimum daily schedule is 4 hours, the minimum
-        weekly schedule is 24 hours, and the minimum monthly schedule is 100
-        hours.
-
-        After you find a schedule that meets your needs, call
-        PurchaseScheduledInstances to purchase Scheduled Instances with that
-        schedule.
-
-        :param first_slot_start_time_range: The time period for the first schedule to start.
-        :param recurrence: The schedule recurrence.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: The filters.
-        :param max_results: The maximum number of results to return in a single call.
-        :param max_slot_duration_in_hours: The maximum available duration, in hours.
-        :param min_slot_duration_in_hours: The minimum available duration, in hours.
-        :param next_token: The token for the next set of results.
-        :returns: DescribeScheduledInstanceAvailabilityResult
-        """
         raise NotImplementedError
 
     @handler("DescribeScheduledInstances")
@@ -24759,33 +18145,12 @@ class Ec2Api:
         scheduled_instance_ids: ScheduledInstanceIdRequestSet = None,
         slot_start_time_range: SlotStartTimeRangeRequest = None,
     ) -> DescribeScheduledInstancesResult:
-        """Describes the specified Scheduled Instances or all your Scheduled
-        Instances.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: The filters.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :param scheduled_instance_ids: The Scheduled Instance IDs.
-        :param slot_start_time_range: The time period for the first schedule to start.
-        :returns: DescribeScheduledInstancesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeSecurityGroupReferences")
     def describe_security_group_references(
         self, context: RequestContext, group_id: GroupIds, dry_run: Boolean = None
     ) -> DescribeSecurityGroupReferencesResult:
-        """[VPC only] Describes the VPCs on the other side of a VPC peering
-        connection that are referencing the security groups you've specified in
-        this request.
-
-        :param group_id: The IDs of the security groups in your account.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeSecurityGroupReferencesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeSecurityGroupRules")
@@ -24798,16 +18163,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeSecurityGroupRulesMaxResults = None,
     ) -> DescribeSecurityGroupRulesResult:
-        """Describes one or more of your security group rules.
-
-        :param filters: One or more filters.
-        :param security_group_rule_ids: The IDs of the security group rules.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return in a single call.
-        :returns: DescribeSecurityGroupRulesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeSecurityGroups")
@@ -24821,26 +18176,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeSecurityGroupsMaxResults = None,
     ) -> DescribeSecurityGroupsResult:
-        """Describes the specified security groups or all of your security groups.
-
-        A security group is for use with instances either in the EC2-Classic
-        platform or in a specific VPC. For more information, see `Amazon EC2
-        security
-        groups <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide* and `Security groups
-        for your
-        VPC <https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_SecurityGroups.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param filters: The filters.
-        :param group_ids: The IDs of the security groups.
-        :param group_names: [EC2-Classic and default VPC only] The names of the security groups.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token to request the next page of results.
-        :param max_results: The maximum number of results to return in a single call.
-        :returns: DescribeSecurityGroupsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeSnapshotAttribute")
@@ -24851,19 +18186,6 @@ class Ec2Api:
         snapshot_id: SnapshotId,
         dry_run: Boolean = None,
     ) -> DescribeSnapshotAttributeResult:
-        """Describes the specified attribute of the specified snapshot. You can
-        specify only one attribute at a time.
-
-        For more information about EBS snapshots, see `Amazon EBS
-        snapshots <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param attribute: The snapshot attribute you would like to view.
-        :param snapshot_id: The ID of the EBS snapshot.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeSnapshotAttributeResult
-        """
         raise NotImplementedError
 
     @handler("DescribeSnapshotTierStatus")
@@ -24875,15 +18197,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeSnapshotTierStatusMaxResults = None,
     ) -> DescribeSnapshotTierStatusResult:
-        """Describes the storage tier status of one or more Amazon EBS snapshots.
-
-        :param filters: The filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :returns: DescribeSnapshotTierStatusResult
-        """
         raise NotImplementedError
 
     @handler("DescribeSnapshots")
@@ -24898,91 +18211,12 @@ class Ec2Api:
         snapshot_ids: SnapshotIdStringList = None,
         dry_run: Boolean = None,
     ) -> DescribeSnapshotsResult:
-        """Describes the specified EBS snapshots available to you or all of the EBS
-        snapshots available to you.
-
-        The snapshots available to you include public snapshots, private
-        snapshots that you own, and private snapshots owned by other Amazon Web
-        Services accounts for which you have explicit create volume permissions.
-
-        The create volume permissions fall into the following categories:
-
-        -  *public*: The owner of the snapshot granted create volume permissions
-           for the snapshot to the ``all`` group. All Amazon Web Services
-           accounts have create volume permissions for these snapshots.
-
-        -  *explicit*: The owner of the snapshot granted create volume
-           permissions to a specific Amazon Web Services account.
-
-        -  *implicit*: An Amazon Web Services account has implicit create volume
-           permissions for all snapshots it owns.
-
-        The list of snapshots returned can be filtered by specifying snapshot
-        IDs, snapshot owners, or Amazon Web Services accounts with create volume
-        permissions. If no options are specified, Amazon EC2 returns all
-        snapshots for which you have create volume permissions.
-
-        If you specify one or more snapshot IDs, only snapshots that have the
-        specified IDs are returned. If you specify an invalid snapshot ID, an
-        error is returned. If you specify a snapshot ID for which you do not
-        have access, it is not included in the returned results.
-
-        If you specify one or more snapshot owners using the ``OwnerIds``
-        option, only snapshots from the specified owners and for which you have
-        access are returned. The results can include the Amazon Web Services
-        account IDs of the specified owners, ``amazon`` for snapshots owned by
-        Amazon, or ``self`` for snapshots that you own.
-
-        If you specify a list of restorable users, only snapshots with create
-        snapshot permissions for those users are returned. You can specify
-        Amazon Web Services account IDs (if you own the snapshots), ``self`` for
-        snapshots for which you own or have explicit permissions, or ``all`` for
-        public snapshots.
-
-        If you are describing a long list of snapshots, we recommend that you
-        paginate the output to make the list more manageable. The ``MaxResults``
-        parameter sets the maximum number of results returned in a single page.
-        If the list of results exceeds your ``MaxResults`` value, then that
-        number of results is returned along with a ``NextToken`` value that can
-        be passed to a subsequent ``DescribeSnapshots`` request to retrieve the
-        remaining results.
-
-        To get the state of fast snapshot restores for a snapshot, use
-        DescribeFastSnapshotRestores.
-
-        For more information about EBS snapshots, see `Amazon EBS
-        snapshots <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param filters: The filters.
-        :param max_results: The maximum number of snapshot results returned by ``DescribeSnapshots``
-        in paginated output.
-        :param next_token: The ``NextToken`` value returned from a previous paginated
-        ``DescribeSnapshots`` request where ``MaxResults`` was used and the
-        results exceeded the value of that parameter.
-        :param owner_ids: Scopes the results to snapshots with the specified owners.
-        :param restorable_by_user_ids: The IDs of the Amazon Web Services accounts that can create volumes from
-        the snapshot.
-        :param snapshot_ids: The snapshot IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeSnapshotsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeSpotDatafeedSubscription")
     def describe_spot_datafeed_subscription(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> DescribeSpotDatafeedSubscriptionResult:
-        """Describes the data feed for Spot Instances. For more information, see
-        `Spot Instance data
-        feed <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-data-feeds.html>`__
-        in the *Amazon EC2 User Guide for Linux Instances*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeSpotDatafeedSubscriptionResult
-        """
         raise NotImplementedError
 
     @handler("DescribeSpotFleetInstances")
@@ -24994,15 +18228,6 @@ class Ec2Api:
         max_results: DescribeSpotFleetInstancesMaxResults = None,
         next_token: String = None,
     ) -> DescribeSpotFleetInstancesResponse:
-        """Describes the running instances for the specified Spot Fleet.
-
-        :param spot_fleet_request_id: The ID of the Spot Fleet request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :returns: DescribeSpotFleetInstancesResponse
-        """
         raise NotImplementedError
 
     @handler("DescribeSpotFleetRequestHistory")
@@ -25016,28 +18241,6 @@ class Ec2Api:
         max_results: DescribeSpotFleetRequestHistoryMaxResults = None,
         next_token: String = None,
     ) -> DescribeSpotFleetRequestHistoryResponse:
-        """Describes the events for the specified Spot Fleet request during the
-        specified time.
-
-        Spot Fleet events are delayed by up to 30 seconds before they can be
-        described. This ensures that you can query by the last evaluated time
-        and not miss a recorded event. Spot Fleet events are available for 48
-        hours.
-
-        For more information, see `Monitor fleet events using Amazon
-        EventBridge <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/fleet-monitor.html>`__
-        in the *Amazon EC2 User Guide for Linux Instances*.
-
-        :param spot_fleet_request_id: The ID of the Spot Fleet request.
-        :param start_time: The starting date and time for the events, in UTC format (for example,
-        *YYYY*-*MM*-*DD* T *HH*:*MM*:*SS* Z).
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param event_type: The type of events to describe.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :returns: DescribeSpotFleetRequestHistoryResponse
-        """
         raise NotImplementedError
 
     @handler("DescribeSpotFleetRequests")
@@ -25049,18 +18252,6 @@ class Ec2Api:
         next_token: String = None,
         spot_fleet_request_ids: SpotFleetRequestIdList = None,
     ) -> DescribeSpotFleetRequestsResponse:
-        """Describes your Spot Fleet requests.
-
-        Spot Fleet requests are deleted 48 hours after they are canceled and
-        their instances are terminated.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :param spot_fleet_request_ids: The IDs of the Spot Fleet requests.
-        :returns: DescribeSpotFleetRequestsResponse
-        """
         raise NotImplementedError
 
     @handler("DescribeSpotInstanceRequests")
@@ -25073,35 +18264,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: Integer = None,
     ) -> DescribeSpotInstanceRequestsResult:
-        """Describes the specified Spot Instance requests.
-
-        You can use ``DescribeSpotInstanceRequests`` to find a running Spot
-        Instance by examining the response. If the status of the Spot Instance
-        is ``fulfilled``, the instance ID appears in the response and contains
-        the identifier of the instance. Alternatively, you can use
-        `DescribeInstances <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances>`__
-        with a filter to look for instances where the instance lifecycle is
-        ``spot``.
-
-        We recommend that you set ``MaxResults`` to a value between 5 and 1000
-        to limit the number of results returned. This paginates the output,
-        which makes the list more manageable and returns the results faster. If
-        the list of results exceeds your ``MaxResults`` value, then that number
-        of results is returned along with a ``NextToken`` value that can be
-        passed to a subsequent ``DescribeSpotInstanceRequests`` request to
-        retrieve the remaining results.
-
-        Spot Instance requests are deleted four hours after they are canceled
-        and their instances are terminated.
-
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param spot_instance_request_ids: One or more Spot Instance request IDs.
-        :param next_token: The token to request the next set of results.
-        :param max_results: The maximum number of results to return in a single call.
-        :returns: DescribeSpotInstanceRequestsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeSpotPriceHistory")
@@ -25118,32 +18280,6 @@ class Ec2Api:
         product_descriptions: ProductDescriptionList = None,
         start_time: DateTime = None,
     ) -> DescribeSpotPriceHistoryResult:
-        """Describes the Spot price history. For more information, see `Spot
-        Instance pricing
-        history <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-instances-history.html>`__
-        in the *Amazon EC2 User Guide for Linux Instances*.
-
-        When you specify a start and end time, the operation returns the prices
-        of the instance types within that time range. It also returns the last
-        price change before the start time, which is the effective price as of
-        the start time.
-
-        :param filters: One or more filters.
-        :param availability_zone: Filters the results by the specified Availability Zone.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param end_time: The date and time, up to the current date, from which to stop retrieving
-        the price history data, in UTC format (for example,
-        *YYYY*-*MM*-*DD* T *HH*:*MM*:*SS* Z).
-        :param instance_types: Filters the results by the specified instance types.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :param product_descriptions: Filters the results by the specified basic product descriptions.
-        :param start_time: The date and time, up to the past 90 days, from which to start
-        retrieving the price history data, in UTC format (for example,
-        *YYYY*-*MM*-*DD* T *HH*:*MM*:*SS* Z).
-        :returns: DescribeSpotPriceHistoryResult
-        """
         raise NotImplementedError
 
     @handler("DescribeStaleSecurityGroups")
@@ -25155,19 +18291,6 @@ class Ec2Api:
         max_results: DescribeStaleSecurityGroupsMaxResults = None,
         next_token: DescribeStaleSecurityGroupsNextToken = None,
     ) -> DescribeStaleSecurityGroupsResult:
-        """[VPC only] Describes the stale security group rules for security groups
-        in a specified VPC. Rules are stale when they reference a deleted
-        security group in the same VPC or in a peer VPC, or if they reference a
-        security group in a peer VPC for which the VPC peering connection has
-        been deleted.
-
-        :param vpc_id: The ID of the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of items to return for this request.
-        :param next_token: The token for the next set of items to return.
-        :returns: DescribeStaleSecurityGroupsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeStoreImageTasks")
@@ -25180,35 +18303,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeStoreImageTasksRequestMaxResults = None,
     ) -> DescribeStoreImageTasksResult:
-        """Describes the progress of the AMI store tasks. You can describe the
-        store tasks for specified AMIs. If you don't specify the AMIs, you get a
-        paginated list of store tasks from the last 31 days.
-
-        For each AMI task, the response indicates if the task is ``InProgress``,
-        ``Completed``, or ``Failed``. For tasks ``InProgress``, the response
-        shows the estimated progress as a percentage.
-
-        Tasks are listed in reverse chronological order. Currently, only tasks
-        from the past 31 days can be viewed.
-
-        To use this API, you must have the required permissions. For more
-        information, see `Permissions for storing and restoring AMIs using
-        Amazon
-        S3 <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ami-store-restore.html#ami-s3-permissions>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        For more information, see `Store and restore an AMI using Amazon
-        S3 <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ami-store-restore.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param image_ids: The AMI IDs for which to show progress.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: The filters.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return in a single call.
-        :returns: DescribeStoreImageTasksResult
-        """
         raise NotImplementedError
 
     @handler("DescribeSubnets")
@@ -25221,20 +18315,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeSubnetsMaxResults = None,
     ) -> DescribeSubnetsResult:
-        """Describes one or more of your subnets.
-
-        For more information, see `Your VPC and
-        subnets <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Subnets.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param filters: One or more filters.
-        :param subnet_ids: One or more subnet IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :returns: DescribeSubnetsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTags")
@@ -25246,19 +18326,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeTagsResult:
-        """Describes the specified tags for your EC2 resources.
-
-        For more information about tags, see `Tagging Your
-        Resources <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: The filters.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token to retrieve the next page of results.
-        :returns: DescribeTagsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTrafficMirrorFilters")
@@ -25271,16 +18338,6 @@ class Ec2Api:
         max_results: TrafficMirroringMaxResults = None,
         next_token: NextToken = None,
     ) -> DescribeTrafficMirrorFiltersResult:
-        """Describes one or more Traffic Mirror filters.
-
-        :param traffic_mirror_filter_ids: The ID of the Traffic Mirror filter.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeTrafficMirrorFiltersResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTrafficMirrorSessions")
@@ -25293,18 +18350,6 @@ class Ec2Api:
         max_results: TrafficMirroringMaxResults = None,
         next_token: NextToken = None,
     ) -> DescribeTrafficMirrorSessionsResult:
-        """Describes one or more Traffic Mirror sessions. By default, all Traffic
-        Mirror sessions are described. Alternatively, you can filter the
-        results.
-
-        :param traffic_mirror_session_ids: The ID of the Traffic Mirror session.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeTrafficMirrorSessionsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTrafficMirrorTargets")
@@ -25317,16 +18362,6 @@ class Ec2Api:
         max_results: TrafficMirroringMaxResults = None,
         next_token: NextToken = None,
     ) -> DescribeTrafficMirrorTargetsResult:
-        """Information about one or more Traffic Mirror targets.
-
-        :param traffic_mirror_target_ids: The ID of the Traffic Mirror targets.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :returns: DescribeTrafficMirrorTargetsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTransitGatewayAttachments")
@@ -25339,19 +18374,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeTransitGatewayAttachmentsResult:
-        """Describes one or more attachments between resources and transit
-        gateways. By default, all attachments are described. Alternatively, you
-        can filter the results by attachment ID, attachment state, resource ID,
-        or resource owner.
-
-        :param transit_gateway_attachment_ids: The IDs of the attachments.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeTransitGatewayAttachmentsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTransitGatewayConnectPeers")
@@ -25364,16 +18386,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeTransitGatewayConnectPeersResult:
-        """Describes one or more Connect peers.
-
-        :param transit_gateway_connect_peer_ids: The IDs of the Connect peers.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeTransitGatewayConnectPeersResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTransitGatewayConnects")
@@ -25386,16 +18398,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeTransitGatewayConnectsResult:
-        """Describes one or more Connect attachments.
-
-        :param transit_gateway_attachment_ids: The IDs of the attachments.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeTransitGatewayConnectsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTransitGatewayMulticastDomains")
@@ -25408,16 +18410,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeTransitGatewayMulticastDomainsResult:
-        """Describes one or more transit gateway multicast domains.
-
-        :param transit_gateway_multicast_domain_ids: The ID of the transit gateway multicast domain.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeTransitGatewayMulticastDomainsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTransitGatewayPeeringAttachments")
@@ -25430,16 +18422,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeTransitGatewayPeeringAttachmentsResult:
-        """Describes your transit gateway peering attachments.
-
-        :param transit_gateway_attachment_ids: One or more IDs of the transit gateway peering attachments.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeTransitGatewayPeeringAttachmentsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTransitGatewayRouteTables")
@@ -25452,18 +18434,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeTransitGatewayRouteTablesResult:
-        """Describes one or more transit gateway route tables. By default, all
-        transit gateway route tables are described. Alternatively, you can
-        filter the results.
-
-        :param transit_gateway_route_table_ids: The IDs of the transit gateway route tables.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeTransitGatewayRouteTablesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTransitGatewayVpcAttachments")
@@ -25476,17 +18446,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeTransitGatewayVpcAttachmentsResult:
-        """Describes one or more VPC attachments. By default, all VPC attachments
-        are described. Alternatively, you can filter the results.
-
-        :param transit_gateway_attachment_ids: The IDs of the attachments.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeTransitGatewayVpcAttachmentsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTransitGateways")
@@ -25499,17 +18458,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> DescribeTransitGatewaysResult:
-        """Describes one or more transit gateways. By default, all transit gateways
-        are described. Alternatively, you can filter the results.
-
-        :param transit_gateway_ids: The IDs of the transit gateways.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeTransitGatewaysResult
-        """
         raise NotImplementedError
 
     @handler("DescribeTrunkInterfaceAssociations")
@@ -25522,19 +18470,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeTrunkInterfaceAssociationsMaxResults = None,
     ) -> DescribeTrunkInterfaceAssociationsResult:
-        """This API action is currently in **limited preview only**. If you are
-        interested in using this feature, contact your account manager.
-
-        Describes one or more network interface trunk associations.
-
-        :param association_ids: The IDs of the associations.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: One or more filters.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :returns: DescribeTrunkInterfaceAssociationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVolumeAttribute")
@@ -25545,19 +18480,6 @@ class Ec2Api:
         volume_id: VolumeId,
         dry_run: Boolean = None,
     ) -> DescribeVolumeAttributeResult:
-        """Describes the specified attribute of the specified volume. You can
-        specify only one attribute at a time.
-
-        For more information about EBS volumes, see `Amazon EBS
-        volumes <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumes.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param attribute: The attribute of the volume.
-        :param volume_id: The ID of the volume.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeVolumeAttributeResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVolumeStatus")
@@ -25570,57 +18492,6 @@ class Ec2Api:
         volume_ids: VolumeIdStringList = None,
         dry_run: Boolean = None,
     ) -> DescribeVolumeStatusResult:
-        """Describes the status of the specified volumes. Volume status provides
-        the result of the checks performed on your volumes to determine events
-        that can impair the performance of your volumes. The performance of a
-        volume can be affected if an issue occurs on the volume's underlying
-        host. If the volume's underlying host experiences a power outage or
-        system issue, after the system is restored, there could be data
-        inconsistencies on the volume. Volume events notify you if this occurs.
-        Volume actions notify you if any action needs to be taken in response to
-        the event.
-
-        The ``DescribeVolumeStatus`` operation provides the following
-        information about the specified volumes:
-
-        *Status*: Reflects the current status of the volume. The possible values
-        are ``ok``, ``impaired`` , ``warning``, or ``insufficient-data``. If all
-        checks pass, the overall status of the volume is ``ok``. If the check
-        fails, the overall status is ``impaired``. If the status is
-        ``insufficient-data``, then the checks might still be taking place on
-        your volume at the time. We recommend that you retry the request. For
-        more information about volume status, see `Monitor the status of your
-        volumes <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-volume-status.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        *Events*: Reflect the cause of a volume status and might require you to
-        take action. For example, if your volume returns an ``impaired`` status,
-        then the volume event might be ``potential-data-inconsistency``. This
-        means that your volume has been affected by an issue with the underlying
-        host, has all I/O operations disabled, and might have inconsistent data.
-
-        *Actions*: Reflect the actions you might have to take in response to an
-        event. For example, if the status of the volume is ``impaired`` and the
-        volume event shows ``potential-data-inconsistency``, then the action
-        shows ``enable-volume-io``. This means that you may want to enable the
-        I/O operations for the volume by calling the EnableVolumeIO action and
-        then check the volume for data consistency.
-
-        Volume status is based on the volume status checks, and does not reflect
-        the volume state. Therefore, volume status does not indicate volumes in
-        the ``error`` state (for example, when a volume is incapable of
-        accepting I/O.)
-
-        :param filters: The filters.
-        :param max_results: The maximum number of volume results returned by
-        ``DescribeVolumeStatus`` in paginated output.
-        :param next_token: The ``NextToken`` value to include in a future ``DescribeVolumeStatus``
-        request.
-        :param volume_ids: The IDs of the volumes.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeVolumeStatusResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVolumes")
@@ -25633,31 +18504,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeVolumesResult:
-        """Describes the specified EBS volumes or all of your EBS volumes.
-
-        If you are describing a long list of volumes, we recommend that you
-        paginate the output to make the list more manageable. The ``MaxResults``
-        parameter sets the maximum number of results returned in a single page.
-        If the list of results exceeds your ``MaxResults`` value, then that
-        number of results is returned along with a ``NextToken`` value that can
-        be passed to a subsequent ``DescribeVolumes`` request to retrieve the
-        remaining results.
-
-        For more information about EBS volumes, see `Amazon EBS
-        volumes <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumes.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param filters: The filters.
-        :param volume_ids: The volume IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of volume results returned by ``DescribeVolumes`` in
-        paginated output.
-        :param next_token: The ``NextToken`` value returned from a previous paginated
-        ``DescribeVolumes`` request where ``MaxResults`` was used and the
-        results exceeded the value of that parameter.
-        :returns: DescribeVolumesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVolumesModifications")
@@ -25670,30 +18516,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: Integer = None,
     ) -> DescribeVolumesModificationsResult:
-        """Describes the most recent volume modification request for the specified
-        EBS volumes.
-
-        If a volume has never been modified, some information in the output will
-        be null. If a volume has been modified more than once, the output
-        includes only the most recent modification request.
-
-        You can also use CloudWatch Events to check the status of a modification
-        to an EBS volume. For information about CloudWatch Events, see the
-        `Amazon CloudWatch Events User
-        Guide <https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/>`__.
-        For more information, see `Monitor the progress of volume
-        modifications <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-volume-modifications.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param volume_ids: The IDs of the volumes.
-        :param filters: The filters.
-        :param next_token: The ``nextToken`` value returned by a previous paginated request.
-        :param max_results: The maximum number of results (up to a limit of 500) to be returned in a
-        paginated request.
-        :returns: DescribeVolumesModificationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcAttribute")
@@ -25704,15 +18526,6 @@ class Ec2Api:
         vpc_id: VpcId,
         dry_run: Boolean = None,
     ) -> DescribeVpcAttributeResult:
-        """Describes the specified attribute of the specified VPC. You can specify
-        only one attribute at a time.
-
-        :param attribute: The VPC attribute.
-        :param vpc_id: The ID of the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeVpcAttributeResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcClassicLink")
@@ -25723,14 +18536,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         vpc_ids: VpcClassicLinkIdList = None,
     ) -> DescribeVpcClassicLinkResult:
-        """Describes the ClassicLink status of one or more VPCs.
-
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param vpc_ids: One or more VPCs for which you want to describe the ClassicLink status.
-        :returns: DescribeVpcClassicLinkResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcClassicLinkDnsSupport")
@@ -25741,20 +18546,6 @@ class Ec2Api:
         next_token: DescribeVpcClassicLinkDnsSupportNextToken = None,
         vpc_ids: VpcClassicLinkIdList = None,
     ) -> DescribeVpcClassicLinkDnsSupportResult:
-        """Describes the ClassicLink DNS support status of one or more VPCs. If
-        enabled, the DNS hostname of a linked EC2-Classic instance resolves to
-        its private IP address when addressed from an instance in the VPC to
-        which it's linked. Similarly, the DNS hostname of an instance in a VPC
-        resolves to its private IP address when addressed from a linked
-        EC2-Classic instance. For more information, see
-        `ClassicLink <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-classiclink.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param vpc_ids: One or more VPC IDs.
-        :returns: DescribeVpcClassicLinkDnsSupportResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcEndpointConnectionNotifications")
@@ -25767,17 +18558,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeVpcEndpointConnectionNotificationsResult:
-        """Describes the connection notifications for VPC endpoints and VPC
-        endpoint services.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param connection_notification_id: The ID of the notification.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token to request the next page of results.
-        :returns: DescribeVpcEndpointConnectionNotificationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcEndpointConnections")
@@ -25789,17 +18569,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeVpcEndpointConnectionsResult:
-        """Describes the VPC endpoint connections to your VPC endpoint services,
-        including any endpoints that are pending your acceptance.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to retrieve the next page of results.
-        :returns: DescribeVpcEndpointConnectionsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcEndpointServiceConfigurations")
@@ -25812,18 +18581,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeVpcEndpointServiceConfigurationsResult:
-        """Describes the VPC endpoint service configurations in your account (your
-        services).
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param service_ids: The IDs of one or more services.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to retrieve the next page of results.
-        :returns: DescribeVpcEndpointServiceConfigurationsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcEndpointServicePermissions")
@@ -25836,18 +18593,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeVpcEndpointServicePermissionsResult:
-        """Describes the principals (service consumers) that are permitted to
-        discover your VPC endpoint service.
-
-        :param service_id: The ID of the service.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param next_token: The token to retrieve the next page of results.
-        :returns: DescribeVpcEndpointServicePermissionsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcEndpointServices")
@@ -25860,24 +18605,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeVpcEndpointServicesResult:
-        """Describes available services to which you can create a VPC endpoint.
-
-        When the service provider and the consumer have different accounts in
-        multiple Availability Zones, and the consumer views the VPC endpoint
-        service information, the response only includes the common Availability
-        Zones. For example, when the service provider account uses
-        ``us-east-1a`` and ``us-east-1c`` and the consumer uses ``us-east-1a``
-        and ``us-east-1b``, the response includes the VPC endpoint services in
-        the common Availability Zone, ``us-east-1a``.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param service_names: One or more service names.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of items to return for this request.
-        :param next_token: The token for the next set of items to return.
-        :returns: DescribeVpcEndpointServicesResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcEndpoints")
@@ -25890,16 +18617,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> DescribeVpcEndpointsResult:
-        """Describes one or more of your VPC endpoints.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param vpc_endpoint_ids: One or more endpoint IDs.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of items to return for this request.
-        :param next_token: The token for the next set of items to return.
-        :returns: DescribeVpcEndpointsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcPeeringConnections")
@@ -25912,16 +18629,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeVpcPeeringConnectionsMaxResults = None,
     ) -> DescribeVpcPeeringConnectionsResult:
-        """Describes one or more of your VPC peering connections.
-
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param vpc_peering_connection_ids: One or more VPC peering connection IDs.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :returns: DescribeVpcPeeringConnectionsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpcs")
@@ -25934,16 +18641,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: DescribeVpcsMaxResults = None,
     ) -> DescribeVpcsResult:
-        """Describes one or more of your VPCs.
-
-        :param filters: One or more filters.
-        :param vpc_ids: One or more VPC IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :returns: DescribeVpcsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpnConnections")
@@ -25954,18 +18651,6 @@ class Ec2Api:
         vpn_connection_ids: VpnConnectionIdStringList = None,
         dry_run: Boolean = None,
     ) -> DescribeVpnConnectionsResult:
-        """Describes one or more of your VPN connections.
-
-        For more information, see `Amazon Web Services Site-to-Site
-        VPN <https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html>`__ in
-        the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        :param filters: One or more filters.
-        :param vpn_connection_ids: One or more VPN connection IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeVpnConnectionsResult
-        """
         raise NotImplementedError
 
     @handler("DescribeVpnGateways")
@@ -25976,18 +18661,6 @@ class Ec2Api:
         vpn_gateway_ids: VpnGatewayIdStringList = None,
         dry_run: Boolean = None,
     ) -> DescribeVpnGatewaysResult:
-        """Describes one or more of your virtual private gateways.
-
-        For more information, see `Amazon Web Services Site-to-Site
-        VPN <https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html>`__ in
-        the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        :param filters: One or more filters.
-        :param vpn_gateway_ids: One or more virtual private gateway IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DescribeVpnGatewaysResult
-        """
         raise NotImplementedError
 
     @handler("DetachClassicLinkVpc")
@@ -25998,17 +18671,6 @@ class Ec2Api:
         vpc_id: VpcId,
         dry_run: Boolean = None,
     ) -> DetachClassicLinkVpcResult:
-        """Unlinks (detaches) a linked EC2-Classic instance from a VPC. After the
-        instance has been unlinked, the VPC security groups are no longer
-        associated with it. An instance is automatically unlinked from a VPC
-        when it's stopped.
-
-        :param instance_id: The ID of the instance to unlink from the VPC.
-        :param vpc_id: The ID of the VPC to which the instance is linked.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DetachClassicLinkVpcResult
-        """
         raise NotImplementedError
 
     @handler("DetachInternetGateway")
@@ -26019,15 +18681,6 @@ class Ec2Api:
         vpc_id: VpcId,
         dry_run: Boolean = None,
     ) -> None:
-        """Detaches an internet gateway from a VPC, disabling connectivity between
-        the internet and the VPC. The VPC must not contain any running instances
-        with Elastic IP addresses or public IPv4 addresses.
-
-        :param internet_gateway_id: The ID of the internet gateway.
-        :param vpc_id: The ID of the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DetachNetworkInterface")
@@ -26038,13 +18691,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         force: Boolean = None,
     ) -> None:
-        """Detaches a network interface from an instance.
-
-        :param attachment_id: The ID of the attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param force: Specifies whether to force a detachment.
-        """
         raise NotImplementedError
 
     @handler("DetachVolume")
@@ -26057,33 +18703,6 @@ class Ec2Api:
         instance_id: InstanceId = None,
         dry_run: Boolean = None,
     ) -> VolumeAttachment:
-        """Detaches an EBS volume from an instance. Make sure to unmount any file
-        systems on the device within your operating system before detaching the
-        volume. Failure to do so can result in the volume becoming stuck in the
-        ``busy`` state while detaching. If this happens, detachment can be
-        delayed indefinitely until you unmount the volume, force detachment,
-        reboot the instance, or all three. If an EBS volume is the root device
-        of an instance, it can't be detached while the instance is running. To
-        detach the root volume, stop the instance first.
-
-        When a volume with an Amazon Web Services Marketplace product code is
-        detached from an instance, the product code is no longer associated with
-        the instance.
-
-        For more information, see `Detach an Amazon EBS
-        volume <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-detaching-volume.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param volume_id: The ID of the volume.
-        :param device: The device name.
-        :param force: Forces detachment if the previous detachment attempt did not occur
-        cleanly (for example, logging into an instance, unmounting the volume,
-        and detaching normally).
-        :param instance_id: The ID of the instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: VolumeAttachment
-        """
         raise NotImplementedError
 
     @handler("DetachVpnGateway")
@@ -26094,44 +18713,12 @@ class Ec2Api:
         vpn_gateway_id: VpnGatewayId,
         dry_run: Boolean = None,
     ) -> None:
-        """Detaches a virtual private gateway from a VPC. You do this if you're
-        planning to turn off the VPC and not use it anymore. You can confirm a
-        virtual private gateway has been completely detached from a VPC by
-        describing the virtual private gateway (any attachments to the virtual
-        private gateway are also described).
-
-        You must wait for the attachment's state to switch to ``detached``
-        before you can delete the VPC or attach a different VPC to the virtual
-        private gateway.
-
-        :param vpc_id: The ID of the VPC.
-        :param vpn_gateway_id: The ID of the virtual private gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DisableEbsEncryptionByDefault")
     def disable_ebs_encryption_by_default(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> DisableEbsEncryptionByDefaultResult:
-        """Disables EBS encryption by default for your account in the current
-        Region.
-
-        After you disable encryption by default, you can still create encrypted
-        volumes by enabling encryption when you create each volume.
-
-        Disabling encryption by default does not change the encryption status of
-        your existing volumes.
-
-        For more information, see `Amazon EBS
-        encryption <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisableEbsEncryptionByDefaultResult
-        """
         raise NotImplementedError
 
     @handler("DisableFastLaunch")
@@ -26142,19 +18729,6 @@ class Ec2Api:
         force: Boolean = None,
         dry_run: Boolean = None,
     ) -> DisableFastLaunchResult:
-        """Discontinue faster launching for a Windows AMI, and clean up existing
-        pre-provisioned snapshots. When you disable faster launching, the AMI
-        uses the standard launch process for each instance. All pre-provisioned
-        snapshots must be removed before you can enable faster launching again.
-
-        :param image_id: The ID of the image for which you’re turning off faster launching, and
-        removing pre-provisioned snapshots.
-        :param force: Forces the image settings to turn off faster launching for your Windows
-        AMI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisableFastLaunchResult
-        """
         raise NotImplementedError
 
     @handler("DisableFastSnapshotRestores")
@@ -26165,65 +18739,24 @@ class Ec2Api:
         source_snapshot_ids: SnapshotIdStringList,
         dry_run: Boolean = None,
     ) -> DisableFastSnapshotRestoresResult:
-        """Disables fast snapshot restores for the specified snapshots in the
-        specified Availability Zones.
-
-        :param availability_zones: One or more Availability Zones.
-        :param source_snapshot_ids: The IDs of one or more snapshots.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisableFastSnapshotRestoresResult
-        """
         raise NotImplementedError
 
     @handler("DisableImageDeprecation")
     def disable_image_deprecation(
         self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None
     ) -> DisableImageDeprecationResult:
-        """Cancels the deprecation of the specified AMI.
-
-        For more information, see `Deprecate an
-        AMI <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ami-deprecate.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param image_id: The ID of the AMI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisableImageDeprecationResult
-        """
         raise NotImplementedError
 
     @handler("DisableIpamOrganizationAdminAccount")
     def disable_ipam_organization_admin_account(
         self, context: RequestContext, delegated_admin_account_id: String, dry_run: Boolean = None
     ) -> DisableIpamOrganizationAdminAccountResult:
-        """Disable the IPAM account. For more information, see `Enable integration
-        with Organizations </vpc/latest/ipam/enable-integ-ipam.html>`__ in the
-        *Amazon VPC IPAM User Guide*.
-
-        :param delegated_admin_account_id: The Organizations member account ID that you want to disable as IPAM
-        account.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :returns: DisableIpamOrganizationAdminAccountResult
-        """
         raise NotImplementedError
 
     @handler("DisableSerialConsoleAccess")
     def disable_serial_console_access(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> DisableSerialConsoleAccessResult:
-        """Disables access to the EC2 serial console of all instances for your
-        account. By default, access to the EC2 serial console is disabled for
-        your account. For more information, see `Manage account access to the
-        EC2 serial
-        console <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configure-access-to-serial-console.html#serial-console-account-access>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisableSerialConsoleAccessResult
-        """
         raise NotImplementedError
 
     @handler("DisableTransitGatewayRouteTablePropagation")
@@ -26234,15 +18767,6 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> DisableTransitGatewayRouteTablePropagationResult:
-        """Disables the specified resource attachment from propagating routes to
-        the specified propagation route table.
-
-        :param transit_gateway_route_table_id: The ID of the propagation route table.
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisableTransitGatewayRouteTablePropagationResult
-        """
         raise NotImplementedError
 
     @handler("DisableVgwRoutePropagation")
@@ -26253,46 +18777,18 @@ class Ec2Api:
         route_table_id: RouteTableId,
         dry_run: Boolean = None,
     ) -> None:
-        """Disables a virtual private gateway (VGW) from propagating routes to a
-        specified route table of a VPC.
-
-        :param gateway_id: The ID of the virtual private gateway.
-        :param route_table_id: The ID of the route table.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DisableVpcClassicLink")
     def disable_vpc_classic_link(
         self, context: RequestContext, vpc_id: VpcId, dry_run: Boolean = None
     ) -> DisableVpcClassicLinkResult:
-        """Disables ClassicLink for a VPC. You cannot disable ClassicLink for a VPC
-        that has EC2-Classic instances linked to it.
-
-        :param vpc_id: The ID of the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisableVpcClassicLinkResult
-        """
         raise NotImplementedError
 
     @handler("DisableVpcClassicLinkDnsSupport")
     def disable_vpc_classic_link_dns_support(
         self, context: RequestContext, vpc_id: VpcId = None
     ) -> DisableVpcClassicLinkDnsSupportResult:
-        """Disables ClassicLink DNS support for a VPC. If disabled, DNS hostnames
-        resolve to public IP addresses when addressed between a linked
-        EC2-Classic instance and instances in the VPC to which it's linked. For
-        more information, see
-        `ClassicLink <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-classiclink.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        You must specify a VPC ID in the request.
-
-        :param vpc_id: The ID of the VPC.
-        :returns: DisableVpcClassicLinkDnsSupportResult
-        """
         raise NotImplementedError
 
     @handler("DisassociateAddress")
@@ -26303,22 +18799,6 @@ class Ec2Api:
         public_ip: String = None,
         dry_run: Boolean = None,
     ) -> None:
-        """Disassociates an Elastic IP address from the instance or network
-        interface it's associated with.
-
-        An Elastic IP address is for use in either the EC2-Classic platform or
-        in a VPC. For more information, see `Elastic IP
-        Addresses <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        This is an idempotent operation. If you perform the operation more than
-        once, Amazon EC2 doesn't return an error.
-
-        :param association_id: [EC2-VPC] The association ID.
-        :param public_ip: [EC2-Classic] The Elastic IP address.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DisassociateClientVpnTargetNetwork")
@@ -26329,25 +18809,6 @@ class Ec2Api:
         association_id: ClientVpnAssociationId,
         dry_run: Boolean = None,
     ) -> DisassociateClientVpnTargetNetworkResult:
-        """Disassociates a target network from the specified Client VPN endpoint.
-        When you disassociate the last target network from a Client VPN, the
-        following happens:
-
-        -  The route that was automatically added for the VPC is deleted
-
-        -  All active client connections are terminated
-
-        -  New client connections are disallowed
-
-        -  The Client VPN endpoint's status changes to ``pending-associate``
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint from which to disassociate the target
-        network.
-        :param association_id: The ID of the target network association.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisassociateClientVpnTargetNetworkResult
-        """
         raise NotImplementedError
 
     @handler("DisassociateEnclaveCertificateIamRole")
@@ -26358,33 +18819,12 @@ class Ec2Api:
         role_arn: ResourceArn = None,
         dry_run: Boolean = None,
     ) -> DisassociateEnclaveCertificateIamRoleResult:
-        """Disassociates an IAM role from an Certificate Manager (ACM) certificate.
-        Disassociating an IAM role from an ACM certificate removes the Amazon S3
-        object that contains the certificate, certificate chain, and encrypted
-        private key from the Amazon S3 bucket. It also revokes the IAM role's
-        permission to use the KMS key used to encrypt the private key. This
-        effectively revokes the role's permission to use the certificate.
-
-        :param certificate_arn: The ARN of the ACM certificate from which to disassociate the IAM role.
-        :param role_arn: The ARN of the IAM role to disassociate.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisassociateEnclaveCertificateIamRoleResult
-        """
         raise NotImplementedError
 
     @handler("DisassociateIamInstanceProfile")
     def disassociate_iam_instance_profile(
         self, context: RequestContext, association_id: IamInstanceProfileAssociationId
     ) -> DisassociateIamInstanceProfileResult:
-        """Disassociates an IAM instance profile from a running or stopped
-        instance.
-
-        Use DescribeIamInstanceProfileAssociations to get the association ID.
-
-        :param association_id: The ID of the IAM instance profile association.
-        :returns: DisassociateIamInstanceProfileResult
-        """
         raise NotImplementedError
 
     @handler("DisassociateInstanceEventWindow")
@@ -26395,18 +18835,6 @@ class Ec2Api:
         association_target: InstanceEventWindowDisassociationRequest,
         dry_run: Boolean = None,
     ) -> DisassociateInstanceEventWindowResult:
-        """Disassociates one or more targets from an event window.
-
-        For more information, see `Define event windows for scheduled
-        events <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/event-windows.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_event_window_id: The ID of the event window.
-        :param association_target: One or more targets to disassociate from the specified event window.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisassociateInstanceEventWindowResult
-        """
         raise NotImplementedError
 
     @handler("DisassociateRouteTable")
@@ -26416,33 +18844,12 @@ class Ec2Api:
         association_id: RouteTableAssociationId,
         dry_run: Boolean = None,
     ) -> None:
-        """Disassociates a subnet or gateway from a route table.
-
-        After you perform this action, the subnet no longer uses the routes in
-        the route table. Instead, it uses the routes in the VPC's main route
-        table. For more information about route tables, see `Route
-        tables <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param association_id: The association ID representing the current association between the
-        route table and subnet or gateway.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("DisassociateSubnetCidrBlock")
     def disassociate_subnet_cidr_block(
         self, context: RequestContext, association_id: SubnetCidrAssociationId
     ) -> DisassociateSubnetCidrBlockResult:
-        """Disassociates a CIDR block from a subnet. Currently, you can
-        disassociate an IPv6 CIDR block only. You must detach or delete all
-        gateways and resources that are associated with the CIDR block before
-        you can disassociate it.
-
-        :param association_id: The association ID for the CIDR block.
-        :returns: DisassociateSubnetCidrBlockResult
-        """
         raise NotImplementedError
 
     @handler("DisassociateTransitGatewayMulticastDomain")
@@ -26454,16 +18861,6 @@ class Ec2Api:
         subnet_ids: TransitGatewaySubnetIdList = None,
         dry_run: Boolean = None,
     ) -> DisassociateTransitGatewayMulticastDomainResult:
-        """Disassociates the specified subnets from the transit gateway multicast
-        domain.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param subnet_ids: The IDs of the subnets;.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisassociateTransitGatewayMulticastDomainResult
-        """
         raise NotImplementedError
 
     @handler("DisassociateTransitGatewayRouteTable")
@@ -26474,14 +18871,6 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> DisassociateTransitGatewayRouteTableResult:
-        """Disassociates a resource attachment from a transit gateway route table.
-
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisassociateTransitGatewayRouteTableResult
-        """
         raise NotImplementedError
 
     @handler("DisassociateTrunkInterface")
@@ -26492,67 +18881,18 @@ class Ec2Api:
         client_token: String = None,
         dry_run: Boolean = None,
     ) -> DisassociateTrunkInterfaceResult:
-        """This API action is currently in **limited preview only**. If you are
-        interested in using this feature, contact your account manager.
-
-        Removes an association between a branch network interface with a trunk
-        network interface.
-
-        :param association_id: The ID of the association.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: DisassociateTrunkInterfaceResult
-        """
         raise NotImplementedError
 
     @handler("DisassociateVpcCidrBlock")
     def disassociate_vpc_cidr_block(
         self, context: RequestContext, association_id: VpcCidrAssociationId
     ) -> DisassociateVpcCidrBlockResult:
-        """Disassociates a CIDR block from a VPC. To disassociate the CIDR block,
-        you must specify its association ID. You can get the association ID by
-        using DescribeVpcs. You must detach or delete all gateways and resources
-        that are associated with the CIDR block before you can disassociate it.
-
-        You cannot disassociate the CIDR block with which you originally created
-        the VPC (the primary CIDR block).
-
-        :param association_id: The association ID for the CIDR block.
-        :returns: DisassociateVpcCidrBlockResult
-        """
         raise NotImplementedError
 
     @handler("EnableEbsEncryptionByDefault")
     def enable_ebs_encryption_by_default(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> EnableEbsEncryptionByDefaultResult:
-        """Enables EBS encryption by default for your account in the current
-        Region.
-
-        After you enable encryption by default, the EBS volumes that you create
-        are always encrypted, either using the default KMS key or the KMS key
-        that you specified when you created each volume. For more information,
-        see `Amazon EBS
-        encryption <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        You can specify the default KMS key for encryption by default using
-        ModifyEbsDefaultKmsKeyId or ResetEbsDefaultKmsKeyId.
-
-        Enabling encryption by default has no effect on the encryption status of
-        your existing volumes.
-
-        After you enable encryption by default, you can no longer launch
-        instances using instance types that do not support encryption. For more
-        information, see `Supported instance
-        types <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html#EBSEncryption_supported_instances>`__.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: EnableEbsEncryptionByDefaultResult
-        """
         raise NotImplementedError
 
     @handler("EnableFastLaunch")
@@ -26566,27 +18906,6 @@ class Ec2Api:
         max_parallel_launches: Integer = None,
         dry_run: Boolean = None,
     ) -> EnableFastLaunchResult:
-        """When you enable faster launching for a Windows AMI, images are
-        pre-provisioned, using snapshots to launch instances up to 65% faster.
-        To create the optimized Windows image, Amazon EC2 launches an instance
-        and runs through Sysprep steps, rebooting as required. Then it creates a
-        set of reserved snapshots that are used for subsequent launches. The
-        reserved snapshots are automatically replenished as they are used,
-        depending on your settings for launch frequency.
-
-        :param image_id: The ID of the image for which you’re enabling faster launching.
-        :param resource_type: The type of resource to use for pre-provisioning the Windows AMI for
-        faster launching.
-        :param snapshot_configuration: Configuration settings for creating and managing the snapshots that are
-        used for pre-provisioning the Windows AMI for faster launching.
-        :param launch_template: The launch template to use when launching Windows instances from
-        pre-provisioned snapshots.
-        :param max_parallel_launches: The maximum number of parallel instances to launch for creating
-        resources.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: EnableFastLaunchResult
-        """
         raise NotImplementedError
 
     @handler("EnableFastSnapshotRestores")
@@ -26597,24 +18916,6 @@ class Ec2Api:
         source_snapshot_ids: SnapshotIdStringList,
         dry_run: Boolean = None,
     ) -> EnableFastSnapshotRestoresResult:
-        """Enables fast snapshot restores for the specified snapshots in the
-        specified Availability Zones.
-
-        You get the full benefit of fast snapshot restores after they enter the
-        ``enabled`` state. To get the current state of fast snapshot restores,
-        use DescribeFastSnapshotRestores. To disable fast snapshot restores, use
-        DisableFastSnapshotRestores.
-
-        For more information, see `Amazon EBS fast snapshot
-        restore <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-fast-snapshot-restore.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param availability_zones: One or more Availability Zones.
-        :param source_snapshot_ids: The IDs of one or more snapshots.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: EnableFastSnapshotRestoresResult
-        """
         raise NotImplementedError
 
     @handler("EnableImageDeprecation")
@@ -26625,54 +18926,18 @@ class Ec2Api:
         deprecate_at: MillisecondDateTime,
         dry_run: Boolean = None,
     ) -> EnableImageDeprecationResult:
-        """Enables deprecation of the specified AMI at the specified date and time.
-
-        For more information, see `Deprecate an
-        AMI <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ami-deprecate.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param image_id: The ID of the AMI.
-        :param deprecate_at: The date and time to deprecate the AMI, in UTC, in the following format:
-        *YYYY*-*MM*-*DD* T *HH*:*MM*:*SS* Z.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: EnableImageDeprecationResult
-        """
         raise NotImplementedError
 
     @handler("EnableIpamOrganizationAdminAccount")
     def enable_ipam_organization_admin_account(
         self, context: RequestContext, delegated_admin_account_id: String, dry_run: Boolean = None
     ) -> EnableIpamOrganizationAdminAccountResult:
-        """Enable an Organizations member account as the IPAM admin account. You
-        cannot select the Organizations management account as the IPAM admin
-        account. For more information, see `Enable integration with
-        Organizations </vpc/latest/ipam/enable-integ-ipam.html>`__ in the
-        *Amazon VPC IPAM User Guide*.
-
-        :param delegated_admin_account_id: The Organizations member account ID that you want to enable as the IPAM
-        account.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :returns: EnableIpamOrganizationAdminAccountResult
-        """
         raise NotImplementedError
 
     @handler("EnableSerialConsoleAccess")
     def enable_serial_console_access(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> EnableSerialConsoleAccessResult:
-        """Enables access to the EC2 serial console of all instances for your
-        account. By default, access to the EC2 serial console is disabled for
-        your account. For more information, see `Manage account access to the
-        EC2 serial
-        console <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configure-access-to-serial-console.html#serial-console-account-access>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: EnableSerialConsoleAccessResult
-        """
         raise NotImplementedError
 
     @handler("EnableTransitGatewayRouteTablePropagation")
@@ -26683,15 +18948,6 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> EnableTransitGatewayRouteTablePropagationResult:
-        """Enables the specified attachment to propagate routes to the specified
-        propagation route table.
-
-        :param transit_gateway_route_table_id: The ID of the propagation route table.
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: EnableTransitGatewayRouteTablePropagationResult
-        """
         raise NotImplementedError
 
     @handler("EnableVgwRoutePropagation")
@@ -26702,68 +18958,24 @@ class Ec2Api:
         route_table_id: RouteTableId,
         dry_run: Boolean = None,
     ) -> None:
-        """Enables a virtual private gateway (VGW) to propagate routes to the
-        specified route table of a VPC.
-
-        :param gateway_id: The ID of the virtual private gateway that is attached to a VPC.
-        :param route_table_id: The ID of the route table.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("EnableVolumeIO")
     def enable_volume_io(
         self, context: RequestContext, volume_id: VolumeId, dry_run: Boolean = None
     ) -> None:
-        """Enables I/O operations for a volume that had I/O operations disabled
-        because the data on the volume was potentially inconsistent.
-
-        :param volume_id: The ID of the volume.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("EnableVpcClassicLink")
     def enable_vpc_classic_link(
         self, context: RequestContext, vpc_id: VpcId, dry_run: Boolean = None
     ) -> EnableVpcClassicLinkResult:
-        """Enables a VPC for ClassicLink. You can then link EC2-Classic instances
-        to your ClassicLink-enabled VPC to allow communication over private IP
-        addresses. You cannot enable your VPC for ClassicLink if any of your VPC
-        route tables have existing routes for address ranges within the
-        ``10.0.0.0/8`` IP address range, excluding local routes for VPCs in the
-        ``10.0.0.0/16`` and ``10.1.0.0/16`` IP address ranges. For more
-        information, see
-        `ClassicLink <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-classiclink.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param vpc_id: The ID of the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: EnableVpcClassicLinkResult
-        """
         raise NotImplementedError
 
     @handler("EnableVpcClassicLinkDnsSupport")
     def enable_vpc_classic_link_dns_support(
         self, context: RequestContext, vpc_id: VpcId = None
     ) -> EnableVpcClassicLinkDnsSupportResult:
-        """Enables a VPC to support DNS hostname resolution for ClassicLink. If
-        enabled, the DNS hostname of a linked EC2-Classic instance resolves to
-        its private IP address when addressed from an instance in the VPC to
-        which it's linked. Similarly, the DNS hostname of an instance in a VPC
-        resolves to its private IP address when addressed from a linked
-        EC2-Classic instance. For more information, see
-        `ClassicLink <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-classiclink.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        You must specify a VPC ID in the request.
-
-        :param vpc_id: The ID of the VPC.
-        :returns: EnableVpcClassicLinkDnsSupportResult
-        """
         raise NotImplementedError
 
     @handler("ExportClientVpnClientCertificateRevocationList")
@@ -26773,14 +18985,6 @@ class Ec2Api:
         client_vpn_endpoint_id: ClientVpnEndpointId,
         dry_run: Boolean = None,
     ) -> ExportClientVpnClientCertificateRevocationListResult:
-        """Downloads the client certificate revocation list for the specified
-        Client VPN endpoint.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ExportClientVpnClientCertificateRevocationListResult
-        """
         raise NotImplementedError
 
     @handler("ExportClientVpnClientConfiguration")
@@ -26790,16 +18994,6 @@ class Ec2Api:
         client_vpn_endpoint_id: ClientVpnEndpointId,
         dry_run: Boolean = None,
     ) -> ExportClientVpnClientConfigurationResult:
-        """Downloads the contents of the Client VPN endpoint configuration file for
-        the specified Client VPN endpoint. The Client VPN endpoint configuration
-        file includes the Client VPN endpoint and certificate information
-        clients need to establish a connection with the Client VPN endpoint.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ExportClientVpnClientConfigurationResult
-        """
         raise NotImplementedError
 
     @handler("ExportImage")
@@ -26815,23 +19009,6 @@ class Ec2Api:
         role_name: String = None,
         tag_specifications: TagSpecificationList = None,
     ) -> ExportImageResult:
-        """Exports an Amazon Machine Image (AMI) to a VM file. For more
-        information, see `Exporting a VM directly from an Amazon Machine Image
-        (AMI) <https://docs.aws.amazon.com/vm-import/latest/userguide/vmexport_image.html>`__
-        in the *VM Import/Export User Guide*.
-
-        :param disk_image_format: The disk image format.
-        :param image_id: The ID of the image.
-        :param s3_export_location: Information about the destination Amazon S3 bucket.
-        :param client_token: Token to enable idempotency for export image requests.
-        :param description: A description of the image being exported.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param role_name: The name of the role that grants VM Import/Export permission to export
-        images to your Amazon S3 bucket.
-        :param tag_specifications: The tags to apply to the export image task during creation.
-        :returns: ExportImageResult
-        """
         raise NotImplementedError
 
     @handler("ExportTransitGatewayRoutes")
@@ -26843,40 +19020,12 @@ class Ec2Api:
         filters: FilterList = None,
         dry_run: Boolean = None,
     ) -> ExportTransitGatewayRoutesResult:
-        """Exports routes from the specified transit gateway route table to the
-        specified S3 bucket. By default, all routes are exported. Alternatively,
-        you can filter by CIDR range.
-
-        The routes are saved to the specified bucket in a JSON file. For more
-        information, see `Export Route Tables to Amazon
-        S3 <https://docs.aws.amazon.com/vpc/latest/tgw/tgw-route-tables.html#tgw-export-route-tables>`__
-        in *Transit Gateways*.
-
-        :param transit_gateway_route_table_id: The ID of the route table.
-        :param s3_bucket: The name of the S3 bucket.
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ExportTransitGatewayRoutesResult
-        """
         raise NotImplementedError
 
     @handler("GetAssociatedEnclaveCertificateIamRoles")
     def get_associated_enclave_certificate_iam_roles(
         self, context: RequestContext, certificate_arn: ResourceArn = None, dry_run: Boolean = None
     ) -> GetAssociatedEnclaveCertificateIamRolesResult:
-        """Returns the IAM roles that are associated with the specified ACM (ACM)
-        certificate. It also returns the name of the Amazon S3 bucket and the
-        Amazon S3 object key where the certificate, certificate chain, and
-        encrypted private key bundle are stored, and the ARN of the KMS key
-        that's used to encrypt the private key.
-
-        :param certificate_arn: The ARN of the ACM certificate for which to view the associated IAM
-        roles, encryption keys, and Amazon S3 object information.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetAssociatedEnclaveCertificateIamRolesResult
-        """
         raise NotImplementedError
 
     @handler("GetAssociatedIpv6PoolCidrs")
@@ -26888,16 +19037,6 @@ class Ec2Api:
         max_results: Ipv6PoolMaxResults = None,
         dry_run: Boolean = None,
     ) -> GetAssociatedIpv6PoolCidrsResult:
-        """Gets information about the IPv6 CIDR block associations for a specified
-        IPv6 address pool.
-
-        :param pool_id: The ID of the IPv6 address pool.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetAssociatedIpv6PoolCidrsResult
-        """
         raise NotImplementedError
 
     @handler("GetCapacityReservationUsage")
@@ -26909,43 +19048,18 @@ class Ec2Api:
         max_results: GetCapacityReservationUsageRequestMaxResults = None,
         dry_run: Boolean = None,
     ) -> GetCapacityReservationUsageResult:
-        """Gets usage information about a Capacity Reservation. If the Capacity
-        Reservation is shared, it shows usage information for the Capacity
-        Reservation owner and each Amazon Web Services account that is currently
-        using the shared capacity. If the Capacity Reservation is not shared, it
-        shows only the Capacity Reservation owner's usage.
-
-        :param capacity_reservation_id: The ID of the Capacity Reservation.
-        :param next_token: The token to use to retrieve the next page of results.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetCapacityReservationUsageResult
-        """
         raise NotImplementedError
 
     @handler("GetCoipPoolUsage")
     def get_coip_pool_usage(
         self,
         context: RequestContext,
-        pool_id: CoipPoolId,
+        pool_id: Ipv4PoolCoipId,
         filters: FilterList = None,
         max_results: CoipPoolMaxResults = None,
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> GetCoipPoolUsageResult:
-        """Describes the allocations from the specified customer-owned address
-        pool.
-
-        :param pool_id: The ID of the address pool.
-        :param filters: The filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetCoipPoolUsageResult
-        """
         raise NotImplementedError
 
     @handler("GetConsoleOutput")
@@ -26956,32 +19070,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         latest: Boolean = None,
     ) -> GetConsoleOutputResult:
-        """Gets the console output for the specified instance. For Linux instances,
-        the instance console output displays the exact console output that would
-        normally be displayed on a physical monitor attached to a computer. For
-        Windows instances, the instance console output includes the last three
-        system event log errors.
-
-        By default, the console output returns buffered information that was
-        posted shortly after an instance transition state (start, stop, reboot,
-        or terminate). This information is available for at least one hour after
-        the most recent post. Only the most recent 64 KB of console output is
-        available.
-
-        You can optionally retrieve the latest serial console output at any time
-        during the instance lifecycle. This option is supported on instance
-        types that use the Nitro hypervisor.
-
-        For more information, see `Instance console
-        output <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-console.html#instance-console-console-output>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_id: The ID of the instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param latest: When enabled, retrieves the latest console output for the instance.
-        :returns: GetConsoleOutputResult
-        """
         raise NotImplementedError
 
     @handler("GetConsoleScreenshot")
@@ -26992,18 +19080,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         wake_up: Boolean = None,
     ) -> GetConsoleScreenshotResult:
-        """Retrieve a JPG-format screenshot of a running instance to help with
-        troubleshooting.
-
-        The returned content is Base64-encoded.
-
-        :param instance_id: The ID of the instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param wake_up: When set to ``true``, acts as keystroke input and wakes up an instance
-        that's in standby or "sleep" mode.
-        :returns: GetConsoleScreenshotResult
-        """
         raise NotImplementedError
 
     @handler("GetDefaultCreditSpecification")
@@ -27013,54 +19089,18 @@ class Ec2Api:
         instance_family: UnlimitedSupportedInstanceFamily,
         dry_run: Boolean = None,
     ) -> GetDefaultCreditSpecificationResult:
-        """Describes the default credit option for CPU usage of a burstable
-        performance instance family.
-
-        For more information, see `Burstable performance
-        instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/burstable-performance-instances.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_family: The instance family.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetDefaultCreditSpecificationResult
-        """
         raise NotImplementedError
 
     @handler("GetEbsDefaultKmsKeyId")
     def get_ebs_default_kms_key_id(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> GetEbsDefaultKmsKeyIdResult:
-        """Describes the default KMS key for EBS encryption by default for your
-        account in this Region. You can change the default KMS key for
-        encryption by default using ModifyEbsDefaultKmsKeyId or
-        ResetEbsDefaultKmsKeyId.
-
-        For more information, see `Amazon EBS
-        encryption <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetEbsDefaultKmsKeyIdResult
-        """
         raise NotImplementedError
 
     @handler("GetEbsEncryptionByDefault")
     def get_ebs_encryption_by_default(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> GetEbsEncryptionByDefaultResult:
-        """Describes whether EBS encryption by default is enabled for your account
-        in the current Region.
-
-        For more information, see `Amazon EBS
-        encryption <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetEbsEncryptionByDefaultResult
-        """
         raise NotImplementedError
 
     @handler("GetFlowLogsIntegrationTemplate")
@@ -27072,30 +19112,6 @@ class Ec2Api:
         integrate_services: IntegrateServices,
         dry_run: Boolean = None,
     ) -> GetFlowLogsIntegrationTemplateResult:
-        """Generates a CloudFormation template that streamlines and automates the
-        integration of VPC flow logs with Amazon Athena. This make it easier for
-        you to query and gain insights from VPC flow logs data. Based on the
-        information that you provide, we configure resources in the template to
-        do the following:
-
-        -  Create a table in Athena that maps fields to a custom log format
-
-        -  Create a Lambda function that updates the table with new partitions
-           on a daily, weekly, or monthly basis
-
-        -  Create a table partitioned between two timestamps in the past
-
-        -  Create a set of named queries in Athena that you can use to get
-           started quickly
-
-        :param flow_log_id: The ID of the flow log.
-        :param config_delivery_s3_destination_arn: To store the CloudFormation template in Amazon S3, specify the location
-        in Amazon S3.
-        :param integrate_services: Information about the service integration.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetFlowLogsIntegrationTemplateResult
-        """
         raise NotImplementedError
 
     @handler("GetGroupsForCapacityReservation")
@@ -27107,34 +19123,12 @@ class Ec2Api:
         max_results: GetGroupsForCapacityReservationRequestMaxResults = None,
         dry_run: Boolean = None,
     ) -> GetGroupsForCapacityReservationResult:
-        """Lists the resource groups to which a Capacity Reservation has been
-        added.
-
-        :param capacity_reservation_id: The ID of the Capacity Reservation.
-        :param next_token: The token to use to retrieve the next page of results.
-        :param max_results: The maximum number of results to return for the request in a single
-        page.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetGroupsForCapacityReservationResult
-        """
         raise NotImplementedError
 
     @handler("GetHostReservationPurchasePreview")
     def get_host_reservation_purchase_preview(
         self, context: RequestContext, host_id_set: RequestHostIdSet, offering_id: OfferingId
     ) -> GetHostReservationPurchasePreviewResult:
-        """Preview a reservation purchase with configurations that match those of
-        your Dedicated Host. You must have active Dedicated Hosts in your
-        account before you purchase a reservation.
-
-        This is a preview of the PurchaseHostReservation action and does not
-        result in the offering being purchased.
-
-        :param host_id_set: The IDs of the Dedicated Hosts with which the reservation is associated.
-        :param offering_id: The offering ID of the reservation.
-        :returns: GetHostReservationPurchasePreviewResult
-        """
         raise NotImplementedError
 
     @handler("GetInstanceTypesFromInstanceRequirements")
@@ -27148,37 +19142,6 @@ class Ec2Api:
         max_results: Integer = None,
         next_token: String = None,
     ) -> GetInstanceTypesFromInstanceRequirementsResult:
-        """Returns a list of instance types with the specified instance attributes.
-        You can use the response to preview the instance types without launching
-        instances. Note that the response does not consider capacity.
-
-        When you specify multiple parameters, you get instance types that
-        satisfy all of the specified parameters. If you specify multiple values
-        for a parameter, you get instance types that satisfy any of the
-        specified values.
-
-        For more information, see `Preview instance types with specified
-        attributes <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet-attribute-based-instance-type-selection.html#spotfleet-get-instance-types-from-instance-requirements>`__,
-        `Attribute-based instance type selection for EC2
-        Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet-attribute-based-instance-type-selection.html>`__,
-        `Attribute-based instance type selection for Spot
-        Fleet <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet-attribute-based-instance-type-selection.html>`__,
-        and `Spot placement
-        score <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-placement-score.html>`__
-        in the *Amazon EC2 User Guide*, and `Creating an Auto Scaling group
-        using attribute-based instance type
-        selection <https://docs.aws.amazon.com/autoscaling/ec2/userguide/create-asg-instance-type-requirements.html>`__
-        in the *Amazon EC2 Auto Scaling User Guide*.
-
-        :param architecture_types: The processor architecture type.
-        :param virtualization_types: The virtualization type.
-        :param instance_requirements: The attributes required for the instance types.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :returns: GetInstanceTypesFromInstanceRequirementsResult
-        """
         raise NotImplementedError
 
     @handler("GetIpamAddressHistory")
@@ -27194,23 +19157,6 @@ class Ec2Api:
         max_results: IpamAddressHistoryMaxResults = None,
         next_token: NextToken = None,
     ) -> GetIpamAddressHistoryResult:
-        """Retrieve historical information about a CIDR within an IPAM scope. For
-        more information, see `View the history of IP
-        addresses </vpc/latest/ipam/view-history-cidr-ipam.html>`__ in the
-        *Amazon VPC IPAM User Guide*.
-
-        :param cidr: The CIDR you want the history of.
-        :param ipam_scope_id: The ID of the IPAM scope that the CIDR is in.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param vpc_id: The ID of the VPC you want your history records filtered by.
-        :param start_time: The start of the time period for which you are looking for history.
-        :param end_time: The end of the time period for which you are looking for history.
-        :param max_results: The maximum number of historical results you would like returned per
-        page.
-        :param next_token: The token for the next page of results.
-        :returns: GetIpamAddressHistoryResult
-        """
         raise NotImplementedError
 
     @handler("GetIpamPoolAllocations")
@@ -27224,17 +19170,6 @@ class Ec2Api:
         max_results: GetIpamPoolAllocationsMaxResults = None,
         next_token: NextToken = None,
     ) -> GetIpamPoolAllocationsResult:
-        """Get a list of all the CIDR allocations in an IPAM pool.
-
-        :param ipam_pool_id: The ID of the IPAM pool you want to see the allocations for.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param ipam_pool_allocation_id: The ID of the allocation.
-        :param filters: One or more filters for the request.
-        :param max_results: The maximum number of results you would like returned per page.
-        :param next_token: The token for the next page of results.
-        :returns: GetIpamPoolAllocationsResult
-        """
         raise NotImplementedError
 
     @handler("GetIpamPoolCidrs")
@@ -27247,16 +19182,6 @@ class Ec2Api:
         max_results: IpamMaxResults = None,
         next_token: NextToken = None,
     ) -> GetIpamPoolCidrsResult:
-        """Get the CIDRs provisioned to an IPAM pool.
-
-        :param ipam_pool_id: The ID of the IPAM pool you want the CIDR for.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param filters: One or more filters for the request.
-        :param max_results: The maximum number of results to return in the request.
-        :param next_token: The token for the next page of results.
-        :returns: GetIpamPoolCidrsResult
-        """
         raise NotImplementedError
 
     @handler("GetIpamResourceCidrs")
@@ -27274,42 +19199,12 @@ class Ec2Api:
         resource_tag: RequestIpamResourceTag = None,
         resource_owner: String = None,
     ) -> GetIpamResourceCidrsResult:
-        """Get information about the resources in a scope.
-
-        :param ipam_scope_id: The ID of the scope that the resource is in.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param filters: One or more filters for the request.
-        :param max_results: The maximum number of results to return in the request.
-        :param next_token: The token for the next page of results.
-        :param ipam_pool_id: The ID of the IPAM pool that the resource is in.
-        :param resource_id: The ID of the resource.
-        :param resource_type: The resource type.
-        :param resource_tag: A tag on an IPAM resource.
-        :param resource_owner: The ID of the Amazon Web Services account that owns the resource.
-        :returns: GetIpamResourceCidrsResult
-        """
         raise NotImplementedError
 
     @handler("GetLaunchTemplateData")
     def get_launch_template_data(
         self, context: RequestContext, instance_id: InstanceId, dry_run: Boolean = None
     ) -> GetLaunchTemplateDataResult:
-        """Retrieves the configuration data of the specified instance. You can use
-        this data to create a launch template.
-
-        This action calls on other describe actions to get instance information.
-        Depending on your instance configuration, you may need to allow the
-        following actions in your IAM policy: DescribeSpotInstanceRequests,
-        DescribeInstanceCreditSpecifications, DescribeVolumes,
-        DescribeInstanceAttribute, and DescribeElasticGpus. Or, you can allow
-        ``describe*`` depending on your instance requirements.
-
-        :param instance_id: The ID of the instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetLaunchTemplateDataResult
-        """
         raise NotImplementedError
 
     @handler("GetManagedPrefixListAssociations")
@@ -27321,16 +19216,6 @@ class Ec2Api:
         max_results: GetManagedPrefixListAssociationsMaxResults = None,
         next_token: NextToken = None,
     ) -> GetManagedPrefixListAssociationsResult:
-        """Gets information about the resources that are associated with the
-        specified managed prefix list.
-
-        :param prefix_list_id: The ID of the prefix list.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :returns: GetManagedPrefixListAssociationsResult
-        """
         raise NotImplementedError
 
     @handler("GetManagedPrefixListEntries")
@@ -27343,16 +19228,6 @@ class Ec2Api:
         max_results: PrefixListMaxResults = None,
         next_token: NextToken = None,
     ) -> GetManagedPrefixListEntriesResult:
-        """Gets information about the entries for a specified managed prefix list.
-
-        :param prefix_list_id: The ID of the prefix list.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param target_version: The version of the prefix list for which to return the entries.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :returns: GetManagedPrefixListEntriesResult
-        """
         raise NotImplementedError
 
     @handler("GetNetworkInsightsAccessScopeAnalysisFindings")
@@ -27364,15 +19239,6 @@ class Ec2Api:
         next_token: NextToken = None,
         dry_run: Boolean = None,
     ) -> GetNetworkInsightsAccessScopeAnalysisFindingsResult:
-        """Gets the findings for the specified Network Access Scope analysis.
-
-        :param network_insights_access_scope_analysis_id: The ID of the Network Access Scope analysis.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetNetworkInsightsAccessScopeAnalysisFindingsResult
-        """
         raise NotImplementedError
 
     @handler("GetNetworkInsightsAccessScopeContent")
@@ -27382,48 +19248,12 @@ class Ec2Api:
         network_insights_access_scope_id: NetworkInsightsAccessScopeId,
         dry_run: Boolean = None,
     ) -> GetNetworkInsightsAccessScopeContentResult:
-        """Gets the content for the specified Network Access Scope.
-
-        :param network_insights_access_scope_id: The ID of the Network Access Scope.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetNetworkInsightsAccessScopeContentResult
-        """
         raise NotImplementedError
 
     @handler("GetPasswordData")
     def get_password_data(
         self, context: RequestContext, instance_id: InstanceId, dry_run: Boolean = None
     ) -> GetPasswordDataResult:
-        """Retrieves the encrypted administrator password for a running Windows
-        instance.
-
-        The Windows password is generated at boot by the ``EC2Config`` service
-        or ``EC2Launch`` scripts (Windows Server 2016 and later). This usually
-        only happens the first time an instance is launched. For more
-        information, see
-        `EC2Config <https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/UsingConfig_WinAMI.html>`__
-        and
-        `EC2Launch <https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ec2launch.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        For the ``EC2Config`` service, the password is not generated for
-        rebundled AMIs unless ``Ec2SetPassword`` is enabled before bundling.
-
-        The password is encrypted using the key pair that you specified when you
-        launched the instance. You must provide the corresponding key pair file.
-
-        When you launch an instance, password generation and encryption may take
-        a few minutes. If you try to retrieve the password before it's
-        available, the output returns an empty string. We recommend that you
-        wait up to 15 minutes after launching an instance before trying to
-        retrieve the generated password.
-
-        :param instance_id: The ID of the Windows instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetPasswordDataResult
-        """
         raise NotImplementedError
 
     @handler("GetReservedInstancesExchangeQuote")
@@ -27434,36 +19264,12 @@ class Ec2Api:
         dry_run: Boolean = None,
         target_configurations: TargetConfigurationRequestSet = None,
     ) -> GetReservedInstancesExchangeQuoteResult:
-        """Returns a quote and exchange information for exchanging one or more
-        specified Convertible Reserved Instances for a new Convertible Reserved
-        Instance. If the exchange cannot be performed, the reason is returned in
-        the response. Use AcceptReservedInstancesExchangeQuote to perform the
-        exchange.
-
-        :param reserved_instance_ids: The IDs of the Convertible Reserved Instances to exchange.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param target_configurations: The configuration of the target Convertible Reserved Instance to
-        exchange for your current Convertible Reserved Instances.
-        :returns: GetReservedInstancesExchangeQuoteResult
-        """
         raise NotImplementedError
 
     @handler("GetSerialConsoleAccessStatus")
     def get_serial_console_access_status(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> GetSerialConsoleAccessStatusResult:
-        """Retrieves the access status of your account to the EC2 serial console of
-        all instances. By default, access to the EC2 serial console is disabled
-        for your account. For more information, see `Manage account access to
-        the EC2 serial
-        console <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configure-access-to-serial-console.html#serial-console-account-access>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetSerialConsoleAccessStatusResult
-        """
         raise NotImplementedError
 
     @handler("GetSpotPlacementScores")
@@ -27480,31 +19286,6 @@ class Ec2Api:
         max_results: SpotPlacementScoresMaxResults = None,
         next_token: String = None,
     ) -> GetSpotPlacementScoresResult:
-        """Calculates the Spot placement score for a Region or Availability Zone
-        based on the specified target capacity and compute requirements.
-
-        You can specify your compute requirements either by using
-        ``InstanceRequirementsWithMetadata`` and letting Amazon EC2 choose the
-        optimal instance types to fulfill your Spot request, or you can specify
-        the instance types by using ``InstanceTypes``.
-
-        For more information, see `Spot placement
-        score <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-placement-score.html>`__
-        in the Amazon EC2 User Guide.
-
-        :param target_capacity: The target capacity.
-        :param instance_types: The instance types.
-        :param target_capacity_unit_type: The unit for the target capacity.
-        :param single_availability_zone: Specify ``true`` so that the response returns a list of scored
-        Availability Zones.
-        :param region_names: The Regions used to narrow down the list of Regions to be scored.
-        :param instance_requirements_with_metadata: The attributes for the instance types.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param max_results: The maximum number of results to return in a single call.
-        :param next_token: The token for the next set of results.
-        :returns: GetSpotPlacementScoresResult
-        """
         raise NotImplementedError
 
     @handler("GetSubnetCidrReservations")
@@ -27517,16 +19298,6 @@ class Ec2Api:
         next_token: String = None,
         max_results: GetSubnetCidrReservationsMaxResults = None,
     ) -> GetSubnetCidrReservationsResult:
-        """Gets information about the subnet CIDR reservations.
-
-        :param subnet_id: The ID of the subnet.
-        :param filters: One or more filters.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param next_token: The token for the next page of results.
-        :param max_results: The maximum number of results to return with a single call.
-        :returns: GetSubnetCidrReservationsResult
-        """
         raise NotImplementedError
 
     @handler("GetTransitGatewayAttachmentPropagations")
@@ -27539,17 +19310,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> GetTransitGatewayAttachmentPropagationsResult:
-        """Lists the route tables to which the specified resource attachment
-        propagates routes.
-
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetTransitGatewayAttachmentPropagationsResult
-        """
         raise NotImplementedError
 
     @handler("GetTransitGatewayMulticastDomainAssociations")
@@ -27562,17 +19322,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> GetTransitGatewayMulticastDomainAssociationsResult:
-        """Gets information about the associations for the transit gateway
-        multicast domain.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetTransitGatewayMulticastDomainAssociationsResult
-        """
         raise NotImplementedError
 
     @handler("GetTransitGatewayPrefixListReferences")
@@ -27585,17 +19334,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> GetTransitGatewayPrefixListReferencesResult:
-        """Gets information about the prefix list references in a specified transit
-        gateway route table.
-
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetTransitGatewayPrefixListReferencesResult
-        """
         raise NotImplementedError
 
     @handler("GetTransitGatewayRouteTableAssociations")
@@ -27608,17 +19346,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> GetTransitGatewayRouteTableAssociationsResult:
-        """Gets information about the associations for the specified transit
-        gateway route table.
-
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetTransitGatewayRouteTableAssociationsResult
-        """
         raise NotImplementedError
 
     @handler("GetTransitGatewayRouteTablePropagations")
@@ -27631,17 +19358,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> GetTransitGatewayRouteTablePropagationsResult:
-        """Gets information about the route table propagations for the specified
-        transit gateway route table.
-
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetTransitGatewayRouteTablePropagationsResult
-        """
         raise NotImplementedError
 
     @handler("GetVpnConnectionDeviceSampleConfiguration")
@@ -27653,19 +19369,6 @@ class Ec2Api:
         internet_key_exchange_version: String = None,
         dry_run: Boolean = None,
     ) -> GetVpnConnectionDeviceSampleConfigurationResult:
-        """Download an Amazon Web Services-provided sample configuration file to be
-        used with the customer gateway device specified for your Site-to-Site
-        VPN connection.
-
-        :param vpn_connection_id: The ``VpnConnectionId`` specifies the Site-to-Site VPN connection used
-        for the sample configuration.
-        :param vpn_connection_device_type_id: Device identifier provided by the ``GetVpnConnectionDeviceTypes`` API.
-        :param internet_key_exchange_version: The IKE version to be used in the sample configuration file for your
-        customer gateway device.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetVpnConnectionDeviceSampleConfigurationResult
-        """
         raise NotImplementedError
 
     @handler("GetVpnConnectionDeviceTypes")
@@ -27676,22 +19379,6 @@ class Ec2Api:
         next_token: NextToken = None,
         dry_run: Boolean = None,
     ) -> GetVpnConnectionDeviceTypesResult:
-        """Obtain a list of customer gateway devices for which sample configuration
-        files can be provided. The request has no additional parameters. You can
-        also see the list of device types with sample configuration files
-        available under `Your customer gateway
-        device <https://docs.aws.amazon.com/vpn/latest/s2svpn/your-cgw.html>`__
-        in the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        :param max_results: The maximum number of results returned by
-        ``GetVpnConnectionDeviceTypes`` in paginated output.
-        :param next_token: The ``NextToken`` value returned from a previous paginated
-        ``GetVpnConnectionDeviceTypes`` request where ``MaxResults`` was used
-        and the results exceeded the value of that parameter.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: GetVpnConnectionDeviceTypesResult
-        """
         raise NotImplementedError
 
     @handler("ImportClientVpnClientCertificateRevocationList")
@@ -27702,20 +19389,6 @@ class Ec2Api:
         certificate_revocation_list: String,
         dry_run: Boolean = None,
     ) -> ImportClientVpnClientCertificateRevocationListResult:
-        """Uploads a client certificate revocation list to the specified Client VPN
-        endpoint. Uploading a client certificate revocation list overwrites the
-        existing client certificate revocation list.
-
-        Uploading a client certificate revocation list resets existing client
-        connections.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint to which the client certificate
-        revocation list applies.
-        :param certificate_revocation_list: The client certificate revocation list file.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ImportClientVpnClientCertificateRevocationListResult
-        """
         raise NotImplementedError
 
     @handler("ImportImage")
@@ -27739,35 +19412,6 @@ class Ec2Api:
         usage_operation: String = None,
         boot_mode: BootModeValues = None,
     ) -> ImportImageResult:
-        """Import single or multi-volume disk images or EBS snapshots into an
-        Amazon Machine Image (AMI).
-
-        For more information, see `Importing a VM as an image using VM
-        Import/Export <https://docs.aws.amazon.com/vm-import/latest/userguide/vmimport-image-import.html>`__
-        in the *VM Import/Export User Guide*.
-
-        :param architecture: The architecture of the virtual machine.
-        :param client_data: The client-specific data.
-        :param client_token: The token to enable idempotency for VM import requests.
-        :param description: A description string for the import image task.
-        :param disk_containers: Information about the disk containers.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param encrypted: Specifies whether the destination AMI of the imported image should be
-        encrypted.
-        :param hypervisor: The target hypervisor platform.
-        :param kms_key_id: An identifier for the symmetric KMS key to use when creating the
-        encrypted AMI.
-        :param license_type: The license type to be used for the Amazon Machine Image (AMI) after
-        importing.
-        :param platform: The operating system of the virtual machine.
-        :param role_name: The name of the role to use when not using the default role, 'vmimport'.
-        :param license_specifications: The ARNs of the license configurations.
-        :param tag_specifications: The tags to apply to the import image task during creation.
-        :param usage_operation: The usage operation value.
-        :param boot_mode: The boot mode of the virtual machine.
-        :returns: ImportImageResult
-        """
         raise NotImplementedError
 
     @handler("ImportInstance")
@@ -27780,30 +19424,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         launch_specification: ImportInstanceLaunchSpecification = None,
     ) -> ImportInstanceResult:
-        """Creates an import instance task using metadata from the specified disk
-        image.
-
-        This API action supports only single-volume VMs. To import multi-volume
-        VMs, use ImportImage instead.
-
-        This API action is not supported by the Command Line Interface (CLI).
-        For information about using the Amazon EC2 CLI, which is deprecated, see
-        `Importing a VM to Amazon
-        EC2 <https://awsdocs.s3.amazonaws.com/EC2/ec2-clt.pdf#UsingVirtualMachinesinAmazonEC2>`__
-        in the *Amazon EC2 CLI Reference* PDF file.
-
-        For information about the import manifest referenced by this API action,
-        see `VM Import
-        Manifest <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/manifest.html>`__.
-
-        :param platform: The instance operating system.
-        :param description: A description for the instance being imported.
-        :param disk_images: The disk image.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param launch_specification: The launch specification.
-        :returns: ImportInstanceResult
-        """
         raise NotImplementedError
 
     @handler("ImportKeyPair")
@@ -27815,25 +19435,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> ImportKeyPairResult:
-        """Imports the public key from an RSA or ED25519 key pair that you created
-        with a third-party tool. Compare this with CreateKeyPair, in which
-        Amazon Web Services creates the key pair and gives the keys to you
-        (Amazon Web Services keeps a copy of the public key). With
-        ImportKeyPair, you create the key pair and give Amazon Web Services just
-        the public key. The private key is never transferred between you and
-        Amazon Web Services.
-
-        For more information about key pairs, see `Amazon EC2 key
-        pairs <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param key_name: A unique name for the key pair.
-        :param public_key_material: The public key.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: The tags to apply to the imported key pair.
-        :returns: ImportKeyPairResult
-        """
         raise NotImplementedError
 
     @handler("ImportSnapshot")
@@ -27850,26 +19451,6 @@ class Ec2Api:
         role_name: String = None,
         tag_specifications: TagSpecificationList = None,
     ) -> ImportSnapshotResult:
-        """Imports a disk into an EBS snapshot.
-
-        For more information, see `Importing a disk as a snapshot using VM
-        Import/Export <https://docs.aws.amazon.com/vm-import/latest/userguide/vmimport-import-snapshot.html>`__
-        in the *VM Import/Export User Guide*.
-
-        :param client_data: The client-specific data.
-        :param client_token: Token to enable idempotency for VM import requests.
-        :param description: The description string for the import snapshot task.
-        :param disk_container: Information about the disk container.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param encrypted: Specifies whether the destination snapshot of the imported image should
-        be encrypted.
-        :param kms_key_id: An identifier for the symmetric KMS key to use when creating the
-        encrypted snapshot.
-        :param role_name: The name of the role to use when not using the default role, 'vmimport'.
-        :param tag_specifications: The tags to apply to the import snapshot task during creation.
-        :returns: ImportSnapshotResult
-        """
         raise NotImplementedError
 
     @handler("ImportVolume")
@@ -27882,31 +19463,17 @@ class Ec2Api:
         description: String = None,
         dry_run: Boolean = None,
     ) -> ImportVolumeResult:
-        """Creates an import volume task using metadata from the specified disk
-        image.
+        raise NotImplementedError
 
-        This API action supports only single-volume VMs. To import multi-volume
-        VMs, use ImportImage instead. To import a disk to a snapshot, use
-        ImportSnapshot instead.
-
-        This API action is not supported by the Command Line Interface (CLI).
-        For information about using the Amazon EC2 CLI, which is deprecated, see
-        `Importing Disks to Amazon
-        EBS <https://awsdocs.s3.amazonaws.com/EC2/ec2-clt.pdf#importing-your-volumes-into-amazon-ebs>`__
-        in the *Amazon EC2 CLI Reference* PDF file.
-
-        For information about the import manifest referenced by this API action,
-        see `VM Import
-        Manifest <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/manifest.html>`__.
-
-        :param availability_zone: The Availability Zone for the resulting EBS volume.
-        :param image: The disk image.
-        :param volume: The volume size.
-        :param description: A description of the volume.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ImportVolumeResult
-        """
+    @handler("ListImagesInRecycleBin")
+    def list_images_in_recycle_bin(
+        self,
+        context: RequestContext,
+        image_ids: ImageIdStringList = None,
+        next_token: String = None,
+        max_results: ListImagesInRecycleBinMaxResults = None,
+        dry_run: Boolean = None,
+    ) -> ListImagesInRecycleBinResult:
         raise NotImplementedError
 
     @handler("ListSnapshotsInRecycleBin")
@@ -27918,15 +19485,6 @@ class Ec2Api:
         snapshot_ids: SnapshotIdStringList = None,
         dry_run: Boolean = None,
     ) -> ListSnapshotsInRecycleBinResult:
-        """Lists one or more snapshots that are currently in the Recycle Bin.
-
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param snapshot_ids: The IDs of the snapshots to list.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ListSnapshotsInRecycleBinResult
-        """
         raise NotImplementedError
 
     @handler("ModifyAddressAttribute")
@@ -27937,16 +19495,6 @@ class Ec2Api:
         domain_name: String = None,
         dry_run: Boolean = None,
     ) -> ModifyAddressAttributeResult:
-        """Modifies an attribute of the specified Elastic IP address. For
-        requirements, see `Using reverse DNS for email
-        applications <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html#Using_Elastic_Addressing_Reverse_DNS>`__.
-
-        :param allocation_id: [EC2-VPC] The allocation ID.
-        :param domain_name: The domain name to modify for the IP address.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyAddressAttributeResult
-        """
         raise NotImplementedError
 
     @handler("ModifyAvailabilityZoneGroup")
@@ -27957,21 +19505,6 @@ class Ec2Api:
         opt_in_status: ModifyAvailabilityZoneOptInStatus,
         dry_run: Boolean = None,
     ) -> ModifyAvailabilityZoneGroupResult:
-        """Changes the opt-in status of the Local Zone and Wavelength Zone group
-        for your account.
-
-        Use
-        `DescribeAvailabilityZones <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeAvailabilityZones.html>`__
-        to view the value for ``GroupName``.
-
-        :param group_name: The name of the Availability Zone group, Local Zone group, or Wavelength
-        Zone group.
-        :param opt_in_status: Indicates whether you are opted in to the Local Zone group or Wavelength
-        Zone group.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyAvailabilityZoneGroupResult
-        """
         raise NotImplementedError
 
     @handler("ModifyCapacityReservation")
@@ -27986,23 +19519,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         additional_info: String = None,
     ) -> ModifyCapacityReservationResult:
-        """Modifies a Capacity Reservation's capacity and the conditions under
-        which it is to be released. You cannot change a Capacity Reservation's
-        instance type, EBS optimization, instance store settings, platform,
-        Availability Zone, or instance eligibility. If you need to modify any of
-        these attributes, we recommend that you cancel the Capacity Reservation,
-        and then create a new one with the required attributes.
-
-        :param capacity_reservation_id: The ID of the Capacity Reservation.
-        :param instance_count: The number of instances for which to reserve capacity.
-        :param end_date: The date and time at which the Capacity Reservation expires.
-        :param end_date_type: Indicates the way in which the Capacity Reservation ends.
-        :param accept: Reserved.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param additional_info: Reserved for future use.
-        :returns: ModifyCapacityReservationResult
-        """
         raise NotImplementedError
 
     @handler("ModifyCapacityReservationFleet")
@@ -28015,25 +19531,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         remove_end_date: Boolean = None,
     ) -> ModifyCapacityReservationFleetResult:
-        """Modifies a Capacity Reservation Fleet.
-
-        When you modify the total target capacity of a Capacity Reservation
-        Fleet, the Fleet automatically creates new Capacity Reservations, or
-        modifies or cancels existing Capacity Reservations in the Fleet to meet
-        the new total target capacity. When you modify the end date for the
-        Fleet, the end dates for all of the individual Capacity Reservations in
-        the Fleet are updated accordingly.
-
-        :param capacity_reservation_fleet_id: The ID of the Capacity Reservation Fleet to modify.
-        :param total_target_capacity: The total number of capacity units to be reserved by the Capacity
-        Reservation Fleet.
-        :param end_date: The date and time at which the Capacity Reservation Fleet expires.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param remove_end_date: Indicates whether to remove the end date from the Capacity Reservation
-        Fleet.
-        :returns: ModifyCapacityReservationFleetResult
-        """
         raise NotImplementedError
 
     @handler("ModifyClientVpnEndpoint")
@@ -28055,29 +19552,6 @@ class Ec2Api:
         session_timeout_hours: Integer = None,
         client_login_banner_options: ClientLoginBannerOptions = None,
     ) -> ModifyClientVpnEndpointResult:
-        """Modifies the specified Client VPN endpoint. Modifying the DNS server
-        resets existing client connections.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint to modify.
-        :param server_certificate_arn: The ARN of the server certificate to be used.
-        :param connection_log_options: Information about the client connection logging options.
-        :param dns_servers: Information about the DNS servers to be used by Client VPN connections.
-        :param vpn_port: The port number to assign to the Client VPN endpoint for TCP and UDP
-        traffic.
-        :param description: A brief description of the Client VPN endpoint.
-        :param split_tunnel: Indicates whether the VPN is split-tunnel.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param security_group_ids: The IDs of one or more security groups to apply to the target network.
-        :param vpc_id: The ID of the VPC to associate with the Client VPN endpoint.
-        :param self_service_portal: Specify whether to enable the self-service portal for the Client VPN
-        endpoint.
-        :param client_connect_options: The options for managing connection authorization for new client
-        connections.
-        :param session_timeout_hours: .
-        :param client_login_banner_options: .
-        :returns: ModifyClientVpnEndpointResult
-        """
         raise NotImplementedError
 
     @handler("ModifyDefaultCreditSpecification")
@@ -28088,111 +19562,18 @@ class Ec2Api:
         cpu_credits: String,
         dry_run: Boolean = None,
     ) -> ModifyDefaultCreditSpecificationResult:
-        """Modifies the default credit option for CPU usage of burstable
-        performance instances. The default credit option is set at the account
-        level per Amazon Web Services Region, and is specified per instance
-        family. All new burstable performance instances in the account launch
-        using the default credit option.
-
-        ``ModifyDefaultCreditSpecification`` is an asynchronous operation, which
-        works at an Amazon Web Services Region level and modifies the credit
-        option for each Availability Zone. All zones in a Region are updated
-        within five minutes. But if instances are launched during this
-        operation, they might not get the new credit option until the zone is
-        updated. To verify whether the update has occurred, you can call
-        ``GetDefaultCreditSpecification`` and check
-        ``DefaultCreditSpecification`` for updates.
-
-        For more information, see `Burstable performance
-        instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/burstable-performance-instances.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_family: The instance family.
-        :param cpu_credits: The credit option for CPU usage of the instance family.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyDefaultCreditSpecificationResult
-        """
         raise NotImplementedError
 
     @handler("ModifyEbsDefaultKmsKeyId")
     def modify_ebs_default_kms_key_id(
         self, context: RequestContext, kms_key_id: KmsKeyId, dry_run: Boolean = None
     ) -> ModifyEbsDefaultKmsKeyIdResult:
-        """Changes the default KMS key for EBS encryption by default for your
-        account in this Region.
-
-        Amazon Web Services creates a unique Amazon Web Services managed KMS key
-        in each Region for use with encryption by default. If you change the
-        default KMS key to a symmetric customer managed KMS key, it is used
-        instead of the Amazon Web Services managed KMS key. To reset the default
-        KMS key to the Amazon Web Services managed KMS key for EBS, use
-        ResetEbsDefaultKmsKeyId. Amazon EBS does not support asymmetric KMS
-        keys.
-
-        If you delete or disable the customer managed KMS key that you specified
-        for use with encryption by default, your instances will fail to launch.
-
-        For more information, see `Amazon EBS
-        encryption <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param kms_key_id: The identifier of the Key Management Service (KMS) KMS key to use for
-        Amazon EBS encryption.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyEbsDefaultKmsKeyIdResult
-        """
         raise NotImplementedError
 
     @handler("ModifyFleet", expand=False)
     def modify_fleet(
         self, context: RequestContext, request: ModifyFleetRequest
     ) -> ModifyFleetResult:
-        """Modifies the specified EC2 Fleet.
-
-        You can only modify an EC2 Fleet request of type ``maintain``.
-
-        While the EC2 Fleet is being modified, it is in the ``modifying`` state.
-
-        To scale up your EC2 Fleet, increase its target capacity. The EC2 Fleet
-        launches the additional Spot Instances according to the allocation
-        strategy for the EC2 Fleet request. If the allocation strategy is
-        ``lowest-price``, the EC2 Fleet launches instances using the Spot
-        Instance pool with the lowest price. If the allocation strategy is
-        ``diversified``, the EC2 Fleet distributes the instances across the Spot
-        Instance pools. If the allocation strategy is ``capacity-optimized``,
-        EC2 Fleet launches instances from Spot Instance pools with optimal
-        capacity for the number of instances that are launching.
-
-        To scale down your EC2 Fleet, decrease its target capacity. First, the
-        EC2 Fleet cancels any open requests that exceed the new target capacity.
-        You can request that the EC2 Fleet terminate Spot Instances until the
-        size of the fleet no longer exceeds the new target capacity. If the
-        allocation strategy is ``lowest-price``, the EC2 Fleet terminates the
-        instances with the highest price per unit. If the allocation strategy is
-        ``capacity-optimized``, the EC2 Fleet terminates the instances in the
-        Spot Instance pools that have the least available Spot Instance
-        capacity. If the allocation strategy is ``diversified``, the EC2 Fleet
-        terminates instances across the Spot Instance pools. Alternatively, you
-        can request that the EC2 Fleet keep the fleet at its current size, but
-        not replace any Spot Instances that are interrupted or that you
-        terminate manually.
-
-        If you are finished with your EC2 Fleet for now, but will use it again
-        later, you can set the target capacity to 0.
-
-        :param fleet_id: The ID of the EC2 Fleet.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param excess_capacity_termination_policy: Indicates whether running instances should be terminated if the total
-        target capacity of the EC2 Fleet is decreased below the current size of
-        the EC2 Fleet.
-        :param launch_template_configs: The launch template and overrides.
-        :param target_capacity_specification: The size of the EC2 Fleet.
-        :param context: Reserved.
-        :returns: ModifyFleetResult
-        """
         raise NotImplementedError
 
     @handler("ModifyFpgaImageAttribute")
@@ -28210,22 +19591,6 @@ class Ec2Api:
         description: String = None,
         name: String = None,
     ) -> ModifyFpgaImageAttributeResult:
-        """Modifies the specified attribute of the specified Amazon FPGA Image
-        (AFI).
-
-        :param fpga_image_id: The ID of the AFI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param attribute: The name of the attribute.
-        :param operation_type: The operation type.
-        :param user_ids: The Amazon Web Services account IDs.
-        :param user_groups: The user groups.
-        :param product_codes: The product codes.
-        :param load_permission: The load permission for the AFI.
-        :param description: A description for the AFI.
-        :param name: A name for the AFI.
-        :returns: ModifyFpgaImageAttributeResult
-        """
         raise NotImplementedError
 
     @handler("ModifyHosts")
@@ -28238,75 +19603,12 @@ class Ec2Api:
         instance_type: String = None,
         instance_family: String = None,
     ) -> ModifyHostsResult:
-        """Modify the auto-placement setting of a Dedicated Host. When
-        auto-placement is enabled, any instances that you launch with a tenancy
-        of ``host`` but without a specific host ID are placed onto any available
-        Dedicated Host in your account that has auto-placement enabled. When
-        auto-placement is disabled, you need to provide a host ID to have the
-        instance launch onto a specific host. If no host ID is provided, the
-        instance is launched onto a suitable host with auto-placement enabled.
-
-        You can also use this API action to modify a Dedicated Host to support
-        either multiple instance types in an instance family, or to support a
-        specific instance type only.
-
-        :param host_ids: The IDs of the Dedicated Hosts to modify.
-        :param auto_placement: Specify whether to enable or disable auto-placement.
-        :param host_recovery: Indicates whether to enable or disable host recovery for the Dedicated
-        Host.
-        :param instance_type: Specifies the instance type to be supported by the Dedicated Host.
-        :param instance_family: Specifies the instance family to be supported by the Dedicated Host.
-        :returns: ModifyHostsResult
-        """
         raise NotImplementedError
 
     @handler("ModifyIdFormat")
     def modify_id_format(
         self, context: RequestContext, resource: String, use_long_ids: Boolean
     ) -> None:
-        """Modifies the ID format for the specified resource on a per-Region basis.
-        You can specify that resources should receive longer IDs (17-character
-        IDs) when they are created.
-
-        This request can only be used to modify longer ID settings for resource
-        types that are within the opt-in period. Resources currently in their
-        opt-in period include: ``bundle`` | ``conversion-task`` |
-        ``customer-gateway`` | ``dhcp-options`` | ``elastic-ip-allocation`` |
-        ``elastic-ip-association`` | ``export-task`` | ``flow-log`` |
-        ``image`` | ``import-task`` | ``internet-gateway`` | ``network-acl``
-        | ``network-acl-association`` | ``network-interface`` |
-        ``network-interface-attachment`` | ``prefix-list`` | ``route-table``
-        | ``route-table-association`` | ``security-group`` | ``subnet`` |
-        ``subnet-cidr-block-association`` | ``vpc`` |
-        ``vpc-cidr-block-association`` | ``vpc-endpoint`` |
-        ``vpc-peering-connection`` | ``vpn-connection`` | ``vpn-gateway``.
-
-        This setting applies to the IAM user who makes the request; it does not
-        apply to the entire Amazon Web Services account. By default, an IAM user
-        defaults to the same settings as the root user. If you're using this
-        action as the root user, then these settings apply to the entire
-        account, unless an IAM user explicitly overrides these settings for
-        themselves. For more information, see `Resource
-        IDs <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/resource-ids.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        Resources created with longer IDs are visible to all IAM roles and
-        users, regardless of these settings and provided that they have
-        permission to use the relevant ``Describe`` command for the resource
-        type.
-
-        :param resource: The type of resource: ``bundle`` | ``conversion-task`` |
-        ``customer-gateway`` | ``dhcp-options`` | ``elastic-ip-allocation`` |
-        ``elastic-ip-association`` | ``export-task`` | ``flow-log`` |
-        ``image`` | ``import-task`` | ``internet-gateway`` | ``network-acl``
-        | ``network-acl-association`` | ``network-interface`` |
-        ``network-interface-attachment`` | ``prefix-list`` | ``route-table``
-        | ``route-table-association`` | ``security-group`` | ``subnet`` |
-        ``subnet-cidr-block-association`` | ``vpc`` |
-        ``vpc-cidr-block-association`` | ``vpc-endpoint`` |
-        ``vpc-peering-connection`` | ``vpn-connection`` | ``vpn-gateway``.
-        :param use_long_ids: Indicate whether the resource should use longer IDs (17-character IDs).
-        """
         raise NotImplementedError
 
     @handler("ModifyIdentityIdFormat")
@@ -28317,50 +19619,6 @@ class Ec2Api:
         resource: String,
         use_long_ids: Boolean,
     ) -> None:
-        """Modifies the ID format of a resource for a specified IAM user, IAM role,
-        or the root user for an account; or all IAM users, IAM roles, and the
-        root user for an account. You can specify that resources should receive
-        longer IDs (17-character IDs) when they are created.
-
-        This request can only be used to modify longer ID settings for resource
-        types that are within the opt-in period. Resources currently in their
-        opt-in period include: ``bundle`` | ``conversion-task`` |
-        ``customer-gateway`` | ``dhcp-options`` | ``elastic-ip-allocation`` |
-        ``elastic-ip-association`` | ``export-task`` | ``flow-log`` |
-        ``image`` | ``import-task`` | ``internet-gateway`` | ``network-acl``
-        | ``network-acl-association`` | ``network-interface`` |
-        ``network-interface-attachment`` | ``prefix-list`` | ``route-table``
-        | ``route-table-association`` | ``security-group`` | ``subnet`` |
-        ``subnet-cidr-block-association`` | ``vpc`` |
-        ``vpc-cidr-block-association`` | ``vpc-endpoint`` |
-        ``vpc-peering-connection`` | ``vpn-connection`` | ``vpn-gateway``.
-
-        For more information, see `Resource
-        IDs <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/resource-ids.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        This setting applies to the principal specified in the request; it does
-        not apply to the principal that makes the request.
-
-        Resources created with longer IDs are visible to all IAM roles and
-        users, regardless of these settings and provided that they have
-        permission to use the relevant ``Describe`` command for the resource
-        type.
-
-        :param principal_arn: The ARN of the principal, which can be an IAM user, IAM role, or the
-        root user.
-        :param resource: The type of resource: ``bundle`` | ``conversion-task`` |
-        ``customer-gateway`` | ``dhcp-options`` | ``elastic-ip-allocation`` |
-        ``elastic-ip-association`` | ``export-task`` | ``flow-log`` |
-        ``image`` | ``import-task`` | ``internet-gateway`` | ``network-acl``
-        | ``network-acl-association`` | ``network-interface`` |
-        ``network-interface-attachment`` | ``prefix-list`` | ``route-table``
-        | ``route-table-association`` | ``security-group`` | ``subnet`` |
-        ``subnet-cidr-block-association`` | ``vpc`` |
-        ``vpc-cidr-block-association`` | ``vpc-endpoint`` |
-        ``vpc-peering-connection`` | ``vpn-connection`` | ``vpn-gateway``.
-        :param use_long_ids: Indicates whether the resource should use longer IDs (17-character IDs).
-        """
         raise NotImplementedError
 
     @handler("ModifyImageAttribute")
@@ -28380,32 +19638,6 @@ class Ec2Api:
         organization_arns: OrganizationArnStringList = None,
         organizational_unit_arns: OrganizationalUnitArnStringList = None,
     ) -> None:
-        """Modifies the specified attribute of the specified AMI. You can specify
-        only one attribute at a time. You can use the ``Attribute`` parameter to
-        specify the attribute or one of the following parameters:
-        ``Description`` or ``LaunchPermission``.
-
-        Images with an Amazon Web Services Marketplace product code cannot be
-        made public.
-
-        To enable the SriovNetSupport enhanced networking attribute of an image,
-        enable SriovNetSupport on an instance and create an AMI from the
-        instance.
-
-        :param image_id: The ID of the AMI.
-        :param attribute: The name of the attribute to modify.
-        :param description: A new description for the AMI.
-        :param launch_permission: A new launch permission for the AMI.
-        :param operation_type: The operation type.
-        :param product_codes: Not supported.
-        :param user_groups: The user groups.
-        :param user_ids: The Amazon Web Services account IDs.
-        :param value: The value of the attribute being modified.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param organization_arns: The Amazon Resource Name (ARN) of an organization.
-        :param organizational_unit_arns: The Amazon Resource Name (ARN) of an organizational unit (OU).
-        """
         raise NotImplementedError
 
     @handler("ModifyInstanceAttribute")
@@ -28429,47 +19661,6 @@ class Ec2Api:
         user_data: BlobAttributeValue = None,
         value: String = None,
     ) -> None:
-        """Modifies the specified attribute of the specified instance. You can
-        specify only one attribute at a time.
-
-        **Note:** Using this action to change the security groups associated
-        with an elastic network interface (ENI) attached to an instance in a VPC
-        can result in an error if the instance has more than one ENI. To change
-        the security groups associated with an ENI attached to an instance that
-        has multiple ENIs, we recommend that you use the
-        ModifyNetworkInterfaceAttribute action.
-
-        To modify some attributes, the instance must be stopped. For more
-        information, see `Modify a stopped
-        instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_ChangingAttributesWhileInstanceStopped.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_id: The ID of the instance.
-        :param source_dest_check: Enable or disable source/destination checks, which ensure that the
-        instance is either the source or the destination of any traffic that it
-        receives.
-        :param attribute: The name of the attribute.
-        :param block_device_mappings: Modifies the ``DeleteOnTermination`` attribute for volumes that are
-        currently attached.
-        :param disable_api_termination: If the value is ``true``, you can't terminate the instance using the
-        Amazon EC2 console, CLI, or API; otherwise, you can.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param ebs_optimized: Specifies whether the instance is optimized for Amazon EBS I/O.
-        :param ena_support: Set to ``true`` to enable enhanced networking with ENA for the instance.
-        :param groups: [EC2-VPC] Replaces the security groups of the instance with the
-        specified security groups.
-        :param instance_initiated_shutdown_behavior: Specifies whether an instance stops or terminates when you initiate
-        shutdown from the instance (using the operating system command for
-        system shutdown).
-        :param instance_type: Changes the instance type to the specified value.
-        :param kernel: Changes the instance's kernel to the specified value.
-        :param ramdisk: Changes the instance's RAM disk to the specified value.
-        :param sriov_net_support: Set to ``simple`` to enable enhanced networking with the Intel 82599
-        Virtual Function interface for the instance.
-        :param user_data: Changes the instance's user data to the specified value.
-        :param value: A new value for the attribute.
-        """
         raise NotImplementedError
 
     @handler("ModifyInstanceCapacityReservationAttributes")
@@ -28480,17 +19671,6 @@ class Ec2Api:
         capacity_reservation_specification: CapacityReservationSpecification,
         dry_run: Boolean = None,
     ) -> ModifyInstanceCapacityReservationAttributesResult:
-        """Modifies the Capacity Reservation settings for a stopped instance. Use
-        this action to configure an instance to target a specific Capacity
-        Reservation, run in any ``open`` Capacity Reservation with matching
-        attributes, or run On-Demand Instance capacity.
-
-        :param instance_id: The ID of the instance to be modified.
-        :param capacity_reservation_specification: Information about the Capacity Reservation targeting option.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyInstanceCapacityReservationAttributesResult
-        """
         raise NotImplementedError
 
     @handler("ModifyInstanceCreditSpecification")
@@ -28501,21 +19681,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         client_token: String = None,
     ) -> ModifyInstanceCreditSpecificationResult:
-        """Modifies the credit option for CPU usage on a running or stopped
-        burstable performance instance. The credit options are ``standard`` and
-        ``unlimited``.
-
-        For more information, see `Burstable performance
-        instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/burstable-performance-instances.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_credit_specifications: Information about the credit option for CPU usage.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: A unique, case-sensitive token that you provide to ensure idempotency of
-        your modification request.
-        :returns: ModifyInstanceCreditSpecificationResult
-        """
         raise NotImplementedError
 
     @handler("ModifyInstanceEventStartTime")
@@ -28527,15 +19692,6 @@ class Ec2Api:
         not_before: DateTime,
         dry_run: Boolean = None,
     ) -> ModifyInstanceEventStartTimeResult:
-        """Modifies the start time for a scheduled Amazon EC2 instance event.
-
-        :param instance_id: The ID of the instance with the scheduled event.
-        :param instance_event_id: The ID of the event whose date and time you are modifying.
-        :param not_before: The new date and time when the event will take place.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyInstanceEventStartTimeResult
-        """
         raise NotImplementedError
 
     @handler("ModifyInstanceEventWindow")
@@ -28548,30 +19704,6 @@ class Ec2Api:
         time_ranges: InstanceEventWindowTimeRangeRequestSet = None,
         cron_expression: InstanceEventWindowCronExpression = None,
     ) -> ModifyInstanceEventWindowResult:
-        """Modifies the specified event window.
-
-        You can define either a set of time ranges or a cron expression when
-        modifying the event window, but not both.
-
-        To modify the targets associated with the event window, use the
-        AssociateInstanceEventWindow and DisassociateInstanceEventWindow API.
-
-        If Amazon Web Services has already scheduled an event, modifying an
-        event window won't change the time of the scheduled event.
-
-        For more information, see `Define event windows for scheduled
-        events <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/event-windows.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_event_window_id: The ID of the event window.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param name: The name of the event window.
-        :param time_ranges: The time ranges of the event window.
-        :param cron_expression: The cron expression of the event window, for example,
-        ``* 0-4,20-23 * * 1,5``.
-        :returns: ModifyInstanceEventWindowResult
-        """
         raise NotImplementedError
 
     @handler("ModifyInstanceMetadataOptions")
@@ -28586,28 +19718,6 @@ class Ec2Api:
         http_protocol_ipv6: InstanceMetadataProtocolState = None,
         instance_metadata_tags: InstanceMetadataTagsState = None,
     ) -> ModifyInstanceMetadataOptionsResult:
-        """Modify the instance metadata parameters on a running or stopped
-        instance. When you modify the parameters on a stopped instance, they are
-        applied when the instance is started. When you modify the parameters on
-        a running instance, the API responds with a state of “pending”. After
-        the parameter modifications are successfully applied to the instance,
-        the state of the modifications changes from “pending” to “applied” in
-        subsequent describe-instances API calls. For more information, see
-        `Instance metadata and user
-        data <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_id: The ID of the instance.
-        :param http_tokens: The state of token usage for your instance metadata requests.
-        :param http_put_response_hop_limit: The desired HTTP PUT response hop limit for instance metadata requests.
-        :param http_endpoint: Enables or disables the HTTP metadata endpoint on your instances.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param http_protocol_ipv6: Enables or disables the IPv6 endpoint for the instance metadata service.
-        :param instance_metadata_tags: Set to ``enabled`` to allow access to instance tags from the instance
-        metadata.
-        :returns: ModifyInstanceMetadataOptionsResult
-        """
         raise NotImplementedError
 
     @handler("ModifyInstancePlacement")
@@ -28622,40 +19732,6 @@ class Ec2Api:
         partition_number: Integer = None,
         host_resource_group_arn: String = None,
     ) -> ModifyInstancePlacementResult:
-        """Modifies the placement attributes for a specified instance. You can do
-        the following:
-
-        -  Modify the affinity between an instance and a `Dedicated
-           Host <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dedicated-hosts-overview.html>`__.
-           When affinity is set to ``host`` and the instance is not associated
-           with a specific Dedicated Host, the next time the instance is
-           launched, it is automatically associated with the host on which it
-           lands. If the instance is restarted or rebooted, this relationship
-           persists.
-
-        -  Change the Dedicated Host with which an instance is associated.
-
-        -  Change the instance tenancy of an instance.
-
-        -  Move an instance to or from a `placement
-           group <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-groups.html>`__.
-
-        At least one attribute for affinity, host ID, tenancy, or placement
-        group name must be specified in the request. Affinity and tenancy can be
-        modified in the same request.
-
-        To modify the host ID, tenancy, placement group, or partition for an
-        instance, the instance must be in the ``stopped`` state.
-
-        :param instance_id: The ID of the instance that you are modifying.
-        :param affinity: The affinity setting for the instance.
-        :param group_name: The name of the placement group in which to place the instance.
-        :param host_id: The ID of the Dedicated Host with which to associate the instance.
-        :param tenancy: The tenancy for the instance.
-        :param partition_number: The number of the partition in which to place the instance.
-        :param host_resource_group_arn: The ARN of the host resource group in which to place the instance.
-        :returns: ModifyInstancePlacementResult
-        """
         raise NotImplementedError
 
     @handler("ModifyIpam")
@@ -28668,16 +19744,6 @@ class Ec2Api:
         add_operating_regions: AddIpamOperatingRegionSet = None,
         remove_operating_regions: RemoveIpamOperatingRegionSet = None,
     ) -> ModifyIpamResult:
-        """Modify the configurations of an IPAM.
-
-        :param ipam_id: The ID of the IPAM you want to modify.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param description: The description of the IPAM you want to modify.
-        :param add_operating_regions: Choose the operating Regions for the IPAM.
-        :param remove_operating_regions: The operating Regions to remove.
-        :returns: ModifyIpamResult
-        """
         raise NotImplementedError
 
     @handler("ModifyIpamPool")
@@ -28695,29 +19761,6 @@ class Ec2Api:
         add_allocation_resource_tags: RequestIpamResourceTagList = None,
         remove_allocation_resource_tags: RequestIpamResourceTagList = None,
     ) -> ModifyIpamPoolResult:
-        """Modify the configurations of an IPAM pool.
-
-        For more information, see `Modify a
-        pool </vpc/latest/ipam/mod-pool-ipam.html>`__ in the *Amazon VPC IPAM
-        User Guide*.
-
-        :param ipam_pool_id: The ID of the IPAM pool you want to modify.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param description: The description of the IPAM pool you want to modify.
-        :param auto_import: If true, IPAM will continuously look for resources within the CIDR range
-        of this pool and automatically import them as allocations into your
-        IPAM.
-        :param allocation_min_netmask_length: The minimum netmask length required for CIDR allocations in this IPAM
-        pool to be compliant.
-        :param allocation_max_netmask_length: The maximum netmask length possible for CIDR allocations in this IPAM
-        pool to be compliant.
-        :param allocation_default_netmask_length: The default netmask length for allocations added to this pool.
-        :param clear_allocation_default_netmask_length: Clear the default netmask length allocation rule for this pool.
-        :param add_allocation_resource_tags: Add tag allocation rules to a pool.
-        :param remove_allocation_resource_tags: Remove tag allocation rules from a pool.
-        :returns: ModifyIpamPoolResult
-        """
         raise NotImplementedError
 
     @handler("ModifyIpamResourceCidr")
@@ -28732,28 +19775,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         destination_ipam_scope_id: IpamScopeId = None,
     ) -> ModifyIpamResourceCidrResult:
-        """Modify a resource CIDR. You can use this action to transfer resource
-        CIDRs between scopes and ignore resource CIDRs that you do not want to
-        manage. If set to false, the resource will not be tracked for overlap,
-        it cannot be auto-imported into a pool, and it will be removed from any
-        pool it has an allocation in.
-
-        For more information, see `Move resource CIDRs between
-        scopes </vpc/latest/ipam/move-resource-ipam.html>`__ and `Change the
-        monitoring state of resource
-        CIDRs </vpc/latest/ipam/change-monitoring-state-ipam.html>`__ in the
-        *Amazon VPC IPAM User Guide*.
-
-        :param resource_id: The ID of the resource you want to modify.
-        :param resource_cidr: The CIDR of the resource you want to modify.
-        :param resource_region: The Amazon Web Services Region of the resource you want to modify.
-        :param current_ipam_scope_id: The ID of the current scope that the resource CIDR is in.
-        :param monitored: Determines if the resource is monitored by IPAM.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param destination_ipam_scope_id: The ID of the scope you want to transfer the resource CIDR to.
-        :returns: ModifyIpamResourceCidrResult
-        """
         raise NotImplementedError
 
     @handler("ModifyIpamScope")
@@ -28764,14 +19785,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         description: String = None,
     ) -> ModifyIpamScopeResult:
-        """Modify an IPAM scope.
-
-        :param ipam_scope_id: The ID of the scope you want to modify.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param description: The description of the scope you want to modify.
-        :returns: ModifyIpamScopeResult
-        """
         raise NotImplementedError
 
     @handler("ModifyLaunchTemplate")
@@ -28784,19 +19797,6 @@ class Ec2Api:
         launch_template_name: LaunchTemplateName = None,
         default_version: String = None,
     ) -> ModifyLaunchTemplateResult:
-        """Modifies a launch template. You can specify which version of the launch
-        template to set as the default version. When launching an instance, the
-        default version applies when a launch template version is not specified.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param client_token: Unique, case-sensitive identifier you provide to ensure the idempotency
-        of the request.
-        :param launch_template_id: The ID of the launch template.
-        :param launch_template_name: The name of the launch template.
-        :param default_version: The version number of the launch template to set as the default version.
-        :returns: ModifyLaunchTemplateResult
-        """
         raise NotImplementedError
 
     @handler("ModifyManagedPrefixList")
@@ -28811,25 +19811,6 @@ class Ec2Api:
         remove_entries: RemovePrefixListEntries = None,
         max_entries: Integer = None,
     ) -> ModifyManagedPrefixListResult:
-        """Modifies the specified managed prefix list.
-
-        Adding or removing entries in a prefix list creates a new version of the
-        prefix list. Changing the name of the prefix list does not affect the
-        version.
-
-        If you specify a current version number that does not match the true
-        current version number, the request fails.
-
-        :param prefix_list_id: The ID of the prefix list.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param current_version: The current version of the prefix list.
-        :param prefix_list_name: A name for the prefix list.
-        :param add_entries: One or more entries to add to the prefix list.
-        :param remove_entries: One or more entries to remove from the prefix list.
-        :param max_entries: The maximum number of entries for the prefix list.
-        :returns: ModifyManagedPrefixListResult
-        """
         raise NotImplementedError
 
     @handler("ModifyNetworkInterfaceAttribute")
@@ -28843,20 +19824,6 @@ class Ec2Api:
         groups: SecurityGroupIdStringList = None,
         source_dest_check: AttributeBooleanValue = None,
     ) -> None:
-        """Modifies the specified network interface attribute. You can specify only
-        one attribute at a time. You can use this action to attach and detach
-        security groups from an existing EC2 instance.
-
-        :param network_interface_id: The ID of the network interface.
-        :param attachment: Information about the interface attachment.
-        :param description: A description for the network interface.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param groups: Changes the security groups for the network interface.
-        :param source_dest_check: Enable or disable source/destination checks, which ensure that the
-        instance is either the source or the destination of any traffic that it
-        receives.
-        """
         raise NotImplementedError
 
     @handler("ModifyPrivateDnsNameOptions")
@@ -28869,18 +19836,6 @@ class Ec2Api:
         enable_resource_name_dns_a_record: Boolean = None,
         enable_resource_name_dns_aaaa_record: Boolean = None,
     ) -> ModifyPrivateDnsNameOptionsResult:
-        """Modifies the options for instance hostnames for the specified instance.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param instance_id: The ID of the instance.
-        :param private_dns_hostname_type: The type of hostname for EC2 instances.
-        :param enable_resource_name_dns_a_record: Indicates whether to respond to DNS queries for instance hostnames with
-        DNS A records.
-        :param enable_resource_name_dns_aaaa_record: Indicates whether to respond to DNS queries for instance hostnames with
-        DNS AAAA records.
-        :returns: ModifyPrivateDnsNameOptionsResult
-        """
         raise NotImplementedError
 
     @handler("ModifyReservedInstances")
@@ -28891,21 +19846,6 @@ class Ec2Api:
         target_configurations: ReservedInstancesConfigurationList,
         client_token: String = None,
     ) -> ModifyReservedInstancesResult:
-        """Modifies the Availability Zone, instance count, instance type, or
-        network platform (EC2-Classic or EC2-VPC) of your Reserved Instances.
-        The Reserved Instances to be modified must be identical, except for
-        Availability Zone, network platform, and instance type.
-
-        For more information, see `Modifying Reserved
-        Instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ri-modifying.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param reserved_instances_ids: The IDs of the Reserved Instances to modify.
-        :param target_configurations: The configuration settings for the Reserved Instances to modify.
-        :param client_token: A unique, case-sensitive token you provide to ensure idempotency of your
-        modification request.
-        :returns: ModifyReservedInstancesResult
-        """
         raise NotImplementedError
 
     @handler("ModifySecurityGroupRules")
@@ -28916,14 +19856,6 @@ class Ec2Api:
         security_group_rules: SecurityGroupRuleUpdateList,
         dry_run: Boolean = None,
     ) -> ModifySecurityGroupRulesResult:
-        """Modifies the rules of a security group.
-
-        :param group_id: The ID of the security group.
-        :param security_group_rules: Information about the security group properties to update.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifySecurityGroupRulesResult
-        """
         raise NotImplementedError
 
     @handler("ModifySnapshotAttribute")
@@ -28938,30 +19870,6 @@ class Ec2Api:
         user_ids: UserIdStringList = None,
         dry_run: Boolean = None,
     ) -> None:
-        """Adds or removes permission settings for the specified snapshot. You may
-        add or remove specified Amazon Web Services account IDs from a
-        snapshot's list of create volume permissions, but you cannot do both in
-        a single operation. If you need to both add and remove account IDs for a
-        snapshot, you must use multiple operations. You can make up to 500
-        modifications to a snapshot in a single operation.
-
-        Encrypted snapshots and snapshots with Amazon Web Services Marketplace
-        product codes cannot be made public. Snapshots encrypted with your
-        default KMS key cannot be shared with other accounts.
-
-        For more information about modifying snapshot permissions, see `Share a
-        snapshot <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-modifying-snapshot-permissions.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param snapshot_id: The ID of the snapshot.
-        :param attribute: The snapshot attribute to modify.
-        :param create_volume_permission: A JSON representation of the snapshot attribute modification.
-        :param group_names: The group to modify for the snapshot.
-        :param operation_type: The type of operation to perform to the attribute.
-        :param user_ids: The account ID to modify for the snapshot.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("ModifySnapshotTier")
@@ -28972,71 +19880,12 @@ class Ec2Api:
         storage_tier: TargetStorageTier = None,
         dry_run: Boolean = None,
     ) -> ModifySnapshotTierResult:
-        """Archives an Amazon EBS snapshot. When you archive a snapshot, it is
-        converted to a full snapshot that includes all of the blocks of data
-        that were written to the volume at the time the snapshot was created,
-        and moved from the standard tier to the archive tier. For more
-        information, see `Archive Amazon EBS
-        snapshots <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/snapshot-archive.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param snapshot_id: The ID of the snapshot.
-        :param storage_tier: The name of the storage tier.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifySnapshotTierResult
-        """
         raise NotImplementedError
 
     @handler("ModifySpotFleetRequest", expand=False)
     def modify_spot_fleet_request(
         self, context: RequestContext, request: ModifySpotFleetRequestRequest
     ) -> ModifySpotFleetRequestResponse:
-        """Modifies the specified Spot Fleet request.
-
-        You can only modify a Spot Fleet request of type ``maintain``.
-
-        While the Spot Fleet request is being modified, it is in the
-        ``modifying`` state.
-
-        To scale up your Spot Fleet, increase its target capacity. The Spot
-        Fleet launches the additional Spot Instances according to the allocation
-        strategy for the Spot Fleet request. If the allocation strategy is
-        ``lowestPrice``, the Spot Fleet launches instances using the Spot
-        Instance pool with the lowest price. If the allocation strategy is
-        ``diversified``, the Spot Fleet distributes the instances across the
-        Spot Instance pools. If the allocation strategy is
-        ``capacityOptimized``, Spot Fleet launches instances from Spot Instance
-        pools with optimal capacity for the number of instances that are
-        launching.
-
-        To scale down your Spot Fleet, decrease its target capacity. First, the
-        Spot Fleet cancels any open requests that exceed the new target
-        capacity. You can request that the Spot Fleet terminate Spot Instances
-        until the size of the fleet no longer exceeds the new target capacity.
-        If the allocation strategy is ``lowestPrice``, the Spot Fleet terminates
-        the instances with the highest price per unit. If the allocation
-        strategy is ``capacityOptimized``, the Spot Fleet terminates the
-        instances in the Spot Instance pools that have the least available Spot
-        Instance capacity. If the allocation strategy is ``diversified``, the
-        Spot Fleet terminates instances across the Spot Instance pools.
-        Alternatively, you can request that the Spot Fleet keep the fleet at its
-        current size, but not replace any Spot Instances that are interrupted or
-        that you terminate manually.
-
-        If you are finished with your Spot Fleet for now, but will use it again
-        later, you can set the target capacity to 0.
-
-        :param spot_fleet_request_id: The ID of the Spot Fleet request.
-        :param excess_capacity_termination_policy: Indicates whether running Spot Instances should be terminated if the
-        target capacity of the Spot Fleet request is decreased below the current
-        size of the Spot Fleet.
-        :param launch_template_configs: The launch template and overrides.
-        :param target_capacity: The size of the fleet.
-        :param on_demand_target_capacity: The number of On-Demand Instances in the fleet.
-        :param context: Reserved.
-        :returns: ModifySpotFleetRequestResponse
-        """
         raise NotImplementedError
 
     @handler("ModifySubnetAttribute")
@@ -29055,50 +19904,6 @@ class Ec2Api:
         enable_lni_at_device_index: Integer = None,
         disable_lni_at_device_index: AttributeBooleanValue = None,
     ) -> None:
-        """Modifies a subnet attribute. You can only modify one attribute at a
-        time.
-
-        Use this action to modify subnets on Amazon Web Services Outposts.
-
-        -  To modify a subnet on an Outpost rack, set both
-           ``MapCustomerOwnedIpOnLaunch`` and ``CustomerOwnedIpv4Pool``. These
-           two parameters act as a single attribute.
-
-        -  To modify a subnet on an Outpost server, set either
-           ``EnableLniAtDeviceIndex`` or ``DisableLniAtDeviceIndex``.
-
-        For more information about Amazon Web Services Outposts, see the
-        following:
-
-        -  `Outpost
-           servers <https://docs.aws.amazon.com/outposts/latest/userguide/how-servers-work.html>`__
-
-        -  `Outpost
-           racks <https://docs.aws.amazon.com/outposts/latest/userguide/how-racks-work.html>`__
-
-        :param subnet_id: The ID of the subnet.
-        :param assign_ipv6_address_on_creation: Specify ``true`` to indicate that network interfaces created in the
-        specified subnet should be assigned an IPv6 address.
-        :param map_public_ip_on_launch: Specify ``true`` to indicate that network interfaces attached to
-        instances created in the specified subnet should be assigned a public
-        IPv4 address.
-        :param map_customer_owned_ip_on_launch: Specify ``true`` to indicate that network interfaces attached to
-        instances created in the specified subnet should be assigned a
-        customer-owned IPv4 address.
-        :param customer_owned_ipv4_pool: The customer-owned IPv4 address pool associated with the subnet.
-        :param enable_dns64: Indicates whether DNS queries made to the Amazon-provided DNS Resolver
-        in this subnet should return synthetic IPv6 addresses for IPv4-only
-        destinations.
-        :param private_dns_hostname_type_on_launch: The type of hostnames to assign to instances in the subnet at launch.
-        :param enable_resource_name_dns_a_record_on_launch: Indicates whether to respond to DNS queries for instance hostnames with
-        DNS A records.
-        :param enable_resource_name_dns_aaaa_record_on_launch: Indicates whether to respond to DNS queries for instance hostnames with
-        DNS AAAA records.
-        :param enable_lni_at_device_index: Indicates the device position for local network interfaces in this
-        subnet.
-        :param disable_lni_at_device_index: Specify ``true`` to indicate that local network interfaces at the
-        current position should be disabled.
-        """
         raise NotImplementedError
 
     @handler("ModifyTrafficMirrorFilterNetworkServices")
@@ -29110,24 +19915,6 @@ class Ec2Api:
         remove_network_services: TrafficMirrorNetworkServiceList = None,
         dry_run: Boolean = None,
     ) -> ModifyTrafficMirrorFilterNetworkServicesResult:
-        """Allows or restricts mirroring network services.
-
-        By default, Amazon DNS network services are not eligible for Traffic
-        Mirror. Use ``AddNetworkServices`` to add network services to a Traffic
-        Mirror filter. When a network service is added to the Traffic Mirror
-        filter, all traffic related to that network service will be mirrored.
-        When you no longer want to mirror network services, use
-        ``RemoveNetworkServices`` to remove the network services from the
-        Traffic Mirror filter.
-
-        :param traffic_mirror_filter_id: The ID of the Traffic Mirror filter.
-        :param add_network_services: The network service, for example Amazon DNS, that you want to mirror.
-        :param remove_network_services: The network service, for example Amazon DNS, that you no longer want to
-        mirror.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyTrafficMirrorFilterNetworkServicesResult
-        """
         raise NotImplementedError
 
     @handler("ModifyTrafficMirrorFilterRule")
@@ -29147,27 +19934,6 @@ class Ec2Api:
         remove_fields: TrafficMirrorFilterRuleFieldList = None,
         dry_run: Boolean = None,
     ) -> ModifyTrafficMirrorFilterRuleResult:
-        """Modifies the specified Traffic Mirror rule.
-
-        ``DestinationCidrBlock`` and ``SourceCidrBlock`` must both be an IPv4
-        range or an IPv6 range.
-
-        :param traffic_mirror_filter_rule_id: The ID of the Traffic Mirror rule.
-        :param traffic_direction: The type of traffic to assign to the rule.
-        :param rule_number: The number of the Traffic Mirror rule.
-        :param rule_action: The action to assign to the rule.
-        :param destination_port_range: The destination ports that are associated with the Traffic Mirror rule.
-        :param source_port_range: The port range to assign to the Traffic Mirror rule.
-        :param protocol: The protocol, for example TCP, to assign to the Traffic Mirror rule.
-        :param destination_cidr_block: The destination CIDR block to assign to the Traffic Mirror rule.
-        :param source_cidr_block: The source CIDR block to assign to the Traffic Mirror rule.
-        :param description: The description to assign to the Traffic Mirror rule.
-        :param remove_fields: The properties that you want to remove from the Traffic Mirror filter
-        rule.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyTrafficMirrorFilterRuleResult
-        """
         raise NotImplementedError
 
     @handler("ModifyTrafficMirrorSession")
@@ -29184,21 +19950,6 @@ class Ec2Api:
         remove_fields: TrafficMirrorSessionFieldList = None,
         dry_run: Boolean = None,
     ) -> ModifyTrafficMirrorSessionResult:
-        """Modifies a Traffic Mirror session.
-
-        :param traffic_mirror_session_id: The ID of the Traffic Mirror session.
-        :param traffic_mirror_target_id: The Traffic Mirror target.
-        :param traffic_mirror_filter_id: The ID of the Traffic Mirror filter.
-        :param packet_length: The number of bytes in each packet to mirror.
-        :param session_number: The session number determines the order in which sessions are evaluated
-        when an interface is used by multiple sessions.
-        :param virtual_network_id: The virtual network ID of the Traffic Mirror session.
-        :param description: The description to assign to the Traffic Mirror session.
-        :param remove_fields: The properties that you want to remove from the Traffic Mirror session.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyTrafficMirrorSessionResult
-        """
         raise NotImplementedError
 
     @handler("ModifyTransitGateway")
@@ -29210,18 +19961,6 @@ class Ec2Api:
         options: ModifyTransitGatewayOptions = None,
         dry_run: Boolean = None,
     ) -> ModifyTransitGatewayResult:
-        """Modifies the specified transit gateway. When you modify a transit
-        gateway, the modified options are applied to new transit gateway
-        attachments only. Your existing transit gateway attachments are not
-        modified.
-
-        :param transit_gateway_id: The ID of the transit gateway.
-        :param description: The description for the transit gateway.
-        :param options: The options to modify.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyTransitGatewayResult
-        """
         raise NotImplementedError
 
     @handler("ModifyTransitGatewayPrefixListReference")
@@ -29234,17 +19973,6 @@ class Ec2Api:
         blackhole: Boolean = None,
         dry_run: Boolean = None,
     ) -> ModifyTransitGatewayPrefixListReferenceResult:
-        """Modifies a reference (route) to a prefix list in a specified transit
-        gateway route table.
-
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param prefix_list_id: The ID of the prefix list.
-        :param transit_gateway_attachment_id: The ID of the attachment to which traffic is routed.
-        :param blackhole: Indicates whether to drop traffic that matches this route.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyTransitGatewayPrefixListReferenceResult
-        """
         raise NotImplementedError
 
     @handler("ModifyTransitGatewayVpcAttachment")
@@ -29257,16 +19985,6 @@ class Ec2Api:
         options: ModifyTransitGatewayVpcAttachmentRequestOptions = None,
         dry_run: Boolean = None,
     ) -> ModifyTransitGatewayVpcAttachmentResult:
-        """Modifies the specified VPC attachment.
-
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param add_subnet_ids: The IDs of one or more subnets to add.
-        :param remove_subnet_ids: The IDs of one or more subnets to remove.
-        :param options: The new VPC attachment options.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyTransitGatewayVpcAttachmentResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVolume")
@@ -29281,51 +19999,6 @@ class Ec2Api:
         throughput: Integer = None,
         multi_attach_enabled: Boolean = None,
     ) -> ModifyVolumeResult:
-        """You can modify several parameters of an existing EBS volume, including
-        volume size, volume type, and IOPS capacity. If your EBS volume is
-        attached to a current-generation EC2 instance type, you might be able to
-        apply these changes without stopping the instance or detaching the
-        volume from it. For more information about modifying EBS volumes, see
-        `Amazon EBS Elastic
-        Volumes <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-modify-volume.html>`__
-        (Linux instances) or `Amazon EBS Elastic
-        Volumes <https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ebs-modify-volume.html>`__
-        (Windows instances).
-
-        When you complete a resize operation on your volume, you need to extend
-        the volume's file-system size to take advantage of the new storage
-        capacity. For more information, see `Extend a Linux file
-        system <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-expand-volume.html#recognize-expanded-volume-linux>`__
-        or `Extend a Windows file
-        system <https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ebs-expand-volume.html#recognize-expanded-volume-windows>`__.
-
-        You can use CloudWatch Events to check the status of a modification to
-        an EBS volume. For information about CloudWatch Events, see the `Amazon
-        CloudWatch Events User
-        Guide <https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/>`__.
-        You can also track the status of a modification using
-        DescribeVolumesModifications. For information about tracking status
-        changes using either method, see `Monitor the progress of volume
-        modifications <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-volume-modifications.html>`__.
-
-        With previous-generation instance types, resizing an EBS volume might
-        require detaching and reattaching the volume or stopping and restarting
-        the instance.
-
-        If you reach the maximum volume modification rate per volume limit, you
-        must wait at least six hours before applying further modifications to
-        the affected EBS volume.
-
-        :param volume_id: The ID of the volume.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param size: The target size of the volume, in GiB.
-        :param volume_type: The target EBS volume type of the volume.
-        :param iops: The target IOPS rate of the volume.
-        :param throughput: The target throughput of the volume, in MiB/s.
-        :param multi_attach_enabled: Specifies whether to enable Amazon EBS Multi-Attach.
-        :returns: ModifyVolumeResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVolumeAttribute")
@@ -29336,23 +20009,6 @@ class Ec2Api:
         auto_enable_io: AttributeBooleanValue = None,
         dry_run: Boolean = None,
     ) -> None:
-        """Modifies a volume attribute.
-
-        By default, all I/O operations for the volume are suspended when the
-        data on the volume is determined to be potentially inconsistent, to
-        prevent undetectable, latent data corruption. The I/O access to the
-        volume can be resumed by first enabling I/O access and then checking the
-        data consistency on your volume.
-
-        You can change the default behavior to resume I/O operations. We
-        recommend that you change this only for boot volumes or for volumes that
-        are stateless or disposable.
-
-        :param volume_id: The ID of the volume.
-        :param auto_enable_io: Indicates whether the volume should be auto-enabled for I/O operations.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("ModifyVpcAttribute")
@@ -29363,12 +20019,6 @@ class Ec2Api:
         enable_dns_hostnames: AttributeBooleanValue = None,
         enable_dns_support: AttributeBooleanValue = None,
     ) -> None:
-        """Modifies the specified attribute of the specified VPC.
-
-        :param vpc_id: The ID of the VPC.
-        :param enable_dns_hostnames: Indicates whether the instances launched in the VPC get DNS hostnames.
-        :param enable_dns_support: Indicates whether the DNS resolution is supported for the VPC.
-        """
         raise NotImplementedError
 
     @handler("ModifyVpcEndpoint")
@@ -29387,35 +20037,6 @@ class Ec2Api:
         remove_security_group_ids: VpcEndpointSecurityGroupIdList = None,
         private_dns_enabled: Boolean = None,
     ) -> ModifyVpcEndpointResult:
-        """Modifies attributes of a specified VPC endpoint. The attributes that you
-        can modify depend on the type of VPC endpoint (interface, gateway, or
-        Gateway Load Balancer). For more information, see `VPC
-        Endpoints <https://docs.aws.amazon.com/vpc/latest/userguide/vpc-endpoints.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param vpc_endpoint_id: The ID of the endpoint.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param reset_policy: (Gateway endpoint) Specify ``true`` to reset the policy document to the
-        default policy.
-        :param policy_document: (Interface and gateway endpoints) A policy to attach to the endpoint
-        that controls access to the service.
-        :param add_route_table_ids: (Gateway endpoint) One or more route tables IDs to associate with the
-        endpoint.
-        :param remove_route_table_ids: (Gateway endpoint) One or more route table IDs to disassociate from the
-        endpoint.
-        :param add_subnet_ids: (Interface and Gateway Load Balancer endpoints) One or more subnet IDs
-        in which to serve the endpoint.
-        :param remove_subnet_ids: (Interface endpoint) One or more subnets IDs in which to remove the
-        endpoint.
-        :param add_security_group_ids: (Interface endpoint) One or more security group IDs to associate with
-        the network interface.
-        :param remove_security_group_ids: (Interface endpoint) One or more security group IDs to disassociate from
-        the network interface.
-        :param private_dns_enabled: (Interface endpoint) Indicates whether a private hosted zone is
-        associated with the VPC.
-        :returns: ModifyVpcEndpointResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVpcEndpointConnectionNotification")
@@ -29427,17 +20048,6 @@ class Ec2Api:
         connection_notification_arn: String = None,
         connection_events: ValueStringList = None,
     ) -> ModifyVpcEndpointConnectionNotificationResult:
-        """Modifies a connection notification for VPC endpoint or VPC endpoint
-        service. You can change the SNS topic for the notification, or the
-        events for which to be notified.
-
-        :param connection_notification_id: The ID of the notification.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param connection_notification_arn: The ARN for the SNS topic for the notification.
-        :param connection_events: One or more events for the endpoint.
-        :returns: ModifyVpcEndpointConnectionNotificationResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVpcEndpointServiceConfiguration")
@@ -29454,36 +20064,6 @@ class Ec2Api:
         add_gateway_load_balancer_arns: ValueStringList = None,
         remove_gateway_load_balancer_arns: ValueStringList = None,
     ) -> ModifyVpcEndpointServiceConfigurationResult:
-        """Modifies the attributes of your VPC endpoint service configuration. You
-        can change the Network Load Balancers or Gateway Load Balancers for your
-        service, and you can specify whether acceptance is required for requests
-        to connect to your endpoint service through an interface VPC endpoint.
-
-        If you set or modify the private DNS name, you must prove that you own
-        the private DNS domain name. For more information, see `VPC Endpoint
-        Service Private DNS Name
-        Verification <https://docs.aws.amazon.com/vpc/latest/userguide/endpoint-services-dns-validation.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param service_id: The ID of the service.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param private_dns_name: (Interface endpoint configuration) The private DNS name to assign to the
-        endpoint service.
-        :param remove_private_dns_name: (Interface endpoint configuration) Removes the private DNS name of the
-        endpoint service.
-        :param acceptance_required: Indicates whether requests to create an endpoint to your service must be
-        accepted.
-        :param add_network_load_balancer_arns: The Amazon Resource Names (ARNs) of Network Load Balancers to add to
-        your service configuration.
-        :param remove_network_load_balancer_arns: The Amazon Resource Names (ARNs) of Network Load Balancers to remove
-        from your service configuration.
-        :param add_gateway_load_balancer_arns: The Amazon Resource Names (ARNs) of Gateway Load Balancers to add to
-        your service configuration.
-        :param remove_gateway_load_balancer_arns: The Amazon Resource Names (ARNs) of Gateway Load Balancers to remove
-        from your service configuration.
-        :returns: ModifyVpcEndpointServiceConfigurationResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVpcEndpointServicePayerResponsibility")
@@ -29494,14 +20074,6 @@ class Ec2Api:
         payer_responsibility: PayerResponsibility,
         dry_run: Boolean = None,
     ) -> ModifyVpcEndpointServicePayerResponsibilityResult:
-        """Modifies the payer responsibility for your VPC endpoint service.
-
-        :param service_id: The ID of the service.
-        :param payer_responsibility: The entity that is responsible for the endpoint costs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyVpcEndpointServicePayerResponsibilityResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVpcEndpointServicePermissions")
@@ -29513,24 +20085,6 @@ class Ec2Api:
         add_allowed_principals: ValueStringList = None,
         remove_allowed_principals: ValueStringList = None,
     ) -> ModifyVpcEndpointServicePermissionsResult:
-        """Modifies the permissions for your `VPC endpoint
-        service <https://docs.aws.amazon.com/vpc/latest/userguide/endpoint-service.html>`__.
-        You can add or remove permissions for service consumers (IAM users, IAM
-        roles, and Amazon Web Services accounts) to connect to your endpoint
-        service.
-
-        If you grant permissions to all principals, the service is public. Any
-        users who know the name of a public service can send a request to attach
-        an endpoint. If the service does not require manual approval,
-        attachments are automatically approved.
-
-        :param service_id: The ID of the service.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param add_allowed_principals: The Amazon Resource Names (ARN) of one or more principals.
-        :param remove_allowed_principals: The Amazon Resource Names (ARN) of one or more principals.
-        :returns: ModifyVpcEndpointServicePermissionsResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVpcPeeringConnectionOptions")
@@ -29542,41 +20096,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         requester_peering_connection_options: PeeringConnectionOptionsRequest = None,
     ) -> ModifyVpcPeeringConnectionOptionsResult:
-        """Modifies the VPC peering connection options on one side of a VPC peering
-        connection. You can do the following:
-
-        -  Enable/disable communication over the peering connection between an
-           EC2-Classic instance that's linked to your VPC (using ClassicLink)
-           and instances in the peer VPC.
-
-        -  Enable/disable communication over the peering connection between
-           instances in your VPC and an EC2-Classic instance that's linked to
-           the peer VPC.
-
-        -  Enable/disable the ability to resolve public DNS hostnames to private
-           IP addresses when queried from instances in the peer VPC.
-
-        If the peered VPCs are in the same Amazon Web Services account, you can
-        enable DNS resolution for queries from the local VPC. This ensures that
-        queries from the local VPC resolve to private IP addresses in the peer
-        VPC. This option is not available if the peered VPCs are in different
-        different Amazon Web Services accounts or different Regions. For peered
-        VPCs in different Amazon Web Services accounts, each Amazon Web Services
-        account owner must initiate a separate request to modify the peering
-        connection options. For inter-region peering connections, you must use
-        the Region for the requester VPC to modify the requester VPC peering
-        options and the Region for the accepter VPC to modify the accepter VPC
-        peering options. To verify which VPCs are the accepter and the requester
-        for a VPC peering connection, use the DescribeVpcPeeringConnections
-        command.
-
-        :param vpc_peering_connection_id: The ID of the VPC peering connection.
-        :param accepter_peering_connection_options: The VPC peering connection options for the accepter VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param requester_peering_connection_options: The VPC peering connection options for the requester VPC.
-        :returns: ModifyVpcPeeringConnectionOptionsResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVpcTenancy")
@@ -29587,25 +20106,6 @@ class Ec2Api:
         instance_tenancy: VpcTenancy,
         dry_run: Boolean = None,
     ) -> ModifyVpcTenancyResult:
-        """Modifies the instance tenancy attribute of the specified VPC. You can
-        change the instance tenancy attribute of a VPC to ``default`` only. You
-        cannot change the instance tenancy attribute to ``dedicated``.
-
-        After you modify the tenancy of the VPC, any new instances that you
-        launch into the VPC have a tenancy of ``default``, unless you specify
-        otherwise during launch. The tenancy of any existing instances in the
-        VPC is not affected.
-
-        For more information, see `Dedicated
-        Instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dedicated-instance.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param vpc_id: The ID of the VPC.
-        :param instance_tenancy: The instance tenancy attribute for the VPC.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyVpcTenancyResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVpnConnection")
@@ -29618,59 +20118,6 @@ class Ec2Api:
         vpn_gateway_id: VpnGatewayId = None,
         dry_run: Boolean = None,
     ) -> ModifyVpnConnectionResult:
-        """Modifies the customer gateway or the target gateway of an Amazon Web
-        Services Site-to-Site VPN connection. To modify the target gateway, the
-        following migration options are available:
-
-        -  An existing virtual private gateway to a new virtual private gateway
-
-        -  An existing virtual private gateway to a transit gateway
-
-        -  An existing transit gateway to a new transit gateway
-
-        -  An existing transit gateway to a virtual private gateway
-
-        Before you perform the migration to the new gateway, you must configure
-        the new gateway. Use CreateVpnGateway to create a virtual private
-        gateway, or CreateTransitGateway to create a transit gateway.
-
-        This step is required when you migrate from a virtual private gateway
-        with static routes to a transit gateway.
-
-        You must delete the static routes before you migrate to the new gateway.
-
-        Keep a copy of the static route before you delete it. You will need to
-        add back these routes to the transit gateway after the VPN connection
-        migration is complete.
-
-        After you migrate to the new gateway, you might need to modify your VPC
-        route table. Use CreateRoute and DeleteRoute to make the changes
-        described in `Update VPC route
-        tables <https://docs.aws.amazon.com/vpn/latest/s2svpn/modify-vpn-target.html#step-update-routing>`__
-        in the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        When the new gateway is a transit gateway, modify the transit gateway
-        route table to allow traffic between the VPC and the Amazon Web Services
-        Site-to-Site VPN connection. Use CreateTransitGatewayRoute to add the
-        routes.
-
-        If you deleted VPN static routes, you must add the static routes to the
-        transit gateway route table.
-
-        After you perform this operation, the VPN endpoint's IP addresses on the
-        Amazon Web Services side and the tunnel options remain intact. Your
-        Amazon Web Services Site-to-Site VPN connection will be temporarily
-        unavailable for a brief period while we provision the new endpoints.
-
-        :param vpn_connection_id: The ID of the VPN connection.
-        :param transit_gateway_id: The ID of the transit gateway.
-        :param customer_gateway_id: The ID of the customer gateway at your end of the VPN connection.
-        :param vpn_gateway_id: The ID of the virtual private gateway at the Amazon Web Services side of
-        the VPN connection.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyVpnConnectionResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVpnConnectionOptions")
@@ -29684,24 +20131,6 @@ class Ec2Api:
         remote_ipv6_network_cidr: String = None,
         dry_run: Boolean = None,
     ) -> ModifyVpnConnectionOptionsResult:
-        """Modifies the connection options for your Site-to-Site VPN connection.
-
-        When you modify the VPN connection options, the VPN endpoint IP
-        addresses on the Amazon Web Services side do not change, and the tunnel
-        options do not change. Your VPN connection will be temporarily
-        unavailable for a brief period while the VPN connection is updated.
-
-        :param vpn_connection_id: The ID of the Site-to-Site VPN connection.
-        :param local_ipv4_network_cidr: The IPv4 CIDR on the customer gateway (on-premises) side of the VPN
-        connection.
-        :param remote_ipv4_network_cidr: The IPv4 CIDR on the Amazon Web Services side of the VPN connection.
-        :param local_ipv6_network_cidr: The IPv6 CIDR on the customer gateway (on-premises) side of the VPN
-        connection.
-        :param remote_ipv6_network_cidr: The IPv6 CIDR on the Amazon Web Services side of the VPN connection.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyVpnConnectionOptionsResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVpnTunnelCertificate")
@@ -29712,14 +20141,6 @@ class Ec2Api:
         vpn_tunnel_outside_ip_address: String,
         dry_run: Boolean = None,
     ) -> ModifyVpnTunnelCertificateResult:
-        """Modifies the VPN tunnel endpoint certificate.
-
-        :param vpn_connection_id: The ID of the Amazon Web Services Site-to-Site VPN connection.
-        :param vpn_tunnel_outside_ip_address: The external IP address of the VPN tunnel.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyVpnTunnelCertificateResult
-        """
         raise NotImplementedError
 
     @handler("ModifyVpnTunnelOptions")
@@ -29731,60 +20152,18 @@ class Ec2Api:
         tunnel_options: ModifyVpnTunnelOptionsSpecification,
         dry_run: Boolean = None,
     ) -> ModifyVpnTunnelOptionsResult:
-        """Modifies the options for a VPN tunnel in an Amazon Web Services
-        Site-to-Site VPN connection. You can modify multiple options for a
-        tunnel in a single request, but you can only modify one tunnel at a
-        time. For more information, see `Site-to-Site VPN tunnel options for
-        your Site-to-Site VPN
-        connection <https://docs.aws.amazon.com/vpn/latest/s2svpn/VPNTunnels.html>`__
-        in the *Amazon Web Services Site-to-Site VPN User Guide*.
-
-        :param vpn_connection_id: The ID of the Amazon Web Services Site-to-Site VPN connection.
-        :param vpn_tunnel_outside_ip_address: The external IP address of the VPN tunnel.
-        :param tunnel_options: The tunnel options to modify.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ModifyVpnTunnelOptionsResult
-        """
         raise NotImplementedError
 
     @handler("MonitorInstances")
     def monitor_instances(
         self, context: RequestContext, instance_ids: InstanceIdStringList, dry_run: Boolean = None
     ) -> MonitorInstancesResult:
-        """Enables detailed monitoring for a running instance. Otherwise, basic
-        monitoring is enabled. For more information, see `Monitor your instances
-        using
-        CloudWatch <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-cloudwatch.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        To disable detailed monitoring, see .
-
-        :param instance_ids: The IDs of the instances.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: MonitorInstancesResult
-        """
         raise NotImplementedError
 
     @handler("MoveAddressToVpc")
     def move_address_to_vpc(
         self, context: RequestContext, public_ip: String, dry_run: Boolean = None
     ) -> MoveAddressToVpcResult:
-        """Moves an Elastic IP address from the EC2-Classic platform to the EC2-VPC
-        platform. The Elastic IP address must be allocated to your account for
-        more than 24 hours, and it must not be associated with an instance.
-        After the Elastic IP address is moved, it is no longer available for use
-        in the EC2-Classic platform, unless you move it back using the
-        RestoreAddressToClassic request. You cannot move an Elastic IP address
-        that was originally allocated for use in the EC2-VPC platform to the
-        EC2-Classic platform.
-
-        :param public_ip: The Elastic IP address.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: MoveAddressToVpcResult
-        """
         raise NotImplementedError
 
     @handler("MoveByoipCidrToIpam")
@@ -29796,15 +20175,6 @@ class Ec2Api:
         ipam_pool_owner: String,
         dry_run: Boolean = None,
     ) -> MoveByoipCidrToIpamResult:
-        """Move an BYOIP IPv4 CIDR to IPAM from a public IPv4 pool.
-
-        :param cidr: The BYOIP CIDR.
-        :param ipam_pool_id: The IPAM pool ID.
-        :param ipam_pool_owner: The Amazon Web Services account ID of the owner of the IPAM pool.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :returns: MoveByoipCidrToIpamResult
-        """
         raise NotImplementedError
 
     @handler("ProvisionByoipCidr")
@@ -29819,39 +20189,6 @@ class Ec2Api:
         pool_tag_specifications: TagSpecificationList = None,
         multi_region: Boolean = None,
     ) -> ProvisionByoipCidrResult:
-        """Provisions an IPv4 or IPv6 address range for use with your Amazon Web
-        Services resources through bring your own IP addresses (BYOIP) and
-        creates a corresponding address pool. After the address range is
-        provisioned, it is ready to be advertised using AdvertiseByoipCidr.
-
-        Amazon Web Services verifies that you own the address range and are
-        authorized to advertise it. You must ensure that the address range is
-        registered to you and that you created an RPKI ROA to authorize Amazon
-        ASNs 16509 and 14618 to advertise the address range. For more
-        information, see `Bring your own IP addresses
-        (BYOIP) <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-byoip.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        Provisioning an address range is an asynchronous operation, so the call
-        returns immediately, but the address range is not ready to use until its
-        status changes from ``pending-provision`` to ``provisioned``. To monitor
-        the status of an address range, use DescribeByoipCidrs. To allocate an
-        Elastic IP address from your IPv4 address pool, use AllocateAddress with
-        either the specific address from the address pool or the ID of the
-        address pool.
-
-        :param cidr: The public IPv4 or IPv6 address range, in CIDR notation.
-        :param cidr_authorization_context: A signed document that proves that you are authorized to bring the
-        specified IP address range to Amazon using BYOIP.
-        :param publicly_advertisable: (IPv6 only) Indicate whether the address range will be publicly
-        advertised to the internet.
-        :param description: A description for the address range and the address pool.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param pool_tag_specifications: The tags to apply to the address pool.
-        :param multi_region: Reserved.
-        :returns: ProvisionByoipCidrResult
-        """
         raise NotImplementedError
 
     @handler("ProvisionIpamPoolCidr")
@@ -29863,22 +20200,6 @@ class Ec2Api:
         cidr: String = None,
         cidr_authorization_context: IpamCidrAuthorizationContext = None,
     ) -> ProvisionIpamPoolCidrResult:
-        """Provision a CIDR to an IPAM pool. You can use thsi action to provision
-        new CIDRs to a top-level pool or to transfer a CIDR from a top-level
-        pool to a pool within it.
-
-        For more information, see `Provision CIDRs to
-        pools </vpc/latest/ipam/prov-cidr-ipam.html>`__ in the *Amazon VPC IPAM
-        User Guide*.
-
-        :param ipam_pool_id: The ID of the IPAM pool to which you want to assign a CIDR.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param cidr: The CIDR you want to assign to the IPAM pool.
-        :param cidr_authorization_context: A signed document that proves that you are authorized to bring a
-        specified IP address range to Amazon using BYOIP.
-        :returns: ProvisionIpamPoolCidrResult
-        """
         raise NotImplementedError
 
     @handler("ProvisionPublicIpv4PoolCidr")
@@ -29890,20 +20211,6 @@ class Ec2Api:
         netmask_length: Integer,
         dry_run: Boolean = None,
     ) -> ProvisionPublicIpv4PoolCidrResult:
-        """Provision a CIDR to a public IPv4 pool.
-
-        For more information about IPAM, see `What is
-        IPAM? </vpc/latest/ipam/what-is-it-ipam.html>`__ in the *Amazon VPC IPAM
-        User Guide*.
-
-        :param ipam_pool_id: The ID of the IPAM pool you would like to use to allocate this CIDR.
-        :param pool_id: The ID of the public IPv4 pool you would like to use for this CIDR.
-        :param netmask_length: The netmask length of the CIDR you would like to allocate to the public
-        IPv4 pool.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :returns: ProvisionPublicIpv4PoolCidrResult
-        """
         raise NotImplementedError
 
     @handler("PurchaseHostReservation")
@@ -29917,24 +20224,6 @@ class Ec2Api:
         limit_price: String = None,
         tag_specifications: TagSpecificationList = None,
     ) -> PurchaseHostReservationResult:
-        """Purchase a reservation with configurations that match those of your
-        Dedicated Host. You must have active Dedicated Hosts in your account
-        before you purchase a reservation. This action results in the specified
-        reservation being purchased and charged to your account.
-
-        :param host_id_set: The IDs of the Dedicated Hosts with which the reservation will be
-        associated.
-        :param offering_id: The ID of the offering.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param currency_code: The currency in which the ``totalUpfrontPrice``, ``LimitPrice``, and
-        ``totalHourlyPrice`` amounts are specified.
-        :param limit_price: The specified limit is checked against the total upfront cost of the
-        reservation (calculated as the offering's upfront cost multiplied by the
-        host count).
-        :param tag_specifications: The tags to apply to the Dedicated Host Reservation during purchase.
-        :returns: PurchaseHostReservationResult
-        """
         raise NotImplementedError
 
     @handler("PurchaseReservedInstancesOffering")
@@ -29947,35 +20236,6 @@ class Ec2Api:
         limit_price: ReservedInstanceLimitPrice = None,
         purchase_time: DateTime = None,
     ) -> PurchaseReservedInstancesOfferingResult:
-        """Purchases a Reserved Instance for use with your account. With Reserved
-        Instances, you pay a lower hourly rate compared to On-Demand instance
-        pricing.
-
-        Use DescribeReservedInstancesOfferings to get a list of Reserved
-        Instance offerings that match your specifications. After you've
-        purchased a Reserved Instance, you can check for your new Reserved
-        Instance with DescribeReservedInstances.
-
-        To queue a purchase for a future date and time, specify a purchase time.
-        If you do not specify a purchase time, the default is the current time.
-
-        For more information, see `Reserved
-        Instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts-on-demand-reserved-instances.html>`__
-        and `Reserved Instance
-        Marketplace <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ri-market-general.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_count: The number of Reserved Instances to purchase.
-        :param reserved_instances_offering_id: The ID of the Reserved Instance offering to purchase.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param limit_price: Specified for Reserved Instance Marketplace offerings to limit the total
-        order and ensure that the Reserved Instances are not purchased at
-        unexpected prices.
-        :param purchase_time: The time at which to purchase the Reserved Instance, in UTC format (for
-        example, *YYYY*-*MM*-*DD* T *HH*:*MM*:*SS* Z).
-        :returns: PurchaseReservedInstancesOfferingResult
-        """
         raise NotImplementedError
 
     @handler("PurchaseScheduledInstances")
@@ -29986,48 +20246,12 @@ class Ec2Api:
         client_token: String = None,
         dry_run: Boolean = None,
     ) -> PurchaseScheduledInstancesResult:
-        """Purchases the Scheduled Instances with the specified schedule.
-
-        Scheduled Instances enable you to purchase Amazon EC2 compute capacity
-        by the hour for a one-year term. Before you can purchase a Scheduled
-        Instance, you must call DescribeScheduledInstanceAvailability to check
-        for available schedules and obtain a purchase token. After you purchase
-        a Scheduled Instance, you must call RunScheduledInstances during each
-        scheduled time period.
-
-        After you purchase a Scheduled Instance, you can't cancel, modify, or
-        resell your purchase.
-
-        :param purchase_requests: The purchase requests.
-        :param client_token: Unique, case-sensitive identifier that ensures the idempotency of the
-        request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: PurchaseScheduledInstancesResult
-        """
         raise NotImplementedError
 
     @handler("RebootInstances")
     def reboot_instances(
         self, context: RequestContext, instance_ids: InstanceIdStringList, dry_run: Boolean = None
     ) -> None:
-        """Requests a reboot of the specified instances. This operation is
-        asynchronous; it only queues a request to reboot the specified
-        instances. The operation succeeds if the instances are valid and belong
-        to you. Requests to reboot terminated instances are ignored.
-
-        If an instance does not cleanly shut down within a few minutes, Amazon
-        EC2 performs a hard reboot.
-
-        For more information about troubleshooting, see `Troubleshoot an
-        unreachable
-        instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-console.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_ids: The instance IDs.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("RegisterImage")
@@ -30049,84 +20273,6 @@ class Ec2Api:
         virtualization_type: String = None,
         boot_mode: BootModeValues = None,
     ) -> RegisterImageResult:
-        """Registers an AMI. When you're creating an AMI, this is the final step
-        you must complete before you can launch an instance from the AMI. For
-        more information about creating AMIs, see `Creating your own
-        AMIs <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        For Amazon EBS-backed instances, CreateImage creates and registers the
-        AMI in a single request, so you don't have to register the AMI yourself.
-
-        If needed, you can deregister an AMI at any time. Any modifications you
-        make to an AMI backed by an instance store volume invalidates its
-        registration. If you make changes to an image, deregister the previous
-        image and register the new image.
-
-        **Register a snapshot of a root device volume**
-
-        You can use ``RegisterImage`` to create an Amazon EBS-backed Linux AMI
-        from a snapshot of a root device volume. You specify the snapshot using
-        a block device mapping. You can't set the encryption state of the volume
-        using the block device mapping. If the snapshot is encrypted, or
-        encryption by default is enabled, the root volume of an instance
-        launched from the AMI is encrypted.
-
-        For more information, see `Create a Linux AMI from a
-        snapshot <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html#creating-launching-ami-from-snapshot>`__
-        and `Use encryption with Amazon EBS-backed
-        AMIs <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIEncryption.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        **Amazon Web Services Marketplace product codes**
-
-        If any snapshots have Amazon Web Services Marketplace product codes,
-        they are copied to the new AMI.
-
-        Windows and some Linux distributions, such as Red Hat Enterprise Linux
-        (RHEL) and SUSE Linux Enterprise Server (SLES), use the Amazon EC2
-        billing product code associated with an AMI to verify the subscription
-        status for package updates. To create a new AMI for operating systems
-        that require a billing product code, instead of registering the AMI, do
-        the following to preserve the billing product code association:
-
-        #. Launch an instance from an existing AMI with that billing product
-           code.
-
-        #. Customize the instance.
-
-        #. Create an AMI from the instance using CreateImage.
-
-        If you purchase a Reserved Instance to apply to an On-Demand Instance
-        that was launched from an AMI with a billing product code, make sure
-        that the Reserved Instance has the matching billing product code. If you
-        purchase a Reserved Instance without the matching billing product code,
-        the Reserved Instance will not be applied to the On-Demand Instance. For
-        information about how to obtain the platform details and billing
-        information of an AMI, see `Understanding AMI
-        billing <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ami-billing-info.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param name: A name for your AMI.
-        :param image_location: The full path to your AMI manifest in Amazon S3 storage.
-        :param architecture: The architecture of the AMI.
-        :param block_device_mappings: The block device mapping entries.
-        :param description: A description for your AMI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param ena_support: Set to ``true`` to enable enhanced networking with ENA for the AMI and
-        any instances that you launch from the AMI.
-        :param kernel_id: The ID of the kernel.
-        :param billing_products: The billing product codes.
-        :param ramdisk_id: The ID of the RAM disk.
-        :param root_device_name: The device name of the root device volume (for example, ``/dev/sda1``).
-        :param sriov_net_support: Set to ``simple`` to enable enhanced networking with the Intel 82599
-        Virtual Function interface for the AMI and any instances that you launch
-        from the AMI.
-        :param virtualization_type: The type of virtualization (``hvm`` | ``paravirtual``).
-        :param boot_mode: The boot mode of the AMI.
-        :returns: RegisterImageResult
-        """
         raise NotImplementedError
 
     @handler("RegisterInstanceEventNotificationAttributes")
@@ -30136,16 +20282,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         instance_tag_attribute: RegisterInstanceTagAttributeRequest = None,
     ) -> RegisterInstanceEventNotificationAttributesResult:
-        """Registers a set of tag keys to include in scheduled event notifications
-        for your resources.
-
-        To remove tags, use .
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param instance_tag_attribute: Information about the tag keys to register.
-        :returns: RegisterInstanceEventNotificationAttributesResult
-        """
         raise NotImplementedError
 
     @handler("RegisterTransitGatewayMulticastGroupMembers")
@@ -30157,26 +20293,6 @@ class Ec2Api:
         network_interface_ids: TransitGatewayNetworkInterfaceIdList = None,
         dry_run: Boolean = None,
     ) -> RegisterTransitGatewayMulticastGroupMembersResult:
-        """Registers members (network interfaces) with the transit gateway
-        multicast group. A member is a network interface associated with a
-        supported EC2 instance that receives multicast traffic. For information
-        about supported instances, see `Multicast
-        Consideration <https://docs.aws.amazon.com/vpc/latest/tgw/transit-gateway-limits.html#multicast-limits>`__
-        in *Amazon VPC Transit Gateways*.
-
-        After you add the members, use
-        `SearchTransitGatewayMulticastGroups <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_SearchTransitGatewayMulticastGroups.html>`__
-        to verify that the members were added to the transit gateway multicast
-        group.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param group_ip_address: The IP address assigned to the transit gateway multicast group.
-        :param network_interface_ids: The group members' network interface IDs to register with the transit
-        gateway multicast group.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RegisterTransitGatewayMulticastGroupMembersResult
-        """
         raise NotImplementedError
 
     @handler("RegisterTransitGatewayMulticastGroupSources")
@@ -30188,27 +20304,6 @@ class Ec2Api:
         network_interface_ids: TransitGatewayNetworkInterfaceIdList = None,
         dry_run: Boolean = None,
     ) -> RegisterTransitGatewayMulticastGroupSourcesResult:
-        """Registers sources (network interfaces) with the specified transit
-        gateway multicast group.
-
-        A multicast source is a network interface attached to a supported
-        instance that sends multicast traffic. For information about supported
-        instances, see `Multicast
-        Considerations <https://docs.aws.amazon.com/vpc/latest/tgw/transit-gateway-limits.html#multicast-limits>`__
-        in *Amazon VPC Transit Gateways*.
-
-        After you add the source, use
-        `SearchTransitGatewayMulticastGroups <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_SearchTransitGatewayMulticastGroups.html>`__
-        to verify that the source was added to the multicast group.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param group_ip_address: The IP address assigned to the transit gateway multicast group.
-        :param network_interface_ids: The group sources' network interface IDs to register with the transit
-        gateway multicast group.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RegisterTransitGatewayMulticastGroupSourcesResult
-        """
         raise NotImplementedError
 
     @handler("RejectTransitGatewayMulticastDomainAssociations")
@@ -30220,17 +20315,6 @@ class Ec2Api:
         subnet_ids: ValueStringList = None,
         dry_run: Boolean = None,
     ) -> RejectTransitGatewayMulticastDomainAssociationsResult:
-        """Rejects a request to associate cross-account subnets with a transit
-        gateway multicast domain.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param transit_gateway_attachment_id: The ID of the transit gateway attachment.
-        :param subnet_ids: The IDs of the subnets to associate with the transit gateway multicast
-        domain.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RejectTransitGatewayMulticastDomainAssociationsResult
-        """
         raise NotImplementedError
 
     @handler("RejectTransitGatewayPeeringAttachment")
@@ -30240,13 +20324,6 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> RejectTransitGatewayPeeringAttachmentResult:
-        """Rejects a transit gateway peering attachment request.
-
-        :param transit_gateway_attachment_id: The ID of the transit gateway peering attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RejectTransitGatewayPeeringAttachmentResult
-        """
         raise NotImplementedError
 
     @handler("RejectTransitGatewayVpcAttachment")
@@ -30256,18 +20333,6 @@ class Ec2Api:
         transit_gateway_attachment_id: TransitGatewayAttachmentId,
         dry_run: Boolean = None,
     ) -> RejectTransitGatewayVpcAttachmentResult:
-        """Rejects a request to attach a VPC to a transit gateway.
-
-        The VPC attachment must be in the ``pendingAcceptance`` state. Use
-        DescribeTransitGatewayVpcAttachments to view your pending VPC attachment
-        requests. Use AcceptTransitGatewayVpcAttachment to accept a VPC
-        attachment request.
-
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RejectTransitGatewayVpcAttachmentResult
-        """
         raise NotImplementedError
 
     @handler("RejectVpcEndpointConnections")
@@ -30278,15 +20343,6 @@ class Ec2Api:
         vpc_endpoint_ids: VpcEndpointIdList,
         dry_run: Boolean = None,
     ) -> RejectVpcEndpointConnectionsResult:
-        """Rejects one or more VPC endpoint connection requests to your VPC
-        endpoint service.
-
-        :param service_id: The ID of the service.
-        :param vpc_endpoint_ids: The IDs of one or more VPC endpoints.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RejectVpcEndpointConnectionsResult
-        """
         raise NotImplementedError
 
     @handler("RejectVpcPeeringConnection")
@@ -30296,18 +20352,6 @@ class Ec2Api:
         vpc_peering_connection_id: VpcPeeringConnectionId,
         dry_run: Boolean = None,
     ) -> RejectVpcPeeringConnectionResult:
-        """Rejects a VPC peering connection request. The VPC peering connection
-        must be in the ``pending-acceptance`` state. Use the
-        DescribeVpcPeeringConnections request to view your outstanding VPC
-        peering connection requests. To delete an active VPC peering connection,
-        or to delete a VPC peering connection request that you initiated, use
-        DeleteVpcPeeringConnection.
-
-        :param vpc_peering_connection_id: The ID of the VPC peering connection.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RejectVpcPeeringConnectionResult
-        """
         raise NotImplementedError
 
     @handler("ReleaseAddress")
@@ -30319,57 +20363,12 @@ class Ec2Api:
         network_border_group: String = None,
         dry_run: Boolean = None,
     ) -> None:
-        """Releases the specified Elastic IP address.
-
-        [EC2-Classic, default VPC] Releasing an Elastic IP address automatically
-        disassociates it from any instance that it's associated with. To
-        disassociate an Elastic IP address without releasing it, use
-        DisassociateAddress.
-
-        [Nondefault VPC] You must use DisassociateAddress to disassociate the
-        Elastic IP address before you can release it. Otherwise, Amazon EC2
-        returns an error (``InvalidIPAddress.InUse``).
-
-        After releasing an Elastic IP address, it is released to the IP address
-        pool. Be sure to update your DNS records and any servers or devices that
-        communicate with the address. If you attempt to release an Elastic IP
-        address that you already released, you'll get an ``AuthFailure`` error
-        if the address is already allocated to another Amazon Web Services
-        account.
-
-        [EC2-VPC] After you release an Elastic IP address for use in a VPC, you
-        might be able to recover it. For more information, see AllocateAddress.
-
-        :param allocation_id: [EC2-VPC] The allocation ID.
-        :param public_ip: [EC2-Classic] The Elastic IP address.
-        :param network_border_group: The set of Availability Zones, Local Zones, or Wavelength Zones from
-        which Amazon Web Services advertises IP addresses.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("ReleaseHosts")
     def release_hosts(
         self, context: RequestContext, host_ids: RequestHostIdList
     ) -> ReleaseHostsResult:
-        """When you no longer want to use an On-Demand Dedicated Host it can be
-        released. On-Demand billing is stopped and the host goes into
-        ``released`` state. The host ID of Dedicated Hosts that have been
-        released can no longer be specified in another request, for example, to
-        modify the host. You must stop or terminate all instances on a host
-        before it can be released.
-
-        When Dedicated Hosts are released, it may take some time for them to
-        stop counting toward your limit and you may receive capacity errors when
-        trying to allocate new Dedicated Hosts. Wait a few minutes and then try
-        again.
-
-        Released hosts still appear in a DescribeHosts response.
-
-        :param host_ids: The IDs of the Dedicated Hosts to release.
-        :returns: ReleaseHostsResult
-        """
         raise NotImplementedError
 
     @handler("ReleaseIpamPoolAllocation")
@@ -30378,25 +20377,9 @@ class Ec2Api:
         context: RequestContext,
         ipam_pool_id: IpamPoolId,
         cidr: String,
+        ipam_pool_allocation_id: IpamPoolAllocationId,
         dry_run: Boolean = None,
-        ipam_pool_allocation_id: IpamPoolAllocationId = None,
     ) -> ReleaseIpamPoolAllocationResult:
-        """Release an allocation within an IPAM pool. You can only use this action
-        to release manual allocations. To remove an allocation for a resource
-        without deleting the resource, set its monitored state to false using
-        `ModifyIpamResourceCidr <https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_ModifyIpamResourceCidr.html>`__.
-        For more information, see `Release an
-        allocation </vpc/latest/ipam/release-pool-alloc-ipam.html>`__ in the
-        *Amazon VPC IPAM User Guide*.
-
-        :param ipam_pool_id: The ID of the IPAM pool which contains the allocation you want to
-        release.
-        :param cidr: The CIDR of the allocation you want to release.
-        :param dry_run: A check for whether you have the required permissions for the action
-        without actually making the request and provides an error response.
-        :param ipam_pool_allocation_id: The ID of the allocation.
-        :returns: ReleaseIpamPoolAllocationResult
-        """
         raise NotImplementedError
 
     @handler("ReplaceIamInstanceProfileAssociation")
@@ -30406,17 +20389,6 @@ class Ec2Api:
         iam_instance_profile: IamInstanceProfileSpecification,
         association_id: IamInstanceProfileAssociationId,
     ) -> ReplaceIamInstanceProfileAssociationResult:
-        """Replaces an IAM instance profile for the specified running instance. You
-        can use this action to change the IAM instance profile that's associated
-        with an instance without having to disassociate the existing IAM
-        instance profile first.
-
-        Use DescribeIamInstanceProfileAssociations to get the association ID.
-
-        :param iam_instance_profile: The IAM instance profile.
-        :param association_id: The ID of the existing IAM instance profile association.
-        :returns: ReplaceIamInstanceProfileAssociationResult
-        """
         raise NotImplementedError
 
     @handler("ReplaceNetworkAclAssociation")
@@ -30427,21 +20399,6 @@ class Ec2Api:
         network_acl_id: NetworkAclId,
         dry_run: Boolean = None,
     ) -> ReplaceNetworkAclAssociationResult:
-        """Changes which network ACL a subnet is associated with. By default when
-        you create a subnet, it's automatically associated with the default
-        network ACL. For more information, see `Network
-        ACLs <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_ACLs.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        This is an idempotent operation.
-
-        :param association_id: The ID of the current association between the original network ACL and
-        the subnet.
-        :param network_acl_id: The ID of the new network ACL to associate with the subnet.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ReplaceNetworkAclAssociationResult
-        """
         raise NotImplementedError
 
     @handler("ReplaceNetworkAclEntry")
@@ -30459,25 +20416,6 @@ class Ec2Api:
         ipv6_cidr_block: String = None,
         port_range: PortRange = None,
     ) -> None:
-        """Replaces an entry (rule) in a network ACL. For more information, see
-        `Network
-        ACLs <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_ACLs.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param egress: Indicates whether to replace the egress rule.
-        :param network_acl_id: The ID of the ACL.
-        :param protocol: The protocol number.
-        :param rule_action: Indicates whether to allow or deny the traffic that matches the rule.
-        :param rule_number: The rule number of the entry to replace.
-        :param cidr_block: The IPv4 network range to allow or deny, in CIDR notation (for example
-        ``172.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param icmp_type_code: ICMP protocol: The ICMP or ICMPv6 type and code.
-        :param ipv6_cidr_block: The IPv6 network range to allow or deny, in CIDR notation (for example
-        ``2001:bd8:1234:1a00::/64``).
-        :param port_range: TCP or UDP protocols: The range of ports the rule applies to.
-        """
         raise NotImplementedError
 
     @handler("ReplaceRoute")
@@ -30502,35 +20440,6 @@ class Ec2Api:
         vpc_peering_connection_id: VpcPeeringConnectionId = None,
         core_network_arn: CoreNetworkArn = None,
     ) -> None:
-        """Replaces an existing route within a route table in a VPC. You must
-        provide only one of the following: internet gateway, virtual private
-        gateway, NAT instance, NAT gateway, VPC peering connection, network
-        interface, egress-only internet gateway, or transit gateway.
-
-        For more information, see `Route
-        tables <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        :param route_table_id: The ID of the route table.
-        :param destination_cidr_block: The IPv4 CIDR address block used for the destination match.
-        :param destination_ipv6_cidr_block: The IPv6 CIDR address block used for the destination match.
-        :param destination_prefix_list_id: The ID of the prefix list for the route.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param vpc_endpoint_id: The ID of a VPC endpoint.
-        :param egress_only_internet_gateway_id: [IPv6 traffic only] The ID of an egress-only internet gateway.
-        :param gateway_id: The ID of an internet gateway or virtual private gateway.
-        :param instance_id: The ID of a NAT instance in your VPC.
-        :param local_target: Specifies whether to reset the local route to its default target
-        (``local``).
-        :param nat_gateway_id: [IPv4 traffic only] The ID of a NAT gateway.
-        :param transit_gateway_id: The ID of a transit gateway.
-        :param local_gateway_id: The ID of the local gateway.
-        :param carrier_gateway_id: [IPv4 traffic only] The ID of a carrier gateway.
-        :param network_interface_id: The ID of a network interface.
-        :param vpc_peering_connection_id: The ID of a VPC peering connection.
-        :param core_network_arn: The Amazon Resource Name (ARN) of the core network.
-        """
         raise NotImplementedError
 
     @handler("ReplaceRouteTableAssociation")
@@ -30541,23 +20450,6 @@ class Ec2Api:
         route_table_id: RouteTableId,
         dry_run: Boolean = None,
     ) -> ReplaceRouteTableAssociationResult:
-        """Changes the route table associated with a given subnet, internet
-        gateway, or virtual private gateway in a VPC. After the operation
-        completes, the subnet or gateway uses the routes in the new route table.
-        For more information about route tables, see `Route
-        tables <https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html>`__
-        in the *Amazon Virtual Private Cloud User Guide*.
-
-        You can also use this operation to change which table is the main route
-        table in the VPC. Specify the main route table's association ID and the
-        route table ID of the new main route table.
-
-        :param association_id: The association ID.
-        :param route_table_id: The ID of the new route table to associate with the subnet.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ReplaceRouteTableAssociationResult
-        """
         raise NotImplementedError
 
     @handler("ReplaceTransitGatewayRoute")
@@ -30570,17 +20462,6 @@ class Ec2Api:
         blackhole: Boolean = None,
         dry_run: Boolean = None,
     ) -> ReplaceTransitGatewayRouteResult:
-        """Replaces the specified route in the specified transit gateway route
-        table.
-
-        :param destination_cidr_block: The CIDR range used for the destination match.
-        :param transit_gateway_route_table_id: The ID of the route table.
-        :param transit_gateway_attachment_id: The ID of the attachment.
-        :param blackhole: Indicates whether traffic matching this route is to be dropped.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ReplaceTransitGatewayRouteResult
-        """
         raise NotImplementedError
 
     @handler("ReportInstanceStatus")
@@ -30595,24 +20476,6 @@ class Ec2Api:
         end_time: DateTime = None,
         start_time: DateTime = None,
     ) -> None:
-        """Submits feedback about the status of an instance. The instance must be
-        in the ``running`` state. If your experience with the instance differs
-        from the instance status returned by DescribeInstanceStatus, use
-        ReportInstanceStatus to report your experience with the instance. Amazon
-        EC2 collects this information to improve the accuracy of status checks.
-
-        Use of this action does not change the value returned by
-        DescribeInstanceStatus.
-
-        :param instances: The instances.
-        :param reason_codes: The reason codes that describe the health state of your instance.
-        :param status: The status of all instances listed.
-        :param description: Descriptive text about the health state of your instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param end_time: The time at which the reported instance health state ended.
-        :param start_time: The time at which the reported instance health state began.
-        """
         raise NotImplementedError
 
     @handler("RequestSpotFleet")
@@ -30622,72 +20485,12 @@ class Ec2Api:
         spot_fleet_request_config: SpotFleetRequestConfigData,
         dry_run: Boolean = None,
     ) -> RequestSpotFleetResponse:
-        """Creates a Spot Fleet request.
-
-        The Spot Fleet request specifies the total target capacity and the
-        On-Demand target capacity. Amazon EC2 calculates the difference between
-        the total capacity and On-Demand capacity, and launches the difference
-        as Spot capacity.
-
-        You can submit a single request that includes multiple launch
-        specifications that vary by instance type, AMI, Availability Zone, or
-        subnet.
-
-        By default, the Spot Fleet requests Spot Instances in the Spot Instance
-        pool where the price per unit is the lowest. Each launch specification
-        can include its own instance weighting that reflects the value of the
-        instance type to your application workload.
-
-        Alternatively, you can specify that the Spot Fleet distribute the target
-        capacity across the Spot pools included in its launch specifications. By
-        ensuring that the Spot Instances in your Spot Fleet are in different
-        Spot pools, you can improve the availability of your fleet.
-
-        You can specify tags for the Spot Fleet request and instances launched
-        by the fleet. You cannot tag other resource types in a Spot Fleet
-        request because only the ``spot-fleet-request`` and ``instance``
-        resource types are supported.
-
-        For more information, see `Spot Fleet
-        requests <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet-requests.html>`__
-        in the *Amazon EC2 User Guide for Linux Instances*.
-
-        :param spot_fleet_request_config: The configuration for the Spot Fleet request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RequestSpotFleetResponse
-        """
         raise NotImplementedError
 
     @handler("RequestSpotInstances", expand=False)
     def request_spot_instances(
         self, context: RequestContext, request: RequestSpotInstancesRequest
     ) -> RequestSpotInstancesResult:
-        """Creates a Spot Instance request.
-
-        For more information, see `Spot Instance
-        requests <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html>`__
-        in the *Amazon EC2 User Guide for Linux Instances*.
-
-        :param availability_zone_group: The user-specified name for a logical grouping of requests.
-        :param block_duration_minutes: Deprecated.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param instance_count: The maximum number of Spot Instances to launch.
-        :param launch_group: The instance launch group.
-        :param launch_specification: The launch specification.
-        :param spot_price: The maximum price per hour that you are willing to pay for a Spot
-        Instance.
-        :param type: The Spot Instance request type.
-        :param valid_from: The start date of the request.
-        :param valid_until: The end date of the request, in UTC format
-        (*YYYY*-*MM*-*DD* T *HH*:*MM*:*SS* Z).
-        :param tag_specifications: The key-value pair for tagging the Spot Instance request on creation.
-        :param instance_interruption_behavior: The behavior when a Spot Instance is interrupted.
-        :returns: RequestSpotInstancesResult
-        """
         raise NotImplementedError
 
     @handler("ResetAddressAttribute")
@@ -30698,36 +20501,12 @@ class Ec2Api:
         attribute: AddressAttributeName,
         dry_run: Boolean = None,
     ) -> ResetAddressAttributeResult:
-        """Resets the attribute of the specified IP address. For requirements, see
-        `Using reverse DNS for email
-        applications <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html#Using_Elastic_Addressing_Reverse_DNS>`__.
-
-        :param allocation_id: [EC2-VPC] The allocation ID.
-        :param attribute: The attribute of the IP address.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ResetAddressAttributeResult
-        """
         raise NotImplementedError
 
     @handler("ResetEbsDefaultKmsKeyId")
     def reset_ebs_default_kms_key_id(
         self, context: RequestContext, dry_run: Boolean = None
     ) -> ResetEbsDefaultKmsKeyIdResult:
-        """Resets the default KMS key for EBS encryption for your account in this
-        Region to the Amazon Web Services managed KMS key for EBS.
-
-        After resetting the default KMS key to the Amazon Web Services managed
-        KMS key, you can continue to encrypt by a customer managed KMS key by
-        specifying it when you create the volume. For more information, see
-        `Amazon EBS
-        encryption <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: ResetEbsDefaultKmsKeyIdResult
-        """
         raise NotImplementedError
 
     @handler("ResetFpgaImageAttribute")
@@ -30738,15 +20517,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         attribute: ResetFpgaImageAttributeName = None,
     ) -> ResetFpgaImageAttributeResult:
-        """Resets the specified attribute of the specified Amazon FPGA Image (AFI)
-        to its default value. You can only reset the load permission attribute.
-
-        :param fpga_image_id: The ID of the AFI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param attribute: The attribute.
-        :returns: ResetFpgaImageAttributeResult
-        """
         raise NotImplementedError
 
     @handler("ResetImageAttribute")
@@ -30757,14 +20527,6 @@ class Ec2Api:
         image_id: ImageId,
         dry_run: Boolean = None,
     ) -> None:
-        """Resets an attribute of an AMI to its default value.
-
-        :param attribute: The attribute to reset (currently you can only reset the launch
-        permission attribute).
-        :param image_id: The ID of the AMI.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("ResetInstanceAttribute")
@@ -30775,23 +20537,6 @@ class Ec2Api:
         instance_id: InstanceId,
         dry_run: Boolean = None,
     ) -> None:
-        """Resets an attribute of an instance to its default value. To reset the
-        ``kernel`` or ``ramdisk``, the instance must be in a stopped state. To
-        reset the ``sourceDestCheck``, the instance can be either running or
-        stopped.
-
-        The ``sourceDestCheck`` attribute controls whether source/destination
-        checking is enabled. The default value is ``true``, which means checking
-        is enabled. This value must be ``false`` for a NAT instance to perform
-        NAT. For more information, see `NAT
-        Instances <https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_NAT_Instance.html>`__
-        in the *Amazon VPC User Guide*.
-
-        :param attribute: The attribute to reset.
-        :param instance_id: The ID of the instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("ResetNetworkInterfaceAttribute")
@@ -30802,14 +20547,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         source_dest_check: String = None,
     ) -> None:
-        """Resets a network interface attribute. You can specify only one attribute
-        at a time.
-
-        :param network_interface_id: The ID of the network interface.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param source_dest_check: The source/destination checking attribute.
-        """
         raise NotImplementedError
 
     @handler("ResetSnapshotAttribute")
@@ -30820,33 +20557,18 @@ class Ec2Api:
         snapshot_id: SnapshotId,
         dry_run: Boolean = None,
     ) -> None:
-        """Resets permission settings for the specified snapshot.
-
-        For more information about modifying snapshot permissions, see `Share a
-        snapshot <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-modifying-snapshot-permissions.html>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param attribute: The attribute to reset.
-        :param snapshot_id: The ID of the snapshot.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("RestoreAddressToClassic")
     def restore_address_to_classic(
         self, context: RequestContext, public_ip: String, dry_run: Boolean = None
     ) -> RestoreAddressToClassicResult:
-        """Restores an Elastic IP address that was previously moved to the EC2-VPC
-        platform back to the EC2-Classic platform. You cannot move an Elastic IP
-        address that was originally allocated for use in EC2-VPC. The Elastic IP
-        address must not be associated with an instance or network interface.
+        raise NotImplementedError
 
-        :param public_ip: The Elastic IP address.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RestoreAddressToClassicResult
-        """
+    @handler("RestoreImageFromRecycleBin")
+    def restore_image_from_recycle_bin(
+        self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None
+    ) -> RestoreImageFromRecycleBinResult:
         raise NotImplementedError
 
     @handler("RestoreManagedPrefixListVersion")
@@ -30858,32 +20580,12 @@ class Ec2Api:
         current_version: Long,
         dry_run: Boolean = None,
     ) -> RestoreManagedPrefixListVersionResult:
-        """Restores the entries from a previous version of a managed prefix list to
-        a new version of the prefix list.
-
-        :param prefix_list_id: The ID of the prefix list.
-        :param previous_version: The version to restore.
-        :param current_version: The current version number for the prefix list.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RestoreManagedPrefixListVersionResult
-        """
         raise NotImplementedError
 
     @handler("RestoreSnapshotFromRecycleBin")
     def restore_snapshot_from_recycle_bin(
         self, context: RequestContext, snapshot_id: SnapshotId, dry_run: Boolean = None
     ) -> RestoreSnapshotFromRecycleBinResult:
-        """Restores a snapshot from the Recycle Bin. For more information, see
-        `Restore snapshots from the Recycle
-        Bin <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/recycle-bin-working-with-snaps.html#recycle-bin-restore-snaps>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param snapshot_id: The ID of the snapshot to restore.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RestoreSnapshotFromRecycleBinResult
-        """
         raise NotImplementedError
 
     @handler("RestoreSnapshotTier")
@@ -30895,25 +20597,6 @@ class Ec2Api:
         permanent_restore: Boolean = None,
         dry_run: Boolean = None,
     ) -> RestoreSnapshotTierResult:
-        """Restores an archived Amazon EBS snapshot for use temporarily or
-        permanently, or modifies the restore period or restore type for a
-        snapshot that was previously temporarily restored.
-
-        For more information see `Restore an archived
-        snapshot <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/working-with-snapshot-archiving.html#restore-archived-snapshot>`__
-        and `modify the restore period or restore type for a temporarily
-        restored
-        snapshot <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/working-with-snapshot-archiving.html#modify-temp-restore-period>`__
-        in the *Amazon Elastic Compute Cloud User Guide*.
-
-        :param snapshot_id: The ID of the snapshot to restore.
-        :param temporary_restore_days: Specifies the number of days for which to temporarily restore an
-        archived snapshot.
-        :param permanent_restore: Indicates whether to permanently restore an archived snapshot.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RestoreSnapshotTierResult
-        """
         raise NotImplementedError
 
     @handler("RevokeClientVpnIngress")
@@ -30926,18 +20609,6 @@ class Ec2Api:
         revoke_all_groups: Boolean = None,
         dry_run: Boolean = None,
     ) -> RevokeClientVpnIngressResult:
-        """Removes an ingress authorization rule from a Client VPN endpoint.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint with which the authorization rule is
-        associated.
-        :param target_network_cidr: The IPv4 address range, in CIDR notation, of the network for which
-        access is being removed.
-        :param access_group_id: The ID of the Active Directory group for which to revoke access.
-        :param revoke_all_groups: Indicates whether access should be revoked for all clients.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: RevokeClientVpnIngressResult
-        """
         raise NotImplementedError
 
     @handler("RevokeSecurityGroupEgress")
@@ -30955,43 +20626,6 @@ class Ec2Api:
         source_security_group_name: String = None,
         source_security_group_owner_id: String = None,
     ) -> RevokeSecurityGroupEgressResult:
-        """[VPC only] Removes the specified outbound (egress) rules from a security
-        group for EC2-VPC. This action does not apply to security groups for use
-        in EC2-Classic.
-
-        You can specify rules using either rule IDs or security group rule
-        properties. If you use rule properties, the values that you specify (for
-        example, ports) must match the existing rule's values exactly. Each rule
-        has a protocol, from and to ports, and destination (CIDR range, security
-        group, or prefix list). For the TCP and UDP protocols, you must also
-        specify the destination port or range of ports. For the ICMP protocol,
-        you must also specify the ICMP type and code. If the security group rule
-        has a description, you do not need to specify the description to revoke
-        the rule.
-
-        [Default VPC] If the values you specify do not match the existing rule's
-        values, no error is returned, and the output describes the security
-        group rules that were not revoked.
-
-        Amazon Web Services recommends that you describe the security group to
-        verify that the rules were removed.
-
-        Rule changes are propagated to instances within the security group as
-        quickly as possible. However, a small delay might occur.
-
-        :param group_id: The ID of the security group.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param ip_permissions: The sets of IP permissions.
-        :param security_group_rule_ids: The IDs of the security group rules.
-        :param cidr_ip: Not supported.
-        :param from_port: Not supported.
-        :param ip_protocol: Not supported.
-        :param to_port: Not supported.
-        :param source_security_group_name: Not supported.
-        :param source_security_group_owner_id: Not supported.
-        :returns: RevokeSecurityGroupEgressResult
-        """
         raise NotImplementedError
 
     @handler("RevokeSecurityGroupIngress")
@@ -31010,47 +20644,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         security_group_rule_ids: SecurityGroupRuleIdList = None,
     ) -> RevokeSecurityGroupIngressResult:
-        """Removes the specified inbound (ingress) rules from a security group.
-
-        You can specify rules using either rule IDs or security group rule
-        properties. If you use rule properties, the values that you specify (for
-        example, ports) must match the existing rule's values exactly. Each rule
-        has a protocol, from and to ports, and source (CIDR range, security
-        group, or prefix list). For the TCP and UDP protocols, you must also
-        specify the destination port or range of ports. For the ICMP protocol,
-        you must also specify the ICMP type and code. If the security group rule
-        has a description, you do not need to specify the description to revoke
-        the rule.
-
-        [EC2-Classic, default VPC] If the values you specify do not match the
-        existing rule's values, no error is returned, and the output describes
-        the security group rules that were not revoked.
-
-        Amazon Web Services recommends that you describe the security group to
-        verify that the rules were removed.
-
-        Rule changes are propagated to instances within the security group as
-        quickly as possible. However, a small delay might occur.
-
-        :param cidr_ip: The CIDR IP address range.
-        :param from_port: The start of port range for the TCP and UDP protocols, or an ICMP type
-        number.
-        :param group_id: The ID of the security group.
-        :param group_name: [EC2-Classic, default VPC] The name of the security group.
-        :param ip_permissions: The sets of IP permissions.
-        :param ip_protocol: The IP protocol name (``tcp``, ``udp``, ``icmp``) or number (see
-        `Protocol
-        Numbers <http://www.
-        :param source_security_group_name: [EC2-Classic, default VPC] The name of the source security group.
-        :param source_security_group_owner_id: [EC2-Classic] The Amazon Web Services account ID of the source security
-        group, if the source security group is in a different account.
-        :param to_port: The end of port range for the TCP and UDP protocols, or an ICMP code
-        number.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param security_group_rule_ids: The IDs of the security group rules.
-        :returns: RevokeSecurityGroupIngressResult
-        """
         raise NotImplementedError
 
     @handler("RunInstances")
@@ -31096,115 +20689,6 @@ class Ec2Api:
         enclave_options: EnclaveOptionsRequest = None,
         private_dns_name_options: PrivateDnsNameOptionsRequest = None,
     ) -> Reservation:
-        """Launches the specified number of instances using an AMI for which you
-        have permissions.
-
-        You can specify a number of options, or leave the default options. The
-        following rules apply:
-
-        -  [EC2-VPC] If you don't specify a subnet ID, we choose a default
-           subnet from your default VPC for you. If you don't have a default
-           VPC, you must specify a subnet ID in the request.
-
-        -  [EC2-Classic] If don't specify an Availability Zone, we choose one
-           for you.
-
-        -  Some instance types must be launched into a VPC. If you do not have a
-           default VPC, or if you do not specify a subnet ID, the request fails.
-           For more information, see `Instance types available only in a
-           VPC <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-vpc.html#vpc-only-instance-types>`__.
-
-        -  [EC2-VPC] All instances have a network interface with a primary
-           private IPv4 address. If you don't specify this address, we choose
-           one from the IPv4 range of your subnet.
-
-        -  Not all instance types support IPv6 addresses. For more information,
-           see `Instance
-           types <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html>`__.
-
-        -  If you don't specify a security group ID, we use the default security
-           group. For more information, see `Security
-           groups <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html>`__.
-
-        -  If any of the AMIs have a product code attached for which the user
-           has not subscribed, the request fails.
-
-        You can create a `launch
-        template <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html>`__,
-        which is a resource that contains the parameters to launch an instance.
-        When you launch an instance using RunInstances, you can specify the
-        launch template instead of specifying the launch parameters.
-
-        To ensure faster instance launches, break up large requests into smaller
-        batches. For example, create five separate launch requests for 100
-        instances each instead of one launch request for 500 instances.
-
-        An instance is ready for you to use when it's in the ``running`` state.
-        You can check the state of your instance using DescribeInstances. You
-        can tag instances and EBS volumes during launch, after launch, or both.
-        For more information, see CreateTags and `Tagging your Amazon EC2
-        resources <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html>`__.
-
-        Linux instances have access to the public key of the key pair at boot.
-        You can use this key to provide secure access to the instance. Amazon
-        EC2 public images use this feature to provide secure access without
-        passwords. For more information, see `Key
-        pairs <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html>`__.
-
-        For troubleshooting, see `What to do if an instance immediately
-        terminates <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_InstanceStraightToTerminated.html>`__,
-        and `Troubleshooting connecting to your
-        instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesConnecting.html>`__.
-
-        :param max_count: The maximum number of instances to launch.
-        :param min_count: The minimum number of instances to launch.
-        :param block_device_mappings: The block device mapping, which defines the EBS volumes and instance
-        store volumes to attach to the instance at launch.
-        :param image_id: The ID of the AMI.
-        :param instance_type: The instance type.
-        :param ipv6_address_count: [EC2-VPC] The number of IPv6 addresses to associate with the primary
-        network interface.
-        :param ipv6_addresses: [EC2-VPC] The IPv6 addresses from the range of the subnet to associate
-        with the primary network interface.
-        :param kernel_id: The ID of the kernel.
-        :param key_name: The name of the key pair.
-        :param monitoring: Specifies whether detailed monitoring is enabled for the instance.
-        :param placement: The placement for the instance.
-        :param ramdisk_id: The ID of the RAM disk to select.
-        :param security_group_ids: The IDs of the security groups.
-        :param security_groups: [EC2-Classic, default VPC] The names of the security groups.
-        :param subnet_id: [EC2-VPC] The ID of the subnet to launch the instance into.
-        :param user_data: The user data to make available to the instance.
-        :param additional_info: Reserved.
-        :param client_token: Unique, case-sensitive identifier you provide to ensure the idempotency
-        of the request.
-        :param disable_api_termination: If you set this parameter to ``true``, you can't terminate the instance
-        using the Amazon EC2 console, CLI, or API; otherwise, you can.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param ebs_optimized: Indicates whether the instance is optimized for Amazon EBS I/O.
-        :param iam_instance_profile: The name or Amazon Resource Name (ARN) of an IAM instance profile.
-        :param instance_initiated_shutdown_behavior: Indicates whether an instance stops or terminates when you initiate
-        shutdown from the instance (using the operating system command for
-        system shutdown).
-        :param network_interfaces: The network interfaces to associate with the instance.
-        :param private_ip_address: [EC2-VPC] The primary IPv4 address.
-        :param elastic_gpu_specification: An elastic GPU to associate with the instance.
-        :param elastic_inference_accelerators: An elastic inference accelerator to associate with the instance.
-        :param tag_specifications: The tags to apply to the resources during launch.
-        :param launch_template: The launch template to use to launch the instances.
-        :param instance_market_options: The market (purchasing) option for the instances.
-        :param credit_specification: The credit option for CPU usage of the burstable performance instance.
-        :param cpu_options: The CPU options for the instance.
-        :param capacity_reservation_specification: Information about the Capacity Reservation targeting option.
-        :param hibernation_options: Indicates whether an instance is enabled for hibernation.
-        :param license_specifications: The license configurations.
-        :param metadata_options: The metadata options for the instance.
-        :param enclave_options: Indicates whether the instance is enabled for Amazon Web Services Nitro
-        Enclaves.
-        :param private_dns_name_options: The options for the instance hostname.
-        :returns: Reservation
-        """
         raise NotImplementedError
 
     @handler("RunScheduledInstances")
@@ -31217,28 +20701,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         instance_count: Integer = None,
     ) -> RunScheduledInstancesResult:
-        """Launches the specified Scheduled Instances.
-
-        Before you can launch a Scheduled Instance, you must purchase it and
-        obtain an identifier using PurchaseScheduledInstances.
-
-        You must launch a Scheduled Instance during its scheduled time period.
-        You can't stop or reboot a Scheduled Instance, but you can terminate it
-        as needed. If you terminate a Scheduled Instance before the current
-        scheduled time period ends, you can launch it again after a few minutes.
-        For more information, see `Scheduled
-        Instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-scheduled-instances.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param launch_specification: The launch specification.
-        :param scheduled_instance_id: The Scheduled Instance ID.
-        :param client_token: Unique, case-sensitive identifier that ensures the idempotency of the
-        request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param instance_count: The number of instances.
-        :returns: RunScheduledInstancesResult
-        """
         raise NotImplementedError
 
     @handler("SearchLocalGatewayRoutes")
@@ -31251,16 +20713,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> SearchLocalGatewayRoutesResult:
-        """Searches for routes in the specified local gateway route table.
-
-        :param local_gateway_route_table_id: The ID of the local gateway route table.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: SearchLocalGatewayRoutesResult
-        """
         raise NotImplementedError
 
     @handler("SearchTransitGatewayMulticastGroups")
@@ -31273,17 +20725,6 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> SearchTransitGatewayMulticastGroupsResult:
-        """Searches one or more transit gateway multicast groups and returns the
-        group membership information.
-
-        :param transit_gateway_multicast_domain_id: The ID of the transit gateway multicast domain.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of results to return with a single call.
-        :param next_token: The token for the next page of results.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: SearchTransitGatewayMulticastGroupsResult
-        """
         raise NotImplementedError
 
     @handler("SearchTransitGatewayRoutes")
@@ -31295,47 +20736,12 @@ class Ec2Api:
         max_results: TransitGatewayMaxResults = None,
         dry_run: Boolean = None,
     ) -> SearchTransitGatewayRoutesResult:
-        """Searches for routes in the specified transit gateway route table.
-
-        :param transit_gateway_route_table_id: The ID of the transit gateway route table.
-        :param filters: One or more filters.
-        :param max_results: The maximum number of routes to return.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: SearchTransitGatewayRoutesResult
-        """
         raise NotImplementedError
 
     @handler("SendDiagnosticInterrupt")
     def send_diagnostic_interrupt(
         self, context: RequestContext, instance_id: InstanceId, dry_run: Boolean = None
     ) -> None:
-        """Sends a diagnostic interrupt to the specified Amazon EC2 instance to
-        trigger a *kernel panic* (on Linux instances), or a *blue screen*/*stop
-        error* (on Windows instances). For instances based on Intel and AMD
-        processors, the interrupt is received as a *non-maskable interrupt*
-        (NMI).
-
-        In general, the operating system crashes and reboots when a kernel panic
-        or stop error is triggered. The operating system can also be configured
-        to perform diagnostic tasks, such as generating a memory dump file,
-        loading a secondary kernel, or obtaining a call trace.
-
-        Before sending a diagnostic interrupt to your instance, ensure that its
-        operating system is configured to perform the required diagnostic tasks.
-
-        For more information about configuring your operating system to generate
-        a crash dump when a kernel panic or stop error occurs, see `Send a
-        diagnostic interrupt (for advanced
-        users) <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/diagnostic-interrupt.html>`__
-        (Linux instances) or `Send a diagnostic interrupt (for advanced
-        users) <https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/diagnostic-interrupt.html>`__
-        (Windows instances).
-
-        :param instance_id: The ID of the instance.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        """
         raise NotImplementedError
 
     @handler("StartInstances")
@@ -31346,40 +20752,6 @@ class Ec2Api:
         additional_info: String = None,
         dry_run: Boolean = None,
     ) -> StartInstancesResult:
-        """Starts an Amazon EBS-backed instance that you've previously stopped.
-
-        Instances that use Amazon EBS volumes as their root devices can be
-        quickly stopped and started. When an instance is stopped, the compute
-        resources are released and you are not billed for instance usage.
-        However, your root partition Amazon EBS volume remains and continues to
-        persist your data, and you are charged for Amazon EBS volume usage. You
-        can restart your instance at any time. Every time you start your
-        instance, Amazon EC2 charges a one-minute minimum for instance usage,
-        and thereafter charges per second for instance usage.
-
-        Before stopping an instance, make sure it is in a state from which it
-        can be restarted. Stopping an instance does not preserve data stored in
-        RAM.
-
-        Performing this operation on an instance that uses an instance store as
-        its root device returns an error.
-
-        If you attempt to start a T3 instance with ``host`` tenancy and the
-        ``unlimted`` CPU credit option, the request fails. The ``unlimited`` CPU
-        credit option is not supported on Dedicated Hosts. Before you start the
-        instance, either change its CPU credit option to ``standard``, or change
-        its tenancy to ``default`` or ``dedicated``.
-
-        For more information, see `Stop and start your
-        instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Stop_Start.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_ids: The IDs of the instances.
-        :param additional_info: Reserved.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: StartInstancesResult
-        """
         raise NotImplementedError
 
     @handler("StartNetworkInsightsAccessScopeAnalysis")
@@ -31391,16 +20763,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> StartNetworkInsightsAccessScopeAnalysisResult:
-        """Starts analyzing the specified Network Access Scope.
-
-        :param network_insights_access_scope_id: The ID of the Network Access Scope.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: The tags to apply.
-        :returns: StartNetworkInsightsAccessScopeAnalysisResult
-        """
         raise NotImplementedError
 
     @handler("StartNetworkInsightsAnalysis")
@@ -31413,42 +20775,12 @@ class Ec2Api:
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
     ) -> StartNetworkInsightsAnalysisResult:
-        """Starts analyzing the specified path. If the path is reachable, the
-        operation returns the shortest feasible path.
-
-        :param network_insights_path_id: The ID of the path.
-        :param client_token: Unique, case-sensitive identifier that you provide to ensure the
-        idempotency of the request.
-        :param filter_in_arns: The Amazon Resource Names (ARN) of the resources that the path must
-        traverse.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param tag_specifications: The tags to apply.
-        :returns: StartNetworkInsightsAnalysisResult
-        """
         raise NotImplementedError
 
     @handler("StartVpcEndpointServicePrivateDnsVerification")
     def start_vpc_endpoint_service_private_dns_verification(
         self, context: RequestContext, service_id: VpcEndpointServiceId, dry_run: Boolean = None
     ) -> StartVpcEndpointServicePrivateDnsVerificationResult:
-        """Initiates the verification process to prove that the service provider
-        owns the private DNS name domain for the endpoint service.
-
-        The service provider must successfully perform the verification before
-        the consumer can use the name to access the service.
-
-        Before the service provider runs this command, they must add a record to
-        the DNS server. For more information, see `Adding a TXT Record to Your
-        Domain's DNS
-        Server <https://docs.aws.amazon.com/vpc/latest/userguide/endpoint-services-dns-validation.html#add-dns-txt-record>`__
-        in the *Amazon VPC User Guide*.
-
-        :param service_id: The ID of the endpoint service.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: StartVpcEndpointServicePrivateDnsVerificationResult
-        """
         raise NotImplementedError
 
     @handler("StopInstances")
@@ -31460,63 +20792,6 @@ class Ec2Api:
         dry_run: Boolean = None,
         force: Boolean = None,
     ) -> StopInstancesResult:
-        """Stops an Amazon EBS-backed instance.
-
-        You can use the Stop action to hibernate an instance if the instance is
-        `enabled for
-        hibernation <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html#enabling-hibernation>`__
-        and it meets the `hibernation
-        prerequisites <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html#hibernating-prerequisites>`__.
-        For more information, see `Hibernate your
-        instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        We don't charge usage for a stopped instance, or data transfer fees;
-        however, your root partition Amazon EBS volume remains and continues to
-        persist your data, and you are charged for Amazon EBS volume usage.
-        Every time you start your instance, Amazon EC2 charges a one-minute
-        minimum for instance usage, and thereafter charges per second for
-        instance usage.
-
-        You can't stop or hibernate instance store-backed instances. You can't
-        use the Stop action to hibernate Spot Instances, but you can specify
-        that Amazon EC2 should hibernate Spot Instances when they are
-        interrupted. For more information, see `Hibernating interrupted Spot
-        Instances <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-interruptions.html#hibernate-spot-instances>`__
-        in the *Amazon EC2 User Guide*.
-
-        When you stop or hibernate an instance, we shut it down. You can restart
-        your instance at any time. Before stopping or hibernating an instance,
-        make sure it is in a state from which it can be restarted. Stopping an
-        instance does not preserve data stored in RAM, but hibernating an
-        instance does preserve data stored in RAM. If an instance cannot
-        hibernate successfully, a normal shutdown occurs.
-
-        Stopping and hibernating an instance is different to rebooting or
-        terminating it. For example, when you stop or hibernate an instance, the
-        root device and any other devices attached to the instance persist. When
-        you terminate an instance, the root device and any other devices
-        attached during the instance launch are automatically deleted. For more
-        information about the differences between rebooting, stopping,
-        hibernating, and terminating instances, see `Instance
-        lifecycle <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        When you stop an instance, we attempt to shut it down forcibly after a
-        short while. If your instance appears stuck in the stopping state after
-        a period of time, there may be an issue with the underlying host
-        computer. For more information, see `Troubleshoot stopping your
-        instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesStopping.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_ids: The IDs of the instances.
-        :param hibernate: Hibernates the instance if the instance was enabled for hibernation at
-        launch.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param force: Forces the instances to stop.
-        :returns: StopInstancesResult
-        """
         raise NotImplementedError
 
     @handler("TerminateClientVpnConnections")
@@ -31528,90 +20803,12 @@ class Ec2Api:
         username: String = None,
         dry_run: Boolean = None,
     ) -> TerminateClientVpnConnectionsResult:
-        """Terminates active Client VPN endpoint connections. This action can be
-        used to terminate a specific client connection, or up to five
-        connections established by a specific user.
-
-        :param client_vpn_endpoint_id: The ID of the Client VPN endpoint to which the client is connected.
-        :param connection_id: The ID of the client connection to be terminated.
-        :param username: The name of the user who initiated the connection.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: TerminateClientVpnConnectionsResult
-        """
         raise NotImplementedError
 
     @handler("TerminateInstances")
     def terminate_instances(
         self, context: RequestContext, instance_ids: InstanceIdStringList, dry_run: Boolean = None
     ) -> TerminateInstancesResult:
-        """Shuts down the specified instances. This operation is idempotent; if you
-        terminate an instance more than once, each call succeeds.
-
-        If you specify multiple instances and the request fails (for example,
-        because of a single incorrect instance ID), none of the instances are
-        terminated.
-
-        If you terminate multiple instances across multiple Availability Zones,
-        and one or more of the specified instances are enabled for termination
-        protection, the request fails with the following results:
-
-        -  The specified instances that are in the same Availability Zone as the
-           protected instance are not terminated.
-
-        -  The specified instances that are in different Availability Zones,
-           where no other specified instances are protected, are successfully
-           terminated.
-
-        For example, say you have the following instances:
-
-        -  Instance A: ``us-east-1a``; Not protected
-
-        -  Instance B: ``us-east-1a``; Not protected
-
-        -  Instance C: ``us-east-1b``; Protected
-
-        -  Instance D: ``us-east-1b``; not protected
-
-        If you attempt to terminate all of these instances in the same request,
-        the request reports failure with the following results:
-
-        -  Instance A and Instance B are successfully terminated because none of
-           the specified instances in ``us-east-1a`` are enabled for termination
-           protection.
-
-        -  Instance C and Instance D fail to terminate because at least one of
-           the specified instances in ``us-east-1b`` (Instance C) is enabled for
-           termination protection.
-
-        Terminated instances remain visible after termination (for approximately
-        one hour).
-
-        By default, Amazon EC2 deletes all EBS volumes that were attached when
-        the instance launched. Volumes attached after instance launch continue
-        running.
-
-        You can stop, start, and terminate EBS-backed instances. You can only
-        terminate instance store-backed instances. What happens to an instance
-        differs if you stop it or terminate it. For example, when you stop an
-        instance, the root device and any other devices attached to the instance
-        persist. When you terminate an instance, any attached EBS volumes with
-        the ``DeleteOnTermination`` block device mapping parameter set to
-        ``true`` are automatically deleted. For more information about the
-        differences between stopping and terminating instances, see `Instance
-        lifecycle <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        For more information about troubleshooting, see `Troubleshooting
-        terminating your
-        instance <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesShuttingDown.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_ids: The IDs of the instances.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: TerminateInstancesResult
-        """
         raise NotImplementedError
 
     @handler("UnassignIpv6Addresses")
@@ -31622,14 +20819,6 @@ class Ec2Api:
         ipv6_addresses: Ipv6AddressList = None,
         ipv6_prefixes: IpPrefixList = None,
     ) -> UnassignIpv6AddressesResult:
-        """Unassigns one or more IPv6 addresses IPv4 Prefix Delegation prefixes
-        from a network interface.
-
-        :param network_interface_id: The ID of the network interface.
-        :param ipv6_addresses: The IPv6 addresses to unassign from the network interface.
-        :param ipv6_prefixes: One or more IPv6 prefixes to unassign from the network interface.
-        :returns: UnassignIpv6AddressesResult
-        """
         raise NotImplementedError
 
     @handler("UnassignPrivateIpAddresses")
@@ -31640,30 +20829,12 @@ class Ec2Api:
         private_ip_addresses: PrivateIpAddressStringList = None,
         ipv4_prefixes: IpPrefixList = None,
     ) -> None:
-        """Unassigns one or more secondary private IP addresses, or IPv4 Prefix
-        Delegation prefixes from a network interface.
-
-        :param network_interface_id: The ID of the network interface.
-        :param private_ip_addresses: The secondary private IP addresses to unassign from the network
-        interface.
-        :param ipv4_prefixes: The IPv4 prefixes to unassign from the network interface.
-        """
         raise NotImplementedError
 
     @handler("UnmonitorInstances")
     def unmonitor_instances(
         self, context: RequestContext, instance_ids: InstanceIdStringList, dry_run: Boolean = None
     ) -> UnmonitorInstancesResult:
-        """Disables detailed monitoring for a running instance. For more
-        information, see `Monitoring your instances and
-        volumes <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-cloudwatch.html>`__
-        in the *Amazon EC2 User Guide*.
-
-        :param instance_ids: The IDs of the instances.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: UnmonitorInstancesResult
-        """
         raise NotImplementedError
 
     @handler("UpdateSecurityGroupRuleDescriptionsEgress")
@@ -31676,20 +20847,6 @@ class Ec2Api:
         ip_permissions: IpPermissionList = None,
         security_group_rule_descriptions: SecurityGroupRuleDescriptionList = None,
     ) -> UpdateSecurityGroupRuleDescriptionsEgressResult:
-        """[VPC only] Updates the description of an egress (outbound) security
-        group rule. You can replace an existing description, or add a
-        description to a rule that did not have one previously. You can remove a
-        description for a security group rule by omitting the description
-        parameter in the request.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param group_id: The ID of the security group.
-        :param group_name: [Default VPC] The name of the security group.
-        :param ip_permissions: The IP permissions for the security group rule.
-        :param security_group_rule_descriptions: The description for the egress security group rules.
-        :returns: UpdateSecurityGroupRuleDescriptionsEgressResult
-        """
         raise NotImplementedError
 
     @handler("UpdateSecurityGroupRuleDescriptionsIngress")
@@ -31702,37 +20859,10 @@ class Ec2Api:
         ip_permissions: IpPermissionList = None,
         security_group_rule_descriptions: SecurityGroupRuleDescriptionList = None,
     ) -> UpdateSecurityGroupRuleDescriptionsIngressResult:
-        """Updates the description of an ingress (inbound) security group rule. You
-        can replace an existing description, or add a description to a rule that
-        did not have one previously. You can remove a description for a security
-        group rule by omitting the description parameter in the request.
-
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :param group_id: The ID of the security group.
-        :param group_name: [EC2-Classic, default VPC] The name of the security group.
-        :param ip_permissions: The IP permissions for the security group rule.
-        :param security_group_rule_descriptions: [VPC only] The description for the ingress security group rules.
-        :returns: UpdateSecurityGroupRuleDescriptionsIngressResult
-        """
         raise NotImplementedError
 
     @handler("WithdrawByoipCidr")
     def withdraw_byoip_cidr(
         self, context: RequestContext, cidr: String, dry_run: Boolean = None
     ) -> WithdrawByoipCidrResult:
-        """Stops advertising an address range that is provisioned as an address
-        pool.
-
-        You can perform this operation at most once every 10 seconds, even if
-        you specify different address ranges each time.
-
-        It can take a few minutes before traffic to the specified addresses
-        stops routing to Amazon Web Services because of BGP propagation delays.
-
-        :param cidr: The address range, in CIDR notation.
-        :param dry_run: Checks whether you have the required permissions for the action, without
-        actually making the request, and provides an error response.
-        :returns: WithdrawByoipCidrResult
-        """
         raise NotImplementedError

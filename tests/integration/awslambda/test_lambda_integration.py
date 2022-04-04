@@ -2,9 +2,9 @@ import base64
 import json
 import os
 import time
-import unittest
 from unittest.mock import patch
 
+import pytest
 from botocore.exceptions import ClientError
 
 from localstack import config
@@ -35,57 +35,50 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PARALLEL_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_parallel.py")
 
 
-class TestLambdaEventSourceMappings(unittest.TestCase):
-    def test_event_source_mapping_default_batch_size(self):
-        function_name = "lambda_func-{}".format(short_uid())
-        queue_name_1 = "queue-{}-1".format(short_uid())
-        queue_name_2 = "queue-{}-2".format(short_uid())
-        ddb_table = "ddb_table-{}".format(short_uid())
+class TestLambdaEventSourceMappings:
+    def test_event_source_mapping_default_batch_size(
+        self, create_lambda_function, lambda_client, sqs_client
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        queue_name_1 = f"queue-{short_uid()}-1"
+        queue_name_2 = f"queue-{short_uid()}-2"
+        ddb_table = f"ddb_table-{short_uid()}"
 
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        create_lambda_function(
             func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-
-        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url_1 = sqs_client.create_queue(QueueName=queue_name_1)["QueueUrl"]
         queue_arn_1 = aws_stack.sqs_queue_arn(queue_name_1)
 
         rs = lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn_1, FunctionName=function_name
         )
-        self.assertEqual(BATCH_SIZE_RANGES["sqs"][0], rs["BatchSize"])
+        assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
         uuid = rs["UUID"]
 
-        try:
+        with pytest.raises(ClientError) as e:
             # Update batch size with invalid value
             lambda_client.update_event_source_mapping(
                 UUID=uuid,
                 FunctionName=function_name,
                 BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
             )
-            self.fail("This call should not be successful as the batch size > MAX_BATCH_SIZE")
-
-        except ClientError as e:
-            self.assertEqual(INVALID_PARAMETER_VALUE_EXCEPTION, e.response["Error"]["Code"])
+        e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
 
         queue_url_2 = sqs_client.create_queue(QueueName=queue_name_2)["QueueUrl"]
         queue_arn_2 = aws_stack.sqs_queue_arn(queue_name_2)
 
-        try:
+        with pytest.raises(ClientError) as e:
             # Create event source mapping with invalid batch size value
             lambda_client.create_event_source_mapping(
                 EventSourceArn=queue_arn_2,
                 FunctionName=function_name,
                 BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
             )
-            self.fail("This call should not be successful as the batch size > MAX_BATCH_SIZE")
-
-        except ClientError as e:
-            self.assertEqual(INVALID_PARAMETER_VALUE_EXCEPTION, e.response["Error"]["Code"])
+        e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
 
         table_arn = aws_stack.create_dynamodb_table(ddb_table, partition_key="id")[
             "TableDescription"
@@ -93,30 +86,29 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         rs = lambda_client.create_event_source_mapping(
             EventSourceArn=table_arn, FunctionName=function_name
         )
-        self.assertEqual(BATCH_SIZE_RANGES["dynamodb"][0], rs["BatchSize"])
+        assert BATCH_SIZE_RANGES["dynamodb"][0] == rs["BatchSize"]
 
         # clean up
         dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
         dynamodb_client.delete_table(TableName=ddb_table)
         sqs_client.delete_queue(QueueUrl=queue_url_1)
         sqs_client.delete_queue(QueueUrl=queue_url_2)
-        lambda_client.delete_function(FunctionName=function_name)
 
-    def test_disabled_event_source_mapping_with_dynamodb(self):
-        function_name = "lambda_func-{}".format(short_uid())
-        ddb_table = "ddb_table-{}".format(short_uid())
+    def test_disabled_event_source_mapping_with_dynamodb(
+        self, create_lambda_function, lambda_client
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        ddb_table = f"ddb_table-{short_uid()}"
 
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        create_lambda_function(
             func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
         table_arn = aws_stack.create_dynamodb_table(ddb_table, partition_key="id")[
             "TableDescription"
         ]["TableArn"]
-
-        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         rs = lambda_client.create_event_source_mapping(
             FunctionName=function_name, EventSourceArn=table_arn
@@ -135,7 +127,7 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         events = get_lambda_log_events(function_name)
 
         # lambda was invoked 1 time
-        self.assertEqual(1, len(events[0]["Records"]))
+        assert 1 == len(events[0]["Records"])
 
         # disable event source mapping
         lambda_client.update_event_source_mapping(UUID=uuid, Enabled=False)
@@ -144,28 +136,27 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         events = get_lambda_log_events(function_name)
 
         # lambda no longer invoked, still have 1 event
-        self.assertEqual(1, len(events[0]["Records"]))
+        assert 1 == len(events[0]["Records"])
 
         # clean up
         dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
         dynamodb_client.delete_table(TableName=ddb_table)
 
-        lambda_client.delete_function(FunctionName=function_name)
+    def test_deletion_event_source_mapping_with_dynamodb(
+        self, create_lambda_function, lambda_client
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        ddb_table = f"ddb_table-{short_uid()}"
 
-    def test_deletion_event_source_mapping_with_dynamodb(self):
-        function_name = "lambda_func-{}".format(short_uid())
-        ddb_table = "ddb_table-{}".format(short_uid())
-
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        create_lambda_function(
             func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
         table_arn = aws_stack.create_dynamodb_table(ddb_table, partition_key="id")[
             "TableDescription"
         ]["TableArn"]
-        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         lambda_client.create_event_source_mapping(
             FunctionName=function_name, EventSourceArn=table_arn
@@ -175,20 +166,15 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         dynamodb_client.delete_table(TableName=ddb_table)
 
         result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
-        self.assertEqual(0, len(result["EventSourceMappings"]))
-        # clean up
-        lambda_client.delete_function(FunctionName=function_name)
+        assert 0 == len(result["EventSourceMappings"])
 
-    def test_event_source_mapping_with_sqs(self):
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        sqs_client = aws_stack.create_external_boto_client("sqs")
+    def test_event_source_mapping_with_sqs(self, create_lambda_function, lambda_client, sqs_client):
+        function_name = f"lambda_func-{short_uid()}"
+        queue_name_1 = f"queue-{short_uid()}-1"
 
-        function_name = "lambda_func-{}".format(short_uid())
-        queue_name_1 = "queue-{}-1".format(short_uid())
-
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        create_lambda_function(
             func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
@@ -203,27 +189,24 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         events = retry(get_lambda_log_events, sleep_before=3, function_name=function_name)
 
         # lambda was invoked 1 time
-        self.assertEqual(1, len(events[0]["Records"]))
+        assert 1 == len(events[0]["Records"])
         rs = sqs_client.receive_message(QueueUrl=queue_url_1)
-        self.assertIsNone(rs.get("Messages"))
+        assert rs.get("Messages") is None
 
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url_1)
-        lambda_client.delete_function(FunctionName=function_name)
 
-    def test_create_kinesis_event_source_mapping(self):
+    def test_create_kinesis_event_source_mapping(self, create_lambda_function, lambda_client):
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-foobar-{short_uid()}"
 
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        create_lambda_function(
             func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
         arn = aws_stack.kinesis_stream_arn(stream_name, account_id="000000000000")
-
-        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.create_event_source_mapping(EventSourceArn=arn, FunctionName=function_name)
 
         def process_records(record):
@@ -238,34 +221,34 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
 
         kinesis = aws_stack.create_external_boto_client("kinesis")
         stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
-        self.assertEqual(1, stream_summary["StreamDescriptionSummary"]["OpenShardCount"])
+        assert 1 == stream_summary["StreamDescriptionSummary"]["OpenShardCount"]
         num_events_kinesis = 10
         kinesis.put_records(
             Records=[
-                {"Data": "{}", "PartitionKey": "test_%s" % i} for i in range(0, num_events_kinesis)
+                {"Data": "{}", "PartitionKey": f"test_{i}"} for i in range(0, num_events_kinesis)
             ],
             StreamName=stream_name,
         )
 
         events = get_lambda_log_events(function_name)
-        self.assertEqual(10, len(events[0]["Records"]))
+        assert 10 == len(events[0]["Records"])
 
-        self.assertIn("eventID", events[0]["Records"][0])
-        self.assertIn("eventSourceARN", events[0]["Records"][0])
-        self.assertIn("eventSource", events[0]["Records"][0])
-        self.assertIn("eventVersion", events[0]["Records"][0])
-        self.assertIn("eventName", events[0]["Records"][0])
-        self.assertIn("invokeIdentityArn", events[0]["Records"][0])
-        self.assertIn("awsRegion", events[0]["Records"][0])
-        self.assertIn("kinesis", events[0]["Records"][0])
+        assert "eventID" in events[0]["Records"][0]
+        assert "eventSourceARN" in events[0]["Records"][0]
+        assert "eventSource" in events[0]["Records"][0]
+        assert "eventVersion" in events[0]["Records"][0]
+        assert "eventName" in events[0]["Records"][0]
+        assert "invokeIdentityArn" in events[0]["Records"][0]
+        assert "awsRegion" in events[0]["Records"][0]
+        assert "kinesis" in events[0]["Records"][0]
 
-    def test_python_lambda_subscribe_sns_topic(self):
+    def test_python_lambda_subscribe_sns_topic(self, create_lambda_function):
         sns_client = aws_stack.create_external_boto_client("sns")
-        function_name = "{}-{}".format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
+        function_name = f"{TEST_LAMBDA_FUNCTION_PREFIX}-{short_uid()}"
 
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        create_lambda_function(
             func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
@@ -292,29 +275,28 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         )
         notification = events[0]["Records"][0]["Sns"]
 
-        self.assertIn("Subject", notification)
-        self.assertEqual(subject, notification["Subject"])
+        assert "Subject" in notification
+        assert subject == notification["Subject"]
 
 
-class TestLambdaHttpInvocation(unittest.TestCase):
-    def test_http_invocation_with_apigw_proxy(self):
-        lambda_name = "test_lambda_%s" % short_uid()
+class TestLambdaHttpInvocation:
+    def test_http_invocation_with_apigw_proxy(self, create_lambda_function):
+        lambda_name = f"test_lambda_{short_uid()}"
         lambda_resource = "/api/v1/{proxy+}"
         lambda_path = "/api/v1/hello/world"
         lambda_request_context_path = "/" + TEST_STAGE_NAME + lambda_path
         lambda_request_context_resource_path = lambda_resource
 
         # create lambda function
-        testutil.create_lambda_function(
+        create_lambda_function(
+            func_name=lambda_name,
             handler_file=TEST_LAMBDA_PYTHON,
             libs=TEST_LAMBDA_LIBS,
-            func_name=lambda_name,
         )
 
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(lambda_name)
-        invocation_uri = "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations"
-        target_uri = invocation_uri % (aws_stack.get_region(), lambda_uri)
+        target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
 
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway2",
@@ -330,16 +312,10 @@ class TestLambdaHttpInvocation(unittest.TestCase):
         )
         content = json.loads(result.content)
 
-        self.assertEqual(lambda_path, content["path"])
-        self.assertEqual(lambda_resource, content["resource"])
-        self.assertEqual(lambda_request_context_path, content["requestContext"]["path"])
-        self.assertEqual(
-            lambda_request_context_resource_path,
-            content["requestContext"]["resourcePath"],
-        )
-
-        # clean up
-        testutil.delete_lambda_function(lambda_name)
+        assert lambda_path == content["path"]
+        assert lambda_resource == content["resource"]
+        assert lambda_request_context_path == content["requestContext"]["path"]
+        assert lambda_request_context_resource_path == content["requestContext"]["resourcePath"]
 
 
 class TestKinesisSource:
@@ -376,7 +352,7 @@ class TestKinesisSource:
         start = time.perf_counter()
         kinesis.put_records(
             Records=[
-                {"Data": '{"batch": 0}', "PartitionKey": "test_%s" % i}
+                {"Data": '{"batch": 0}', "PartitionKey": f"test_{i}"}
                 for i in range(0, num_events_kinesis)
             ],
             StreamName=stream_name,
@@ -384,7 +360,7 @@ class TestKinesisSource:
         assert (time.perf_counter() - start) < 1  # this should not take more than a second
         kinesis.put_records(
             Records=[
-                {"Data": '{"batch": 1}', "PartitionKey": "test_%s" % i}
+                {"Data": '{"batch": 1}', "PartitionKey": f"test_{i}"}
                 for i in range(0, num_events_kinesis)
             ],
             StreamName=stream_name,

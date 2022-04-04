@@ -1361,6 +1361,7 @@ class TestCloudFormation:
         assert "AWS::Kinesis::Stream" in result["ResourceTypes"]
         assert result.get("ResourceIdentifierSummaries")
 
+    @pytest.mark.xfail(reason="flaky due to issues in parameter handling and re-resolving")
     def test_stack_imports(self):
         cloudformation = aws_stack.create_external_boto_client("cloudformation")
         result = cloudformation.list_imports(ExportName="_unknown_")

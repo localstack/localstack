@@ -67,23 +67,25 @@ from localstack.utils.testutil import (
 )
 
 from .functions import lambda_integration
+from .lambda_test_util import concurrency_update_done, get_invoke_init_type, update_done
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_integration.py")
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions", "lambda_echo.py")
-TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions", "lambda_python_version.py")
-TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "functions", "lambda_python3.py")
-TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_integration.js")
-TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_handler.js")
-TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions", "golang", "handler.zip")
-TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions", "lambda_integration.rb")
-TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "functions", "dotnetcore2", "dotnetcore2.zip")
-TEST_LAMBDA_DOTNETCORE31 = os.path.join(
-    THIS_FOLDER, "functions", "dotnetcore31", "dotnetcore31.zip"
+TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_python_version.py")
+TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
+    THIS_FOLDER, "functions/lambda_unhandled_error.py"
 )
-TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "functions", "custom-runtime")
+TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "functions/lambda_python3.py")
+TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
+TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
+TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions/golang/handler.zip")
+TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions/lambda_integration.rb")
+TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "functions/dotnetcore2/dotnetcore2.zip")
+TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "functions/dotnetcore31/dotnetcore31.zip")
+TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "functions/custom-runtime")
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
-    THIS_FOLDER, "functions", "java", "lambda_echo", "lambda-function-with-lib-0.0.1.jar"
+    THIS_FOLDER, "functions/java/lambda_echo/lambda-function-with-lib-0.0.1.jar"
 )
 TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
     THIS_FOLDER,
@@ -94,13 +96,11 @@ TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
     "distributions",
     "lambda-function-with-multiple-handlers.zip",
 )
-TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "functions", "lambda_environment.py")
+TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "functions/lambda_environment.py")
 
-TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_send_message.py")
-TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_put_item.py")
-TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(
-    THIS_FOLDER, "functions", "lambda_start_execution.py"
-)
+TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions/lambda_send_message.py")
+TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions/lambda_put_item.py")
+TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, "functions/lambda_start_execution.py")
 
 TEST_LAMBDA_FUNCTION_PREFIX = "lambda-function"
 
@@ -974,6 +974,36 @@ class TestPythonRuntimes:
         result = json.loads(to_str(result["Payload"].read()))
         assert result["version"] == runtime
 
+    @pytest.mark.skipif(
+        not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
+    )
+    @parametrize_python_runtimes
+    def test_python_runtime_unhandled_errors(self, lambda_client, create_lambda_function, runtime):
+        function_name = f"test_python_executor_{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
+            runtime=runtime,
+        )
+        result = lambda_client.invoke(
+            FunctionName=function_name,
+            Payload=b"{}",
+        )
+        assert result["StatusCode"] == 200
+        assert result["ExecutedVersion"] == "$LATEST"
+        assert result["FunctionError"] == "Unhandled"
+        payload = json.loads(to_str(result["Payload"].read()))
+        assert payload["errorType"] == "CustomException"
+        assert payload["errorMessage"] == "some error occurred"
+        assert "stackTrace" in payload
+
+        if (
+            runtime == "python3.9" and os.environ.get("PROVIDER_OVERRIDE_LAMBDA") == "asf"
+        ):  # TODO: remove this after the legacy provider is gone
+            assert "requestId" in payload
+        else:
+            assert "requestId" not in payload
+
 
 parametrize_node_runtimes = pytest.mark.parametrize(
     "runtime",
@@ -1488,6 +1518,7 @@ class TestJavaRuntimes:
 TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_cache.js")
 TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_cache.py")
 TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_timeout.py")
+TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_introspect.py")
 
 
 class TestLambdaBehavior:
@@ -1610,3 +1641,170 @@ class TestLambdaBehavior:
             )
 
         wait_until(_assert_log_output, strategy="linear")
+
+    @pytest.mark.skip(reason="very slow (only execute when needed)")
+    def test_lambda_provisioned_concurrency_moves_with_alias(
+        self, lambda_client, logs_client, create_lambda_function
+    ):
+        """
+        create fn ⇒ publish version ⇒ create alias for version ⇒ put concurrency on alias
+        ⇒ new version with change ⇒ change alias to new version ⇒ concurrency moves with alias? same behavior for calls to alias/version?
+        """
+
+        func_name = f"test_lambda_{short_uid()}"
+        alias_name = f"test_alias_{short_uid()}"
+
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=LAMBDA_RUNTIME_PYTHON38,
+            client=lambda_client,
+            timeout=2,
+        )
+
+        fn = lambda_client.get_function_configuration(FunctionName=func_name, Qualifier="$LATEST")
+        assert fn["State"] == "Active"
+
+        first_ver = lambda_client.publish_version(
+            FunctionName=func_name, RevisionId=fn["RevisionId"], Description="my-first-version"
+        )
+        assert first_ver["State"] == "Active"
+        assert fn["RevisionId"] != first_ver["RevisionId"]
+        assert (
+            lambda_client.get_function_configuration(
+                FunctionName=func_name, Qualifier=first_ver["Version"]
+            )["RevisionId"]
+            == first_ver["RevisionId"]
+        )
+
+        # There's no ProvisionedConcurrencyConfiguration yet
+        assert get_invoke_init_type(lambda_client, func_name, first_ver["Version"]) == "on-demand"
+
+        # Create Alias and add ProvisionedConcurrencyConfiguration to it
+        alias = lambda_client.create_alias(
+            FunctionName=func_name, FunctionVersion=first_ver["Version"], Name=alias_name
+        )
+        assert alias["FunctionVersion"] == first_ver["Version"]
+        assert alias["RevisionId"] != first_ver["RevisionId"]
+        versioned_revision_id_before = lambda_client.get_function(
+            FunctionName=func_name, Qualifier=first_ver["Version"]
+        )["Configuration"]["RevisionId"]
+        lambda_client.put_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
+        )
+        assert wait_until(concurrency_update_done(lambda_client, func_name, alias_name))
+        versioned_revision_id_after = lambda_client.get_function(
+            FunctionName=func_name, Qualifier=alias_name
+        )["Configuration"]["RevisionId"]
+        assert versioned_revision_id_before != versioned_revision_id_after
+
+        # Alias AND Version now both use provisioned-concurrency (!)
+        assert (
+            get_invoke_init_type(lambda_client, func_name, first_ver["Version"])
+            == "provisioned-concurrency"
+        )
+        assert (
+            get_invoke_init_type(lambda_client, func_name, alias_name) == "provisioned-concurrency"
+        )
+
+        # Update lambda configuration and publish new version
+        lambda_client.update_function_configuration(FunctionName=func_name, Timeout=10)
+        assert wait_until(update_done(lambda_client, func_name))
+        lambda_conf = lambda_client.get_function_configuration(FunctionName=func_name)
+
+        # Move existing alias to the new version
+        new_version = lambda_client.publish_version(
+            FunctionName=func_name, RevisionId=lambda_conf["RevisionId"]
+        )
+        new_alias = lambda_client.update_alias(
+            FunctionName=func_name, FunctionVersion=new_version["Version"], Name=alias_name
+        )
+        assert new_alias["RevisionId"] != new_version["RevisionId"]
+
+        # lambda should now be provisioning new "hot" execution environments for this new alias->version pointer
+        # the old one should be de-provisioned
+        lambda_client.get_provisioned_concurrency_config(
+            FunctionName=func_name, Qualifier=alias_name
+        )
+        assert wait_until(
+            concurrency_update_done(lambda_client, func_name, alias_name),
+            strategy="linear",
+            wait=30,
+            max_retries=20,
+            _max_wait=600,
+        )  # this is SLOW (~6-8 min)
+
+        # concurrency should still only work for the alias now
+        # NOTE: the old version has been de-provisioned and will run 'on-demand' now!
+        assert get_invoke_init_type(lambda_client, func_name, first_ver["Version"]) == "on-demand"
+        assert (
+            get_invoke_init_type(lambda_client, func_name, new_version["Version"])
+            == "provisioned-concurrency"
+        )
+        assert (
+            get_invoke_init_type(lambda_client, func_name, alias_name) == "provisioned-concurrency"
+        )
+
+        # ProvisionedConcurrencyConfig should only be "registered" to the alias, not the referenced version
+        with pytest.raises(Exception) as e:
+            lambda_client.get_provisioned_concurrency_config(
+                FunctionName=func_name, Qualifier=new_version["Version"]
+            )
+        e.match("ProvisionedConcurrencyConfigNotFoundException")
+
+    @pytest.mark.skip(reason="very slow (only execute when needed)")
+    def test_lambda_provisioned_concurrency_doesnt_apply_to_latest(
+        self, lambda_client, logs_client, create_lambda_function
+    ):
+        """create fn ⇒ publish version ⇒ provisioned concurrency @version ⇒ test if it applies to call to $LATEST"""
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=LAMBDA_RUNTIME_PYTHON38,
+            client=lambda_client,
+            timeout=2,
+        )
+
+        fn = lambda_client.get_function_configuration(FunctionName=func_name, Qualifier="$LATEST")
+        assert fn["State"] == "Active"
+
+        first_ver = lambda_client.publish_version(
+            FunctionName=func_name, RevisionId=fn["RevisionId"], Description="my-first-version"
+        )
+        assert first_ver["State"] == "Active"
+        assert fn["RevisionId"] != first_ver["RevisionId"]
+        assert (
+            lambda_client.get_function_configuration(
+                FunctionName=func_name, Qualifier=first_ver["Version"]
+            )["RevisionId"]
+            == first_ver["RevisionId"]
+        )
+
+        # Normal published version without ProvisionedConcurrencyConfiguration
+        assert get_invoke_init_type(lambda_client, func_name, first_ver["Version"]) == "on-demand"
+
+        # Create ProvisionedConcurrencyConfiguration for this Version
+        versioned_revision_id_before = lambda_client.get_function(
+            FunctionName=func_name, Qualifier=first_ver["Version"]
+        )["Configuration"]["RevisionId"]
+        lambda_client.put_provisioned_concurrency_config(
+            FunctionName=func_name,
+            Qualifier=first_ver["Version"],
+            ProvisionedConcurrentExecutions=1,
+        )
+        assert wait_until(concurrency_update_done(lambda_client, func_name, first_ver["Version"]))
+        versioned_revision_id_after = lambda_client.get_function(
+            FunctionName=func_name, Qualifier=first_ver["Version"]
+        )["Configuration"]["RevisionId"]
+        assert versioned_revision_id_before != versioned_revision_id_after
+        assert (
+            get_invoke_init_type(lambda_client, func_name, first_ver["Version"])
+            == "provisioned-concurrency"
+        )
+
+        # $LATEST does *NOT* use provisioned concurrency
+        assert get_invoke_init_type(lambda_client, func_name, "$LATEST") == "on-demand"
+        # TODO: why is this flaky?
+        # assert lambda_client.get_function(FunctionName=func_name, Qualifier='$LATEST')['Configuration']['RevisionId'] == lambda_client.get_function(FunctionName=func_name, Qualifier=first_ver['Version'])['Configuration']['RevisionId']

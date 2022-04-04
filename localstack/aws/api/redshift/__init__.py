@@ -2588,6 +2588,7 @@ class RestoreFromClusterSnapshotMessage(ServiceRequest):
     DefaultIamRoleArn: Optional[String]
     ReservedNodeId: Optional[String]
     TargetReservedNodeOfferingId: Optional[String]
+    Encrypted: Optional[BooleanOptional]
 
 
 class RestoreFromClusterSnapshotResult(TypedDict, total=False):
@@ -3934,6 +3935,7 @@ class RedshiftApi:
         default_iam_role_arn: String = None,
         reserved_node_id: String = None,
         target_reserved_node_offering_id: String = None,
+        encrypted: BooleanOptional = None,
     ) -> RestoreFromClusterSnapshotResult:
         raise NotImplementedError
 

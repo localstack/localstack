@@ -152,13 +152,17 @@
     "ApiGatewayUsagePlan": {
       "Type": "AWS::ApiGateway::UsagePlan",
       "Properties": {
-        "Quota": {"Limit" : 123},
+        "Quota": {"Limit" : "123"},
         "ApiStages": [
           {
             "ApiId": {"Ref": "ApiGatewayRestApi"},
             "Stage": {"Ref": "ApiGWStage"}
           }
-        ]
+        ],
+        "Throttle": {
+          "BurstLimit": "500",
+          "RateLimit": "1000"
+        }
       }
     },
     "ApiGatewayUsagePlanKey": {
