@@ -79,4 +79,4 @@ class TestLambdaSizeLimits(object):
         lambda_client.delete_function(FunctionName=function_name)
         with pytest.raises(Exception) as exc:
             lambda_client.delete_function(FunctionName=function_name)
-        assert "ResourceNotFoundException" in str(exc)
+        exc.match("ResourceNotFoundException")
