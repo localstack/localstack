@@ -284,8 +284,9 @@ class ValidationException(CommonServiceException):
 
 
 class DynamoDBApiListener(AwsApiListener):
-    def __init__(self):
-        self.provider = provider = DynamoDBProvider()
+    def __init__(self, provider=None):
+        provider = provider or DynamoDBProvider()
+        self.provider = provider
         super().__init__(
             "dynamodb", ExternalProcessFallbackDispatcher(provider, provider.get_forward_url)
         )
