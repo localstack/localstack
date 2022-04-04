@@ -1,6 +1,6 @@
 """
-This module contains utilities to call a backend (e.g., an external service process like DynamoDBLocal)
-from
+This module contains utilities to call a backend (e.g., an external service process like
+DynamoDBLocal) from a service provider.
 """
 from typing import Any, Callable, Mapping, Optional, Tuple, Union
 from urllib.parse import urlsplit
@@ -99,9 +99,9 @@ def dispatch_to_backend(
     """
     Dispatch the given request to a backend by using the `request_forwarder` function to
     fetch an HTTP response, converting it to a ServiceResponse.
-    :param context:
-    :param request_forwarder:
-    :param include_response_metadata:
+    :param context: the request context
+    :param http_request_dispatcher: dispatcher that performs the request and returns an HTTP response
+    :param include_response_metadata: whether to include boto3 response metadata in the response
     :return:
     """
     status, headers, content = http_request_dispatcher(context)
