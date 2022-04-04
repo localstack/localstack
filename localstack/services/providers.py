@@ -140,7 +140,7 @@ def kinesis():
 
 @aws_provider()
 def kms():
-    if config.KMS_PROVIDER == "kms-local":
+    if config.KMS_PROVIDER == "local-kms":
         from localstack.services.kms import kms_starter
 
         return Service("kms", start=kms_starter.start_kms_local)
@@ -162,6 +162,16 @@ def awslambda():
         stop=lambda_starter.stop_lambda,
         check=lambda_starter.check_lambda,
     )
+
+
+@aws_provider(api="lambda", name="asf")
+def awslambda_asf():
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.awslambda.provider import LambdaProvider
+
+    provider = LambdaProvider()
+
+    return Service("lambda", listener=AwsApiListener("lambda", provider), lifecycle_hook=provider)
 
 
 @aws_provider()
@@ -193,18 +203,23 @@ def redshift():
 
 @aws_provider()
 def route53():
-    from localstack.services.route53 import route53_listener, route53_starter
+    from localstack.services.route53.provider import Route53Provider
 
-    return Service(
-        "route53", listener=route53_listener.UPDATE_ROUTE53, start=route53_starter.start_route53
-    )
+    provider = Route53Provider()
+
+    return Service("route53", listener=AwsApiListener("route53", MotoFallbackDispatcher(provider)))
 
 
 @aws_provider()
 def route53resolver():
-    from localstack.services.route53 import route53_starter
+    from localstack.services.route53.provider import Route53ResolverApi
 
-    return Service("route53resolver", start=route53_starter.start_route53_resolver)
+    provider = Route53ResolverApi()
+
+    return Service(
+        "route53resolver",
+        listener=AwsApiListener("route53resolver", MotoFallbackDispatcher(provider)),
+    )
 
 
 @aws_provider()

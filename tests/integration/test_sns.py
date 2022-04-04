@@ -1081,21 +1081,20 @@ class TestSNS:
         )
 
         queue_url = queue["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
         self.sns_client.subscribe(
             TopicArn=topic_arn,
             Protocol="sqs",
-            Endpoint=queue_arn,
+            Endpoint=queue_url,
             Attributes={"RawMessageDelivery": "true"},
         )
-
+        message_group_id = "complexMessageGroupId"
         publish_batch_response = self.sns_client.publish_batch(
             TopicArn=topic_arn,
             PublishBatchRequestEntries=[
                 {
                     "Id": "1",
-                    "MessageGroupId": "1",
+                    "MessageGroupId": message_group_id,
                     "Message": "Test Message with two attributes",
                     "Subject": "Subject",
                     "MessageAttributes": {
@@ -1105,14 +1104,14 @@ class TestSNS:
                 },
                 {
                     "Id": "2",
-                    "MessageGroupId": "1",
+                    "MessageGroupId": message_group_id,
                     "Message": "Test Message with one attribute",
                     "Subject": "Subject",
                     "MessageAttributes": {"attr1": {"DataType": "Number", "StringValue": "19.12"}},
                 },
                 {
                     "Id": "3",
-                    "MessageGroupId": "1",
+                    "MessageGroupId": message_group_id,
                     "Message": "Test Message without attribute",
                     "Subject": "Subject",
                 },
@@ -1128,11 +1127,15 @@ class TestSNS:
 
         def get_messages(queue_url):
             response = self.sqs_client.receive_message(
-                QueueUrl=queue_url, MessageAttributeNames=["All"], MaxNumberOfMessages=10
+                QueueUrl=queue_url,
+                MessageAttributeNames=["All"],
+                AttributeNames=["All"],
+                MaxNumberOfMessages=10,
             )
             assert len(response["Messages"]) == 3
             for message in response["Messages"]:
                 assert "Body" in message
+                assert message["Attributes"]["MessageGroupId"] == message_group_id
 
                 if message["Body"] == "Test Message with two attributes":
                     assert len(message["MessageAttributes"]) == 2

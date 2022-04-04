@@ -1834,6 +1834,8 @@ def invoke_function(function):
 
     if invocation_type == "RequestResponse":
         context = {"client_context": request.headers.get("X-Amz-Client-Context")}
+
+        time_before = time.perf_counter()
         result = run_lambda(
             func_arn=arn,
             event=data,
@@ -1841,6 +1843,7 @@ def invoke_function(function):
             asynchronous=False,
             version=qualifier,
         )
+        LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
         return _create_response(result)
     elif invocation_type == "Event":
         run_lambda(func_arn=arn, event=data, context={}, asynchronous=True, version=qualifier)

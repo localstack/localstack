@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from random import randint
 from typing import Dict, Optional
 
-from localstack.aws.api import RequestContext
+from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.opensearch import (
     ARN,
     AccessPoliciesStatus,
@@ -67,6 +67,8 @@ from localstack.aws.api.opensearch import (
     StringList,
     TagList,
     TLSSecurityPolicy,
+    UpdateDomainConfigRequest,
+    UpdateDomainConfigResponse,
     ValidationException,
     VersionStatus,
     VersionString,
@@ -83,8 +85,9 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.utils.analytics import event_publisher
-from localstack.utils.common import synchronized
+from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
 from localstack.utils.serving import Server
+from localstack.utils.sync import synchronized
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
@@ -182,6 +185,10 @@ class OpenSearchServiceBackend(RegionBackend):
 
 def get_domain_config(domain_key) -> DomainConfig:
     status = get_domain_status(domain_key)
+    return _status_to_config(status)
+
+
+def _status_to_config(status: DomainStatus) -> DomainConfig:
     cluster_cfg = status.get("ClusterConfig") or {}
     default_cfg = DEFAULT_OPENSEARCH_CLUSTER_CONFIG
     config_status = get_domain_config_status()
@@ -368,6 +375,13 @@ def _ensure_domain_exists(arn: ARN) -> None:
         raise ValidationException("Invalid ARN. Domain not found.")
 
 
+def _update_domain_config_request_to_status(request: UpdateDomainConfigRequest) -> DomainStatus:
+    request: Dict
+    request.pop("DryRun", None)
+    request.pop("DomainName", None)
+    return request
+
+
 class OpensearchProvider(OpensearchApi):
     def create_domain(
         self,
@@ -462,6 +476,26 @@ class OpensearchProvider(OpensearchApi):
             status = get_domain_status(domain_key)
         return DescribeDomainResponse(DomainStatus=status)
 
+    @handler("UpdateDomainConfig", expand=False)
+    def update_domain_config(
+        self, context: RequestContext, payload: UpdateDomainConfigRequest
+    ) -> UpdateDomainConfigResponse:
+        domain_key = DomainKey(
+            domain_name=payload["DomainName"],
+            region=context.region,
+            account=context.account_id,
+        )
+        region = OpenSearchServiceBackend.get(domain_key.region)
+        with _domain_mutex:
+            domain_status = region.opensearch_domains.get(domain_key.domain_name, None)
+            if domain_status is None:
+                raise ResourceNotFoundException(f"Domain not found: {domain_key.domain_name}")
+
+            status_update: Dict = _update_domain_config_request_to_status(payload)
+            domain_status.update(status_update)
+
+        return UpdateDomainConfigResponse(DomainConfig=_status_to_config(domain_status))
+
     def describe_domains(
         self, context: RequestContext, domain_names: DomainNameList
     ) -> DescribeDomainsResponse:
@@ -498,7 +532,14 @@ class OpensearchProvider(OpensearchApi):
         max_results: MaxResults = None,
         next_token: NextToken = None,
     ) -> ListVersionsResponse:
-        return ListVersionsResponse(Versions=list(versions.install_versions.keys()))
+        version_list = PaginatedList(versions.install_versions.keys())
+        page, nxt = version_list.get_page(
+            lambda x: x,
+            next_token=next_token,
+            page_size=max_results,
+        )
+        response = ListVersionsResponse(Versions=page, NextToken=nxt)
+        return remove_none_values_from_dict(response)
 
     def get_compatible_versions(
         self, context: RequestContext, domain_name: DomainName = None
