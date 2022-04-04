@@ -1653,7 +1653,6 @@ def add_permission_policy_statement(
     new_policy = generate_policy(sid, action, resource_arn_qualified, sourcearn, principal)
     new_statement = new_policy["Statement"][0]
     result = {"Statement": json.dumps(new_statement)}
-
     if previous_policy:
         statment_with_sid = next(
             (statement for statement in previous_policy["Statement"] if statement["Sid"] == sid),
@@ -1676,6 +1675,7 @@ def add_permission_policy_statement(
 
     policy_name = get_lambda_policy_name(resource_name, qualifier=qualifier)
     LOG.debug('Creating IAM policy "%s" for Lambda resource %s', policy_name, resource_arn)
+
     iam_client.create_policy(
         PolicyName=policy_name,
         PolicyDocument=json.dumps(new_policy),
@@ -1692,11 +1692,32 @@ def remove_permission(function, statement):
     policy = get_lambda_policy(function, qualifier=qualifier)
     if not policy:
         return not_found_error('Unable to find policy for Lambda function "%s"' % function)
+
+    statement_index = next(
+        (i for i, item in enumerate(policy["Statement"]) if item["Sid"] == statement), None
+    )
+    if statement_index is None:
+        return not_found_error(f"Statement {statement} is not found in resource policy.")
     iam_client.delete_policy(PolicyArn=policy["PolicyArn"])
+
+    policy["Statement"].pop(statement_index)
+    description = policy.get("Description")
+    policy_name = policy.get("PolicyName")
+    del policy["PolicyName"]
+    del policy["PolicyArn"]
+    if len(policy["Statement"]) > 0 and description:
+        iam_client.create_policy(
+            PolicyName=policy_name,
+            PolicyDocument=json.dumps(policy),
+            Description=description,
+        )
+    elif len(policy["Statement"]) > 0:
+        iam_client.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy))
+
     result = {
         "FunctionName": function,
         "Qualifier": qualifier,
-        "StatementId": policy["Statement"][0]["Sid"],
+        "StatementId": statement,
     }
     return jsonify(result)
 

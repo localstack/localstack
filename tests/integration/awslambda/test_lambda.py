@@ -9,6 +9,7 @@ from datetime import datetime
 from io import BytesIO
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
@@ -249,7 +250,6 @@ class TestLambdaAPI:
             Principal=principal,
             SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
         )
-        assert "Statement" in resp
 
         # fetch lambda policy
         policy = lambda_client.get_policy(FunctionName=function_name)["Policy"]
@@ -279,6 +279,60 @@ class TestLambdaAPI:
             RevisionId="r1",
         )
         assert 200 == resp["ResponseMetadata"]["HTTPStatusCode"]
+
+    def test_remove_multi_permissions(self, lambda_client, create_lambda_function):
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+        )
+
+        action = "lambda:InvokeFunction"
+        sid = "s3"
+        principal = "s3.amazonaws.com"
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+        )
+
+        sid_2 = "sqs"
+        principal_2 = "sqs.amazonaws.com"
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            Action=action,
+            StatementId=sid_2,
+            Principal=principal_2,
+            SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+        )
+
+        with pytest.raises(ClientError) as e:
+            lambda_client.remove_permission(
+                FunctionName=function_name,
+                StatementId="non-existent",
+            )
+        assert e.value.response["Error"]["Code"] == "ResourceNotFoundException"
+
+        lambda_client.remove_permission(
+            FunctionName=function_name,
+            StatementId=sid_2,
+        )
+        policy = json.loads(
+            lambda_client.get_policy(
+                FunctionName=function_name,
+            )["Policy"]
+        )
+        assert policy["Statement"][0]["Sid"] == sid
+
+        lambda_client.remove_permission(
+            FunctionName=function_name,
+            StatementId=sid,
+        )
+        with pytest.raises(ClientError) as ctx:
+            lambda_client.get_policy(FunctionName=function_name)
+        assert ctx.value.response["Error"]["Code"] == "ResourceNotFoundException"
 
     def test_add_lambda_multiple_permission(
         self, iam_client, lambda_client, create_lambda_function
