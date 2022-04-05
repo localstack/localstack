@@ -716,10 +716,11 @@ class TestAPIGateway(unittest.TestCase):
             resourceId=root_res_id,
             httpMethod="POST",
             type="HTTP",
-            uri="http://httpbin.org/anything/echo",
+            uri="http://localhost:6667",
             integrationHttpMethod="POST",
         )
 
+        self.start_http_backend(6667)
         # call endpoint without authorization
         url = path_based_url(api_id=api_id, stage_name="local", path="/")
         response = requests.POST(
