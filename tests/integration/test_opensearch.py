@@ -76,6 +76,7 @@ def try_cluster_health(cluster_url: str):
     ], "expected cluster state to be in a valid state"
 
 
+@pytest.mark.skip_offline
 class TestOpensearchProvider:
     """
     Because this test reuses the localstack instance for each test, all tests are performed with
@@ -305,6 +306,26 @@ class TestOpensearchProvider:
         assert "EngineVersion" in status
         assert status["EngineVersion"] == "OpenSearch_1.0"
 
+    def test_update_domain_config(self, opensearch_client, opensearch_domain):
+        initial_response = opensearch_client.describe_domain_config(DomainName=opensearch_domain)
+        update_response = opensearch_client.update_domain_config(
+            DomainName=opensearch_domain, ClusterConfig={"InstanceType": "r4.16xlarge.search"}
+        )
+        final_response = opensearch_client.describe_domain_config(DomainName=opensearch_domain)
+
+        assert (
+            initial_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
+            != update_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
+        )
+        assert (
+            update_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
+            == "r4.16xlarge.search"
+        )
+        assert (
+            update_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
+            == final_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
+        )
+
     def test_create_indices(self, opensearch_endpoint):
         indices = ["index1", "index2"]
         for index_name in indices:
@@ -365,6 +386,7 @@ class TestOpensearchProvider:
         )
 
 
+@pytest.mark.skip_offline
 class TestEdgeProxiedOpensearchCluster:
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
@@ -396,8 +418,8 @@ class TestEdgeProxiedOpensearchCluster:
         ), "gave up waiting for cluster to shut down"
 
 
+@pytest.mark.skip_offline
 class TestMultiClusterManager:
-    @pytest.mark.skip_offline
     def test_multi_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
@@ -439,8 +461,8 @@ class TestMultiClusterManager:
             call_safe(cluster_1.shutdown)
 
 
+@pytest.mark.skip_offline
 class TestMultiplexingClusterManager:
-    @pytest.mark.skip_offline
     def test_multiplexing_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
@@ -482,6 +504,7 @@ class TestMultiplexingClusterManager:
             call_safe(cluster_1.shutdown)
 
 
+@pytest.mark.skip_offline
 class TestSingletonClusterManager:
     def test_endpoint_strategy_port_singleton_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
@@ -521,6 +544,7 @@ class TestSingletonClusterManager:
             call_safe(cluster_1.shutdown)
 
 
+@pytest.mark.skip_offline
 class TestCustomBackendManager:
     def test_custom_backend(self, httpserver, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")

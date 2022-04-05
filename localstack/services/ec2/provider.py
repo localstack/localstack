@@ -6,8 +6,11 @@ from moto.ec2.exceptions import InvalidVpcEndPointIdError
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
+    AvailabilityZone,
     Boolean,
     CurrencyCodeValues,
+    DescribeAvailabilityZonesRequest,
+    DescribeAvailabilityZonesResult,
     DescribeReservedInstancesOfferingsRequest,
     DescribeReservedInstancesOfferingsResult,
     DescribeReservedInstancesRequest,
@@ -25,6 +28,8 @@ from localstack.aws.api.ec2 import (
     ReservedInstances,
     ReservedInstancesOffering,
     ReservedInstanceState,
+    RevokeSecurityGroupEgressRequest,
+    RevokeSecurityGroupEgressResult,
     RIProductDescription,
     String,
     Tenancy,
@@ -34,10 +39,39 @@ from localstack.aws.api.ec2 import (
     VpcEndpointSubnetIdList,
     scope,
 )
+from localstack.services.moto import call_moto
 from localstack.utils.strings import long_uid
 
 
 class Ec2Provider(Ec2Api, ABC):
+    @handler("DescribeAvailabilityZones", expand=False)
+    def describe_availability_zones(
+        self,
+        context: RequestContext,
+        describe_availability_zones_request: DescribeAvailabilityZonesRequest,
+    ) -> DescribeAvailabilityZonesResult:
+        backend = ec2_backends.get(context.region)
+
+        availability_zones = []
+        zone_names = describe_availability_zones_request.get("ZoneNames")
+        if zone_names:
+            for zone in zone_names:
+                zone_detail = backend.get_zone_by_name(zone)
+                if zone_detail:
+                    availability_zones.append(
+                        AvailabilityZone(
+                            State="available",
+                            Messages=[],
+                            RegionName=zone_detail.region_name,
+                            ZoneName=zone_detail.name,
+                            ZoneId=zone_detail.zone_id,
+                        )
+                    )
+
+            return DescribeAvailabilityZonesResult(AvailabilityZones=availability_zones)
+
+        return call_moto(context)
+
     @handler("DescribeReservedInstancesOfferings", expand=False)
     def describe_reserved_instances_offerings(
         self,
@@ -153,3 +187,20 @@ class Ec2Provider(Ec2Api, ABC):
             vpc_endpoint.private_dns_enabled = private_dns_enabled
 
         return ModifyVpcEndpointResult(Return=True)
+
+    @handler("RevokeSecurityGroupEgress", expand=False)
+    def revoke_security_group_egress(
+        self,
+        context: RequestContext,
+        revoke_security_group_egress_request: RevokeSecurityGroupEgressRequest,
+    ) -> RevokeSecurityGroupEgressResult:
+        try:
+            return call_moto(context)
+        except Exception as e:
+            if "specified rule does not exist" in str(e):
+                backend = ec2_backends[context.region]
+                group_id = revoke_security_group_egress_request["GroupId"]
+                group = backend.get_security_group_by_name_or_id(group_id)
+                if group and not group.egress_rules:
+                    return RevokeSecurityGroupEgressResult(Return=True)
+            raise

@@ -1,5 +1,3 @@
-<a href="https://events.localstack.cloud/"><img src="./.github/images/meetup.svg"></a>
-
 <p align="center">
   <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-header.png" alt="LocalStack - A fully functional local cloud stack">
 </p>
@@ -62,7 +60,7 @@ pip install localstack
 
 **Note**: Please do **not** use `sudo` or the `root` user - LocalStack should be installed and started entirely under a local non-root user. If you have problems with permissions in MacOS X Sierra, install with `pip install --user localstack`
 
-It installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime. 
+It installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime.
 
 ## Example
 

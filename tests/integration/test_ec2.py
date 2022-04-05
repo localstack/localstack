@@ -277,22 +277,3 @@ class TestEc2Integrations:
 
         # clean up
         ec2_client.delete_vpc(VpcId=vpc_id)
-
-    def test_terminate_instances(self, ec2_client):
-        kwargs = {
-            "MinCount": 1,
-            "MaxCount": 1,
-            "ImageId": "ami-d3adb33f",
-            "KeyName": "the_key",
-            "InstanceType": "t1.micro",
-            "BlockDeviceMappings": [{"DeviceName": "/dev/sda2", "Ebs": {"VolumeSize": 50}}],
-        }
-
-        resp1 = ec2_client.run_instances(**kwargs)
-
-        instances = []
-        for instance in resp1["Instances"]:
-            instances.append(instance.get("InstanceId"))
-
-        resp = ec2_client.terminate_instances(InstanceIds=instances)
-        assert instances[0] == resp["TerminatingInstances"][0]["InstanceId"]

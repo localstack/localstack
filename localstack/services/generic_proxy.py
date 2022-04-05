@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import json
 import logging
@@ -7,7 +9,7 @@ import socket
 import ssl
 import threading
 from asyncio.selector_events import BaseSelectorEventLoop
-from typing import Dict, List, Match, Optional, Union
+from typing import Dict, List, Match, Optional, Type, TypeVar, Union
 from urllib.parse import parse_qs, unquote, urlencode, urlparse
 
 import requests
@@ -343,17 +345,19 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
 # BASE BACKEND UTILS
 # -------------------
 
+T = TypeVar("T", bound="RegionBackend")
+
 
 class RegionBackend(object):
     """Base class for region-specific backends for the different APIs.
     RegionBackend lookup methods are not thread safe."""
 
-    REGIONS: Dict[str, "RegionBackend"]
+    REGIONS: Dict[str, T]
 
     name: str  # name of the region
 
     @classmethod
-    def get(cls, region: str = None) -> "RegionBackend":
+    def get(cls: Type[T], region: str = None) -> T:
         region = region or cls.get_current_request_region()
 
         regions = cls.regions()
@@ -366,7 +370,7 @@ class RegionBackend(object):
         return regions[region]
 
     @classmethod
-    def regions(cls) -> Dict[str, "RegionBackend"]:
+    def regions(cls: Type[T]) -> Dict[str, T]:
         if not hasattr(cls, "REGIONS"):
             # maps region name to region backend instance
             cls.REGIONS = {}

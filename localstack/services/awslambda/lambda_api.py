@@ -51,6 +51,7 @@ from localstack.utils.common import (
     empty_context_manager,
     ensure_readable,
     first_char_to_lower,
+    get_unzipped_size,
     is_zip_file,
     isoformat_milliseconds,
     json_safe,
@@ -96,6 +97,7 @@ LAMBDA_DEFAULT_TIMEOUT = 3
 INVALID_PARAMETER_VALUE_EXCEPTION = "InvalidParameterValueException"
 VERSION_LATEST = LambdaFunction.QUALIFIER_LATEST
 FUNCTION_MAX_SIZE = 69905067
+FUNCTION_MAX_UNZIPPED_SIZE = 262144000
 
 BATCH_SIZE_RANGES = {
     "kafka": (100, 10000),
@@ -1069,8 +1071,13 @@ def do_set_function_code(lambda_function: LambdaFunction):
         if not is_zip_file(zip_file_content):
             raise ClientError(f"Uploaded Lambda code for runtime ({runtime}) is not in Zip format")
         # Unzip the Lambda archive contents
-        unzip(archive_file, lambda_cwd)
 
+        if get_unzipped_size(archive_file) >= FUNCTION_MAX_UNZIPPED_SIZE:
+            raise Exception(
+                f"An error occurred (InvalidParameterValueException) when calling the CreateFunction operation: Unzipped size must be smaller than {FUNCTION_MAX_UNZIPPED_SIZE} bytes"
+            )
+
+        unzip(archive_file, lambda_cwd)
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
@@ -1659,7 +1666,6 @@ def add_permission_policy_statement(
     new_policy = generate_policy(sid, action, resource_arn_qualified, sourcearn, principal)
     new_statement = new_policy["Statement"][0]
     result = {"Statement": json.dumps(new_statement)}
-
     if previous_policy:
         statment_with_sid = next(
             (statement for statement in previous_policy["Statement"] if statement["Sid"] == sid),
@@ -1682,6 +1688,7 @@ def add_permission_policy_statement(
 
     policy_name = get_lambda_policy_name(resource_name, qualifier=qualifier)
     LOG.debug('Creating IAM policy "%s" for Lambda resource %s', policy_name, resource_arn)
+
     iam_client.create_policy(
         PolicyName=policy_name,
         PolicyDocument=json.dumps(new_policy),
@@ -1698,11 +1705,32 @@ def remove_permission(function, statement):
     policy = get_lambda_policy(function, qualifier=qualifier)
     if not policy:
         return not_found_error('Unable to find policy for Lambda function "%s"' % function)
+
+    statement_index = next(
+        (i for i, item in enumerate(policy["Statement"]) if item["Sid"] == statement), None
+    )
+    if statement_index is None:
+        return not_found_error(f"Statement {statement} is not found in resource policy.")
     iam_client.delete_policy(PolicyArn=policy["PolicyArn"])
+
+    policy["Statement"].pop(statement_index)
+    description = policy.get("Description")
+    policy_name = policy.get("PolicyName")
+    del policy["PolicyName"]
+    del policy["PolicyArn"]
+    if len(policy["Statement"]) > 0 and description:
+        iam_client.create_policy(
+            PolicyName=policy_name,
+            PolicyDocument=json.dumps(policy),
+            Description=description,
+        )
+    elif len(policy["Statement"]) > 0:
+        iam_client.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy))
+
     result = {
         "FunctionName": function,
         "Qualifier": qualifier,
-        "StatementId": policy["Statement"][0]["Sid"],
+        "StatementId": statement,
     }
     return jsonify(result)
 
@@ -1840,6 +1868,8 @@ def invoke_function(function):
 
     if invocation_type == "RequestResponse":
         context = {"client_context": request.headers.get("X-Amz-Client-Context")}
+
+        time_before = time.perf_counter()
         result = run_lambda(
             func_arn=arn,
             event=data,
@@ -1847,6 +1877,7 @@ def invoke_function(function):
             asynchronous=False,
             version=qualifier,
         )
+        LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
         return _create_response(result)
     elif invocation_type == "Event":
         run_lambda(func_arn=arn, event=data, context={}, asynchronous=True, version=qualifier)

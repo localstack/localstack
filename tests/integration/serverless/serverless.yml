@@ -120,6 +120,11 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: "${self:service}-${opt:stage}-CreateBackupQueue"
+    
+    TestBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: 'testing-bucket'
 
 functions:
   tests:

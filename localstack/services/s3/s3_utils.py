@@ -112,7 +112,7 @@ def extract_bucket_name(headers, path):
         if match and match.group(3):
             bucket_name = match.group(3)
     else:
-        bucket_name = path.split("/", 2)[1]
+        bucket_name = path.split("/", maxsplit=2)[1]
     return bucket_name if bucket_name else None
 
 
@@ -123,11 +123,11 @@ def extract_key_name(headers, path):
     key_name = None
     path = path.split("?")[0]  # strip off query params from path
     if uses_host_addressing(headers):
-        split = path.split("/", 1)
+        split = path.split("/", maxsplit=1)
         if len(split) > 1:
             key_name = split[1]
     else:
-        split = path.split("/", 2)
+        split = path.split("/", maxsplit=2)
         if len(split) > 2:
             key_name = split[2]
 
@@ -182,6 +182,11 @@ def get_key_from_s3_url(url: str, leading_slash: bool = False) -> str:
     result = result.lstrip("/")
     result = f"/{result}" if leading_slash else result
     return result
+
+
+def is_object_download_request(method, path, headers) -> bool:
+    """Return whether this is a GetObject download request."""
+    return method == "GET" and bool(extract_key_name(headers, path))
 
 
 def is_expired(expiry_datetime):

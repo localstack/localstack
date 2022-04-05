@@ -52,6 +52,8 @@ PageSizeLimit = int
 ParameterName = str
 ParameterValue = str
 Percentage = int
+PolicyRuntime = str
+PolicyText = str
 QueryArn = str
 QueryDescription = str
 QueryExpression = str
@@ -191,6 +193,11 @@ class OrganizationConfigRuleTriggerType(str):
     ScheduledNotification = "ScheduledNotification"
 
 
+class OrganizationConfigRuleTriggerTypeNoSN(str):
+    ConfigurationItemChangeNotification = "ConfigurationItemChangeNotification"
+    OversizedConfigurationItemChangeNotification = "OversizedConfigurationItemChangeNotification"
+
+
 class OrganizationResourceDetailedStatus(str):
     CREATE_SUCCESSFUL = "CREATE_SUCCESSFUL"
     CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
@@ -230,6 +237,7 @@ class OrganizationRuleStatus(str):
 class Owner(str):
     CUSTOM_LAMBDA = "CUSTOM_LAMBDA"
     AWS = "AWS"
+    CUSTOM_POLICY = "CUSTOM_POLICY"
 
 
 class RecorderStatus(str):
@@ -381,6 +389,7 @@ class ResourceType(str):
     AWS_CodeDeploy_DeploymentGroup = "AWS::CodeDeploy::DeploymentGroup"
     AWS_EC2_LaunchTemplate = "AWS::EC2::LaunchTemplate"
     AWS_ECR_PublicRepository = "AWS::ECR::PublicRepository"
+    AWS_GuardDuty_Detector = "AWS::GuardDuty::Detector"
 
 
 class ResourceValueType(str):
@@ -836,6 +845,12 @@ class ConfigExportDeliveryInfo(TypedDict, total=False):
     nextDeliveryTime: Optional[Date]
 
 
+class CustomPolicyDetails(TypedDict, total=False):
+    PolicyRuntime: PolicyRuntime
+    PolicyText: PolicyText
+    EnableDebugLogDelivery: Optional[Boolean]
+
+
 class SourceDetail(TypedDict, total=False):
     EventSource: Optional[EventSource]
     MessageType: Optional[MessageType]
@@ -847,8 +862,9 @@ SourceDetails = List[SourceDetail]
 
 class Source(TypedDict, total=False):
     Owner: Owner
-    SourceIdentifier: StringWithCharLimit256
+    SourceIdentifier: Optional[StringWithCharLimit256]
     SourceDetails: Optional[SourceDetails]
+    CustomPolicyDetails: Optional[CustomPolicyDetails]
 
 
 class Scope(TypedDict, total=False):
@@ -896,6 +912,9 @@ class ConfigRuleEvaluationStatus(TypedDict, total=False):
     LastErrorCode: Optional[String]
     LastErrorMessage: Optional[String]
     FirstEvaluationStarted: Optional[Boolean]
+    LastDebugLogDeliveryStatus: Optional[String]
+    LastDebugLogDeliveryStatusReason: Optional[String]
+    LastDebugLogDeliveryTime: Optional[Date]
 
 
 ConfigRuleEvaluationStatusList = List[ConfigRuleEvaluationStatus]
@@ -1082,6 +1101,7 @@ class ConformancePackStatusDetail(TypedDict, total=False):
 
 
 ConformancePackStatusDetailsList = List[ConformancePackStatusDetail]
+DebugLogDeliveryAccounts = List[AccountId]
 
 
 class DeleteAggregationAuthorizationRequest(ServiceRequest):
@@ -1412,8 +1432,24 @@ class DescribeOrganizationConfigRulesRequest(ServiceRequest):
     NextToken: Optional[String]
 
 
-ExcludedAccounts = List[AccountId]
 ResourceTypesScope = List[StringWithCharLimit256]
+OrganizationConfigRuleTriggerTypeNoSNs = List[OrganizationConfigRuleTriggerTypeNoSN]
+
+
+class OrganizationCustomPolicyRuleMetadataNoPolicy(TypedDict, total=False):
+    Description: Optional[StringWithCharLimit256Min0]
+    OrganizationConfigRuleTriggerTypes: Optional[OrganizationConfigRuleTriggerTypeNoSNs]
+    InputParameters: Optional[StringWithCharLimit2048]
+    MaximumExecutionFrequency: Optional[MaximumExecutionFrequency]
+    ResourceTypesScope: Optional[ResourceTypesScope]
+    ResourceIdScope: Optional[StringWithCharLimit768]
+    TagKeyScope: Optional[StringWithCharLimit128]
+    TagValueScope: Optional[StringWithCharLimit256]
+    PolicyRuntime: Optional[PolicyRuntime]
+    DebugLogDeliveryAccounts: Optional[DebugLogDeliveryAccounts]
+
+
+ExcludedAccounts = List[AccountId]
 OrganizationConfigRuleTriggerTypes = List[OrganizationConfigRuleTriggerType]
 
 
@@ -1447,6 +1483,7 @@ class OrganizationConfigRule(TypedDict, total=False):
     OrganizationCustomRuleMetadata: Optional[OrganizationCustomRuleMetadata]
     ExcludedAccounts: Optional[ExcludedAccounts]
     LastUpdateTime: Optional[Date]
+    OrganizationCustomPolicyRuleMetadata: Optional[OrganizationCustomPolicyRuleMetadataNoPolicy]
 
 
 OrganizationConfigRules = List[OrganizationConfigRule]
@@ -1862,6 +1899,14 @@ class GetConformancePackComplianceSummaryResponse(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class GetCustomRulePolicyRequest(ServiceRequest):
+    ConfigRuleName: Optional[ConfigRuleName]
+
+
+class GetCustomRulePolicyResponse(TypedDict, total=False):
+    PolicyText: Optional[PolicyText]
+
+
 class GetDiscoveredResourceCountsRequest(ServiceRequest):
     resourceTypes: Optional[ResourceTypes]
     limit: Optional[Limit]
@@ -1940,6 +1985,14 @@ class GetOrganizationConformancePackDetailedStatusResponse(TypedDict, total=Fals
         OrganizationConformancePackDetailedStatuses
     ]
     NextToken: Optional[String]
+
+
+class GetOrganizationCustomRulePolicyRequest(ServiceRequest):
+    OrganizationConfigRuleName: OrganizationConfigRuleName
+
+
+class GetOrganizationCustomRulePolicyResponse(TypedDict, total=False):
+    PolicyText: Optional[PolicyText]
 
 
 LaterTime = datetime
@@ -2065,6 +2118,20 @@ class ListTagsForResourceResponse(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class OrganizationCustomPolicyRuleMetadata(TypedDict, total=False):
+    Description: Optional[StringWithCharLimit256Min0]
+    OrganizationConfigRuleTriggerTypes: Optional[OrganizationConfigRuleTriggerTypeNoSNs]
+    InputParameters: Optional[StringWithCharLimit2048]
+    MaximumExecutionFrequency: Optional[MaximumExecutionFrequency]
+    ResourceTypesScope: Optional[ResourceTypesScope]
+    ResourceIdScope: Optional[StringWithCharLimit768]
+    TagKeyScope: Optional[StringWithCharLimit128]
+    TagValueScope: Optional[StringWithCharLimit256]
+    PolicyRuntime: PolicyRuntime
+    PolicyText: PolicyText
+    DebugLogDeliveryAccounts: Optional[DebugLogDeliveryAccounts]
+
+
 TagsList = List[Tag]
 
 
@@ -2139,6 +2206,7 @@ class PutOrganizationConfigRuleRequest(ServiceRequest):
     OrganizationManagedRuleMetadata: Optional[OrganizationManagedRuleMetadata]
     OrganizationCustomRuleMetadata: Optional[OrganizationCustomRuleMetadata]
     ExcludedAccounts: Optional[ExcludedAccounts]
+    OrganizationCustomPolicyRuleMetadata: Optional[OrganizationCustomPolicyRuleMetadata]
 
 
 class PutOrganizationConfigRuleResponse(TypedDict, total=False):
@@ -2755,6 +2823,12 @@ class ConfigApi:
     ) -> GetConformancePackComplianceSummaryResponse:
         raise NotImplementedError
 
+    @handler("GetCustomRulePolicy")
+    def get_custom_rule_policy(
+        self, context: RequestContext, config_rule_name: ConfigRuleName = None
+    ) -> GetCustomRulePolicyResponse:
+        raise NotImplementedError
+
     @handler("GetDiscoveredResourceCounts")
     def get_discovered_resource_counts(
         self,
@@ -2785,6 +2859,12 @@ class ConfigApi:
         limit: CosmosPageLimit = None,
         next_token: String = None,
     ) -> GetOrganizationConformancePackDetailedStatusResponse:
+        raise NotImplementedError
+
+    @handler("GetOrganizationCustomRulePolicy")
+    def get_organization_custom_rule_policy(
+        self, context: RequestContext, organization_config_rule_name: OrganizationConfigRuleName
+    ) -> GetOrganizationCustomRulePolicyResponse:
         raise NotImplementedError
 
     @handler("GetResourceConfigHistory")
@@ -2927,6 +3007,7 @@ class ConfigApi:
         organization_managed_rule_metadata: OrganizationManagedRuleMetadata = None,
         organization_custom_rule_metadata: OrganizationCustomRuleMetadata = None,
         excluded_accounts: ExcludedAccounts = None,
+        organization_custom_policy_rule_metadata: OrganizationCustomPolicyRuleMetadata = None,
     ) -> PutOrganizationConfigRuleResponse:
         raise NotImplementedError
 

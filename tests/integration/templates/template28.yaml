@@ -83,8 +83,9 @@ Resources:
     # </sensitive>
     Properties:
       InstanceType: "t3.small"
-      ImageId: abc
-      KeyName: "ec2-key-pair"
+      # The following image is initialised in EC2 Pro provider init hook
+      ImageId: ami-a33ac4f1069a
+      KeyName: key-pair-foo123
       IamInstanceProfile: !Ref InstanceProfile
       SecurityGroupIds:
       - Ref: PublicSG
@@ -95,7 +96,8 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: "t3.small"
-      ImageId: "ami-c6f321bf"
+      # The following image is initialised in EC2 Pro provider init hook
+      ImageId: ami-a33ac4f1069a
 
   CloudWatchAlarm:
     Type: AWS::CloudWatch::Alarm

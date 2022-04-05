@@ -76,7 +76,7 @@ class PaginatedList(list):
         except StopIteration:
             pass
 
-        if start_idx + page_size <= len(result_list):
+        if start_idx + page_size < len(result_list):
             next_token = token_generator(result_list[start_idx + page_size])
         else:
             next_token = None

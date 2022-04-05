@@ -1,5 +1,5 @@
 import time
-from datetime import datetime, timezone, tzinfo
+from datetime import date, datetime, timezone, tzinfo
 from typing import Optional
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
@@ -47,6 +47,10 @@ def now(millis: bool = False, tz: Optional[tzinfo] = None) -> int:
 
 def now_utc(millis: bool = False) -> int:
     return now(millis, timezone.utc)
+
+
+def today_no_time() -> int:
+    return mktime(datetime.combine(date.today(), datetime.min.time()))
 
 
 def mktime(ts: datetime, millis: bool = False) -> int:

@@ -1198,6 +1198,7 @@ class TestCloudFormation:
         rs = logs_client.describe_log_groups(logGroupNamePrefix=log_group_prefix)
         assert len(rs["logGroups"]) == 0
 
+    @pytest.mark.skip_offline
     def test_cfn_handle_elasticsearch_domain(self):
         stack_name = "stack-%s" % short_uid()
         domain_name = "es-%s" % short_uid()
@@ -1360,6 +1361,7 @@ class TestCloudFormation:
         assert "AWS::Kinesis::Stream" in result["ResourceTypes"]
         assert result.get("ResourceIdentifierSummaries")
 
+    @pytest.mark.xfail(reason="flaky due to issues in parameter handling and re-resolving")
     def test_stack_imports(self):
         cloudformation = aws_stack.create_external_boto_client("cloudformation")
         result = cloudformation.list_imports(ExportName="_unknown_")
@@ -2008,6 +2010,9 @@ class TestCloudFormation:
         cfn_client = aws_stack.create_external_boto_client("cloudformation")
         sns_client = aws_stack.create_external_boto_client("sns")
         cw_client = aws_stack.create_external_boto_client("cloudwatch")
+        ec2_client = aws_stack.create_external_boto_client("ec2")
+
+        ec2_client.create_key_pair(KeyName="key-pair-foo123")
 
         # list resources before stack deployment
         metric_alarms = cw_client.describe_alarms().get("MetricAlarms", [])
@@ -2026,7 +2031,6 @@ class TestCloudFormation:
         subnet_id = subnets[0]["Value"]
         instance_id = instances[0]["Value"]
 
-        ec2_client = aws_stack.create_external_boto_client("ec2")
         resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
         assert len(resp["Subnets"]) == 1
 
@@ -2067,6 +2071,7 @@ class TestCloudFormation:
         ]:
             pytest.skip()
         ec2_client = aws_stack.create_external_boto_client("ec2")
+        ec2_client.create_key_pair(KeyName="testkey")
 
         create_and_await_stack(
             StackName=stack_name,
