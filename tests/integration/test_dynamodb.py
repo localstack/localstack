@@ -293,6 +293,9 @@ class TestDynamoDB:
             )
         assert ctx.match("ValidationException")
 
+        # clean up
+        delete_table(table_name)
+
     def test_valid_query_index(self, dynamodb):
         """Query requests ALL_ATTRIBUTES and the named index has a ProjectionType of ALL,
         no exception should be raised."""
@@ -335,6 +338,9 @@ class TestDynamoDB:
             KeyConditionExpression=Key("field_b").eq("xyz"),
             Select="ALL_ATTRIBUTES",
         )
+
+        # clean up
+        delete_table(table_name)
 
     def test_return_values_in_put_item(self, dynamodb):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)

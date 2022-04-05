@@ -1026,6 +1026,7 @@ def get_global_secondary_index(table_name, index_name):
     for index in schema["Table"].get("GlobalSecondaryIndexes", []):
         if index["IndexName"] == index_name:
             return index
+    raise Exception("Index not found")  # TODO: add proper exception handling
 
 
 def is_index_query_valid(query_data: dict) -> bool:
