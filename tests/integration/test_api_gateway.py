@@ -729,7 +729,7 @@ class TestAPIGateway(unittest.TestCase):
 
         # the header Authorization should be empty
         body_content = json.loads(response.content)
-        assert body_content.get('headers').get('Authorization') == ""
+        assert body_content.get("headers").get("Authorization") == ""
 
         # clean up
         lambda_client = aws_stack.create_external_boto_client("lambda")
