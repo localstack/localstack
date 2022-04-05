@@ -26,7 +26,8 @@ if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudwatch import CloudWatchClient
-    from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
+    from mypy_boto3_dynamodbstreams import DynamoDBStreamsClient
     from mypy_boto3_ec2 import EC2Client
     from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
@@ -68,9 +69,33 @@ def _client(service):
     return aws_stack.create_external_boto_client(service, config=config)
 
 
+def _resource(service):
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.resource(service)
+    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
+    config = (
+        botocore.config.Config(
+            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+        )
+        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
+        else None
+    )
+    return aws_stack.connect_to_resource_external(service, config=config)
+
+
 @pytest.fixture(scope="class")
 def dynamodb_client() -> "DynamoDBClient":
     return _client("dynamodb")
+
+
+@pytest.fixture(scope="class")
+def dynamodb_resource() -> "DynamoDBServiceResource":
+    return _resource("dynamodb")
+
+
+@pytest.fixture(scope="class")
+def dynamodbstreams_client() -> "DynamoDBStreamsClient":
+    return _client("dynamodbstreams")
 
 
 @pytest.fixture(scope="class")
@@ -225,6 +250,14 @@ def dynamodb_create_table(dynamodb_client):
     # cleanup
     for table in tables:
         try:
+            # table has to be in ACTIVE state before deletion
+            def wait_for_table_created():
+                return (
+                    dynamodb_client.describe_table(TableName=table)["Table"]["TableStatus"]
+                    == "ACTIVE"
+                )
+
+            assert poll_condition(wait_for_table_created, timeout=30)
             dynamodb_client.delete_table(TableName=table)
         except Exception as e:
             LOG.debug("error cleaning up table %s: %s", table, e)
@@ -374,6 +407,21 @@ def kinesis_create_stream(kinesis_client):
             kinesis_client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
         except Exception as e:
             LOG.debug("error cleaning up kinesis stream %s: %s", stream_name, e)
+
+
+@pytest.fixture
+def wait_for_stream_ready(kinesis_client):
+    def _wait_for_stream_ready(stream_name: str):
+        def is_stream_ready():
+            describe_stream_response = kinesis_client.describe_stream(StreamName=stream_name)
+            return describe_stream_response["StreamDescription"]["StreamStatus"] in [
+                "ACTIVE",
+                "UPDATING",
+            ]
+
+        poll_condition(is_stream_ready)
+
+    return _wait_for_stream_ready
 
 
 @pytest.fixture

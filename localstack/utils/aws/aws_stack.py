@@ -267,6 +267,27 @@ def connect_to_resource(
     )
 
 
+def connect_to_resource_external(
+    service_name,
+    env=None,
+    region_name=None,
+    endpoint_url=None,
+    config: botocore.config.Config = None,
+    **kwargs,
+):
+    """
+    Generic method to obtain an AWS service resource using boto3, based on environment, region, or custom endpoint_url.
+    """
+    return create_external_boto_client(
+        service_name,
+        client=False,
+        env=env,
+        region_name=region_name,
+        endpoint_url=endpoint_url,
+        config=config,
+    )
+
+
 def connect_to_service(
     service_name,
     client=True,
