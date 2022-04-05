@@ -728,7 +728,7 @@ class TestAPIGateway(unittest.TestCase):
         )
 
         # the header Authorization should be empty
-        body_content = json.loads(response.content)
+        body_content = json.loads(to_str(response.content))
         assert body_content.get("headers").get("Authorization") == ""
 
         # clean up
