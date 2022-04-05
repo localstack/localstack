@@ -19,7 +19,7 @@ from localstack.constants import (
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
     LS_LOG_TRACE_INTERNAL,
-    PATH_USER_REQUEST, HEADER_LOCALSTACK_AUTHORIZATION,
+    PATH_USER_REQUEST,
 )
 from localstack.http import Router
 from localstack.http.dispatcher import Handler, handler_dispatcher

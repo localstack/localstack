@@ -34,7 +34,8 @@ from localstack.constants import (
     APPLICATION_JSON,
     AWS_REGION_US_EAST_1,
     BIND_HOST,
-    HEADER_LOCALSTACK_REQUEST_URL, HEADER_LOCALSTACK_AUTHORIZATION,
+    HEADER_LOCALSTACK_AUTHORIZATION,
+    HEADER_LOCALSTACK_REQUEST_URL,
 )
 from localstack.services.messages import Headers, MessagePayload
 from localstack.services.messages import Request as RoutingRequest
