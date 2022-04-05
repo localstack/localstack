@@ -670,7 +670,7 @@ class TestAPIGateway(unittest.TestCase):
         apigw_client = aws_stack.create_external_boto_client("apigateway")
 
         # create Lambda function
-        lambda_name = "apigw-lambda-%s" % short_uid()
+        lambda_name = f"apigw-lambda-{short_uid()}"
         self.create_lambda_function(lambda_name)
         lambda_uri = aws_stack.lambda_function_arn(lambda_name)
 
@@ -701,8 +701,35 @@ class TestAPIGateway(unittest.TestCase):
             authorizerId=authorizer["id"],
             apiKeyRequired=is_api_key_required,
         )
-
         self.assertEqual(authorizer["id"], method_response["authorizerId"])
+
+        # create method route without authorization
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_res_id,
+            httpMethod="POST",
+            authorizationType="None",
+            apiKeyRequired=False,
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_res_id,
+            httpMethod="POST",
+            type="HTTP",
+            uri="http://httpbin.org/anything/echo",
+            integrationHttpMethod="POST",
+        )
+
+        # call endpoint without authorization
+        url = path_based_url(api_id=api_id, stage_name="local", path="/")
+        response = requests.POST(
+            url,
+            json.dumps({"id": "id1", "data": "foobar123"}),
+        )
+
+        # the header Authorization should be empty
+        body_content = json.loads(response.content)
+        assert body_content.headers["Authorization"] == ""
 
         # clean up
         lambda_client = aws_stack.create_external_boto_client("lambda")
