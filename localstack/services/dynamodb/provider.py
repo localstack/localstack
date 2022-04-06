@@ -362,6 +362,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return Response("", headers=headers)
 
     def handle_shell_ui_request(self, request: werkzeug.Request, req_path: str) -> Response:
+        # TODO: "DynamoDB Local Web Shell was deprecated with version 1.16.X and is not available any
+        #  longer from 1.17.X to latest. There are no immediate plans for a new Web Shell to be introduced."
+        #  -> keeping this for now, to allow configuring custom installs; should consider removing it in the future
+        # https://repost.aws/questions/QUHyIzoEDqQ3iOKlUEp1LPWQ#ANdBm9Nz9TRf6VqR3jZtcA1g
         req_path = f"/{req_path}" if not req_path.startswith("/") else req_path
         url = f"{self.get_forward_url()}/shell{req_path}"
         result = requests.request(

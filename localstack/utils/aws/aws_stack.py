@@ -866,10 +866,9 @@ def mock_aws_request_headers(service="dynamodb", region_name=None, access_key=No
         "X-Amz-Date": "20160623T103251Z",
         "Authorization": (
             "AWS4-HMAC-SHA256 "
-            + "Credential=%s/20160623/%s/%s/aws4_request, "
+            + f"Credential={access_key}/20160623/{region_name}/{service}/aws4_request, "
             + "SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234"
-        )
-        % (access_key, region_name, service),
+        ),
     }
     return headers
 

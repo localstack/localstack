@@ -5,11 +5,9 @@ from datetime import datetime
 from time import sleep
 
 import pytest
-import requests
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
-from localstack import config
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
@@ -17,7 +15,6 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.aws.aws_stack import get_environment
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
-from localstack.utils.strings import to_str
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
@@ -979,15 +976,6 @@ class TestDynamoDB:
         assert result["KeyMetadata"]["KeyManager"] == "AWS"
 
         delete_table(table_name)
-
-    def test_access_shell_ui(self):
-        base_url = config.get_edge_url()
-        response = requests.get(f"{base_url}/shell")
-        assert response.ok
-        assert "/shell/index.html" in response.headers.get("Refresh", "")
-        response = requests.get(f"{base_url}/shell/index.html")
-        assert response.ok
-        assert "<html" in to_str(response.content)
 
 
 def delete_table(name):
