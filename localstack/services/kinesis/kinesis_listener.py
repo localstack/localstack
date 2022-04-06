@@ -164,16 +164,9 @@ class ProxyListenerKinesis(ProxyListener):
             event_publisher.fire_event(event_type, payload=payload)
         elif action == "PutRecord":
             response_body = self.decode_content(response.content)
-            # Note: avoid adding 'encryptionType':'NONE' in the event_record, as this breaks .NET Lambdas
-            event_record = {
-                "approximateArrivalTimestamp": epoch_timestamp(),
-                "data": data["Data"],
-                "partitionKey": data["PartitionKey"],
-                "sequenceNumber": response_body.get("SequenceNumber"),
-            }
-            event_records = [event_record]
-            stream_name = data["StreamName"]
-            lambda_api.process_kinesis_records(event_records, stream_name)
+            event_record = self.create_event_record(data, response_body.get("SequenceNumber"))
+
+            self.process_kinesis_records([event_record], data["StreamName"])
         elif action == "PutRecords":
             event_records = []
             response_body = self.decode_content(response.content)
@@ -182,16 +175,11 @@ class ProxyListenerKinesis(ProxyListener):
                 records = data["Records"]
                 for index in range(0, len(records)):
                     record = records[index]
-                    # Note: avoid adding 'encryptionType':'NONE' in the event_record, as this breaks .NET Lambdas
-                    event_record = {
-                        "approximateArrivalTimestamp": epoch_timestamp(),
-                        "data": record["Data"],
-                        "partitionKey": record["PartitionKey"],
-                        "sequenceNumber": response_records[index].get("SequenceNumber"),
-                    }
-                    event_records.append(event_record)
-                stream_name = data["StreamName"]
-                lambda_api.process_kinesis_records(event_records, stream_name)
+                    sequence_number = response_records[index].get("SequenceNumber")
+                    event_records.append(self.create_event_record(record, sequence_number))
+
+                self.process_kinesis_records(event_records, data["StreamName"])
+
         elif action == "UpdateShardCount" and config.KINESIS_PROVIDER == "kinesalite":
             # Currently kinesalite, which backs the Kinesis implementation for localstack, does
             # not support UpdateShardCount:
@@ -303,6 +291,29 @@ class ProxyListenerKinesis(ProxyListener):
             return decoded, content_type
 
         return decoded
+
+    def create_event_record(self, data, sequence_number):
+        # Note: avoid adding 'encryptionType':'NONE' in the event_record, as this breaks .NET Lambdas
+        return {
+            "approximateArrivalTimestamp": epoch_timestamp(),
+            "data": data["Data"],
+            "partitionKey": data["PartitionKey"],
+            "sequenceNumber": sequence_number,
+        }
+
+    def check_for_dynamodb_source_arn(self, event_record):
+        try:
+            decoded = json.loads(base64.b64decode(event_record["data"]))
+            if "dynamodb" in decoded:
+                return decoded.get("eventSourceARN")
+            else:
+                return None
+        except Exception:
+            return None
+
+    def process_kinesis_records(self, event_records, stream_name):
+        source_arn = self.check_for_dynamodb_source_arn(event_records[0])
+        lambda_api.process_kinesis_records(event_records, stream_name, source_arn)
 
 
 def encode_data(data, encoding_type):

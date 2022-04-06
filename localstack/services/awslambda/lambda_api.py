@@ -668,7 +668,29 @@ def process_sns_notification(
     return inv_result.result
 
 
-def process_kinesis_records(records, stream_name):
+def create_records(shard_id, stream_arn, chunk, is_dynamodb_record):
+    if not is_dynamodb_record:
+        return [
+            {
+                "eventID": "{0}:{1}".format(shard_id, rec["sequenceNumber"]),
+                "eventSourceARN": stream_arn,
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventName": "aws:kinesis:record",
+                "invokeIdentityArn": "arn:aws:iam::{0}:role/lambda-role".format(
+                    TEST_AWS_ACCOUNT_ID
+                ),
+                "awsRegion": aws_stack.get_region(),
+                "kinesis": rec,
+            }
+            for rec in chunk
+        ]
+    else:
+        # dynamo db record already has the relevant fields base64-encoded in "data":
+        return [json.loads(base64.b64decode(rec["data"])) for rec in chunk]
+
+
+def process_kinesis_records(records, stream_name, dynamodb_source_arn=None):
     def chunks(lst, n):
         # Yield successive n-sized chunks from lst.
         for i in range(0, len(lst), n):
@@ -676,31 +698,25 @@ def process_kinesis_records(records, stream_name):
 
     # feed records into listening lambdas
     try:
-        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
+        if not dynamodb_source_arn:
+            stream_arn = aws_stack.kinesis_stream_arn(stream_name)
+        else:
+            stream_arn = dynamodb_source_arn
         sources = get_event_sources(source_arn=stream_arn)
+        is_dynamodb_record = dynamodb_source_arn is not None
         for source in sources:
+            if source.get("State") != "Enabled":
+                continue
             arn = source["FunctionArn"]
             for chunk in chunks(records, source["BatchSize"]):
                 shard_id = "shardId-000000000000"
                 event = {
-                    "Records": [
-                        {
-                            "eventID": "{0}:{1}".format(shard_id, rec["sequenceNumber"]),
-                            "eventSourceARN": stream_arn,
-                            "eventSource": "aws:kinesis",
-                            "eventVersion": "1.0",
-                            "eventName": "aws:kinesis:record",
-                            "invokeIdentityArn": "arn:aws:iam::{0}:role/lambda-role".format(
-                                TEST_AWS_ACCOUNT_ID
-                            ),
-                            "awsRegion": aws_stack.get_region(),
-                            "kinesis": rec,
-                        }
-                        for rec in chunk
-                    ]
+                    "Records": create_records(
+                        shard_id, stream_arn, chunk, is_dynamodb_record=is_dynamodb_record
+                    )
                 }
                 lock_discriminator = None
-                if not config.SYNCHRONOUS_KINESIS_EVENTS:
+                if not is_dynamodb_record and not config.SYNCHRONOUS_KINESIS_EVENTS:
                     lock_discriminator = f"{stream_arn}/{shard_id}"
                     lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
                         lock_discriminator, BoundedSemaphore(source["ParallelizationFactor"])
@@ -709,9 +725,23 @@ def process_kinesis_records(records, stream_name):
                 def on_failure_callback(
                     result, func_arn, event, error=None, dlq_sent=None, **kwargs
                 ):
-                    # kinesis only supports "OnFailure"
+                    # streams only supports "OnFailure"
                     if not error:
                         return
+
+                    details = {
+                        "shardId": shard_id,
+                        "startSequenceNumber": chunk[0]["sequenceNumber"],
+                        "endSequenceNumber": chunk[-1]["sequenceNumber"],
+                        "approximateArrivalOfFirstRecord": timestamp_millis(
+                            chunk[0]["approximateArrivalTimestamp"]
+                        ),
+                        "approximateArrivalOfLastRecord": timestamp_millis(
+                            chunk[-1]["approximateArrivalTimestamp"]
+                        ),
+                        "batchSize": source["BatchSize"],
+                        "streamArn": stream_arn,
+                    }
                     payload = {
                         "version": "1.0",
                         "timestamp": timestamp_millis(),
@@ -726,20 +756,12 @@ def process_kinesis_records(records, stream_name):
                             "executedVersion": "$LATEST",
                             "functionError": "Unhandled",
                         },
-                        "KinesisBatchInfo": {
-                            "shardId": shard_id,
-                            "startSequenceNumber": chunk[0]["sequenceNumber"],
-                            "endSequenceNumber": chunk[-1]["sequenceNumber"],
-                            "approximateArrivalOfFirstRecord": timestamp_millis(
-                                chunk[0]["approximateArrivalTimestamp"]
-                            ),
-                            "approximateArrivalOfLastRecord": timestamp_millis(
-                                chunk[-1]["approximateArrivalTimestamp"]
-                            ),
-                            "batchSize": source["BatchSize"],
-                            "streamArn": stream_arn,
-                        },
                     }
+                    if is_dynamodb_record:
+                        payload["DDBStreamBatchInfo"] = details
+                    else:
+                        payload["KinesisBatchInfo"] = details
+
                     target = source["DestinationConfig"]["OnFailure"]["Destination"]
                     send_event_to_target(target, payload)
 
@@ -747,7 +769,9 @@ def process_kinesis_records(records, stream_name):
                     func_arn=arn,
                     event=event,
                     context={},
-                    asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS,
+                    asynchronous=not config.SYNCHRONOUS_DYNAMODB_EVENTS
+                    if is_dynamodb_record
+                    else not config.SYNCHRONOUS_KINESIS_EVENTS,
                     lock_discriminator=lock_discriminator,
                     callback=on_failure_callback
                     if source.get("DestinationConfig")

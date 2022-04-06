@@ -26,12 +26,8 @@ from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.testutil import get_lambda_log_events
 
 from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import (
-    TEST_LAMBDA_LIBS,
-    TEST_LAMBDA_PYTHON,
-    TEST_LAMBDA_PYTHON_ECHO,
-    get_lambda_logs,
-)
+from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from .util import get_lambda_logs
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = "test_source_stream"

@@ -2,12 +2,10 @@ import base64
 import json
 import logging
 import os
-import re
 import shutil
 import time
 from datetime import datetime
 from io import BytesIO
-from typing import List
 
 import pytest
 from botocore.exceptions import ClientError
@@ -154,67 +152,6 @@ PROVIDED_TEST_RUNTIMES = [
         LAMBDA_RUNTIME_PROVIDED_AL2, marks=pytest.mark.skip("curl missing in provided.al2 image")
     ),
 ]
-
-lambda_role = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {"Service": "lambda.amazonaws.com"},
-            "Action": "sts:AssumeRole",
-        }
-    ],
-}
-s3_lambda_permission = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "sqs:*",
-                "kinesis:DescribeStream",
-                "kinesis:DescribeStreamSummary",
-                "kinesis:GetRecords",
-                "kinesis:GetShardIterator",
-                "kinesis:ListShards",
-                "kinesis:ListStreams",
-                "kinesis:SubscribeToShard",
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents",
-            ],
-            "Resource": ["*"],
-        }
-    ],
-}
-
-
-@pytest.fixture
-def check_lambda_logs(logs_client):
-    def _check_logs(func_name: str, expected_lines: List[str] = None):
-        if not expected_lines:
-            expected_lines = []
-        log_events = get_lambda_logs(func_name, logs_client=logs_client)
-        log_messages = [e["message"] for e in log_events]
-        for line in expected_lines:
-            if ".*" in line:
-                found = [re.match(line, m, flags=re.DOTALL) for m in log_messages]
-                if any(found):
-                    continue
-            assert line in log_messages
-
-    return _check_logs
-
-
-def get_lambda_logs(func_name, logs_client=None):
-    logs_client = logs_client or aws_stack.create_external_boto_client("logs")
-    log_group_name = f"/aws/lambda/{func_name}"
-    streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
-    streams = sorted(streams, key=lambda x: x["creationTime"], reverse=True)
-    log_events = logs_client.get_log_events(
-        logGroupName=log_group_name, logStreamName=streams[0]["logStreamName"]
-    )["events"]
-    return log_events
 
 
 def is_old_provider():
@@ -724,137 +661,6 @@ class TestLambdaBaseFeatures:
             assert condition == msg["requestContext"]["condition"]
 
         retry(receive_message, retries=120, sleep=3)
-
-    def test_lambda_destination_invocation_stream_input(
-        self,
-        lambda_client,
-        create_lambda_function,
-        sqs_client,
-        sqs_queue_arn,
-        sqs_create_queue,
-        iam_create_role_with_policy,
-        kinesis_client,
-    ):
-        try:
-            function_name = f"lambda_func-{short_uid()}"
-            role = f"test-lambda-role-{short_uid()}"
-            policy_name = f"test-lambda-policy-{short_uid()}"
-            role_arn = iam_create_role_with_policy(
-                RoleName=role,
-                PolicyName=policy_name,
-                RoleDefinition=lambda_role,
-                PolicyDefinition=s3_lambda_permission,
-            )
-
-            response = create_lambda_function(
-                handler_file=TEST_LAMBDA_PYTHON,
-                func_name=function_name,
-                runtime=LAMBDA_RUNTIME_PYTHON37,
-                role=role_arn,
-                libs=TEST_LAMBDA_LIBS,
-            )
-
-            function_arn = response["CreateFunctionResponse"]["FunctionArn"]
-            queue_success = sqs_create_queue()
-            queue_failure = sqs_create_queue()
-
-            success_queue_arn = sqs_queue_arn(queue_success)
-            failure_queue_arn = sqs_queue_arn(queue_failure)
-            # adding event invoke config
-            response = lambda_client.put_function_event_invoke_config(
-                FunctionName=function_name,
-                DestinationConfig={
-                    "OnSuccess": {"Destination": success_queue_arn},
-                    "OnFailure": {"Destination": failure_queue_arn},
-                },
-            )
-            lambda_client.invoke(FunctionName=function_name, InvocationType="Event")
-
-            def verify_message_received():
-                result = sqs_client.receive_message(
-                    QueueUrl=queue_success, MessageAttributeNames=["All"]
-                )
-                msg = result["Messages"][0]
-                body = json.loads(msg["Body"])
-                assert body["requestContext"]["condition"] == "Success"
-                assert (
-                    function_arn in body["requestContext"]["functionArn"]
-                )  # AWS will also contain the version e.g. <arn>:$LATEST
-                assert not body["requestPayload"]
-
-            retry(verify_message_received, retries=50, sleep=5)
-
-            # test destination-config for create_event_source_mapping
-            kinesis_name = f"test-kinesis-{short_uid()}"
-            kinesis_client.create_stream(StreamName=kinesis_name, ShardCount=1)
-
-            result = kinesis_client.describe_stream(StreamName=kinesis_name)["StreamDescription"]
-            kinesis_arn = result["StreamARN"]
-
-            # wait for stream-status "ACTIVE"
-            status = result["StreamStatus"]
-            if status != "ACTIVE":
-
-                def check_stream_active():
-                    state = kinesis_client.describe_stream(StreamName=kinesis_name)[
-                        "StreamDescription"
-                    ]["StreamStatus"]
-                    if state != "ACTIVE":
-                        raise Exception(f"StreamStatus is {state}")
-
-                retry(check_stream_active, retries=6, sleep=1.0, sleep_before=2.0)
-
-            queue_event_source_mapping = sqs_create_queue()
-            queue_failure_event_source_mapping_arn = sqs_queue_arn(queue_event_source_mapping)
-            destination_config = {
-                "OnFailure": {"Destination": queue_failure_event_source_mapping_arn}
-            }
-
-            result = lambda_client.create_event_source_mapping(
-                FunctionName=function_name,
-                BatchSize=1,
-                StartingPosition="TRIM_HORIZON",
-                EventSourceArn=kinesis_arn,
-                MaximumBatchingWindowInSeconds=1,
-                MaximumRetryAttempts=1,
-                DestinationConfig=destination_config,
-            )
-
-            event_source_mapping_uuid = result["UUID"]
-            event_source_mapping_state = result["State"]
-            if event_source_mapping_state != "Enabled":
-
-                def check_mapping_state():
-                    state = lambda_client.get_event_source_mapping(UUID=event_source_mapping_uuid)[
-                        "State"
-                    ]
-                    if state != "Enabled":
-                        raise Exception(f"State is {state}")
-
-                retry(check_mapping_state, retries=6, sleep_before=2.0, sleep=1.0)
-
-            message = {
-                "input": "hello",
-                "value": "world",
-                lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
-            }
-            result = kinesis_client.put_record(
-                StreamName=kinesis_name, Data=to_bytes(json.dumps(message)), PartitionKey="custom"
-            )
-
-            def verify_failure_received():
-                result = sqs_client.receive_message(QueueUrl=queue_event_source_mapping)
-                msg = result["Messages"][0]
-                body = json.loads(msg["Body"])
-                assert body["requestContext"]["condition"] == "RetryAttemptsExhausted"
-                assert body["KinesisBatchInfo"]["batchSize"] == 1
-                assert body["KinesisBatchInfo"]["streamArn"] == kinesis_arn
-
-            retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
-
-        finally:
-            kinesis_client.delete_stream(StreamName=kinesis_name, EnforceConsumerDeletion=True)
-            lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
 
     def test_large_payloads(self, caplog, lambda_client, create_lambda_function):
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
