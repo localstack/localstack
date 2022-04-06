@@ -717,7 +717,7 @@ class TestAPIGateway(unittest.TestCase):
             resourceId=root_res_id,
             httpMethod="POST",
             type="HTTP",
-            uri="http://localhost:6667",
+            uri=f"http://localhost:{test_port}",
             integrationHttpMethod="POST",
         )
 
