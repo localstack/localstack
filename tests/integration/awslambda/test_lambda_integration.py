@@ -9,7 +9,6 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.services.apigateway.helpers import path_based_url
-from localstack.services.awslambda import lambda_api
 from localstack.services.awslambda.lambda_api import (
     BATCH_SIZE_RANGES,
     INVALID_PARAMETER_VALUE_EXCEPTION,
@@ -18,7 +17,6 @@ from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry, safe_requests, short_uid
-from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 
@@ -27,6 +25,7 @@ from .test_lambda import (
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
+    is_old_provider,
 )
 
 TEST_STAGE_NAME = "testing"
@@ -102,13 +101,14 @@ class TestLambdaEventSourceMappings:
         )["TableDescription"]
 
         # table ARNs are not sufficient as event source, needs to be a dynamodb stream arn
-        with pytest.raises(ClientError) as e:
-            lambda_client.create_event_source_mapping(
-                EventSourceArn=table_description["TableArn"],
-                FunctionName=function_name,
-                StartingPosition="LATEST",
-            )
-        e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+        if not is_old_provider():
+            with pytest.raises(ClientError) as e:
+                lambda_client.create_event_source_mapping(
+                    EventSourceArn=table_description["TableArn"],
+                    FunctionName=function_name,
+                    StartingPosition="LATEST",
+                )
+            e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
 
         # check if event source mapping can be created with latest stream ARN
         rs = lambda_client.create_event_source_mapping(
@@ -208,21 +208,34 @@ class TestLambdaEventSourceMappings:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=LAMBDA_RUNTIME_PYTHON36,
+            role=lambda_su_role,
         )
 
-        table_arn = aws_stack.create_dynamodb_table(ddb_table, partition_key="id")[
-            "TableDescription"
-        ]["TableArn"]
+        latest_stream_arn = aws_stack.create_dynamodb_table(
+            table_name=ddb_table,
+            partition_key="id",
+            client=dynamodb_client,
+            stream_view_type="NEW_IMAGE",
+        )["TableDescription"]["LatestStreamArn"]
 
         lambda_client.create_event_source_mapping(
-            FunctionName=function_name, EventSourceArn=table_arn
+            FunctionName=function_name,
+            EventSourceArn=latest_stream_arn,
+            StartingPosition="TRIM_HORIZON",
         )
 
-        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
+        def wait_for_table_created():
+            return (
+                dynamodb_client.describe_table(TableName=ddb_table)["Table"]["TableStatus"]
+                == "ACTIVE"
+            )
+
+        assert poll_condition(wait_for_table_created, timeout=30)
+
         dynamodb_client.delete_table(TableName=ddb_table)
 
-        result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
-        assert 0 == len(result["EventSourceMappings"])
+        result = lambda_client.list_event_source_mappings(EventSourceArn=latest_stream_arn)
+        assert 1 == len(result["EventSourceMappings"])
 
     def test_event_source_mapping_with_sqs(
         self,
@@ -288,9 +301,13 @@ class TestLambdaEventSourceMappings:
         stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
             "StreamARN"
         ]
-        # with pytest.raises(ClientError) as e:
-        #     lambda_client.create_event_source_mapping(EventSourceArn=stream_arn, FunctionName=function_name)
-        # e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+        # only valid against AWS / new provider (once implemented)
+        if not is_old_provider():
+            with pytest.raises(ClientError) as e:
+                lambda_client.create_event_source_mapping(
+                    EventSourceArn=stream_arn, FunctionName=function_name
+                )
+            e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
 
         wait_for_stream_ready(stream_name=stream_name)
 
@@ -326,23 +343,39 @@ class TestLambdaEventSourceMappings:
         assert "kinesis" in events[0]["Records"][0]
 
     def test_python_lambda_subscribe_sns_topic(
-        self, create_lambda_function, sns_client, lambda_su_role, sns_topic, logs_client
+        self,
+        create_lambda_function,
+        sns_client,
+        lambda_su_role,
+        sns_topic,
+        logs_client,
+        lambda_client,
     ):
         function_name = f"{TEST_LAMBDA_FUNCTION_PREFIX}-{short_uid()}"
+        permission_id = f"test-statement-{short_uid()}"
 
-        create_lambda_function(
+        lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             runtime=LAMBDA_RUNTIME_PYTHON36,
             role=lambda_su_role,
         )
+        lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
 
         topic_arn = sns_topic["Attributes"]["TopicArn"]
+
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId=permission_id,
+            Action="lambda:InvokeFunction",
+            Principal="sns.amazonaws.com",
+            SourceArn=topic_arn,
+        )
 
         sns_client.subscribe(
             TopicArn=topic_arn,
             Protocol="lambda",
-            Endpoint=lambda_api.func_arn(function_name),
+            Endpoint=lambda_arn,
         )
 
         subject = "[Subject] Test subject"
@@ -351,7 +384,7 @@ class TestLambdaEventSourceMappings:
 
         events = retry(
             check_expected_lambda_log_events_length,
-            retries=3,
+            retries=10,
             sleep=1,
             function_name=function_name,
             expected_length=1,
@@ -405,37 +438,46 @@ class TestLambdaHttpInvocation:
 
 class TestKinesisSource:
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
-    def test_kinesis_lambda_parallelism(self, lambda_client, kinesis_client):
+    def test_kinesis_lambda_parallelism(
+        self,
+        lambda_client,
+        kinesis_client,
+        create_lambda_function,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        logs_client,
+        lambda_su_role,
+    ):
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-foobar-{short_uid()}"
 
-        testutil.create_lambda_function(
+        create_lambda_function(
             handler_file=TEST_LAMBDA_PARALLEL_FILE,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
+            role=lambda_su_role,
         )
 
-        arn = aws_stack.kinesis_stream_arn(stream_name, account_id="000000000000")
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
+            "StreamARN"
+        ]
 
-        lambda_client.create_event_source_mapping(EventSourceArn=arn, FunctionName=function_name)
+        wait_for_stream_ready(stream_name=stream_name)
 
-        def process_records(record):
-            assert record
-
-        aws_stack.create_kinesis_stream(stream_name, delete=True)
-        kinesis_connector.listen_to_kinesis(
-            stream_name=stream_name,
-            listener_func=process_records,
-            wait_until_started=True,
+        lambda_client.create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+            BatchSize=10,
         )
 
-        kinesis = aws_stack.create_external_boto_client("kinesis")
-        stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
+        stream_summary = kinesis_client.describe_stream_summary(StreamName=stream_name)
         assert 1 == stream_summary["StreamDescriptionSummary"]["OpenShardCount"]
         num_events_kinesis = 10
         # assure async call
         start = time.perf_counter()
-        kinesis.put_records(
+        kinesis_client.put_records(
             Records=[
                 {"Data": '{"batch": 0}', "PartitionKey": f"test_{i}"}
                 for i in range(0, num_events_kinesis)
@@ -443,7 +485,7 @@ class TestKinesisSource:
             StreamName=stream_name,
         )
         assert (time.perf_counter() - start) < 1  # this should not take more than a second
-        kinesis.put_records(
+        kinesis_client.put_records(
             Records=[
                 {"Data": '{"batch": 1}', "PartitionKey": f"test_{i}"}
                 for i in range(0, num_events_kinesis)
@@ -452,11 +494,13 @@ class TestKinesisSource:
         )
 
         def get_events():
-            events = get_lambda_log_events(function_name, regex_filter=r"event.*Records")
+            events = get_lambda_log_events(
+                function_name, regex_filter=r"event.*Records", logs_client=logs_client
+            )
             assert len(events) == 2
             return events
 
-        events = retry(get_events, retries=5)
+        events = retry(get_events, retries=30)
 
         def assertEvent(event, batch_no):
             assert 10 == len(event["event"]["Records"])
@@ -480,7 +524,3 @@ class TestKinesisSource:
         assertEvent(events[1], 1)
 
         assert (events[1]["executionStart"] - events[0]["executionStart"]) > 5
-
-        # cleanup
-        lambda_client.delete_function(FunctionName=function_name)
-        kinesis_client.delete_stream(StreamName=stream_name)

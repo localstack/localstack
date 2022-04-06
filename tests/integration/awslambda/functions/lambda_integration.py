@@ -185,7 +185,11 @@ def forward_event_to_target_stream(record, stream_name):
 
 
 def create_external_boto_client(service):
-    endpoint_url = f"http://{os.environ['LOCALSTACK_HOSTNAME']}:{os.environ.get('EDGE_PORT', 4566)}"
+    endpoint_url = None
+    if os.environ.get("LOCALSTACK_HOSTNAME"):
+        endpoint_url = (
+            f"http://{os.environ['LOCALSTACK_HOSTNAME']}:{os.environ.get('EDGE_PORT', 4566)}"
+        )
     region_name = (
         os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION") or "us-east-1"
     )

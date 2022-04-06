@@ -257,7 +257,7 @@ def dynamodb_create_table(dynamodb_client):
                     == "ACTIVE"
                 )
 
-            assert poll_condition(wait_for_table_created, timeout=30)
+            poll_condition(wait_for_table_created, timeout=30)
             dynamodb_client.delete_table(TableName=table)
         except Exception as e:
             LOG.debug("error cleaning up table %s: %s", table, e)
@@ -294,8 +294,12 @@ def s3_create_bucket(s3_client):
 
 
 @pytest.fixture
-def s3_bucket(s3_create_bucket) -> str:
-    return s3_create_bucket()
+def s3_bucket(s3_client, s3_create_bucket) -> str:
+    region = s3_client.meta.region_name
+    kwargs = {}
+    if region != "us-east-1":
+        kwargs["CreateBucketConfiguration"] = {"LocationConstraint": region}
+    return s3_create_bucket(**kwargs)
 
 
 @pytest.fixture
@@ -678,6 +682,29 @@ def is_change_set_finished(cfn_client):
     return _is_change_set_finished
 
 
+@pytest.fixture
+def wait_until_lambda_ready(lambda_client):
+    def _wait_until_ready(function_name: str, qualifier: str = None):
+        def _is_not_pending():
+            kwargs = {}
+            if qualifier:
+                kwargs["Qualifier"] = qualifier
+            try:
+                result = (
+                    lambda_client.get_function(FunctionName=function_name)["Configuration"]["State"]
+                    != "Pending"
+                )
+                LOG.debug(f"lambda state result: {result=}")
+                return result
+            except Exception as e:
+                LOG.error(e)
+                raise
+
+        wait_until(_is_not_pending)
+
+    return _wait_until_ready
+
+
 role_assume_policy = """
 {
   "Version": "2012-10-17",
@@ -714,9 +741,10 @@ role_policy = """
 
 
 @pytest.fixture
-def create_lambda_function(lambda_client, iam_client):
+def create_lambda_function(lambda_client, iam_client, wait_until_lambda_ready):
     lambda_arns = []
     role_names = []
+    policy_arns = []
 
     def _create_lambda_function(*args, **kwargs):
         kwargs["client"] = lambda_client
@@ -734,26 +762,14 @@ def create_lambda_function(lambda_client, iam_client):
             policy_arn = iam_client.create_policy(
                 PolicyName=policy_name, PolicyDocument=role_policy
             )["Policy"]["Arn"]
+            policy_arns.append(policy_arn)
             iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
             kwargs["role"] = role["Arn"]
 
         def _create_function():
             resp = testutil.create_lambda_function(func_name, **kwargs)
             lambda_arns.append(resp["CreateFunctionResponse"]["FunctionArn"])
-
-            def _is_not_pending():
-                try:
-                    result = (
-                        lambda_client.get_function(FunctionName=func_name)["Configuration"]["State"]
-                        != "Pending"
-                    )
-                    LOG.debug(f"lambda state result: {result=}")
-                    return result
-                except Exception as e:
-                    LOG.error(e)
-                    raise
-
-            wait_until(_is_not_pending)
+            wait_until_lambda_ready(function_name=func_name)
             return resp
 
         # @AWS, takes about 10s until the role/policy is "active", until then it will fail
@@ -773,6 +789,12 @@ def create_lambda_function(lambda_client, iam_client):
             iam_client.delete_role(RoleName=role_name)
         except Exception:
             LOG.debug(f"Unable to delete role {role_name=} in cleanup")
+
+    for policy_arn in policy_arns:
+        try:
+            iam_client.delete_policy(PolicyArn=policy_arn)
+        except Exception:
+            LOG.debug(f"Unable to delete policy {policy_arn=} in cleanup")
 
 
 @pytest.fixture
