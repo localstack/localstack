@@ -76,11 +76,16 @@ class VelocityUtil(object):
 
     def escapeJavaScript(self, s):
         try:
-            return json.dumps(json.loads(s))
+            result = json.dumps(json.loads(s))
+            # if the input `s` is a string we serialize the already escaped string and remove the
+            # extra quotes.
+            if isinstance(s, str):
+                return json.dumps(result)[1:-1]
+            return result
         except Exception:
             primitive_types = (str, int, bool, float, type(None))
             s = s if isinstance(s, primitive_types) else str(s)
-        if str(s).strip() in ["true", "false"]:
+        if str(s).strip() in {"true", "false"}:
             s = bool(s)
         elif s not in [True, False] and is_number(s):
             s = to_number(s)
