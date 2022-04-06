@@ -4,7 +4,6 @@ import logging
 import os
 import shutil
 import time
-from datetime import datetime
 from io import BytesIO
 
 import pytest
@@ -210,8 +209,38 @@ class TestLambdaAPI:
             lambda_client.delete_function(FunctionName=func_name)
         assert "ResourceNotFoundException" in str(exc)
 
+    @pytest.mark.snapshot
+    def test_add_lambda_permission_aws(
+        self, lambda_client, iam_client, create_lambda_function, snapshot
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        lambda_create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+        )
+        lambda_arn = lambda_create_response["CreateFunctionResponse"]["FunctionArn"]
+        snapshot.assert_match("create_lambda", lambda_create_response)
+        # create lambda permission
+        action = "lambda:InvokeFunction"
+        sid = "s3"
+        principal = "s3.amazonaws.com"
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+        )
+        snapshot.assert_match("add_permission", resp)
+
+        # fetch lambda policy
+        get_policy_result = lambda_client.get_policy(FunctionName=function_name)
+        snapshot.assert_match("get_policy", get_policy_result)
+        assert lambda_arn == json.loads(get_policy_result["Policy"])["Statement"][0]["Resource"]
+
     # TODO permissions cannot be added to $LATEST
-    @only_localstack
+    @pytest.mark.skipif(not is_old_provider(), reason="tests wrong behavior")
     def test_add_lambda_permission(self, lambda_client, iam_client, create_lambda_function):
         function_name = f"lambda_func-{short_uid()}"
         lambda_create_response = create_lambda_function(
@@ -374,8 +403,15 @@ class TestLambdaAPI:
         )
         assert 200 == resp["ResponseMetadata"]["HTTPStatusCode"]
 
+    @pytest.mark.snapshot
     def test_lambda_asynchronous_invocations(
-        self, lambda_client, create_lambda_function, sqs_queue, sqs_queue_arn, lambda_su_role
+        self,
+        lambda_client,
+        create_lambda_function,
+        sqs_queue,
+        sqs_queue_arn,
+        lambda_su_role,
+        snapshot,
     ):
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
@@ -398,11 +434,7 @@ class TestLambdaAPI:
             MaximumEventAgeInSeconds=123,
             DestinationConfig=destination_config,
         )
-
-        # checking for parameter configuration
-        assert 2 == response["MaximumRetryAttempts"]
-        assert 123 == response["MaximumEventAgeInSeconds"]
-        assert destination_config == response["DestinationConfig"]
+        snapshot.assert_match("put_function_event_invoke_config", response)
 
         # over writing event invoke config
         response = lambda_client.put_function_event_invoke_config(
@@ -410,20 +442,14 @@ class TestLambdaAPI:
             MaximumRetryAttempts=2,
             DestinationConfig=destination_config,
         )
-
-        # checking if 'MaximumEventAgeInSeconds' is removed
-        assert "MaximumEventAgeInSeconds" not in response
-        assert isinstance(response["LastModified"], datetime)
+        snapshot.assert_match("put_function_event_invoke_config_overwritemaxeventage", response)
 
         # updating event invoke config
         response = lambda_client.update_function_event_invoke_config(
             FunctionName=function_name,
             MaximumRetryAttempts=1,
         )
-
-        # checking for updated and existing configuration
-        assert 1 == response["MaximumRetryAttempts"]
-        assert destination_config == response["DestinationConfig"]
+        snapshot.assert_match("put_function_event_invoke_config_maxattempt1", response)
 
         # clean up
         lambda_client.delete_function_event_invoke_config(FunctionName=function_name)

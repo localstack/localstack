@@ -1,0 +1,37 @@
+{
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaAsfApi::test_basic_invoke": {
+    "lambda_get_fn": {
+      "Configuration": {
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.9",
+        "Role": "<arn>",
+        "Handler": "index.handler",
+        "CodeSize": 276,
+        "Description": "",
+        "Timeout": 3,
+        "MemorySize": 128,
+        "Version": "$LATEST",
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "State": "Active",
+        "LastUpdateStatus": "Successful",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "Code": {
+        "RepositoryType": "S3"
+      }
+    },
+    "lambda_invoke_result": {
+      "StatusCode": 200,
+      "ExecutedVersion": "$LATEST",
+      "Payload": "{}"
+    }
+  }
+}

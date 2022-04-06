@@ -1,0 +1,82 @@
+{
+  "tests/integration/awslambda/test_lambda.py::TestLambdaAPI::test_add_lambda_permission_aws": {
+    "create_lambda": {
+      "CreateFunctionResponse": {
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.6",
+        "Role": "<arn>",
+        "Handler": "handler.handler",
+        "CodeSize": 264,
+        "Description": "",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "Version": "$LATEST",
+        "Environment": {
+          "Variables": {}
+        },
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "CreateEventSourceMappingResponse": null
+    },
+    "add_permission": {
+      "Statement": "{\"Sid\":\"s3\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"s3.amazonaws.com\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"<arn>\",\"Condition\":{\"ArnLike\":{\"AWS:SourceArn\":\"<arn>\"}}}"
+    },
+    "get_policy": {
+      "Policy": "{\"Version\":\"2012-10-17\",\"Id\":\"default\",\"Statement\":[{\"Sid\":\"s3\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"s3.amazonaws.com\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"<arn>\",\"Condition\":{\"ArnLike\":{\"AWS:SourceArn\":\"<arn>\"}}}]}"
+    }
+  },
+  "tests/integration/awslambda/test_lambda.py::TestLambdaAPI::test_lambda_asynchronous_invocations": {
+    "put_function_event_invoke_config": {
+      "LastModified": "2022-04-06T16:46:20.061000+02:00",
+      "FunctionArn": "<arn>",
+      "MaximumRetryAttempts": 2,
+      "MaximumEventAgeInSeconds": 123,
+      "DestinationConfig": {
+        "OnSuccess": {
+          "Destination": "<arn>"
+        },
+        "OnFailure": {
+          "Destination": "<arn>"
+        }
+      }
+    },
+    "put_function_event_invoke_config_overwritemaxeventage": {
+      "LastModified": "2022-04-06T16:46:20.061000+02:00",
+      "FunctionArn": "<arn>",
+      "MaximumRetryAttempts": 2,
+      "DestinationConfig": {
+        "OnSuccess": {
+          "Destination": "<arn>"
+        },
+        "OnFailure": {
+          "Destination": "<arn>"
+        }
+      }
+    },
+    "put_function_event_invoke_config_maxattempt1": {
+      "LastModified": "2022-04-06T16:46:20.061000+02:00",
+      "FunctionArn": "<arn>",
+      "MaximumRetryAttempts": 1,
+      "DestinationConfig": {
+        "OnSuccess": {
+          "Destination": "<arn>"
+        },
+        "OnFailure": {
+          "Destination": "<arn>"
+        }
+      }
+    }
+  }
+}
