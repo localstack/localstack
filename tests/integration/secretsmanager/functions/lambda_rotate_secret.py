@@ -49,7 +49,10 @@ def handler(event, context):
     edge_port = os.environ.get("EDGE_PORT") or 4566
     protocol = "https" if os.environ.get("USE_SSL") else "http"
     endpoint_url = f"{protocol}://{os.environ['LOCALSTACK_HOSTNAME']}:{edge_port}"
-    service_client = boto3.client("secretsmanager", endpoint_url=endpoint_url, verify=False)
+    region = os.environ["AWS_REGION"]
+    service_client = boto3.client(
+        "secretsmanager", endpoint_url=endpoint_url, verify=False, region_name=region
+    )
 
     arn = event["SecretId"]
     token = event["ClientRequestToken"]
