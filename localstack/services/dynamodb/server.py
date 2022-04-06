@@ -14,6 +14,7 @@ from localstack.utils.sync import retry
 LOG = logging.getLogger(__name__)
 
 # server singleton
+# TODO: consider removing this module-level singleton, and instead making the DynamodDB server part of the provider
 _server: Optional["DynamodbServer"] = None
 
 

@@ -13,8 +13,7 @@ from werkzeug.datastructures import Headers
 from localstack import config
 from localstack.aws.api.core import (
     CommonServiceException,
-    HttpRequest,
-    HttpResponse,
+    Request,
     RequestContext,
     ServiceRequest,
     ServiceRequestHandler,
@@ -26,12 +25,10 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_bytes, to_str
 
 HttpBackendResponse = Tuple[int, dict, Union[str, bytes]]
-ServiceRequestOrMapping = Union[Mapping[str, Any], ServiceRequest]
-RequestForwarder = Callable[[RequestContext, Optional[ServiceRequestOrMapping]], HttpResponse]
 
 
 def ForwardingFallbackDispatcher(
-    provider: object, request_forwarder: RequestForwarder
+    provider: object, request_forwarder: ServiceRequestHandler
 ) -> DispatchTable:
     """
     Wraps a provider with a request forwarder. It does by creating a new DispatchTable from the original
@@ -51,7 +48,7 @@ def ForwardingFallbackDispatcher(
 
 
 def _wrap_with_fallthrough(
-    handler: ServiceRequestHandler, request_forwarder: RequestForwarder
+    handler: ServiceRequestHandler, fallthrough_handler: ServiceRequestHandler
 ) -> ServiceRequestHandler:
     def _call(context, req) -> ServiceResponse:
         try:
@@ -59,17 +56,17 @@ def _wrap_with_fallthrough(
             # implemented, we try to fall back to forwarding the request to the backend
             return handler(context, req)
         except NotImplementedError:
-            return request_forwarder(context)
+            return fallthrough_handler(context, req)
 
     return _call
 
 
-def ExternalProcessFallbackDispatcher(provider: object, forward_url_getter: Callable[[], str]):
+def HttpFallbackDispatcher(provider: object, forward_url_getter: Callable[[], str]):
     return ForwardingFallbackDispatcher(provider, get_request_forwarder_http(forward_url_getter))
 
 
-def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> RequestForwarder:
-    def _forward_request(context, service_request: ServiceRequestOrMapping = None):
+def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> ServiceRequestHandler:
+    def _forward_request(context, service_request: ServiceRequest = None) -> ServiceResponse:
         if service_request is not None:
             local_context = create_aws_request_context(
                 service_name=context.service.service_name,
@@ -84,7 +81,9 @@ def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> Request
     return _forward_request
 
 
-def forward_request(context: RequestContext, forward_url_getter: Callable[[], str]):
+def forward_request(
+    context: RequestContext, forward_url_getter: Callable[[], str]
+) -> ServiceResponse:
     def _call_http_backend(context: RequestContext) -> HttpBackendResponse:
         return call_http_backend(context, forward_url=forward_url_getter())
 
@@ -194,7 +193,7 @@ def create_aws_request_context(
     return context
 
 
-def create_http_request(aws_request: AWSPreparedRequest) -> HttpRequest:
+def create_http_request(aws_request: AWSPreparedRequest) -> Request:
     # create HttpRequest from AWSRequest
     split_url = urlsplit(aws_request.url)
     host = split_url.netloc.split(":")
@@ -210,7 +209,7 @@ def create_http_request(aws_request: AWSPreparedRequest) -> HttpRequest:
     for k, v in aws_request.headers.items():
         headers[k] = v
 
-    return HttpRequest(
+    return Request(
         method=aws_request.method,
         path=split_url.path,
         query_string=split_url.query,

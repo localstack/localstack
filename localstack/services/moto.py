@@ -18,15 +18,15 @@ from localstack.aws.api import (
     HttpRequest,
     HttpResponse,
     RequestContext,
+    ServiceRequest,
     ServiceResponse,
 )
-from localstack.aws.skeleton import DispatchTable
-from localstack.services.forwarder import (
+from localstack.aws.forwarder import (
     ForwardingFallbackDispatcher,
     HttpBackendResponse,
-    ServiceRequestOrMapping,
     create_aws_request_context,
 )
+from localstack.aws.skeleton import DispatchTable
 from localstack.utils.strings import to_bytes
 
 MotoResponse = HttpBackendResponse
@@ -73,7 +73,7 @@ def call_moto(context: RequestContext, include_response_metadata=False) -> Servi
 
 
 def call_moto_with_request(
-    context: RequestContext, service_request: ServiceRequestOrMapping
+    context: RequestContext, service_request: ServiceRequest
 ) -> ServiceResponse:
     """
     Like `call_moto`, but you can pass a modified version of the service request before calling moto. The caveat is
@@ -96,12 +96,13 @@ def call_moto_with_request(
     return call_moto(local_context)
 
 
-def proxy_moto(context: RequestContext) -> HttpResponse:
+def proxy_moto(context: RequestContext, service_request: ServiceRequest = None) -> HttpResponse:
     """
     Similar to ``call``, only that ``proxy`` does not parse the HTTP response into a ServiceResponse, but instead
     returns directly the HTTP response. This can be useful to pass through moto's response directly to the client.
 
     :param context: the request context
+    :param service_request: currently not being used, added to satisfy ServiceRequestHandler contract
     :return: the HttpResponse from moto
     """
     status, headers, content = dispatch_to_moto(context)

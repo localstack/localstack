@@ -8,9 +8,16 @@ import traceback
 from typing import Dict, List
 
 import requests
+import werkzeug
 
 from localstack import config, constants
-from localstack.aws.api import CommonServiceException, RequestContext, handler
+from localstack.aws.api import (
+    CommonServiceException,
+    RequestContext,
+    ServiceRequest,
+    ServiceResponse,
+    handler,
+)
 from localstack.aws.api.dynamodb import (
     BatchWriteItemInput,
     BatchWriteItemOutput,
@@ -65,8 +72,10 @@ from localstack.aws.api.dynamodb import (
     UpdateTableOutput,
     UpdateTimeToLiveOutput,
 )
+from localstack.aws.forwarder import HttpFallbackDispatcher, get_request_forwarder_http
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import LOCALHOST
+from localstack.http import Response
 from localstack.services.awslambda import lambda_api
 from localstack.services.dynamodb import server
 from localstack.services.dynamodb.server import start_dynamodb, wait_for_dynamodb
@@ -78,15 +87,11 @@ from localstack.services.dynamodb.utils import (
     extract_table_name_from_partiql_update,
 )
 from localstack.services.dynamodbstreams import dynamodbstreams_api
-from localstack.services.forwarder import (
-    ExternalProcessFallbackDispatcher,
-    ServiceRequestOrMapping,
-    get_request_forwarder_http,
-)
+from localstack.services.edge import ROUTER
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import event_publisher
-from localstack.utils.aws import aws_responses, aws_stack
+from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
@@ -287,15 +292,9 @@ class DynamoDBApiListener(AwsApiListener):
     def __init__(self, provider=None):
         provider = provider or DynamoDBProvider()
         self.provider = provider
-        super().__init__(
-            "dynamodb", ExternalProcessFallbackDispatcher(provider, provider.get_forward_url)
-        )
+        super().__init__("dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url))
 
     def forward_request(self, method, path, data, headers):
-        result = self.provider.handle_special_request(method, path, data, headers)
-        if result is not None:
-            return result
-
         action = headers.get("X-Amz-Target", "")
         action = action.replace(ACTION_PREFIX, "")
         if self.provider.should_throttle(action):
@@ -308,9 +307,6 @@ class DynamoDBApiListener(AwsApiListener):
         return super().forward_request(method, path, data, headers)
 
     def return_response(self, method, path, data, headers, response):
-        if path.startswith("/shell") or method == "GET":
-            return
-
         if response._content:
             # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
             content_replaced = re.sub(
@@ -335,14 +331,25 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def __init__(self):
         self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
 
+    def on_after_init(self):
+        ROUTER.add(
+            path="/shell",
+            endpoint=self.handle_shell_ui_redirect,
+            methods=["GET"],
+        )
+        ROUTER.add(
+            path="/shell/<regex('.*'):req_path>",
+            endpoint=self.handle_shell_ui_request,
+        )
+
     def forward_request(
-        self, context: RequestContext, service_request: ServiceRequestOrMapping = None
-    ):
+        self, context: RequestContext, service_request: ServiceRequest = None
+    ) -> ServiceResponse:
         # note: modifying headers in-place here before forwarding the request
         self.prepare_request_headers(context.request.headers)
-        return self.request_forwarder(context, service_request=service_request)
+        return self.request_forwarder(context, service_request)
 
-    def get_forward_url(self):
+    def get_forward_url(self) -> str:
         """Return the URL of the backend DynamoDBLocal server to forward requests to"""
         return f"http://{LOCALHOST}:{server.get_server().port}"
 
@@ -350,18 +357,17 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         start_dynamodb()
         wait_for_dynamodb()
 
-    def handle_special_request(self, method, path, data, headers):
-        if path.startswith("/shell") or method == "GET":
-            if path == "/shell":
-                headers = {"Refresh": f"0; url={config.service_url('dynamodb')}/shell/"}
-                return aws_responses.requests_response("", headers=headers)
-            if path.startswith("/shell"):
-                url = f"{self.get_forward_url()}{path}"
-                return requests.request(method=method, url=url, headers=headers, data=data)
-            return True
+    def handle_shell_ui_redirect(self, request: werkzeug.Request) -> Response:
+        headers = {"Refresh": f"0; url={config.service_url('dynamodb')}/shell/index.html"}
+        return Response("", headers=headers)
 
-        if method == "OPTIONS":
-            return 200
+    def handle_shell_ui_request(self, request: werkzeug.Request, req_path: str) -> Response:
+        req_path = f"/{req_path}" if not req_path.startswith("/") else req_path
+        url = f"{self.get_forward_url()}/shell{req_path}"
+        result = requests.request(
+            method=request.method, url=url, headers=request.headers, data=request.data
+        )
+        return Response(result.content, headers=dict(result.headers), status=result.status_code)
 
     @handler("CreateTable", expand=False)
     def create_table(
@@ -460,8 +466,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         try:
             # forward request to backend
             result = self.forward_request(context)
-        except Exception as e:
-            if "Nothing to update" in str(e) and update_table_input.get("ReplicaUpdates"):
+        except CommonServiceException as e:
+            is_no_update_error = (
+                e.code == "ValidationException" and "Nothing to update" in e.message
+            )
+            if is_no_update_error and update_table_input.get("ReplicaUpdates"):
                 table_name = update_table_input.get("TableName")
                 # update local table props (replicas)
                 table_properties = DynamoDBRegion.get().table_properties
