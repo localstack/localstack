@@ -1179,7 +1179,7 @@ class TestAPIGateway(unittest.TestCase):
         }
 
         # create state machine
-        fn_name = "test-stepfunctions-apigw"
+        fn_name = "test-stepfunctions-apigw-%s" % short_uid()
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=fn_name,
