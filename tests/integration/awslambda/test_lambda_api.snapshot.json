@@ -32,6 +32,30 @@
       "StatusCode": 200,
       "ExecutedVersion": "$LATEST",
       "Payload": "{}"
+    },
+    "lambda_create_fn": {
+      "FunctionArn": "<arn>",
+      "Runtime": "python3.9",
+      "Role": "<arn>",
+      "Handler": "index.handler",
+      "CodeSize": 276,
+      "Description": "",
+      "Timeout": 3,
+      "MemorySize": 128,
+      "Version": "$LATEST",
+      "TracingConfig": {
+        "Mode": "PassThrough"
+      },
+      "State": "Pending",
+      "StateReason": "The function is being created.",
+      "StateReasonCode": "Creating",
+      "PackageType": "Zip",
+      "Architectures": [
+        "x86_64"
+      ],
+      "EphemeralStorage": {
+        "Size": 512
+      }
     }
   }
 }

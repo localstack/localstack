@@ -85,7 +85,7 @@ class TestLambdaAsfApi:
     ):
         fn_name = f"ls-fn-{short_uid()}"
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
-            create_lambda_function_aws(
+            response = create_lambda_function_aws(
                 FunctionName=fn_name,
                 Handler="index.handler",
                 Code={"ZipFile": f.read()},
@@ -93,6 +93,7 @@ class TestLambdaAsfApi:
                 Role=lambda_su_role,
                 Runtime="python3.9",
             )
+            snapshot.assert_match("lambda_create_fn", response)
 
         get_fn_result = lambda_client.get_function(FunctionName=fn_name)
         snapshot.assert_match("lambda_get_fn", get_fn_result)
