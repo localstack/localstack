@@ -668,7 +668,8 @@ class TestAPIGateway(unittest.TestCase):
 
     def test_apigateway_with_custom_authorization_method(self):
         apigw_client = aws_stack.create_external_boto_client("apigateway")
-
+        test_port = get_free_tcp_port()
+        proxy = self.start_http_backend(test_port)
         # create Lambda function
         lambda_name = f"apigw-lambda-{short_uid()}"
         self.create_lambda_function(lambda_name)
@@ -720,7 +721,6 @@ class TestAPIGateway(unittest.TestCase):
             integrationHttpMethod="POST",
         )
 
-        self.start_http_backend(6667)
         # call endpoint without authorization
         url = path_based_url(api_id=api_id, stage_name="local", path="/")
         response = requests.POST(
@@ -736,6 +736,7 @@ class TestAPIGateway(unittest.TestCase):
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=lambda_name)
         apigw_client.delete_rest_api(restApiId=api_id)
+        proxy.stop()
 
     def test_create_model(self):
         client = aws_stack.create_external_boto_client("apigateway")
