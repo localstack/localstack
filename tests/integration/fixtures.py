@@ -26,7 +26,8 @@ if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudwatch import CloudWatchClient
-    from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
+    from mypy_boto3_dynamodbstreams import DynamoDBStreamsClient
     from mypy_boto3_ec2 import EC2Client
     from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
@@ -68,9 +69,33 @@ def _client(service):
     return aws_stack.create_external_boto_client(service, config=config)
 
 
+def _resource(service):
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.resource(service)
+    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
+    config = (
+        botocore.config.Config(
+            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+        )
+        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
+        else None
+    )
+    return aws_stack.connect_to_resource_external(service, config=config)
+
+
 @pytest.fixture(scope="class")
 def dynamodb_client() -> "DynamoDBClient":
     return _client("dynamodb")
+
+
+@pytest.fixture(scope="class")
+def dynamodb_resource() -> "DynamoDBServiceResource":
+    return _resource("dynamodb")
+
+
+@pytest.fixture(scope="class")
+def dynamodbstreams_client() -> "DynamoDBStreamsClient":
+    return _client("dynamodbstreams")
 
 
 @pytest.fixture(scope="class")
@@ -225,6 +250,14 @@ def dynamodb_create_table(dynamodb_client):
     # cleanup
     for table in tables:
         try:
+            # table has to be in ACTIVE state before deletion
+            def wait_for_table_created():
+                return (
+                    dynamodb_client.describe_table(TableName=table)["Table"]["TableStatus"]
+                    == "ACTIVE"
+                )
+
+            poll_condition(wait_for_table_created, timeout=30)
             dynamodb_client.delete_table(TableName=table)
         except Exception as e:
             LOG.debug("error cleaning up table %s: %s", table, e)
@@ -261,8 +294,12 @@ def s3_create_bucket(s3_client):
 
 
 @pytest.fixture
-def s3_bucket(s3_create_bucket) -> str:
-    return s3_create_bucket()
+def s3_bucket(s3_client, s3_create_bucket) -> str:
+    region = s3_client.meta.region_name
+    kwargs = {}
+    if region != "us-east-1":
+        kwargs["CreateBucketConfiguration"] = {"LocationConstraint": region}
+    return s3_create_bucket(**kwargs)
 
 
 @pytest.fixture
@@ -374,6 +411,21 @@ def kinesis_create_stream(kinesis_client):
             kinesis_client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
         except Exception as e:
             LOG.debug("error cleaning up kinesis stream %s: %s", stream_name, e)
+
+
+@pytest.fixture
+def wait_for_stream_ready(kinesis_client):
+    def _wait_for_stream_ready(stream_name: str):
+        def is_stream_ready():
+            describe_stream_response = kinesis_client.describe_stream(StreamName=stream_name)
+            return describe_stream_response["StreamDescription"]["StreamStatus"] in [
+                "ACTIVE",
+                "UPDATING",
+            ]
+
+        poll_condition(is_stream_ready)
+
+    return _wait_for_stream_ready
 
 
 @pytest.fixture
@@ -630,6 +682,29 @@ def is_change_set_finished(cfn_client):
     return _is_change_set_finished
 
 
+@pytest.fixture
+def wait_until_lambda_ready(lambda_client):
+    def _wait_until_ready(function_name: str, qualifier: str = None):
+        def _is_not_pending():
+            kwargs = {}
+            if qualifier:
+                kwargs["Qualifier"] = qualifier
+            try:
+                result = (
+                    lambda_client.get_function(FunctionName=function_name)["Configuration"]["State"]
+                    != "Pending"
+                )
+                LOG.debug(f"lambda state result: {result=}")
+                return result
+            except Exception as e:
+                LOG.error(e)
+                raise
+
+        wait_until(_is_not_pending)
+
+    return _wait_until_ready
+
+
 role_assume_policy = """
 {
   "Version": "2012-10-17",
@@ -666,9 +741,10 @@ role_policy = """
 
 
 @pytest.fixture
-def create_lambda_function(lambda_client, iam_client):
+def create_lambda_function(lambda_client, iam_client, wait_until_lambda_ready):
     lambda_arns = []
     role_names = []
+    policy_arns = []
 
     def _create_lambda_function(*args, **kwargs):
         kwargs["client"] = lambda_client
@@ -686,26 +762,14 @@ def create_lambda_function(lambda_client, iam_client):
             policy_arn = iam_client.create_policy(
                 PolicyName=policy_name, PolicyDocument=role_policy
             )["Policy"]["Arn"]
+            policy_arns.append(policy_arn)
             iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
             kwargs["role"] = role["Arn"]
 
         def _create_function():
             resp = testutil.create_lambda_function(func_name, **kwargs)
             lambda_arns.append(resp["CreateFunctionResponse"]["FunctionArn"])
-
-            def _is_not_pending():
-                try:
-                    result = (
-                        lambda_client.get_function(FunctionName=func_name)["Configuration"]["State"]
-                        != "Pending"
-                    )
-                    LOG.debug(f"lambda state result: {result=}")
-                    return result
-                except Exception as e:
-                    LOG.error(e)
-                    raise
-
-            wait_until(_is_not_pending)
+            wait_until_lambda_ready(function_name=func_name)
             return resp
 
         # @AWS, takes about 10s until the role/policy is "active", until then it will fail
@@ -725,6 +789,12 @@ def create_lambda_function(lambda_client, iam_client):
             iam_client.delete_role(RoleName=role_name)
         except Exception:
             LOG.debug(f"Unable to delete role {role_name=} in cleanup")
+
+    for policy_arn in policy_arns:
+        try:
+            iam_client.delete_policy(PolicyArn=policy_arn)
+        except Exception:
+            LOG.debug(f"Unable to delete policy {policy_arn=} in cleanup")
 
 
 @pytest.fixture

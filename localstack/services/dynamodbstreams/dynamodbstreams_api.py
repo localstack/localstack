@@ -45,7 +45,7 @@ def add_dynamodb_stream(
             ),
             "TableName": table_name,
             "StreamLabel": latest_stream_label,
-            "StreamStatus": "ENABLED",
+            "StreamStatus": "ENABLING",
             "KeySchema": [],
             "Shards": [],
             "StreamViewType": view_type,
