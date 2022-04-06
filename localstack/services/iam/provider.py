@@ -53,6 +53,31 @@ from localstack.utils.strings import short_uid
 
 SERVICE_LINKED_ROLE_PATH_PREFIX = "/aws-service-role"
 
+ADDITIONAL_MANAGED_POLICIES = {
+    "AWSLambdaExecute": {
+        "Arn": "arn:aws:iam::aws:policy/AWSLambdaExecute",
+        "Path": "/",
+        "CreateDate": "2017-10-20T17:23:10+00:00",
+        "DefaultVersionId": "v4",
+        "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["logs:*"],
+                    "Resource": "arn:aws:logs:*:*:*",
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": ["s3:GetObject", "s3:PutObject"],
+                    "Resource": "arn:aws:s3:::*",
+                },
+            ],
+        },
+        "UpdateDate": "2019-05-20T18:22:18+00:00",
+    }
+}
+
 
 class IamProvider(IamApi):
     def __init__(self):
@@ -192,31 +217,6 @@ class IamProvider(IamApi):
 
 
 def apply_patches():
-    additional_managed_policies = {
-        "AWSLambdaExecute": {
-            "Arn": "arn:aws:iam::aws:policy/AWSLambdaExecute",
-            "Path": "/",
-            "CreateDate": "2017-10-20T17:23:10+00:00",
-            "DefaultVersionId": "v4",
-            "Document": {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": ["logs:*"],
-                        "Resource": "arn:aws:logs:*:*:*",
-                    },
-                    {
-                        "Effect": "Allow",
-                        "Action": ["s3:GetObject", "s3:PutObject"],
-                        "Resource": "arn:aws:s3:::*",
-                    },
-                ],
-            },
-            "UpdateDate": "2019-05-20T18:22:18+00:00",
-        }
-    }
-
     class AWSManagedPolicyUSGov(AWSManagedPolicy):
         # Fix missing regions in managed policies (e.g., aws-us-gov). Note: make sure to keep at global scope here
         # TODO: possibly find a more efficient way for this - e.g., lazy loading of policies in special regions
@@ -227,7 +227,7 @@ def apply_patches():
 
     # Add missing managed polices
     aws_managed_policies.extend(
-        [AWSManagedPolicy.from_data(k, v) for k, v in additional_managed_policies.items()]
+        [AWSManagedPolicy.from_data(k, v) for k, v in ADDITIONAL_MANAGED_POLICIES.items()]
     )
 
     if "Principal" not in VALID_STATEMENT_ELEMENTS:
