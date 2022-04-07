@@ -82,7 +82,7 @@ import logging
 from abc import ABC
 from datetime import datetime
 from email.utils import formatdate
-from typing import Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
 from boto.utils import ISO8601
@@ -446,7 +446,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         real_root = list(pseudo_root)[0]
         return real_root
 
-    def _serialize(self, shape: Shape, params: any, xmlnode: ETree.Element, name: str) -> None:
+    def _serialize(self, shape: Shape, params: Any, xmlnode: ETree.Element, name: str) -> None:
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
         if shape is None:
             return
@@ -729,7 +729,7 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
             actual_key = prefix + key
             response.headers[actual_key] = val
 
-    def _serialize_header_value(self, shape: Shape, value: any):
+    def _serialize_header_value(self, shape: Shape, value: Any):
         """Serializes a value for the location trait "header"."""
         if shape.type_name == "timestamp":
             datetime_obj = parse_to_aware_datetime(value)
@@ -979,7 +979,7 @@ class JSONResponseSerializer(ResponseSerializer):
             self._serialize(body, params, shape)
         return json.dumps(body)
 
-    def _serialize(self, body: dict, value: any, shape, key: Optional[str] = None):
+    def _serialize(self, body: dict, value: Any, shape, key: Optional[str] = None):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
         method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
         method(body, value, shape, key)
@@ -1040,10 +1040,10 @@ class JSONResponseSerializer(ResponseSerializer):
                 self._serialize(wrapper, list_item, shape.member, "__current__")
                 list_obj.append(wrapper["__current__"])
 
-    def _default_serialize(self, body: dict, value: any, _, key: str):
+    def _default_serialize(self, body: dict, value: Any, _, key: str):
         body[key] = value
 
-    def _serialize_type_timestamp(self, body: dict, value: any, shape: Shape, key: str):
+    def _serialize_type_timestamp(self, body: dict, value: Any, shape: Shape, key: str):
         body[key] = self._convert_timestamp_to_str(
             value, shape.serialization.get("timestampFormat")
         )
