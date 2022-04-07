@@ -799,27 +799,34 @@ class TestDynamoDB:
                 ReturnConsumedCapacity="INDEXES",
             )
 
-        records = ddbstreams.get_records(ShardIterator=iterator_id)
-        assert records["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert len(records["Records"]) == 2
-        assert isinstance(
-            records["Records"][0]["dynamodb"]["ApproximateCreationDateTime"],
-            datetime,
-        )
-        assert records["Records"][0]["dynamodb"]["ApproximateCreationDateTime"].microsecond == 0
-        assert records["Records"][0]["eventVersion"] == "1.1"
-        assert records["Records"][0]["eventName"] == "INSERT"
-        assert "OldImage" not in records["Records"][0]["dynamodb"]
-        assert int(records["Records"][0]["dynamodb"]["SequenceNumber"]) > starting_sequence_number
-        assert isinstance(
-            records["Records"][1]["dynamodb"]["ApproximateCreationDateTime"],
-            datetime,
-        )
-        assert records["Records"][1]["dynamodb"]["ApproximateCreationDateTime"].microsecond == 0
-        assert records["Records"][1]["eventVersion"] == "1.1"
-        assert records["Records"][1]["eventName"] == "MODIFY"
-        assert "OldImage" in records["Records"][1]["dynamodb"]
-        assert int(records["Records"][1]["dynamodb"]["SequenceNumber"]) > starting_sequence_number
+        def check_expected_records():
+            records = ddbstreams.get_records(ShardIterator=iterator_id)
+            assert records["ResponseMetadata"]["HTTPStatusCode"] == 200
+            assert len(records["Records"]) == 2
+            assert isinstance(
+                records["Records"][0]["dynamodb"]["ApproximateCreationDateTime"],
+                datetime,
+            )
+            assert records["Records"][0]["dynamodb"]["ApproximateCreationDateTime"].microsecond == 0
+            assert records["Records"][0]["eventVersion"] == "1.1"
+            assert records["Records"][0]["eventName"] == "INSERT"
+            assert "OldImage" not in records["Records"][0]["dynamodb"]
+            assert (
+                int(records["Records"][0]["dynamodb"]["SequenceNumber"]) > starting_sequence_number
+            )
+            assert isinstance(
+                records["Records"][1]["dynamodb"]["ApproximateCreationDateTime"],
+                datetime,
+            )
+            assert records["Records"][1]["dynamodb"]["ApproximateCreationDateTime"].microsecond == 0
+            assert records["Records"][1]["eventVersion"] == "1.1"
+            assert records["Records"][1]["eventName"] == "MODIFY"
+            assert "OldImage" in records["Records"][1]["dynamodb"]
+            assert (
+                int(records["Records"][1]["dynamodb"]["SequenceNumber"]) > starting_sequence_number
+            )
+
+        retry(check_expected_records, retries=5, sleep=1)
 
         dynamodb_client.delete_table(TableName=table_name)
 
