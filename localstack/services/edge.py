@@ -267,22 +267,27 @@ def do_forward_request_inmem(api, method, path, data, headers, port=None):
 
 def do_forward_request_network(port, method, path, data, headers, target_url=None):
     # TODO: enable per-service endpoints, to allow deploying in distributed settings
-    target_url = target_url or "%s://%s:%s" % (config.get_protocol(), LOCALHOST, port)
-    url = "%s%s" % (target_url, path)
-    response = requests.request(
-        method, url, data=data, headers=headers, verify=False, stream=True, allow_redirects=False
+    target_url = target_url or f"{config.get_protocol()}://{LOCALHOST}:{port}"
+    url = f"{target_url}{path}"
+    return requests.request(
+        method,
+        url,
+        data=data,
+        headers=headers,
+        verify=False,
+        stream=True,
+        allow_redirects=False,
     )
-    return response
 
 
 def get_auth_string(method, path, headers, data=None):
     """
     Get Auth header from Header (this is how aws client's like boto typically
-    provide it) or from query string or url encoded parameters (sometimes
-    happens with presigned requests. Always return in the Authorization Header
+    provide it) or from query string or url encoded parameters sometimes
+    happens with presigned requests. Always return to the Authorization Header
     form.
 
-    Typically an auth string comes in as a header:
+    Typically, an auth string comes in as a header:
 
         Authorization: AWS4-HMAC-SHA256 \
         Credential=_not_needed_locally_/20210312/us-east-1/sqs/aws4_request, \
@@ -297,9 +302,7 @@ def get_auth_string(method, path, headers, data=None):
        &X-Amz-Signature=2c652c7bc9a3b75579db3d987d1e6dd056f0ac776c1e1d4ec91e2ce84e5ad3ae
     """
 
-    auth_header = headers.get("authorization", "")
-
-    if auth_header:
+    if auth_header := headers.get("authorization", ""):
         return auth_header
 
     data_components = parse_request_data(method, path, data)
