@@ -7,7 +7,7 @@ import pytest
 from botocore.parsers import ResponseParser, create_parser
 from dateutil.tz import tzlocal, tzutc
 
-from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
+from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.protocol.serializer import (
     ProtocolSerializerError,
     QueryResponseSerializer,
@@ -15,6 +15,7 @@ from localstack.aws.protocol.serializer import (
     create_serializer,
 )
 from localstack.aws.spec import load_service
+from localstack.http.response import Response
 from localstack.utils.common import to_str
 
 _skip_assert = {}
@@ -539,7 +540,7 @@ def test_json_protocol_content_type_1_0():
     """AppRunner defines the jsonVersion 1.0, therefore the Content-Type needs to be application/x-amz-json-1.0."""
     service = load_service("apprunner")
     response_serializer = create_serializer(service)
-    result: HttpResponse = response_serializer.serialize_to_response(
+    result: Response = response_serializer.serialize_to_response(
         {}, service.operation_model("DeleteConnection")
     )
     assert result is not None
@@ -551,7 +552,7 @@ def test_json_protocol_content_type_1_1():
     """Logs defines the jsonVersion 1.1, therefore the Content-Type needs to be application/x-amz-json-1.1."""
     service = load_service("logs")
     response_serializer = create_serializer(service)
-    result: HttpResponse = response_serializer.serialize_to_response(
+    result: Response = response_serializer.serialize_to_response(
         {}, service.operation_model("DeleteLogGroup")
     )
     assert result is not None

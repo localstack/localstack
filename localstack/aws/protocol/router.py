@@ -35,7 +35,7 @@ class _RequiredArgsRule:
         self.required_header_args = required_header_args or []
         self.match_score = 1 + len(self.required_query_args) + len(self.required_header_args)
 
-    def matches(self, query_args: "MultiDict[str, str]", headers: Headers) -> bool:
+    def matches(self, query_args: MultiDict, headers: Headers) -> bool:
         """
         Returns true if the given query args and the given headers of a request match the required query args and
         headers of this rule.
@@ -63,6 +63,8 @@ class _RequiredArgsRule:
 
 
 class _HttpOperation(NamedTuple):
+    """Useful intermediary representation of the 'http' block of an operation to make code cleaner"""
+
     operation: OperationModel
     path: str
     method: str
@@ -71,7 +73,6 @@ class _HttpOperation(NamedTuple):
 
     @staticmethod
     def from_operation(op: OperationModel) -> "_HttpOperation":
-        """Useful intermediary representation of the 'http' block of an operation to make code cleaner"""
         uri = op.http.get("requestUri")
         method = op.http.get("method")
 
@@ -131,13 +132,10 @@ class _RequestMatchingRule(Rule):
         :return: matching fine-grained rule
         :raises: NotFound if none of the fine-grained rules matches
         """
-        try:
-            # return the first matching rule or raise a NotFound error if no rule matches
-            return next(
-                filter(lambda rule: rule.matches(request.args, request.headers), self.rules)
-            )
-        except StopIteration:
-            raise NotFound()
+        for rule in self.rules:
+            if rule.matches(request.args, request.headers):
+                return rule
+        raise NotFound()
 
 
 # Regex to find path parameters which should be greedy according to the spec

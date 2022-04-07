@@ -110,7 +110,7 @@ def _text_content(func):
         request: HttpRequest,
         shape: Shape,
         node_or_string: Union[ETree.Element, str],
-        uri_params: Mapping[str, any] = None,
+        uri_params: Mapping[str, Any] = None,
     ):
         if hasattr(node_or_string, "text"):
             text = node_or_string.text
@@ -216,8 +216,8 @@ class RequestParser(abc.ABC):
         raise NotImplementedError
 
     def _parse_shape(
-        self, request: HttpRequest, shape: Shape, node: any, uri_params: Mapping[str, any] = None
-    ) -> any:
+        self, request: HttpRequest, shape: Shape, node: Any, uri_params: Mapping[str, Any] = None
+    ) -> Any:
         """
         Main parsing method which dynamically calls the parsing function for the specific shape.
 
@@ -266,7 +266,7 @@ class RequestParser(abc.ABC):
         request: HttpRequest,
         shape: ListShape,
         node: list,
-        uri_params: Mapping[str, any] = None,
+        uri_params: Mapping[str, Any] = None,
     ):
         parsed = []
         member_shape = shape.member
@@ -303,7 +303,7 @@ class RequestParser(abc.ABC):
         raise ValueError("cannot parse boolean value %s" % node)
 
     @_text_content
-    def _noop_parser(self, _, __, node: any, ___):
+    def _noop_parser(self, _, __, node: Any, ___):
         return node
 
     _parse_character = _parse_string = _noop_parser
@@ -390,7 +390,7 @@ class QueryRequestParser(RequestParser):
         member_name: str,
         member_shape: Shape,
         node: dict,
-        uri_params: Mapping[str, any] = None,
+        uri_params: Mapping[str, Any] = None,
     ):
         if isinstance(member_shape, (MapShape, ListShape, StructureShape)):
             # If we have a complex type, we filter the node and change it's keys to craft a new "context" for the
@@ -411,7 +411,7 @@ class QueryRequestParser(RequestParser):
         request: HttpRequest,
         shape: StructureShape,
         node: dict,
-        uri_params: Mapping[str, any] = None,
+        uri_params: Mapping[str, Any] = None,
     ) -> dict:
         result = {}
 
@@ -430,7 +430,7 @@ class QueryRequestParser(RequestParser):
         return result if len(result) > 0 else None
 
     def _parse_map(
-        self, request: HttpRequest, shape: MapShape, node: dict, uri_params: Mapping[str, any]
+        self, request: HttpRequest, shape: MapShape, node: dict, uri_params: Mapping[str, Any]
     ) -> dict:
         """
         This is what the node looks like for a flattened map::
@@ -481,7 +481,7 @@ class QueryRequestParser(RequestParser):
         request: HttpRequest,
         shape: ListShape,
         node: dict,
-        uri_params: Mapping[str, any] = None,
+        uri_params: Mapping[str, Any] = None,
     ) -> list:
         """
         Some actions take lists of parameters. These lists are specified using the param.[member.]n notation.
@@ -518,7 +518,7 @@ class QueryRequestParser(RequestParser):
         return [r[1] for r in sorted(result)] if len(result) > 0 else None
 
     @staticmethod
-    def _get_first(node: any) -> any:
+    def _get_first(node: Any) -> Any:
         if isinstance(node, (list, tuple)):
             return node[0]
         return node
@@ -600,7 +600,7 @@ class BaseRestRequestParser(RequestParser):
         request: HttpRequest,
         shape: Shape,
         member_shapes: Dict[str, Shape],
-        uri_params: Mapping[str, any],
+        uri_params: Mapping[str, Any],
         final_parsed: dict,
     ) -> None:
         """Parses all attributes which are located in the payload / body of the incoming request."""
@@ -639,7 +639,7 @@ class BaseRestRequestParser(RequestParser):
         final_parsed.update(non_payload_parsed)
         final_parsed.update(payload_parsed)
 
-    def _initial_body_parse(self, request: HttpRequest) -> any:
+    def _initial_body_parse(self, request: HttpRequest) -> Any:
         """
         This method executes the initial parsing of the body (XML, JSON, or CBOR).
         The parsed body will afterwards still be walked through and the nodes will be converted to the appropriate
@@ -650,7 +650,7 @@ class BaseRestRequestParser(RequestParser):
         """
         raise NotImplementedError("_initial_body_parse")
 
-    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> any:
+    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> Any:
         # TODO handle event streams
         raise NotImplementedError("_create_event_stream")
 
@@ -679,7 +679,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         request: HttpRequest,
         shape: StructureShape,
         node: ETree.Element,
-        uri_params: Mapping[str, any] = None,
+        uri_params: Mapping[str, Any] = None,
     ) -> dict:
         parsed = {}
         xml_dict = self._build_name_to_xml_node(node)
@@ -714,7 +714,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         request: HttpRequest,
         shape: MapShape,
         node: dict,
-        uri_params: Mapping[str, any] = None,
+        uri_params: Mapping[str, Any] = None,
     ) -> dict:
         parsed = {}
         key_shape = shape.key
@@ -742,7 +742,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         request: HttpRequest,
         shape: ListShape,
         node: dict,
-        uri_params: Mapping[str, any] = None,
+        uri_params: Mapping[str, Any] = None,
     ) -> list:
         # When we use _build_name_to_xml_node, repeated elements are aggregated
         # into a list. However, we can't tell the difference between a scalar
@@ -805,7 +805,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
                 xml_dict[key] = item
         return xml_dict
 
-    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> any:
+    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> Any:
         # TODO handle event streams
         raise NotImplementedError("_create_event_stream")
 
@@ -823,7 +823,7 @@ class BaseJSONRequestParser(RequestParser, ABC):
         request: HttpRequest,
         shape: StructureShape,
         value: Optional[dict],
-        uri_params: Mapping[str, any] = None,
+        uri_params: Mapping[str, Any] = None,
     ) -> Optional[dict]:
         if shape.is_document_type:
             final_parsed = value
@@ -848,7 +848,7 @@ class BaseJSONRequestParser(RequestParser, ABC):
         request: HttpRequest,
         shape: MapShape,
         value: Optional[dict],
-        uri_params: Mapping[str, any] = None,
+        uri_params: Mapping[str, Any] = None,
     ) -> Optional[dict]:
         if value is None:
             return None
@@ -877,7 +877,7 @@ class BaseJSONRequestParser(RequestParser, ABC):
                 raise ProtocolParserError("HTTP body could not be parsed as JSON.") from e
 
     def _parse_boolean(
-        self, request: HttpRequest, shape: Shape, node: bool, uri_params: Mapping[str, any] = None
+        self, request: HttpRequest, shape: Shape, node: bool, uri_params: Mapping[str, Any] = None
     ) -> bool:
         return super()._noop_parser(request, shape, node, uri_params)
 
@@ -906,7 +906,7 @@ class JSONRequestParser(BaseJSONRequestParser):
         return operation, final_parsed
 
     def _do_parse(
-        self, request: HttpRequest, shape: Shape, uri_params: Mapping[str, any] = None
+        self, request: HttpRequest, shape: Shape, uri_params: Mapping[str, Any] = None
     ) -> dict:
         parsed = {}
         if shape is not None:
@@ -922,8 +922,8 @@ class JSONRequestParser(BaseJSONRequestParser):
         raise NotImplementedError
 
     def _handle_json_body(
-        self, request: HttpRequest, shape: Shape, uri_params: Mapping[str, any] = None
-    ) -> any:
+        self, request: HttpRequest, shape: Shape, uri_params: Mapping[str, Any] = None
+    ) -> Any:
         # The json.loads() gives us the primitive JSON types, but we need to traverse the parsed JSON data to convert
         # to richer types (blobs, timestamps, etc.)
         parsed_json = self._parse_body_as_json(request)
@@ -944,7 +944,7 @@ class RestJSONRequestParser(BaseRestRequestParser, BaseJSONRequestParser):
     def _initial_body_parse(self, request: HttpRequest) -> dict:
         return self._parse_body_as_json(request)
 
-    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> any:
+    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> Any:
         raise NotImplementedError
 
 
