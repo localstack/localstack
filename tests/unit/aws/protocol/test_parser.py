@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import unquote, urlencode, urlsplit
 
 import pytest
 from botocore.awsrequest import prepare_request_dict
@@ -7,9 +7,9 @@ from botocore.serialize import create_serializer
 
 from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.parser import (
+    OperationNotFoundParserError,
     ProtocolParserError,
     QueryRequestParser,
-    RestJSONRequestParser,
     UnknownParserError,
     create_parser,
 )
@@ -251,10 +251,11 @@ def _botocore_parser_integration_test(
     parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method") or "GET",
-            path=path,
+            path=unquote(path),
             query_string=to_str(query_string),
             headers=headers,
             body=body,
+            raw_path=path,
         )
     )
 
@@ -656,17 +657,11 @@ def test_ec2_parser_ec2_with_botocore():
 
 
 def test_restjson_parser_path_params_with_slashes():
-    parser = RestJSONRequestParser(load_service("qldb"))
-    resource_arn = "arn:aws:qldb:eu-central-1:000000000000:ledger/c-c67c827a"
-    request = HttpRequest(
-        body=b"",
-        method="GET",
-        headers={},
-        path=f"/tags/{resource_arn}",
+    _botocore_parser_integration_test(
+        service="qldb",
+        action="ListTagsForResource",
+        ResourceArn="arn:aws:qldb:eu-central-1:000000000000:ledger/c-c67c827a",
     )
-    operation, params = parser.parse(request)
-    assert operation.name == "ListTagsForResource"
-    assert params == {"ResourceArn": resource_arn}
 
 
 def test_parse_cloudtrail_with_botocore():
@@ -800,6 +795,23 @@ def test_restjson_operation_detection_with_length_prio():
     )
 
 
+def test_restjson_operation_detection_with_subpath():
+    """
+    Tests if the operation lookup correctly fails for a subpath of an operation.
+    For example: The detection of a URL which is routed through API Gateway.
+    """
+    service = load_service("apigateway")
+    parser = create_parser(service)
+    with pytest.raises(OperationNotFoundParserError):
+        parser.parse(
+            HttpRequest(
+                method="GET",
+                path="/restapis/cmqinv79uh/local/_user_request_/",
+                raw_path="/restapis/cmqinv79uh/local/_user_request_/",
+            )
+        )
+
+
 def test_s3_operation_detection():
     """
     Test if the S3 operation detection works for ambiguous operations. GetObject is the worst, because it is
@@ -807,7 +819,7 @@ def test_s3_operation_detection():
     matched required parameter.
     """
     _botocore_parser_integration_test(
-        service="s3", action="GetObject", Bucket="test-bucket", Key="test.json"
+        service="s3", action="GetObject", Bucket="test-bucket", Key="foo/bar/test.json"
     )
 
 
