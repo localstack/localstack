@@ -258,6 +258,90 @@ class TestDynamoDB:
             )
         assert ctx.match("ValidationException")
 
+    def test_invalid_query_index(self, dynamodb):
+        """Raises an exception when a query requests ALL_ATTRIBUTES,
+        but the index does not have a ProjectionType of ALL"""
+        table_name = f"test-table-{short_uid()}"
+        table = dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[
+                {"AttributeName": "id", "AttributeType": "S"},
+                {"AttributeName": "field_a", "AttributeType": "S"},
+            ],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            Tags=TEST_DDB_TAGS,
+            GlobalSecondaryIndexes=[
+                {
+                    "IndexName": "field_a_index",
+                    "KeySchema": [{"AttributeName": "field_a", "KeyType": "HASH"}],
+                    "Projection": {"ProjectionType": "KEYS_ONLY"},
+                    "ProvisionedThroughput": {
+                        "ReadCapacityUnits": 1,
+                        "WriteCapacityUnits": 1,
+                    },
+                },
+            ],
+        )
+
+        with pytest.raises(Exception) as ctx:
+            table.query(
+                TableName=table_name,
+                IndexName="field_a_index",
+                KeyConditionExpression=Key("field_a").eq("xyz"),
+                Select="ALL_ATTRIBUTES",
+            )
+        assert ctx.match("ValidationException")
+
+        # clean up
+        delete_table(table_name)
+
+    def test_valid_query_index(self, dynamodb):
+        """Query requests ALL_ATTRIBUTES and the named index has a ProjectionType of ALL,
+        no exception should be raised."""
+        table_name = f"test-table-{short_uid()}"
+        table = dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[
+                {"AttributeName": "id", "AttributeType": "S"},
+                {"AttributeName": "field_a", "AttributeType": "S"},
+                {"AttributeName": "field_b", "AttributeType": "S"},
+            ],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            Tags=TEST_DDB_TAGS,
+            GlobalSecondaryIndexes=[
+                {
+                    "IndexName": "field_a_index",
+                    "KeySchema": [{"AttributeName": "field_a", "KeyType": "HASH"}],
+                    "Projection": {"ProjectionType": "KEYS_ONLY"},
+                    "ProvisionedThroughput": {
+                        "ReadCapacityUnits": 1,
+                        "WriteCapacityUnits": 1,
+                    },
+                },
+                {
+                    "IndexName": "field_b_index",
+                    "KeySchema": [{"AttributeName": "field_b", "KeyType": "HASH"}],
+                    "Projection": {"ProjectionType": "ALL"},
+                    "ProvisionedThroughput": {
+                        "ReadCapacityUnits": 1,
+                        "WriteCapacityUnits": 1,
+                    },
+                },
+            ],
+        )
+
+        table.query(
+            TableName=table_name,
+            IndexName="field_b_index",
+            KeyConditionExpression=Key("field_b").eq("xyz"),
+            Select="ALL_ATTRIBUTES",
+        )
+
+        # clean up
+        delete_table(table_name)
+
     def test_return_values_in_put_item(self, dynamodb):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
