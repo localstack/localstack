@@ -16,6 +16,7 @@ from moto.iam.models import iam_backend as moto_iam_backend
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.responses import GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE, IamResponse
 
+import localstack.aws.api.iam
 from localstack import config, constants
 from localstack.aws.api import RequestContext
 from localstack.aws.api.iam import (
@@ -36,6 +37,7 @@ from localstack.aws.api.iam import (
     ResourceNameType,
     SimulatePolicyResponse,
     SimulationPolicyListType,
+    Tag,
     arnType,
     customSuffixType,
     groupNameType,
@@ -48,6 +50,9 @@ from localstack.aws.api.iam import (
     tagKeyListType,
     tagListType,
 )
+from localstack.aws.proxy import AwsApiListener
+from localstack.http import Request, Response
+from localstack.services.moto import MotoFallbackDispatcher
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
@@ -195,8 +200,29 @@ class IamProvider(IamApi):
             constants.TEST_AWS_ACCOUNT_ID, aws_service_name, role.name
         )
         result = CreateServiceLinkedRoleResponse()
-        result["Role"] = role
+        result["Role"] = self.moto_role_to_api_role(role)
         return result
+
+    @staticmethod
+    def moto_role_to_api_role(role: Role) -> localstack.aws.api.iam.Role:
+        api_role = localstack.aws.api.iam.Role()
+        api_role["Path"] = role.path
+        api_role["RoleName"] = role.name
+        api_role["RoleId"] = role.id
+        api_role["Arn"] = role.arn
+        api_role["CreateDate"] = role.create_date
+        if role.assume_role_policy_document:
+            api_role["AssumeRolePolicyDocument"] = role.assume_role_policy_document
+        if role.description:
+            api_role["Description"] = role.description
+        if role.max_session_duration:
+            api_role["MaxSessionDuration"] = role.max_session_duration
+        if role.permissions_boundary:
+            api_role["PermissionsBoundary"] = role.permissions_boundary
+        if role.tags:
+            api_role["Tags"] = [Tag(Key=tk, Value=tv) for tk, tv in role.tags.items()]
+        # api_role["RoleLastUsed"] = TODO: field not supported in moto's Role implementation.
+        return api_role
 
     def delete_service_linked_role(
         self, context: RequestContext, role_name: roleNameType
@@ -214,6 +240,16 @@ class IamProvider(IamApi):
         result = GetServiceLinkedRoleDeletionStatusResponse()
         result["Status"] = DeletionTaskStatusType.SUCCEEDED
         return result
+
+
+class IamApiListener(AwsApiListener):
+    def __init__(self):
+        self.provider = IamProvider()
+        super().__init__("iam", MotoFallbackDispatcher(self.provider))
+
+    def request(self, request: Request) -> Response:
+        response = super().request(request)
+        return response
 
 
 def apply_patches():
