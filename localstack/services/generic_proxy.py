@@ -34,6 +34,7 @@ from localstack.constants import (
     APPLICATION_JSON,
     AWS_REGION_US_EAST_1,
     BIND_HOST,
+    HEADER_LOCALSTACK_AUTHORIZATION,
     HEADER_LOCALSTACK_REQUEST_URL,
 )
 from localstack.services.messages import Headers, MessagePayload
@@ -965,8 +966,8 @@ def start_proxy_server(
         method = request.method
         headers = request.headers
         headers[HEADER_LOCALSTACK_REQUEST_URL] = str(request.url)
-
-        response = modify_and_forward(
+        headers[HEADER_LOCALSTACK_AUTHORIZATION] = headers.get("Authorization", "")
+        return modify_and_forward(
             method=method,
             path=path_with_params,
             data_bytes=data,
@@ -976,8 +977,6 @@ def start_proxy_server(
             client_address=request.remote_addr,
             server_address=parsed_url.netloc,
         )
-
-        return response
 
     ssl_creds = (None, None)
     if use_ssl:

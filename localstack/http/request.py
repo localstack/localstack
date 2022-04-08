@@ -28,6 +28,7 @@ class Request(_SansIORequest):
         query_string: Union[bytes, str] = b"",
         remote_addr: str = None,
         server: Optional[Tuple[str, Optional[int]]] = None,
+        raw_path: str = None,
     ):
         if not headers:
             headers = Headers()
@@ -42,6 +43,9 @@ class Request(_SansIORequest):
             self._body = body.encode("utf-8")
         else:
             self._body = body
+
+        # TODO storing the raw_path here violates the drop-in assumption
+        self.raw_path = raw_path
 
         super(Request, self).__init__(
             method=method,
@@ -127,3 +131,7 @@ class Request(_SansIORequest):
 
     def close(self) -> None:
         pass
+
+
+def get_raw_path(request: Request) -> str:
+    return request.raw_path
