@@ -50,9 +50,6 @@ from localstack.aws.api.iam import (
     tagKeyListType,
     tagListType,
 )
-from localstack.aws.proxy import AwsApiListener
-from localstack.http import Request, Response
-from localstack.services.moto import MotoFallbackDispatcher
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
@@ -240,16 +237,6 @@ class IamProvider(IamApi):
         result = GetServiceLinkedRoleDeletionStatusResponse()
         result["Status"] = DeletionTaskStatusType.SUCCEEDED
         return result
-
-
-class IamApiListener(AwsApiListener):
-    def __init__(self):
-        self.provider = IamProvider()
-        super().__init__("iam", MotoFallbackDispatcher(self.provider))
-
-    def request(self, request: Request) -> Response:
-        response = super().request(request)
-        return response
 
 
 def apply_patches():

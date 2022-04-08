@@ -113,19 +113,14 @@ def firehose():
 
 @aws_provider()
 def iam():
-    # from localstack.services.iam.provider import IamProvider
-    # from localstack.services.moto import MotoFallbackDispatcher
-    #
-    # provider = IamProvider()
-    # return Service(
-    #     "iam",
-    #     listener=AwsApiListener("iam", MotoFallbackDispatcher(provider)),
-    # )
+    from localstack.services.iam.provider import IamProvider
+    from localstack.services.moto import MotoFallbackDispatcher
 
-    from localstack.services.iam.provider import IamApiListener
-
-    listener = IamApiListener()
-    return Service("iam", listener=listener)
+    provider = IamProvider()
+    return Service(
+        "iam",
+        listener=AwsApiListener("iam", MotoFallbackDispatcher(provider)),
+    )
 
 
 @aws_provider()
