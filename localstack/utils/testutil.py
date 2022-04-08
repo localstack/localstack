@@ -569,8 +569,12 @@ def get_lambda_log_group_name(function_name):
     return "/aws/lambda/{}".format(function_name)
 
 
-def check_expected_lambda_log_events_length(expected_length, function_name, regex_filter=None):
-    events = get_lambda_log_events(function_name, regex_filter=regex_filter)
+def check_expected_lambda_log_events_length(
+    expected_length, function_name, regex_filter=None, logs_client=None
+):
+    events = get_lambda_log_events(
+        function_name, regex_filter=regex_filter, logs_client=logs_client
+    )
     events = [line for line in events if line not in ["\x1b[0m", "\\x1b[0m"]]
     if len(events) != expected_length:
         print(

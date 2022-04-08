@@ -267,21 +267,6 @@ class TestKinesis:
 
 
 @pytest.fixture
-def wait_for_stream_ready(kinesis_client):
-    def _wait_for_stream_ready(stream_name: str):
-        def is_stream_ready():
-            describe_stream_response = kinesis_client.describe_stream(StreamName=stream_name)
-            return describe_stream_response["StreamDescription"]["StreamStatus"] in [
-                "ACTIVE",
-                "UPDATING",
-            ]
-
-        poll_condition(is_stream_ready)
-
-    return _wait_for_stream_ready
-
-
-@pytest.fixture
 def wait_for_consumer_ready(kinesis_client):
     def _wait_for_consumer_ready(consumer_arn: str):
         def is_consumer_ready():

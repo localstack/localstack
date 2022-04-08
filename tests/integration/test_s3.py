@@ -2503,6 +2503,19 @@ class TestS3(unittest.TestCase):
         self.s3_client.delete_bucket(Bucket=bucket_1_name)
         self.s3_client.delete_bucket(Bucket=bucket_2_name)
 
+    def test_upload_file_with_xml_preamble(self):
+        bucket_name = f"bucket-{short_uid()}"
+        object_key = f"key-{short_uid()}"
+        body = '<?xml version="1.0" encoding="UTF-8"?><test/>'
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body=body)
+
+        response = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        content = to_str(response["Body"].read())
+        self.assertEqual(body, content)
+        self._delete_bucket(bucket_name, keys=[object_key])
+
     # ---------------
     # HELPER METHODS
     # ---------------

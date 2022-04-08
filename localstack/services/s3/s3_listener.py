@@ -30,6 +30,7 @@ from localstack.services.s3.s3_utils import (
     extract_key_name,
     get_forwarded_for_host,
     is_expired,
+    is_object_download_request,
     is_static_website,
     normalize_bucket_name,
     uses_host_addressing,
@@ -722,10 +723,12 @@ def fix_delimiter(response):
     replace_in_xml_response(response, "<Delimiter>None<", "<Delimiter><")
 
 
-def fix_xml_preamble_newline(response):
+def fix_xml_preamble_newline(method, path, headers, response):
     # some tools (Serverless) require a newline after the "<?xml ...>\n" preamble line, e.g., for LocationConstraint
     # this is required because upstream moto is generally collapsing all S3 XML responses:
     # https://github.com/spulec/moto/blob/3718cde444b3e0117072c29b087237e1787c3a66/moto/core/responses.py#L102-L104
+    if is_object_download_request(method, path, headers):
+        return
     replace_in_xml_response(response, r"(<\?xml [^>]+>)<", r"\1\n<")
 
 
@@ -1495,7 +1498,7 @@ class ProxyListenerS3(PersistingProxyListener):
             ret304_on_etag(data, headers, response)
             append_aws_request_troubleshooting_headers(response)
             fix_delimiter(response)
-            fix_xml_preamble_newline(response)
+            fix_xml_preamble_newline(method, path, headers, response)
 
             if method == "PUT":
                 set_object_expiry(path, headers)

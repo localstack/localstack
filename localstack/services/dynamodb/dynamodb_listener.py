@@ -312,11 +312,12 @@ class ProxyListenerDynamoDB(ProxyListener):
             ProxyListenerDynamoDB.thread_local.unprocessed_delete_items = unprocessed_delete_items
 
         elif action == "Query":
-            if data.get("IndexName"):
-                if not is_index_query_valid(to_str(data["TableName"]), data.get("Select")):
+            index_name = data.get("IndexName")
+            if index_name:
+                if not is_index_query_valid(data):
                     return error_response(
                         message="One or more parameter values were invalid: Select type ALL_ATTRIBUTES "
-                        "is not supported for global secondary index id-index because its projection "
+                        f"is not supported for global secondary index {index_name} because its projection "
                         "type is not ALL",
                         error_type="ValidationException",
                         code=400,
@@ -1020,12 +1021,22 @@ def update_global_table(data):
 # ---
 
 
-def is_index_query_valid(table_name: str, index_query_type: str) -> bool:
+def get_global_secondary_index(table_name, index_name):
     schema = SchemaExtractor.get_table_schema(table_name)
     for index in schema["Table"].get("GlobalSecondaryIndexes", []):
-        index_projection_type = index.get("Projection").get("ProjectionType")
-        if index_query_type == "ALL_ATTRIBUTES" and index_projection_type != "ALL":
-            return False
+        if index["IndexName"] == index_name:
+            return index
+    raise Exception("Index not found")  # TODO: add proper exception handling
+
+
+def is_index_query_valid(query_data: dict) -> bool:
+    table_name = to_str(query_data["TableName"])
+    index_name = to_str(query_data["IndexName"])
+    index_query_type = query_data.get("Select")
+    index = get_global_secondary_index(table_name, index_name)
+    index_projection_type = index.get("Projection").get("ProjectionType")
+    if index_query_type == "ALL_ATTRIBUTES" and index_projection_type != "ALL":
+        return False
     return True
 
 
