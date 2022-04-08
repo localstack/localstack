@@ -771,12 +771,19 @@ class TestPythonRuntimes:
         )
         return function_name
 
-    def test_invocation_type_not_set(self, lambda_client, python_function_name):
+    def test_invocation_type_not_set(self, lambda_client, python_function_name, snapshot):
 
         result = lambda_client.invoke(
             FunctionName=python_function_name, Payload=b"{}", LogType="Tail"
         )
-        result_data = json.loads(result["Payload"].read())
+        result = read_streams(result)
+        snapshot.skip_key(re.compile("LogResult"), "<log_result>")
+        snapshot.register_replacement(re.compile(python_function_name), "<function_name>")
+        snapshot.register_replacement(
+            re.compile(r"\d{4}/\d{2}/\d{2}/\[((\$LATEST)|\d+)\][0-9a-f]{32}"), "<log_stream_id>"
+        )
+        snapshot.assert_match("invoke", result)
+        result_data = json.loads(result["Payload"])
 
         # assert response details
         assert 200 == result["StatusCode"]
@@ -785,6 +792,11 @@ class TestPythonRuntimes:
         # assert that logs are contained in response
         logs = result.get("LogResult", "")
         logs = to_str(base64.b64decode(to_str(logs)))
+        snapshot.register_replacement(
+            re.compile(r"Duration: \d+(\.\d{2})? ms"), "Duration: <duration> ms"
+        )
+        snapshot.register_replacement(re.compile(r"Used: \d+ MB"), "Used: <memory> MB")
+        snapshot.assert_match("logs", {"logs": logs})
         assert "START" in logs
         assert "Lambda log message" in logs
         assert "END" in logs
