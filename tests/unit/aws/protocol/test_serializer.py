@@ -15,6 +15,7 @@ from localstack.aws.protocol.serializer import (
     create_serializer,
 )
 from localstack.aws.spec import load_service
+from localstack.http.response import Response
 from localstack.utils.common import to_str
 
 _skip_assert = {}
@@ -533,6 +534,30 @@ def test_json_protocol_custom_error_serialization():
         451,
         "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
     )
+
+
+def test_json_protocol_content_type_1_0():
+    """AppRunner defines the jsonVersion 1.0, therefore the Content-Type needs to be application/x-amz-json-1.0."""
+    service = load_service("apprunner")
+    response_serializer = create_serializer(service)
+    result: Response = response_serializer.serialize_to_response(
+        {}, service.operation_model("DeleteConnection")
+    )
+    assert result is not None
+    assert result.content_type is not None
+    assert result.content_type == "application/x-amz-json-1.0"
+
+
+def test_json_protocol_content_type_1_1():
+    """Logs defines the jsonVersion 1.1, therefore the Content-Type needs to be application/x-amz-json-1.1."""
+    service = load_service("logs")
+    response_serializer = create_serializer(service)
+    result: Response = response_serializer.serialize_to_response(
+        {}, service.operation_model("DeleteLogGroup")
+    )
+    assert result is not None
+    assert result.content_type is not None
+    assert result.content_type == "application/x-amz-json-1.1"
 
 
 def test_json_serializer_cognito_with_botocore():

@@ -2,6 +2,7 @@
 migration from the edge proxy to the new HTTP framework, and will be removed in the future. """
 from urllib.parse import urlsplit
 
+from quart import request as quart_request
 from requests.models import Response as _RequestsResponse
 from werkzeug.exceptions import NotFound
 
@@ -23,12 +24,15 @@ class ProxyListenerAdapter(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
         split_url = urlsplit(path)
+        raw_path = quart_request.scope.get("raw_path")
+
         request = Request(
             method=method,
             path=split_url.path,
             query_string=split_url.query,
             headers=headers,
             body=data,
+            raw_path=raw_path,
         )
 
         response = self.request(request)

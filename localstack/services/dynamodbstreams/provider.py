@@ -33,6 +33,13 @@ from localstack.utils.common import to_str
 
 LOG = logging.getLogger(__name__)
 
+STREAM_STATUS_MAP = {
+    "ACTIVE": "ENABLED",
+    "CREATING": "ENABLING",
+    "DELETING": "DISABLING",
+    "UPDATING": "ENABLING",
+}
+
 
 class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     def describe_stream(
@@ -55,12 +62,16 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
                 stream_details = kinesis.describe_stream(StreamName=stream_name)
                 table_details = dynamodb.describe_table(TableName=table_name)
                 stream["KeySchema"] = table_details["Table"]["KeySchema"]
+                stream["StreamStatus"] = STREAM_STATUS_MAP.get(
+                    stream_details["StreamDescription"]["StreamStatus"]
+                )
 
                 # Replace Kinesis ShardIDs with ones that mimic actual
                 # DynamoDBStream ShardIDs.
                 stream_shards = stream_details["StreamDescription"]["Shards"]
                 for shard in stream_shards:
                     shard["ShardId"] = shard_id(stream_name, shard["ShardId"])
+                    del shard["HashKeyRange"]
                 stream["Shards"] = stream_shards
                 return DescribeStreamOutput(**result)
         if not result:
