@@ -159,7 +159,7 @@ class SesProvider(SesApi, ABC):
             response["MessageId"],
             context.region,
             Source=source,
-            Destinations=destination,
+            Destination=destination,
             Subject=message["Subject"].get("Data"),
             Body=message["Body"].get("Text", {}).get("Data"),
         )
@@ -190,9 +190,9 @@ class SesProvider(SesApi, ABC):
             message.id,
             context.region,
             Source=source,
-            Template=[template],
-            TemplateData=[template_data],
-            Destinations=destination,
+            Template=template,
+            TemplateData=template_data,
+            Destination=destination,
         )
 
         return SendTemplatedEmailResponse(MessageId=message.id)
@@ -223,7 +223,7 @@ class SesProvider(SesApi, ABC):
         message = ses_backend.send_raw_email(source, destinations, raw_data, context.region)
 
         save_for_retrospection(
-            message.id, context.region, Source=source, Destinations=destinations, RawData=raw_data
+            message.id, context.region, Source=source, Destination=destinations, RawData=raw_data
         )
 
         return SendRawEmailResponse(MessageId=message.id)

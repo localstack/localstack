@@ -96,7 +96,7 @@ class TestSES:
         assert email == contents["Source"]
         assert "A_SUBJECT" == contents["Subject"]
         assert "A_MESSAGE" == contents["Body"]
-        assert ["success@example.com"] == contents["Destinations"]["ToAddresses"]
+        assert ["success@example.com"] == contents["Destination"]["ToAddresses"]
 
     def test_send_templated_email_save(self, ses_client, create_template):
         data_dir = config.dirs.data or config.dirs.tmp
@@ -120,6 +120,6 @@ class TestSES:
         contents = json.loads(message)
 
         assert email == contents["Source"]
-        assert [TEST_TEMPLATE_ATTRIBUTES["TemplateName"]] == contents["Template"]
-        assert ['{"A key": "A value"}'] == contents["TemplateData"]
-        assert ["success@example.com"] == contents["Destinations"]["ToAddresses"]
+        assert TEST_TEMPLATE_ATTRIBUTES["TemplateName"] == contents["Template"]
+        assert '{"A key": "A value"}' == contents["TemplateData"]
+        assert ["success@example.com"] == contents["Destination"]["ToAddresses"]
