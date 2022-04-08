@@ -521,6 +521,7 @@ class TestLambdaAPI:
             },
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
         )
+        snapshot.replace_value(re.compile(r"^csc-[0-9a-f]{17}$"), "<csc-id>")
         snapshot.assert_match("create_code_signing_config", response)
 
         assert "Description" in response["CodeSigningConfig"]

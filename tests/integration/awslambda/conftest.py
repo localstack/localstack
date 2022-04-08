@@ -23,7 +23,7 @@ PATTERN_UUID = re.compile(
     r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 )
 PATTERN_ISO8601 = re.compile(
-    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}(\+[0-9]{4})?"
+    r"(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-][01]\d:?([0-5]\d)?)"
 )
 PATTERN_S3_URL = re.compile(
     r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}(\+[0-9]{4})?"
@@ -113,6 +113,7 @@ class SnapshotManager:
 
     replacers: List[Tuple[Pattern[str], str]]
     skip_keys: List[Tuple[Pattern[str], str]]
+    replace_values: List[Tuple[Pattern[str], str]]
 
     def __init__(
         self, *, file_path: str,  scope_key: str, update: Optional[bool] = False, verify: Optional[bool] = False
@@ -124,6 +125,7 @@ class SnapshotManager:
         self.called_keys = set()
         self.replacers = []
         self.skip_keys = []
+        self.replace_values = []
         self.results = []
 
         self.observed_state = {}
@@ -133,7 +135,7 @@ class SnapshotManager:
         self.register_replacement(PATTERN_ARN, "<arn>")
         self.register_replacement(PATTERN_UUID, "<uuid>")
         self.register_replacement(PATTERN_ISO8601, "<date>")
-        self.register_replacement(PATTERN_S3_URL, "<s3-url>")
+        # self.register_replacement(PATTERN_S3_URL, "<s3-url>")
         self.register_replacement(PATTERN_SQS_URL, "<sqs-url>")
 
         self.skip_key(re.compile(r"^.*Name$"), "<name>")
@@ -149,6 +151,9 @@ class SnapshotManager:
 
     def skip_key(self, pattern: Pattern[str], value: str):
         self.skip_keys.append((pattern, value))
+
+    def replace_value(self, pattern: Pattern[str], value: str):
+        self.replace_values.append((pattern, value))
 
     def persist_state(self) -> None:
         if self.update:
@@ -222,36 +227,39 @@ class SnapshotManager:
         new_dict = {}
         for k, v in old.items():
 
-            skipped = False
             for (pattern, repl) in self.skip_keys:
                 if pattern.match(k):
                     new_dict[k] = repl
-                    skipped = True
-                    continue
-            if skipped:
-                continue
-
-            if isinstance(v, dict):
-                new_dict[k] = self._transform(v)
-            elif isinstance(v, list):
-                # assumption: no nested lists in API calls
-                new_list = []
-                for i in v:
-                    if isinstance(i, dict):
-                        new_list.append(self._transform(i))
-                    elif isinstance(i, str):
-                        new_list.append(i)
-                    else:  # assumption: has to be an int or boolean
-                        new_list.append(v)
-                new_dict[k] = new_list
-            elif isinstance(v, str):
-                new_dict[k] = v
-            elif isinstance(v, StreamingBody):
-                new_dict[k] = v.read().decode("utf-8")
-            elif isinstance(v, datetime):  # TODO: remove when structural matching is implemented
-                new_dict[k] = "<date>"
+                    break
             else:
-                new_dict[k] = v
+                if isinstance(v, dict):
+                    new_dict[k] = self._transform(v)
+                elif isinstance(v, list):
+                    # assumption: no nested lists in API calls
+                    new_list = []
+                    for i in v:
+                        if isinstance(i, dict):
+                            new_list.append(self._transform(i))
+                        elif isinstance(i, str):
+                            new_list.append(i)
+                        else:  # assumption: has to be an int or boolean
+                            new_list.append(v)
+                    new_dict[k] = new_list
+                elif isinstance(v, str):
+                    for (pattern, repl) in self.replace_values:
+                        if pattern.match(v):
+                            new_dict[k] = repl
+                            break
+                    else:
+                        new_dict[k] = v
+                elif isinstance(v, StreamingBody):
+                    new_dict[k] = v.read().decode("utf-8")
+                elif isinstance(
+                    v, datetime
+                ):  # TODO: remove when structural matching is implemented
+                    new_dict[k] = "<date>"
+                else:
+                    new_dict[k] = v
 
         tmp_str = json.dumps(new_dict)
         for (pattern, repl) in self.replacers:
