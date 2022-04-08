@@ -44,6 +44,7 @@ from localstack.utils.time import timestamp_millis
 LOGGER = logging.getLogger(__name__)
 
 # Keep record of all sent emails
+# These can be retrieved via a service endpoint
 EMAILS: Dict[MessageId, Dict[str, Any]] = {}
 
 
@@ -54,13 +55,12 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
 
     kwargs should consist of following keys related to the email:
     - Body
-    - Subject
-    - Body
+    - Destinations
     - RawData
     - Source
+    - Subject
     - Template
     - TemplateData
-    - Destinations
     """
     ses_dir = os.path.join(config.dirs.data or config.dirs.tmp, "ses")
 
