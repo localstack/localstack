@@ -5,9 +5,11 @@ import os
 import shutil
 import time
 from io import BytesIO
+from typing import Dict, List, TypeVar
 
 import pytest
 from botocore.exceptions import ClientError
+from botocore.response import StreamingBody
 
 from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_api
@@ -152,6 +154,20 @@ PROVIDED_TEST_RUNTIMES = [
     ),
 ]
 
+T = TypeVar("T")
+
+
+def read_streams(payload: T) -> T:
+    new_payload = {}
+    for k, v in payload.items():
+        if isinstance(v, Dict):
+            new_payload[k] = read_streams(v)
+        elif isinstance(v, StreamingBody):
+            new_payload[k] = to_str(v.read())
+        else:
+            new_payload[k] = v
+    return new_payload
+
 
 def is_old_provider():
     return (
@@ -213,6 +229,7 @@ class TestLambdaAPI:
     def test_add_lambda_permission_aws(
         self, lambda_client, iam_client, create_lambda_function, snapshot
     ):
+        """Testing the add_permission call on lambda, by adding a new resource-based policy to a lambda function"""
         function_name = f"lambda_func-{short_uid()}"
         lambda_create_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -240,7 +257,9 @@ class TestLambdaAPI:
         assert lambda_arn == json.loads(get_policy_result["Policy"])["Statement"][0]["Resource"]
 
     # TODO permissions cannot be added to $LATEST
-    @pytest.mark.skipif(not is_old_provider(), reason="tests wrong behavior")
+    @pytest.mark.skipif(
+        not is_old_provider(), reason="test does not make valid assertions against AWS"
+    )
     def test_add_lambda_permission(self, lambda_client, iam_client, create_lambda_function):
         function_name = f"lambda_func-{short_uid()}"
         lambda_create_response = create_lambda_function(
@@ -291,7 +310,8 @@ class TestLambdaAPI:
         )
         assert 200 == resp["ResponseMetadata"]["HTTPStatusCode"]
 
-    def test_remove_multi_permissions(self, lambda_client, create_lambda_function):
+    def test_remove_multi_permissions(self, lambda_client, create_lambda_function, snapshot):
+        """Tests creation and subsequent removal of multiple permissions, including the changes in the policy"""
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -302,22 +322,28 @@ class TestLambdaAPI:
         action = "lambda:InvokeFunction"
         sid = "s3"
         principal = "s3.amazonaws.com"
-        lambda_client.add_permission(
+        permission_1_add = lambda_client.add_permission(
             FunctionName=function_name,
             Action=action,
             StatementId=sid,
             Principal=principal,
         )
+        snapshot.assert_match("add_permission_1", permission_1_add)
 
         sid_2 = "sqs"
         principal_2 = "sqs.amazonaws.com"
-        lambda_client.add_permission(
+        permission_2_add = lambda_client.add_permission(
             FunctionName=function_name,
             Action=action,
             StatementId=sid_2,
             Principal=principal_2,
             SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
         )
+        snapshot.assert_match("add_permission_2", permission_2_add)
+        policy_response = lambda_client.get_policy(
+            FunctionName=function_name,
+        )
+        snapshot.assert_match("policy_after_2_add", policy_response)
 
         with pytest.raises(ClientError) as e:
             lambda_client.remove_permission(
@@ -335,6 +361,7 @@ class TestLambdaAPI:
                 FunctionName=function_name,
             )["Policy"]
         )
+        snapshot.assert_match("policy_after_removal", policy)
         assert policy["Statement"][0]["Sid"] == sid
 
         lambda_client.remove_permission(
@@ -345,7 +372,9 @@ class TestLambdaAPI:
             lambda_client.get_policy(FunctionName=function_name)
         assert ctx.value.response["Error"]["Code"] == "ResourceNotFoundException"
 
-    @only_localstack
+    @pytest.mark.skipif(
+        not is_old_provider(), reason="test does not make valid assertions against AWS"
+    )
     def test_add_lambda_multiple_permission(
         self, iam_client, lambda_client, create_lambda_function
     ):
@@ -413,6 +442,7 @@ class TestLambdaAPI:
         lambda_su_role,
         snapshot,
     ):
+        """Testing API actions of function event config"""
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -454,7 +484,8 @@ class TestLambdaAPI:
         # clean up
         lambda_client.delete_function_event_invoke_config(FunctionName=function_name)
 
-    def test_function_concurrency(self, lambda_client, create_lambda_function):
+    def test_function_concurrency(self, lambda_client, create_lambda_function, snapshot):
+        """Testing the api of the put function concurrency action"""
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -465,13 +496,14 @@ class TestLambdaAPI:
         response = lambda_client.put_function_concurrency(
             FunctionName=function_name, ReservedConcurrentExecutions=123
         )
+        snapshot.assert_match("put_function_concurrency", response)
         assert "ReservedConcurrentExecutions" in response
         response = lambda_client.get_function_concurrency(FunctionName=function_name)
+        snapshot.assert_match("get_function_concurrency", response)
         assert "ReservedConcurrentExecutions" in response
-        response = lambda_client.delete_function_concurrency(FunctionName=function_name)
-        assert "ReservedConcurrentExecutions" not in response
+        lambda_client.delete_function_concurrency(FunctionName=function_name)
 
-    def test_function_code_signing_config(self, lambda_client, create_lambda_function):
+    def test_function_code_signing_config(self, lambda_client, create_lambda_function, snapshot):
         function_name = f"lambda_func-{short_uid()}"
 
         create_lambda_function(
@@ -489,6 +521,7 @@ class TestLambdaAPI:
             },
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
         )
+        snapshot.assert_match("create_code_signing_config", response)
 
         assert "Description" in response["CodeSigningConfig"]
         assert "SigningProfileVersionArns" in response["CodeSigningConfig"]["AllowedPublishers"]
@@ -501,6 +534,7 @@ class TestLambdaAPI:
             CodeSigningConfigArn=code_signing_arn,
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Warn"},
         )
+        snapshot.assert_match("update_code_signing_config", response)
 
         assert (
             "Warn"
@@ -508,14 +542,17 @@ class TestLambdaAPI:
         )
         response = lambda_client.get_code_signing_config(CodeSigningConfigArn=code_signing_arn)
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        snapshot.assert_match("get_code_signing_config", response)
 
         response = lambda_client.put_function_code_signing_config(
             CodeSigningConfigArn=code_signing_arn, FunctionName=function_name
         )
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        snapshot.assert_match("put_function_code_signing_config", response)
 
         response = lambda_client.get_function_code_signing_config(FunctionName=function_name)
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        snapshot.assert_match("get_function_code_signing_config", response)
         assert code_signing_arn == response["CodeSigningConfigArn"]
         assert function_name == response["FunctionName"]
 
@@ -525,23 +562,8 @@ class TestLambdaAPI:
         response = lambda_client.delete_code_signing_config(CodeSigningConfigArn=code_signing_arn)
         assert 204 == response["ResponseMetadata"]["HTTPStatusCode"]
 
-    def create_multiple_lambda_permissions(self, lambda_client, iam_client, create_lambda_function):
-        role_name = f"role-{short_uid()}"
+    def create_multiple_lambda_permissions(self, lambda_client, create_lambda_function, snapshot):
         function_name = f"test-function-{short_uid()}"
-        assume_policy_document = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Action": "sts:AssumeRole",
-                    "Principal": {"Service": "lambda.amazonaws.com"},
-                }
-            ],
-        }
-
-        iam_client.create_role(
-            RoleName=role_name,
-            AssumeRolePolicyDocument=json.dumps(assume_policy_document),
-        )
 
         create_lambda_function(
             funct_name=function_name,
@@ -557,6 +579,7 @@ class TestLambdaAPI:
             StatementId=sid,
             Principal="logs.amazonaws.com",
         )
+        snapshot.assert_match("add_permission_response_1", resp)
         assert "Statement" in resp
 
         sid = "kinesis"
@@ -566,8 +589,14 @@ class TestLambdaAPI:
             StatementId=sid,
             Principal="kinesis.amazonaws.com",
         )
+        snapshot.assert_match("add_permission_response_2", resp)
 
         assert "Statement" in resp
+
+        policy_response = lambda_client.get_policy(
+            FunctionName=function_name,
+        )
+        snapshot.assert_match("policy_after_2_add", policy_response)
 
 
 class TestLambdaBaseFeatures:
@@ -579,13 +608,15 @@ class TestLambdaBaseFeatures:
         sqs_create_queue,
         sqs_queue_arn,
         lambda_su_role,
+        snapshot,
     ):
+        """Creates a lambda with a defined dead letter queue, and check failed lambda invocation leads to a message"""
         # create DLQ and Lambda function
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         queue_arn = sqs_queue_arn(queue_url)
-        create_lambda_function(
+        create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
@@ -593,6 +624,7 @@ class TestLambdaBaseFeatures:
             DeadLetterConfig={"TargetArn": queue_arn},
             role=lambda_su_role,
         )
+        snapshot.assert_match("create_lambda_with_dlq", create_lambda_response)
 
         # invoke Lambda, triggering an error
         payload = {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}
@@ -610,17 +642,23 @@ class TestLambdaBaseFeatures:
             assert "RequestID" in msg_attrs
             assert "ErrorCode" in msg_attrs
             assert "ErrorMessage" in msg_attrs
+            snapshot.assert_match("sqs_dlq_message", result)
 
         # on AWS, event retries can be quite delayed, so we have to wait up to 6 minutes here, potential flakes
         retry(receive_dlq, retries=120, sleep=3)
 
         # update DLQ config
-        lambda_client.update_function_configuration(FunctionName=lambda_name, DeadLetterConfig={})
+        update_function_config_response = lambda_client.update_function_configuration(
+            FunctionName=lambda_name, DeadLetterConfig={}
+        )
+        snapshot.assert_match("delete_dlq", update_function_config_response)
         # invoke Lambda again, assert that status code is 200 and error details contained in the payload
         result = lambda_client.invoke(
             FunctionName=lambda_name, Payload=json.dumps(payload), LogType="Tail"
         )
-        payload = json.loads(to_str(result["Payload"].read()))
+        result = read_streams(result)
+        payload = json.loads(to_str(result["Payload"]))
+        snapshot.assert_match("result_payload", payload)
         assert 200 == result["StatusCode"]
         assert "Unhandled" == result["FunctionError"]
         assert "$LATEST" == result["ExecutedVersion"]
@@ -652,6 +690,7 @@ class TestLambdaBaseFeatures:
         sqs_create_queue,
         sqs_queue_arn,
         lambda_su_role,
+        snapshot,
     ):
         # create DLQ and Lambda function
         queue_name = f"test-{short_uid()}"
@@ -665,13 +704,14 @@ class TestLambdaBaseFeatures:
             role=lambda_su_role,
         )
 
-        lambda_client.put_function_event_invoke_config(
+        put_event_invoke_config_response = lambda_client.put_function_event_invoke_config(
             FunctionName=lambda_name,
             DestinationConfig={
                 "OnSuccess": {"Destination": queue_arn},
                 "OnFailure": {"Destination": queue_arn},
             },
         )
+        snapshot.assert_match("put_function_event_invoke_config", put_event_invoke_config_response)
 
         lambda_client.invoke(
             FunctionName=lambda_name,
@@ -685,10 +725,11 @@ class TestLambdaBaseFeatures:
             msg = rs["Messages"][0]["Body"]
             msg = json.loads(msg)
             assert condition == msg["requestContext"]["condition"]
+            snapshot.assert_match("destination_message", rs)
 
         retry(receive_message, retries=120, sleep=3)
 
-    def test_large_payloads(self, caplog, lambda_client, create_lambda_function):
+    def test_large_payloads(self, caplog, lambda_client, create_lambda_function, snapshot):
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         caplog.set_level(logging.INFO)
 
@@ -701,8 +742,10 @@ class TestLambdaBaseFeatures:
         payload = {"test": "test123456" * 100 * 1000 * 5}  # 5MB payload
         payload_bytes = to_bytes(json.dumps(payload))
         result = lambda_client.invoke(FunctionName=function_name, Payload=payload_bytes)
+        result = read_streams(result)
+        snapshot.assert_match("invocation_response", result)
         assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
-        result_data = result["Payload"].read()
+        result_data = result["Payload"]
         result_data = json.loads(to_str(result_data))
         assert payload == result_data
 
