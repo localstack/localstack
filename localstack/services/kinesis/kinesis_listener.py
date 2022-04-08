@@ -11,6 +11,7 @@ from requests.models import Response
 from localstack import config
 from localstack.constants import APPLICATION_CBOR, APPLICATION_JSON, HEADER_AMZN_ERROR_TYPE
 from localstack.services.awslambda import lambda_api
+from localstack.services.awslambda.lambda_api import RECORD_TYPE_DYNAMODB, RECORD_TYPE_KINESIS
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
@@ -32,6 +33,23 @@ class KinesisBackend(RegionBackend):
         self.stream_consumers = []
         # maps stream name to list of enhanced monitoring metrics
         self.enhanced_metrics = {}
+
+
+def forward_records_to_process(event_records, kinesis_stream_name):
+    """Forwards the records to lambda_api to check if any event_source_mapping is specified for the stream
+    Dynamodb streams use kinesis, therefore we need to check the data content to extract the corresponding dynamodb source-arn
+    Otherwise we can safely assume that this is a "normal" kinesis stream"""
+    try:
+        decoded = json.loads(base64.b64decode(event_records[0]["data"]))
+        if "dynamodb" in decoded:
+            return lambda_api.process_records(
+                event_records, decoded.get("eventSourceARN"), RECORD_TYPE_DYNAMODB
+            )
+    except Exception as e:
+        LOG.debug("Error while trying to decode data from event_records: %s", e)
+    return lambda_api.process_records(
+        event_records, aws_stack.kinesis_stream_arn(kinesis_stream_name), RECORD_TYPE_KINESIS
+    )
 
 
 class ProxyListenerKinesis(ProxyListener):
@@ -166,7 +184,7 @@ class ProxyListenerKinesis(ProxyListener):
             response_body = self.decode_content(response.content)
             event_record = self.create_event_record(data, response_body.get("SequenceNumber"))
 
-            self.process_kinesis_records([event_record], data["StreamName"])
+            forward_records_to_process([event_record], data["StreamName"])
         elif action == "PutRecords":
             event_records = []
             response_body = self.decode_content(response.content)
@@ -178,7 +196,7 @@ class ProxyListenerKinesis(ProxyListener):
                     sequence_number = response_records[index].get("SequenceNumber")
                     event_records.append(self.create_event_record(record, sequence_number))
 
-                self.process_kinesis_records(event_records, data["StreamName"])
+                forward_records_to_process(event_records, data["StreamName"])
 
         elif action == "UpdateShardCount" and config.KINESIS_PROVIDER == "kinesalite":
             # Currently kinesalite, which backs the Kinesis implementation for localstack, does
@@ -300,20 +318,6 @@ class ProxyListenerKinesis(ProxyListener):
             "partitionKey": data["PartitionKey"],
             "sequenceNumber": sequence_number,
         }
-
-    def check_for_dynamodb_source_arn(self, event_record):
-        try:
-            decoded = json.loads(base64.b64decode(event_record["data"]))
-            if "dynamodb" in decoded:
-                return decoded.get("eventSourceARN")
-            else:
-                return None
-        except Exception:
-            return None
-
-    def process_kinesis_records(self, event_records, stream_name):
-        source_arn = self.check_for_dynamodb_source_arn(event_records[0])
-        lambda_api.process_kinesis_records(event_records, stream_name, source_arn)
 
 
 def encode_data(data, encoding_type):

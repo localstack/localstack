@@ -10,7 +10,6 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc, to_str
-from localstack.utils.sync import retry
 
 APP_NAME = "ddb_streams_api"
 app = Flask(APP_NAME)
@@ -65,20 +64,6 @@ def get_stream_for_table(table_arn):
     return region.ddb_streams.get(table_name)
 
 
-def check_stream_ready(kinesis, stream_name):
-    status = kinesis.describe_stream(StreamName=stream_name)["StreamDescription"]["StreamStatus"]
-    if status not in ("ACTIVE", "UPDATING"):
-
-        def check_stream_active():
-            state = kinesis.describe_stream(StreamName=stream_name)["StreamDescription"][
-                "StreamStatus"
-            ]
-            if state != "ACTIVE":
-                raise Exception(f"StreamStatus is {state}")
-
-        retry(check_stream_active, retries=6, sleep=1.0)
-
-
 def forward_events(records):
     kinesis = aws_stack.connect_to_service("kinesis")
     for record in records:
@@ -87,7 +72,6 @@ def forward_events(records):
         if stream:
             table_name = table_name_from_stream_arn(stream["StreamArn"])
             stream_name = get_kinesis_stream_name(table_name)
-            check_stream_ready(kinesis, stream_name)
             kinesis.put_record(StreamName=stream_name, Data=json.dumps(record), PartitionKey="TODO")
 
 

@@ -916,7 +916,7 @@ def lambda_su_role():
 
 
 @pytest.fixture
-def iam_create_role_with_policy(iam_client):
+def create_iam_role_with_policy(iam_client):
     roles = {}
 
     def _create_role_and_policy(**kwargs):

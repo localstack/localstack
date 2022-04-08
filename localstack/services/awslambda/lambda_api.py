@@ -109,6 +109,10 @@ BATCH_SIZE_RANGES = {
 
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+00:00"
 
+RECORD_TYPE_KINESIS = "Kinesis"
+RECORD_TYPE_DYNAMODB = "Dynamodb"
+BATCH_INFO_KINESIS = "KinesisBatchInfo"
+BATCH_INFO_DYNAMODB = "DDBStreamBatchInfo"
 app = Flask(APP_NAME)
 
 
@@ -668,116 +672,155 @@ def process_sns_notification(
     return inv_result.result
 
 
-def create_records(shard_id, stream_arn, chunk, is_dynamodb_record):
-    if not is_dynamodb_record:
-        return [
-            {
-                "eventID": "{0}:{1}".format(shard_id, rec["sequenceNumber"]),
-                "eventSourceARN": stream_arn,
-                "eventSource": "aws:kinesis",
-                "eventVersion": "1.0",
-                "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::{0}:role/lambda-role".format(
-                    TEST_AWS_ACCOUNT_ID
-                ),
-                "awsRegion": aws_stack.get_region(),
-                "kinesis": rec,
-            }
-            for rec in chunk
-        ]
-    else:
-        # dynamo db record already has the relevant fields base64-encoded in "data":
-        return [json.loads(base64.b64decode(rec["data"])) for rec in chunk]
+def _create_kinesis_event_records(shard_id, stream_arn, chunk):
+    """Creates a list of event records for lambda from the kinesis records
+    shard_id    -- used as part of the eventID
+    stream_arn  -- the eventSourceARN of the event
+    chunk       -- kinesis records information that will be added to the event records
+
+    returns list of event records for kinesis
+    """
+    return [
+        {
+            "eventID": "{0}:{1}".format(shard_id, rec["sequenceNumber"]),
+            "eventSourceARN": stream_arn,
+            "eventSource": "aws:kinesis",
+            "eventVersion": "1.0",
+            "eventName": "aws:kinesis:record",
+            "invokeIdentityArn": "arn:aws:iam::{0}:role/lambda-role".format(TEST_AWS_ACCOUNT_ID),
+            "awsRegion": aws_stack.get_region(),
+            "kinesis": rec,
+        }
+        for rec in chunk
+    ]
 
 
-def process_kinesis_records(records, stream_name, dynamodb_source_arn=None):
-    def chunks(lst, n):
-        # Yield successive n-sized chunks from lst.
-        for i in range(0, len(lst), n):
-            yield lst[i : i + n]
+def _create_dynamodb_records(chunk):
+    """Creates a list of event records for lambda from the kinesis records by extracting the "data" field
+    chunk       -- kinesis records information
 
-    # feed records into listening lambdas
+    returns list of event records for dynamodb
+    """
+    return [json.loads(base64.b64decode(rec["data"])) for rec in chunk]
+
+
+def _chunks(lst, n):
+    """Yield successive n-sized chunks from list."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
+
+
+def _create_on_failure_callback(shard_id, source, chunk, details_type):
+    """If destinationConfig for OnFailure is set, returns a function that will invoke the destination
+    Else returns None"""
+
+    def _on_failure_callback(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
+        # streams only supports "OnFailure"
+        if not error:
+            return
+
+        payload = {
+            "version": "1.0",
+            "timestamp": timestamp_millis(),
+            "requestContext": {
+                "requestId": long_uid(),
+                "functionArn": func_arn,
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": 1,
+            },
+            "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": "Unhandled",
+            },
+        }
+        details = {
+            "shardId": shard_id,
+            "startSequenceNumber": chunk[0]["sequenceNumber"],
+            "endSequenceNumber": chunk[-1]["sequenceNumber"],
+            "approximateArrivalOfFirstRecord": timestamp_millis(
+                chunk[0]["approximateArrivalTimestamp"]
+            ),
+            "approximateArrivalOfLastRecord": timestamp_millis(
+                chunk[-1]["approximateArrivalTimestamp"]
+            ),
+            "batchSize": source["BatchSize"],
+            "streamArn": source["EventSourceArn"],
+        }
+        payload[details_type] = details
+
+        target = source["DestinationConfig"]["OnFailure"]["Destination"]
+        send_event_to_target(target, payload)
+
+    if source.get("DestinationConfig") and source["DestinationConfig"].get("OnFailure"):
+        return _on_failure_callback
+    return None
+
+
+def _process_dynamodb_records(shard_id, source, chunk):
+    """Creates dynamodb event records and runs lambda
+    shard_id    -- the shared-id that will be used in the event-record description
+    source      -- the event-source-mapping details
+    chunk       -- the kinesis records to be transformed to event records
+    """
+    function_arn = source["FunctionArn"]
+    event = {"Records": _create_dynamodb_records(chunk)}
+    on_failure_callback = _create_on_failure_callback(shard_id, source, chunk, BATCH_INFO_DYNAMODB)
+    run_lambda(
+        func_arn=function_arn,
+        event=event,
+        context={},
+        asynchronous=not config.SYNCHRONOUS_DYNAMODB_EVENTS,
+        callback=on_failure_callback,
+    )
+
+
+def _process_kinesis_records(shard_id, source, chunk):
+    """Creates kinesis event records and runs lambda
+    shard_id    -- the shared-id that will be used in the event-record description
+    source      -- the event-source-mapping details
+    chunk       -- the kinesis records to be transformed to event records
+    """
+    function_arn = source["FunctionArn"]
+    stream_arn = source["EventSourceArn"]
+    event = {"Records": _create_kinesis_event_records(shard_id, stream_arn, chunk)}
+    lock_discriminator = None
+    if not config.SYNCHRONOUS_KINESIS_EVENTS:
+        lock_discriminator = f"{stream_arn}/{shard_id}"
+        lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
+            lock_discriminator, BoundedSemaphore(source["ParallelizationFactor"])
+        )
+
+    on_failure_callback = _create_on_failure_callback(shard_id, source, chunk, BATCH_INFO_KINESIS)
+
+    run_lambda(
+        func_arn=function_arn,
+        event=event,
+        context={},
+        asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS,
+        lock_discriminator=lock_discriminator,
+        callback=on_failure_callback,
+    )
+
+
+def process_records(records, stream_arn, record_type):
+    """Feed records into listening lambdas (defined by event-source-mapping)
+    records     -- the records that should be transformed to events
+    stream_arn  -- the stream-arn that was defined as source-arn in the event-source-mapping
+    record_type -- either RECORD_TYPE_KINESIS or RECORD_TYPE_DYNAMODB
+    """
     try:
-        if not dynamodb_source_arn:
-            stream_arn = aws_stack.kinesis_stream_arn(stream_name)
-        else:
-            stream_arn = dynamodb_source_arn
         sources = get_event_sources(source_arn=stream_arn)
-        is_dynamodb_record = dynamodb_source_arn is not None
         for source in sources:
             if source.get("State") != "Enabled":
                 continue
-            arn = source["FunctionArn"]
-            for chunk in chunks(records, source["BatchSize"]):
+            for chunk in _chunks(records, source["BatchSize"]):
                 shard_id = "shardId-000000000000"
-                event = {
-                    "Records": create_records(
-                        shard_id, stream_arn, chunk, is_dynamodb_record=is_dynamodb_record
-                    )
-                }
-                lock_discriminator = None
-                if not is_dynamodb_record and not config.SYNCHRONOUS_KINESIS_EVENTS:
-                    lock_discriminator = f"{stream_arn}/{shard_id}"
-                    lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
-                        lock_discriminator, BoundedSemaphore(source["ParallelizationFactor"])
-                    )
+                if record_type == RECORD_TYPE_KINESIS:
+                    _process_kinesis_records(shard_id, source, chunk)
+                elif record_type == RECORD_TYPE_DYNAMODB:
+                    _process_dynamodb_records(shard_id, source, chunk)
 
-                def on_failure_callback(
-                    result, func_arn, event, error=None, dlq_sent=None, **kwargs
-                ):
-                    # streams only supports "OnFailure"
-                    if not error:
-                        return
-
-                    details = {
-                        "shardId": shard_id,
-                        "startSequenceNumber": chunk[0]["sequenceNumber"],
-                        "endSequenceNumber": chunk[-1]["sequenceNumber"],
-                        "approximateArrivalOfFirstRecord": timestamp_millis(
-                            chunk[0]["approximateArrivalTimestamp"]
-                        ),
-                        "approximateArrivalOfLastRecord": timestamp_millis(
-                            chunk[-1]["approximateArrivalTimestamp"]
-                        ),
-                        "batchSize": source["BatchSize"],
-                        "streamArn": stream_arn,
-                    }
-                    payload = {
-                        "version": "1.0",
-                        "timestamp": timestamp_millis(),
-                        "requestContext": {
-                            "requestId": long_uid(),
-                            "functionArn": func_arn,
-                            "condition": "RetryAttemptsExhausted",
-                            "approximateInvokeCount": 1,
-                        },
-                        "responseContext": {
-                            "statusCode": 200,
-                            "executedVersion": "$LATEST",
-                            "functionError": "Unhandled",
-                        },
-                    }
-                    if is_dynamodb_record:
-                        payload["DDBStreamBatchInfo"] = details
-                    else:
-                        payload["KinesisBatchInfo"] = details
-
-                    target = source["DestinationConfig"]["OnFailure"]["Destination"]
-                    send_event_to_target(target, payload)
-
-                run_lambda(
-                    func_arn=arn,
-                    event=event,
-                    context={},
-                    asynchronous=not config.SYNCHRONOUS_DYNAMODB_EVENTS
-                    if is_dynamodb_record
-                    else not config.SYNCHRONOUS_KINESIS_EVENTS,
-                    lock_discriminator=lock_discriminator,
-                    callback=on_failure_callback
-                    if source.get("DestinationConfig")
-                    and source["DestinationConfig"].get("OnFailure")
-                    else None,
-                )
     except Exception as e:
         LOG.warning(
             "Unable to run Lambda function on Kinesis records: %s %s", e, traceback.format_exc()

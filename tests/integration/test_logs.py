@@ -228,7 +228,7 @@ class TestCloudWatchLogs:
         s3_client,
         firehose_client,
         iam_client,
-        iam_create_role_with_policy,
+        create_iam_role_with_policy,
     ):
         try:
             firehose_name = f"test-firehose-{short_uid()}"
@@ -236,7 +236,7 @@ class TestCloudWatchLogs:
 
             role = f"test-firehose-s3-role-{short_uid()}"
             policy_name = f"test-firehose-s3-role-policy-{short_uid()}"
-            role_arn = iam_create_role_with_policy(
+            role_arn = create_iam_role_with_policy(
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=s3_firehose_role,
@@ -262,7 +262,7 @@ class TestCloudWatchLogs:
 
             role = f"test-firehose-role-{short_uid()}"
             policy_name = f"test-firehose-role-policy-{short_uid()}"
-            role_arn_logs = iam_create_role_with_policy(
+            role_arn_logs = create_iam_role_with_policy(
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=logs_role,
@@ -321,7 +321,7 @@ class TestCloudWatchLogs:
         logs_log_stream,
         kinesis_client,
         iam_client,
-        iam_create_role_with_policy,
+        create_iam_role_with_policy,
     ):
 
         kinesis_name = f"test-kinesis-{short_uid()}"
@@ -333,7 +333,7 @@ class TestCloudWatchLogs:
             kinesis_arn = result["StreamARN"]
             role = f"test-kinesis-role-{short_uid()}"
             policy_name = f"test-kinesis-role-policy-{short_uid()}"
-            role_arn = iam_create_role_with_policy(
+            role_arn = create_iam_role_with_policy(
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=logs_role,

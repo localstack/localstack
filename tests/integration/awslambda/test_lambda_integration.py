@@ -112,10 +112,10 @@ class TestLambdaEventSourceMappings:
         assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
         uuid = rs["UUID"]
 
-        def wait_for_event_source_mapping():
+        def _wait_for_event_source_mapping():
             return lambda_client.get_event_source_mapping(UUID=uuid)["State"] == "Enabled"
 
-        assert poll_condition(wait_for_event_source_mapping, timeout=30)
+        assert poll_condition(_wait_for_event_source_mapping, timeout=30)
 
         with pytest.raises(ClientError) as e:
             # Update batch size with invalid value
@@ -447,14 +447,15 @@ class TestLambdaEventSourceMappings:
         sqs_client,
         sqs_queue_arn,
         sqs_create_queue,
-        iam_create_role_with_policy,
+        create_iam_role_with_policy,
         kinesis_client,
+        wait_for_stream_ready,
     ):
         try:
             function_name = f"lambda_func-{short_uid()}"
             role = f"test-lambda-role-{short_uid()}"
             policy_name = f"test-lambda-policy-{short_uid()}"
-            role_arn = iam_create_role_with_policy(
+            role_arn = create_iam_role_with_policy(
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=lambda_role,
@@ -478,18 +479,7 @@ class TestLambdaEventSourceMappings:
             result = kinesis_client.describe_stream(StreamName=kinesis_name)["StreamDescription"]
             kinesis_arn = result["StreamARN"]
 
-            # wait for stream-status "ACTIVE"
-            status = result["StreamStatus"]
-            if status != "ACTIVE":
-
-                def check_stream_active():
-                    state = kinesis_client.describe_stream(StreamName=kinesis_name)[
-                        "StreamDescription"
-                    ]["StreamStatus"]
-                    if state != "ACTIVE":
-                        raise Exception(f"StreamStatus is {state}")
-
-                retry(check_stream_active, retries=6, sleep=1.0, sleep_before=2.0)
+            wait_for_stream_ready(stream_name=kinesis_name)
 
             queue_event_source_mapping = sqs_create_queue()
             queue_failure_event_source_mapping_arn = sqs_queue_arn(queue_event_source_mapping)
@@ -510,15 +500,14 @@ class TestLambdaEventSourceMappings:
             event_source_mapping_uuid = result["UUID"]
             event_source_mapping_state = result["State"]
             if event_source_mapping_state != "Enabled":
-
-                def check_mapping_state():
-                    state = lambda_client.get_event_source_mapping(UUID=event_source_mapping_uuid)[
-                        "State"
-                    ]
-                    if state != "Enabled":
-                        raise Exception(f"State is {state}")
-
-                retry(check_mapping_state, retries=6, sleep_before=2.0, sleep=1.0)
+                retry(
+                    _check_mapping_state,
+                    retries=6,
+                    sleep_before=2.0,
+                    sleep=1.0,
+                    lambda_client=lambda_client,
+                    uuid=event_source_mapping_uuid,
+                )
 
             message = {
                 "input": "hello",
@@ -550,7 +539,7 @@ class TestLambdaEventSourceMappings:
         sqs_client,
         sqs_queue_arn,
         sqs_create_queue,
-        iam_create_role_with_policy,
+        create_iam_role_with_policy,
         dynamodb_client,
         dynamodb_create_table,
     ):
@@ -558,7 +547,7 @@ class TestLambdaEventSourceMappings:
             function_name = f"lambda_func-{short_uid()}"
             role = f"test-lambda-role-{short_uid()}"
             policy_name = f"test-lambda-policy-{short_uid()}"
-            role_arn = iam_create_role_with_policy(
+            role_arn = create_iam_role_with_policy(
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=lambda_role,
@@ -583,15 +572,14 @@ class TestLambdaEventSourceMappings:
             status = result["TableDescription"]["TableStatus"]
             # wait for status "ACTIVE"
             if status != "ACTIVE":
-
-                def check_table_active():
-                    state = dynamodb_client.describe_table(TableName=table_name)["Table"][
-                        "TableStatus"
-                    ]
-                    if state != "ACTIVE":
-                        raise Exception(f"TableStatus is {state}")
-
-                retry(check_table_active, retries=6, sleep=1.0, sleep_before=2.0)
+                retry(
+                    _check_table_active,
+                    retries=6,
+                    sleep=1.0,
+                    sleep_before=2.0,
+                    dynamodb_client=dynamodb_client,
+                    table_name=table_name,
+                )
 
             # activate stream
             result = dynamodb_client.update_table(
@@ -618,15 +606,14 @@ class TestLambdaEventSourceMappings:
             event_source_mapping_uuid = result["UUID"]
             event_source_mapping_state = result["State"]
             if event_source_mapping_state != "Enabled":
-
-                def check_mapping_state():
-                    state = lambda_client.get_event_source_mapping(UUID=event_source_mapping_uuid)[
-                        "State"
-                    ]
-                    if state != "Enabled":
-                        raise Exception(f"State is {state}")
-
-                retry(check_mapping_state, retries=6, sleep_before=2.0, sleep=1.0)
+                retry(
+                    _check_mapping_state,
+                    retries=6,
+                    sleep_before=2.0,
+                    sleep=1.0,
+                    lambda_client=lambda_client,
+                    uuid=event_source_mapping_uuid,
+                )
 
             insert = {partition_key: {"S": "hello world"}}
 
@@ -649,7 +636,7 @@ class TestLambdaEventSourceMappings:
         self,
         lambda_client,
         create_lambda_function,
-        iam_create_role_with_policy,
+        create_iam_role_with_policy,
         dynamodb_client,
         dynamodb_create_table,
         logs_client,
@@ -659,7 +646,7 @@ class TestLambdaEventSourceMappings:
             function_name = f"lambda_func-{short_uid()}"
             role = f"test-lambda-role-{short_uid()}"
             policy_name = f"test-lambda-policy-{short_uid()}"
-            role_arn = iam_create_role_with_policy(
+            role_arn = create_iam_role_with_policy(
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=lambda_role,
@@ -683,15 +670,14 @@ class TestLambdaEventSourceMappings:
             status = result["TableDescription"]["TableStatus"]
             # wait for status "ACTIVE"
             if status != "ACTIVE":
-
-                def check_table_active():
-                    state = dynamodb_client.describe_table(TableName=table_name)["Table"][
-                        "TableStatus"
-                    ]
-                    if state != "ACTIVE":
-                        raise Exception(f"TableStatus is {state}")
-
-                retry(check_table_active, retries=6, sleep=1.0, sleep_before=2.0)
+                retry(
+                    _check_table_active,
+                    retries=6,
+                    sleep=1.0,
+                    sleep_before=2.0,
+                    dynamodb_client=dynamodb_client,
+                    table_name=table_name,
+                )
 
             # activate stream
             result = dynamodb_client.update_table(
@@ -712,15 +698,14 @@ class TestLambdaEventSourceMappings:
             event_source_mapping_uuid = result["UUID"]
             event_source_mapping_state = result["State"]
             if event_source_mapping_state != "Enabled":
-
-                def check_mapping_state():
-                    state = lambda_client.get_event_source_mapping(UUID=event_source_mapping_uuid)[
-                        "State"
-                    ]
-                    if state != "Enabled":
-                        raise Exception(f"State is {state}")
-
-                retry(check_mapping_state, retries=6, sleep_before=2.0, sleep=1.0)
+                retry(
+                    _check_mapping_state,
+                    retries=6,
+                    sleep_before=2.0,
+                    sleep=1.0,
+                    lambda_client=lambda_client,
+                    uuid=event_source_mapping_uuid,
+                )
 
             insert = {partition_key: {"S": "hello world"}}
 
@@ -870,3 +855,13 @@ class TestKinesisSource:
         assertEvent(events[1], 1)
 
         assert (events[1]["executionStart"] - events[0]["executionStart"]) > 5
+
+
+def _check_mapping_state(lambda_client, uuid):
+    assert lambda_client.get_event_source_mapping(UUID=uuid)["State"] == "Enabled"
+
+
+def _check_table_active(dynamodb_client, table_name):
+    state = dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"]
+    if state != "ACTIVE":
+        raise Exception(f"TableStatus is {state}")
