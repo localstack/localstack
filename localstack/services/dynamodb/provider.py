@@ -631,10 +631,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("Query", expand=False)
     def query(self, context: RequestContext, query_input: QueryInput) -> QueryOutput:
-        if query_input.get("IndexName"):
-            if not is_index_query_valid(
-                to_str(query_input["TableName"]), query_input.get("Select")
-            ):
+        index_name = query_input.get("IndexName")
+        if index_name:
+            if not is_index_query_valid(query_input):
                 raise ValidationException(
                     "One or more parameter values were invalid: Select type ALL_ATTRIBUTES "
                     "is not supported for global secondary index id-index because its projection "
@@ -1218,12 +1217,22 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 # ---
 
 
-def is_index_query_valid(table_name: str, index_query_type: str) -> bool:
+def get_global_secondary_index(table_name, index_name):
     schema = SchemaExtractor.get_table_schema(table_name)
     for index in schema["Table"].get("GlobalSecondaryIndexes", []):
-        index_projection_type = index.get("Projection").get("ProjectionType")
-        if index_query_type == "ALL_ATTRIBUTES" and index_projection_type != "ALL":
-            return False
+        if index["IndexName"] == index_name:
+            return index
+    raise ResourceNotFoundException("Index not found")
+
+
+def is_index_query_valid(query_data: dict) -> bool:
+    table_name = to_str(query_data["TableName"])
+    index_name = to_str(query_data["IndexName"])
+    index_query_type = query_data.get("Select")
+    index = get_global_secondary_index(table_name, index_name)
+    index_projection_type = index.get("Projection").get("ProjectionType")
+    if index_query_type == "ALL_ATTRIBUTES" and index_projection_type != "ALL":
+        return False
     return True
 
 
