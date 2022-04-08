@@ -124,6 +124,7 @@ def dispatch_to_backend(
             code=error.get("Code", "UnknownError"),
             status_code=status,
             message=error.get("Message", ""),
+            sender_fault=("Type" in error),
         )
 
     if not include_response_metadata:

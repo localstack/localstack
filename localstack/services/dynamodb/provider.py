@@ -709,9 +709,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 if not unprocessed.get(key):
                     del unprocessed[key]
 
-            # TODO update CRC32 headers?
-            # fix_headers_for_updated_response(response)
-
         return result
 
     @handler("TransactWriteItems", expand=False)
