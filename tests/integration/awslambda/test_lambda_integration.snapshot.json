@@ -1,0 +1,866 @@
+{
+  "tests/integration/awslambda/test_lambda_integration.py::TestKinesisSource::test_kinesis_lambda_parallelism": {
+    "describe_kinesis_stream": {
+      "StreamDescription": {
+        "StreamName": "<name>",
+        "StreamARN": "<arn>",
+        "StreamStatus": "CREATING",
+        "StreamModeDetails": {
+          "StreamMode": "PROVISIONED"
+        },
+        "Shards": "<sha>",
+        "HasMoreShards": "<sha>",
+        "RetentionPeriodHours": 24,
+        "StreamCreationTimestamp": "<timestamp>",
+        "EnhancedMonitoring": [
+          {
+            "ShardLevelMetrics": "<sha>"
+          }
+        ],
+        "EncryptionType": "NONE"
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "create_esm": {
+      "ResponseMetadata": "<response-metadata>",
+      "UUID": "<uuid>",
+      "StartingPosition": "TRIM_HORIZON",
+      "BatchSize": 10,
+      "MaximumBatchingWindowInSeconds": 0,
+      "ParallelizationFactor": 1,
+      "EventSourceArn": "<arn>",
+      "FunctionArn": "<arn>",
+      "LastModified": "<date>",
+      "LastProcessingResult": "No records processed",
+      "State": "Creating",
+      "StateTransitionReason": "User action",
+      "DestinationConfig": {
+        "OnFailure": {}
+      },
+      "MaximumRecordAgeInSeconds": -1,
+      "BisectBatchOnFunctionError": false,
+      "MaximumRetryAttempts": -1,
+      "TumblingWindowInSeconds": 0,
+      "FunctionResponseTypes": []
+    },
+    "stream_summary": {
+      "StreamDescriptionSummary": {
+        "StreamName": "<name>",
+        "StreamARN": "<arn>",
+        "StreamStatus": "ACTIVE",
+        "StreamModeDetails": {
+          "StreamMode": "PROVISIONED"
+        },
+        "RetentionPeriodHours": 24,
+        "StreamCreationTimestamp": "<timestamp>",
+        "EnhancedMonitoring": [
+          {
+            "ShardLevelMetrics": "<sha>"
+          }
+        ],
+        "EncryptionType": "NONE",
+        "OpenShardCount": "<sha>",
+        "ConsumerCount": 0
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "put_records_result": {
+      "FailedRecordCount": 0,
+      "Records": [
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "put_records_result_2": {
+      "FailedRecordCount": 0,
+      "Records": [
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<shard-id>"
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "lambda_log_events": {
+      "events": [
+        {
+          "executionStart": "<execution-start>",
+          "event": {
+            "Records": [
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_0",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDB9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_1",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDB9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_2",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDB9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_3",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDB9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_4",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDB9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_5",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDB9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_6",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDB9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_7",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDB9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_8",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDB9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_9",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDB9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              }
+            ]
+          }
+        },
+        {
+          "executionStart": "<execution-start>",
+          "event": {
+            "Records": [
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_0",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDF9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_1",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDF9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_2",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDF9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_3",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDF9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_4",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDF9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_5",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDF9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_6",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDF9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_7",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDF9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_8",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDF9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              },
+              {
+                "kinesis": {
+                  "kinesisSchemaVersion": "1.0",
+                  "partitionKey": "test_9",
+                  "sequenceNumber": "<seq-nr>",
+                  "data": "eyJiYXRjaCI6IDF9",
+                  "approximateArrivalTimestamp": "<timestamp>"
+                },
+                "eventSource": "aws:kinesis",
+                "eventVersion": "1.0",
+                "eventID": "<event-id>",
+                "eventName": "<name>",
+                "invokeIdentityArn": "<arn>",
+                "awsRegion": "us-east-2",
+                "eventSourceARN": "<arn>"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration.py::TestLambdaEventSourceMappings::test_event_source_mapping_default_batch_size": {
+    "create_esm": {
+      "ResponseMetadata": "<response-metadata>",
+      "UUID": "<uuid>",
+      "BatchSize": 10,
+      "MaximumBatchingWindowInSeconds": 0,
+      "EventSourceArn": "<arn>",
+      "FunctionArn": "<arn>",
+      "LastModified": "<date>",
+      "State": "Creating",
+      "StateTransitionReason": "USER_INITIATED",
+      "FunctionResponseTypes": []
+    },
+    "create_table_result": {
+      "TableDescription": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "<name>",
+            "AttributeType": "S"
+          }
+        ],
+        "TableName": "<name>",
+        "KeySchema": [
+          {
+            "AttributeName": "<name>",
+            "KeyType": "HASH"
+          }
+        ],
+        "TableStatus": "CREATING",
+        "CreationDateTime": "<date>",
+        "ProvisionedThroughput": {
+          "NumberOfDecreasesToday": 0,
+          "ReadCapacityUnits": 10,
+          "WriteCapacityUnits": 10
+        },
+        "TableSizeBytes": 0,
+        "ItemCount": 0,
+        "TableArn": "<arn>",
+        "TableId": "<uuid>",
+        "StreamSpecification": {
+          "StreamEnabled": true,
+          "StreamViewType": "NEW_IMAGE"
+        },
+        "LatestStreamLabel": "<stream-label>",
+        "LatestStreamArn": "<arn>"
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "create_esm_withlatest_stream_arn": {
+      "ResponseMetadata": "<response-metadata>",
+      "UUID": "<uuid>",
+      "StartingPosition": "LATEST",
+      "BatchSize": 100,
+      "MaximumBatchingWindowInSeconds": 0,
+      "ParallelizationFactor": 1,
+      "EventSourceArn": "<arn>",
+      "FunctionArn": "<arn>",
+      "LastModified": "<date>",
+      "LastProcessingResult": "No records processed",
+      "State": "Creating",
+      "StateTransitionReason": "User action",
+      "DestinationConfig": {
+        "OnFailure": {}
+      },
+      "MaximumRecordAgeInSeconds": -1,
+      "BisectBatchOnFunctionError": false,
+      "MaximumRetryAttempts": -1,
+      "TumblingWindowInSeconds": 0,
+      "FunctionResponseTypes": []
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration.py::TestLambdaEventSourceMappings::test_disabled_event_source_mapping_with_dynamodb": {
+    "create_lambda_response": {
+      "CreateFunctionResponse": {
+        "ResponseMetadata": "<response-metadata>",
+        "FunctionName": "<name>",
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.6",
+        "Role": "<arn>",
+        "Handler": "handler.handler",
+        "CodeSize": 264,
+        "Description": "",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "LastModified": "<date>",
+        "CodeSha256": "<sha>",
+        "Version": "$LATEST",
+        "Environment": {
+          "Variables": {}
+        },
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "CreateEventSourceMappingResponse": null
+    },
+    "create_table_result": {
+      "TableDescription": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "<name>",
+            "AttributeType": "S"
+          }
+        ],
+        "TableName": "<name>",
+        "KeySchema": [
+          {
+            "AttributeName": "<name>",
+            "KeyType": "HASH"
+          }
+        ],
+        "TableStatus": "CREATING",
+        "CreationDateTime": "<date>",
+        "ProvisionedThroughput": {
+          "NumberOfDecreasesToday": 0,
+          "ReadCapacityUnits": 10,
+          "WriteCapacityUnits": 10
+        },
+        "TableSizeBytes": 0,
+        "ItemCount": 0,
+        "TableArn": "<arn>",
+        "TableId": "<uuid>",
+        "StreamSpecification": {
+          "StreamEnabled": true,
+          "StreamViewType": "NEW_IMAGE"
+        },
+        "LatestStreamLabel": "<latest-stream-label>",
+        "LatestStreamArn": "<arn>"
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "describe_table": {
+      "Table": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "<name>",
+            "AttributeType": "S"
+          }
+        ],
+        "TableName": "<name>",
+        "KeySchema": [
+          {
+            "AttributeName": "<name>",
+            "KeyType": "HASH"
+          }
+        ],
+        "TableStatus": "ACTIVE",
+        "CreationDateTime": "<date>",
+        "ProvisionedThroughput": {
+          "NumberOfDecreasesToday": 0,
+          "ReadCapacityUnits": 10,
+          "WriteCapacityUnits": 10
+        },
+        "TableSizeBytes": 0,
+        "ItemCount": 0,
+        "TableArn": "<arn>",
+        "TableId": "<uuid>",
+        "StreamSpecification": {
+          "StreamEnabled": true,
+          "StreamViewType": "NEW_IMAGE"
+        },
+        "LatestStreamLabel": "<latest-stream-label>",
+        "LatestStreamArn": "<arn>"
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "describe_stream": {
+      "StreamDescription": {
+        "StreamArn": "<arn>",
+        "StreamLabel": "<stream-label>",
+        "StreamStatus": "ENABLED",
+        "StreamViewType": "NEW_IMAGE",
+        "CreationRequestDateTime": "<date>",
+        "TableName": "<name>",
+        "KeySchema": [
+          {
+            "AttributeName": "<name>",
+            "KeyType": "HASH"
+          }
+        ],
+        "Shards": "<sha>"
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "events_1": {
+      "events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "us-east-2",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approx-creation-datetime>",
+                "Keys": {
+                  "id": {
+                    "S": "<event-id-1>"
+                  }
+                },
+                "NewImage": {
+                  "data": {
+                    "S": "data1"
+                  },
+                  "id": {
+                    "S": "<event-id-1>"
+                  }
+                },
+                "SequenceNumber": "<seq-nr>",
+                "SizeBytes": 29,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "<arn>"
+            }
+          ]
+        }
+      ]
+    },
+    "update_esm_result": {
+      "ResponseMetadata": "<response-metadata>",
+      "UUID": "<uuid>",
+      "StartingPosition": "TRIM_HORIZON",
+      "BatchSize": 100,
+      "MaximumBatchingWindowInSeconds": 1,
+      "ParallelizationFactor": 1,
+      "EventSourceArn": "<arn>",
+      "FunctionArn": "<arn>",
+      "LastModified": "<date>",
+      "LastProcessingResult": "OK",
+      "State": "Disabling",
+      "StateTransitionReason": "User action",
+      "DestinationConfig": {
+        "OnFailure": {}
+      },
+      "MaximumRecordAgeInSeconds": -1,
+      "BisectBatchOnFunctionError": false,
+      "MaximumRetryAttempts": -1,
+      "TumblingWindowInSeconds": 0,
+      "FunctionResponseTypes": []
+    },
+    "events_2": {
+      "events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "us-east-2",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approx-creation-datetime>",
+                "Keys": {
+                  "id": {
+                    "S": "<event-id-1>"
+                  }
+                },
+                "NewImage": {
+                  "data": {
+                    "S": "data1"
+                  },
+                  "id": {
+                    "S": "<event-id-1>"
+                  }
+                },
+                "SequenceNumber": "<seq-nr>",
+                "SizeBytes": 29,
+                "StreamViewType": "NEW_IMAGE"
+              },
+              "eventSourceARN": "<arn>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration.py::TestLambdaEventSourceMappings::test_python_lambda_subscribe_sns_topic": {
+    "lambda_creation_response": {
+      "CreateFunctionResponse": {
+        "ResponseMetadata": "<response-metadata>",
+        "FunctionName": "<name>",
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.6",
+        "Role": "<arn>",
+        "Handler": "handler.handler",
+        "CodeSize": 264,
+        "Description": "",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "LastModified": "<date>",
+        "CodeSha256": "<sha>",
+        "Version": "$LATEST",
+        "Environment": {
+          "Variables": {}
+        },
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "CreateEventSourceMappingResponse": null
+    },
+    "sns_topic": {
+      "Attributes": {
+        "Policy": "{\"Version\":\"2008-10-17\",\"Id\":\"__default_policy_ID\",\"Statement\":[{\"Sid\":\"__default_statement_ID\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":[\"SNS:GetTopicAttributes\",\"SNS:SetTopicAttributes\",\"SNS:AddPermission\",\"SNS:RemovePermission\",\"SNS:DeleteTopic\",\"SNS:Subscribe\",\"SNS:ListSubscriptionsByTopic\",\"SNS:Publish\"],\"Resource\":\"<arn>\",\"Condition\":{\"StringEquals\":{\"AWS:SourceOwner\":\"111111111111\"}}}]}",
+        "Owner": "111111111111",
+        "SubscriptionsPending": "0",
+        "TopicArn": "<arn>",
+        "EffectiveDeliveryPolicy": "{\"http\":{\"defaultHealthyRetryPolicy\":{\"minDelayTarget\":20,\"maxDelayTarget\":20,\"numRetries\":3,\"numMaxDelayRetries\":0,\"numNoDelayRetries\":0,\"numMinDelayRetries\":0,\"backoffFunction\":\"linear\"},\"disableSubscriptionOverrides\":false}}",
+        "SubscriptionsConfirmed": "0",
+        "DisplayName": "<name>",
+        "SubscriptionsDeleted": "0"
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "add_permission_result": {
+      "ResponseMetadata": "<response-metadata>",
+      "Statement": "{\"Sid\":\"test-statement-209fe4db\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"sns.amazonaws.com\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"<arn>\",\"Condition\":{\"ArnLike\":{\"AWS:SourceArn\":\"<arn>\"}}}"
+    },
+    "events": {
+      "events": [
+        {
+          "Records": [
+            {
+              "EventSource": "aws:sns",
+              "EventVersion": "1.0",
+              "EventSubscriptionArn": "<arn>",
+              "Sns": {
+                "Type": "Notification",
+                "MessageId": "<uuid>",
+                "TopicArn": "<arn>",
+                "Subject": "[Subject] Test subject",
+                "Message": "Hello world.",
+                "Timestamp": "<timestamp>",
+                "SignatureVersion": "1",
+                "Signature": "jPwZalrsttylFAwy29mZLOZHanD/JrD1It5hXSX5xKT8frizrNCy6E9B2xpZW63FgZC07J2y6wcixPkZ8UwR7j48bKF1Z/gfjynwKFofXq5nfRfvcA2U+sWkaaeEsjgj2iJBNcpLnwH6+ohThof+hjnsthvc4Ppj6yrJ2RgS/XHo38eTHJK9XVRWepovihrfv8VPMIiXZ7yELCVvZSrFl1UfstE8ioXpt8IEgC545Oj1UMFzCu7KGuyWqSQlGUtgayQ0FUxYZdTCopS+3+5KyXOaLdcAb9e3nM6K/7SNpCiUEpH+5+TGSMClPyvf2M1eAR5j5yKyqNZ3zwXNI4VY/g==",
+                "SigningCertUrl": "https://sns.us-east-2.amazonaws.com/SimpleNotificationService-7ff5318490ec183fbaddaa2a969abfda.pem",
+                "UnsubscribeUrl": "https://sns.us-east-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=<arn>",
+                "MessageAttributes": {}
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

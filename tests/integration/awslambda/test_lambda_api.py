@@ -36,7 +36,7 @@ lambda_asf_only = pytest.mark.skipif(
 )
 
 
-# TODO: move this to fixtures / reconcile with ohter fixture usage
+# TODO: move this to fixtures / reconcile with other fixture usage
 @pytest.fixture
 def create_lambda_function_aws(
     lambda_client,
@@ -75,6 +75,11 @@ def create_lambda_function_aws(
             lambda_client.delete_function(FunctionName=arn)
         except Exception:
             LOG.debug(f"Unable to delete function {arn=} in cleanup")
+
+
+# 1. AWS mit --snapshot-update
+# 2. AWS mit --snapshot-verify
+# 3. localstack mit --snapshot-verify
 
 
 @pytest.mark.snapshot

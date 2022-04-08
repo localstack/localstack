@@ -19,8 +19,8 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
         default=False,
         help="test run will not have an internet connection",
     )
-    parser.addoption("--snapshot-write", action="store_true")
-    parser.addoption("--snapshot-strict", action="store_true")
+    parser.addoption("--snapshot-update", action="store_true")
+    parser.addoption("--snapshot-verify", action="store_true")
 
 
 def pytest_configure(config):
