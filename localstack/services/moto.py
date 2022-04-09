@@ -3,15 +3,12 @@ This module provides tools to call moto using moto and botocore internals withou
 """
 import sys
 from functools import lru_cache
-from typing import Any, Callable, Mapping, Optional, Tuple, Union
-from urllib.parse import urlsplit
+from typing import Callable
 
-from botocore.awsrequest import AWSPreparedRequest
 from botocore.parsers import create_parser
 from moto.backends import get_backend as get_moto_backend
 from moto.core.utils import BackendDict
 from moto.moto_server.utilities import RegexConverter
-from werkzeug.datastructures import Headers
 from werkzeug.routing import Map, Rule
 
 from localstack import __version__ as localstack_version
@@ -21,15 +18,18 @@ from localstack.aws.api import (
     HttpRequest,
     HttpResponse,
     RequestContext,
+    ServiceRequest,
     ServiceResponse,
 )
-from localstack.aws.api.core import ServiceRequest, ServiceRequestHandler
-from localstack.aws.skeleton import DispatchTable, create_dispatch_table
-from localstack.aws.spec import load_service
-from localstack.utils.aws import aws_stack
-from localstack.utils.strings import to_bytes, to_str
+from localstack.aws.forwarder import (
+    ForwardingFallbackDispatcher,
+    HttpBackendResponse,
+    create_aws_request_context,
+)
+from localstack.aws.skeleton import DispatchTable
+from localstack.utils.strings import to_bytes
 
-MotoResponse = Tuple[int, dict, Union[str, bytes]]
+MotoResponse = HttpBackendResponse
 MotoDispatcher = Callable[[HttpRequest, str, dict], MotoResponse]
 
 user_agent = f"Localstack/{localstack_version} Python/{sys.version.split(' ')[0]}"
@@ -73,7 +73,7 @@ def call_moto(context: RequestContext, include_response_metadata=False) -> Servi
 
 
 def call_moto_with_request(
-    context: RequestContext, service_request: Union[Mapping[str, Any], ServiceRequest]
+    context: RequestContext, service_request: ServiceRequest
 ) -> ServiceResponse:
     """
     Like `call_moto`, but you can pass a modified version of the service request before calling moto. The caveat is
@@ -96,12 +96,13 @@ def call_moto_with_request(
     return call_moto(local_context)
 
 
-def proxy_moto(context: RequestContext) -> HttpResponse:
+def proxy_moto(context: RequestContext, service_request: ServiceRequest = None) -> HttpResponse:
     """
     Similar to ``call``, only that ``proxy`` does not parse the HTTP response into a ServiceResponse, but instead
     returns directly the HTTP response. This can be useful to pass through moto's response directly to the client.
 
     :param context: the request context
+    :param service_request: currently not being used, added to satisfy ServiceRequestHandler contract
     :return: the HttpResponse from moto
     """
     status, headers, content = dispatch_to_moto(context)
@@ -118,24 +119,7 @@ def MotoFallbackDispatcher(provider: object) -> DispatchTable:
     :param provider: the ASF provider
     :return: a modified DispatchTable
     """
-    table = create_dispatch_table(provider)
-
-    for op, fn in table.items():
-        table[op] = _wrap_with_fallthrough(fn)
-
-    return table
-
-
-def _wrap_with_fallthrough(handler: ServiceRequestHandler) -> ServiceRequestHandler:
-    def _call(context, req) -> ServiceResponse:
-        try:
-            # handler will typically be an ASF provider method, and in case it hasn't been implemented, we try to
-            # fall through to moto
-            return handler(context, req)
-        except NotImplementedError:
-            return proxy_moto(context)
-
-    return _call
+    return ForwardingFallbackDispatcher(provider, proxy_moto)
 
 
 def dispatch_to_moto(context: RequestContext) -> MotoResponse:
@@ -206,80 +190,3 @@ def load_moto_routing_table(service: str) -> Map:
         url_map.add(Rule(url_path, endpoint=endpoint, strict_slashes=strict_slashes))
 
     return url_map
-
-
-def create_aws_request_context(
-    service_name: str,
-    action: str,
-    parameters: Mapping[str, Any] = None,
-    region: str = None,
-    endpoint_url: Optional[str] = None,
-) -> RequestContext:
-    """
-    This is a stripped-down version of what the botocore client does to perform an HTTP request from a client call. A
-    client call looks something like this: boto3.client("sqs").create_queue(QueueName="myqueue"), which will be
-    serialized into an HTTP request. This method does the same, without performing the actual request, and with a
-    more low-level interface. An equivalent call would be
-
-         create_aws_request_context("sqs", "CreateQueue", {"QueueName": "myqueue"})
-
-    :param service_name: the AWS service
-    :param action: the action to invoke
-    :param parameters: the invocation parameters
-    :param region: the region name (default is us-east-1)
-    :param endpoint_url: the endpoint to call (defaults to localstack)
-    :return: a RequestContext object that describes this request
-    """
-    if parameters is None:
-        parameters = {}
-    if region is None:
-        region = config.AWS_REGION_US_EAST_1
-
-    service = load_service(service_name)
-    operation = service.operation_model(action)
-
-    # we re-use botocore internals here to serialize the HTTP request, but don't send it
-    client = aws_stack.connect_to_service(
-        service_name, endpoint_url=endpoint_url, region_name=region
-    )
-    request_context = {
-        "client_region": region,
-        "has_streaming_input": operation.has_streaming_input,
-        "auth_type": operation.auth_type,
-    }
-    request_dict = client._convert_to_request_dict(parameters, operation, context=request_context)
-    aws_request = client._endpoint.create_request(request_dict, operation)
-
-    context = RequestContext()
-    context.service = service
-    context.operation = operation
-    context.region = region
-    context.request = create_http_request(aws_request)
-
-    return context
-
-
-def create_http_request(aws_request: AWSPreparedRequest) -> HttpRequest:
-    # create HttpRequest from AWSRequest
-    split_url = urlsplit(aws_request.url)
-    host = split_url.netloc.split(":")
-    if len(host) == 1:
-        server = (to_str(host[0]), None)
-    elif len(host) == 2:
-        server = (to_str(host[0]), int(host[1]))
-    else:
-        raise ValueError
-
-    # prepare the RequestContext
-    headers = Headers()
-    for k, v in aws_request.headers.items():
-        headers[k] = v
-
-    return HttpRequest(
-        method=aws_request.method,
-        path=split_url.path,
-        query_string=split_url.query,
-        headers=headers,
-        body=aws_request.body,
-        server=server,
-    )
