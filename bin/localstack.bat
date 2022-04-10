@@ -1,1 +1,1 @@
-python %~dp0\localstack %*
+python "%~dp0\localstack" %*
