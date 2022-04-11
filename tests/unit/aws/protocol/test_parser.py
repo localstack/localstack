@@ -727,6 +727,21 @@ def test_parse_appconfig_non_json_blob_payload():
     )
 
 
+def test_parse_appconfig_deprecated_operation():
+    """
+    Tests if the parsing works correctly if the request targets a deprecated operation (without alternative, i.e.
+    another function having the same signature).
+    """
+    _botocore_parser_integration_test(
+        service="appconfig",
+        action="GetConfiguration",
+        Application="test-application",
+        Environment="test-environment",
+        Configuration="test-configuration",
+        ClientId="test-client-id",
+    )
+
+
 def test_parse_s3_with_extended_uri_pattern():
     """
     Tests if the parsing works for operations where the operation defines a request URI with a "+" in the variable name,
@@ -776,6 +791,41 @@ def test_restjson_operation_detection_with_query_suffix_in_requesturi():
     # Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
     # parameter, f.e. API Gateway's ImportRestApi: "/restapis?mode=import"
     _botocore_parser_integration_test(service="apigateway", action="ImportRestApi", body=b"Test")
+
+
+def test_restxml_operation_detection_with_query_suffix_without_value_in_requesturi():
+    # Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
+    # parameter without a specific value, f.e. CloudFront's CreateDistributionWithTags:
+    # "/2020-05-31/distribution?WithTags"
+    _botocore_parser_integration_test(
+        service="cloudfront",
+        action="CreateDistributionWithTags",
+        DistributionConfigWithTags={
+            "DistributionConfig": {
+                "CallerReference": "string",
+                "Origins": {
+                    "Quantity": 1,
+                    "Items": [
+                        {
+                            "Id": "string",
+                            "DomainName": "string",
+                        }
+                    ],
+                },
+                "Comment": "string",
+                "Enabled": True,
+                "DefaultCacheBehavior": {
+                    "TargetOriginId": "string",
+                    "ViewerProtocolPolicy": "allow-all",
+                },
+            },
+            "Tags": {
+                "Items": [
+                    {"Key": "string", "Value": "string"},
+                ]
+            },
+        },
+    )
 
 
 def test_restjson_operation_detection_with_length_prio():
