@@ -10,7 +10,7 @@ namespace dotnet6
     {
 
         /// <summary>
-        /// A simple function that takes a string and does a ToUpper
+        /// A simple function that returns an empty payload
         /// </summary>
         /// <param name="input"></param>
         /// <param name="context"></param>
