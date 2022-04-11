@@ -6,6 +6,8 @@ import pytest
 import requests
 
 import localstack.config as config
+from localstack.constants import INTERNAL_RESOURCE_PATH
+from localstack.services.ses.provider import EMAILS_ENDPOINT
 
 TEST_TEMPLATE_ATTRIBUTES = {
     "TemplateName": "hello-world",
@@ -101,7 +103,8 @@ class TestSES:
         assert "A_MESSAGE" == contents["Body"]
         assert ["success@example.com"] == contents["Destination"]["ToAddresses"]
 
-        api_contents = requests.get("http://localhost:4566/_localstack/ses").json()
+        emails_url = config.get_edge_url() + INTERNAL_RESOURCE_PATH + EMAILS_ENDPOINT
+        api_contents = requests.get(emails_url).json()
         api_contents = {msg["Id"]: msg for msg in api_contents["messages"]}
         assert message_id in api_contents
         assert api_contents[message_id] == contents
