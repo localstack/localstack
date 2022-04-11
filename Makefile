@@ -236,11 +236,22 @@ ci-pro-smoke-tests:
 	IMAGE_NAME=$(CI_SMOKE_IMAGE_NAME) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DNS_ADDRESS=0 DEBUG=1 localstack start -d
 	docker logs -f $(MAIN_CONTAINER_NAME) &
 	localstack wait -t 120
+	awslocal amplify list-apps
 	awslocal apigatewayv2 get-apis
 	awslocal appsync list-graphql-apis
+	awslocal athena list-data-catalogs
+	awslocal batch describe-job-definitions
+	awslocal cloudfront list-distributions
+	awslocal cloudtrail list-trails
 	awslocal cognito-idp list-user-pools --max-results 10
+	awslocal docdb describe-db-clusters
+	awslocal ecs list-clusters
 	awslocal emr list-clusters
+	awslocal glue get-databases
+	awslocal iot list-things
+	awslocal kafka list-clusters
 	awslocal lambda list-layers
+	awslocal mediastore list-containers
 	awslocal qldb list-ledgers
 	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup --db-cluster-parameter-group-name mydbclusterparametergroup
 	awslocal rds describe-db-instances
