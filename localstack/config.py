@@ -489,6 +489,9 @@ DYNAMODB_WRITE_ERROR_PROBABILITY = float(
 # JAVA EE heap size for dynamodb
 DYNAMODB_HEAP_SIZE = os.environ.get("DYNAMODB_HEAP_SIZE", "").strip() or "256m"
 
+# single DB instance across multiple credentials are regions
+DYNAMODB_SHARE_DB = int(os.environ.get("DYNAMODB_SHARE_DB") or 0)
+
 # expose SQS on a specific port externally
 SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
 
@@ -612,6 +615,7 @@ CONFIG_ENV_VARS = [
     "DOCKER_BRIDGE_IP",
     "DYNAMODB_ERROR_PROBABILITY",
     "DYNAMODB_HEAP_SIZE",
+    "DYNAMODB_SHARE_DB",
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
