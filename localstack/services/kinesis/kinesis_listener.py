@@ -180,24 +180,6 @@ class ProxyListenerKinesis(ProxyListener):
             if action == "CreateStream":
                 payload["s"] = data.get("ShardCount")
             event_publisher.fire_event(event_type, payload=payload)
-        elif action == "PutRecord":
-            response_body = self.decode_content(response.content)
-            event_record = self.create_event_record(data, response_body.get("SequenceNumber"))
-
-            forward_records_to_process([event_record], data["StreamName"])
-        elif action == "PutRecords":
-            event_records = []
-            response_body = self.decode_content(response.content)
-            if "Records" in response_body:
-                response_records = response_body["Records"]
-                records = data["Records"]
-                for index in range(0, len(records)):
-                    record = records[index]
-                    sequence_number = response_records[index].get("SequenceNumber")
-                    event_records.append(self.create_event_record(record, sequence_number))
-
-                forward_records_to_process(event_records, data["StreamName"])
-
         elif action == "UpdateShardCount" and config.KINESIS_PROVIDER == "kinesalite":
             # Currently kinesalite, which backs the Kinesis implementation for localstack, does
             # not support UpdateShardCount:

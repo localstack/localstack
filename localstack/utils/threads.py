@@ -4,7 +4,7 @@ import threading
 import traceback
 from concurrent.futures import Future
 from multiprocessing.dummy import Pool
-from typing import Callable, List
+from typing import Callable, List, Iterable
 
 LOG = logging.getLogger(__name__)
 
@@ -29,7 +29,6 @@ class FuncThread(threading.Thread):
         self.on_stop = on_stop
 
     def run(self):
-        result = None
         try:
             kwargs = {}
             argspec = inspect.getfullargspec(self.func)
