@@ -80,7 +80,7 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
     with open(path, "w") as f:
         f.write(json.dumps(email, default=_serialize))
 
-    LOGGER.debug(f"Email saved at: {path}")
+    LOGGER.debug("Email saved at: %s", path)
 
 
 class SesProvider(SesApi, ABC):
