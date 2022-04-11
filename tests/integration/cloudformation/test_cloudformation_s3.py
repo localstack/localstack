@@ -34,3 +34,11 @@ def test_bucket_autoname(cfn_client, deploy_cfn_template):
     output = descr_response["Stacks"][0]["Outputs"][0]
     assert output["OutputKey"] == "BucketNameOutput"
     assert result.stack_name.lower() in output["OutputValue"]
+
+
+def test_bucket_versioning(cfn_client, deploy_cfn_template, s3_client):
+    result = deploy_cfn_template(template_file_name="s3_versioned_bucket.yaml")
+    assert "BucketName" in result.outputs
+    bucket_name = result.outputs["BucketName"]
+    bucket_version = s3_client.get_bucket_versioning(Bucket=bucket_name)
+    assert bucket_version["Status"] == "Enabled"
