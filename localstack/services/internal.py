@@ -141,17 +141,6 @@ class CloudFormationUi:
         return deploy_html
 
 
-class SesResource:
-    """Provides API for retrospective access to emails sent via SES."""
-
-    def on_get(self, request):
-        from localstack.services.ses.provider import EMAILS
-
-        return {
-            "messages": list(EMAILS.values()),
-        }
-
-
 class DiagnoseResource:
     def on_get(self, request):
         from localstack.utils import diagnose
@@ -189,7 +178,6 @@ class LocalstackResources(Router):
 
         health_resource = HealthResource(SERVICE_PLUGINS)
         graph_resource = ResourceGraph()
-        ses_resource = SesResource()
 
         # two special routes for legacy support (before `/_localstack` was introduced)
         super().add("/health", health_resource)
@@ -197,7 +185,6 @@ class LocalstackResources(Router):
 
         self.add("/health", health_resource)
         self.add("/graph", graph_resource)
-        self.add("/ses", ses_resource)
         self.add("/cloudformation/deploy", CloudFormationUi())
 
         if config.DEBUG:

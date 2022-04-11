@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from abc import ABC
 from datetime import date, datetime, time
 from typing import Any, Dict, Optional
 
@@ -36,7 +35,9 @@ from localstack.aws.api.ses import (
     VerificationAttributes,
     VerificationStatus,
 )
+from localstack.services.internal import get_internal_apis
 from localstack.services.moto import call_moto
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.time import timestamp_millis
@@ -46,6 +47,10 @@ LOGGER = logging.getLogger(__name__)
 # Keep record of all sent emails
 # These can be retrieved via a service endpoint
 EMAILS: Dict[MessageId, Dict[str, Any]] = {}
+
+# Endpoint to access all the sent emails
+# (relative to LocalStack internal HTTP resources base endpoint)
+EMAILS_ENDPOINT = "/ses"
 
 
 def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
@@ -83,7 +88,26 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
     LOGGER.debug("Email saved at: %s", path)
 
 
-class SesProvider(SesApi, ABC):
+class SesServiceApiResource:
+    """Provides a REST API for retrospective access to emails sent via SES.
+
+    This is registered as a LocalStack internal HTTP resource."""
+
+    def on_get(self, request):
+        return {
+            "messages": list(EMAILS.values()),
+        }
+
+
+class SesProvider(SesApi, ServiceLifecycleHook):
+
+    #
+    # Lifecycle Hooks
+    #
+
+    def on_after_init(self):
+        # Allow sent emails to be retrieved from the SES emails endpoint
+        get_internal_apis().add(EMAILS_ENDPOINT, SesServiceApiResource())
 
     #
     # Helpers

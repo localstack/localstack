@@ -263,6 +263,7 @@ def ses():
     return Service(
         "ses",
         listener=AwsApiListener("ses", MotoFallbackDispatcher(provider)),
+        lifecycle_hook=provider,
     )
 
 
