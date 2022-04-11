@@ -102,13 +102,15 @@ class KMSAlias(GenericBaseModel):
     def cloudformation_type():
         return "AWS::KMS::Alias"
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("AliasName")
+
     def fetch_state(self, stack_name, resources):
         kms = aws_stack.connect_to_service("kms")
         aliases = kms.list_aliases()["Aliases"]
         for alias in aliases:
             if alias["AliasName"] == self.props.get("AliasName"):
                 return alias
-
         return None
 
     @staticmethod
