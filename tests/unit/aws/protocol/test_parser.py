@@ -727,6 +727,21 @@ def test_parse_appconfig_non_json_blob_payload():
     )
 
 
+def test_parse_appconfig_deprecated_operation():
+    """
+    Tests if the parsing works correctly if the request targets a deprecated operation (without alternative, i.e.
+    another function having the same signature).
+    """
+    _botocore_parser_integration_test(
+        service="appconfig",
+        action="GetConfiguration",
+        Application="test-application",
+        Environment="test-environment",
+        Configuration="test-configuration",
+        ClientId="test-client-id",
+    )
+
+
 def test_parse_s3_with_extended_uri_pattern():
     """
     Tests if the parsing works for operations where the operation defines a request URI with a "+" in the variable name,

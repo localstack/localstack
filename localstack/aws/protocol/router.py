@@ -12,56 +12,6 @@ from localstack.http import Request
 from localstack.http.request import get_raw_path
 
 
-class _RequiredArgsRule:
-    """
-    Specific Rule implementation which checks if a set of certain required header and query parameters are matched by
-    a specific request.
-    """
-
-    endpoint: Any
-    required_query_args: Optional[Mapping[str, List[Any]]]
-    required_header_args: List[str]
-    match_score: int
-
-    def __init__(
-        self,
-        endpoint: Any,
-        required_query_args: Optional[Mapping[str, List[Any]]],
-        required_header_args: Optional[List[str]],
-    ) -> None:
-        super().__init__()
-        self.endpoint = endpoint
-        self.required_query_args = required_query_args or {}
-        self.required_header_args = required_header_args or []
-        self.match_score = 1 + len(self.required_query_args) + len(self.required_header_args)
-
-    def matches(self, query_args: MultiDict, headers: Headers) -> bool:
-        """
-        Returns true if the given query args and the given headers of a request match the required query args and
-        headers of this rule.
-        :param query_args: query arguments of the incoming request
-        :param headers: headers of the incoming request
-        :return: True if the query args and headers match the required args of this rule
-        """
-        if self.required_query_args:
-            for key, values in self.required_query_args.items():
-                if key not in query_args:
-                    return False
-                # if a required query arg also has a list of required values set, the values need to match as well
-                if values:
-                    query_arg_values = query_args.getlist(key)
-                    for value in values:
-                        if value not in query_arg_values:
-                            return False
-
-        if self.required_header_args:
-            for key in self.required_header_args:
-                if key not in headers:
-                    return False
-
-        return True
-
-
 class _HttpOperation(NamedTuple):
     """Useful intermediary representation of the 'http' block of an operation to make code cleaner"""
 
@@ -70,11 +20,13 @@ class _HttpOperation(NamedTuple):
     method: str
     query_args: Mapping[str, List[str]]
     header_args: List[str]
+    deprecated: bool
 
     @staticmethod
     def from_operation(op: OperationModel) -> "_HttpOperation":
         uri = op.http.get("requestUri")
         method = op.http.get("method")
+        deprecated = op.deprecated
 
         # requestUris can contain mandatory query args (f.e. /apikeys?mode=import)
         path_query = uri.split("?")
@@ -106,7 +58,57 @@ class _HttpOperation(NamedTuple):
                             # (no specific value will be enforced when matching)
                             query_args[query_name] = []
 
-        return _HttpOperation(op, path, method, query_args, header_args)
+        return _HttpOperation(op, path, method, query_args, header_args, deprecated)
+
+
+class _RequiredArgsRule:
+    """
+    Specific Rule implementation which checks if a set of certain required header and query parameters are matched by
+    a specific request.
+    """
+
+    endpoint: Any
+    required_query_args: Optional[Mapping[str, List[Any]]]
+    required_header_args: List[str]
+    match_score: int
+
+    def __init__(self, operation: _HttpOperation) -> None:
+        super().__init__()
+        self.endpoint = operation.operation
+        self.required_query_args = operation.query_args or {}
+        self.required_header_args = operation.header_args or []
+        self.match_score = (
+            10 + 10 * len(self.required_query_args) + 10 * len(self.required_header_args)
+        )
+        # If this operation is deprecated, the score is a bit less high (bot not as much as a matching required arg)
+        if operation.deprecated:
+            self.match_score -= 5
+
+    def matches(self, query_args: MultiDict, headers: Headers) -> bool:
+        """
+        Returns true if the given query args and the given headers of a request match the required query args and
+        headers of this rule.
+        :param query_args: query arguments of the incoming request
+        :param headers: headers of the incoming request
+        :return: True if the query args and headers match the required args of this rule
+        """
+        if self.required_query_args:
+            for key, values in self.required_query_args.items():
+                if key not in query_args:
+                    return False
+                # if a required query arg also has a list of required values set, the values need to match as well
+                if values:
+                    query_arg_values = query_args.getlist(key)
+                    for value in values:
+                        if value not in query_arg_values:
+                            return False
+
+        if self.required_header_args:
+            for key in self.required_header_args:
+                if key not in headers:
+                    return False
+
+        return True
 
 
 class _RequestMatchingRule(Rule):
@@ -122,9 +124,7 @@ class _RequestMatchingRule(Rule):
     def __init__(self, string: str, *args, operations: List[_HttpOperation], **kwargs) -> None:
         super().__init__(string, *args, **kwargs)
         # Create a rule which checks all required arguments (not only the path and method)
-        rules = [
-            _RequiredArgsRule(op.operation, op.query_args, op.header_args) for op in operations
-        ]
+        rules = [_RequiredArgsRule(op) for op in operations]
         # Sort the rules descending based on their rule score
         # (i.e. the first matching rule will have the highest score)=
         self.rules = sorted(rules, key=lambda rule: rule.match_score, reverse=True)
@@ -176,9 +176,8 @@ def _create_service_map(service: ServiceModel) -> Map:
     # group all operations by their path and method
     path_index: Dict[(str, str), List[_HttpOperation]] = defaultdict(list)
     for op in ops:
-        if not op.deprecated:
-            http_op = _HttpOperation.from_operation(op)
-            path_index[(http_op.path, http_op.method)].append(http_op)
+        http_op = _HttpOperation.from_operation(op)
+        path_index[(http_op.path, http_op.method)].append(http_op)
 
     # create a matching rule for each (path, method) combination
     for (path, method), ops in path_index.items():
