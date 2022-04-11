@@ -778,6 +778,41 @@ def test_restjson_operation_detection_with_query_suffix_in_requesturi():
     _botocore_parser_integration_test(service="apigateway", action="ImportRestApi", body=b"Test")
 
 
+def test_restxml_operation_detection_with_query_suffix_without_value_in_requesturi():
+    # Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
+    # parameter without a specific value, f.e. CloudFront's CreateDistributionWithTags:
+    # "/2020-05-31/distribution?WithTags"
+    _botocore_parser_integration_test(
+        service="cloudfront",
+        action="CreateDistributionWithTags",
+        DistributionConfigWithTags={
+            "DistributionConfig": {
+                "CallerReference": "string",
+                "Origins": {
+                    "Quantity": 1,
+                    "Items": [
+                        {
+                            "Id": "string",
+                            "DomainName": "string",
+                        }
+                    ],
+                },
+                "Comment": "string",
+                "Enabled": True,
+                "DefaultCacheBehavior": {
+                    "TargetOriginId": "string",
+                    "ViewerProtocolPolicy": "allow-all",
+                },
+            },
+            "Tags": {
+                "Items": [
+                    {"Key": "string", "Value": "string"},
+                ]
+            },
+        },
+    )
+
+
 def test_restjson_operation_detection_with_length_prio():
     """
     Tests if the correct operation is detected if the requestURI patterns are conflicting and the length of the

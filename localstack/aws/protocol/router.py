@@ -79,8 +79,14 @@ class _HttpOperation(NamedTuple):
         # requestUris can contain mandatory query args (f.e. /apikeys?mode=import)
         path_query = uri.split("?")
         path = path_query[0]
-        query_args: Dict[str, List[str]] = parse_qs(path_query[1]) if len(path_query) > 1 else {}
         header_args = []
+        query_args: Dict[str, List[str]] = {}
+
+        if len(path_query) > 1:
+            # parse the query args of the request URI (they are mandatory)
+            query_args: Dict[str, List[str]] = parse_qs(path_query[1], keep_blank_values=True)
+            # for mandatory keys without values, keep an empty list (instead of [''] - the result of parse_qs)
+            query_args = {k: filter(None, v) for k, v in query_args.items()}
 
         # find the required header and query parameters of the input shape
         input_shape = op.input_shape
