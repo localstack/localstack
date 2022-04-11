@@ -1593,7 +1593,10 @@ class Util:
         if runtime == "nodejs14.x" and docker_image == DEFAULT_LAMBDA_CONTAINER_REGISTRY:
             # TODO temporary fix until lambci image for nodejs14.x becomes available
             docker_image = "localstack/lambda-js"
-        if runtime == "python3.9" and docker_image == DEFAULT_LAMBDA_CONTAINER_REGISTRY:
+        elif (
+            runtime in ["python3.9", "dotnet6"]
+            and docker_image == DEFAULT_LAMBDA_CONTAINER_REGISTRY
+        ):
             # TODO temporary fix until we support AWS images via https://github.com/localstack/localstack/pull/4734
             docker_image = "mlupin/docker-lambda"
         return "%s:%s" % (docker_image, docker_tag)
