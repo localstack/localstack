@@ -1,4 +1,5 @@
-from localstack.services.dynamodb.dynamodb_listener import ItemSet, ProxyListenerDynamoDB
+from localstack.services.dynamodb.provider import DynamoDBProvider
+from localstack.services.dynamodb.utils import ItemSet
 from localstack.utils.aws import aws_stack
 
 
@@ -9,7 +10,7 @@ def test_fix_region_in_headers():
     for region_name in ["local", "localhost"]:
         headers = aws_stack.mock_aws_request_headers("dynamodb", region_name=region_name)
         assert aws_stack.get_region() not in headers.get("Authorization")
-        ProxyListenerDynamoDB.prepare_request_headers(headers)
+        DynamoDBProvider.prepare_request_headers(headers)
         assert aws_stack.get_region() in headers.get("Authorization")
 
 

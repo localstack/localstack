@@ -21,5 +21,9 @@ Resources:
     Type: AWS::KMS::Alias
     DependsOn: KMSKeyDefinition
     Properties:
-      AliasName: alias/sample-kms-alias
+      AliasName: alias/sample-5302
       TargetKeyId: !Ref KMSKeyDefinition
+
+Outputs:
+  KeyAlias:
+    Value: !Ref KMSKeyAlias

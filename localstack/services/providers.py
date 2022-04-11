@@ -58,13 +58,13 @@ def cloudwatch():
 
 @aws_provider()
 def dynamodb():
-    from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
+    from localstack.services.dynamodb.provider import DynamoDBApiListener
 
+    listener = DynamoDBApiListener()
     return Service(
         "dynamodb",
-        listener=dynamodb_listener.UPDATE_DYNAMODB,
-        start=dynamodb_starter.start_dynamodb,
-        check=dynamodb_starter.check_dynamodb,
+        listener=listener,
+        lifecycle_hook=listener.provider,
     )
 
 

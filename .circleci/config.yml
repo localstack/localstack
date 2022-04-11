@@ -85,6 +85,7 @@ jobs:
             docker pull -q lambci/lambda:20191117-python3.6
             docker pull -q lambci/lambda:20191117-dotnetcore2.0
             docker pull -q lambci/lambda:dotnetcore3.1
+            docker pull -q mlupin/docker-lambda:dotnet6
             docker pull -q lambci/lambda:20191117-provided
             docker pull -q lambci/lambda:java8
             docker pull -q lambci/lambda:python3.8

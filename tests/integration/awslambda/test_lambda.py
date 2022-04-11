@@ -20,6 +20,7 @@ from localstack.services.awslambda.lambda_api import (
     use_docker,
 )
 from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_RUNTIME_DOTNET6,
     LAMBDA_RUNTIME_DOTNETCORE31,
     LAMBDA_RUNTIME_GOLANG,
     LAMBDA_RUNTIME_JAVA8,
@@ -84,6 +85,7 @@ TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions/golang/handler.zip
 TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions/lambda_integration.rb")
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "functions/dotnetcore2/dotnetcore2.zip")
 TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "functions/dotnetcore31/dotnetcore31.zip")
+TEST_LAMBDA_DOTNET6 = os.path.join(THIS_FOLDER, "functions/dotnet6/dotnet6.zip")
 TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "functions/custom-runtime")
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
     THIS_FOLDER, "functions/java/lambda_echo/lambda-function-with-lib-0.0.1.jar"
@@ -1283,8 +1285,14 @@ class TestDotNetCoreRuntimes:
                 LAMBDA_RUNTIME_DOTNETCORE31,
                 ["Running .NET Core 3.1 Lambda"],
             ),
+            (
+                TEST_LAMBDA_DOTNET6,
+                "dotnet6::dotnet6.Function::FunctionHandler",
+                LAMBDA_RUNTIME_DOTNET6,
+                ["Running .NET 6 Lambda"],
+            ),
         ],
-        ids=["dotnetcore3.1"],
+        ids=["dotnetcore3.1", "dotnet6"],
     )
     def test_dotnet_lambda(
         self, zip_file, handler, runtime, expected_lines, lambda_client, create_lambda_function

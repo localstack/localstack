@@ -176,7 +176,7 @@ class TestDynamoDB:
     def test_stream_spec_and_region_replacement(self, dynamodb):
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
         kinesis = aws_stack.create_external_boto_client("kinesis")
-        table_name = "ddb-%s" % short_uid()
+        table_name = f"ddb-{short_uid()}"
         aws_stack.create_dynamodb_table(
             table_name,
             partition_key=PARTITION_KEY,
@@ -509,13 +509,12 @@ class TestDynamoDB:
         kinesis = aws_stack.create_external_boto_client("kinesis")
 
         # create kinesis datastream
-        kinesis.create_stream(StreamName="kinesis_dest_stream", ShardCount=1)
+        stream_name = "kinesis_dest_stream"
+        kinesis.create_stream(StreamName=stream_name, ShardCount=1)
         # wait for the stream to be created
         sleep(1)
         # Get stream description
-        stream_description = kinesis.describe_stream(StreamName="kinesis_dest_stream")[
-            "StreamDescription"
-        ]
+        stream_description = kinesis.describe_stream(StreamName=stream_name)["StreamDescription"]
         table_name = "table_with_kinesis_stream-%s" % short_uid()
         # create table
         dynamodb.create_table(
@@ -533,6 +532,7 @@ class TestDynamoDB:
         # put item into table
         dynamodb.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
 
+        # update item in table
         dynamodb.update_item(
             TableName=table_name,
             Key={"Username": {"S": "Fred"}},
@@ -541,17 +541,18 @@ class TestDynamoDB:
             ReturnValues="UPDATED_NEW",
         )
 
+        # delete item in table
         dynamodb.delete_item(TableName=table_name, Key={"Username": {"S": "Fred"}})
-        # get shard iterator of the stream
-        shard_iterator = kinesis.get_shard_iterator(
-            StreamName="kinesis_dest_stream",
-            ShardId=stream_description["Shards"][0]["ShardId"],
-            ShardIteratorType="TRIM_HORIZON",
-        )["ShardIterator"]
+
+        def _fetch_records():
+            records = aws_stack.kinesis_get_latest_records(
+                stream_name, shard_id=stream_description["Shards"][0]["ShardId"]
+            )
+            assert len(records) == 3
+            return records
 
         # get records from the stream
-        records = kinesis.get_records(ShardIterator=shard_iterator)["Records"]
-        assert len(records) == 3
+        records = retry(_fetch_records)
 
         for record in records:
             record = json.loads(record["Data"])
