@@ -132,6 +132,11 @@ class ApiInvocationContext:
                 self.auth_info["identity"] = {}
             return self.auth_info["identity"]
 
+    @property
+    def authorizer_type(self) -> str:
+        if isinstance(self.auth_info, dict):
+            return self.auth_info.get("authorizer_type") if self.auth_info else None
+
     def is_websocket_request(self):
         upgrade_header = str(self.headers.get("upgrade") or "")
         return upgrade_header.lower() == "websocket"
