@@ -143,6 +143,20 @@ class S3Bucket(GenericBaseModel):
             if len(tags) > 0:
                 s3.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": tags})
 
+        def _put_bucket_versioning(resource_id, resources, resource_type, func, stack_name):
+            s3_client = aws_stack.connect_to_service("s3")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            versioning_config = props.get("VersioningConfiguration")
+            if versioning_config:
+                s3_client.put_bucket_versioning(
+                    Bucket=bucket_name,
+                    VersioningConfiguration={
+                        "Status": versioning_config.get("Status", "Disabled"),
+                    },
+                )
+
         result = {
             "create": [
                 {
@@ -159,6 +173,7 @@ class S3Bucket(GenericBaseModel):
                     "function": "put_bucket_notification_configuration",
                     "parameters": s3_bucket_notification_config,
                 },
+                {"function": _put_bucket_versioning},
                 {"function": _add_bucket_tags},
             ],
             "delete": [
