@@ -206,12 +206,10 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         configuration_set_name: ConfigurationSetName = None,
         template_arn: AmazonResourceName = None,
     ) -> SendTemplatedEmailResponse:
-        message = ses_backend.send_templated_email(
-            source, [template], template_data, destination, context.region
-        )
+        response = call_moto(context)
 
         save_for_retrospection(
-            message.id,
+            response["MessageId"],
             context.region,
             Source=source,
             Template=template,
@@ -219,7 +217,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             Destination=destination,
         )
 
-        return SendTemplatedEmailResponse(MessageId=message.id)
+        return response
 
     @handler("SendRawEmail")
     def send_raw_email(
