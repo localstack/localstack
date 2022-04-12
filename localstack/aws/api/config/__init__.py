@@ -390,6 +390,8 @@ class ResourceType(str):
     AWS_EC2_LaunchTemplate = "AWS::EC2::LaunchTemplate"
     AWS_ECR_PublicRepository = "AWS::ECR::PublicRepository"
     AWS_GuardDuty_Detector = "AWS::GuardDuty::Detector"
+    AWS_EMR_SecurityConfiguration = "AWS::EMR::SecurityConfiguration"
+    AWS_SageMaker_CodeRepository = "AWS::SageMaker::CodeRepository"
 
 
 class ResourceValueType(str):
