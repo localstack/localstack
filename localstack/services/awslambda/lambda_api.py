@@ -230,7 +230,7 @@ def build_mapping_obj(data) -> Dict:
     else:
         source_arn = data["EventSourceArn"]
         mapping["EventSourceArn"] = source_arn
-        mapping["StartingPosition"] = LAMBDA_DEFAULT_STARTING_POSITION
+        mapping["StartingPosition"] = data.get("StartingPosition")
     batch_size = check_batch_size_range(source_arn, batch_size)
     mapping["BatchSize"] = batch_size
 

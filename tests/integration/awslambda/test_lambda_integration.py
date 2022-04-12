@@ -803,7 +803,7 @@ class TestKinesisSource:
         lambda_client.create_event_source_mapping(
             EventSourceArn=stream_arn,
             FunctionName=function_name,
-            StartingPosition="TRIM_HORIZON",
+            StartingPosition="LATEST",
             BatchSize=num_records_per_batch,
         )
 
@@ -852,6 +852,94 @@ class TestKinesisSource:
             assert actual_record_ids == [i for i in range(num_records_per_batch)]
 
         assert (invocation_events[1]["executionStart"] - invocation_events[0]["executionStart"]) > 5
+
+    @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
+    def test_kinesis_event_source_trim_horizon(
+        self,
+        lambda_client,
+        kinesis_client,
+        create_lambda_function,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        logs_client,
+        lambda_su_role,
+    ):
+
+        function_name = f"lambda_func-{short_uid()}"
+        stream_name = f"test-foobar-{short_uid()}"
+        num_records_per_batch = 10
+        num_batches = 3
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PARALLEL_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+            role=lambda_su_role,
+        )
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
+            "StreamARN"
+        ]
+        wait_for_stream_ready(stream_name=stream_name)
+        stream_summary = kinesis_client.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
+
+        # insert some records before event source mapping created
+        for i in range(num_batches - 1):
+            kinesis_client.put_records(
+                Records=[
+                    {"Data": json.dumps({"record_id": j}), "PartitionKey": f"test_{i}"}
+                    for j in range(0, num_records_per_batch)
+                ],
+                StreamName=stream_name,
+            )
+
+        lambda_client.create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+            BatchSize=num_records_per_batch,
+        )
+
+        # insert some more records
+        kinesis_client.put_records(
+            Records=[
+                {"Data": json.dumps({"record_id": i}), "PartitionKey": f"test_{num_batches}"}
+                for i in range(0, num_records_per_batch)
+            ],
+            StreamName=stream_name,
+        )
+
+        def get_lambda_invocation_events():
+            events = get_lambda_log_events(
+                function_name, regex_filter=r"event.*Records", logs_client=logs_client
+            )
+            assert len(events) == num_batches
+            return events
+
+        invocation_events = retry(get_lambda_invocation_events, retries=30)
+
+        for i in range(num_batches):
+            event = invocation_events[i]
+            assert len(event["event"]["Records"]) == num_records_per_batch
+            actual_record_ids = []
+            for record in event["event"]["Records"]:
+                assert "eventID" in record
+                assert "eventSourceARN" in record
+                assert "eventSource" in record
+                assert "eventVersion" in record
+                assert "eventName" in record
+                assert "invokeIdentityArn" in record
+                assert "awsRegion" in record
+                assert "kinesis" in record
+                record_data = base64.b64decode(record["kinesis"]["data"]).decode("utf-8")
+                # TODO: I think the record data should actually be b64 encoded
+                actual_record_id = json.loads(record_data)["record_id"]
+                actual_record_ids.append(actual_record_id)
+
+            actual_record_ids.sort()
+            assert actual_record_ids == [i for i in range(num_records_per_batch)]
 
 
 def _check_mapping_state(lambda_client, uuid):
