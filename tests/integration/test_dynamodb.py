@@ -985,17 +985,11 @@ class TestDynamoDB:
             TableName=table_name,
             KeySchema=[{"AttributeName": "PK", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "PK", "AttributeType": "S"}],
-            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1}
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
         )
 
         result = dynamodb.batch_get_item(
-            RequestItems={
-                table_name: {
-                    "Keys": [
-                        {"PK": {"S": "test-key"}}
-                    ]
-                }
-            }
+            RequestItems={table_name: {"Keys": [{"PK": {"S": "test-key"}}]}}
         )
         assert list(result["Responses"])[0] == table_name
 
