@@ -15,6 +15,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.aws.aws_stack import get_environment
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
+from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
@@ -341,6 +342,55 @@ class TestDynamoDB:
 
         # clean up
         delete_table(table_name)
+
+    def test_valid_local_secondary_index(self, dynamodb_client, dynamodb_create_table):
+        try:
+            table_name = f"test-table-{short_uid()}"
+            dynamodb_client.create_table(
+                TableName=table_name,
+                KeySchema=[
+                    {"AttributeName": "PK", "KeyType": "HASH"},
+                    {"AttributeName": "SK", "KeyType": "RANGE"},
+                ],
+                AttributeDefinitions=[
+                    {"AttributeName": "PK", "AttributeType": "S"},
+                    {"AttributeName": "SK", "AttributeType": "S"},
+                    {"AttributeName": "LSI1SK", "AttributeType": "N"},
+                ],
+                LocalSecondaryIndexes=[
+                    {
+                        "IndexName": "LSI1",
+                        "KeySchema": [
+                            {"AttributeName": "PK", "KeyType": "HASH"},
+                            {"AttributeName": "LSI1SK", "KeyType": "RANGE"},
+                        ],
+                        "Projection": {"ProjectionType": "ALL"},
+                    }
+                ],
+                ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+                Tags=TEST_DDB_TAGS,
+            )
+
+            def wait_for_table_created():
+                return (
+                    dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"]
+                    == "ACTIVE"
+                )
+
+            poll_condition(wait_for_table_created, timeout=30)
+            item = {"SK": {"S": "hello"}, "LSI1SK": {"N": "123"}, "PK": {"S": "test one"}}
+
+            dynamodb_client.put_item(TableName=table_name, Item=item)
+            result = dynamodb_client.query(
+                TableName=table_name,
+                IndexName="LSI1",
+                KeyConditionExpression="PK = :v1",
+                ExpressionAttributeValues={":v1": {"S": "test one"}},
+                Select="ALL_ATTRIBUTES",
+            )
+            assert result["Items"] == [item]
+        finally:
+            dynamodb_client.delete_table(TableName=table_name)
 
     def test_return_values_in_put_item(self, dynamodb):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
