@@ -22,7 +22,9 @@ from flask import Flask, Response, jsonify, request
 from localstack import config
 from localstack.constants import APPLICATION_JSON, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_executors
-from localstack.services.awslambda.event_source_listeners.event_source_listener import EventSourceListener
+from localstack.services.awslambda.event_source_listeners.event_source_listener import (
+    EventSourceListener,
+)
 from localstack.services.awslambda.lambda_executors import InvocationResult, LambdaContext
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
@@ -447,8 +449,6 @@ def process_sns_notification(
     return inv_result.result
 
 
-
-
 def _create_dynamodb_records(chunk):
     """Creates a list of event records for lambda from the kinesis records by extracting the "data" field
     chunk       -- kinesis records information
@@ -529,8 +529,6 @@ def _process_dynamodb_records(shard_id, source, chunk):
     )
 
 
-
-
 def process_records(records, stream_arn, record_type):
     """Feed records into listening lambdas (defined by event-source-mapping)
     records     -- the records that should be transformed to events
@@ -544,8 +542,8 @@ def process_records(records, stream_arn, record_type):
                 continue
             for chunk in _chunks(records, source["BatchSize"]):
                 shard_id = "shardId-000000000000"
-                #if record_type == RECORD_TYPE_KINESIS:
-                    #_process_kinesis_records(shard_id, source, chunk)
+                # if record_type == RECORD_TYPE_KINESIS:
+                # _process_kinesis_records(shard_id, source, chunk)
                 if record_type == RECORD_TYPE_DYNAMODB:
                     _process_dynamodb_records(shard_id, source, chunk)
 

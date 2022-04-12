@@ -1,4 +1,4 @@
-from typing import Dict, Any, Type
+from typing import Any, Dict, Type
 
 from localstack.utils.objects import SubtypesInstanceManager
 from localstack.utils.threads import start_worker_thread
@@ -24,8 +24,7 @@ class EventSourceListener(SubtypesInstanceManager):
     def start_listeners(event_source_mapping: Dict):
         # force import EventSourceListener subclasses
         # otherwise they will not be detected by EventSourceListener.get(service_type)
-        from . import event_source_listener_kinesis
-        from . import event_source_listener_sqs
+        from . import event_source_listener_kinesis, event_source_listener_sqs
 
         source_arn = event_source_mapping.get("EventSourceArn") or ""
         parts = source_arn.split(":")

@@ -1,23 +1,28 @@
 import base64
-import time
 import threading
-from typing import Dict, List, Any, Optional
+import time
+from typing import Any, Dict, List, Optional
 
-from localstack import config
-from localstack.utils.common import to_str, first_char_to_lower
+from localstack import config, constants
 from localstack.services.awslambda import lambda_executors
-from localstack.services.awslambda.event_source_listeners.event_source_listener import EventSourceListener
+from localstack.services.awslambda.event_source_listeners.event_source_listener import (
+    EventSourceListener,
+)
 from localstack.services.awslambda.lambda_api import LOG, get_event_sources, run_lambda
 from localstack.services.awslambda.lambda_executors import InvocationResult
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import first_char_to_lower, to_str
 from localstack.utils.threads import FuncThread
-from localstack import constants
 
 
 class EventSourceListenerKinesis(EventSourceListener):
     # Kinesis listener thread settings
-    COORDINATOR_THREAD: Optional[FuncThread] = None  # Thread for monitoring state of event source mappings
-    KINESIS_LISTENER_THREADS: Dict[str, FuncThread] = {}  # Threads for listening to stream shards and forwarding data to mapped Lambdas
+    COORDINATOR_THREAD: Optional[
+        FuncThread
+    ] = None  # Thread for monitoring state of event source mappings
+    KINESIS_LISTENER_THREADS: Dict[
+        str, FuncThread
+    ] = {}  # Threads for listening to stream shards and forwarding data to mapped Lambdas
     KINESIS_POLL_INTERVAL_SEC: float = 1
 
     @staticmethod
@@ -36,7 +41,7 @@ class EventSourceListenerKinesis(EventSourceListener):
         return get_event_sources(source_arn=r".*:kinesis:.*")
 
     def process_event(self, event: Any):
-            raise NotImplementedError
+        raise NotImplementedError
 
     def _create_lambda_event_payload(self, stream_arn, shard_id, records):
         record_payloads = []
@@ -46,16 +51,20 @@ class EventSourceListenerKinesis(EventSourceListener):
                 record_payload[first_char_to_lower(key)] = val
             # boto3 automatically decodes records in get_records(), so we must re-encode
             record_payload["data"] = to_str(base64.b64encode(record_payload["data"]))
-            record_payloads.append({
-                "eventID": "{0}:{1}".format(shard_id, record_payload["sequenceNumber"]),
-                "eventSourceARN": stream_arn,
-                "eventSource": "aws:kinesis",
-                "eventVersion": "1.0",
-                "eventName": "aws:kinesis:record",
-                "invokeIdentityArn": "arn:aws:iam::{0}:role/lambda-role".format(constants.TEST_AWS_ACCOUNT_ID),  # TODO: is this the correct value to use?
-                "awsRegion": aws_stack.get_region(),
-                "kinesis": record_payload,
-            })
+            record_payloads.append(
+                {
+                    "eventID": "{0}:{1}".format(shard_id, record_payload["sequenceNumber"]),
+                    "eventSourceARN": stream_arn,
+                    "eventSource": "aws:kinesis",
+                    "eventVersion": "1.0",
+                    "eventName": "aws:kinesis:record",
+                    "invokeIdentityArn": "arn:aws:iam::{0}:role/lambda-role".format(
+                        constants.TEST_AWS_ACCOUNT_ID
+                    ),  # TODO: is this the correct value to use?
+                    "awsRegion": aws_stack.get_region(),
+                    "kinesis": record_payload,
+                }
+            )
         return {"Records": record_payloads}
 
     def _invoke_lambda(self, function_arn, payload, lock_discriminator, parallelization_factor):
@@ -96,17 +105,20 @@ class EventSourceListenerKinesis(EventSourceListener):
         cur_thread = threading.currentThread()
 
         while getattr(cur_thread, "do_run", True):
-            records_response = kinesis_client.get_records(ShardIterator=shard_iterator, Limit=batch_size)
+            records_response = kinesis_client.get_records(
+                ShardIterator=shard_iterator, Limit=batch_size
+            )
             records = records_response.get("Records")
             should_get_next_batch = True
             if records:
                 payload = self._create_lambda_event_payload(stream_arn, shard_id, records)
-                is_invocation_successful = self._invoke_lambda(function_arn, payload, lock_discriminator, parallelization_factor)
+                is_invocation_successful = self._invoke_lambda(
+                    function_arn, payload, lock_discriminator, parallelization_factor
+                )
                 should_get_next_batch = is_invocation_successful
             if should_get_next_batch:
                 shard_iterator = records_response["NextShardIterator"]
             time.sleep(self.KINESIS_POLL_INTERVAL_SEC)
-
 
     def _monitor_kinesis_event_sources(self, *args):
         while True:
@@ -126,16 +138,39 @@ class EventSourceListenerKinesis(EventSourceListener):
                     stream_arn = source["EventSourceArn"]
                     stream_name = aws_stack.kinesis_stream_name(stream_arn)
                     region_name = stream_arn.split(":")[3]
-                    kinesis_client = aws_stack.connect_to_service("kinesis", region_name=region_name)
+                    kinesis_client = aws_stack.connect_to_service(
+                        "kinesis", region_name=region_name
+                    )
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
-                    shard_ids = [shard['ShardId'] for shard in kinesis_client.describe_stream(StreamName=stream_name)['StreamDescription']['Shards']]
+                    shard_ids = [
+                        shard["ShardId"]
+                        for shard in kinesis_client.describe_stream(StreamName=stream_name)[
+                            "StreamDescription"
+                        ]["Shards"]
+                    ]
 
                     for shard_id in shard_ids:
                         lock_discriminator = f"{stream_arn}/{shard_id}"
                         mapped_shard_ids.add(lock_discriminator)
                         if lock_discriminator not in self.KINESIS_LISTENER_THREADS:
-                            shard_iterator = kinesis_client.get_shard_iterator(StreamName=stream_name, ShardId=shard_id, ShardIteratorType=source["StartingPosition"])["ShardIterator"]
-                            listener_thread = FuncThread(self._listen_to_shard_and_invoke_lambda, {"function_arn": source["FunctionArn"], "stream_arn": stream_arn, "batch_size": batch_size, "parallelization_factor": source["ParallelizationFactor"], "lock_discriminator": lock_discriminator, "shard_id": shard_id, "kinesis_client": kinesis_client, "shard_iterator": shard_iterator})
+                            shard_iterator = kinesis_client.get_shard_iterator(
+                                StreamName=stream_name,
+                                ShardId=shard_id,
+                                ShardIteratorType=source["StartingPosition"],
+                            )["ShardIterator"]
+                            listener_thread = FuncThread(
+                                self._listen_to_shard_and_invoke_lambda,
+                                {
+                                    "function_arn": source["FunctionArn"],
+                                    "stream_arn": stream_arn,
+                                    "batch_size": batch_size,
+                                    "parallelization_factor": source["ParallelizationFactor"],
+                                    "lock_discriminator": lock_discriminator,
+                                    "shard_id": shard_id,
+                                    "kinesis_client": kinesis_client,
+                                    "shard_iterator": shard_iterator,
+                                },
+                            )
                             self.KINESIS_LISTENER_THREADS[lock_discriminator] = listener_thread
                             listener_thread.start()
 

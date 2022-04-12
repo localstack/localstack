@@ -4,7 +4,7 @@ import threading
 import traceback
 from concurrent.futures import Future
 from multiprocessing.dummy import Pool
-from typing import Callable, List, Iterable
+from typing import Callable, Iterable, List
 
 LOG = logging.getLogger(__name__)
 

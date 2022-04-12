@@ -1,9 +1,16 @@
 import time
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 from localstack.services.awslambda import lambda_executors
-from localstack.services.awslambda.event_source_listeners.event_source_listener import EventSourceListener
-from localstack.services.awslambda.lambda_api import LOG, get_event_sources, message_attributes_to_lower, run_lambda
+from localstack.services.awslambda.event_source_listeners.event_source_listener import (
+    EventSourceListener,
+)
+from localstack.services.awslambda.lambda_api import (
+    LOG,
+    get_event_sources,
+    message_attributes_to_lower,
+    run_lambda,
+)
 from localstack.services.awslambda.lambda_executors import InvocationResult
 from localstack.utils.aws import aws_stack
 from localstack.utils.threads import FuncThread
