@@ -22,6 +22,11 @@ class EventSourceListener(SubtypesInstanceManager):
 
     @staticmethod
     def start_listeners(event_source_mapping: Dict):
+        # force import EventSourceListener subclasses
+        # otherwise they will not be detected by EventSourceListener.get(service_type)
+        from . import event_source_listener_kinesis
+        from . import event_source_listener_sqs
+
         source_arn = event_source_mapping.get("EventSourceArn") or ""
         parts = source_arn.split(":")
         service_type = parts[2] if len(parts) > 2 else ""
@@ -31,7 +36,6 @@ class EventSourceListener(SubtypesInstanceManager):
             )
             if self_managed_endpoints.get("KAFKA_BOOTSTRAP_SERVERS"):
                 service_type = "kafka"
-        foo = EventSourceListener.instances().keys()
         instance = EventSourceListener.get(service_type, raise_if_missing=False)
         if instance:
             instance.start()

@@ -779,7 +779,6 @@ class TestKinesisSource:
         logs_client,
         lambda_su_role,
     ):
-        import localstack.services.awslambda.event_source_listeners.event_source_listener_kinesis
 
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-foobar-{short_uid()}"

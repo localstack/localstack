@@ -1,6 +1,6 @@
 import time
+import threading
 from typing import Dict, List, Any, Optional
-from threading import BoundedSemaphore
 
 from localstack import config
 from localstack.services.awslambda import lambda_executors
@@ -54,8 +54,10 @@ class EventSourceListenerKinesis(EventSourceListener):
     def _invoke_lambda(self, function_arn, payload, lock_discriminator, parallelization_factor):
         if not config.SYNCHRONOUS_KINESIS_EVENTS:
             lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
-                lock_discriminator, BoundedSemaphore(parallelization_factor)
+                lock_discriminator, threading.BoundedSemaphore(parallelization_factor)
             )
+        else:
+            lock_discriminator = None
 
         # TODO handle failure condition
         # on_failure_callback = _create_on_failure_callback(shard_id, source, chunk, BATCH_INFO_KINESIS)
@@ -84,8 +86,9 @@ class EventSourceListenerKinesis(EventSourceListener):
         shard_id = params["shard_id"]
         kinesis_client = params["kinesis_client"]
         shard_iterator = params["shard_iterator"]
+        cur_thread = threading.currentThread()
 
-        while True:
+        while getattr(cur_thread, "do_run", True):
             records_response = kinesis_client.get_records(ShardIterator=shard_iterator, Limit=batch_size)
             records = records_response.get("Records")
             should_get_next_batch = True
@@ -126,7 +129,6 @@ class EventSourceListenerKinesis(EventSourceListener):
                         if lock_discriminator not in self.KINESIS_LISTENER_THREADS:
                             shard_iterator = kinesis_client.get_shard_iterator(StreamName=stream_name, ShardId=shard_id, ShardIteratorType=source["StartingPosition"])["ShardIterator"]
                             listener_thread = FuncThread(self._listen_to_shard_and_invoke_lambda, {"function_arn": source["FunctionArn"], "stream_arn": stream_arn, "batch_size": batch_size, "parallelization_factor": source["ParallelizationFactor"], "lock_discriminator": lock_discriminator, "shard_id": shard_id, "kinesis_client": kinesis_client, "shard_iterator": shard_iterator})
-                            #self._listen_to_shard_and_invoke_lambda(source["FunctionArn"], stream_arn, batch_size, source["ParallelizationFactor"], lock_discriminator, shard_id, kinesis_client, shard_iterator)
                             self.KINESIS_LISTENER_THREADS[lock_discriminator] = listener_thread
                             listener_thread.start()
 
@@ -134,8 +136,7 @@ class EventSourceListenerKinesis(EventSourceListener):
                 orphaned_threads = set(self.KINESIS_LISTENER_THREADS.keys()) - mapped_shard_ids
                 for thread_id in orphaned_threads:
                     orphaned_thread = self.KINESIS_LISTENER_THREADS.pop(thread_id)
-                    # TODO implement stopping logic
-                    orphaned_thread.stop()
+                    orphaned_thread.do_run = False
 
             except Exception as e:
                 # TODO
