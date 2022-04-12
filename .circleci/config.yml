@@ -77,16 +77,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-<<<<<<< HEAD
-          name: Install python 3.10
-          command: |
-            pyenv install 3.10.2
-            pyenv global 3.10.2
-      - run:
           name: Pull Lambda runtimes
-=======
-          name: Pull lambda runtimes
->>>>>>> 40d11ac0 (Revert "try updating circleci to python3.10")
           command: |
             sudo useradd localstack -s /bin/bash
             docker pull -q lambci/lambda:20191117-nodejs8.10
@@ -150,7 +141,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Test elasticmq SQS provider
+          name: Test ElasticMQ SQS provider
           environment:
             DEBUG: 1
             SQS_PROVIDER: "elasticmq"
