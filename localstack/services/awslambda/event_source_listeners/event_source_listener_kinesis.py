@@ -1,8 +1,10 @@
+import base64
 import time
 import threading
 from typing import Dict, List, Any, Optional
 
 from localstack import config
+from localstack.utils.common import to_str, first_char_to_lower
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import EventSourceListener
 from localstack.services.awslambda.lambda_api import LOG, get_event_sources, run_lambda
@@ -37,19 +39,24 @@ class EventSourceListenerKinesis(EventSourceListener):
             raise NotImplementedError
 
     def _create_lambda_event_payload(self, stream_arn, shard_id, records):
-        return {"Records": [
-            {
-                "eventID": "{0}:{1}".format(shard_id, record["SequenceNumber"]),
+        record_payloads = []
+        for record in records:
+            record_payload = {}
+            for key, val in record.items():
+                record_payload[first_char_to_lower(key)] = val
+            # boto3 automatically decodes records in get_records(), so we must re-encode
+            record_payload["data"] = to_str(base64.b64encode(record_payload["data"]))
+            record_payloads.append({
+                "eventID": "{0}:{1}".format(shard_id, record_payload["sequenceNumber"]),
                 "eventSourceARN": stream_arn,
                 "eventSource": "aws:kinesis",
                 "eventVersion": "1.0",
                 "eventName": "aws:kinesis:record",
                 "invokeIdentityArn": "arn:aws:iam::{0}:role/lambda-role".format(constants.TEST_AWS_ACCOUNT_ID),  # TODO: is this the correct value to use?
                 "awsRegion": aws_stack.get_region(),
-                "kinesis": record,
-            }
-            for record in records
-        ]}
+                "kinesis": record_payload,
+            })
+        return {"Records": record_payloads}
 
     def _invoke_lambda(self, function_arn, payload, lock_discriminator, parallelization_factor):
         if not config.SYNCHRONOUS_KINESIS_EVENTS:

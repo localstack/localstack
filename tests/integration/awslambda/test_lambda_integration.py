@@ -1,4 +1,5 @@
 import base64
+base64
 import json
 import os
 import time
@@ -842,14 +843,13 @@ class TestKinesisSource:
                 assert "invokeIdentityArn" in record
                 assert "awsRegion" in record
                 assert "kinesis" in record
-                record_data = record["kinesis"]["Data"]
+                record_data = base64.b64decode(record["kinesis"]["data"]).decode("utf-8")
                 # TODO: I think the record data should actually be b64 encoded
-                actual_record_id = json.loads( record_data )["record_id"]
+                actual_record_id = json.loads(record_data)["record_id"]
                 actual_record_ids.append(actual_record_id)
 
             actual_record_ids.sort()
             assert actual_record_ids == [i for i in range(num_records_per_batch)]
-
 
         assert (invocation_events[1]["executionStart"] - invocation_events[0]["executionStart"]) > 5
 
