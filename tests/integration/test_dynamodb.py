@@ -977,6 +977,22 @@ class TestDynamoDB:
 
         delete_table(table_name)
 
+    def test_dynamodb_get_batch_items(self):
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        table_name = "ddb-table-%s" % short_uid()
+
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "PK", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "PK", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        )
+
+        result = dynamodb.batch_get_item(
+            RequestItems={table_name: {"Keys": [{"PK": {"S": "test-key"}}]}}
+        )
+        assert list(result["Responses"])[0] == table_name
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.create_external_boto_client("dynamodb")

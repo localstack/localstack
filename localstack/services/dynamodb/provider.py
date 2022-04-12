@@ -19,6 +19,8 @@ from localstack.aws.api import (
     handler,
 )
 from localstack.aws.api.dynamodb import (
+    BatchGetItemOutput,
+    BatchGetRequestMap,
     BatchWriteItemInput,
     BatchWriteItemOutput,
     CreateGlobalTableOutput,
@@ -56,6 +58,7 @@ from localstack.aws.api.dynamodb import (
     ResourceArnString,
     ResourceInUseException,
     ResourceNotFoundException,
+    ReturnConsumedCapacity,
     ScanInput,
     ScanOutput,
     StreamArn,
@@ -709,6 +712,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     del unprocessed[key]
 
         return result
+
+    @handler("BatchGetItem")
+    def batch_get_item(
+        self,
+        context: RequestContext,
+        request_items: BatchGetRequestMap,
+        return_consumed_capacity: ReturnConsumedCapacity = None,
+    ) -> BatchGetItemOutput:
+        return self.forward_request(context)
 
     @handler("TransactWriteItems", expand=False)
     def transact_write_items(
