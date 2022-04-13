@@ -52,6 +52,8 @@ EMAILS: Dict[MessageId, Dict[str, Any]] = {}
 # (relative to LocalStack internal HTTP resources base endpoint)
 EMAILS_ENDPOINT = "/ses"
 
+_EMAILS_ENDPOINT_REGISTERED = False
+
 
 def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
     """Save a message for retrospection.
@@ -99,6 +101,17 @@ class SesServiceApiResource:
         }
 
 
+def register_ses_api_resource():
+    """Register the email retrospection endpoint as an internal LocalStack endpoint."""
+    # Use a global to indicate whether the resource has already been registered
+    # This is cheaper than iterating over the registered routes in the Router object
+    global _EMAILS_ENDPOINT_REGISTERED
+
+    if not _EMAILS_ENDPOINT_REGISTERED:
+        get_internal_apis().add(EMAILS_ENDPOINT, SesServiceApiResource())
+        _EMAILS_ENDPOINT_REGISTERED = True
+
+
 class SesProvider(SesApi, ServiceLifecycleHook):
 
     #
@@ -107,7 +120,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         # Allow sent emails to be retrieved from the SES emails endpoint
-        get_internal_apis().add(EMAILS_ENDPOINT, SesServiceApiResource())
+        register_ses_api_resource()
 
     #
     # Helpers
