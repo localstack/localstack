@@ -532,7 +532,6 @@ class TestLambdaEventSourceMappings:
                 func_name=function_name,
                 runtime=LAMBDA_RUNTIME_PYTHON37,
                 role=role_arn,
-                libs=TEST_LAMBDA_LIBS,
             )
 
             response["CreateFunctionResponse"]["FunctionArn"]
@@ -555,15 +554,17 @@ class TestLambdaEventSourceMappings:
             result = lambda_client.create_event_source_mapping(
                 FunctionName=function_name,
                 BatchSize=1,
-                StartingPosition="TRIM_HORIZON",
+                StartingPosition="LATEST",
                 EventSourceArn=kinesis_arn,
                 MaximumBatchingWindowInSeconds=1,
                 MaximumRetryAttempts=1,
                 DestinationConfig=destination_config,
             )
+            time.sleep(2)
 
             event_source_mapping_uuid = result["UUID"]
             event_source_mapping_state = result["State"]
+            # TODO make use of this elsewhere
             if event_source_mapping_state != "Enabled":
                 retry(
                     _check_mapping_state,
@@ -591,7 +592,7 @@ class TestLambdaEventSourceMappings:
                 assert body["KinesisBatchInfo"]["batchSize"] == 1
                 assert body["KinesisBatchInfo"]["streamArn"] == kinesis_arn
 
-            retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
+            retry(verify_failure_received, retries=10, sleep=5, sleep_before=5)
 
         finally:
             kinesis_client.delete_stream(StreamName=kinesis_name, EnforceConsumerDeletion=True)

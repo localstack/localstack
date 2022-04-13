@@ -1,9 +1,11 @@
 import base64
+import math
 import threading
 import time
 from typing import Any, Dict, List, Optional
 
 from localstack import config, constants
+from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -11,7 +13,7 @@ from localstack.services.awslambda.event_source_listeners.event_source_listener 
 from localstack.services.awslambda.lambda_api import LOG, get_event_sources, run_lambda
 from localstack.services.awslambda.lambda_executors import InvocationResult
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import first_char_to_lower, to_str
+from localstack.utils.common import first_char_to_lower, to_str, timestamp_millis, long_uid
 from localstack.utils.threads import FuncThread
 
 
@@ -76,16 +78,12 @@ class EventSourceListenerKinesis(EventSourceListener):
         else:
             lock_discriminator = None
 
-        # TODO handle failure condition
-        # on_failure_callback = _create_on_failure_callback(shard_id, source, chunk, BATCH_INFO_KINESIS)
-
         result = run_lambda(
             func_arn=function_arn,
             event=payload,
             context={},
             asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS,
             lock_discriminator=lock_discriminator,
-            # callback=on_failure_callback,
         )
         if isinstance(result, InvocationResult):
             status_code = getattr(result.result, "status_code", 0)
@@ -95,6 +93,7 @@ class EventSourceListenerKinesis(EventSourceListener):
         return False
 
     def _listen_to_shard_and_invoke_lambda(self, params):
+        # TODO: These values will never get updated if the event source mapping configuration changes :(
         function_arn = params["function_arn"]
         stream_arn = params["stream_arn"]
         batch_size = params["batch_size"]
@@ -103,6 +102,9 @@ class EventSourceListenerKinesis(EventSourceListener):
         shard_id = params["shard_id"]
         kinesis_client = params["kinesis_client"]
         shard_iterator = params["shard_iterator"]
+        failure_destination = params["failure_destination"]
+        max_num_retries = params["max_num_retries"]
+        num_invocation_failures = 0
 
         while lock_discriminator in self.KINESIS_LISTENER_THREADS:
             records_response = kinesis_client.get_records(
@@ -115,10 +117,63 @@ class EventSourceListenerKinesis(EventSourceListener):
                 is_invocation_successful = self._invoke_lambda(
                     function_arn, payload, lock_discriminator, parallelization_factor
                 )
-                should_get_next_batch = is_invocation_successful
+                if is_invocation_successful:
+                    should_get_next_batch = True
+                else:
+                    num_invocation_failures += 1
+                    if num_invocation_failures >= max_num_retries:
+                        should_get_next_batch = True
+                        if failure_destination:
+                            first_rec = records[0]
+                            last_rec = records[-1]
+                            self._send_to_failure_destination(shard_id,
+                                                              first_rec["SequenceNumber"],
+                                                              last_rec["SequenceNumber"],
+                                                              stream_arn,
+                                                              function_arn,
+                                                              num_invocation_failures,
+                                                              batch_size,
+                                                              first_rec["ApproximateArrivalTimestamp"],
+                                                              last_rec["ApproximateArrivalTimestamp"],
+                                                              failure_destination)
+                    else:
+                        should_get_next_batch = False
             if should_get_next_batch:
                 shard_iterator = records_response["NextShardIterator"]
+                num_invocation_failures = 0
             time.sleep(self.KINESIS_POLL_INTERVAL_SEC)
+
+    def _send_to_failure_destination(self, shard_id, start_sequence_num, end_sequence_num, source_arn, func_arn, invoke_count, batch_size, first_record_arrival_time, last_record_arrival_time, destination):
+        payload = {
+            "version": "1.0",
+            "timestamp": timestamp_millis(),
+            "requestContext": {
+                "requestId": long_uid(),
+                "functionArn": func_arn,
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": invoke_count,
+            },
+            "responseContext": { # TODO: don't hardcode these fields
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": "Unhandled",
+            },
+        }
+        details = {
+            "shardId": shard_id,
+            "startSequenceNumber": start_sequence_num,
+            "endSequenceNumber": end_sequence_num,
+            "approximateArrivalOfFirstRecord": timestamp_millis(
+                first_record_arrival_time
+            ),
+            "approximateArrivalOfLastRecord": timestamp_millis(
+                last_record_arrival_time
+            ),
+            "batchSize": batch_size,
+            "streamArn": source_arn,
+        }
+        payload["KinesisBatchInfo"] = details
+        send_event_to_target(destination, payload)
 
     def _monitor_kinesis_event_sources(self, *args):
         while True:
@@ -144,6 +199,10 @@ class EventSourceListenerKinesis(EventSourceListener):
                         "kinesis", region_name=region_name
                     )
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
+                    failure_destination = source.get("DestinationConfig", {}).get("OnFailure", {}).get("Destination", None)
+                    max_num_retries = source.get("MaximumRetryAttempts", -1)
+                    if max_num_retries < 0:
+                        max_num_retries = math.inf
                     shard_ids = [
                         shard["ShardId"]
                         for shard in kinesis_client.describe_stream(StreamName=stream_name)[
@@ -171,6 +230,8 @@ class EventSourceListenerKinesis(EventSourceListener):
                                     "shard_id": shard_id,
                                     "kinesis_client": kinesis_client,
                                     "shard_iterator": shard_iterator,
+                                    "failure_destination": failure_destination,
+                                    "max_num_retries": max_num_retries,
                                 },
                             )
                             self.KINESIS_LISTENER_THREADS[lock_discriminator] = listener_thread

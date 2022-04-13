@@ -111,7 +111,6 @@ DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+00:00"
 
 RECORD_TYPE_KINESIS = "Kinesis"
 RECORD_TYPE_DYNAMODB = "Dynamodb"
-BATCH_INFO_KINESIS = "KinesisBatchInfo"
 BATCH_INFO_DYNAMODB = "DDBStreamBatchInfo"
 app = Flask(APP_NAME)
 
@@ -225,6 +224,7 @@ def build_mapping_obj(data) -> Dict:
     mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
     mapping["ParallelizationFactor"] = data.get("ParallelizationFactor") or 1
     mapping["Topics"] = data.get("Topics") or []
+    mapping["MaximumRetryAttempts"] = data.get("MaximumRetryAttempts") or -1
     if "SelfManagedEventSource" in data:
         source_arn = data["SourceAccessConfigurations"][0]["URI"]
         mapping["SelfManagedEventSource"] = data["SelfManagedEventSource"]
@@ -465,8 +465,10 @@ def _chunks(lst, n):
 
 
 def _create_on_failure_callback(shard_id, source, chunk, details_type):
-    """If destinationConfig for OnFailure is set, returns a function that will invoke the destination
-    Else returns None"""
+    """
+    If destinationConfig for OnFailure is set, returns a function that will invoke the destination
+    Else returns None
+    """
 
     def _on_failure_callback(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
         # streams only supports "OnFailure"
