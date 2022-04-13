@@ -3,12 +3,16 @@ import copy
 import json
 import logging
 import re
+from abc import ABC, abstractmethod
+from enum import Enum
 from urllib.parse import quote_plus, unquote_plus
 
 import airspeed
+from requests import Response
+from requests.structures import CaseInsensitiveDict
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import make_http_request, to_str
@@ -19,18 +23,43 @@ from localstack.utils.objects import recurse_object
 LOG = logging.getLogger(__name__)
 
 
-class BackendIntegration:
+class PassthroughBehavior(Enum):
+    WHEN_NO_MATCH = "WHEN_NO_MATCH"
+    WHEN_NO_TEMPLATES = "WHEN_NO_TEMPLATES"
+    NEVER = "NEVER"
+
+
+class MappingTemplates:
+    """
+    API Gateway uses mapping templates to transform incoming requests before they are sent to the
+    integration back end. With API Gateway, you can define one mapping template for each possible
+    content type. The content type selection is based on the Content-Type header of the incoming
+    request. If no content type is specified in the request, API Gateway uses an application/json
+    mapping template. By default, mapping templates are configured to simply pass through the
+    request input. Mapping templates use Apache Velocity to generate a request to your back end.
+    """
+
+    passthrough_behavior: PassthroughBehavior
+
+
+class BackendIntegration(ABC):
     """
     Backend integration
     """
 
+    def __init__(self):
+        self.request_templates = RequestTemplates()
+        self.response_templates = ResponseTemplates()
+
+    @abstractmethod
+    def invoke(self, invocation_context: ApiInvocationContext):
+        pass
+
 
 class SnsIntegration(BackendIntegration):
-    @classmethod
-    def invoke(cls, invocation_context: ApiInvocationContext):
+    def invoke(self, invocation_context: ApiInvocationContext):
         try:
-            request_templates = RequestTemplates()
-            payload = request_templates.render(invocation_context)
+            payload = self.request_templates.render(invocation_context)
         except Exception as e:
             LOG.warning("Failed to apply template for SNS integration", e)
             raise
@@ -44,6 +73,46 @@ class SnsIntegration(BackendIntegration):
         return make_http_request(
             config.service_url("sns"), method="POST", headers=headers, data=payload
         )
+
+
+class MockIntegration(BackendIntegration):
+    @staticmethod
+    def _create_response(status_code, headers, data=""):
+        response = Response()
+        response.status_code = status_code
+        response.headers = headers
+        response._content = data
+        return response
+
+    def invoke(self, invocation_context: ApiInvocationContext):
+        headers = CaseInsensitiveDict(dict(invocation_context.headers or {}))
+
+        # request template
+        request_payload = self.request_templates.render(invocation_context)
+
+        # mapping is done based on "statusCode" field
+        status_code = 200
+        if headers.get(HEADER_CONTENT_TYPE) == APPLICATION_JSON:
+            try:
+                mock_response = json.loads(request_payload)
+                status_code = mock_response.get("statusCode", status_code)
+            except Exception as e:
+                LOG.warning("failed to deserialize request payload after transformation: %s", e)
+                return MockIntegration._create_response(
+                    500,
+                    headers={"Content-Type": APPLICATION_JSON},
+                    data='{"message": "Internal server error"}',
+                )
+
+        # response template
+        response = MockIntegration._create_response(status_code, headers, data=request_payload)
+        response = self.response_templates.render(invocation_context, response=response)
+        if isinstance(response, Response):
+            return response
+        else:
+            if not headers.get(HEADER_CONTENT_TYPE):
+                headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
+            return MockIntegration._create_response(status_code, headers, response)
 
 
 class VelocityUtil(object):
@@ -209,7 +278,7 @@ class Templates:
     def __init__(self):
         self.vtl = VtlTemplate()
 
-    def render(self, api_context: ApiInvocationContext):
+    def render(self, api_context: ApiInvocationContext, **kwargs):
         pass
 
     def render_vtl(self, template, variables):
@@ -231,19 +300,25 @@ class Templates:
             },
         }
 
+    @staticmethod
+    def get_passthrough_behavior(integration):
+        return getattr(PassthroughBehavior, integration.get("passthroughBehavior"), None)
+
 
 class RequestTemplates(Templates):
     """
     Handles request template rendering
     """
 
-    def render(self, api_context: ApiInvocationContext):
+    def render(self, api_context: ApiInvocationContext, **kwargs):
         LOG.info(
             "Method request body before transformations: %s", to_str(api_context.data_as_string())
         )
         request_templates = api_context.integration.get("requestTemplates", {})
-        template = request_templates.get(APPLICATION_JSON, {})
-        if not template:
+        template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE), {})
+
+        passthrough_behavior = self.get_passthrough_behavior(integration=api_context.integration)
+        if not template and passthrough_behavior == PassthroughBehavior.WHEN_NO_MATCH:
             return api_context.data_as_string()
 
         variables = self.build_variables_mapping(api_context)
@@ -257,8 +332,9 @@ class ResponseTemplates(Templates):
     Handles response template rendering
     """
 
-    def render(self, api_context: ApiInvocationContext):
-        response = api_context.response
+    def render(self, api_context: ApiInvocationContext, **kwargs):
+        data = kwargs["response"] if "response" in kwargs else ""
+        response = data or api_context.response
         integration = api_context.integration
         # we set context data with the response content because later on we use context data as
         # the body field in the template. We need to improve this by using the right source
@@ -272,7 +348,15 @@ class ResponseTemplates(Templates):
         if return_code not in entries and len(entries) > 1:
             LOG.info("Found multiple integration response status codes: %s", entries)
             return response._content
-        return_code = entries[0]
+        # return_code = entries[0]
+
+        # AWS if there is no integration response and Content-Type is defined it return "internal
+        # server error"
+        if not int_responses.get(return_code) and api_context.headers.get(HEADER_CONTENT_TYPE):
+            response._content = '{"message": "Internal server error"}'
+            response.status_code = 500
+            response.headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
+            return response
 
         response_templates = int_responses[return_code].get("responseTemplates", {})
         template = response_templates.get(APPLICATION_JSON, {})

@@ -43,6 +43,7 @@ from localstack.services.apigateway.helpers import (
     make_error_response,
 )
 from localstack.services.apigateway.integration import (
+    MockIntegration,
     RequestTemplates,
     ResponseTemplates,
     SnsIntegration,
@@ -440,7 +441,6 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     resource_path = invocation_context.resource_path
     response_templates = invocation_context.response_templates
     integration = invocation_context.integration
-
     # extract integration type and path parameters
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
@@ -450,6 +450,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     # the customer, even if it's empty that's what's expected in the integration.
     custom_auth_header = invocation_context.headers.pop(HEADER_LOCALSTACK_AUTHORIZATION, "")
     invocation_context.headers["Authorization"] = custom_auth_header
+
+    # XXX this can be computed inside invocation_context.
+    invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
 
     try:
         path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
@@ -769,14 +772,17 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
 
     elif integration_type == "MOCK":
 
+        integration = MockIntegration()
+        return integration.invoke(invocation_context)
+
         # TODO: apply tell don't ask principle inside ResponseTemplates or InvocationContext
-        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-        invocation_context.response = requests_response({})
-
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
-
-        return invocation_context.response
+        # invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        # invocation_context.response = requests_response({})
+        #
+        # response_templates = ResponseTemplates()
+        # response_templates.render(invocation_context)
+        #
+        # return invocation_context.response
 
     if method == "OPTIONS":
         # fall back to returning CORS headers if this is an OPTIONS request

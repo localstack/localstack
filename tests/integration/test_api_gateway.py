@@ -40,6 +40,15 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
+from tests.integration.apigateway_fixtures import (
+    api_invoke_url,
+    create_rest_api,
+    create_rest_api_integration,
+    create_rest_api_integration_response,
+    create_rest_resource,
+    create_rest_resource_method,
+    delete_rest_api,
+)
 
 from .awslambda.test_lambda import (
     TEST_LAMBDA_LIBS,
@@ -65,7 +74,8 @@ ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
 
 
 class TestAPIGateway(unittest.TestCase):
-    # template used to transform incoming requests at the API Gateway (stream name to be filled in later)
+    # template used to transform incoming requests at the API Gateway (stream name to be filled
+    # in later)
     APIGATEWAY_DATA_INBOUND_TEMPLATE = """{
         "StreamName": "%s",
         "Records": [
@@ -116,7 +126,8 @@ class TestAPIGateway(unittest.TestCase):
         "providerARNs": ["arn:aws:cognito-idp:us-east-1:123412341234:userpool/us-east-1_123412341"],
         "authType": "custom",
         "authorizerUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/"
-        + "arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer/invocations",
+        + "arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer"
+        "/invocations",
         "authorizerCredentials": "arn:aws:iam::123456789012:role/apigAwsProxyRole",
         "identitySource": "method.request.header.Authorization",
         "identityValidationExpression": ".*",
@@ -1697,7 +1708,6 @@ class TestAPIGateway(unittest.TestCase):
             integration_responses = [{"httpMethod": "PUT", "statusCode": "200"}]
 
         for resp_details in integration_responses:
-
             apigw_client.put_method(
                 restApiId=api_id,
                 resourceId=root_id,
@@ -1733,3 +1743,78 @@ class TestAPIGateway(unittest.TestCase):
         apigw_client.create_deployment(restApiId=api_id, stageName="staging")
 
         return api_id
+
+
+def test_mock_integration_empty_response(apigateway_client):
+    api_id, _, root = create_rest_api(apigateway_client, name="mock api")
+    resource_id, _ = create_rest_resource(
+        apigateway_client, restApiId=api_id, parentId=root, pathPart="demo"
+    )
+    create_rest_resource_method(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        authorizationType="NONE",
+    )
+    create_rest_api_integration(
+        apigateway_client, restApiId=api_id, resourceId=resource_id, httpMethod="GET", type="MOCK"
+    )
+
+    url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
+    response = requests.get(url)
+
+    assert response.status_code == 200
+    assert response.headers["Content-Type"] == "application/json"
+    assert to_str(response._content) == ""
+
+    delete_rest_api(apigateway_client, restApiId=api_id)
+
+
+def test_mock_integration_request_template_when_no_match_mapping_template(apigateway_client):
+    api_id, _, root = create_rest_api(apigateway_client, name="mock api")
+    resource_id, _ = create_rest_resource(
+        apigateway_client, restApiId=api_id, parentId=root, pathPart="demo"
+    )
+    create_rest_resource_method(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        authorizationType="NONE",
+    )
+
+    create_rest_api_integration(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        type="MOCK",
+        passthroughBehavior="WHEN_NO_MATCH",
+        requestTemplates={"application/json": '{"statusCode":201}'},
+    )
+
+    create_rest_api_integration_response(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        statusCode="201",
+        responseTemplates={"application/json": '{"id": "$context.requestId"}'},
+    )
+
+    url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
+    response = requests.post(url, headers={"Content-Type": "application/json"})
+
+    assert response.status_code == 201
+    assert response.headers["Content-Type"] == "application/json"
+    assert "id" in json.loads(response._content)
+
+    url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
+    response = requests.post(url, headers={"Content-Type": "application/text"})
+
+    assert response.status_code == 500
+    assert response.headers["Content-Type"] == "application/json"
+    assert to_str(response._content) == '{"message": "Internal server error"}'
+
+    delete_rest_api(apigateway_client, restApiId=api_id)
