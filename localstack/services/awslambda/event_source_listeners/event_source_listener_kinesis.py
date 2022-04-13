@@ -1,11 +1,11 @@
 import base64
+import json
 import math
 import threading
 import time
 from typing import Any, Dict, List, Optional
 
 from localstack import config, constants
-from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -13,7 +13,8 @@ from localstack.services.awslambda.event_source_listeners.event_source_listener 
 from localstack.services.awslambda.lambda_api import LOG, get_event_sources, run_lambda
 from localstack.services.awslambda.lambda_executors import InvocationResult
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import first_char_to_lower, to_str, timestamp_millis, long_uid
+from localstack.utils.aws.message_forwarding import send_event_to_target
+from localstack.utils.common import first_char_to_lower, long_uid, timestamp_millis, to_str
 from localstack.utils.threads import FuncThread
 
 
@@ -88,9 +89,9 @@ class EventSourceListenerKinesis(EventSourceListener):
         if isinstance(result, InvocationResult):
             status_code = getattr(result.result, "status_code", 0)
             if status_code >= 400:
-                return False
-            return True
-        return False
+                return False, status_code
+            return True, status_code
+        return False, 500
 
     def _listen_to_shard_and_invoke_lambda(self, params):
         # TODO: These values will never get updated if the event source mapping configuration changes :(
@@ -114,7 +115,7 @@ class EventSourceListenerKinesis(EventSourceListener):
             should_get_next_batch = True
             if records:
                 payload = self._create_lambda_event_payload(stream_arn, shard_id, records)
-                is_invocation_successful = self._invoke_lambda(
+                is_invocation_successful, status_code = self._invoke_lambda(
                     function_arn, payload, lock_discriminator, parallelization_factor
                 )
                 if is_invocation_successful:
@@ -126,16 +127,19 @@ class EventSourceListenerKinesis(EventSourceListener):
                         if failure_destination:
                             first_rec = records[0]
                             last_rec = records[-1]
-                            self._send_to_failure_destination(shard_id,
-                                                              first_rec["SequenceNumber"],
-                                                              last_rec["SequenceNumber"],
-                                                              stream_arn,
-                                                              function_arn,
-                                                              num_invocation_failures,
-                                                              batch_size,
-                                                              first_rec["ApproximateArrivalTimestamp"],
-                                                              last_rec["ApproximateArrivalTimestamp"],
-                                                              failure_destination)
+                            self._send_to_failure_destination(
+                                shard_id,
+                                first_rec["SequenceNumber"],
+                                last_rec["SequenceNumber"],
+                                stream_arn,
+                                function_arn,
+                                num_invocation_failures,
+                                status_code,
+                                batch_size,
+                                first_rec["ApproximateArrivalTimestamp"],
+                                last_rec["ApproximateArrivalTimestamp"],
+                                failure_destination,
+                            )
                     else:
                         should_get_next_batch = False
             if should_get_next_batch:
@@ -143,7 +147,20 @@ class EventSourceListenerKinesis(EventSourceListener):
                 num_invocation_failures = 0
             time.sleep(self.KINESIS_POLL_INTERVAL_SEC)
 
-    def _send_to_failure_destination(self, shard_id, start_sequence_num, end_sequence_num, source_arn, func_arn, invoke_count, batch_size, first_record_arrival_time, last_record_arrival_time, destination):
+    def _send_to_failure_destination(
+        self,
+        shard_id,
+        start_sequence_num,
+        end_sequence_num,
+        source_arn,
+        func_arn,
+        invoke_count,
+        status_code,
+        batch_size,
+        first_record_arrival_time,
+        last_record_arrival_time,
+        destination,
+    ):
         payload = {
             "version": "1.0",
             "timestamp": timestamp_millis(),
@@ -153,9 +170,9 @@ class EventSourceListenerKinesis(EventSourceListener):
                 "condition": "RetryAttemptsExhausted",
                 "approximateInvokeCount": invoke_count,
             },
-            "responseContext": { # TODO: don't hardcode these fields
-                "statusCode": 200,
-                "executedVersion": "$LATEST",
+            "responseContext": {
+                "statusCode": status_code,
+                "executedVersion": "$LATEST",  # TODO: don't hardcode these fields
                 "functionError": "Unhandled",
             },
         }
@@ -163,12 +180,8 @@ class EventSourceListenerKinesis(EventSourceListener):
             "shardId": shard_id,
             "startSequenceNumber": start_sequence_num,
             "endSequenceNumber": end_sequence_num,
-            "approximateArrivalOfFirstRecord": timestamp_millis(
-                first_record_arrival_time
-            ),
-            "approximateArrivalOfLastRecord": timestamp_millis(
-                last_record_arrival_time
-            ),
+            "approximateArrivalOfFirstRecord": timestamp_millis(first_record_arrival_time),
+            "approximateArrivalOfLastRecord": timestamp_millis(last_record_arrival_time),
             "batchSize": batch_size,
             "streamArn": source_arn,
         }
@@ -199,7 +212,11 @@ class EventSourceListenerKinesis(EventSourceListener):
                         "kinesis", region_name=region_name
                     )
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
-                    failure_destination = source.get("DestinationConfig", {}).get("OnFailure", {}).get("Destination", None)
+                    failure_destination = (
+                        source.get("DestinationConfig", {})
+                        .get("OnFailure", {})
+                        .get("Destination", None)
+                    )
                     max_num_retries = source.get("MaximumRetryAttempts", -1)
                     if max_num_retries < 0:
                         max_num_retries = math.inf

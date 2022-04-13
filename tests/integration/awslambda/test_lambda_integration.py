@@ -244,14 +244,14 @@ class TestLambdaEventSourceMappings:
         assert 1 == len(events[0]["Records"])
 
     def test_disabled_event_source_mapping_with_kinesis(
-            self,
-            lambda_client,
-            kinesis_client,
-            create_lambda_function,
-            kinesis_create_stream,
-            wait_for_stream_ready,
-            logs_client,
-            lambda_su_role,
+        self,
+        lambda_client,
+        kinesis_client,
+        create_lambda_function,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        logs_client,
+        lambda_su_role,
     ):
 
         function_name = f"lambda_func-{short_uid()}"
@@ -505,7 +505,7 @@ class TestLambdaEventSourceMappings:
         assert "Subject" in notification
         assert subject == notification["Subject"]
 
-    def test_event_source_mapping_with_destination_config_kinesis_stream(
+    def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
         lambda_client,
         create_lambda_function,
@@ -539,10 +539,8 @@ class TestLambdaEventSourceMappings:
             # test destination-config for create_event_source_mapping
             kinesis_name = f"test-kinesis-{short_uid()}"
             kinesis_client.create_stream(StreamName=kinesis_name, ShardCount=1)
-
             result = kinesis_client.describe_stream(StreamName=kinesis_name)["StreamDescription"]
             kinesis_arn = result["StreamARN"]
-
             wait_for_stream_ready(stream_name=kinesis_name)
 
             queue_event_source_mapping = sqs_create_queue()
@@ -561,10 +559,9 @@ class TestLambdaEventSourceMappings:
                 DestinationConfig=destination_config,
             )
             time.sleep(2)
-
             event_source_mapping_uuid = result["UUID"]
             event_source_mapping_state = result["State"]
-            # TODO make use of this elsewhere
+            # TODO I'm not positive this actually blocks until the mapping is available
             if event_source_mapping_state != "Enabled":
                 retry(
                     _check_mapping_state,
@@ -592,7 +589,7 @@ class TestLambdaEventSourceMappings:
                 assert body["KinesisBatchInfo"]["batchSize"] == 1
                 assert body["KinesisBatchInfo"]["streamArn"] == kinesis_arn
 
-            retry(verify_failure_received, retries=10, sleep=5, sleep_before=5)
+            retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
 
         finally:
             kinesis_client.delete_stream(StreamName=kinesis_name, EnforceConsumerDeletion=True)
