@@ -1,5 +1,4 @@
 import base64
-import json
 import math
 import threading
 import time
@@ -55,6 +54,10 @@ class EventSourceListenerKinesis(EventSourceListener):
                 record_payload[first_char_to_lower(key)] = val
             # boto3 automatically decodes records in get_records(), so we must re-encode
             record_payload["data"] = to_str(base64.b64encode(record_payload["data"]))
+            # convert datetime obj to timestamp
+            record_payload["approximateArrivalTimestamp"] = (
+                record_payload["approximateArrivalTimestamp"].timestamp() * 1000
+            )
             record_payloads.append(
                 {
                     "eventID": "{0}:{1}".format(shard_id, record_payload["sequenceNumber"]),
