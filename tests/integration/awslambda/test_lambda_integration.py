@@ -243,6 +243,69 @@ class TestLambdaEventSourceMappings:
         # lambda no longer invoked, still have 1 event
         assert 1 == len(events[0]["Records"])
 
+    def test_disabled_event_source_mapping_with_kinesis(
+            self,
+            lambda_client,
+            kinesis_client,
+            create_lambda_function,
+            kinesis_create_stream,
+            wait_for_stream_ready,
+            logs_client,
+            lambda_su_role,
+    ):
+
+        function_name = f"lambda_func-{short_uid()}"
+        stream_name = f"test-foobar-{short_uid()}"
+        num_records_per_batch = 10
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+            role=lambda_su_role,
+        )
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
+            "StreamARN"
+        ]
+        wait_for_stream_ready(stream_name=stream_name)
+
+        event_source_uuid = lambda_client.create_event_source_mapping(
+            EventSourceArn=stream_arn,
+            FunctionName=function_name,
+            StartingPosition="LATEST",
+            BatchSize=num_records_per_batch,
+        )["UUID"]
+        time.sleep(2)  # wait for mapping to become active
+
+        kinesis_client.put_records(
+            Records=[
+                {"Data": json.dumps({"record_id": i}), "PartitionKey": f"test"}
+                for i in range(0, num_records_per_batch)
+            ],
+            StreamName=stream_name,
+        )
+
+        def get_lambda_invocation_events():
+            events = get_lambda_log_events(function_name, logs_client=logs_client)
+            assert len(events) == 1
+            return events
+
+        retry(get_lambda_invocation_events, retries=30)
+
+        lambda_client.update_event_source_mapping(UUID=event_source_uuid, Enabled=False)
+        time.sleep(2)
+        kinesis_client.put_records(
+            Records=[
+                {"Data": json.dumps({"record_id": i}), "PartitionKey": f"test"}
+                for i in range(0, num_records_per_batch)
+            ],
+            StreamName=stream_name,
+        )
+        time.sleep(7)  # wait for records to pass through stream
+        get_lambda_invocation_events()  # should still only get the first batch from before mapping was disabled
+
     # TODO invalid test against AWS, this behavior just is not correct
     def test_deletion_event_source_mapping_with_dynamodb(
         self, create_lambda_function, lambda_client, dynamodb_client, lambda_su_role
@@ -847,7 +910,6 @@ class TestKinesisSource:
                 record_data = base64.b64decode(record["kinesis"]["data"]).decode("utf-8")
                 actual_record_id = json.loads(record_data)["record_id"]
                 actual_record_ids.append(actual_record_id)
-
             actual_record_ids.sort()
             assert actual_record_ids == [i for i in range(num_records_per_batch)]
 

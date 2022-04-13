@@ -38,7 +38,8 @@ class EventSourceListenerKinesis(EventSourceListener):
         self.COORDINATOR_THREAD.start()
 
     def get_matching_event_sources(self) -> List[Dict]:
-        return get_event_sources(source_arn=r".*:kinesis:.*")
+        event_sources = get_event_sources(source_arn=r".*:kinesis:.*")
+        return [source for source in event_sources if source["State"] == "Enabled"]
 
     def process_event(self, event: Any):
         raise NotImplementedError
@@ -102,9 +103,8 @@ class EventSourceListenerKinesis(EventSourceListener):
         shard_id = params["shard_id"]
         kinesis_client = params["kinesis_client"]
         shard_iterator = params["shard_iterator"]
-        cur_thread = threading.currentThread()
 
-        while getattr(cur_thread, "do_run", True):
+        while lock_discriminator in self.KINESIS_LISTENER_THREADS:
             records_response = kinesis_client.get_records(
                 ShardIterator=shard_iterator, Limit=batch_size
             )
@@ -131,6 +131,8 @@ class EventSourceListenerKinesis(EventSourceListener):
                     # anymore. The loop will get restarted next time a record
                     # arrives and if an event source is configured.
                     self.COORDINATOR_THREAD = None
+                    for thread_id in self.KINESIS_LISTENER_THREADS:
+                        self.KINESIS_LISTENER_THREADS.pop(thread_id)
                     return
 
                 # make sure each event source kinesis stream has a lambda listening on each of its shards
@@ -177,8 +179,7 @@ class EventSourceListenerKinesis(EventSourceListener):
                 # stop any lambda threads that are listening to a previously defined event source that no longer exists
                 orphaned_threads = set(self.KINESIS_LISTENER_THREADS.keys()) - mapped_shard_ids
                 for thread_id in orphaned_threads:
-                    orphaned_thread = self.KINESIS_LISTENER_THREADS.pop(thread_id)
-                    orphaned_thread.do_run = False
+                    self.KINESIS_LISTENER_THREADS.pop(thread_id)
 
             except Exception as e:
                 # TODO
