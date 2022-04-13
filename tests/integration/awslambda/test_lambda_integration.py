@@ -845,7 +845,6 @@ class TestKinesisSource:
                 assert "awsRegion" in record
                 assert "kinesis" in record
                 record_data = base64.b64decode(record["kinesis"]["data"]).decode("utf-8")
-                # TODO: I think the record data should actually be b64 encoded
                 actual_record_id = json.loads(record_data)["record_id"]
                 actual_record_ids.append(actual_record_id)
 
@@ -935,7 +934,6 @@ class TestKinesisSource:
                 assert "awsRegion" in record
                 assert "kinesis" in record
                 record_data = base64.b64decode(record["kinesis"]["data"]).decode("utf-8")
-                # TODO: I think the record data should actually be b64 encoded
                 actual_record_id = json.loads(record_data)["record_id"]
                 actual_record_ids.append(actual_record_id)
 
