@@ -1237,9 +1237,19 @@ def get_global_secondary_index(table_name, index_name):
     raise ResourceNotFoundException("Index not found")
 
 
+def is_local_secondary_index(table_name, index_name) -> bool:
+    schema = SchemaExtractor.get_table_schema(table_name)
+    for index in schema["Table"].get("LocalSecondaryIndexes", []):
+        if index["IndexName"] == index_name:
+            return True
+    return False
+
+
 def is_index_query_valid(query_data: dict) -> bool:
     table_name = to_str(query_data["TableName"])
     index_name = to_str(query_data["IndexName"])
+    if is_local_secondary_index(table_name, index_name):
+        return True
     index_query_type = query_data.get("Select")
     index = get_global_secondary_index(table_name, index_name)
     index_projection_type = index.get("Projection").get("ProjectionType")
