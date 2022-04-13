@@ -1818,3 +1818,59 @@ def test_mock_integration_request_template_when_no_match_mapping_template(apigat
     assert to_str(response._content) == '{"message": "Internal server error"}'
 
     delete_rest_api(apigateway_client, restApiId=api_id)
+
+
+def test_mock_integration_request_template_when_no_templates_mapping_template(apigateway_client):
+    api_id, _, root = create_rest_api(apigateway_client, name="mock api")
+    resource_id, _ = create_rest_resource(
+        apigateway_client, restApiId=api_id, parentId=root, pathPart="demo"
+    )
+    create_rest_resource_method(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        authorizationType="NONE",
+    )
+
+    create_rest_api_integration(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        type="MOCK",
+        passthroughBehavior="WHEN_NO_TEMPLATES",
+        requestTemplates={"application/json": '{"statusCode":201}'},
+    )
+
+    create_rest_api_integration_response(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        statusCode="200",
+        responseTemplates={"application/json": '{"id": "$context.requestId"}'},
+    )
+
+    url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
+    response = requests.post(url)
+
+    assert response.status_code == 200
+    assert response.headers["Content-Type"] == "application/json"
+    assert "id" in json.loads(response._content)
+
+    url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
+    response = requests.post(url, headers={"Content-Type": "application/json"})
+
+    assert response.status_code == 200
+    assert response.headers["Content-Type"] == "application/json"
+    assert "id" in json.loads(response._content)
+
+    # url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
+    # response = requests.post(url, headers={"Content-Type": "application/text"})
+    #
+    # assert response.status_code == 500
+    # assert response.headers["Content-Type"] == "application/json"
+    # assert to_str(response._content) == '{"message": "Internal server error"}'
+
+    delete_rest_api(apigateway_client, restApiId=api_id)

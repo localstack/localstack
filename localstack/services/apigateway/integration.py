@@ -106,7 +106,7 @@ class MockIntegration(BackendIntegration):
 
         # response template
         response = MockIntegration._create_response(status_code, headers, data=request_payload)
-        response = self.response_templates.render(invocation_context, response=response)
+        response, status_code = self.response_templates.render(invocation_context, response=response)
         if isinstance(response, Response):
             return response
         else:
@@ -318,7 +318,7 @@ class RequestTemplates(Templates):
         template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE), {})
 
         passthrough_behavior = self.get_passthrough_behavior(integration=api_context.integration)
-        if not template and passthrough_behavior == PassthroughBehavior.WHEN_NO_MATCH:
+        if not template and passthrough_behavior in { PassthroughBehavior.WHEN_NO_MATCH, PassthroughBehavior.WHEN_NO_TEMPLATES }:
             return api_context.data_as_string()
 
         variables = self.build_variables_mapping(api_context)
@@ -342,23 +342,34 @@ class ResponseTemplates(Templates):
         api_context.data = response._content
         int_responses = integration.get("integrationResponses") or {}
         if not int_responses:
-            return response._content
+            return response._content, response.status_code
         entries = list(int_responses.keys())
         return_code = str(response.status_code)
         if return_code not in entries and len(entries) > 1:
             LOG.info("Found multiple integration response status codes: %s", entries)
-            return response._content
-        # return_code = entries[0]
+            return response._content, return_code
+
+        selected_integration = int_responses.get(return_code)
+        # select the default, the default integration has an "empty" selection pattern
+        if not int_responses.get(return_code) and len(entries) > 0:
+            for status_code_entry in int_responses.keys():
+                integration_response = int_responses[status_code_entry]
+                if "selectionPattern" not in integration_response:
+                    selected_integration = integration_response
+                    response.status_code = status_code_entry
+                    break
+
 
         # AWS if there is no integration response and Content-Type is defined it return "internal
-        # server error"
-        if not int_responses.get(return_code) and api_context.headers.get(HEADER_CONTENT_TYPE):
-            response._content = '{"message": "Internal server error"}'
-            response.status_code = 500
-            response.headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
-            return response
+        # server error". TODO: validate this for WHEN_NO_MATCH and if this only happens when
+        #  there are no mappings at all
+        # if not int_responses.get(return_code) and api_context.headers.get(HEADER_CONTENT_TYPE):
+        #     response._content = '{"message": "Internal server error"}'
+        #     response.status_code = 500
+        #     response.headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
+        #     return response
 
-        response_templates = int_responses[return_code].get("responseTemplates", {})
+        response_templates = selected_integration.get("responseTemplates", {})
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
             return response
@@ -366,4 +377,4 @@ class ResponseTemplates(Templates):
         variables = self.build_variables_mapping(api_context)
         response._content = self.render_vtl(template, variables=variables)
         LOG.info("Endpoint response body after transformations:\n%s", response._content)
-        return response._content
+        return response._content, response.status_code

@@ -218,10 +218,14 @@ def apply_patches():
             request_parameters = self._get_param("requestParameters") or {}
             cache_key_parameters = self._get_param("cacheKeyParameters") or []
             content_handling = self._get_param("contentHandling")
+            passthrough_behavior = self._get_param("passthroughBehavior")
+            selection_pattern = self._get_param("selectionPattern")
             integration["timeoutInMillis"] = timeout_milliseconds
             integration["requestParameters"] = request_parameters
             integration["cacheKeyParameters"] = cache_key_parameters
             integration["contentHandling"] = content_handling
+            integration["passthroughBehavior"] = passthrough_behavior
+            integration["selectionPattern"] = selection_pattern
             return 200, {}, json.dumps(integration)
 
         if self.method == "PATCH":
