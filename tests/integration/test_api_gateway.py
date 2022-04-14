@@ -1952,7 +1952,8 @@ def test_mock_integration_response_template_all(apigateway_client):
         resourceId=resource_id,
         httpMethod="POST",
         statusCode="200",
-        responseTemplates={"application/json": """
+        responseTemplates={
+            "application/json": """
 #set($allParams = $input.params())
 {
 "body-json" : $input.json('$'),
@@ -1995,7 +1996,8 @@ def test_mock_integration_response_template_all(apigateway_client):
     "resource-path" : "$context.resourcePath"
     }
 }
-        """}
+        """
+        },
     )
 
     # template for "application/json" should return 200
@@ -2005,4 +2007,6 @@ def test_mock_integration_response_template_all(apigateway_client):
     expected_mock_response = load_file(TEST_MOCK_RESPONSE)
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/json"
-    assert list(json.loads(expected_mock_response).keys()) == list(json.loads(to_str(response._content)))
+    assert list(json.loads(expected_mock_response).keys()) == list(
+        json.loads(to_str(response._content))
+    )

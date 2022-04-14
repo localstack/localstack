@@ -9,7 +9,6 @@ from urllib.parse import quote_plus, unquote_plus
 
 import airspeed
 from requests import Response
-from requests.structures import CaseInsensitiveDict
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
@@ -54,8 +53,10 @@ class MappingTemplates:
         A content type is unmapped if no mapping template is defined in the integration or the
         content type does not match any of the mapped content types, as specified in requestTemplates
         """
-        if not request_template and self.passthrough_behavior in {PassthroughBehavior.NEVER,
-            PassthroughBehavior.WHEN_NO_TEMPLATES}:
+        if not request_template and self.passthrough_behavior in {
+            PassthroughBehavior.NEVER,
+            PassthroughBehavior.WHEN_NO_TEMPLATES,
+        }:
             raise MappingTemplates.UnsupportedMediaType()
 
     @staticmethod
@@ -142,7 +143,9 @@ class MockIntegration(BackendIntegration):
                 )
 
         # response template
-        response = MockIntegration._create_response(status_code, invocation_context.headers, data=request_payload)
+        response = MockIntegration._create_response(
+            status_code, invocation_context.headers, data=request_payload
+        )
         response = self.response_templates.render(invocation_context, response=response)
         if isinstance(response, Response):
             return response
