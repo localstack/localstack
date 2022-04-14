@@ -5,7 +5,7 @@ import os
 import shutil
 import time
 from io import BytesIO
-from typing import Dict, List, TypeVar
+from typing import Dict, List, Pattern, TypeVar
 
 import pytest
 from botocore.exceptions import ClientError
@@ -154,6 +154,11 @@ PROVIDED_TEST_RUNTIMES = [
     ),
 ]
 
+# Snapshot patterns
+IGNORE_LOGSTREAM_ID: Pattern[str] = re.compile(
+    r"\d{4}/\d{2}/\d{2}/\[((\$LATEST)|\d+)\][0-9a-f]{32}"
+)
+
 T = TypeVar("T")
 
 
@@ -167,6 +172,45 @@ def read_streams(payload: T) -> T:
         else:
             new_payload[k] = v
     return new_payload
+
+
+@pytest.fixture
+def check_lambda_logs(logs_client):
+    def _check_logs(func_name: str, expected_lines: List[str] = None):
+        if not expected_lines:
+            expected_lines = []
+        log_events = get_lambda_logs(func_name, logs_client=logs_client)
+        log_messages = [e["message"] for e in log_events]
+        for line in expected_lines:
+            if ".*" in line:
+                found = [re.match(line, m, flags=re.DOTALL) for m in log_messages]
+                if any(found):
+                    continue
+            assert line in log_messages
+
+    return _check_logs
+
+
+def get_lambda_logs(func_name, logs_client=None):
+    logs_client = logs_client or aws_stack.create_external_boto_client("logs")
+    log_group_name = f"/aws/lambda/{func_name}"
+    streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+    streams = sorted(streams, key=lambda x: x["creationTime"], reverse=True)
+    log_events = logs_client.get_log_events(
+        logGroupName=log_group_name, logStreamName=streams[0]["logStreamName"]
+    )["events"]
+    return log_events
+
+
+def configure_snapshot_for_context(snapshot, function_name: str):
+    """
+    Utility function to configure snapshot to ignore a function name and log stream ids in its body.
+    Helpful if invoke calls return the context object, in which they are present
+    :param snapshot: Snapshot fixture result
+    :param function_name: Function name of the current function
+    """
+    snapshot.register_replacement(IGNORE_LOGSTREAM_ID, "<log_stream_id>")
+    snapshot.register_replacement(re.compile(function_name), "<function_name>")
 
 
 def is_old_provider():
@@ -378,6 +422,7 @@ class TestLambdaAPI:
     def test_add_lambda_multiple_permission(
         self, iam_client, lambda_client, create_lambda_function
     ):
+        """Test adding multiple permissions"""
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -504,6 +549,7 @@ class TestLambdaAPI:
         lambda_client.delete_function_concurrency(FunctionName=function_name)
 
     def test_function_code_signing_config(self, lambda_client, create_lambda_function, snapshot):
+        """Testing the API of code signing config"""
         function_name = f"lambda_func-{short_uid()}"
 
         create_lambda_function(
@@ -564,6 +610,7 @@ class TestLambdaAPI:
         assert 204 == response["ResponseMetadata"]["HTTPStatusCode"]
 
     def create_multiple_lambda_permissions(self, lambda_client, create_lambda_function, snapshot):
+        """Test creating multiple lambda permissions and checking the policy"""
         function_name = f"test-function-{short_uid()}"
 
         create_lambda_function(
@@ -693,6 +740,7 @@ class TestLambdaBaseFeatures:
         lambda_su_role,
         snapshot,
     ):
+        """Testing the destination config API and operation (for the OnSuccess case)"""
         # create DLQ and Lambda function
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
@@ -731,6 +779,7 @@ class TestLambdaBaseFeatures:
         retry(receive_message, retries=120, sleep=3)
 
     def test_large_payloads(self, caplog, lambda_client, create_lambda_function, snapshot):
+        """Testing large payloads sent to lambda functions (~5MB)"""
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         caplog.set_level(logging.INFO)
 
@@ -772,16 +821,14 @@ class TestPythonRuntimes:
         return function_name
 
     def test_invocation_type_not_set(self, lambda_client, python_function_name, snapshot):
+        """Test invocation of a lambda with no invocation type set, but LogType="Tail""" ""
 
         result = lambda_client.invoke(
             FunctionName=python_function_name, Payload=b"{}", LogType="Tail"
         )
         result = read_streams(result)
         snapshot.skip_key(re.compile("LogResult"), "<log_result>")
-        snapshot.register_replacement(re.compile(python_function_name), "<function_name>")
-        snapshot.register_replacement(
-            re.compile(r"\d{4}/\d{2}/\d{2}/\[((\$LATEST)|\d+)\][0-9a-f]{32}"), "<log_stream_id>"
-        )
+        configure_snapshot_for_context(snapshot, python_function_name)
         snapshot.match("invoke", result)
         result_data = json.loads(result["Payload"])
 
@@ -802,52 +849,67 @@ class TestPythonRuntimes:
         assert "END" in logs
         assert "REPORT" in logs
 
-    def test_invocation_type_request_response(self, lambda_client, python_function_name):
+    def test_invocation_type_request_response(self, lambda_client, python_function_name, snapshot):
+        """Test invocation with InvocationType RequestResponse explicitely set"""
         result = lambda_client.invoke(
             FunctionName=python_function_name,
             Payload=b"{}",
             InvocationType="RequestResponse",
         )
-        result_data = result["Payload"].read()
-        result_data = json.loads(to_str(result_data))
+        result = read_streams(result)
+        configure_snapshot_for_context(snapshot, python_function_name)
+        snapshot.match("invoke-result", result)
+        result_data = result["Payload"]
+        result_data = json.loads(result_data)
         assert "application/json" == result["ResponseMetadata"]["HTTPHeaders"]["content-type"]
         assert 200 == result["StatusCode"]
         assert isinstance(result_data, dict)
 
-    def test_invocation_type_event(self, lambda_client, python_function_name):
+    def test_invocation_type_event(self, lambda_client, python_function_name, snapshot):
+        """Check invocation response for type event"""
         result = lambda_client.invoke(
             FunctionName=python_function_name, Payload=b"{}", InvocationType="Event"
         )
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
 
         assert 202 == result["StatusCode"]
 
-    def test_invocation_type_dry_run(self, lambda_client, python_function_name):
+    def test_invocation_type_dry_run(self, lambda_client, python_function_name, snapshot):
+        """Check invocation response for type dryrun"""
         result = lambda_client.invoke(
             FunctionName=python_function_name, Payload=b"{}", InvocationType="DryRun"
         )
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
 
         assert 204 == result["StatusCode"]
 
     @parametrize_python_runtimes
-    def test_lambda_environment(self, lambda_client, create_lambda_function, runtime):
+    def test_lambda_environment(self, lambda_client, create_lambda_function, runtime, snapshot):
+        """Tests invoking a lambda function with environment variables set on creation"""
         function_name = f"env-test-function-{short_uid()}"
         env_vars = {"Hello": "World"}
-        create_lambda_function(
+        creation_result = create_lambda_function(
             handler_file=TEST_LAMBDA_ENV,
             libs=TEST_LAMBDA_LIBS,
             func_name=function_name,
             envvars=env_vars,
             runtime=runtime,
         )
+        snapshot.match("creation-result", creation_result)
 
         # invoke function and assert result contains env vars
         result = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        result = read_streams(result)
+        snapshot.match("invocation-result", result)
         result_data = result["Payload"]
         assert 200 == result["StatusCode"]
-        assert json.load(result_data) == env_vars
+        assert json.loads(result_data) == env_vars
 
         # get function config and assert result contains env vars
         result = lambda_client.get_function_configuration(FunctionName=function_name)
+        snapshot.match("get-configuration-result", result)
         assert result["Environment"] == {"Variables": env_vars}
 
     @parametrize_python_runtimes
@@ -860,7 +922,9 @@ class TestPythonRuntimes:
         check_lambda_logs,
         lambda_su_role,
         wait_until_lambda_ready,
+        snapshot,
     ):
+        """Tests invocation with a given qualifier"""
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
 
@@ -880,6 +944,9 @@ class TestPythonRuntimes:
             Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
             Timeout=10,
         )
+        snapshot.match("creation-response", response)
+
+        configure_snapshot_for_context(snapshot, function_name)
         assert "Version" in response
         qualifier = response["Version"]
 
@@ -890,7 +957,9 @@ class TestPythonRuntimes:
         result = lambda_client.invoke(
             FunctionName=function_name, Payload=data_before, Qualifier=qualifier
         )
-        data_after = json.loads(result["Payload"].read())
+        result = read_streams(result)
+        snapshot.match("invocation-response", result)
+        data_after = json.loads(result["Payload"])
         assert json.loads(to_str(data_before)) == data_after["event"]
 
         context = data_after["context"]
@@ -916,7 +985,14 @@ class TestPythonRuntimes:
 
     @parametrize_python_runtimes
     def test_upload_lambda_from_s3(
-        self, lambda_client, s3_client, s3_bucket, runtime, lambda_su_role, wait_until_lambda_ready
+        self,
+        lambda_client,
+        s3_client,
+        s3_bucket,
+        runtime,
+        lambda_su_role,
+        wait_until_lambda_ready,
+        snapshot,
     ):
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
@@ -928,7 +1004,7 @@ class TestPythonRuntimes:
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
-        lambda_client.create_function(
+        create_response = lambda_client.create_function(
             FunctionName=function_name,
             Runtime=runtime,
             Handler="handler.handler",
@@ -936,13 +1012,17 @@ class TestPythonRuntimes:
             Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
             Timeout=10,
         )
+        snapshot.match("creation-response", create_response)
+        configure_snapshot_for_context(snapshot, function_name)
 
         wait_until_lambda_ready(function_name=function_name)
 
         # invoke lambda function
         data_before = b'{"foo": "bar with \'quotes\\""}'
         result = lambda_client.invoke(FunctionName=function_name, Payload=data_before)
-        data_after = json.loads(result["Payload"].read())
+        result = read_streams(result)
+        snapshot.match("invocation-response", result)
+        data_after = json.loads(result["Payload"])
         assert json.loads(to_str(data_before)) == data_after["event"]
 
         context = data_after["context"]
@@ -1147,21 +1227,26 @@ class TestPythonRuntimes:
         not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
     )
     @parametrize_python_runtimes
-    def test_python_runtime_unhandled_errors(self, lambda_client, create_lambda_function, runtime):
+    def test_python_runtime_unhandled_errors(
+        self, lambda_client, create_lambda_function, runtime, snapshot
+    ):
         function_name = f"test_python_executor_{short_uid()}"
-        create_lambda_function(
+        creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
             runtime=runtime,
         )
+        snapshot.match("creation_response", creation_response)
         result = lambda_client.invoke(
             FunctionName=function_name,
             Payload=b"{}",
         )
+        result = read_streams(result)
+        snapshot.match("invocation_response", result)
         assert result["StatusCode"] == 200
         assert result["ExecutedVersion"] == "$LATEST"
         assert result["FunctionError"] == "Unhandled"
-        payload = json.loads(to_str(result["Payload"].read()))
+        payload = json.loads(result["Payload"])
         assert payload["errorType"] == "CustomException"
         assert payload["errorMessage"] == "some error occurred"
         assert "stackTrace" in payload
@@ -1186,30 +1271,34 @@ class TestNodeJSRuntimes:
     )
     @parametrize_node_runtimes
     def test_nodejs_lambda_with_context(
-        self, lambda_client, create_lambda_function, runtime, check_lambda_logs
+        self, lambda_client, create_lambda_function, runtime, check_lambda_logs, snapshot
     ):
         function_name = f"test-function-{short_uid()}"
-        create_lambda_function(
+        creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_INTEGRATION_NODEJS,
             handler="lambda_integration.handler",
             runtime=runtime,
         )
+        snapshot.match("creation", creation_response)
         ctx = {
             "custom": {"foo": "bar"},
             "client": {"snap": ["crackle", "pop"]},
             "env": {"fizz": "buzz"},
         }
+        configure_snapshot_for_context(snapshot, function_name)
 
         result = lambda_client.invoke(
             FunctionName=function_name,
             Payload=b"{}",
             ClientContext=to_str(base64.b64encode(to_bytes(json.dumps(ctx)))),
         )
+        result = read_streams(result)
+        snapshot.match("invocation", result)
 
-        result_data = result["Payload"].read()
+        result_data = result["Payload"]
         assert 200 == result["StatusCode"]
-        client_context = json.loads(to_str(result_data))["context"]["clientContext"]
+        client_context = json.loads(result_data)["context"]["clientContext"]
         # TODO in the old provider, for some reason this is necessary. That is invalid behavior
         if is_old_provider():
             client_context = json.loads(client_context)

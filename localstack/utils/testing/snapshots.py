@@ -2,6 +2,7 @@ import json
 import logging
 import re
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional, Pattern, Set, Tuple
 
 from botocore.response import StreamingBody
@@ -111,9 +112,12 @@ class SnapshotSession:
 
     def persist_state(self) -> None:
         if self.update:
-            with open(self.file_path, "w+") as fd:
+            Path(self.file_path).touch()
+            with open(self.file_path, "r+") as fd:
                 try:
                     content = fd.read()
+                    fd.seek(0)
+                    fd.truncate()
                     full_state = json.loads(content or "{}")
                     full_state[self.scope_key] = self.observed_state
                     fd.write(json.dumps(full_state, indent=2))
