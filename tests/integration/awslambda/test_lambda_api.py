@@ -98,10 +98,10 @@ class TestLambdaAsfApi:
                 Role=lambda_su_role,
                 Runtime="python3.9",
             )
-            snapshot.assert_match("lambda_create_fn", response)
+            snapshot.match("lambda_create_fn", response)
 
         get_fn_result = lambda_client.get_function(FunctionName=fn_name)
-        snapshot.assert_match("lambda_get_fn", get_fn_result)
+        snapshot.match("lambda_get_fn", get_fn_result)
 
         invoke_result = lambda_client.invoke(FunctionName=fn_name, Payload=bytes("{}", "utf-8"))
-        snapshot.assert_match("lambda_invoke_result", invoke_result)
+        snapshot.match("lambda_invoke_result", invoke_result)
