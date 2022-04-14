@@ -41,6 +41,20 @@ class MappingTemplates:
 
     passthrough_behavior: PassthroughBehavior
 
+    class UnsupportedMediaType(Exception):
+        pass
+
+    def __init__(self, passthrough_behaviour: str):
+        self.passthrough_behavior = self.passthrough_behavior(passthrough_behaviour)
+
+    def request_body_passthrough(self, template):
+        if not template and self.passthrough_behavior.NEVER:
+            raise MappingTemplates.UnsupportedMediaType()
+
+    @staticmethod
+    def passthrough_behavior(passthrough_behaviour: str):
+        return getattr(PassthroughBehavior, passthrough_behaviour, None)
+
 
 class BackendIntegration(ABC):
     """
@@ -84,8 +98,27 @@ class MockIntegration(BackendIntegration):
         response._content = data
         return response
 
+    @classmethod
+    def mapping_templates(cls, passthrough_behavior: str):
+        return MappingTemplates(passthrough_behavior)
+
     def invoke(self, invocation_context: ApiInvocationContext):
+        # TODO: make this in invocation_context build
         headers = CaseInsensitiveDict(dict(invocation_context.headers or {}))
+
+        passthrough_behavior = invocation_context.integration.get("passthroughBehavior") or ""
+        request_template = invocation_context.integration.get("requestTemplates").get(
+            headers.get(HEADER_CONTENT_TYPE)
+        )
+
+        try:
+            self.mapping_templates(passthrough_behavior).request_body_passthrough(request_template)
+        except MappingTemplates.UnsupportedMediaType:
+            response = Response()
+            response.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
+            response.status_code = 415
+            response._content = '{"message": "Unsupported Media Type"}'
+            return response
 
         # request template
         request_payload = self.request_templates.render(invocation_context)
@@ -300,10 +333,6 @@ class Templates:
             },
         }
 
-    @staticmethod
-    def get_passthrough_behavior(integration):
-        return getattr(PassthroughBehavior, integration.get("passthroughBehavior") or "", None)
-
 
 class RequestTemplates(Templates):
     """
@@ -315,14 +344,14 @@ class RequestTemplates(Templates):
             "Method request body before transformations: %s", to_str(api_context.data_as_string())
         )
         request_templates = api_context.integration.get("requestTemplates", {})
-        template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE))
+        request_template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE))
 
-        passthrough_behavior = self.get_passthrough_behavior(integration=api_context.integration)
-        if not template and passthrough_behavior in { PassthroughBehavior.WHEN_NO_MATCH, PassthroughBehavior.WHEN_NO_TEMPLATES }:
-            return api_context.data_as_string()
+        # if not template and passthrough_behavior in {PassthroughBehavior.WHEN_NO_MATCH,
+        #                                              PassthroughBehavior.WHEN_NO_TEMPLATES}:
+        #     return api_context.data_as_string()
 
         variables = self.build_variables_mapping(api_context)
-        result = self.render_vtl(template, variables=variables)
+        result = self.render_vtl(request_template, variables=variables)
         LOG.info(f"Endpoint request body after transformations:\n{result}")
         return result or ""
 
@@ -351,14 +380,13 @@ class ResponseTemplates(Templates):
 
         selected_integration = int_responses.get(return_code)
         # select the default, the default integration has an "empty" selection pattern
-        if not int_responses.get(return_code) and len(entries) > 0:
+        if not int_responses.get(return_code) and entries:
             for status_code_entry in int_responses.keys():
                 integration_response = int_responses[status_code_entry]
                 if "selectionPattern" not in integration_response:
                     selected_integration = integration_response
                     response.status_code = status_code_entry
                     break
-
 
         # AWS if there is no integration response and Content-Type is defined it return "internal
         # server error". TODO: validate this for WHEN_NO_MATCH and if this only happens when

@@ -417,6 +417,9 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
     try:
         response = invoke_rest_api_integration_backend(invocation_context)
+        if response.status_code == 415:
+            return response
+
         # TODO remove this setter once all the integrations are migrated to the new response
         #  handling
         invocation_context.response = response

@@ -1868,11 +1868,53 @@ def test_mock_integration_request_template_when_no_templates_mapping_template(ap
     assert response.headers["Content-Type"] == "application/json"
     assert "id" in json.loads(response._content)
 
-    # url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
-    # response = requests.post(url, headers={"Content-Type": "application/text"})
-    #
-    # assert response.status_code == 500
-    # assert response.headers["Content-Type"] == "application/json"
-    # assert to_str(response._content) == '{"message": "Internal server error"}'
-
     delete_rest_api(apigateway_client, restApiId=api_id)
+
+
+def test_mock_integration_request_template_never_mapping_template(apigateway_client):
+    api_id, _, root = create_rest_api(apigateway_client, name="mock api")
+    resource_id, _ = create_rest_resource(
+        apigateway_client, restApiId=api_id, parentId=root, pathPart="demo"
+    )
+    create_rest_resource_method(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        authorizationType="NONE",
+    )
+
+    create_rest_api_integration(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        type="MOCK",
+        passthroughBehavior="NEVER",
+        requestTemplates={"application/json": '{"statusCode":201}'},
+    )
+
+    create_rest_api_integration_response(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        statusCode="200",
+        responseTemplates={"application/json": '{"id": "$context.requestId"}'},
+    )
+
+    # no template for "text/plain" should return 415
+    url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
+    response = requests.post(url, headers={"Content-Type": "text/plain"})
+
+    assert response.status_code == 415
+    assert response.headers["Content-Type"] == "application/json"
+    assert to_str(response._content) == '{"message": "Unsupported Media Type"}'
+
+    # template for "application/json" should return 200
+    url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
+    response = requests.post(url, headers={"Content-Type": "application/json"})
+
+    assert response.status_code == 200
+    assert response.headers["Content-Type"] == "application/json"
+    assert "id" in json.loads(response._content)
