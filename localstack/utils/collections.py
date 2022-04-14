@@ -3,7 +3,7 @@ dicts, list, sets). """
 
 import logging
 import re
-from typing import Any, Callable, Dict, List, Optional, Sized, Union
+from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, TypeVar, Union
 
 LOG = logging.getLogger(__name__)
 
@@ -45,18 +45,21 @@ class HashableList(list):
         return result
 
 
-class PaginatedList(list):
+_ListType = TypeVar("_ListType")
+
+
+class PaginatedList(List[_ListType]):
     """List which can be paginated and filtered. For usage in AWS APIs with paginated responses"""
 
     DEFAULT_PAGE_SIZE = 50
 
     def get_page(
         self,
-        token_generator: Callable,
+        token_generator: Callable[[_ListType], str],
         next_token: str = None,
         page_size: int = None,
-        filter_function: Callable = None,
-    ) -> (list, str):
+        filter_function: Callable[[_ListType], bool] = None,
+    ) -> Tuple[List[_ListType], Optional[str]]:
         if filter_function is not None:
             result_list = list(filter(filter_function, self))
         else:
