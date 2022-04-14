@@ -78,7 +78,9 @@ class Scheduler:
     def __init__(self, executor: Optional[Executor] = None) -> None:
         """
         Creates a new Scheduler. If an executor is passed, then that executor will be used to run the scheduled tasks
-        asynchronously, otherwise they will be executed synchronously inside the event loop.
+        asynchronously, otherwise they will be executed synchronously inside the event loop. Running tasks
+        asynchronously in an executor means that they will be effectively executed at a fixed rate (scheduling with
+        ``fixed_rate = False``, will have no effect).
 
         :param executor: an optional executor that tasks will be submitted to.
         """
@@ -170,17 +172,24 @@ class Scheduler:
             if task.is_cancelled:
                 continue
 
-            w = max(0, deadline - time.time())
-            if w > 0:
+            # wait until the task should be executed
+            wait = max(0, deadline - time.time())
+            if wait > 0:
                 with cond:
-                    interrupted = cond.wait(timeout=w)
+                    interrupted = cond.wait(timeout=wait)
                     if interrupted:
-                        # something with a potentially earlier deadline has arrived
-                        # the naive thing is to requeue and retry
-                        # could optimize by checking the deadline of the added element(s), but that would be fairly
-                        # involved. the assumption is that schedule is not invoked frequently
+                        # something with a potentially earlier deadline has arrived while waiting, so we re-queue and
+                        # continue. this could be optimized by checking the deadline of the added element(s) first,
+                        # but that would be fairly involved. the assumption is that `schedule` is not invoked frequently
                         q.put((task.deadline, task))
                         continue
+
+            # run or submit the task
+            if not task.is_cancelled:
+                if executor:
+                    executor.submit(task.run)
+                else:
+                    task.run()
 
             if task.is_periodic:
                 try:
@@ -189,9 +198,3 @@ class Scheduler:
                     # task deadline couldn't be set because it was cancelled
                     continue
                 q.put((task.deadline, task))
-
-            if not task.is_cancelled:
-                if executor:
-                    executor.submit(task.run)
-                else:
-                    task.run()

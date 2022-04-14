@@ -65,9 +65,9 @@ class TestScheduler:
 
         assert task.invocations[0][1] == pytest.approx(invocation_time, 0.1)
 
-    def test_period_run_nonfixed(self, dispatcher):
+    def test_period_run_nonfixed(self):
         task = DummyTask()
-        scheduler, thread = self.create_and_start(dispatcher)
+        scheduler, thread = self.create_and_start(None)
 
         scheduler.schedule(task, period=0.1, fixed_rate=False)
         scheduler.schedule(scheduler.close, start=time.time() + 0.5)
@@ -77,10 +77,10 @@ class TestScheduler:
         assert task.invocations[2][1] + 0.1 == pytest.approx(task.invocations[3][1], 0.05)
         assert task.invocations[3][1] + 0.1 == pytest.approx(task.invocations[4][1], 0.05)
 
-    def test_periodic_run_fixed_with_longer_task(self, dispatcher):
+    def test_periodic_run_fixed_with_longer_task(self):
         task = DummyTask(fn=lambda: time.sleep(1))
 
-        scheduler, thread = self.create_and_start(dispatcher)
+        scheduler, thread = self.create_and_start(None)
 
         scheduler.schedule(task, period=0.5, fixed_rate=True)
         scheduler.schedule(scheduler.close, start=time.time() + 1.25)
