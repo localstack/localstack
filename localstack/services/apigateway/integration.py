@@ -5,6 +5,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from enum import Enum
+from http import HTTPStatus
 from urllib.parse import quote_plus, unquote_plus
 
 import airspeed
@@ -77,6 +78,14 @@ class BackendIntegration(ABC):
     def invoke(self, invocation_context: ApiInvocationContext):
         pass
 
+    @classmethod
+    def _create_response(cls, status_code, headers, data=""):
+        response = Response()
+        response.status_code = status_code
+        response.headers = headers
+        response._content = data
+        return response
+
 
 class SnsIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
@@ -98,17 +107,10 @@ class SnsIntegration(BackendIntegration):
 
 
 class MockIntegration(BackendIntegration):
-    @staticmethod
-    def _create_response(status_code, headers, data=""):
-        response = Response()
-        response.status_code = status_code
-        response.headers = headers
-        response._content = data
-        return response
 
     @classmethod
-    def mapping_templates(cls, passthrough_behavior: str):
-        return MappingTemplates(passthrough_behavior)
+    def evaluate_passthrough_behavior(cls, passthrough_behavior: str, request_template: str):
+        return MappingTemplates(passthrough_behavior).request_body_passthrough(request_template)
 
     def invoke(self, invocation_context: ApiInvocationContext):
         passthrough_behavior = invocation_context.integration.get("passthroughBehavior") or ""
@@ -116,14 +118,17 @@ class MockIntegration(BackendIntegration):
             invocation_context.headers.get(HEADER_CONTENT_TYPE)
         )
 
+        # based on the configured passthrough behavior and the existence of template or not,
+        # we proceed calling the integration or raise an exception.
         try:
-            self.mapping_templates(passthrough_behavior).request_body_passthrough(request_template)
+            self.evaluate_passthrough_behavior(passthrough_behavior, request_template)
         except MappingTemplates.UnsupportedMediaType:
-            response = Response()
-            response.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
-            response.status_code = 415
-            response._content = '{"message": "Unsupported Media Type"}'
-            return response
+            http_status = HTTPStatus(415)
+            return MockIntegration._create_response(
+                http_status.value,
+                headers={"Content-Type": APPLICATION_JSON},
+                data=json.dumps({"message": f"{http_status.phrase}"}),
+            )
 
         # request template
         request_payload = self.request_templates.render(invocation_context)
@@ -136,10 +141,11 @@ class MockIntegration(BackendIntegration):
                 status_code = mock_response.get("statusCode", status_code)
             except Exception as e:
                 LOG.warning("failed to deserialize request payload after transformation: %s", e)
+                http_status = HTTPStatus(500)
                 return MockIntegration._create_response(
-                    500,
+                    http_status.value,
                     headers={"Content-Type": APPLICATION_JSON},
-                    data='{"message": "Internal server error"}',
+                    data=json.dumps({"message": f"{http_status.phrase}"}),
                 )
 
         # response template
@@ -352,15 +358,12 @@ class RequestTemplates(Templates):
         LOG.info(
             "Method request body before transformations: %s", to_str(api_context.data_as_string())
         )
+
         request_templates = api_context.integration.get("requestTemplates", {})
         request_template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE))
-
-        # if not template and passthrough_behavior in {PassthroughBehavior.WHEN_NO_MATCH,
-        #                                              PassthroughBehavior.WHEN_NO_TEMPLATES}:
-        #     return api_context.data_as_string()
-
         variables = self.build_variables_mapping(api_context)
         result = self.render_vtl(request_template, variables=variables)
+
         LOG.info(f"Endpoint request body after transformations:\n{result}")
         return result or ""
 

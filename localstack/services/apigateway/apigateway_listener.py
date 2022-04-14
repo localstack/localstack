@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import re
+from http import HTTPStatus
 from typing import Any, Dict, Union
 from urllib.parse import urljoin
 
@@ -417,7 +418,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
     try:
         response = invoke_rest_api_integration_backend(invocation_context)
-        if response.status_code == 415:
+        if response.status_code == HTTPStatus.UNSUPPORTED_MEDIA_TYPE:
             return response
 
         # TODO remove this setter once all the integrations are migrated to the new response
@@ -774,19 +775,8 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         return invocation_context.response
 
     elif integration_type == "MOCK":
-
         integration = MockIntegration()
         return integration.invoke(invocation_context)
-
-        # TODO: apply tell don't ask principle inside ResponseTemplates or InvocationContext
-        # invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-        # invocation_context.response = requests_response({})
-        #
-        # response_templates = ResponseTemplates()
-        # response_templates.render(invocation_context)
-        #
-        # return invocation_context.response
-
     if method == "OPTIONS":
         # fall back to returning CORS headers if this is an OPTIONS request
         return get_cors_response(headers)
