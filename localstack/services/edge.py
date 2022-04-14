@@ -16,6 +16,7 @@ from localstack.constants import (
     HEADER_LOCALSTACK_REQUEST_URL,
     INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
+    LOCALHOST_HOSTNAME,
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
     LS_LOG_TRACE_INTERNAL,
@@ -43,6 +44,7 @@ from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.utils.strings import to_bytes, to_str, truncate
 from localstack.utils.sync import sleep_forever
 from localstack.utils.threads import TMP_THREADS, start_thread
+from localstack.utils.urls import hostname_from_url
 
 LOG = logging.getLogger(__name__)
 
@@ -420,7 +422,10 @@ def get_api_from_custom_rules(method, path, data, headers):
     """Determine backend port based on custom rules."""
 
     # API Gateway invocation URLs
-    if ("/%s/" % PATH_USER_REQUEST) in path:
+    host_header = hostname_from_url(headers.get("host"))
+    if ("/%s/" % PATH_USER_REQUEST) in path or (
+        host_header.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host_header
+    ):
         return "apigateway", config.service_port("apigateway")
 
     # detect S3 presigned URLs
