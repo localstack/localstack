@@ -365,6 +365,9 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = "route53", config.service_port("route53")
     elif result[0] == "monitoring":
         result = "cloudwatch", config.service_port("cloudwatch")
+    elif result[0] == "ses":
+        if path.startswith("/v2"):
+            result = "sesv2", config.service_port("sesv2")
     elif result[0] == "email":
         result = "ses", config.service_port("ses")
     elif result[0] == "execute-api" or ".execute-api." in host:
