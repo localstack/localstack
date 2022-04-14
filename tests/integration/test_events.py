@@ -713,7 +713,6 @@ class EventsTest(unittest.TestCase):
             self.events_client.delete_rule(Name=rule_name, Force=True)
 
         # assert that all events have been received in the HTTP server listener
-        user_pass = to_str(base64.b64encode(b"user:pass"))
 
         def check():
             self.assertTrue(len(events) >= len(auth_types))
