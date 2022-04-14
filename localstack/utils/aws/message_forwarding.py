@@ -181,11 +181,12 @@ def auth_keys_from_connection(connection: Dict):
 
     if auth_type == AUTH_OAUTH:
         oauth_parameters = auth_parameters.get("OAuthParameters", {})
-
         oauth_method = oauth_parameters.get("HttpMethod")
+
+        oauth_http_parameters = oauth_parameters.get("OAuthHttpParameters", {})
         oauth_endpoint = oauth_parameters.get("AuthorizationEndpoint", "")
         query_object = list_of_parameters_to_object(
-            oauth_parameters.get("QueryStringParameters", [])
+            oauth_http_parameters.get("QueryStringParameters", [])
         )
         oauth_endpoint = add_query_params_to_url(oauth_endpoint, query_object)
 
@@ -193,17 +194,18 @@ def auth_keys_from_connection(connection: Dict):
         client_id = client_parameters.get("ClientID", "")
         client_secret = client_parameters.get("ClientSecret", "")
 
-        oauth_body = list_of_parameters_to_object(oauth_parameters.get("BodyParameters", []))
+        oauth_body = list_of_parameters_to_object(oauth_http_parameters.get("BodyParameters", []))
         oauth_body.update({"client_id": client_id, "client_secret": client_secret})
 
-        oauth_header = list_of_parameters_to_object(oauth_parameters.get("HeaderParameters", []))
+        oauth_header = list_of_parameters_to_object(
+            oauth_http_parameters.get("HeaderParameters", [])
+        )
         oauth_result = requests.request(
             method=oauth_method,
             url=oauth_endpoint,
             data=json.dumps(oauth_body),
             headers=oauth_header,
         )
-
         oauth_data = json.loads(oauth_result.text)
 
         token_type = oauth_data.get("token_type", "")
