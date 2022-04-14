@@ -106,7 +106,7 @@ class MockIntegration(BackendIntegration):
 
         # response template
         response = MockIntegration._create_response(status_code, headers, data=request_payload)
-        response, status_code = self.response_templates.render(invocation_context, response=response)
+        response = self.response_templates.render(invocation_context, response=response)
         if isinstance(response, Response):
             return response
         else:
@@ -302,7 +302,7 @@ class Templates:
 
     @staticmethod
     def get_passthrough_behavior(integration):
-        return getattr(PassthroughBehavior, integration.get("passthroughBehavior"), None)
+        return getattr(PassthroughBehavior, integration.get("passthroughBehavior") or "", None)
 
 
 class RequestTemplates(Templates):
@@ -315,7 +315,7 @@ class RequestTemplates(Templates):
             "Method request body before transformations: %s", to_str(api_context.data_as_string())
         )
         request_templates = api_context.integration.get("requestTemplates", {})
-        template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE), {})
+        template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE))
 
         passthrough_behavior = self.get_passthrough_behavior(integration=api_context.integration)
         if not template and passthrough_behavior in { PassthroughBehavior.WHEN_NO_MATCH, PassthroughBehavior.WHEN_NO_TEMPLATES }:
@@ -324,7 +324,7 @@ class RequestTemplates(Templates):
         variables = self.build_variables_mapping(api_context)
         result = self.render_vtl(template, variables=variables)
         LOG.info(f"Endpoint request body after transformations:\n{result}")
-        return result
+        return result or ""
 
 
 class ResponseTemplates(Templates):
@@ -376,5 +376,6 @@ class ResponseTemplates(Templates):
 
         variables = self.build_variables_mapping(api_context)
         response._content = self.render_vtl(template, variables=variables)
+        response.headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
         LOG.info("Endpoint response body after transformations:\n%s", response._content)
-        return response._content, response.status_code
+        return response

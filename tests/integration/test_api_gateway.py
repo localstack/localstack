@@ -1803,6 +1803,7 @@ def test_mock_integration_request_template_when_no_match_mapping_template(apigat
         responseTemplates={"application/json": '{"id": "$context.requestId"}'},
     )
 
+    # request w/ content-type "application/json"
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
     response = requests.post(url, headers={"Content-Type": "application/json"})
 
@@ -1810,12 +1811,13 @@ def test_mock_integration_request_template_when_no_match_mapping_template(apigat
     assert response.headers["Content-Type"] == "application/json"
     assert "id" in json.loads(response._content)
 
+    # request w/ content-type "application/json"
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
-    response = requests.post(url, headers={"Content-Type": "application/text"})
+    response = requests.post(url, headers={"Content-Type": "text/plain"}, data="hello world")
 
-    assert response.status_code == 500
+    assert response.status_code == 201
     assert response.headers["Content-Type"] == "application/json"
-    assert to_str(response._content) == '{"message": "Internal server error"}'
+    assert "id" in json.loads(response._content)
 
     delete_rest_api(apigateway_client, restApiId=api_id)
 
