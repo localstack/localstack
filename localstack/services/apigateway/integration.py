@@ -47,8 +47,15 @@ class MappingTemplates:
     def __init__(self, passthrough_behaviour: str):
         self.passthrough_behavior = self.passthrough_behavior(passthrough_behaviour)
 
-    def request_body_passthrough(self, template):
-        if not template and self.passthrough_behavior.NEVER:
+    def request_body_passthrough(self, request_template):
+        """
+        Specifies how the method request body of an unmapped content type will be passed through
+        the integration request to the back end without transformation.
+        A content type is unmapped if no mapping template is defined in the integration or the
+        content type does not match any of the mapped content types, as specified in requestTemplates
+        """
+        if not request_template and self.passthrough_behavior in {PassthroughBehavior.NEVER,
+            PassthroughBehavior.WHEN_NO_TEMPLATES}:
             raise MappingTemplates.UnsupportedMediaType()
 
     @staticmethod
@@ -103,12 +110,9 @@ class MockIntegration(BackendIntegration):
         return MappingTemplates(passthrough_behavior)
 
     def invoke(self, invocation_context: ApiInvocationContext):
-        # TODO: make this in invocation_context build
-        headers = CaseInsensitiveDict(dict(invocation_context.headers or {}))
-
         passthrough_behavior = invocation_context.integration.get("passthroughBehavior") or ""
-        request_template = invocation_context.integration.get("requestTemplates").get(
-            headers.get(HEADER_CONTENT_TYPE)
+        request_template = invocation_context.integration.get("requestTemplates", {}).get(
+            invocation_context.headers.get(HEADER_CONTENT_TYPE)
         )
 
         try:
@@ -125,7 +129,7 @@ class MockIntegration(BackendIntegration):
 
         # mapping is done based on "statusCode" field
         status_code = 200
-        if headers.get(HEADER_CONTENT_TYPE) == APPLICATION_JSON:
+        if invocation_context.headers.get(HEADER_CONTENT_TYPE) == APPLICATION_JSON:
             try:
                 mock_response = json.loads(request_payload)
                 status_code = mock_response.get("statusCode", status_code)
@@ -138,14 +142,13 @@ class MockIntegration(BackendIntegration):
                 )
 
         # response template
-        response = MockIntegration._create_response(status_code, headers, data=request_payload)
+        response = MockIntegration._create_response(status_code, invocation_context.headers, data=request_payload)
         response = self.response_templates.render(invocation_context, response=response)
         if isinstance(response, Response):
             return response
-        else:
-            if not headers.get(HEADER_CONTENT_TYPE):
-                headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
-            return MockIntegration._create_response(status_code, headers, response)
+        if not invocation_context.headers.get(HEADER_CONTENT_TYPE):
+            invocation_context.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
+        return MockIntegration._create_response(status_code, invocation_context.headers, response)
 
 
 class VelocityUtil(object):
@@ -182,10 +185,13 @@ class VelocityUtil(object):
         except Exception:
             primitive_types = (str, int, bool, float, type(None))
             s = s if isinstance(s, primitive_types) else str(s)
-        if str(s).strip() in ["true", "false"]:
+        if str(s).strip() in {"true", "false"}:
             s = bool(s)
         elif s not in [True, False] and is_number(s):
             s = to_number(s)
+
+        if isinstance(s, str):
+            return json.dumps(s)[1:-1]
         return json.dumps(s)
 
 
@@ -328,7 +334,7 @@ class Templates:
                 "params": {
                     "path": api_context.path_params,
                     "querystring": api_context.query_params(),
-                    "header": api_context.headers,
+                    "header": dict(api_context.headers),
                 },
             },
         }
@@ -388,15 +394,6 @@ class ResponseTemplates(Templates):
                     response.status_code = status_code_entry
                     break
 
-        # AWS if there is no integration response and Content-Type is defined it return "internal
-        # server error". TODO: validate this for WHEN_NO_MATCH and if this only happens when
-        #  there are no mappings at all
-        # if not int_responses.get(return_code) and api_context.headers.get(HEADER_CONTENT_TYPE):
-        #     response._content = '{"message": "Internal server error"}'
-        #     response.status_code = 500
-        #     response.headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
-        #     return response
-
         response_templates = selected_integration.get("responseTemplates", {})
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
@@ -404,6 +401,6 @@ class ResponseTemplates(Templates):
 
         variables = self.build_variables_mapping(api_context)
         response._content = self.render_vtl(template, variables=variables)
-        response.headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
+        response.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
         LOG.info("Endpoint response body after transformations:\n%s", response._content)
         return response

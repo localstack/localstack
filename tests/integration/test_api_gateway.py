@@ -60,6 +60,7 @@ from .awslambda.test_lambda import (
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, "files", "swagger.json")
 TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "files", "pets.json")
+TEST_MOCK_RESPONSE = os.path.join(THIS_FOLDER, "files", "mock_response.json")
 
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
     "ApiGatewayLambdaProxyIntegrationTestResult",
@@ -1803,7 +1804,7 @@ def test_mock_integration_request_template_when_no_match_mapping_template(apigat
         responseTemplates={"application/json": '{"id": "$context.requestId"}'},
     )
 
-    # request w/ content-type "application/json"
+    # template for "application/json" should return 415
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
     response = requests.post(url, headers={"Content-Type": "application/json"})
 
@@ -1811,7 +1812,7 @@ def test_mock_integration_request_template_when_no_match_mapping_template(apigat
     assert response.headers["Content-Type"] == "application/json"
     assert "id" in json.loads(response._content)
 
-    # request w/ content-type "application/json"
+    # no template for "text/plain" should return 415
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
     response = requests.post(url, headers={"Content-Type": "text/plain"}, data="hello world")
 
@@ -1854,13 +1855,15 @@ def test_mock_integration_request_template_when_no_templates_mapping_template(ap
         responseTemplates={"application/json": '{"id": "$context.requestId"}'},
     )
 
+    # no template for "text/plain" should return 415
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
-    response = requests.post(url)
+    response = requests.post(url, headers={"Content-Type": "text/plain"})
 
-    assert response.status_code == 200
+    assert response.status_code == 415
     assert response.headers["Content-Type"] == "application/json"
-    assert "id" in json.loads(response._content)
+    assert to_str(response._content) == '{"message": "Unsupported Media Type"}'
 
+    # template for "application/json" should return 200
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
     response = requests.post(url, headers={"Content-Type": "application/json"})
 
@@ -1918,3 +1921,88 @@ def test_mock_integration_request_template_never_mapping_template(apigateway_cli
     assert response.status_code == 200
     assert response.headers["Content-Type"] == "application/json"
     assert "id" in json.loads(response._content)
+
+
+def test_mock_integration_response_template_all(apigateway_client):
+    api_id, _, root = create_rest_api(apigateway_client, name="mock api")
+    resource_id, _ = create_rest_resource(
+        apigateway_client, restApiId=api_id, parentId=root, pathPart="demo"
+    )
+    create_rest_resource_method(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        authorizationType="NONE",
+    )
+
+    create_rest_api_integration(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        type="MOCK",
+        passthroughBehavior="WHEN_NO_MATCH",
+        requestTemplates={"application/json": '{"statusCode":201}'},
+    )
+
+    create_rest_api_integration_response(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="POST",
+        statusCode="200",
+        responseTemplates={"application/json": """
+#set($allParams = $input.params())
+{
+"body-json" : $input.json('$'),
+"params" : {
+#foreach($type in $allParams.keySet())
+    #set($params = $allParams.get($type))
+"$type" : {
+    #foreach($paramName in $params.keySet())
+    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+        #if($foreach.hasNext),#end
+    #end
+}
+    #if($foreach.hasNext),#end
+#end
+},
+"stage-variables" : {
+#foreach($key in $stageVariables.keySet())
+"$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+    #if($foreach.hasNext),#end
+#end
+},
+"context" : {
+    "account-id" : "$context.identity.accountId",
+    "api-id" : "$context.apiId",
+    "api-key" : "$context.identity.apiKey",
+    "authorizer-principal-id" : "$context.authorizer.principalId",
+    "caller" : "$context.identity.caller",
+    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+    "http-method" : "$context.httpMethod",
+    "stage" : "$context.stage",
+    "source-ip" : "$context.identity.sourceIp",
+    "user" : "$context.identity.user",
+    "user-agent" : "$context.identity.userAgent",
+    "user-arn" : "$context.identity.userArn",
+    "request-id" : "$context.requestId",
+    "resource-id" : "$context.resourceId",
+    "resource-path" : "$context.resourcePath"
+    }
+}
+        """}
+    )
+
+    # template for "application/json" should return 200
+    url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
+    response = requests.post(url, headers={"Content-Type": "application/json"})
+
+    expected_mock_response = load_file(TEST_MOCK_RESPONSE)
+    assert response.status_code == 200
+    assert response.headers["Content-Type"] == "application/json"
+    assert list(json.loads(expected_mock_response).keys()) == list(json.loads(to_str(response._content)))
