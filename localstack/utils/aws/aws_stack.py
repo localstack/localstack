@@ -571,6 +571,13 @@ def extract_service_from_arn(arn: str) -> Optional[str]:
         return None
 
 
+def extract_resource_from_arn(arn: str) -> Optional[str]:
+    try:
+        return parse_arn(arn).get("resource")
+    except InvalidArnException:
+        return None
+
+
 def get_account_id(account_id=None, env=None):
     if account_id:
         return account_id
