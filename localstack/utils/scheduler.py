@@ -42,6 +42,9 @@ class ScheduledTask:
         return self._cancelled
 
     def set_next_deadline(self):
+        """
+        Internal method to update the next deadline of this task based on the period and the current time.
+        """
         if not self.deadline:
             raise ValueError("Deadline was not initialized")
 
@@ -55,8 +58,7 @@ class ScheduledTask:
 
     def run(self):
         """
-
-        :return:
+        Executes the task function. If the function raises and Exception, ``on_error`` is called (if set).
         """
         try:
             self.task(*self.args, **self.kwargs)
@@ -67,7 +69,8 @@ class ScheduledTask:
 
 class Scheduler:
     """
-    An event-loop based task scheduler that can be parallelized with an executor.
+    An event-loop based task scheduler that can manage multiple scheduled tasks with different periods,
+    can be parallelized with an executor.
     """
 
     POISON = (-1, "__POISON__")
@@ -105,7 +108,7 @@ class Scheduler:
         :param on_error: error callback
         :param args: additional positional arguments to pass to the function
         :param kwargs: additional keyword arguments to pass to the function
-        :return a ScheduledTask instance
+        :return: a ScheduledTask instance
         """
         st = ScheduledTask(
             func,
@@ -120,10 +123,20 @@ class Scheduler:
         return st
 
     def schedule_task(self, task: ScheduledTask) -> None:
+        """
+        Schedules the given task and sets the deadline of the task to either ``task.start`` or the current time.
+
+        :param task: the task to schedule
+        """
         task.deadline = max(task.start or 0, time.time())
         self.add(task)
 
     def add(self, task: ScheduledTask) -> None:
+        """
+        Schedules the given task. Requires that the task has a deadline set. It's better to use ``schedule_task``.
+
+        :param task: the task to schedule.
+        """
         if task.deadline is None:
             raise ValueError
 
@@ -135,7 +148,7 @@ class Scheduler:
 
     def close(self) -> None:
         """
-        Termintes the run loop.
+        Terminates the run loop.
         """
         with self._condition:
             self._queue.put(self.POISON)
@@ -174,7 +187,7 @@ class Scheduler:
                     task.set_next_deadline()
                 except ValueError:
                     # task deadline couldn't be set because it was cancelled
-                    return
+                    continue
                 q.put((task.deadline, task))
 
             if not task.is_cancelled:
