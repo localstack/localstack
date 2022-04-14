@@ -587,6 +587,9 @@ class EventsTest(unittest.TestCase):
                 if auth not in headers_list:
                     headers_list.append(auth)
 
+                if headers.get("target_header"):
+                    headers_list.append(headers.get("target_header"))
+
                 return requests_response(
                     {
                         "access_token": token,
@@ -664,7 +667,18 @@ class EventsTest(unittest.TestCase):
             self.events_client.put_rule(Name=rule_name, EventPattern=pattern)
             self.events_client.put_targets(
                 Rule=rule_name,
-                Targets=[{"Id": target_id, "Arn": result["ApiDestinationArn"]}],
+                Targets=[
+                    {
+                        "Id": target_id,
+                        "Arn": result["ApiDestinationArn"],
+                        "Input": '{"target_value":"value"}',
+                        "HttpParameters": {
+                            "PathParameterValues": ["target_path"],
+                            "HeaderParameters": {"target_header": "target_header_value"},
+                            "QueryStringParameters": {"target_query": "t_query"},
+                        },
+                    }
+                ],
             )
 
             entries = [
@@ -682,19 +696,20 @@ class EventsTest(unittest.TestCase):
             self.events_client.delete_rule(Name=rule_name, Force=True)
 
         # assert that all events have been received in the HTTP server listener
+        user_pass = to_str(base64.b64encode(b"user:pass"))
+
         def check():
             self.assertTrue(len(events) >= len(auth_types))
             self.assertTrue("key" in paths_list[0] and "value" in paths_list[0])
+            self.assertTrue("target_query" in paths_list[0] and "t_query" in paths_list[0])
+            self.assertTrue("target_path" in paths_list[0])
             self.assertTrue(events[0].get("key") == "value")
+            self.assertTrue(events[0].get("target_value") == "value")
 
-            # TODO examine behavior difference between LS pro/community
-            # Pro seems to (correctly) use base64 for basic authentication instead of plaintext
-            user_pass = to_str(base64.b64encode(b"user:pass"))
-            self.assertTrue(
-                "Basic user:pass" in headers_list or f"Basic {user_pass}" in headers_list
-            )
+            self.assertTrue(f"Basic {user_pass}" in headers_list)
             self.assertTrue("apikey_secret" in headers_list)
             self.assertTrue(bearer in headers_list)
+            self.assertTrue("target_header_value" in headers_list)
 
         retry(check, sleep=0.5, retries=5)
 
