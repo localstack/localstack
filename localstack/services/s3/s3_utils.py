@@ -3,6 +3,7 @@ import logging
 import re
 import time
 from collections import namedtuple
+from typing import Dict, Union
 from urllib import parse as urlparse
 from urllib.parse import parse_qs, urlencode
 
@@ -86,13 +87,19 @@ def is_static_website(headers):
     return bool(re.match(S3_STATIC_WEBSITE_HOST_REGEX, headers.get("host", "")))
 
 
-def uses_host_addressing(headers):
+def uses_host_addressing(headers: Union[Dict, str]):
     """
-    Determines if the bucket is using host based addressing style or path based
+    Determines if the bucket is using host based addressing style or path based.
+    Takes either a dict of headers (Dict) or the host header (str).
     """
-    # we can assume that the host header we are receiving here is actually the header we originally received
-    # from the client (because the edge service is forwarding the request in memory)
-    match = re.match(S3_VIRTUAL_HOSTNAME_REGEX, headers.get("host", ""))
+    if isinstance(headers, str):
+        host = headers
+    else:
+        # we can assume that the host header we are receiving here is actually the header we originally received
+        # from the client (because the edge service is forwarding the request in memory)
+        host = headers.get("host", "")
+
+    match = re.match(S3_VIRTUAL_HOSTNAME_REGEX, host)
 
     # checks whether there is a bucket name. This is sort of hacky
     return True if match and match.group(3) else False

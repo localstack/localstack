@@ -6,6 +6,7 @@ from werkzeug.http import parse_dict_header
 
 from localstack.aws.spec import ServiceCatalog
 from localstack.http import Request
+from localstack.services.s3.s3_utils import uses_host_addressing
 
 LOG = logging.getLogger(__name__)
 
@@ -87,6 +88,13 @@ def custom_signing_name_rules(signing_name: str, request: Request) -> Optional[s
     return rules.get("*", signing_name)
 
 
+def custom_host_addressing_rules(host: str) -> Optional[str]:
+    if uses_host_addressing(host):
+        return "s3"
+    elif ".execute-api." in host:
+        return "apigateway"
+
+
 @lru_cache()
 def get_service_catalog() -> ServiceCatalog:
     return ServiceCatalog()
@@ -133,6 +141,10 @@ def guess_aws_service_name(request: Request, services: ServiceCatalog = None) ->
                 if len(services) == 1:
                     return services[0]
                 candidates.update(services)
+
+        custom_host_match = custom_host_addressing_rules(host)
+        if custom_host_match:
+            return custom_host_match
 
     if len(candidates) == 0:
         return None
