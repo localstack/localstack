@@ -2076,7 +2076,7 @@ class TestLambdaBehavior:
 
         wait_until(_assert_log_output, strategy="linear")
 
-    # @pytest.mark.skip(reason="very slow (only execute when needed)")
+    @pytest.mark.skip(reason="very slow (only execute when needed)")
     def test_lambda_provisioned_concurrency_moves_with_alias(
         self, lambda_client, logs_client, create_lambda_function, snapshot
     ):
@@ -2198,7 +2198,7 @@ class TestLambdaBehavior:
             )
         e.match("ProvisionedConcurrencyConfigNotFoundException")
 
-    # @pytest.mark.skip(reason="very slow (only execute when needed)")
+    @pytest.mark.skip(reason="very slow (only execute when needed)")
     def test_lambda_provisioned_concurrency_doesnt_apply_to_latest(
         self, lambda_client, logs_client, create_lambda_function
     ):
