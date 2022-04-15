@@ -1700,7 +1700,7 @@ class TestSecretsManager:
         )
 
     def test_delete_non_existent_secret_returns_as_if_secret_exists(self, sm_client):
-        """When ForceDeleteWithoutRecovery=True, aws responds as if the non-existent secret was successfully deleted."""
+        """When ForceDeleteWithoutRecovery=True, AWS responds as if the non-existent secret was successfully deleted."""
         secret_id = 'non-existent-secret'
 
         response = sm_client.delete_secret(SecretId=secret_id, ForceDeleteWithoutRecovery=True)
