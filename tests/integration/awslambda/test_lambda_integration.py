@@ -506,6 +506,7 @@ class TestDynamoDBEventSourceMapping:
                 "OnFailure": {"Destination": queue_failure_event_source_mapping_arn}
             }
 
+            time.sleep(2)
             result = lambda_client.create_event_source_mapping(
                 FunctionName=function_name,
                 BatchSize=1,
@@ -515,7 +516,6 @@ class TestDynamoDBEventSourceMapping:
                 MaximumRetryAttempts=1,
                 DestinationConfig=destination_config,
             )
-            time.sleep(2)
 
             event_source_mapping_uuid = result["UUID"]
             event_source_mapping_state = result["State"]

@@ -1,3 +1,4 @@
+import datetime
 import math
 import threading
 import time
@@ -129,15 +130,19 @@ class EventSourceListenerDynamoDB(EventSourceListener):
                             last_rec = records[-1]
                             self._send_to_failure_destination(
                                 shard_id,
-                                first_rec["SequenceNumber"],
-                                last_rec["SequenceNumber"],
+                                first_rec["dynamodb"]["SequenceNumber"],
+                                last_rec["dynamodb"]["SequenceNumber"],
                                 stream_arn,
                                 function_arn,
                                 num_invocation_failures,
                                 status_code,
                                 batch_size,
-                                first_rec["ApproximateArrivalTimestamp"],
-                                last_rec["ApproximateArrivalTimestamp"],
+                                first_rec.get(
+                                    "ApproximateArrivalTimestamp", datetime.datetime.utcnow()
+                                ),
+                                last_rec.get(
+                                    "ApproximateArrivalTimestamp", datetime.datetime.utcnow()
+                                ),
                                 failure_destination,
                             )
                     else:
@@ -180,8 +185,8 @@ class EventSourceListenerDynamoDB(EventSourceListener):
             "shardId": shard_id,
             "startSequenceNumber": start_sequence_num,
             "endSequenceNumber": end_sequence_num,
-            "approximateArrivalOfFirstRecord": timestamp_millis(first_record_arrival_time),
-            "approximateArrivalOfLastRecord": timestamp_millis(last_record_arrival_time),
+            "approximateArrivalOfFirstRecord": first_record_arrival_time.isoformat() + "Z",
+            "approximateArrivalOfLastRecord": last_record_arrival_time.isoformat() + "Z",
             "batchSize": batch_size,
             "streamArn": source_arn,
         }
