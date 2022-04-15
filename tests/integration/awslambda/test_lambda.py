@@ -146,11 +146,23 @@ JAVA_TEST_RUNTIMES = (
     if use_docker()
     else [LAMBDA_RUNTIME_JAVA11]
 )
+
+
+def is_old_provider():
+    return (
+        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
+        and os.environ.get("PROVIDER_OVERRIDE_LAMBDA") != "asf"
+    )
+
+
 PROVIDED_TEST_RUNTIMES = [
     LAMBDA_RUNTIME_PROVIDED,
     # TODO remove skip once we use correct images
     pytest.param(
-        LAMBDA_RUNTIME_PROVIDED_AL2, marks=pytest.mark.skip("curl missing in provided.al2 image")
+        LAMBDA_RUNTIME_PROVIDED_AL2,
+        marks=pytest.mark.skipif(
+            is_old_provider(), reason="curl missing in provided.al2 lambci image"
+        ),
     ),
 ]
 
@@ -211,13 +223,6 @@ def configure_snapshot_for_context(snapshot, function_name: str):
     """
     snapshot.register_replacement(IGNORE_LOGSTREAM_ID, "<log_stream_id>")
     snapshot.register_replacement(re.compile(function_name), "<function_name>")
-
-
-def is_old_provider():
-    return (
-        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
-        and os.environ.get("PROVIDER_OVERRIDE_LAMBDA") != "asf"
-    )
 
 
 # API only functions (no lambda execution itself)
@@ -673,6 +678,8 @@ class TestLambdaBaseFeatures:
             role=lambda_su_role,
         )
         snapshot.match("create_lambda_with_dlq", create_lambda_response)
+        snapshot.skip_key(re.compile("ReceiptHandle"), "<receipt-handle>")
+        snapshot.skip_key(re.compile("MD5Of.*"), "<md5-hash>")
 
         # invoke Lambda, triggering an error
         payload = {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}
@@ -761,12 +768,15 @@ class TestLambdaBaseFeatures:
             },
         )
         snapshot.match("put_function_event_invoke_config", put_event_invoke_config_response)
+        snapshot.skip_key(re.compile("ReceiptHandle"), "<receipt-handle>")
+        snapshot.skip_key(re.compile("MD5Of.*"), "<md5-hash>")
 
         lambda_client.invoke(
             FunctionName=lambda_name,
             Payload=json.dumps(payload),
             InvocationType="Event",
         )
+        configure_snapshot_for_context(snapshot, lambda_name)
 
         def receive_message():
             rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
@@ -924,7 +934,7 @@ class TestPythonRuntimes:
         wait_until_lambda_ready,
         snapshot,
     ):
-        """Tests invocation with a given qualifier"""
+        """Tests invocation of python lambda with a given qualifier"""
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
 
@@ -994,6 +1004,7 @@ class TestPythonRuntimes:
         wait_until_lambda_ready,
         snapshot,
     ):
+        """Test invocation of a python lambda with its deployment package uploaded to s3"""
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
 
@@ -1034,6 +1045,7 @@ class TestPythonRuntimes:
 
     @parametrize_python_runtimes
     def test_handler_in_submodule(self, lambda_client, create_lambda_function, runtime):
+        """Test invocation of a lambda handler which resides in a submodule (= not root module)"""
         function_name = f"test-function-{short_uid()}"
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
@@ -1065,6 +1077,7 @@ class TestPythonRuntimes:
         runtime,
         lambda_su_role,
     ):
+        """Send sqs message to sqs queue inside python lambda"""
         function_name = f"test-function-{short_uid()}"
         queue_name = f"lambda-queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1104,6 +1117,7 @@ class TestPythonRuntimes:
         lambda_su_role,
         dynamodb_client,
     ):
+        """Put item into dynamodb from python lambda"""
         table_name = f"ddb-table-{short_uid()}"
         function_name = f"test-function-{short_uid()}"
 
@@ -1146,6 +1160,7 @@ class TestPythonRuntimes:
     def test_lambda_start_stepfunctions_execution(
         self, lambda_client, stepfunctions_client, create_lambda_function, runtime, lambda_su_role
     ):
+        """Start stepfunctions machine execution from lambda"""
         function_name = f"test-function-{short_uid()}"
         resource_lambda_name = f"test-resource-{short_uid()}"
         state_machine_name = f"state-machine-{short_uid()}"
@@ -1210,6 +1225,7 @@ class TestPythonRuntimes:
     )
     @parametrize_python_runtimes
     def test_python_runtime_correct_versions(self, lambda_client, create_lambda_function, runtime):
+        """Test different versions of python runtimes to report back the correct python version"""
         function_name = f"test_python_executor_{short_uid()}"
         create_lambda_function(
             func_name=function_name,
@@ -1230,6 +1246,7 @@ class TestPythonRuntimes:
     def test_python_runtime_unhandled_errors(
         self, lambda_client, create_lambda_function, runtime, snapshot
     ):
+        """Test unhandled errors during python lambda invocation"""
         function_name = f"test_python_executor_{short_uid()}"
         creation_response = create_lambda_function(
             func_name=function_name,
@@ -1273,6 +1290,7 @@ class TestNodeJSRuntimes:
     def test_nodejs_lambda_with_context(
         self, lambda_client, create_lambda_function, runtime, check_lambda_logs, snapshot
     ):
+        """Test context of nodejs lambda invocation"""
         function_name = f"test-function-{short_uid()}"
         creation_response = create_lambda_function(
             func_name=function_name,
@@ -1314,24 +1332,28 @@ class TestNodeJSRuntimes:
 
     @parametrize_node_runtimes
     def test_invoke_nodejs_lambda(
-        self, lambda_client, create_lambda_function, runtime, logs_client
+        self, lambda_client, create_lambda_function, runtime, logs_client, snapshot
     ):
+        """Test simple nodejs lambda invocation"""
         function_name = f"test-function-{short_uid()}"
-        create_lambda_function(
+        result = create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
             runtime=runtime,
             handler="lambda_handler.handler",
         )
+        snapshot.match("creation-result", result)
 
         rs = lambda_client.invoke(
             FunctionName=function_name,
             Payload=json.dumps({"event_type": "test_lambda"}),
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
+        rs = read_streams(rs)
+        snapshot.match("invocation-result", rs)
 
-        payload = rs["Payload"].read()
-        response = json.loads(to_str(payload))
+        payload = rs["Payload"]
+        response = json.loads(payload)
         assert "response from localstack lambda" in response["body"]
 
         def assert_events():
@@ -1342,8 +1364,9 @@ class TestNodeJSRuntimes:
 
     @parametrize_node_runtimes
     def test_invoke_nodejs_lambda_with_payload_containing_quotes(
-        self, lambda_client, create_lambda_function, runtime, logs_client
+        self, lambda_client, create_lambda_function, runtime, logs_client, snapshot
     ):
+        """Test nodejs invocation of payload with quotes"""
         function_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=function_name,
@@ -1358,10 +1381,11 @@ class TestNodeJSRuntimes:
             FunctionName=function_name,
             Payload=body,
         )
-        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-        payload = rs["Payload"].read()
-        response = json.loads(to_str(payload))
+        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
+        rs = read_streams(rs)
+        snapshot.match("invoke-result", rs)
+        response = json.loads(rs["Payload"])
         assert "response from localstack lambda" in response["body"]
 
         def assert_events():
@@ -1381,23 +1405,27 @@ class TestCustomRuntimes:
         PROVIDED_TEST_RUNTIMES,
     )
     def test_provided_runtimes(
-        self, lambda_client, create_lambda_function, runtime, check_lambda_logs
+        self, lambda_client, create_lambda_function, runtime, check_lambda_logs, snapshot
     ):
+        """Test simple provided lambda (with curl as RIC) invocation"""
         function_name = f"test-function-{short_uid()}"
-        create_lambda_function(
+        result = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_CUSTOM_RUNTIME,
             handler="function.handler",
             runtime=runtime,
         )
+        snapshot.match("create-result", result)
         result = lambda_client.invoke(
             FunctionName=function_name,
             Payload=b'{"text": "bar with \'quotes\\""}',
         )
-        result_data = result["Payload"].read()
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
+        result_data = result["Payload"]
 
         assert 200 == result["StatusCode"]
-        result_data = to_str(result_data).strip()
+        result_data = result_data.strip()
         # jsonify in pro (re-)formats the event json so we allow both versions here
         assert result_data in (
             """Echoing request: '{"text": "bar with \'quotes\\""}'""",
@@ -1436,45 +1464,61 @@ class TestDotNetCoreRuntimes:
         ids=["dotnetcore3.1", "dotnet6"],
     )
     def test_dotnet_lambda(
-        self, zip_file, handler, runtime, expected_lines, lambda_client, create_lambda_function
+        self,
+        zip_file,
+        handler,
+        runtime,
+        expected_lines,
+        lambda_client,
+        create_lambda_function,
+        snapshot,
     ):
+        """Test simple dotnet lambda invocation"""
         function_name = f"test-function-{short_uid()}"
 
-        create_lambda_function(
+        create_result = create_lambda_function(
             func_name=function_name,
             zip_file=load_file(zip_file, mode="rb"),
             handler=handler,
             runtime=runtime,
         )
+        snapshot.match("create-result", create_result)
         result = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
-        result_data = result["Payload"].read()
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
+        result_data = result["Payload"]
 
         assert 200 == result["StatusCode"]
-        assert "{}" == to_str(result_data).strip()
+        assert "{}" == result_data.strip()
         # TODO make lambda log checks more resilient to various formats
         # self.check_lambda_logs(func_name, expected_lines=expected_lines)
 
 
 class TestRubyRuntimes:
     @pytest.mark.skipif(not use_docker(), reason="ruby runtimes not supported in local invocation")
-    def test_ruby_lambda_running_in_docker(self, lambda_client, create_lambda_function):
+    def test_ruby_lambda_running_in_docker(self, lambda_client, create_lambda_function, snapshot):
+        """Test simple ruby lambda invocation"""
         function_name = f"test-function-{short_uid()}"
-        create_lambda_function(
+        create_result = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_RUBY,
             handler="lambda_integration.handler",
             runtime=LAMBDA_RUNTIME_RUBY27,
         )
+        snapshot.match("create-result", create_result)
         result = lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
-        result_data = result["Payload"].read()
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
+        result_data = result["Payload"]
 
         assert 200 == result["StatusCode"]
         assert "{}" == to_str(result_data).strip()
 
 
 class TestGolangRuntimes:
-    @pytest.mark.skip
-    def test_golang_lambda(self, lambda_client, tmp_path, create_lambda_function):
+    @pytest.mark.skip_offline
+    def test_golang_lambda(self, lambda_client, tmp_path, create_lambda_function, snapshot):
+        """Test simple golang lambda invocation"""
         # fetch platform-specific example handler
         url = TEST_GOLANG_LAMBDA_URL_TEMPLATE.format(
             version=GO_RUNTIME_VERSION,
@@ -1486,20 +1530,23 @@ class TestGolangRuntimes:
 
         # create function
         func_name = f"test_lambda_{short_uid()}"
-        create_lambda_function(
+        create_result = create_lambda_function(
             func_name=func_name,
             handler_file=handler,
             handler="handler",
             runtime=LAMBDA_RUNTIME_GOLANG,
         )
+        snapshot.match("create-result", create_result)
 
         # invoke
         result = lambda_client.invoke(
             FunctionName=func_name, Payload=json.dumps({"name": "pytest"})
         )
-        result_data = result["Payload"].read()
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
+        result_data = result["Payload"]
         assert result["StatusCode"] == 200
-        assert to_str(result_data).strip() == '"Hello pytest!"'
+        assert result_data.strip() == '"Hello pytest!"'
 
 
 parametrize_java_runtimes = pytest.mark.parametrize(
@@ -1546,19 +1593,25 @@ class TestJavaRuntimes:
         )
         return function_name
 
-    def test_java_runtime(self, lambda_client, simple_java_lambda):
+    def test_java_runtime(self, lambda_client, simple_java_lambda, snapshot):
+        """Tests a simple java lambda invocation"""
         result = lambda_client.invoke(
             FunctionName=simple_java_lambda,
             Payload=b'{"echo":"echo"}',
         )
-        result_data = result["Payload"].read()
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
+        result_data = result["Payload"]
 
         assert 200 == result["StatusCode"]
         # TODO: find out why the assertion below does not work in Travis-CI! (seems to work locally)
         assert "LinkedHashMap" in to_str(result_data)
         assert result_data is not None
 
-    def test_java_runtime_with_large_payload(self, lambda_client, simple_java_lambda, caplog):
+    def test_java_runtime_with_large_payload(
+        self, lambda_client, simple_java_lambda, caplog, snapshot
+    ):
+        """Tests a invocation against a java lambda with a 5MB payload"""
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         caplog.set_level(logging.INFO)
 
@@ -1566,13 +1619,17 @@ class TestJavaRuntimes:
         payload = to_bytes(json.dumps(payload))
 
         result = lambda_client.invoke(FunctionName=simple_java_lambda, Payload=payload)
-        result_data = result["Payload"].read()
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
+
+        result_data = result["Payload"]
 
         assert 200 == result["StatusCode"]
-        assert "LinkedHashMap" in to_str(result_data)
+        assert "LinkedHashMap" in result_data
         assert result_data is not None
 
-    def test_java_runtime_with_lib(self, lambda_client, create_lambda_function):
+    def test_java_runtime_with_lib(self, lambda_client, create_lambda_function, snapshot):
+        """Test lambda creation/invocation with different deployment package types (jar, zip, zip-with-gradle)"""
         java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
 
         # create ZIP file from JAR file
@@ -1598,17 +1655,24 @@ class TestJavaRuntimes:
             mode="rb",
         )
 
-        for archive in [java_jar_with_lib, java_zip_with_lib, java_zip_with_lib_gradle]:
+        for archive_desc, archive in [
+            ("jar-with-lib", java_jar_with_lib),
+            ("zip-with-lib", java_zip_with_lib),
+            ("zip-with-lib-gradle", java_zip_with_lib_gradle),
+        ]:
             lambda_name = f"test-function-{short_uid()}"
-            create_lambda_function(
+            create_result = create_lambda_function(
                 func_name=lambda_name,
                 zip_file=archive,
                 runtime=LAMBDA_RUNTIME_JAVA11,
                 handler="cloud.localstack.sample.LambdaHandlerWithLib",
             )
+            snapshot.match(f"create-result-{archive_desc}", create_result)
 
             result = lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"echo":"echo"}')
-            result_data = result["Payload"].read()
+            result = read_streams(result)
+            snapshot.match(f"invoke-result-{archive_desc}", result)
+            result_data = result["Payload"]
 
             assert 200 == result["StatusCode"]
             assert "echo" in to_str(result_data)
@@ -1692,24 +1756,27 @@ class TestJavaRuntimes:
 
     @parametrize_java_runtimes
     def test_serializable_input_object(
-        self, lambda_client, create_lambda_function, test_java_zip, runtime
+        self, lambda_client, create_lambda_function, test_java_zip, runtime, snapshot
     ):
         # deploy lambda - Java with serializable input object
         function_name = f"test-lambda-{short_uid()}"
-        create_lambda_function(
+        create_result = create_lambda_function(
             func_name=function_name,
             zip_file=test_java_zip,
             runtime=runtime,
             handler="cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
         )
+        snapshot.match("create-result", create_result)
         result = lambda_client.invoke(
             FunctionName=function_name,
             Payload=b'{"bucket": "test_bucket", "key": "test_key"}',
         )
-        result_data = result["Payload"].read()
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
+        result_data = result["Payload"]
 
         assert 200 == result["StatusCode"]
-        assert json.loads(to_str(result_data)) == {
+        assert json.loads(result_data) == {
             "validated": True,
             "bucket": "test_bucket",
             "key": "test_key",
@@ -1724,13 +1791,14 @@ class TestJavaRuntimes:
         s3_bucket,
         sns_create_topic,
         logs_client,
+        snapshot,
     ):
         topic_name = f"topic-{short_uid()}"
         key = f"key-{short_uid()}"
         function_name = simple_java_lambda
-        function_arn = lambda_client.get_function(FunctionName=function_name)["Configuration"][
-            "FunctionArn"
-        ]
+        function_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function", function_result)
+        function_arn = function_result["Configuration"]["FunctionArn"]
         permission_id = f"test-statement-{short_uid()}"
 
         topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
@@ -1769,13 +1837,15 @@ class TestJavaRuntimes:
             },
         )
 
-        lambda_client.add_permission(
+        add_permission_response = lambda_client.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
             Action="lambda:InvokeFunction",
             Principal="sns.amazonaws.com",
             SourceArn=topic_arn,
         )
+        snapshot.skip_key(re.compile(r"Sid"), "<statement-id>")
+        snapshot.match("add-permission", add_permission_response)
 
         sns_client.subscribe(
             TopicArn=topic_arn,
@@ -1825,24 +1895,33 @@ class TestJavaRuntimes:
     )
     # this test is only compiled against java 11
     def test_java_custom_handler_method_specification(
-        self, lambda_client, create_lambda_function, handler, expected_result, check_lambda_logs
+        self,
+        lambda_client,
+        create_lambda_function,
+        handler,
+        expected_result,
+        check_lambda_logs,
+        snapshot,
     ):
         java_handler_multiple_handlers = load_file(TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, mode="rb")
         expected = ['.*"echo": "echo".*']
 
         function_name = f"lambda_handler_test_{short_uid()}"
-        create_lambda_function(
+        create_result = create_lambda_function(
             func_name=function_name,
             zip_file=java_handler_multiple_handlers,
             runtime=LAMBDA_RUNTIME_JAVA11,
             handler=handler,
         )
+        snapshot.match("create-result", create_result)
 
         result = lambda_client.invoke(FunctionName=function_name, Payload=b'{"echo":"echo"}')
-        result_data = result["Payload"].read()
+        result = read_streams(result)
+        snapshot.match("invoke-result", result)
+        result_data = result["Payload"]
 
         assert 200 == result["StatusCode"]
-        assert expected_result == to_str(result_data).strip('"\n ')
+        assert expected_result == result_data.strip('"\n ')
 
         def check_logs():
             check_lambda_logs(function_name, expected_lines=expected)
@@ -1907,31 +1986,43 @@ class TestLambdaBehavior:
         reason="lambda timeouts not supported currently",
     )  # TODO: should be removed after the lambda rework
     def test_lambda_timeout_logs(
-        self, lambda_client, create_lambda_function, lambda_fn, lambda_runtime, logs_client
+        self,
+        lambda_client,
+        create_lambda_function,
+        lambda_fn,
+        lambda_runtime,
+        logs_client,
+        snapshot,
     ):
         """tests the local context reuse of packages in AWS lambda"""
 
         func_name = f"test_lambda_{short_uid()}"
-        create_lambda_function(
+        create_result = create_lambda_function(
             func_name=func_name,
             handler_file=lambda_fn,
             runtime=lambda_runtime,
             client=lambda_client,
             timeout=1,
         )
+        snapshot.match("create-result", create_result)
 
         result = lambda_client.invoke(FunctionName=func_name, Payload=json.dumps({"wait": 2}))
+        snapshot.match("invoke-result", result)
         assert result["StatusCode"] == 200
 
         log_group_name = f"/aws/lambda/{func_name}"
         ls_result = logs_client.describe_log_streams(logGroupName=log_group_name)
         log_stream_name = ls_result["logStreams"][0]["logStreamName"]
-        log_events = logs_client.get_log_events(
-            logGroupName=log_group_name, logStreamName=log_stream_name
-        )["events"]
 
-        assert any(["starting wait" in e["message"] for e in log_events])
-        assert not any(["done waiting" in e["message"] for e in log_events])
+        def assert_events():
+            log_events = logs_client.get_log_events(
+                logGroupName=log_group_name, logStreamName=log_stream_name
+            )["events"]
+
+            assert any(["starting wait" in e["message"] for e in log_events])
+            assert not any(["done waiting" in e["message"] for e in log_events])
+
+        retry(assert_events, retries=15)
 
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],
@@ -1941,20 +2032,28 @@ class TestLambdaBehavior:
         ids=["python"],
     )
     def test_lambda_no_timeout_logs(
-        self, lambda_client, create_lambda_function, lambda_fn, lambda_runtime, logs_client
+        self,
+        lambda_client,
+        create_lambda_function,
+        lambda_fn,
+        lambda_runtime,
+        logs_client,
+        snapshot,
     ):
         """tests the local context reuse of packages in AWS lambda"""
 
         func_name = f"test_lambda_{short_uid()}"
-        create_lambda_function(
+        create_result = create_lambda_function(
             func_name=func_name,
             handler_file=lambda_fn,
             runtime=lambda_runtime,
             client=lambda_client,
             timeout=2,
         )
+        snapshot.match("create-result", create_result)
 
         result = lambda_client.invoke(FunctionName=func_name, Payload=json.dumps({"wait": 1}))
+        snapshot.match("invoke-result", result)
         assert result["StatusCode"] == 200
         log_group_name = f"/aws/lambda/{func_name}"
 
@@ -1977,9 +2076,9 @@ class TestLambdaBehavior:
 
         wait_until(_assert_log_output, strategy="linear")
 
-    @pytest.mark.skip(reason="very slow (only execute when needed)")
+    # @pytest.mark.skip(reason="very slow (only execute when needed)")
     def test_lambda_provisioned_concurrency_moves_with_alias(
-        self, lambda_client, logs_client, create_lambda_function
+        self, lambda_client, logs_client, create_lambda_function, snapshot
     ):
         """
         create fn ⇒ publish version ⇒ create alias for version ⇒ put concurrency on alias
@@ -1989,28 +2088,31 @@ class TestLambdaBehavior:
         func_name = f"test_lambda_{short_uid()}"
         alias_name = f"test_alias_{short_uid()}"
 
-        create_lambda_function(
+        create_result = create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
             runtime=LAMBDA_RUNTIME_PYTHON38,
             client=lambda_client,
             timeout=2,
         )
+        snapshot.match("create-result", create_result)
 
         fn = lambda_client.get_function_configuration(FunctionName=func_name, Qualifier="$LATEST")
+        snapshot.match("get-function-configuration", fn)
         assert fn["State"] == "Active"
 
         first_ver = lambda_client.publish_version(
             FunctionName=func_name, RevisionId=fn["RevisionId"], Description="my-first-version"
         )
+        snapshot.match("publish_version_1", first_ver)
         assert first_ver["State"] == "Active"
         assert fn["RevisionId"] != first_ver["RevisionId"]
-        assert (
-            lambda_client.get_function_configuration(
-                FunctionName=func_name, Qualifier=first_ver["Version"]
-            )["RevisionId"]
-            == first_ver["RevisionId"]
+
+        get_function_configuration = lambda_client.get_function_configuration(
+            FunctionName=func_name, Qualifier=first_ver["Version"]
         )
+        snapshot.match("get_function_configuration_version_1", first_ver)
+        assert get_function_configuration["RevisionId"] == first_ver["RevisionId"]
 
         # There's no ProvisionedConcurrencyConfiguration yet
         assert get_invoke_init_type(lambda_client, func_name, first_ver["Version"]) == "on-demand"
@@ -2019,18 +2121,23 @@ class TestLambdaBehavior:
         alias = lambda_client.create_alias(
             FunctionName=func_name, FunctionVersion=first_ver["Version"], Name=alias_name
         )
+        snapshot.match("create_alias", alias)
         assert alias["FunctionVersion"] == first_ver["Version"]
         assert alias["RevisionId"] != first_ver["RevisionId"]
-        versioned_revision_id_before = lambda_client.get_function(
+        get_function_result = lambda_client.get_function(
             FunctionName=func_name, Qualifier=first_ver["Version"]
-        )["Configuration"]["RevisionId"]
+        )
+        versioned_revision_id_before = get_function_result["Configuration"]["RevisionId"]
+        snapshot.match("get_function_before_provisioned", get_function_result)
         lambda_client.put_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
         )
         assert wait_until(concurrency_update_done(lambda_client, func_name, alias_name))
-        versioned_revision_id_after = lambda_client.get_function(
+        get_function_result = lambda_client.get_function(
             FunctionName=func_name, Qualifier=alias_name
-        )["Configuration"]["RevisionId"]
+        )
+        snapshot.match("get_function_after_provisioned", get_function_result)
+        versioned_revision_id_after = get_function_result["Configuration"]["RevisionId"]
         assert versioned_revision_id_before != versioned_revision_id_after
 
         # Alias AND Version now both use provisioned-concurrency (!)
@@ -2046,21 +2153,25 @@ class TestLambdaBehavior:
         lambda_client.update_function_configuration(FunctionName=func_name, Timeout=10)
         assert wait_until(update_done(lambda_client, func_name))
         lambda_conf = lambda_client.get_function_configuration(FunctionName=func_name)
+        snapshot.match("get_function_after_update", lambda_conf)
 
         # Move existing alias to the new version
         new_version = lambda_client.publish_version(
             FunctionName=func_name, RevisionId=lambda_conf["RevisionId"]
         )
+        snapshot.match("publish_version_2", new_version)
         new_alias = lambda_client.update_alias(
             FunctionName=func_name, FunctionVersion=new_version["Version"], Name=alias_name
         )
+        snapshot.match("update_alias", new_alias)
         assert new_alias["RevisionId"] != new_version["RevisionId"]
 
         # lambda should now be provisioning new "hot" execution environments for this new alias->version pointer
         # the old one should be de-provisioned
-        lambda_client.get_provisioned_concurrency_config(
+        get_provisioned_config_result = lambda_client.get_provisioned_concurrency_config(
             FunctionName=func_name, Qualifier=alias_name
         )
+        snapshot.match("get_provisioned_config_after_alias_move", get_provisioned_config_result)
         assert wait_until(
             concurrency_update_done(lambda_client, func_name, alias_name),
             strategy="linear",
@@ -2087,7 +2198,7 @@ class TestLambdaBehavior:
             )
         e.match("ProvisionedConcurrencyConfigNotFoundException")
 
-    @pytest.mark.skip(reason="very slow (only execute when needed)")
+    # @pytest.mark.skip(reason="very slow (only execute when needed)")
     def test_lambda_provisioned_concurrency_doesnt_apply_to_latest(
         self, lambda_client, logs_client, create_lambda_function
     ):

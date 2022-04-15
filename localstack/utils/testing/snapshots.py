@@ -160,7 +160,7 @@ class SnapshotSession:
 
     def assert_all(self) -> SnapshotMatchResult:
         """use after any assert_match calls to get a combined diff"""
-        result = SnapshotMatchResult(self.observed_state, self.recorded_state)
+        result = SnapshotMatchResult(self.recorded_state, self.observed_state)
         if not result and self.verify:
             raise SnapshotAssertionError("Parity snapshot failed", result=result)
         else:
