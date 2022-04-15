@@ -319,13 +319,13 @@ def events():
 
 @aws_provider()
 def stepfunctions():
-    from localstack.services.stepfunctions import stepfunctions_listener, stepfunctions_starter
+    from localstack.services.stepfunctions.provider import StepFunctionsApiListener
 
+    listener = StepFunctionsApiListener()
     return Service(
         "stepfunctions",
-        listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS,
-        start=stepfunctions_starter.start_stepfunctions,
-        check=stepfunctions_starter.check_stepfunctions,
+        listener=listener,
+        lifecycle_hook=listener.provider,
     )
 
 
