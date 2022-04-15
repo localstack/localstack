@@ -10,8 +10,6 @@ from requests.models import Response
 
 from localstack import config
 from localstack.constants import APPLICATION_CBOR, APPLICATION_JSON, HEADER_AMZN_ERROR_TYPE
-from localstack.services.awslambda import lambda_api
-from localstack.services.awslambda.lambda_api import RECORD_TYPE_DYNAMODB, RECORD_TYPE_KINESIS
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
@@ -33,23 +31,6 @@ class KinesisBackend(RegionBackend):
         self.stream_consumers = []
         # maps stream name to list of enhanced monitoring metrics
         self.enhanced_metrics = {}
-
-
-def forward_records_to_process(event_records, kinesis_stream_name):
-    """Forwards the records to lambda_api to check if any event_source_mapping is specified for the stream
-    Dynamodb streams use kinesis, therefore we need to check the data content to extract the corresponding dynamodb source-arn
-    Otherwise we can safely assume that this is a "normal" kinesis stream"""
-    try:
-        decoded = json.loads(base64.b64decode(event_records[0]["data"]))
-        if "dynamodb" in decoded:
-            return lambda_api.process_records(
-                event_records, decoded.get("eventSourceARN"), RECORD_TYPE_DYNAMODB
-            )
-    except Exception as e:
-        LOG.debug("Error while trying to decode data from event_records: %s", e)
-    return lambda_api.process_records(
-        event_records, aws_stack.kinesis_stream_arn(kinesis_stream_name), RECORD_TYPE_KINESIS
-    )
 
 
 class ProxyListenerKinesis(ProxyListener):
@@ -279,7 +260,6 @@ class ProxyListenerKinesis(ProxyListener):
             return cbor2.dumps(json.loads(replaced))
 
     def decode_content(self, data, describe=False):
-        content_type = ""
         try:
             decoded = json.loads(to_str(data))
             content_type = APPLICATION_JSON
@@ -291,15 +271,6 @@ class ProxyListenerKinesis(ProxyListener):
             return decoded, content_type
 
         return decoded
-
-    def create_event_record(self, data, sequence_number):
-        # Note: avoid adding 'encryptionType':'NONE' in the event_record, as this breaks .NET Lambdas
-        return {
-            "approximateArrivalTimestamp": epoch_timestamp(),
-            "data": data["Data"],
-            "partitionKey": data["PartitionKey"],
-            "sequenceNumber": sequence_number,
-        }
 
 
 def encode_data(data, encoding_type):
