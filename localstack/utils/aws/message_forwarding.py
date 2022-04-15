@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import uuid
-from typing import Dict
+from typing import Dict, Optional
 
 from moto.events.models import events_backends as moto_events_backends
 
@@ -181,11 +181,12 @@ def auth_keys_from_connection(connection: Dict):
 
     if auth_type == AUTH_OAUTH:
         oauth_parameters = auth_parameters.get("OAuthParameters", {})
-
         oauth_method = oauth_parameters.get("HttpMethod")
+
+        oauth_http_parameters = oauth_parameters.get("OAuthHttpParameters", {})
         oauth_endpoint = oauth_parameters.get("AuthorizationEndpoint", "")
         query_object = list_of_parameters_to_object(
-            oauth_parameters.get("QueryStringParameters", [])
+            oauth_http_parameters.get("QueryStringParameters", [])
         )
         oauth_endpoint = add_query_params_to_url(oauth_endpoint, query_object)
 
@@ -193,17 +194,18 @@ def auth_keys_from_connection(connection: Dict):
         client_id = client_parameters.get("ClientID", "")
         client_secret = client_parameters.get("ClientSecret", "")
 
-        oauth_body = list_of_parameters_to_object(oauth_parameters.get("BodyParameters", []))
+        oauth_body = list_of_parameters_to_object(oauth_http_parameters.get("BodyParameters", []))
         oauth_body.update({"client_id": client_id, "client_secret": client_secret})
 
-        oauth_header = list_of_parameters_to_object(oauth_parameters.get("HeaderParameters", []))
+        oauth_header = list_of_parameters_to_object(
+            oauth_http_parameters.get("HeaderParameters", [])
+        )
         oauth_result = requests.request(
             method=oauth_method,
             url=oauth_endpoint,
             data=json.dumps(oauth_body),
             headers=oauth_header,
         )
-
         oauth_data = json.loads(oauth_result.text)
 
         token_type = oauth_data.get("token_type", "")
@@ -218,7 +220,7 @@ def list_of_parameters_to_object(items):
     return {item.get("Key"): item.get("Value") for item in items}
 
 
-def send_event_to_api_destination(target_arn, event, http_parameters: Dict = None):
+def send_event_to_api_destination(target_arn, event, http_parameters: Optional[Dict] = None):
     """Send an event to an EventBridge API destination
     See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
 

@@ -590,6 +590,17 @@ class EventsTest(unittest.TestCase):
                 if headers.get("target_header"):
                     headers_list.append(headers.get("target_header"))
 
+                if "client_id" in event:
+                    oauth_data.update(
+                        {
+                            "client_id": event.get("client_id"),
+                            "client_secret": event.get("client_secret"),
+                            "header_value": headers.get("oauthheader"),
+                            "body_value": event.get("oauthbody"),
+                            "path": path,
+                        }
+                    )
+
                 return requests_response(
                     {
                         "access_token": token,
@@ -601,6 +612,7 @@ class EventsTest(unittest.TestCase):
         events = []
         paths_list = []
         headers_list = []
+        oauth_data = {}
 
         local_port = get_free_tcp_port()
         proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
@@ -626,6 +638,11 @@ class EventsTest(unittest.TestCase):
                     "AuthorizationEndpoint": url,
                     "ClientParameters": {"ClientID": "id", "ClientSecret": "password"},
                     "HttpMethod": "put",
+                    "OAuthHttpParameters": {
+                        "BodyParameters": [{"Key": "oauthbody", "Value": "value1"}],
+                        "HeaderParameters": [{"Key": "oauthheader", "Value": "value2"}],
+                        "QueryStringParameters": [{"Key": "oauthquery", "Value": "value3"}],
+                    },
                 },
             },
         ]
@@ -696,7 +713,6 @@ class EventsTest(unittest.TestCase):
             self.events_client.delete_rule(Name=rule_name, Force=True)
 
         # assert that all events have been received in the HTTP server listener
-        user_pass = to_str(base64.b64encode(b"user:pass"))
 
         def check():
             self.assertTrue(len(events) >= len(auth_types))
@@ -706,7 +722,17 @@ class EventsTest(unittest.TestCase):
             self.assertTrue(events[0].get("key") == "value")
             self.assertTrue(events[0].get("target_value") == "value")
 
+            # Oauth validation
+            self.assertTrue(oauth_data.get("client_id") == "id")
+            self.assertTrue(oauth_data.get("client_secret") == "password")
+            self.assertTrue(oauth_data.get("header_value") == "value2")
+            self.assertTrue(oauth_data.get("body_value") == "value1")
+            self.assertTrue("oauthquery" in oauth_data.get("path"))
+            self.assertTrue("value3" in oauth_data.get("path"))
+
+            user_pass = to_str(base64.b64encode(b"user:pass"))
             self.assertTrue(f"Basic {user_pass}" in headers_list)
+
             self.assertTrue("apikey_secret" in headers_list)
             self.assertTrue(bearer in headers_list)
             self.assertTrue("target_header_value" in headers_list)
