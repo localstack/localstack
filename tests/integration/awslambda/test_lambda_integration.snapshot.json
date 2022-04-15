@@ -69,43 +69,43 @@
       "Records": [
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         }
       ],
       "ResponseMetadata": "<response-metadata>"
@@ -115,43 +115,43 @@
       "Records": [
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         },
         {
           "SequenceNumber": "<seq-nr>",
-          "ShardId": "<shard-id>"
+          "ShardId": "<sha>"
         }
       ],
       "ResponseMetadata": "<response-metadata>"
@@ -496,6 +496,41 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration.py::TestLambdaEventSourceMappings::test_event_source_mapping_default_batch_size": {
+    "create_lambda_result": {
+      "CreateFunctionResponse": {
+        "ResponseMetadata": "<response-metadata>",
+        "FunctionName": "<name>",
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.6",
+        "Role": "<arn>",
+        "Handler": "handler.handler",
+        "CodeSize": 264,
+        "Description": "",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "LastModified": "<date>",
+        "CodeSha256": "<sha>",
+        "Version": "$LATEST",
+        "Environment": {
+          "Variables": {}
+        },
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "CreateEventSourceMappingResponse": null
+    },
     "create_esm": {
       "ResponseMetadata": "<response-metadata>",
       "UUID": "<uuid>",
@@ -507,6 +542,24 @@
       "State": "Creating",
       "StateTransitionReason": "USER_INITIATED",
       "FunctionResponseTypes": []
+    },
+    "sqs_esm_update_exc_batchsize": {
+      "Error": {
+        "Message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+        "Code": "InvalidParameterValueException"
+      },
+      "ResponseMetadata": "<response-metadata>",
+      "Type": "User",
+      "message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10"
+    },
+    "sqs_esm_create_exc_batchsize": {
+      "Error": {
+        "Message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+        "Code": "InvalidParameterValueException"
+      },
+      "ResponseMetadata": "<response-metadata>",
+      "Type": "User",
+      "message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10"
     },
     "create_table_result": {
       "TableDescription": {
@@ -542,6 +595,15 @@
         "LatestStreamArn": "<arn>"
       },
       "ResponseMetadata": "<response-metadata>"
+    },
+    "exc_needs_stream_arn": {
+      "Error": {
+        "Message": "Unrecognized event source, must be kinesis, dynamodb stream or sqs. Expected arn of format <arn>",
+        "Code": "InvalidParameterValueException"
+      },
+      "ResponseMetadata": "<response-metadata>",
+      "Type": "User",
+      "message": "Unrecognized event source, must be kinesis, dynamodb stream or sqs. Expected arn of format <arn>"
     },
     "create_esm_withlatest_stream_arn": {
       "ResponseMetadata": "<response-metadata>",
@@ -834,7 +896,7 @@
     },
     "add_permission_result": {
       "ResponseMetadata": "<response-metadata>",
-      "Statement": "{\"Sid\":\"test-statement-209fe4db\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"sns.amazonaws.com\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"<arn>\",\"Condition\":{\"ArnLike\":{\"AWS:SourceArn\":\"<arn>\"}}}"
+      "Statement": "{\"Sid\":\"<iam-sid>\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"sns.amazonaws.com\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"<arn>\",\"Condition\":{\"ArnLike\":{\"AWS:SourceArn\":\"<arn>\"}}}"
     },
     "events": {
       "events": [
@@ -851,8 +913,8 @@
                 "Subject": "[Subject] Test subject",
                 "Message": "Hello world.",
                 "Timestamp": "<timestamp>",
-                "SignatureVersion": "1",
-                "Signature": "jPwZalrsttylFAwy29mZLOZHanD/JrD1It5hXSX5xKT8frizrNCy6E9B2xpZW63FgZC07J2y6wcixPkZ8UwR7j48bKF1Z/gfjynwKFofXq5nfRfvcA2U+sWkaaeEsjgj2iJBNcpLnwH6+ohThof+hjnsthvc4Ppj6yrJ2RgS/XHo38eTHJK9XVRWepovihrfv8VPMIiXZ7yELCVvZSrFl1UfstE8ioXpt8IEgC545Oj1UMFzCu7KGuyWqSQlGUtgayQ0FUxYZdTCopS+3+5KyXOaLdcAb9e3nM6K/7SNpCiUEpH+5+TGSMClPyvf2M1eAR5j5yKyqNZ3zwXNI4VY/g==",
+                "SignatureVersion": "<sns-signature>",
+                "Signature": "<sns-signature>",
                 "SigningCertUrl": "https://sns.us-east-2.amazonaws.com/SimpleNotificationService-7ff5318490ec183fbaddaa2a969abfda.pem",
                 "UnsubscribeUrl": "https://sns.us-east-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=<arn>",
                 "MessageAttributes": {}
@@ -861,6 +923,645 @@
           ]
         }
       ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration.py::TestLambdaEventSourceMappings::test_create_kinesis_event_source_mapping": {
+    "create_lambda_result": {
+      "CreateFunctionResponse": {
+        "ResponseMetadata": "<response-metadata>",
+        "FunctionName": "<name>",
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.6",
+        "Role": "<arn>",
+        "Handler": "handler.handler",
+        "CodeSize": 264,
+        "Description": "",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "LastModified": "<date>",
+        "CodeSha256": "<sha>",
+        "Version": "$LATEST",
+        "Environment": {
+          "Variables": {}
+        },
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "CreateEventSourceMappingResponse": null
+    },
+    "describe_stream_result": {
+      "StreamDescription": {
+        "StreamName": "<name>",
+        "StreamARN": "<arn>",
+        "StreamStatus": "CREATING",
+        "StreamModeDetails": {
+          "StreamMode": "PROVISIONED"
+        },
+        "Shards": "<sha>",
+        "HasMoreShards": "<sha>",
+        "RetentionPeriodHours": 24,
+        "StreamCreationTimestamp": "<timestamp>",
+        "EnhancedMonitoring": [
+          {
+            "ShardLevelMetrics": "<sha>"
+          }
+        ],
+        "EncryptionType": "NONE"
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "exc_missing_startingposition": {
+      "Error": {
+        "Message": "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
+        "Code": "InvalidParameterValueException"
+      },
+      "ResponseMetadata": "<response-metadata>",
+      "Type": "User",
+      "message": "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null."
+    },
+    "create_esm_result": {
+      "ResponseMetadata": "<response-metadata>",
+      "UUID": "<uuid>",
+      "StartingPosition": "TRIM_HORIZON",
+      "BatchSize": 100,
+      "MaximumBatchingWindowInSeconds": 0,
+      "ParallelizationFactor": 1,
+      "EventSourceArn": "<arn>",
+      "FunctionArn": "<arn>",
+      "LastModified": "<date>",
+      "LastProcessingResult": "No records processed",
+      "State": "Creating",
+      "StateTransitionReason": "User action",
+      "DestinationConfig": {
+        "OnFailure": {}
+      },
+      "MaximumRecordAgeInSeconds": -1,
+      "BisectBatchOnFunctionError": false,
+      "MaximumRetryAttempts": -1,
+      "TumblingWindowInSeconds": 0,
+      "FunctionResponseTypes": []
+    },
+    "stream_summary": {
+      "StreamDescriptionSummary": {
+        "StreamName": "<name>",
+        "StreamARN": "<arn>",
+        "StreamStatus": "ACTIVE",
+        "StreamModeDetails": {
+          "StreamMode": "PROVISIONED"
+        },
+        "RetentionPeriodHours": 24,
+        "StreamCreationTimestamp": "<timestamp>",
+        "EnhancedMonitoring": [
+          {
+            "ShardLevelMetrics": "<sha>"
+          }
+        ],
+        "EncryptionType": "NONE",
+        "OpenShardCount": "<sha>",
+        "ConsumerCount": 0
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "put_records_result": {
+      "FailedRecordCount": 0,
+      "Records": [
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<sha>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<sha>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<sha>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<sha>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<sha>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<sha>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<sha>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<sha>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<sha>"
+        },
+        {
+          "SequenceNumber": "<seq-nr>",
+          "ShardId": "<sha>"
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "events": {
+      "events": [
+        {
+          "Records": [
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test_0",
+                "sequenceNumber": "<seq-nr>",
+                "data": "e30=",
+                "approximateArrivalTimestamp": "<timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "invokeIdentityArn": "<arn>",
+              "awsRegion": "us-east-2",
+              "eventSourceARN": "<arn>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test_1",
+                "sequenceNumber": "<seq-nr>",
+                "data": "e30=",
+                "approximateArrivalTimestamp": "<timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "invokeIdentityArn": "<arn>",
+              "awsRegion": "us-east-2",
+              "eventSourceARN": "<arn>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test_2",
+                "sequenceNumber": "<seq-nr>",
+                "data": "e30=",
+                "approximateArrivalTimestamp": "<timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "invokeIdentityArn": "<arn>",
+              "awsRegion": "us-east-2",
+              "eventSourceARN": "<arn>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test_3",
+                "sequenceNumber": "<seq-nr>",
+                "data": "e30=",
+                "approximateArrivalTimestamp": "<timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "invokeIdentityArn": "<arn>",
+              "awsRegion": "us-east-2",
+              "eventSourceARN": "<arn>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test_4",
+                "sequenceNumber": "<seq-nr>",
+                "data": "e30=",
+                "approximateArrivalTimestamp": "<timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "invokeIdentityArn": "<arn>",
+              "awsRegion": "us-east-2",
+              "eventSourceARN": "<arn>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test_5",
+                "sequenceNumber": "<seq-nr>",
+                "data": "e30=",
+                "approximateArrivalTimestamp": "<timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "invokeIdentityArn": "<arn>",
+              "awsRegion": "us-east-2",
+              "eventSourceARN": "<arn>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test_6",
+                "sequenceNumber": "<seq-nr>",
+                "data": "e30=",
+                "approximateArrivalTimestamp": "<timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "invokeIdentityArn": "<arn>",
+              "awsRegion": "us-east-2",
+              "eventSourceARN": "<arn>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test_7",
+                "sequenceNumber": "<seq-nr>",
+                "data": "e30=",
+                "approximateArrivalTimestamp": "<timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "invokeIdentityArn": "<arn>",
+              "awsRegion": "us-east-2",
+              "eventSourceARN": "<arn>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test_8",
+                "sequenceNumber": "<seq-nr>",
+                "data": "e30=",
+                "approximateArrivalTimestamp": "<timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "invokeIdentityArn": "<arn>",
+              "awsRegion": "us-east-2",
+              "eventSourceARN": "<arn>"
+            },
+            {
+              "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "test_9",
+                "sequenceNumber": "<seq-nr>",
+                "data": "e30=",
+                "approximateArrivalTimestamp": "<timestamp>"
+              },
+              "eventSource": "aws:kinesis",
+              "eventVersion": "1.0",
+              "eventID": "<event-id>",
+              "eventName": "<name>",
+              "invokeIdentityArn": "<arn>",
+              "awsRegion": "us-east-2",
+              "eventSourceARN": "<arn>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration.py::TestLambdaEventSourceMappings::test_event_source_mapping_with_sqs": {
+    "create_lambda_result": {
+      "CreateFunctionResponse": {
+        "ResponseMetadata": "<response-metadata>",
+        "FunctionName": "<name>",
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.6",
+        "Role": "<arn>",
+        "Handler": "handler.handler",
+        "CodeSize": 264,
+        "Description": "",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "LastModified": "<date>",
+        "CodeSha256": "<sha>",
+        "Version": "$LATEST",
+        "Environment": {
+          "Variables": {}
+        },
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "CreateEventSourceMappingResponse": null
+    },
+    "create_esm_result": {
+      "ResponseMetadata": "<response-metadata>",
+      "UUID": "<uuid>",
+      "BatchSize": 10,
+      "MaximumBatchingWindowInSeconds": 1,
+      "EventSourceArn": "<arn>",
+      "FunctionArn": "<arn>",
+      "LastModified": "<date>",
+      "State": "Creating",
+      "StateTransitionReason": "USER_INITIATED",
+      "FunctionResponseTypes": []
+    },
+    "send_message_result": {
+      "MD5OfMessageBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+      "MessageId": "<uuid>",
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "events": {
+      "events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid>",
+              "receiptHandle": "<receipt-handle>",
+              "body": "{\"foo\": \"bar\"}",
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "<timestamp>",
+                "SenderId": "AROAZBN753QFPHI7SCNOO:dominik.schubert@localstack.cloud",
+                "ApproximateFirstReceiveTimestamp": "<timestamp>"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "94232c5b8fc9272f6f73a1e36eb68fcf",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "<arn>",
+              "awsRegion": "us-east-2"
+            }
+          ]
+        }
+      ]
+    },
+    "sqs_receive_message": {
+      "ResponseMetadata": "<response-metadata>"
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration.py::TestLambdaEventSourceMappings::test_deletion_event_source_mapping_with_dynamodb": {
+    "create_function_result": {
+      "CreateFunctionResponse": {
+        "ResponseMetadata": "<response-metadata>",
+        "FunctionName": "<name>",
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.6",
+        "Role": "<arn>",
+        "Handler": "handler.handler",
+        "CodeSize": 264,
+        "Description": "",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "LastModified": "<date>",
+        "CodeSha256": "<sha>",
+        "Version": "$LATEST",
+        "Environment": {
+          "Variables": {}
+        },
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "CreateEventSourceMappingResponse": null
+    },
+    "create_table_result": {
+      "TableDescription": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "<name>",
+            "AttributeType": "S"
+          }
+        ],
+        "TableName": "<name>",
+        "KeySchema": [
+          {
+            "AttributeName": "<name>",
+            "KeyType": "HASH"
+          }
+        ],
+        "TableStatus": "CREATING",
+        "CreationDateTime": "<date>",
+        "ProvisionedThroughput": {
+          "NumberOfDecreasesToday": 0,
+          "ReadCapacityUnits": 10,
+          "WriteCapacityUnits": 10
+        },
+        "TableSizeBytes": 0,
+        "ItemCount": 0,
+        "TableArn": "<arn>",
+        "TableId": "<uuid>",
+        "StreamSpecification": {
+          "StreamEnabled": true,
+          "StreamViewType": "NEW_IMAGE"
+        },
+        "LatestStreamLabel": "<latest-stream-label>",
+        "LatestStreamArn": "<arn>"
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "create_esm_result": {
+      "ResponseMetadata": "<response-metadata>",
+      "UUID": "<uuid>",
+      "StartingPosition": "TRIM_HORIZON",
+      "BatchSize": 100,
+      "MaximumBatchingWindowInSeconds": 0,
+      "ParallelizationFactor": 1,
+      "EventSourceArn": "<arn>",
+      "FunctionArn": "<arn>",
+      "LastModified": "<date>",
+      "LastProcessingResult": "No records processed",
+      "State": "Creating",
+      "StateTransitionReason": "User action",
+      "DestinationConfig": {
+        "OnFailure": {}
+      },
+      "MaximumRecordAgeInSeconds": -1,
+      "BisectBatchOnFunctionError": false,
+      "MaximumRetryAttempts": -1,
+      "TumblingWindowInSeconds": 0,
+      "FunctionResponseTypes": []
+    },
+    "delete_table_result": {
+      "TableDescription": {
+        "TableName": "<name>",
+        "TableStatus": "DELETING",
+        "ProvisionedThroughput": {
+          "NumberOfDecreasesToday": 0,
+          "ReadCapacityUnits": 10,
+          "WriteCapacityUnits": 10
+        },
+        "TableSizeBytes": 0,
+        "ItemCount": 0,
+        "TableArn": "<arn>",
+        "TableId": "<uuid>",
+        "StreamSpecification": {
+          "StreamEnabled": true,
+          "StreamViewType": "NEW_IMAGE"
+        },
+        "LatestStreamLabel": "<latest-stream-label>",
+        "LatestStreamArn": "<arn>"
+      },
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "list_esm_postdelete": {
+      "ResponseMetadata": "<response-metadata>",
+      "EventSourceMappings": [
+        {
+          "UUID": "<uuid>",
+          "StartingPosition": "TRIM_HORIZON",
+          "BatchSize": 100,
+          "MaximumBatchingWindowInSeconds": 0,
+          "ParallelizationFactor": 1,
+          "EventSourceArn": "<arn>",
+          "FunctionArn": "<arn>",
+          "LastModified": "<date>",
+          "LastProcessingResult": "No records processed",
+          "State": "Enabled",
+          "StateTransitionReason": "User action",
+          "DestinationConfig": {
+            "OnFailure": {}
+          },
+          "MaximumRecordAgeInSeconds": -1,
+          "BisectBatchOnFunctionError": false,
+          "MaximumRetryAttempts": -1,
+          "TumblingWindowInSeconds": 0,
+          "FunctionResponseTypes": []
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration.py::TestLambdaHttpInvocation::test_http_invocation_with_apigw_proxy": {
+    "create_lambda_result": {
+      "CreateFunctionResponse": {
+        "ResponseMetadata": "<response-metadata>",
+        "FunctionName": "<name>",
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.7",
+        "Role": "<arn>",
+        "Handler": "handler.handler",
+        "CodeSize": 18173255,
+        "Description": "",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "LastModified": "<date>",
+        "CodeSha256": "<sha>",
+        "Version": "$LATEST",
+        "Environment": {
+          "Variables": {}
+        },
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "CreateEventSourceMappingResponse": null
+    },
+    "get_function_result": {
+      "ResponseMetadata": "<response-metadata>",
+      "Configuration": {
+        "FunctionName": "<name>",
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.7",
+        "Role": "<arn>",
+        "Handler": "handler.handler",
+        "CodeSize": 18173255,
+        "Description": "",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "LastModified": "<date>",
+        "CodeSha256": "<sha>",
+        "Version": "$LATEST",
+        "Environment": {
+          "Variables": {}
+        },
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid>",
+        "State": "Active",
+        "LastUpdateStatus": "Successful",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "Code": {
+        "RepositoryType": "S3",
+        "Location": "<location>"
+      }
+    },
+    "api": {
+      "ResponseMetadata": "<response-metadata>",
+      "id": "<rest-api-id>",
+      "name": "test_gateway2",
+      "description": "Test description for API \"test_gateway2\"",
+      "createdDate": "<date>",
+      "apiKeySource": "HEADER",
+      "endpointConfiguration": {
+        "types": [
+          "EDGE"
+        ]
+      },
+      "disableExecuteApiEndpoint": false
+    },
+    "content": {
+      "test": "hello world"
     }
   }
 }
