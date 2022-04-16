@@ -7,6 +7,7 @@ from werkzeug.sansio.request import Request as _SansIORequest
 from werkzeug.utils import cached_property
 
 from localstack.utils.common import to_bytes
+from localstack.utils.strings import to_str
 
 
 class Request(_SansIORequest):
@@ -15,6 +16,8 @@ class Request(_SansIORequest):
     objects. It allows simple sans-IO requests outside a web server environment.
 
     DO NOT add methods that are not also part of werkzeug.wrappers.request.Request object.
+    Methods which raise `NotImplementedError` may be implemented as required.
+    We use Quart which uses async io to access the IO parts of the request, therefore werkzeug's Request is not used.
     """
 
     def __init__(
@@ -78,7 +81,17 @@ class Request(_SansIORequest):
 
     @property
     def values(self):
-        raise NotImplementedError
+        """Naive implementation to parse and return form data.
+
+        The property is invoked by Moto ELB to get the ELB API version in
+        `moto.elb.urls.api_version_elb_backend()`
+        """
+        params = to_str(self.data).split("&")
+        output = {}
+        for param in params:
+            key, value = param.split("=")
+            output[key] = value
+        return output
 
     @property
     def files(self):
