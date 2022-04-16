@@ -23,6 +23,7 @@ from localstack.aws.api.dynamodb import (
     BatchGetRequestMap,
     BatchWriteItemInput,
     BatchWriteItemOutput,
+    BillingMode,
     CreateGlobalTableOutput,
     CreateTableInput,
     CreateTableOutput,
@@ -386,6 +387,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_name = create_table_input["TableName"]
         if self.table_exists(table_name):
             raise ResourceInUseException("Cannot create preexisting table")
+        billing_mode = create_table_input.get("BillingMode", None)
+        if (
+            billing_mode == BillingMode.PAY_PER_REQUEST
+            and create_table_input.get("ProvisionedThroughput", None) is not None
+        ):
+            raise ValidationException(
+                "One or more parameter values were invalid: Neither ReadCapacityUnits nor WriteCapacityUnits can be "
+                "specified when BillingMode is PAY_PER_REQUEST"
+            )
 
         # forward request to backend
         result = self.forward_request(context)
