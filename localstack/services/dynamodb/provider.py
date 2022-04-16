@@ -387,7 +387,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_name = create_table_input["TableName"]
         if self.table_exists(table_name):
             raise ResourceInUseException("Cannot create preexisting table")
-        billing_mode = create_table_input.get("BillingMode", None)
+        billing_mode = create_table_input.get("BillingMode")
         if (
             billing_mode == BillingMode.PAY_PER_REQUEST
             and create_table_input.get("ProvisionedThroughput", None) is not None

@@ -990,7 +990,7 @@ class TestDynamoDB:
                 ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
                 BillingMode="PAY_PER_REQUEST",
             )
-        assert "One or more parameter values were invalid" in str(e.value)
+        assert e.match("ValidationException")
 
     def test_dynamodb_create_table_with_sse_specification(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
