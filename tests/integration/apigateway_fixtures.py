@@ -57,6 +57,16 @@ def create_rest_api_integration(apigateway_client, **kwargs):
     return response.get("uri"), response.get("type")
 
 
+def delete_rest_api_integration(apigateway_client, **kwargs):
+    response = apigateway_client.delete_integration(**kwargs)
+    assert_response_is_200(response)
+
+
+def get_rest_api_integration(apigateway_client, **kwargs):
+    response = apigateway_client.get_integration(**kwargs)
+    assert_response_is_200(response)
+
+
 def create_rest_api_method_response(apigateway_client, **kwargs):
     response = apigateway_client.put_method_response(**kwargs)
     assert_response_is_200(response)
@@ -78,6 +88,11 @@ def create_base_path_mapping(apigateway_client, **kwargs):
     response = apigateway_client.create_base_path_mapping(**kwargs)
     assert_response_is_200(response)
     return response.get("basePath"), response.get("stage")
+
+
+def create_rest_api_deployment(apigateway_client, **kwargs):
+    response = apigateway_client.create_deployment(**kwargs)
+    assert_response_is_200(response)
 
 
 def create_cognito_user_pool(cognito_idp, **kwargs):

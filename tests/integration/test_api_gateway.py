@@ -8,6 +8,7 @@ from collections import namedtuple
 from typing import Callable, Optional
 from unittest.mock import patch
 
+import pytest
 import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
@@ -47,7 +48,8 @@ from tests.integration.apigateway_fixtures import (
     create_rest_api_integration_response,
     create_rest_resource,
     create_rest_resource_method,
-    delete_rest_api,
+    delete_rest_api, create_rest_api_deployment, delete_rest_api_integration,
+    get_rest_api_integration,
 )
 
 from .awslambda.test_lambda import (
@@ -523,116 +525,6 @@ class TestAPIGateway(unittest.TestCase):
         apig.delete_authorizer(restApiId=self.TEST_API_GATEWAY_ID, authorizerId=authorizer_id)
 
         self.assertRaises(Exception, apig.get_authorizer, self.TEST_API_GATEWAY_ID, authorizer_id)
-
-    def test_apigateway_with_lambda_integration(self):
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
-
-        # create Lambda function
-        lambda_name = "apigw-lambda-%s" % short_uid()
-        self.create_lambda_function(lambda_name)
-        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
-        target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
-
-        # create REST API
-        api = apigw_client.create_rest_api(name="test-api", description="")
-        api_id = api["id"]
-        root_res_id = apigw_client.get_resources(restApiId=api_id)["items"][0]["id"]
-        api_resource = apigw_client.create_resource(
-            restApiId=api_id, parentId=root_res_id, pathPart="test"
-        )
-
-        apigw_client.put_method(
-            restApiId=api_id,
-            resourceId=api_resource["id"],
-            httpMethod="GET",
-            authorizationType="NONE",
-        )
-
-        rs = apigw_client.put_integration(
-            restApiId=api_id,
-            resourceId=api_resource["id"],
-            httpMethod="GET",
-            integrationHttpMethod="POST",
-            type="AWS",
-            uri=target_uri,
-            timeoutInMillis=3000,
-            contentHandling="CONVERT_TO_BINARY",
-            requestTemplates={"application/json": '{"param1": "$input.params(\'param1\')"}'},
-        )
-        integration_keys = [
-            "httpMethod",
-            "type",
-            "passthroughBehavior",
-            "cacheKeyParameters",
-            "uri",
-            "cacheNamespace",
-            "timeoutInMillis",
-            "contentHandling",
-            "requestParameters",
-        ]
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
-        for key in integration_keys:
-            self.assertIn(key, rs)
-        self.assertNotIn("responseTemplates", rs)
-
-        apigw_client.create_deployment(restApiId=api_id, stageName=self.TEST_STAGE_NAME)
-
-        rs = apigw_client.get_integration(
-            restApiId=api_id, resourceId=api_resource["id"], httpMethod="GET"
-        )
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertEqual("AWS", rs["type"])
-        self.assertEqual("POST", rs["httpMethod"])
-        self.assertEqual(target_uri, rs["uri"])
-
-        # invoke the gateway endpoint
-        url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/test")
-        response = requests.get("%s?param1=foobar" % url)
-        self.assertLess(response.status_code, 400)
-        content = response.json()
-        self.assertEqual("GET", content.get("httpMethod"))
-        self.assertEqual(api_resource["id"], content.get("requestContext", {}).get("resourceId"))
-        self.assertEqual(self.TEST_STAGE_NAME, content.get("requestContext", {}).get("stage"))
-        self.assertEqual('{"param1": "foobar"}', content.get("body"))
-
-        # additional checks from https://github.com/localstack/localstack/issues/5041
-        # pass Signature param
-        response = requests.get("%s?param1=foobar&Signature=1" % url)
-        self.assertEqual(response.status_code, 200)
-        content = response.json()
-        self.assertEqual("GET", content.get("httpMethod"))
-        self.assertEqual(api_resource["id"], content.get("requestContext", {}).get("resourceId"))
-        self.assertEqual(self.TEST_STAGE_NAME, content.get("requestContext", {}).get("stage"))
-        self.assertEqual('{"param1": "foobar"}', content.get("body"))
-
-        # pass TestSignature param as well
-        response = requests.get("%s?param1=foobar&TestSignature=1" % url)
-        self.assertEqual(response.status_code, 200)
-        content = response.json()
-        self.assertEqual("GET", content.get("httpMethod"))
-        self.assertEqual(api_resource["id"], content.get("requestContext", {}).get("resourceId"))
-        self.assertEqual(self.TEST_STAGE_NAME, content.get("requestContext", {}).get("stage"))
-        self.assertEqual('{"param1": "foobar"}', content.get("body"))
-
-        # delete integration
-        rs = apigw_client.delete_integration(
-            restApiId=api_id,
-            resourceId=api_resource["id"],
-            httpMethod="GET",
-        )
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
-
-        with self.assertRaises(ClientError) as ctx:
-            # This call should not be successful as the integration is deleted
-            apigw_client.get_integration(
-                restApiId=api_id, resourceId=api_resource["id"], httpMethod="GET"
-            )
-        self.assertEqual(ctx.exception.response["Error"]["Code"], "NotFoundException")
-
-        # clean up
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        lambda_client.delete_function(FunctionName=lambda_name)
-        apigw_client.delete_rest_api(restApiId=api_id)
 
     def test_api_gateway_handle_domain_name(self):
         domain_name = "%s.example.com" % short_uid()
@@ -1744,6 +1636,74 @@ class TestAPIGateway(unittest.TestCase):
         apigw_client.create_deployment(restApiId=api_id, stageName="staging")
 
         return api_id
+
+
+def test_apigateway_with_lambda_integration(apigateway_client):
+
+    lambda_name = f"apigw-lambda-{short_uid()}"
+    testutil.create_lambda_function(
+        handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=lambda_name
+    )
+    lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+    target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
+
+    # create REST API
+    api_id, _, root = create_rest_api(apigateway_client, name="mock api")
+    resource_id, _ = create_rest_resource(
+        apigateway_client, restApiId=api_id, parentId=root, pathPart="test"
+    )
+    create_rest_resource_method(apigateway_client, restApiId=api_id, resourceId=resource_id,
+        httpMethod="GET", authorizationType="NONE"
+    )
+    create_rest_api_integration(apigateway_client, restApiId=api_id, resourceId=resource_id,
+        httpMethod="GET", integrationHttpMethod="POST", type="AWS", uri=target_uri,
+        timeoutInMillis=3000, contentHandling="CONVERT_TO_BINARY", requestTemplates={
+            "application/json": '{"param1": "$input.params(\'param1\')"}'},
+    )
+    create_rest_api_deployment(apigateway_client, restApiId=api_id, stageName="testing")
+    url = path_based_url(api_id=api_id, stage_name="testing", path="/test")
+    response = requests.get(f"{url}?param1=foobar")
+    assert response.status_code < 400
+
+    content = response.json()
+    assert "GET" == content.get("httpMethod")
+    assert resource_id == content.get("requestContext", {}).get("resourceId")
+    assert "testing" == content.get("requestContext", {}).get("stage")
+    assert '{"param1": "foobar"}' == content.get("body")
+
+    # additional checks from https://github.com/localstack/localstack/issues/5041
+    # pass Signature param
+    response = requests.get("%s?param1=foobar&Signature=1" % url)
+    assert response.status_code == 200
+    content = response.json()
+    assert "GET" == content.get("httpMethod")
+    assert resource_id == content.get("requestContext", {}).get("resourceId")
+    assert "testing" == content.get("requestContext", {}).get("stage")
+    assert '{"param1": "foobar"}' == content.get("body")
+
+    # pass TestSignature param as well
+    response = requests.get(f"{url}?param1=foobar&TestSignature=1")
+    assert response.status_code == 200
+    content = response.json()
+    assert "GET" == content.get("httpMethod")
+    assert resource_id == content.get("requestContext", {}).get("resourceId")
+    assert "testing" == content.get("requestContext", {}).get("stage")
+    assert '{"param1": "foobar"}' == content.get("body")
+
+    # delete integration
+    delete_rest_api_integration(apigateway_client, restApiId=api_id, resourceId=resource_id,
+        httpMethod="GET")
+
+    with pytest.raises(ClientError) as ctx:
+        # This call should not be successful as the integration is deleted
+        get_rest_api_integration(apigateway_client, restApiId=api_id, resourceId=resource_id,
+            httpMethod="GET"
+        )
+    assert ctx.value.response["Error"]["Code"] == "NotFoundException"
+    # clean up
+    lambda_client = aws_stack.create_external_boto_client("lambda")
+    lambda_client.delete_function(FunctionName=lambda_name)
+    delete_rest_api(apigateway_client, restApiId=api_id)
 
 
 def test_mock_integration_empty_response(apigateway_client):

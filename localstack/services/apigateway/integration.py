@@ -360,7 +360,7 @@ class RequestTemplates(Templates):
         )
 
         request_templates = api_context.integration.get("requestTemplates", {})
-        request_template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE))
+        request_template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE) or APPLICATION_JSON)
         variables = self.build_variables_mapping(api_context)
         result = self.render_vtl(request_template, variables=variables)
 
