@@ -337,24 +337,6 @@ class TestAPIGateway(unittest.TestCase):
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM,
         )
 
-    def test_api_gateway_lambda_proxy_integration_with_is_base_64_encoded(self):
-        # Test the case where `isBase64Encoded` is enabled.
-        content = b"hello, please base64 encode me"
-
-        def _mutate_data(data) -> None:
-            data["return_is_base_64_encoded"] = True
-            data["return_raw_body"] = base64.b64encode(content).decode("utf8")
-
-        test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(
-            self.TEST_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
-            self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
-            data_mutator_fn=_mutate_data,
-        )
-
-        # Ensure that `invoke_rest_api_integration_backend` correctly decodes the base64 content
-        self.assertEqual(test_result.result.status_code, 203)
-        self.assertEqual(test_result.result.content, content)
-
     def _test_api_gateway_lambda_proxy_integration_no_asserts(
         self,
         fn_name: str,
@@ -1297,41 +1279,6 @@ class TestAPIGateway(unittest.TestCase):
             f"{proto}://localhost:{config.EDGE_PORT}/restapis/{api_id}/{stage}/_user_request_{path}"
         )
 
-    def test_api_gateway_s3_get_integration(self):
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
-        s3_client = aws_stack.create_external_boto_client("s3")
-
-        try:
-            bucket_name = f"test-bucket-{short_uid()}"
-            apigateway_name = f"test-api-{short_uid()}"
-            object_name = "test.json"
-            object_content = '{ "success": "true" }'
-            object_content_type = "application/json"
-
-            api = apigw_client.create_rest_api(name=apigateway_name)
-            api_id = api["id"]
-
-            s3_client.create_bucket(Bucket=bucket_name)
-            s3_client.put_object(
-                Bucket=bucket_name,
-                Key=object_name,
-                Body=object_content,
-                ContentType=object_content_type,
-            )
-
-            self.connect_api_gateway_to_s3(bucket_name, object_name, api_id, "GET")
-
-            apigw_client.create_deployment(restApiId=api_id, stageName="test")
-            url = path_based_url(api_id, "test", f"/{object_name}")
-            result = requests.get(url)
-            self.assertEqual(200, result.status_code)
-            self.assertEqual(object_content, result.text)
-            self.assertEqual(object_content_type, result.headers["content-type"])
-        finally:
-            # clean up
-            apigw_client.delete_rest_api(restApiId=api_id)
-            s3_client.delete_object(Bucket=bucket_name, Key=object_name)
-            s3_client.delete_bucket(Bucket=bucket_name)
 
     def test_api_mock_integration_response_params(self):
         # apigw_client = aws_stack.create_external_boto_client('apigateway')
@@ -1382,41 +1329,6 @@ class TestAPIGateway(unittest.TestCase):
     # =====================================================================
     # Helper methods
     # =====================================================================
-
-    def connect_api_gateway_to_s3(self, bucket_name, file_name, api_id, method):
-        """Connects the root resource of an api gateway to the given object of an s3 bucket."""
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
-        s3_uri = "arn:aws:apigateway:{}:s3:path/{}/{{proxy}}".format(
-            aws_stack.get_region(), bucket_name
-        )
-
-        test_role = "test-s3-role"
-        role_arn = aws_stack.role_arn(role_name=test_role)
-        resources = apigw_client.get_resources(restApiId=api_id)
-        # using the root resource '/' directly for this test
-        root_resource_id = resources["items"][0]["id"]
-        proxy_resource = apigw_client.create_resource(
-            restApiId=api_id, parentId=root_resource_id, pathPart="{proxy+}"
-        )
-        apigw_client.put_method(
-            restApiId=api_id,
-            resourceId=proxy_resource["id"],
-            httpMethod=method,
-            authorizationType="NONE",
-            apiKeyRequired=False,
-            requestParameters={},
-        )
-        apigw_client.put_integration(
-            restApiId=api_id,
-            resourceId=proxy_resource["id"],
-            httpMethod=method,
-            type="AWS",
-            integrationHttpMethod=method,
-            uri=s3_uri,
-            credentials=role_arn,
-            requestParameters={"integration.request.path.proxy": "method.request.path.proxy"},
-        )
-
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
         template = self.APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
         resource_path = self.API_PATH_DATA_INBOUND.replace("/", "")
@@ -1492,70 +1404,6 @@ class TestAPIGateway(unittest.TestCase):
             handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
         )
 
-    def test_apigw_test_invoke_method_api(self):
-        client = aws_stack.create_external_boto_client("apigateway")
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-
-        # create test Lambda
-        fn_name = f"test-{short_uid()}"
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
-        )
-        lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
-
-        # create REST API and test resource
-        rest_api = client.create_rest_api(name="test", description="test")
-        root_resource = client.get_resources(restApiId=rest_api["id"])
-        resource = client.create_resource(
-            restApiId=rest_api["id"], parentId=root_resource["items"][0]["id"], pathPart="foo"
-        )
-
-        # create method and integration
-        client.put_method(
-            restApiId=rest_api["id"],
-            resourceId=resource["id"],
-            httpMethod="GET",
-            authorizationType="NONE",
-        )
-        client.put_integration(
-            restApiId=rest_api["id"],
-            resourceId=resource["id"],
-            httpMethod="GET",
-            integrationHttpMethod="GET",
-            type="AWS",
-            uri="arn:aws:apigateway:{}:lambda:path//2015-03-31/functions/{}/invocations".format(
-                aws_stack.get_region(), lambda_arn_1
-            ),
-        )
-
-        # run test_invoke_method API #1
-        response = client.test_invoke_method(
-            restApiId=rest_api["id"],
-            resourceId=resource["id"],
-            httpMethod="GET",
-            pathWithQueryString="/foo",
-        )
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertEqual(200, response.get("status"))
-        self.assertIn("response from", response.get("body"))
-
-        # run test_invoke_method API #2
-        response = client.test_invoke_method(
-            restApiId=rest_api["id"],
-            resourceId=resource["id"],
-            httpMethod="GET",
-            pathWithQueryString="/foo",
-            body='{"test": "val123"}',
-            headers={"content-type": "application/json"},
-        )
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertEqual(200, response.get("status"))
-        self.assertIn("response from", response.get("body"))
-        self.assertIn("val123", response.get("body"))
-
-        # Clean up
-        lambda_client.delete_function(FunctionName=fn_name)
-        client.delete_rest_api(restApiId=rest_api["id"])
 
     @staticmethod
     def start_http_backend(test_port):
@@ -1636,6 +1484,195 @@ class TestAPIGateway(unittest.TestCase):
         apigw_client.create_deployment(restApiId=api_id, stageName="staging")
 
         return api_id
+
+
+def connect_api_gateway_to_s3(bucket_name, file_name, api_id, method):
+    """Connects the root resource of an api gateway to the given object of an s3 bucket."""
+    apigw_client = aws_stack.create_external_boto_client("apigateway")
+    s3_uri = "arn:aws:apigateway:{}:s3:path/{}/{{proxy}}".format(
+        aws_stack.get_region(), bucket_name
+    )
+
+    test_role = "test-s3-role"
+    role_arn = aws_stack.role_arn(role_name=test_role)
+    resources = apigw_client.get_resources(restApiId=api_id)
+    # using the root resource '/' directly for this test
+    root_resource_id = resources["items"][0]["id"]
+    proxy_resource = apigw_client.create_resource(
+        restApiId=api_id, parentId=root_resource_id, pathPart="{proxy+}"
+    )
+    apigw_client.put_method(
+        restApiId=api_id,
+        resourceId=proxy_resource["id"],
+        httpMethod=method,
+        authorizationType="NONE",
+        apiKeyRequired=False,
+        requestParameters={},
+    )
+    apigw_client.put_integration(
+        restApiId=api_id,
+        resourceId=proxy_resource["id"],
+        httpMethod=method,
+        type="AWS",
+        integrationHttpMethod=method,
+        uri=s3_uri,
+        credentials=role_arn,
+        requestParameters={"integration.request.path.proxy": "method.request.path.proxy"},
+    )
+
+
+def _test_api_gateway_lambda_proxy_integration_no_asserts(
+    fn_name: str,
+    path: str,
+    data_mutator_fn: Optional[Callable] = None
+) -> ApiGatewayLambdaProxyIntegrationTestResult:
+        """
+        Perform the setup needed to do a POST against a Lambda Proxy Integration;
+        then execute the POST.
+
+        :param data_mutator_fn: a Callable[[Dict], None] that lets us mutate the
+          data dictionary before sending it off to the lambda.
+        """
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
+        )
+        lambda_uri = aws_stack.lambda_function_arn(fn_name)
+
+        # create API Gateway and connect it to the Lambda proxy backend
+        invocation_uri = "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations"
+        target_uri = invocation_uri % (aws_stack.get_region(), lambda_uri)
+
+        result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
+            "test_gateway2", target_uri, path=path, stage_name="testing"
+        )
+
+        api_id = result["id"]
+        path_map = get_rest_api_paths(api_id)
+        _, resource = get_resource_for_path(path, path_map)
+
+        # make test request to gateway and check response
+        path_with_replace = path.replace("{test_param1}", "foo1")
+        path_with_params = path_with_replace + "?foo=foo&bar=bar&bar=baz"
+
+        url = path_based_url(api_id=api_id, stage_name="testing", path=path_with_params)
+
+        # These values get read in `lambda_integration.py`
+        data = {"return_status_code": 203, "return_headers": {"foo": "bar123"}}
+        if data_mutator_fn:
+            assert callable(data_mutator_fn)
+            data_mutator_fn(data)
+        result = requests.post(
+            url,
+            data=json.dumps(data),
+            headers={"User-Agent": "python-requests/testing"},
+        )
+
+        return ApiGatewayLambdaProxyIntegrationTestResult(
+            data=data,
+            resource=resource,
+            result=result,
+            url=url,
+            path_with_replace=path_with_replace,
+        )
+
+
+def test_api_gateway_lambda_proxy_integration_with_is_base_64_encoded(apigateway_client):
+    # Test the case where `isBase64Encoded` is enabled.
+    content = b"hello, please base64 encode me"
+
+    def _mutate_data(data) -> None:
+        data["return_is_base_64_encoded"] = True
+        data["return_raw_body"] = base64.b64encode(content).decode("utf8")
+
+    test_result = _test_api_gateway_lambda_proxy_integration_no_asserts(
+        fn_name=TestAPIGateway.TEST_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
+        path=TestAPIGateway.API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
+        data_mutator_fn=_mutate_data,
+    )
+
+    # Ensure that `invoke_rest_api_integration_backend` correctly decodes the base64 content
+    assert test_result.result.status_code == 203
+    assert test_result.result.content == content
+
+
+def test_api_gateway_s3_get_integration(apigateway_client, s3_client):
+    try:
+        bucket_name = f"test-bucket-{short_uid()}"
+        apigateway_name = f"test-api-{short_uid()}"
+        object_name = "test.json"
+        object_content = '{ "success": "true" }'
+        object_content_type = "application/json"
+
+        api_id, _, root = create_rest_api(apigateway_client, name=apigateway_name)
+
+        s3_client.create_bucket(Bucket=bucket_name)
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_name,
+            Body=object_content,
+            ContentType=object_content_type,
+        )
+
+        connect_api_gateway_to_s3(bucket_name, object_name, api_id, "GET")
+        create_rest_api_deployment(apigateway_client, restApiId=api_id, stageName="test")
+
+        url = path_based_url(api_id, "test", f"/{object_name}")
+        result = requests.get(url)
+
+        assert 200 == result.status_code
+        assert object_content == result.text
+        assert object_content_type == result.headers["content-type"]
+    finally:
+        delete_rest_api(apigateway_client, restApiId=api_id)
+        s3_client.delete_object(Bucket=bucket_name, Key=object_name)
+        s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_apigw_test_invoke_method_api(apigateway_client):
+    lambda_client = aws_stack.create_external_boto_client("lambda")
+
+    # create test Lambda
+    fn_name = f"test-{short_uid()}"
+    testutil.create_lambda_function(handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name,
+        runtime=LAMBDA_RUNTIME_NODEJS12X
+    )
+    lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
+
+    # create REST API and test resource
+    api_id, _, root = create_rest_api(apigateway_client, name="test", description="test")
+    resource_id, _ = create_rest_resource(
+        apigateway_client, restApiId=api_id, parentId=root, pathPart="test"
+    )
+
+    # create method and integration
+    create_rest_resource_method(apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        authorizationType="NONE",
+    )
+    create_rest_api_integration(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        integrationHttpMethod="GET",
+        type="AWS",
+        uri="arn:aws:apigateway:{}:lambda:path//2015-03-31/functions/{}/invocations".format(
+            aws_stack.get_region(), lambda_arn_1
+        ),
+    )
+
+    # run test_invoke_method API #1
+    response = apigateway_client.test_invoke_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        pathWithQueryString="/foo",
+    )
+    assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+    assert 200 == response.get("status")
+    assert "response from" in response.get("body")
 
 
 def test_apigateway_with_lambda_integration(apigateway_client):

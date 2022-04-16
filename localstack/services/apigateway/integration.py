@@ -361,11 +361,16 @@ class RequestTemplates(Templates):
 
         request_templates = api_context.integration.get("requestTemplates", {})
         request_template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE) or APPLICATION_JSON)
-        variables = self.build_variables_mapping(api_context)
-        result = self.render_vtl(request_template, variables=variables)
+        # if there is no template we don't need to render anything, we return the incoming input
+        if not request_template:
+            return api_context.data_as_string()
+
+        result = self.render_vtl(
+            request_template, variables=self.build_variables_mapping(api_context)
+        )
 
         LOG.info(f"Endpoint request body after transformations:\n{result}")
-        return result or ""
+        return result
 
 
 class ResponseTemplates(Templates):
