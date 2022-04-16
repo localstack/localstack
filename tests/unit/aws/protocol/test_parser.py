@@ -5,7 +5,6 @@ import pytest
 from botocore.awsrequest import prepare_request_dict
 from botocore.serialize import create_serializer
 
-from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.parser import (
     OperationNotFoundParserError,
     ProtocolParserError,
@@ -14,6 +13,7 @@ from localstack.aws.protocol.parser import (
     create_parser,
 )
 from localstack.aws.spec import load_service
+from localstack.http import Request as HttpRequest
 from localstack.services.s3 import s3_utils
 from localstack.utils.common import to_bytes, to_str
 
