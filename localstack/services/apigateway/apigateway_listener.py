@@ -39,20 +39,22 @@ from localstack.services.apigateway.helpers import (
     make_error_response,
 )
 from localstack.services.apigateway.integration import (
+    HttpIntegration,
+    KinesisIntegration,
+    LambdaIntegration,
     MockIntegration,
     RequestTemplates,
     ResponseTemplates,
-    SnsIntegration,
-    VtlTemplate, HttpIntegration, LambdaIntegration, KinesisIntegration, SqsIntegration,
     S3Integration,
+    SnsIntegration,
+    SqsIntegration,
+    VtlTemplate,
 )
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses, aws_stack
-from localstack.utils.aws.aws_responses import (
-    requests_response,
-)
+from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import camel_to_snake_case, json_safe, to_str
 # set up logger
 from localstack.utils.http import add_query_params_to_url

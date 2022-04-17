@@ -6,27 +6,34 @@ import re
 from abc import ABC, abstractmethod
 from enum import Enum
 from http import HTTPStatus
-from typing import Dict, Any
+from typing import Any, Dict
 from urllib.parse import quote_plus, unquote_plus, urljoin
 
 import airspeed
 import requests
 from flask import Response as FlaskResponse
-from localstack.services.kinesis import kinesis_listener
 from requests import Response
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway import helpers
-from localstack.services.apigateway.apigateway_listener import update_content_length, \
-    apply_request_parameters, TARGET_REGEX_PATH_S3_URI, TARGET_REGEX_ACTION_S3_URI
+from localstack.services.apigateway.apigateway_listener import (
+    TARGET_REGEX_ACTION_S3_URI,
+    TARGET_REGEX_PATH_S3_URI,
+    apply_request_parameters,
+    update_content_length,
+)
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import extract_path_params, make_error_response
 from localstack.services.awslambda import lambda_api
+from localstack.services.kinesis import kinesis_listener
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import flask_to_requests_response, LambdaResponse, \
-    request_response_stream
+from localstack.utils.aws.aws_responses import (
+    LambdaResponse,
+    flask_to_requests_response,
+    request_response_stream,
+)
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.http import add_query_params_to_url
 from localstack.utils.json import extract_jsonpath, json_safe
@@ -174,10 +181,13 @@ class MockIntegration(BackendIntegration):
 
 
 class HttpIntegration(BackendIntegration):
-
     @classmethod
-    def apply_request_parameters(cls, uri: str, integration: Dict[str, Any], path_params: Dict[
-        str, str], query_params: Dict[str, str]
+    def apply_request_parameters(
+        cls,
+        uri: str,
+        integration: Dict[str, Any],
+        path_params: Dict[str, str],
+        query_params: Dict[str, str],
     ):
         request_parameters = integration.get("requestParameters")
         uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
@@ -199,15 +209,20 @@ class HttpIntegration(BackendIntegration):
         return add_query_params_to_url(uri, query_params)
 
     def invoke(self, invocation_context: ApiInvocationContext):
-        uri = invocation_context.integration.get("uri") or \
-              invocation_context.integration.get("integrationUri") or ""
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
         invocation_path = invocation_context.path_with_query_string
         relative_path, query_string_params = helpers.extract_query_string_params(
-            path=invocation_context.path_with_query_string)
+            path=invocation_context.path_with_query_string
+        )
 
         try:
-            path_params = extract_path_params(path=relative_path,
-                extracted_path=invocation_context.resource_path)
+            path_params = extract_path_params(
+                path=relative_path, extracted_path=invocation_context.resource_path
+            )
             invocation_context.path_params = path_params
         except Exception:
             path_params = {}
@@ -226,14 +241,20 @@ class HttpIntegration(BackendIntegration):
 
         if isinstance(payload, dict):
             payload = json.dumps(payload)
-        relative_path, query_string_params = helpers.extract_query_string_params(path=invocation_path)
+        relative_path, query_string_params = helpers.extract_query_string_params(
+            path=invocation_path
+        )
         uri = self.apply_request_parameters(
-            uri=uri, integration=invocation_context.integration,
+            uri=uri,
+            integration=invocation_context.integration,
             path_params=path_params,
-            query_params=query_string_params
+            query_params=query_string_params,
         )
         result = requests.request(
-            method=invocation_context.method, url=uri, data=payload, headers=invocation_context.headers
+            method=invocation_context.method,
+            url=uri,
+            data=payload,
+            headers=invocation_context.headers,
         )
         # apply custom response template
         invocation_context.response = result
@@ -242,12 +263,15 @@ class HttpIntegration(BackendIntegration):
 
 
 class LambdaIntegration(BackendIntegration):
-
     def invoke(self, invocation_context: ApiInvocationContext):
-        uri = invocation_context.integration.get("uri") or \
-              invocation_context.integration.get("integrationUri") or ""
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
         relative_path, query_string_params = helpers.extract_query_string_params(
-            path=invocation_context.path_with_query_string)
+            path=invocation_context.path_with_query_string
+        )
         api_id = invocation_context.api_id
         stage = invocation_context.stage
         headers = invocation_context.headers
@@ -261,9 +285,7 @@ class LambdaIntegration(BackendIntegration):
 
         func_arn = uri
         if ":lambda:path" in uri:
-            func_arn = (
-                uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
-            )
+            func_arn = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
 
         if invocation_context.authorizer_type:
             authorizer_context = {
@@ -296,9 +318,7 @@ class LambdaIntegration(BackendIntegration):
             response = result
         else:
             response = LambdaResponse()
-            parsed_result = (
-                result if isinstance(result, dict) else json.loads(str(result or "{}"))
-            )
+            parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
             parsed_result = common.json_safe(parsed_result)
             parsed_result = {} if parsed_result is None else parsed_result
             response.status_code = int(parsed_result.get("statusCode", 200))
@@ -329,10 +349,12 @@ class LambdaIntegration(BackendIntegration):
 
 
 class KinesisIntegration(BackendIntegration):
-
     def invoke(self, invocation_context: ApiInvocationContext):
-        uri = invocation_context.integration.get("uri") \
-              or invocation_context.integration.get("integrationUri") or ""
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
         if uri.endswith("kinesis:action/PutRecord"):
             target = kinesis_listener.ACTION_PUT_RECORD
         elif uri.endswith("kinesis:action/PutRecords"):
@@ -340,9 +362,7 @@ class KinesisIntegration(BackendIntegration):
         elif uri.endswith("kinesis:action/ListStreams"):
             target = kinesis_listener.ACTION_LIST_STREAMS
         else:
-            LOG.info(
-                f"Unexpected API Gateway integration URI '{uri}' for integration type"
-            )
+            LOG.info(f"Unexpected API Gateway integration URI '{uri}' for integration type")
             target = ""
 
         try:
@@ -369,10 +389,13 @@ class KinesisIntegration(BackendIntegration):
 
 
 class SqsIntegration(BackendIntegration):
-
     def invoke(self, invocation_context: ApiInvocationContext):
         template = invocation_context.integration["requestTemplates"][APPLICATION_JSON]
-        uri = invocation_context.integration.get("uri")  or invocation_context.integration.get("integrationUri") or ""
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
 
         account_id, queue = uri.split("/")[-2:]
         region_name = uri.split(":")[3]
@@ -387,20 +410,21 @@ class SqsIntegration(BackendIntegration):
         headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
 
         url = urljoin(config.service_url("sqs"), f"{TEST_AWS_ACCOUNT_ID}/{queue}")
-        result = common.make_http_request(
-            url, method="POST", headers=headers, data=new_request
-        )
+        result = common.make_http_request(url, method="POST", headers=headers, data=new_request)
         return result
 
 
 class S3Integration(BackendIntegration):
-
     def invoke(self, invocation_context: ApiInvocationContext):
         s3 = aws_stack.connect_to_service("s3")
-        uri = invocation_context.integration.get("uri") \
-              or invocation_context.integration.get("integrationUri") or ""
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
         relative_path, query_string_params = helpers.extract_query_string_params(
-            path=invocation_context.path_with_query_string)
+            path=invocation_context.path_with_query_string
+        )
         resource_path = invocation_context.resource_path
 
         try:
