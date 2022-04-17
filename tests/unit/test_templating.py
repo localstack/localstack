@@ -158,7 +158,7 @@ class TestMessageTransformation:
         variables = {"input": {"body": data}}
         result = velocity_template.render_vtl(template, variables).strip()
         result = json.loads(result)
-        assert result == {'p0': True, 'p1': {'test': '123'}, 'p2': {'foo': 'bar', 'foo2': 'false'}}
+        assert result == {"p0": True, "p1": {"test": "123"}, "p2": {"foo": "bar", "foo2": "false"}}
 
     def test_keyset_functions(self, velocity_template):
         template = "#set($list = $input.path('$..var1[1]').keySet()) #foreach($e in $list)$e#end"

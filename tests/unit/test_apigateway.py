@@ -194,12 +194,12 @@ def test_render_template_values():
     assert decoded == "x=a b"
 
     escape_tests = (
-        ("it's", "it\'s"),
+        ("it's", "it's"),
         ("0010", "10"),
         ("true", "true"),
         ("True", "True"),
         ("1.021", "1.021"),
-        ("'''", "\'\'\'"),
+        ("'''", "'''"),
         ('""', '""'),
         ('"""', '\\"\\"\\"'),
         ('{"foo": 123}', '{"foo": 123}'),
