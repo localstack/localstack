@@ -978,6 +978,20 @@ class TestDynamoDB:
 
         assert result.get("UnprocessedItems") == {}
 
+    def test_dynamodb_pay_per_request(self):
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        table_name = "ddb-table-%s" % short_uid()
+
+        with pytest.raises(Exception) as e:
+            dynamodb.create_table(
+                TableName=table_name,
+                KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+                AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+                ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+                BillingMode="PAY_PER_REQUEST",
+            )
+        assert e.match("ValidationException")
+
     def test_dynamodb_create_table_with_sse_specification(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         table_name = "ddb-table-%s" % short_uid()
