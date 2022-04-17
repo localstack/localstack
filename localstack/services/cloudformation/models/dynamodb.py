@@ -9,6 +9,9 @@ def get_ddb_provisioned_throughput(params, **kwargs):
     args = params.get("ProvisionedThroughput")
     if args == PLACEHOLDER_AWS_NO_VALUE:
         return {}
+    is_ondemand = params.get("BillingMode") == "PAY_PER_REQUEST"
+    if is_ondemand and args is None:
+        return
     if args:
         if isinstance(args["ReadCapacityUnits"], str):
             args["ReadCapacityUnits"] = int(args["ReadCapacityUnits"])
@@ -64,6 +67,15 @@ class DynamoDBTable(GenericBaseModel):
         table_name = self.resolve_refs_recursively(stack_name, table_name, resources)
         return aws_stack.connect_to_service("dynamodb").describe_table(TableName=table_name)
 
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        is_pay_per_request = resource.get("Properties", {}).get("BillingMode") == "PAY_PER_REQUEST"
+        if not is_pay_per_request:
+            resource["Properties"]["ProvisionedThroughput"] = {
+                "ReadCapacityUnits": 5,
+                "WriteCapacityUnits": 5,
+            }
+
     @classmethod
     def get_deploy_templates(cls):
         def _pre_create(resource_id, resources, resource_type, func, stack_name):
@@ -95,12 +107,6 @@ class DynamoDBTable(GenericBaseModel):
                                 default=None,
                             )
                         ),
-                    },
-                    "defaults": {
-                        "ProvisionedThroughput": {
-                            "ReadCapacityUnits": 5,
-                            "WriteCapacityUnits": 5,
-                        }
                     },
                 },
                 {
