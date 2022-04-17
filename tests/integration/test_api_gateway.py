@@ -1771,7 +1771,7 @@ def test_mock_integration_empty_response(apigateway_client):
     response = requests.get(url)
 
     assert response.status_code == 200
-    assert response.headers["Content-Type"] == "application/json"
+    assert response.headers["Content-Type"] == "text/html; charset=utf-8"
     assert to_str(response._content) == ""
 
     delete_rest_api(apigateway_client, restApiId=api_id)
