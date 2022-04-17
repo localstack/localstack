@@ -107,7 +107,6 @@ class SnsIntegration(BackendIntegration):
 
 
 class MockIntegration(BackendIntegration):
-
     @classmethod
     def evaluate_passthrough_behavior(cls, passthrough_behavior: str, request_template: str):
         return MappingTemplates(passthrough_behavior).request_body_passthrough(request_template)
@@ -360,7 +359,9 @@ class RequestTemplates(Templates):
         )
 
         request_templates = api_context.integration.get("requestTemplates", {})
-        request_template = request_templates.get(api_context.headers.get(HEADER_CONTENT_TYPE) or APPLICATION_JSON)
+        request_template = request_templates.get(
+            api_context.headers.get(HEADER_CONTENT_TYPE) or APPLICATION_JSON
+        )
         # if there is no template we don't need to render anything, we return the incoming input
         if not request_template:
             return api_context.data_as_string()
