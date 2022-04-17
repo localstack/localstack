@@ -34,8 +34,8 @@ APIGW_TEMPLATE_CONSTRUCT_JSON = """
 {
     #foreach($key in $map.keySet())
         #set( $k = $util.escapeJavaScript($key) )
-        #set( $v = $util.escapeJavaScript($map.get($key)).replaceAll("\\\\'", "'") )
-        $k: $v
+        #set( $v = $util.escapeJavaScript($map.get($key)).replaceAll("\'", "'") )
+        "$k":"$v"
         #if( $foreach.hasNext ) , #end
     #end
 }
@@ -47,40 +47,40 @@ APIGW_TEMPLATE_CONSTRUCT_JSON = """
 }
 """
 
-APIGW_TEMPLATE_CUSTOM_BODY = """
-#set( $body = $input.json("$") )
-
-#define( $loop )
-{
-    #foreach($key in $map.keySet())
-        #set( $k = $util.escapeJavaScript($key) )
-        #set( $v = $util.escapeJavaScript($map.get($key)).replaceAll("\\'", "'") )
-        "$k": "$v"
-        #if( $foreach.hasNext ) , #end
-    #end
-}
-#end
-
-  {
-    #set( $map = $context.authorizer )
-    "enhancedAuthContext": $loop,
-
-    #set( $map = $input.params().header )
-    "headers": $loop,
-
-    #set( $map = $input.params().querystring )
-    "query": $loop,
-
-    #set( $map = $input.params().path )
-    "path": $loop,
-
-    #set( $map = $context.identity )
-    "identity": $loop,
-
-    #set( $map = $stageVariables )
-    "stageVariables": $loop,
-}
-"""
+# APIGW_TEMPLATE_CUSTOM_BODY = """
+# #set( $body = $input.json("$") )
+#
+# #define( $loop )
+# {
+#     #foreach($key in $map.keySet())
+#         #set( $k = $util.escapeJavaScript($key) )
+#         #set( $v = $util.escapeJavaScript($map.get($key)).replaceAll("\\'", "'") )
+#         "$k": "$v"
+#         #if( $foreach.hasNext ) , #end
+#     #end
+# }
+# #end
+#
+#   {
+#     #set( $map = $context.authorizer )
+#     "enhancedAuthContext": $loop,
+#
+#     #set( $map = $input.params().header )
+#     "headers": $loop,
+#
+#     #set( $map = $input.params().querystring )
+#     "query": $loop,
+#
+#     #set( $map = $input.params().path )
+#     "path": $loop,
+#
+#     #set( $map = $context.identity )
+#     "identity": $loop,
+#
+#     #set( $map = $stageVariables )
+#     "stageVariables": $loop,
+# }
+# """
 
 
 @pytest.fixture
@@ -158,7 +158,7 @@ class TestMessageTransformation:
         variables = {"input": {"body": data}}
         result = velocity_template.render_vtl(template, variables).strip()
         result = json.loads(result)
-        assert result == {"p0": True, **data}
+        assert result == {'p0': True, 'p1': {'test': '123'}, 'p2': {'foo': 'bar', 'foo2': 'false'}}
 
     def test_keyset_functions(self, velocity_template):
         template = "#set($list = $input.path('$..var1[1]').keySet()) #foreach($e in $list)$e#end"
