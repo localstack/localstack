@@ -388,10 +388,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if self.table_exists(table_name):
             raise ResourceInUseException("Cannot create preexisting table")
         billing_mode = create_table_input.get("BillingMode")
-        if (
-            billing_mode == BillingMode.PAY_PER_REQUEST
-            and create_table_input.get("ProvisionedThroughput", None) is not None
-        ):
+        provisioned_throughput = create_table_input.get("ProvisionedThroughput")
+        if billing_mode == BillingMode.PAY_PER_REQUEST and provisioned_throughput is not None:
             raise ValidationException(
                 "One or more parameter values were invalid: Neither ReadCapacityUnits nor WriteCapacityUnits can be "
                 "specified when BillingMode is PAY_PER_REQUEST"
