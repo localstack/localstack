@@ -18,8 +18,6 @@ from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.apigateway_listener import (
-    TARGET_REGEX_ACTION_S3_URI,
-    TARGET_REGEX_PATH_S3_URI,
     apply_request_parameters,
     update_content_length,
 )
@@ -42,6 +40,12 @@ from localstack.utils.objects import recurse_object
 from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
+
+# target ARN patterns
+TARGET_REGEX_PATH_S3_URI = (
+    r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
+)
+TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
 
 
 class PassthroughBehavior(Enum):
@@ -415,8 +419,11 @@ class SqsIntegration(BackendIntegration):
 
 
 class S3Integration(BackendIntegration):
+    def __init__(self):
+        super().__init__()
+        self.s3 = aws_stack.connect_to_service("s3")
+
     def invoke(self, invocation_context: ApiInvocationContext):
-        s3 = aws_stack.connect_to_service("s3")
         uri = (
             invocation_context.integration.get("uri")
             or invocation_context.integration.get("integrationUri")
@@ -439,31 +446,32 @@ class S3Integration(BackendIntegration):
             path_params=path_params,
             query_params=query_string_params,
         )
-        uri_match = re.match(TARGET_REGEX_PATH_S3_URI, uri) or re.match(
+
+        if uri_match := re.match(TARGET_REGEX_PATH_S3_URI, uri) or re.match(
             TARGET_REGEX_ACTION_S3_URI, uri
-        )
-        if uri_match:
-            bucket, object_key = uri_match.group("bucket", "object")
-            LOG.debug("Getting request for bucket %s object %s", bucket, object_key)
-            try:
-                object = s3.get_object(Bucket=bucket, Key=object_key)
-            except s3.exceptions.NoSuchKey:
-                msg = "Object %s not found" % object_key
-                LOG.debug(msg)
-                return make_error_response(msg, 404)
+        ):
+            return self._get_s3_object(uri_match)
 
-            headers = aws_stack.mock_aws_request_headers(service="s3")
+        msg = "Request URI does not match s3 specifications"
+        LOG.warning(msg)
+        return make_error_response(msg, 400)
 
-            if object.get("ContentType"):
-                headers["Content-Type"] = object["ContentType"]
+    def _get_s3_object(self, uri_match):
+        bucket, object_key = uri_match.group("bucket", "object")
+        LOG.debug("Getting request for bucket %s object %s", bucket, object_key)
+        try:
+            object = self.s3.get_object(Bucket=bucket, Key=object_key)
+        except self.s3.exceptions.NoSuchKey:
+            msg = f"Object {object_key} not found"
+            LOG.debug(msg)
+            return make_error_response(msg, 404)
 
-            # stream used so large files do not fill memory
-            response = request_response_stream(stream=object["Body"], headers=headers)
-            return response
-        else:
-            msg = "Request URI does not match s3 specifications"
-            LOG.warning(msg)
-            return make_error_response(msg, 400)
+        headers = aws_stack.mock_aws_request_headers(service="s3")
+
+        if object.get("ContentType"):
+            headers["Content-Type"] = object["ContentType"]
+
+        return request_response_stream(stream=object["Body"], headers=headers)
 
 
 class VelocityUtil(object):
