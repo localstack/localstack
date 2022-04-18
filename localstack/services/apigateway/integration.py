@@ -460,7 +460,7 @@ class S3Integration(BackendIntegration):
         bucket, object_key = uri_match.group("bucket", "object")
         LOG.debug("Getting request for bucket %s object %s", bucket, object_key)
         try:
-            object = self.s3.get_object(Bucket=bucket, Key=object_key)
+            s3_object = self.s3.get_object(Bucket=bucket, Key=object_key)
         except self.s3.exceptions.NoSuchKey:
             msg = f"Object {object_key} not found"
             LOG.debug(msg)
@@ -468,10 +468,10 @@ class S3Integration(BackendIntegration):
 
         headers = aws_stack.mock_aws_request_headers(service="s3")
 
-        if object.get("ContentType"):
-            headers["Content-Type"] = object["ContentType"]
+        if s3_object.get("ContentType"):
+            headers["Content-Type"] = s3_object["ContentType"]
 
-        return request_response_stream(stream=object["Body"], headers=headers)
+        return request_response_stream(stream=s3_object["Body"], headers=headers)
 
 
 class VelocityUtil(object):
