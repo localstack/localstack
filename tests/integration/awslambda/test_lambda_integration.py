@@ -246,88 +246,84 @@ class TestDynamoDBEventSourceMapping:
         logs_client,
         check_lambda_logs,
     ):
-        try:
-            function_name = f"lambda_func-{short_uid()}"
-            role = f"test-lambda-role-{short_uid()}"
-            policy_name = f"test-lambda-policy-{short_uid()}"
-            role_arn = create_iam_role_with_policy(
-                RoleName=role,
-                PolicyName=policy_name,
-                RoleDefinition=lambda_role,
-                PolicyDefinition=s3_lambda_permission,
+        function_name = f"lambda_func-{short_uid()}"
+        role = f"test-lambda-role-{short_uid()}"
+        policy_name = f"test-lambda-policy-{short_uid()}"
+        role_arn = create_iam_role_with_policy(
+            RoleName=role,
+            PolicyName=policy_name,
+            RoleDefinition=lambda_role,
+            PolicyDefinition=s3_lambda_permission,
+        )
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=role_arn,
+        )
+
+        # test destination-config for create_event_source_mapping
+        table_name = f"test-table-{short_uid()}"
+
+        partition_key = "my_partition_key"
+        result = dynamodb_create_table(table_name=table_name, partition_key=partition_key)
+
+        status = result["TableDescription"]["TableStatus"]
+        # wait for status "ACTIVE"
+        if status != "ACTIVE":
+            retry(
+                _check_table_active,
+                retries=6,
+                sleep=1.0,
+                sleep_before=2.0,
+                dynamodb_client=dynamodb_client,
+                table_name=table_name,
             )
 
-            create_lambda_function(
-                handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                func_name=function_name,
-                runtime=LAMBDA_RUNTIME_PYTHON37,
-                role=role_arn,
+        # activate stream
+        result = dynamodb_client.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )
+        stream_arn = result["TableDescription"]["LatestStreamArn"]
+
+        result = lambda_client.create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=1,
+            StartingPosition="LATEST",
+            EventSourceArn=stream_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+        )
+        time.sleep(2)
+        event_source_mapping_uuid = result["UUID"]
+        event_source_mapping_state = result["State"]
+        if event_source_mapping_state != "Enabled":
+            retry(
+                _check_mapping_state,
+                retries=6,
+                sleep_before=2.0,
+                sleep=1.0,
+                lambda_client=lambda_client,
+                uuid=event_source_mapping_uuid,
             )
 
-            # test destination-config for create_event_source_mapping
-            table_name = f"test-table-{short_uid()}"
+        insert = {partition_key: {"S": "hello world"}}
+        dynamodb_client.put_item(TableName=table_name, Item=insert)
 
-            partition_key = "my_partition_key"
-            result = dynamodb_create_table(table_name=table_name, partition_key=partition_key)
+        def check_logs():
+            # assert that logs are present
+            expected = [
+                r'.*"Records":.*',
+                r'.*"dynamodb": {(.*)}.*',
+                r'.*"eventSource": ("aws:dynamodb").*',
+                r'.*"eventName": ("INSERT").*',
+                r'.*"Keys": {("my_partition_key": {"S": "hello world"})}.*',
+            ]
+            check_lambda_logs(function_name, expected_lines=expected)
 
-            status = result["TableDescription"]["TableStatus"]
-            # wait for status "ACTIVE"
-            if status != "ACTIVE":
-                retry(
-                    _check_table_active,
-                    retries=6,
-                    sleep=1.0,
-                    sleep_before=2.0,
-                    dynamodb_client=dynamodb_client,
-                    table_name=table_name,
-                )
-
-            # activate stream
-            result = dynamodb_client.update_table(
-                TableName=table_name,
-                StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
-            )
-            stream_arn = result["TableDescription"]["LatestStreamArn"]
-
-            result = lambda_client.create_event_source_mapping(
-                FunctionName=function_name,
-                BatchSize=1,
-                StartingPosition="LATEST",
-                EventSourceArn=stream_arn,
-                MaximumBatchingWindowInSeconds=1,
-                MaximumRetryAttempts=1,
-            )
-            time.sleep(2)
-            event_source_mapping_uuid = result["UUID"]
-            event_source_mapping_state = result["State"]
-            if event_source_mapping_state != "Enabled":
-                retry(
-                    _check_mapping_state,
-                    retries=6,
-                    sleep_before=2.0,
-                    sleep=1.0,
-                    lambda_client=lambda_client,
-                    uuid=event_source_mapping_uuid,
-                )
-
-            insert = {partition_key: {"S": "hello world"}}
-            dynamodb_client.put_item(TableName=table_name, Item=insert)
-
-            def check_logs():
-                # assert that logs are present
-                expected = [
-                    r'.*"Records":.*',
-                    r'.*"dynamodb": {(.*)}.*',
-                    r'.*"eventSource": ("aws:dynamodb").*',
-                    r'.*"eventName": ("INSERT").*',
-                    r'.*"Keys": {("my_partition_key": {"S": "hello world"})}.*',
-                ]
-                check_lambda_logs(function_name, expected_lines=expected)
-
-            retry(check_logs, retries=50, sleep=2)
-
-        finally:
-            lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+        retry(check_logs, retries=50, sleep=2)
 
     def test_disabled_dynamodb_event_source_mapping(
         self,
@@ -458,93 +454,87 @@ class TestDynamoDBEventSourceMapping:
         dynamodb_client,
         dynamodb_create_table,
     ):
-        try:
-            function_name = f"lambda_func-{short_uid()}"
-            role = f"test-lambda-role-{short_uid()}"
-            policy_name = f"test-lambda-policy-{short_uid()}"
-            role_arn = create_iam_role_with_policy(
-                RoleName=role,
-                PolicyName=policy_name,
-                RoleDefinition=lambda_role,
-                PolicyDefinition=s3_lambda_permission,
+        function_name = f"lambda_func-{short_uid()}"
+        role = f"test-lambda-role-{short_uid()}"
+        policy_name = f"test-lambda-policy-{short_uid()}"
+        role_arn = create_iam_role_with_policy(
+            RoleName=role,
+            PolicyName=policy_name,
+            RoleDefinition=lambda_role,
+            PolicyDefinition=s3_lambda_permission,
+        )
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=role_arn,
+        )
+
+        # test destination-config for create_event_source_mapping
+        table_name = f"test-table-{short_uid()}"
+
+        partition_key = "my_partition_key"
+        result = dynamodb_create_table(table_name=table_name, partition_key=partition_key)
+
+        status = result["TableDescription"]["TableStatus"]
+        # wait for status "ACTIVE"
+        if status != "ACTIVE":
+            retry(
+                _check_table_active,
+                retries=6,
+                sleep=1.0,
+                sleep_before=2.0,
+                dynamodb_client=dynamodb_client,
+                table_name=table_name,
             )
 
-            create_lambda_function(
-                handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
-                func_name=function_name,
-                runtime=LAMBDA_RUNTIME_PYTHON37,
-                role=role_arn,
+        # activate stream
+        result = dynamodb_client.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )
+        stream_arn = result["TableDescription"]["LatestStreamArn"]
+        queue_event_source_mapping = sqs_create_queue()
+        queue_failure_event_source_mapping_arn = sqs_queue_arn(queue_event_source_mapping)
+        destination_config = {"OnFailure": {"Destination": queue_failure_event_source_mapping_arn}}
+
+        result = lambda_client.create_event_source_mapping(
+            FunctionName=function_name,
+            BatchSize=1,
+            StartingPosition="LATEST",
+            EventSourceArn=stream_arn,
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+            DestinationConfig=destination_config,
+        )
+        time.sleep(2)
+
+        event_source_mapping_uuid = result["UUID"]
+        event_source_mapping_state = result["State"]
+        if event_source_mapping_state != "Enabled":
+            retry(
+                _check_mapping_state,
+                retries=6,
+                sleep_before=2.0,
+                sleep=1.0,
+                lambda_client=lambda_client,
+                uuid=event_source_mapping_uuid,
             )
 
-            # test destination-config for create_event_source_mapping
-            table_name = f"test-table-{short_uid()}"
+        insert = {partition_key: {"S": "hello world"}}
 
-            partition_key = "my_partition_key"
-            result = dynamodb_create_table(table_name=table_name, partition_key=partition_key)
+        dynamodb_client.put_item(TableName=table_name, Item=insert)
 
-            status = result["TableDescription"]["TableStatus"]
-            # wait for status "ACTIVE"
-            if status != "ACTIVE":
-                retry(
-                    _check_table_active,
-                    retries=6,
-                    sleep=1.0,
-                    sleep_before=2.0,
-                    dynamodb_client=dynamodb_client,
-                    table_name=table_name,
-                )
+        def verify_failure_received():
+            res = sqs_client.receive_message(QueueUrl=queue_event_source_mapping)
+            msg = res["Messages"][0]
+            body = json.loads(msg["Body"])
+            assert body["requestContext"]["condition"] == "RetryAttemptsExhausted"
+            assert body["DDBStreamBatchInfo"]["batchSize"] == 1
+            assert body["DDBStreamBatchInfo"]["streamArn"] in stream_arn
 
-            # activate stream
-            result = dynamodb_client.update_table(
-                TableName=table_name,
-                StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
-            )
-            stream_arn = result["TableDescription"]["LatestStreamArn"]
-            queue_event_source_mapping = sqs_create_queue()
-            queue_failure_event_source_mapping_arn = sqs_queue_arn(queue_event_source_mapping)
-            destination_config = {
-                "OnFailure": {"Destination": queue_failure_event_source_mapping_arn}
-            }
-
-            result = lambda_client.create_event_source_mapping(
-                FunctionName=function_name,
-                BatchSize=1,
-                StartingPosition="LATEST",
-                EventSourceArn=stream_arn,
-                MaximumBatchingWindowInSeconds=1,
-                MaximumRetryAttempts=1,
-                DestinationConfig=destination_config,
-            )
-            time.sleep(2)
-
-            event_source_mapping_uuid = result["UUID"]
-            event_source_mapping_state = result["State"]
-            if event_source_mapping_state != "Enabled":
-                retry(
-                    _check_mapping_state,
-                    retries=6,
-                    sleep_before=2.0,
-                    sleep=1.0,
-                    lambda_client=lambda_client,
-                    uuid=event_source_mapping_uuid,
-                )
-
-            insert = {partition_key: {"S": "hello world"}}
-
-            dynamodb_client.put_item(TableName=table_name, Item=insert)
-
-            def verify_failure_received():
-                res = sqs_client.receive_message(QueueUrl=queue_event_source_mapping)
-                msg = res["Messages"][0]
-                body = json.loads(msg["Body"])
-                assert body["requestContext"]["condition"] == "RetryAttemptsExhausted"
-                assert body["DDBStreamBatchInfo"]["batchSize"] == 1
-                assert body["DDBStreamBatchInfo"]["streamArn"] in stream_arn
-
-            retry(verify_failure_received, retries=5, sleep=5, sleep_before=5)
-
-        finally:
-            lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+        retry(verify_failure_received, retries=5, sleep=5, sleep_before=5)
 
 
 class TestLambdaHttpInvocation:

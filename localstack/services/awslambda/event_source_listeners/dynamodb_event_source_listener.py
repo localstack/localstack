@@ -1,4 +1,5 @@
-from typing import Any, Dict, List
+import datetime
+from typing import Any, Dict, List, Optional
 
 from localstack.services.awslambda.event_source_listeners.stream_event_source_listener import (
     StreamEventSourceListener,
@@ -12,7 +13,7 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
     _FAILURE_PAYLOAD_DETAILS_FIELD_NAME = "DDBStreamBatchInfo"
 
     @staticmethod
-    def source_type() -> str:
+    def source_type() -> Optional[str]:
         return "dynamodb"
 
     def _get_matching_event_sources(self) -> List[Dict]:
@@ -22,7 +23,15 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
     def _get_stream_client(self, region_name):
         return aws_stack.connect_to_service("dynamodbstreams", region_name=region_name)
 
-    def _create_lambda_event_payload(self, stream_arn, records):
+    def _get_stream_description(self, stream_client, stream_arn):
+        return stream_client.describe_stream(StreamArn=stream_arn)["StreamDescription"]
+
+    def _get_shard_iterator(self, stream_client, stream_arn, shard_id, iterator_type):
+        return stream_client.get_shard_iterator(
+            StreamArn=stream_arn, ShardId=shard_id, ShardIteratorType=iterator_type
+        )["ShardIterator"]
+
+    def _create_lambda_event_payload(self, stream_arn, records, shard_id=None):
         record_payloads = []
         for record in records:
             record_payload = {}
@@ -47,6 +56,15 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
                 }
             )
         return {"Records": record_payloads}
+
+    def _get_starting_and_ending_sequence_numbers(self, first_record, last_record):
+        return first_record["dynamodb"]["SequenceNumber"], last_record["dynamodb"]["SequenceNumber"]
+
+    def _get_first_and_last_arrival_time(self, first_record, last_record):
+        return (
+            first_record.get("ApproximateArrivalTimestamp", datetime.datetime.utcnow()),
+            last_record.get("ApproximateArrivalTimestamp", datetime.datetime.utcnow()),
+        )
 
     def process_event(self, event: Any):
         raise NotImplementedError

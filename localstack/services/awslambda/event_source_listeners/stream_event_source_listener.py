@@ -1,4 +1,3 @@
-import datetime
 import math
 import threading
 import time
@@ -27,9 +26,9 @@ class StreamEventSourceListener(EventSourceListener):
     _FAILURE_PAYLOAD_DETAILS_FIELD_NAME = ""  # To be defined by inheriting classes
 
     @staticmethod
-    def source_type() -> str:
+    def source_type() -> Optional[str]:
         # to be implemented by inheriting classes
-        raise NotImplementedError
+        return None
 
     def _get_matching_event_sources(self) -> List[Dict]:
         # to be implemented by inheriting classes
@@ -39,18 +38,25 @@ class StreamEventSourceListener(EventSourceListener):
         # to be implemented by inheriting classes
         raise NotImplementedError
 
-    def _create_lambda_event_payload(self, stream_arn, records):
+    def _get_stream_description(self, stream_client, stream_arn):
+        # to be implemented by inheriting classes
+        raise NotImplementedError
+
+    def _get_shard_iterator(self, stream_client, stream_arn, shard_id, iterator_type):
+        # to be implemented by inheriting classes
+        raise NotImplementedError
+
+    def _create_lambda_event_payload(self, stream_arn, records, shard_id=None):
         # to be implemented by inheriting classes
         raise NotImplementedError
 
     def _get_starting_and_ending_sequence_numbers(self, first_record, last_record):
-        return first_record["dynamodb"]["SequenceNumber"], last_record["dynamodb"]["SequenceNumber"]
+        # to be implemented by inheriting classes
+        raise NotImplementedError
 
     def _get_first_and_last_arrival_time(self, first_record, last_record):
-        return (
-            first_record.get("ApproximateArrivalTimestamp", datetime.datetime.utcnow()),
-            last_record.get("ApproximateArrivalTimestamp", datetime.datetime.utcnow()),
-        )
+        # to be implemented by inheriting classes
+        raise NotImplementedError
 
     def process_event(self, event: Any):
         # to be (optionally) implemented by inheriting classes
@@ -107,7 +113,7 @@ class StreamEventSourceListener(EventSourceListener):
             records = records_response.get("Records")
             should_get_next_batch = True
             if records:
-                payload = self._create_lambda_event_payload(stream_arn, records)
+                payload = self._create_lambda_event_payload(stream_arn, records, shard_id=shard_id)
                 is_invocation_successful, status_code = self._invoke_lambda(
                     function_arn, payload, lock_discriminator, parallelization_factor
                 )
@@ -218,9 +224,7 @@ class StreamEventSourceListener(EventSourceListener):
                     max_num_retries = source.get("MaximumRetryAttempts", -1)
                     if max_num_retries < 0:
                         max_num_retries = math.inf
-                    stream_description = stream_client.describe_stream(StreamArn=stream_arn)[
-                        "StreamDescription"
-                    ]
+                    stream_description = self._get_stream_description(stream_client, stream_arn)
                     if stream_description["StreamStatus"] not in {"ENABLED", "ACTIVE"}:
                         continue
                     shard_ids = [shard["ShardId"] for shard in stream_description["Shards"]]
@@ -229,11 +233,12 @@ class StreamEventSourceListener(EventSourceListener):
                         lock_discriminator = f"{stream_arn}/{shard_id}"
                         mapped_shard_ids.add(lock_discriminator)
                         if lock_discriminator not in self._STREAM_LISTENER_THREADS:
-                            shard_iterator = stream_client.get_shard_iterator(
-                                StreamArn=stream_arn,
-                                ShardId=shard_id,
-                                ShardIteratorType=source["StartingPosition"],
-                            )["ShardIterator"]
+                            shard_iterator = self._get_shard_iterator(
+                                stream_client,
+                                stream_arn,
+                                shard_id,
+                                source["StartingPosition"],
+                            )
                             listener_thread = FuncThread(
                                 self._listen_to_shard_and_invoke_lambda,
                                 {
