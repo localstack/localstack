@@ -17,7 +17,7 @@ from localstack.utils.common import first_char_to_lower, long_uid, timestamp_mil
 from localstack.utils.threads import FuncThread
 
 
-class EventSourceListenerKinesis(EventSourceListener):
+class KinesisEventSourceListener(EventSourceListener):
     # Kinesis listener thread settings
     COORDINATOR_THREAD: Optional[
         FuncThread

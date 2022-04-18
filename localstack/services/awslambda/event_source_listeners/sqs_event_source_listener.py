@@ -16,7 +16,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.threads import FuncThread
 
 
-class EventSourceListenerSQS(EventSourceListener):
+class SQSEventSourceListener(EventSourceListener):
     # SQS listener thread settings
     SQS_LISTENER_THREAD: Dict = {}
     SQS_POLL_INTERVAL_SEC: float = 1

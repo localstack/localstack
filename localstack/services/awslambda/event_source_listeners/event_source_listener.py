@@ -25,9 +25,9 @@ class EventSourceListener(SubtypesInstanceManager):
         # force import EventSourceListener subclasses
         # otherwise they will not be detected by EventSourceListener.get(service_type)
         from . import (
-            event_source_listener_dynamodb,
-            event_source_listener_kinesis,
-            event_source_listener_sqs,
+            dynamodb_event_source_listener,
+            kinesis_event_source_listener,
+            sqs_event_source_listener,
         )
 
         source_arn = event_source_mapping.get("EventSourceArn") or ""

@@ -17,7 +17,7 @@ from localstack.utils.common import first_char_to_lower, long_uid, timestamp_mil
 from localstack.utils.threads import FuncThread
 
 
-class EventSourceListenerDynamoDB(EventSourceListener):
+class DynamoDBEventSourceListener(EventSourceListener):
     # DynamoDB listener thread settings
     COORDINATOR_THREAD: Optional[
         FuncThread
@@ -259,13 +259,10 @@ class EventSourceListenerDynamoDB(EventSourceListener):
                             listener_thread.start()
 
                 # stop any lambda threads that are listening to a previously defined event source that no longer exists
-                # TODO: deal with dict size changing during iteration error
                 orphaned_threads = set(self.DYNAMODB_LISTENER_THREADS.keys()) - mapped_shard_ids
                 for thread_id in orphaned_threads:
                     self.DYNAMODB_LISTENER_THREADS.pop(thread_id)
 
             except Exception as e:
-                # TODO
                 LOG.error(e)
-
             time.sleep(self.DYNAMODB_POLL_INTERVAL_SEC)
