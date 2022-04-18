@@ -392,6 +392,32 @@ class TestDynamoDB:
         finally:
             dynamodb_client.delete_table(TableName=table_name)
 
+    def test_more_than_20_global_secondary_indexes(self, dynamodb, dynamodb_client):
+        table_name = f"test-table-{short_uid()}"
+        num_gsis = 25
+        attrs = [{"AttributeName": f"a{i}", "AttributeType": "S"} for i in range(num_gsis)]
+        gsis = [
+            {
+                "IndexName": f"gsi_{i}",
+                "KeySchema": [{"AttributeName": f"a{i}", "KeyType": "HASH"}],
+                "Projection": {"ProjectionType": "ALL"},
+            }
+            for i in range(num_gsis)
+        ]
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}, *attrs],
+            GlobalSecondaryIndexes=gsis,
+            BillingMode="PAY_PER_REQUEST",
+        )
+
+        table = dynamodb_client.describe_table(TableName=table_name)
+        assert len(table["Table"]["GlobalSecondaryIndexes"]) == num_gsis
+
+        # clean up
+        delete_table(table_name)
+
     def test_return_values_in_put_item(self, dynamodb):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
