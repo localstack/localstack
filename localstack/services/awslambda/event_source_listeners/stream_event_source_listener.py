@@ -1,7 +1,7 @@
 import math
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from localstack import config
 from localstack.services.awslambda import lambda_executors
@@ -16,6 +16,15 @@ from localstack.utils.threads import FuncThread
 
 
 class StreamEventSourceListener(EventSourceListener):
+    """
+    Abstract class for listening to streams associated with event source mappings, batching data from those streams,
+    and invoking the appropriate Lambda functions with those data batches.
+    Because DynamoDB Streams and Kinesis Streams have similar but different APIs, this abstract class is useful for
+    reducing repeated code. The various methods that must be implemented by inheriting subclasses essentially wrap
+    client API methods or middleware-style operations on data payloads to compensate for the minor differences between
+    these two services.
+    """
+
     _COORDINATOR_THREAD: Optional[
         FuncThread
     ] = None  # Thread for monitoring state of event source mappings
@@ -26,51 +35,98 @@ class StreamEventSourceListener(EventSourceListener):
     _FAILURE_PAYLOAD_DETAILS_FIELD_NAME = ""  # To be defined by inheriting classes
 
     @staticmethod
-    def source_type() -> Optional[str]:
+    def get_source_type() -> Optional[str]:
+        """
+        to be implemented by subclasses
+        :returns: The type of event source this listener is associated with
+        """
         # to be implemented by inheriting classes
         return None
 
     def _get_matching_event_sources(self) -> List[Dict]:
-        # to be implemented by inheriting classes
+        """
+        to be implemented by subclasses
+        :returns: A list of active Event Source Mapping objects (as dicts) that match the listener type
+        """
         raise NotImplementedError
 
     def _get_stream_client(self, region_name: str):
-        # to be implemented by inheriting classes
+        """
+        to be implemented by subclasses
+        :returns: An AWS service client instance for communicating with the appropriate API
+        """
         raise NotImplementedError
 
     def _get_stream_description(self, stream_client, stream_arn):
-        # to be implemented by inheriting classes
+        """
+        to be implemented by subclasses
+        :returns: The stream description object returned by the client's describe_stream method
+        """
         raise NotImplementedError
 
     def _get_shard_iterator(self, stream_client, stream_arn, shard_id, iterator_type):
-        # to be implemented by inheriting classes
+        """
+        to be implemented by subclasses
+        :returns: The shard iterator object returned by the client's get_shard_iterator method
+        """
         raise NotImplementedError
 
-    def _create_lambda_event_payload(self, stream_arn, records, shard_id=None):
-        # to be implemented by inheriting classes
+    def _create_lambda_event_payload(
+        self, stream_arn: str, records: List[Dict], shard_id: Optional[str] = None
+    ) -> Dict:
+        """
+        to be implemented by subclasses
+        Get an event payload for invoking a Lambda function using the given records and stream metadata
+        :param stream_arn: ARN of the event source stream
+        :param records: Batch of records to include in the payload, obtained from the source stream
+        :param shard_id: ID of the shard the records came from. This is only needed for Kinesis event payloads.
+        :returns: An event payload suitable for invoking a Lambda function
+        """
         raise NotImplementedError
 
-    def _get_starting_and_ending_sequence_numbers(self, first_record, last_record):
-        # to be implemented by inheriting classes
+    def _get_starting_and_ending_sequence_numbers(
+        self, first_record: Dict, last_record: Dict
+    ) -> Tuple[str, str]:
+        """
+        to be implemented by subclasses
+        :returns: the SequenceNumber field values from the given records
+        """
         raise NotImplementedError
 
-    def _get_first_and_last_arrival_time(self, first_record, last_record):
-        # to be implemented by inheriting classes
+    def _get_first_and_last_arrival_time(
+        self, first_record: Dict, last_record: Dict
+    ) -> Tuple[str, str]:
+        """
+        to be implemented by subclasses
+        :returns: the times the given records were created/entered the source stream
+        """
         raise NotImplementedError
 
     def process_event(self, event: Any):
-        # to be (optionally) implemented by inheriting classes
+        """
+        to be (optionally) implemented by inheriting classes
+        Process the given event (for reactive mode)
+        """
         raise NotImplementedError
 
     def start(self):
+        """
+        Spawn coordinator thread for listening to relevant new/removed event source mappings
+        """
         if self._COORDINATOR_THREAD is not None:
             return
 
-        LOG.debug(f"Starting {self.source_type()} event source listener coordinator thread")
+        LOG.debug(f"Starting {self.get_source_type()} event source listener coordinator thread")
         self._COORDINATOR_THREAD = FuncThread(self._monitor_stream_event_sources)
         self._COORDINATOR_THREAD.start()
 
-    def _invoke_lambda(self, function_arn, payload, lock_discriminator, parallelization_factor):
+    def _invoke_lambda(
+        self, function_arn, payload, lock_discriminator, parallelization_factor
+    ) -> Tuple[bool, int]:
+        """
+        invoke a given lambda function
+        :returns: True if the invocation was successful (False otherwise) and the status code of the invocation result
+        """
         if not config.SYNCHRONOUS_KINESIS_EVENTS:
             lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
                 lock_discriminator, threading.BoundedSemaphore(parallelization_factor)
@@ -92,7 +148,27 @@ class StreamEventSourceListener(EventSourceListener):
             return True, status_code
         return False, 500
 
-    def _listen_to_shard_and_invoke_lambda(self, params):
+    def _listen_to_shard_and_invoke_lambda(self, params: Dict):
+        """
+        Continuously listens to a stream's shard. Divides records read from the shard into batches and use them to
+        invoke a Lambda.
+        This function is intended to be invoked as a FuncThread. Because FuncThreads can only take a single argument,
+        we pack the numerous arguments needed to invoke this method into a single dictionary.
+        :param params: Dictionary containing the following elements needed to execute this method:
+            * function_arn: ARN of the Lambda function to invoke
+            * stream_arn: ARN of the stream associated with the shard to listen on
+            * batch_size: number of records to pass to the Lambda function per invocation
+            * parallelization_factor: parallelization factor for executing lambda funcs asynchronously
+            * lock_discriminator: discriminator for checking semaphore on lambda function execution. Also used for
+                                  checking if this listener loops should continue to run.
+            * shard_id: ID of the shard to listen on
+            * stream_client: AWS service client for communicating with the stream API
+            * shard_iterator: shard iterator object for iterating over records in stream
+            * max_num_retries: maximum number of times to attempt invoking a batch against the Lambda before giving up
+                               and moving on
+            * failure_destination: Optional destination config for sending record metadata to if Lambda invocation fails
+                                   more than max_num_retries
+        """
         # TODO: These values will never get updated if the event source mapping configuration changes :(
         function_arn = params["function_arn"]
         stream_arn = params["stream_arn"]
@@ -168,6 +244,9 @@ class StreamEventSourceListener(EventSourceListener):
         last_record_arrival_time,
         destination,
     ):
+        """
+        Creates a metadata payload relating to a failed Lambda invocation and delivers it to the given destination
+        """
         payload = {
             "version": "1.0",
             "timestamp": timestamp_millis(),
@@ -196,6 +275,11 @@ class StreamEventSourceListener(EventSourceListener):
         send_event_to_target(destination, payload)
 
     def _monitor_stream_event_sources(self, *args):
+        """
+        Continuously monitors event source mappings. When a new event source for the relevant stream type is created,
+        spawns listener threads for each shard in the stream. When an event source is deleted, stops the associated
+        child threads.
+        """
         while True:
             try:
                 # current set of streams + shard IDs that should be feeding Lambda functions based on event sources

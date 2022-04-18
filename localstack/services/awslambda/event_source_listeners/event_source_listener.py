@@ -8,7 +8,7 @@ class EventSourceListener(SubtypesInstanceManager):
     INSTANCES: Dict[str, "EventSourceListener"] = {}
 
     @staticmethod
-    def source_type() -> str:
+    def get_source_type() -> str:
         """Type discriminator - to be implemented by subclasses."""
         raise NotImplementedError
 
@@ -58,7 +58,7 @@ class EventSourceListener(SubtypesInstanceManager):
 
     @classmethod
     def impl_name(cls) -> str:
-        return cls.source_type()
+        return cls.get_source_type()
 
     @classmethod
     def get_base_type(cls) -> Type:

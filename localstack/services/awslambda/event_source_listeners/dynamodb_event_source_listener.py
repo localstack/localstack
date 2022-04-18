@@ -13,7 +13,7 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
     _FAILURE_PAYLOAD_DETAILS_FIELD_NAME = "DDBStreamBatchInfo"
 
     @staticmethod
-    def source_type() -> Optional[str]:
+    def get_source_type() -> Optional[str]:
         return "dynamodb"
 
     def _get_matching_event_sources(self) -> List[Dict]:

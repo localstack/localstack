@@ -14,7 +14,7 @@ class KinesisEventSourceListener(StreamEventSourceListener):
     _FAILURE_PAYLOAD_DETAILS_FIELD_NAME = "KinesisBatchInfo"
 
     @staticmethod
-    def source_type() -> Optional[str]:
+    def get_source_type() -> Optional[str]:
         return "kinesis"
 
     def _get_matching_event_sources(self) -> List[Dict]:
