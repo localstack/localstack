@@ -68,6 +68,7 @@ MetricLabel = str
 MetricName = str
 MetricStreamName = str
 MetricStreamState = str
+MetricStreamStatistic = str
 MetricWidget = str
 Namespace = str
 NextToken = str
@@ -720,6 +721,25 @@ class GetMetricStreamInput(ServiceRequest):
     Name: MetricStreamName
 
 
+MetricStreamStatisticsAdditionalStatistics = List[MetricStreamStatistic]
+
+
+class MetricStreamStatisticsMetric(TypedDict, total=False):
+    Namespace: Namespace
+    MetricName: MetricName
+
+
+MetricStreamStatisticsIncludeMetrics = List[MetricStreamStatisticsMetric]
+
+
+class MetricStreamStatisticsConfiguration(TypedDict, total=False):
+    IncludeMetrics: MetricStreamStatisticsIncludeMetrics
+    AdditionalStatistics: MetricStreamStatisticsAdditionalStatistics
+
+
+MetricStreamStatisticsConfigurations = List[MetricStreamStatisticsConfiguration]
+
+
 class MetricStreamFilter(TypedDict, total=False):
     Namespace: Optional[Namespace]
 
@@ -738,6 +758,7 @@ class GetMetricStreamOutput(TypedDict, total=False):
     CreationDate: Optional[Timestamp]
     LastUpdateDate: Optional[Timestamp]
     OutputFormat: Optional[MetricStreamOutputFormat]
+    StatisticsConfigurations: Optional[MetricStreamStatisticsConfigurations]
 
 
 class GetMetricWidgetImageInput(ServiceRequest):
@@ -926,6 +947,7 @@ class PutMetricStreamInput(ServiceRequest):
     RoleArn: AmazonResourceName
     OutputFormat: MetricStreamOutputFormat
     Tags: Optional[TagList]
+    StatisticsConfigurations: Optional[MetricStreamStatisticsConfigurations]
 
 
 class PutMetricStreamOutput(TypedDict, total=False):
@@ -1296,6 +1318,7 @@ class CloudwatchApi:
         include_filters: MetricStreamFilters = None,
         exclude_filters: MetricStreamFilters = None,
         tags: TagList = None,
+        statistics_configurations: MetricStreamStatisticsConfigurations = None,
     ) -> PutMetricStreamOutput:
         raise NotImplementedError
 
