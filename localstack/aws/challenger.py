@@ -3,7 +3,7 @@ from typing import Optional
 
 from localstack.aws.api import CommonServiceException
 from localstack.aws.protocol.serializer import create_serializer
-from localstack.aws.protocol.service_router import guess_aws_service_name
+from localstack.aws.protocol.service_router import determine_aws_service_name
 from localstack.aws.spec import ServiceCatalog
 from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
@@ -25,7 +25,7 @@ class ServiceNamerParserChallenger(ProxyListenerAdapter):
         return super().to_proxy_response(response)
 
     def request(self, request: Request) -> Optional[Response]:
-        actual = guess_aws_service_name(request, services)
+        actual = determine_aws_service_name(request, services)
 
         if self.expected == actual:
             LOG.info("successful service name match for %s", actual)
