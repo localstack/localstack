@@ -65,14 +65,16 @@ def handle_numeric_conditions(conditions: List[Any], value: float):
     return True
 
 
-# TODO: refactor/simplify
+# TODO: refactor/simplify!
 def filter_event_based_on_event_format(self, rule_name: str, event: Dict[str, Any]):
     def filter_event(event_pattern_filter: Dict[str, Any], event: Dict[str, Any]):
         for key, value in event_pattern_filter.items():
-            event_value = event.get(key.lower())
+            # match keys in the event in a case-agnostic way
+            event_value = event.get(key.lower(), event.get(key))
             if event_value is None:
                 return False
 
+            # 1. check if certain values in the event do not match the expected pattern
             if event_value and isinstance(event_value, dict):
                 for key_a, value_a in event_value.items():
                     if key_a == "ip":
@@ -85,23 +87,25 @@ def filter_event_based_on_event_format(self, rule_name: str, event: Dict[str, An
                         if not handle_prefix_filtering(value.get(key_a), value_a):
                             return False
 
-            elif isinstance(value, list) and not identify_content_base_parameter_in_pattern(value):
-                if (
-                    isinstance(event_value, list)
-                    and get_two_lists_intersection(value, event_value) == []
-                ):
-                    return False
-                elif (
-                    not isinstance(event_value, list)
-                    and isinstance(event_value, (str, int))
-                    and event_value not in value
-                ):
-                    return False
+            # 2. check if the pattern is a list and event values are not contained in it
+            if isinstance(value, list):
+                if identify_content_base_parameter_in_pattern(value):
+                    if not filter_event_with_content_base_parameter(value, event_value):
+                        return False
+                else:
+                    if (
+                        isinstance(event_value, list)
+                        and get_two_lists_intersection(value, event_value) == []
+                    ):
+                        return False
+                    if (
+                        not isinstance(event_value, list)
+                        and isinstance(event_value, (str, int))
+                        and event_value not in value
+                    ):
+                        return False
 
-            elif isinstance(value, list) and identify_content_base_parameter_in_pattern(value):
-                if not filter_event_with_content_base_parameter(value, event_value):
-                    return False
-
+            # 3. recursively call filter_event(..) for dict types
             elif isinstance(value, (str, dict)):
                 try:
                     value = json.loads(value) if isinstance(value, str) else value
@@ -109,6 +113,7 @@ def filter_event_based_on_event_format(self, rule_name: str, event: Dict[str, An
                         return False
                 except json.decoder.JSONDecodeError:
                     return False
+
         return True
 
     rule_information = self.events_backend.describe_rule(rule_name)
@@ -218,18 +223,17 @@ def start_events(port=None, asynchronous=None, update_listener=None):
 # ---------------
 
 
-def get_two_lists_intersection(lst1, lst2):
+def get_two_lists_intersection(lst1: List, lst2: List) -> List:
     lst3 = [value for value in lst1 if value in lst2]
     return lst3
 
 
-def identify_content_base_parameter_in_pattern(parameters):
-    if any(
+def identify_content_base_parameter_in_pattern(parameters) -> bool:
+    return any(
         list(param.keys())[0] in CONTENT_BASE_FILTER_KEYWORDS
         for param in parameters
         if isinstance(param, dict)
-    ):
-        return True
+    )
 
 
 def filter_event_with_content_base_parameter(pattern_value, event_value):

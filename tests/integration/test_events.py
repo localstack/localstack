@@ -2,9 +2,11 @@
 import base64
 import json
 import os
-import unittest
 import uuid
 from datetime import datetime
+from typing import Dict, List, Tuple
+
+import pytest
 
 from localstack import config
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
@@ -31,23 +33,16 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
 TEST_EVENT_BUS_NAME = "command-bus-dev"
 
-EVENT_DETAIL = '{"command":"update-account","payload":{"acc_id":"0a787ecb-4015","sf_id":"baz"}}'
+EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
 TEST_EVENT_PATTERN = {
-    "Source": ["core.update-account-command"],
+    "source": ["core.update-account-command"],
     "detail-type": ["core.update-account-command"],
-    "Detail": [EVENT_DETAIL],
+    "detail": {"command": ["update-account"]},
 }
 
 
-class EventsTest(unittest.TestCase):
-    def setUp(self):
-        self.events_client = aws_stack.create_external_boto_client("events")
-        self.iam_client = aws_stack.create_external_boto_client("iam")
-        self.sns_client = aws_stack.create_external_boto_client("sns")
-        self.sfn_client = aws_stack.create_external_boto_client("stepfunctions")
-        self.sqs_client = aws_stack.create_external_boto_client("sqs")
-
-    def assertIsValidEvent(self, event):
+class TestEvents:
+    def assert_valid_event(self, event):
         expected_fields = (
             "version",
             "id",
@@ -60,28 +55,28 @@ class EventsTest(unittest.TestCase):
             "detail",
         )
         for field in expected_fields:
-            self.assertIn(field, event)
+            assert field in event
 
-    def test_put_rule(self):
+    def test_put_rule(self, events_client):
         rule_name = "rule-{}".format(short_uid())
 
-        self.events_client.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
+        events_client.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
 
-        rules = self.events_client.list_rules(NamePrefix=rule_name)["Rules"]
-        self.assertEqual(1, len(rules))
-        self.assertEqual(TEST_EVENT_PATTERN, json.loads(rules[0]["EventPattern"]))
+        rules = events_client.list_rules(NamePrefix=rule_name)["Rules"]
+        assert len(rules) == 1
+        assert json.loads(rules[0]["EventPattern"]) == TEST_EVENT_PATTERN
 
         # clean up
-        self.events_client.delete_rule(Name=rule_name, Force=True)
+        events_client.delete_rule(Name=rule_name, Force=True)
 
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
-        self,
+        self, events_client
     ):
         event_type = str(uuid.uuid4())
-        event_details_to_publish = list(map(lambda n: "event %s" % n, range(10)))
+        event_details_to_publish = list(map(lambda n: f"event {n}", range(10)))
 
         for detail in event_details_to_publish:
-            self.events_client.put_events(
+            events_client.put_events(
                 Entries=[
                     {
                         "Source": "unittest",
@@ -104,17 +99,15 @@ class EventsTest(unittest.TestCase):
             )
         )
 
-        self.assertListEqual(
-            event_details_to_publish,
-            list(map(lambda event: json.loads(event["Detail"]), sorted_events)),
+        assert (
+            list(map(lambda event: json.loads(event["Detail"]), sorted_events))
+            == event_details_to_publish
         )
 
-    def test_list_tags_for_resource(self):
+    def test_list_tags_for_resource(self, events_client):
         rule_name = "rule-{}".format(short_uid())
 
-        rule = self.events_client.put_rule(
-            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN)
-        )
+        rule = events_client.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
         rule_arn = rule["RuleArn"]
         expected = [
             {"Key": "key1", "Value": "value1"},
@@ -122,150 +115,191 @@ class EventsTest(unittest.TestCase):
         ]
 
         # insert two tags, verify both are visible
-        self.events_client.tag_resource(ResourceARN=rule_arn, Tags=expected)
-        actual = self.events_client.list_tags_for_resource(ResourceARN=rule_arn)["Tags"]
-        self.assertEqual(expected, actual)
+        events_client.tag_resource(ResourceARN=rule_arn, Tags=expected)
+        actual = events_client.list_tags_for_resource(ResourceARN=rule_arn)["Tags"]
+        assert actual == expected
 
         # remove 'key2', verify only 'key1' remains
         expected = [{"Key": "key1", "Value": "value1"}]
-        self.events_client.untag_resource(ResourceARN=rule_arn, TagKeys=["key2"])
-        actual = self.events_client.list_tags_for_resource(ResourceARN=rule_arn)["Tags"]
-        self.assertEqual(expected, actual)
+        events_client.untag_resource(ResourceARN=rule_arn, TagKeys=["key2"])
+        actual = events_client.list_tags_for_resource(ResourceARN=rule_arn)["Tags"]
+        assert actual == expected
 
         # clean up
-        self.events_client.delete_rule(Name=rule_name, Force=True)
+        events_client.delete_rule(Name=rule_name, Force=True)
 
-    def test_put_events_with_target_sqs(self):
-        queue_name = "queue-{}".format(short_uid())
-        rule_name = "rule-{}".format(short_uid())
-        target_id = "target-{}".format(short_uid())
-        bus_name = "bus-{}".format(short_uid())
+    @pytest.mark.aws_validated
+    def test_put_events_with_target_sqs(self, events_client, sqs_client):
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+            }
+        ]
+        self._put_events_with_filter_to_sqs(
+            events_client, sqs_client, pattern=TEST_EVENT_PATTERN, entries_asserts=[(entries, True)]
+        )
 
-        sqs_client = aws_stack.create_external_boto_client("sqs")
+    @pytest.mark.aws_validated
+    def test_put_events_with_nested_event_pattern(self, events_client, sqs_client):
+        pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
+        entries1 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": "1"}}}),
+            }
+        ]
+        entries2 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": "2"}}}),
+            }
+        ]
+        entries3 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"hello": "world"}),
+            }
+        ]
+        entries_asserts = [(entries1, True), (entries2, False), (entries3, False)]
+        self._put_events_with_filter_to_sqs(
+            events_client,
+            sqs_client,
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_path="$.detail",
+        )
+
+    def test_put_events_with_target_sqs_event_detail_match(self, events_client, sqs_client):
+        entries1 = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps({"EventType": "1"}),
+            }
+        ]
+        entries2 = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps({"EventType": "2"}),
+            }
+        ]
+        entries_asserts = [(entries1, True), (entries2, False)]
+        self._put_events_with_filter_to_sqs(
+            events_client,
+            sqs_client,
+            pattern={"detail": {"EventType": ["0", "1"]}},
+            entries_asserts=entries_asserts,
+            input_path="$.detail",
+        )
+
+    def _put_events_with_filter_to_sqs(
+        self,
+        events_client,
+        sqs_client,
+        pattern: Dict,
+        entries_asserts: List[Tuple[List[Dict], bool]],
+        input_path: str = None,
+    ):
+        queue_name = f"queue-{short_uid()}"
+        rule_name = f"rule-{short_uid()}"
+        target_id = f"target-{short_uid()}"
+        bus_name = f"bus-{short_uid()}"
+
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        queue_arn = self._get_queue_arn(queue_url, sqs_client)
+        policy = {
+            "Version": "2012-10-17",
+            "Id": f"sqs-eventbridge-{short_uid()}",
+            "Statement": [
+                {
+                    "Sid": f"SendMessage-{short_uid()}",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sqs:SendMessage",
+                    "Resource": queue_arn,
+                }
+            ],
+        }
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
+        )
 
-        self.events_client.create_event_bus(Name=bus_name)
-        self.events_client.put_rule(
+        events_client.create_event_bus(Name=bus_name)
+        events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
-            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+            EventPattern=json.dumps(pattern),
         )
-        rs = self.events_client.put_targets(
+        kwargs = {"InputPath": input_path} if input_path else {}
+        rs = events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
-            Targets=[{"Id": target_id, "Arn": queue_arn}],
+            Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
         )
 
-        self.assertIn("FailedEntryCount", rs)
-        self.assertIn("FailedEntries", rs)
-        self.assertEqual(0, rs["FailedEntryCount"])
-        self.assertEqual([], rs["FailedEntries"])
+        assert rs["FailedEntryCount"] == 0
+        assert rs["FailedEntries"] == []
 
-        self.events_client.put_events(
-            Entries=[
-                {
-                    "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["Source"][0],
-                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
-                }
-            ]
-        )
+        try:
+            for entry_asserts in entries_asserts:
+                entries = entry_asserts[0]
+                for entry in entries:
+                    entry.setdefault("EventBusName", bus_name)
+                self._put_entries_assert_results_sqs(
+                    events_client,
+                    sqs_client,
+                    queue_url,
+                    entries=entries,
+                    should_match=entry_asserts[1],
+                )
+        finally:
+            self.cleanup(
+                bus_name,
+                rule_name,
+                target_id,
+                queue_url=queue_url,
+                events_client=events_client,
+                sqs_client=sqs_client,
+            )
+
+    def _put_entries_assert_results_sqs(
+        self, events_client, sqs_client, queue_url: str, entries: List[Dict], should_match: bool
+    ):
+        response = events_client.put_events(Entries=entries)
+        assert not response.get("FailedEntryCount")
 
         def get_message(queue_url):
             resp = sqs_client.receive_message(QueueUrl=queue_url)
-            return resp["Messages"]
+            messages = resp.get("Messages")
+            if should_match:
+                assert len(messages) == 1
+            return messages
 
-        messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(1, len(messages))
+        messages = retry(get_message, retries=5, sleep=1, queue_url=queue_url)
 
-        actual_event = json.loads(messages[0]["Body"])
-        self.assertIsValidEvent(actual_event)
-        self.assertEqual(TEST_EVENT_PATTERN["Detail"][0], actual_event["detail"])
+        if should_match:
+            actual_event = json.loads(messages[0]["Body"])
+            if "detail" in actual_event:
+                self.assert_valid_event(actual_event)
+        else:
+            assert not messages
 
-        # clean up
-        self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
+        return messages
 
-    def test_put_events_with_target_sqs_event_detail_match(self):
-        queue_name = "queue-{}".format(short_uid())
-        rule_name = "rule-{}".format(short_uid())
-        target_id = "target-{}".format(short_uid())
-        bus_name = "bus-{}".format(short_uid())
+    # TODO: further unify/parameterize the tests for the different target types below
 
-        sqs_client = aws_stack.create_external_boto_client("sqs")
-        queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
-
-        self.events_client.create_event_bus(Name=bus_name)
-
-        self.events_client.put_rule(
-            Name=rule_name,
-            EventBusName=bus_name,
-            EventPattern=json.dumps({"detail": {"EventType": ["0", "1"]}}),
-        )
-
-        rs = self.events_client.put_targets(
-            Rule=rule_name,
-            EventBusName=bus_name,
-            Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
-        )
-
-        self.assertIn("FailedEntryCount", rs)
-        self.assertIn("FailedEntries", rs)
-        self.assertEqual(0, rs["FailedEntryCount"])
-        self.assertEqual([], rs["FailedEntries"])
-
-        self.events_client.put_events(
-            Entries=[
-                {
-                    "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["Source"][0],
-                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps({"EventType": "1"}),
-                }
-            ]
-        )
-
-        def get_message(queue_url):
-            resp = sqs_client.receive_message(QueueUrl=queue_url)
-            return resp.get("Messages")
-
-        messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(1, len(messages))
-
-        actual_event = json.loads(messages[0]["Body"])
-        self.assertEqual({"EventType": "1"}, actual_event)
-
-        self.events_client.put_events(
-            Entries=[
-                {
-                    "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["Source"][0],
-                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps({"EventType": "2"}),
-                }
-            ]
-        )
-
-        def get_message(queue_url):
-            resp = sqs_client.receive_message(QueueUrl=queue_url)
-            return resp.get("Messages", [])
-
-        messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(0, len(messages))
-
-        # clean up
-        self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
-
-    def test_put_events_with_target_sns(self):
+    def test_put_events_with_target_sns(self, events_client, sns_client, sqs_client):
         queue_name = "test-%s" % short_uid()
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        sns_client = aws_stack.create_external_boto_client("sns")
-        sqs_client = aws_stack.create_external_boto_client("sqs")
         topic_name = "topic-{}".format(short_uid())
         topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
 
@@ -274,30 +308,30 @@ class EventsTest(unittest.TestCase):
 
         sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
-        self.events_client.create_event_bus(Name=bus_name)
-        self.events_client.put_rule(
+        events_client.create_event_bus(Name=bus_name)
+        events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
-        rs = self.events_client.put_targets(
+        rs = events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
             Targets=[{"Id": target_id, "Arn": topic_arn}],
         )
 
-        self.assertIn("FailedEntryCount", rs)
-        self.assertIn("FailedEntries", rs)
-        self.assertEqual(0, rs["FailedEntryCount"])
-        self.assertEqual([], rs["FailedEntries"])
+        assert "FailedEntryCount" in rs
+        assert "FailedEntries" in rs
+        assert rs["FailedEntryCount"] == 0
+        assert rs["FailedEntries"] == []
 
-        self.events_client.put_events(
+        events_client.put_events(
             Entries=[
                 {
                     "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["Source"][0],
+                    "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
+                    "Detail": json.dumps(EVENT_DETAIL),
                 }
             ]
         )
@@ -307,53 +341,52 @@ class EventsTest(unittest.TestCase):
             return resp["Messages"]
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(1, len(messages))
+        assert len(messages) == 1
 
         actual_event = json.loads(messages[0]["Body"]).get("Message")
-        self.assertIsValidEvent(actual_event)
-        self.assertEqual(TEST_EVENT_PATTERN["Detail"][0], json.loads(actual_event).get("detail"))
+        self.assert_valid_event(actual_event)
+        assert json.loads(actual_event).get("detail") == EVENT_DETAIL
 
         # clean up
         sns_client.delete_topic(TopicArn=topic_arn)
         self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
 
-    def test_put_events_into_event_bus(self):
+    def test_put_events_into_event_bus(self, events_client, sqs_client):
         queue_name = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
         bus_name_1 = "bus1-{}".format(short_uid())
         bus_name_2 = "bus2-{}".format(short_uid())
 
-        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        queue_arn = self._get_queue_arn(queue_url, sqs_client)
 
-        self.events_client.create_event_bus(Name=bus_name_1)
-        resp = self.events_client.create_event_bus(Name=bus_name_2)
-        self.events_client.put_rule(
+        events_client.create_event_bus(Name=bus_name_1)
+        resp = events_client.create_event_bus(Name=bus_name_2)
+        events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name_1,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
-        self.events_client.put_targets(
+        events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name_1,
             Targets=[{"Id": target_id, "Arn": resp.get("EventBusArn")}],
         )
-        self.events_client.put_targets(
+        events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name_2,
             Targets=[{"Id": target_id, "Arn": queue_arn}],
         )
 
-        self.events_client.put_events(
+        events_client.put_events(
             Entries=[
                 {
                     "EventBusName": bus_name_1,
-                    "Source": TEST_EVENT_PATTERN["Source"][0],
+                    "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
+                    "Detail": json.dumps(EVENT_DETAIL),
                 }
             ]
         )
@@ -363,18 +396,18 @@ class EventsTest(unittest.TestCase):
             return resp["Messages"]
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(1, len(messages))
+        assert len(messages) == 1
 
         actual_event = json.loads(messages[0]["Body"])
-        self.assertIsValidEvent(actual_event)
-        self.assertEqual(TEST_EVENT_PATTERN["Detail"][0], actual_event["detail"])
+        self.assert_valid_event(actual_event)
+        assert actual_event["detail"] == EVENT_DETAIL
 
         # clean up
         self.cleanup(bus_name_1, rule_name, target_id)
         self.cleanup(bus_name_2)
         sqs_client.delete_queue(QueueUrl=queue_url)
 
-    def test_put_events_with_target_lambda(self):
+    def test_put_events_with_target_lambda(self, events_client):
         rule_name = "rule-{}".format(short_uid())
         function_name = "lambda-func-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -388,30 +421,30 @@ class EventsTest(unittest.TestCase):
 
         func_arn = rs["CreateFunctionResponse"]["FunctionArn"]
 
-        self.events_client.create_event_bus(Name=bus_name)
-        self.events_client.put_rule(
+        events_client.create_event_bus(Name=bus_name)
+        events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
-        rs = self.events_client.put_targets(
+        rs = events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
             Targets=[{"Id": target_id, "Arn": func_arn}],
         )
 
-        self.assertIn("FailedEntryCount", rs)
-        self.assertIn("FailedEntries", rs)
-        self.assertEqual(0, rs["FailedEntryCount"])
-        self.assertEqual([], rs["FailedEntries"])
+        assert "FailedEntryCount" in rs
+        assert "FailedEntries" in rs
+        assert rs["FailedEntryCount"] == 0
+        assert rs["FailedEntries"] == []
 
-        self.events_client.put_events(
+        events_client.put_events(
             Entries=[
                 {
                     "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["Source"][0],
+                    "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
+                    "Detail": json.dumps(EVENT_DETAIL),
                 }
             ]
         )
@@ -425,30 +458,29 @@ class EventsTest(unittest.TestCase):
             expected_length=1,
         )
         actual_event = events[0]
-        self.assertIsValidEvent(actual_event)
-        self.assertDictEqual(
-            json.loads(actual_event["detail"]),
-            json.loads(TEST_EVENT_PATTERN["Detail"][0]),
-        )
+        self.assert_valid_event(actual_event)
+        assert actual_event["detail"] == EVENT_DETAIL
 
         # clean up
         testutil.delete_lambda_function(function_name)
         self.cleanup(bus_name, rule_name, target_id)
 
-    def test_rule_disable(self):
+    def test_rule_disable(self, events_client):
         rule_name = "rule-{}".format(short_uid())
-        self.events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+        events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
 
-        response = self.events_client.list_rules()
-        self.assertEqual("ENABLED", response["Rules"][0]["State"])
-        _ = self.events_client.disable_rule(Name=rule_name)
-        response = self.events_client.list_rules(NamePrefix=rule_name)
-        self.assertEqual("DISABLED", response["Rules"][0]["State"])
+        response = events_client.list_rules()
+        assert response["Rules"][0]["State"] == "ENABLED"
+        events_client.disable_rule(Name=rule_name)
+        response = events_client.list_rules(NamePrefix=rule_name)
+        assert response["Rules"][0]["State"] == "DISABLED"
 
         # clean up
-        self.events_client.delete_rule(Name=rule_name, Force=True)
+        events_client.delete_rule(Name=rule_name, Force=True)
 
-    def test_scheduled_expression_events(self):
+    def test_scheduled_expression_events(
+        self, stepfunctions_client, sns_client, sqs_client, events_client
+    ):
         class HttpEndpointListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 event = json.loads(to_str(data))
@@ -487,15 +519,15 @@ class EventsTest(unittest.TestCase):
         }
         """
 
-        state_machine_arn = self.sfn_client.create_state_machine(
+        state_machine_arn = stepfunctions_client.create_state_machine(
             name=sm_name, definition=state_machine_definition, roleArn=sm_role_arn
         )["stateMachineArn"]
 
-        topic_arn = self.sns_client.create_topic(Name=topic_name)["TopicArn"]
-        self.sns_client.subscribe(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint)
+        topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
+        sns_client.subscribe(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint)
 
-        queue_url = self.sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        fifo_queue_url = self.sqs_client.create_queue(
+        queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        fifo_queue_url = sqs_client.create_queue(
             QueueName=fifo_queue_name,
             Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
         )["QueueUrl"]
@@ -504,9 +536,9 @@ class EventsTest(unittest.TestCase):
 
         event = {"env": "testing"}
 
-        self.events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+        events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
 
-        self.events_client.put_targets(
+        events_client.put_targets(
             Rule=rule_name,
             Targets=[
                 {"Id": topic_target_id, "Arn": topic_arn, "Input": json.dumps(event)},
@@ -527,29 +559,29 @@ class EventsTest(unittest.TestCase):
 
         def received(q_urls):
             # state machine got executed
-            executions = self.sfn_client.list_executions(stateMachineArn=state_machine_arn)[
+            executions = stepfunctions_client.list_executions(stateMachineArn=state_machine_arn)[
                 "executions"
             ]
-            self.assertGreaterEqual(len(executions), 1)
+            assert len(executions) >= 1
 
             # http endpoint got events
-            self.assertGreaterEqual(len(events), 2)
+            assert len(events) >= 2
             notifications = [
                 event["Message"] for event in events if event["Type"] == "Notification"
             ]
-            self.assertGreaterEqual(len(notifications), 1)
+            assert len(notifications) >= 1
 
             # get state machine execution detail
             execution_arn = executions[0]["executionArn"]
-            execution_input = self.sfn_client.describe_execution(executionArn=execution_arn)[
+            execution_input = stepfunctions_client.describe_execution(executionArn=execution_arn)[
                 "input"
             ]
 
             all_msgs = []
             # get message from queue
             for url in q_urls:
-                msgs = self.sqs_client.receive_message(QueueUrl=url).get("Messages", [])
-                self.assertGreaterEqual(len(msgs), 1)
+                msgs = sqs_client.receive_message(QueueUrl=url).get("Messages", [])
+                assert len(msgs) >= 1
                 all_msgs.append(msgs[0])
 
             return execution_input, notifications[0], all_msgs
@@ -557,23 +589,20 @@ class EventsTest(unittest.TestCase):
         execution_input, notification, msgs_received = retry(
             received, retries=5, sleep=15, q_urls=[queue_url, fifo_queue_url]
         )
-        self.assertEqual(event, json.loads(notification))
-        self.assertEqual(event, json.loads(execution_input))
+        assert json.loads(notification) == event
+        assert json.loads(execution_input) == event
         for msg_received in msgs_received:
-            self.assertEqual(event, json.loads(msg_received["Body"]))
+            assert json.loads(msg_received["Body"]) == event
 
         # clean up
         proxy.stop()
         self.cleanup(
-            None,
-            rule_name,
-            target_ids=[topic_target_id, sm_target_id],
-            queue_url=queue_url,
+            None, rule_name, target_ids=[topic_target_id, sm_target_id], queue_url=queue_url
         )
-        self.sns_client.delete_topic(TopicArn=topic_arn)
-        self.sfn_client.delete_state_machine(stateMachineArn=state_machine_arn)
+        sns_client.delete_topic(TopicArn=topic_arn)
+        stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
-    def test_api_destinations(self):
+    def test_api_destinations(self, events_client):
 
         token = short_uid()
         bearer = "Bearer %s" % token
@@ -617,8 +646,7 @@ class EventsTest(unittest.TestCase):
         local_port = get_free_tcp_port()
         proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
         wait_for_port_open(local_port)
-        events_client = aws_stack.create_external_boto_client("events")
-        url = "http://localhost:%s" % local_port
+        url = f"http://localhost:{local_port}"
 
         auth_types = [
             {
@@ -670,7 +698,7 @@ class EventsTest(unittest.TestCase):
 
             # create api destination
             dest_name = "d-%s" % short_uid()
-            result = self.events_client.create_api_destination(
+            result = events_client.create_api_destination(
                 Name=dest_name,
                 ConnectionArn=connection_arn,
                 InvocationEndpoint=url,
@@ -681,8 +709,8 @@ class EventsTest(unittest.TestCase):
             rule_name = "r-%s" % short_uid()
             target_id = "target-{}".format(short_uid())
             pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
-            self.events_client.put_rule(Name=rule_name, EventPattern=pattern)
-            self.events_client.put_targets(
+            events_client.put_rule(Name=rule_name, EventPattern=pattern)
+            events_client.put_targets(
                 Rule=rule_name,
                 Targets=[
                     {
@@ -705,44 +733,42 @@ class EventsTest(unittest.TestCase):
                     "Detail": '{"i": %s}' % 0,
                 }
             ]
-            self.events_client.put_events(Entries=entries)
+            events_client.put_events(Entries=entries)
 
             # cleaning
-            self.events_client.delete_connection(Name=connection_name)
-            self.events_client.delete_api_destination(Name=dest_name)
-            self.events_client.delete_rule(Name=rule_name, Force=True)
+            events_client.delete_connection(Name=connection_name)
+            events_client.delete_api_destination(Name=dest_name)
+            events_client.delete_rule(Name=rule_name, Force=True)
 
         # assert that all events have been received in the HTTP server listener
 
         def check():
-            self.assertTrue(len(events) >= len(auth_types))
-            self.assertTrue("key" in paths_list[0] and "value" in paths_list[0])
-            self.assertTrue("target_query" in paths_list[0] and "t_query" in paths_list[0])
-            self.assertTrue("target_path" in paths_list[0])
-            self.assertTrue(events[0].get("key") == "value")
-            self.assertTrue(events[0].get("target_value") == "value")
+            assert len(events) >= len(auth_types)
+            assert "key" in paths_list[0] and "value" in paths_list[0]
+            assert "target_query" in paths_list[0] and "t_query" in paths_list[0]
+            assert "target_path" in paths_list[0]
+            assert events[0].get("key") == "value"
+            assert events[0].get("target_value") == "value"
 
-            # Oauth validation
-            self.assertTrue(oauth_data.get("client_id") == "id")
-            self.assertTrue(oauth_data.get("client_secret") == "password")
-            self.assertTrue(oauth_data.get("header_value") == "value2")
-            self.assertTrue(oauth_data.get("body_value") == "value1")
-            self.assertTrue("oauthquery" in oauth_data.get("path"))
-            self.assertTrue("value3" in oauth_data.get("path"))
+            assert oauth_data.get("client_id") == "id"
+            assert oauth_data.get("client_secret") == "password"
+            assert oauth_data.get("header_value") == "value2"
+            assert oauth_data.get("body_value") == "value1"
+            assert "oauthquery" in oauth_data.get("path")
+            assert "value3" in oauth_data.get("path")
 
             user_pass = to_str(base64.b64encode(b"user:pass"))
-            self.assertTrue(f"Basic {user_pass}" in headers_list)
-
-            self.assertTrue("apikey_secret" in headers_list)
-            self.assertTrue(bearer in headers_list)
-            self.assertTrue("target_header_value" in headers_list)
+            assert f"Basic {user_pass}" in headers_list
+            assert "apikey_secret" in headers_list
+            assert bearer in headers_list
+            assert "target_header_value" in headers_list
 
         retry(check, sleep=0.5, retries=5)
 
         # clean up
         proxy.stop()
 
-    def test_put_events_with_target_firehose(self):
+    def test_put_events_with_target_firehose(self, events_client, s3_client, firehose_client):
         s3_bucket = "s3-{}".format(short_uid())
         s3_prefix = "testeventdata"
         stream_name = "firehose-{}".format(short_uid())
@@ -751,11 +777,9 @@ class EventsTest(unittest.TestCase):
         bus_name = "bus-{}".format(short_uid())
 
         # create firehose target bucket
-        s3_client = aws_stack.create_external_boto_client("s3")
         s3_client.create_bucket(Bucket=s3_bucket)
 
         # create firehose delivery stream to s3
-        firehose_client = aws_stack.create_external_boto_client("firehose")
         stream = firehose_client.create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
@@ -766,42 +790,42 @@ class EventsTest(unittest.TestCase):
         )
         stream_arn = stream["DeliveryStreamARN"]
 
-        self.events_client.create_event_bus(Name=bus_name)
-        self.events_client.put_rule(
+        events_client.create_event_bus(Name=bus_name)
+        events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
-        rs = self.events_client.put_targets(
+        rs = events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
             Targets=[{"Id": target_id, "Arn": stream_arn}],
         )
 
-        self.assertIn("FailedEntryCount", rs)
-        self.assertIn("FailedEntries", rs)
-        self.assertEqual(0, rs["FailedEntryCount"])
-        self.assertEqual([], rs["FailedEntries"])
+        assert "FailedEntryCount" in rs
+        assert "FailedEntries" in rs
+        assert rs["FailedEntryCount"] == 0
+        assert rs["FailedEntries"] == []
 
-        self.events_client.put_events(
+        events_client.put_events(
             Entries=[
                 {
                     "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["Source"][0],
+                    "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
+                    "Detail": json.dumps(EVENT_DETAIL),
                 }
             ]
         )
 
         # run tests
         bucket_contents = s3_client.list_objects(Bucket=s3_bucket)["Contents"]
-        self.assertEqual(1, len(bucket_contents))
+        assert len(bucket_contents) == 1
         key = bucket_contents[0]["Key"]
         s3_object = s3_client.get_object(Bucket=s3_bucket, Key=key)
         actual_event = json.loads(s3_object["Body"].read().decode())
-        self.assertIsValidEvent(actual_event)
-        self.assertEqual(TEST_EVENT_PATTERN["Detail"][0], actual_event["detail"])
+        self.assert_valid_event(actual_event)
+        assert actual_event["detail"] == EVENT_DETAIL
 
         # clean up
         firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
@@ -811,9 +835,7 @@ class EventsTest(unittest.TestCase):
         self.cleanup(bus_name, rule_name, target_id)
 
     def test_put_events_with_target_sqs_new_region(self):
-        self.events_client = aws_stack.create_external_boto_client(
-            "events", region_name="eu-west-1"
-        )
+        events_client = aws_stack.create_external_boto_client("events", region_name="eu-west-1")
         queue_name = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -823,21 +845,21 @@ class EventsTest(unittest.TestCase):
         sqs_client.create_queue(QueueName=queue_name)
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
-        self.events_client.create_event_bus(Name=bus_name)
+        events_client.create_event_bus(Name=bus_name)
 
-        self.events_client.put_rule(
+        events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
-        self.events_client.put_targets(
+        events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
             Targets=[{"Id": target_id, "Arn": queue_arn}],
         )
 
-        response = self.events_client.put_events(
+        response = events_client.put_events(
             Entries=[
                 {
                     "Source": "com.mycompany.myapp",
@@ -847,29 +869,28 @@ class EventsTest(unittest.TestCase):
                 }
             ]
         )
-        self.assertIn("Entries", response)
-        self.assertEqual(1, len(response.get("Entries")))
-        self.assertIn("EventId", response.get("Entries")[0])
+        assert "Entries" in response
+        assert len(response.get("Entries")) == 1
+        assert "EventId" in response.get("Entries")[0]
 
-    def test_put_events_with_target_kinesis(self):
+    def test_put_events_with_target_kinesis(self, events_client, kinesis_client):
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
         stream_name = "stream-{}".format(short_uid())
         stream_arn = aws_stack.kinesis_stream_arn(stream_name)
 
-        kinesis_client = aws_stack.create_external_boto_client("kinesis")
         kinesis_client.create_stream(StreamName=stream_name, ShardCount=1)
 
-        self.events_client.create_event_bus(Name=bus_name)
+        events_client.create_event_bus(Name=bus_name)
 
-        self.events_client.put_rule(
+        events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
-        put_response = self.events_client.put_targets(
+        put_response = events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
             Targets=[
@@ -881,10 +902,10 @@ class EventsTest(unittest.TestCase):
             ],
         )
 
-        self.assertIn("FailedEntryCount", put_response)
-        self.assertIn("FailedEntries", put_response)
-        self.assertEqual(0, put_response["FailedEntryCount"])
-        self.assertEqual([], put_response["FailedEntries"])
+        assert "FailedEntryCount" in put_response
+        assert "FailedEntries" in put_response
+        assert put_response["FailedEntryCount"] == 0
+        assert put_response["FailedEntries"] == []
 
         def check_stream_status():
             _stream = kinesis_client.describe_stream(StreamName=stream_name)
@@ -893,13 +914,13 @@ class EventsTest(unittest.TestCase):
         # wait until stream becomes available
         retry(check_stream_status, retries=7, sleep=0.8)
 
-        self.events_client.put_events(
+        events_client.put_events(
             Entries=[
                 {
                     "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["Source"][0],
+                    "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
+                    "Detail": json.dumps(EVENT_DETAIL),
                 }
             ]
         )
@@ -918,39 +939,38 @@ class EventsTest(unittest.TestCase):
         partition_key = record["PartitionKey"]
         data = json.loads(record["Data"].decode())
 
-        self.assertEqual(TEST_EVENT_PATTERN["detail-type"][0], partition_key)
-        self.assertEqual(EVENT_DETAIL, data["detail"])
-        self.assertIsValidEvent(data)
+        assert partition_key == TEST_EVENT_PATTERN["detail-type"][0]
+        assert data["detail"] == EVENT_DETAIL
+        self.assert_valid_event(data)
 
-    def test_put_events_with_input_path(self):
-        queue_name = "queue-{}".format(short_uid())
-        rule_name = "rule-{}".format(short_uid())
-        target_id = "target-{}".format(short_uid())
-        bus_name = "bus-{}".format(short_uid())
+    def test_put_events_with_input_path(self, events_client, sqs_client):
+        queue_name = f"queue-{short_uid()}"
+        rule_name = f"rule-{short_uid()}"
+        target_id = f"target-{short_uid()}"
+        bus_name = f"bus-{short_uid()}"
 
-        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
-        self.events_client.create_event_bus(Name=bus_name)
-        self.events_client.put_rule(
+        events_client.create_event_bus(Name=bus_name)
+        events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
-        self.events_client.put_targets(
+        events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
             Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
         )
 
-        self.events_client.put_events(
+        events_client.put_events(
             Entries=[
                 {
                     "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["Source"][0],
+                    "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
+                    "Detail": json.dumps(EVENT_DETAIL),
                 }
             ]
         )
@@ -960,27 +980,27 @@ class EventsTest(unittest.TestCase):
             return resp.get("Messages")
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(1, len(messages))
-        self.assertEqual(EVENT_DETAIL, json.loads(messages[0].get("Body")))
+        assert len(messages) == 1
+        assert json.loads(messages[0].get("Body")) == EVENT_DETAIL
 
-        self.events_client.put_events(
+        events_client.put_events(
             Entries=[
                 {
                     "EventBusName": bus_name,
                     "Source": "dummySource",
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
+                    "Detail": json.dumps(EVENT_DETAIL),
                 }
             ]
         )
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertIsNone(messages)
+        assert messages is None
 
         # clean up
         self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
 
-    def test_put_events_with_input_path_multiple(self):
+    def test_put_events_with_input_path_multiple(self, events_client, sqs_client):
         queue_name = "queue-{}".format(short_uid())
         queue_name_1 = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
@@ -988,22 +1008,21 @@ class EventsTest(unittest.TestCase):
         target_id_1 = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
         queue_url_1 = sqs_client.create_queue(QueueName=queue_name_1)["QueueUrl"]
         queue_arn_1 = aws_stack.sqs_queue_arn(queue_name_1)
 
-        self.events_client.create_event_bus(Name=bus_name)
+        events_client.create_event_bus(Name=bus_name)
 
-        self.events_client.put_rule(
+        events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
-        self.events_client.put_targets(
+        events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
             Targets=[
@@ -1015,13 +1034,13 @@ class EventsTest(unittest.TestCase):
             ],
         )
 
-        self.events_client.put_events(
+        events_client.put_events(
             Entries=[
                 {
                     "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["Source"][0],
+                    "Source": TEST_EVENT_PATTERN["source"][0],
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
+                    "Detail": json.dumps(EVENT_DETAIL),
                 }
             ]
         )
@@ -1031,66 +1050,60 @@ class EventsTest(unittest.TestCase):
             return resp.get("Messages")
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(1, len(messages))
-        self.assertEqual(EVENT_DETAIL, json.loads(messages[0].get("Body")))
+        assert len(messages) == 1
+        assert json.loads(messages[0].get("Body")) == EVENT_DETAIL
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url_1)
-        self.assertEqual(1, len(messages))
-        self.assertEqual(EVENT_DETAIL, json.loads(messages[0].get("Body")).get("detail"))
+        assert len(messages) == 1
+        assert json.loads(messages[0].get("Body")).get("detail") == EVENT_DETAIL
 
-        self.events_client.put_events(
+        events_client.put_events(
             Entries=[
                 {
                     "EventBusName": bus_name,
                     "Source": "dummySource",
                     "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
+                    "Detail": json.dumps(EVENT_DETAIL),
                 }
             ]
         )
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertIsNone(messages)
+        assert messages is None
 
         # clean up
         self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
 
     def test_put_event_without_source(self):
-        self.events_client = aws_stack.create_external_boto_client(
-            "events", region_name="eu-west-1"
-        )
+        events_client = aws_stack.create_external_boto_client("events", region_name="eu-west-1")
 
-        response = self.events_client.put_events(Entries=[{"DetailType": "Test", "Detail": "{}"}])
-        self.assertIn("Entries", response)
+        response = events_client.put_events(Entries=[{"DetailType": "Test", "Detail": "{}"}])
+        assert response.get("Entries")
 
     def test_put_event_without_detail(self):
-        self.events_client = aws_stack.create_external_boto_client(
-            "events", region_name="eu-west-1"
-        )
+        events_client = aws_stack.create_external_boto_client("events", region_name="eu-west-1")
 
-        response = self.events_client.put_events(
+        response = events_client.put_events(
             Entries=[
                 {
                     "DetailType": "Test",
                 }
             ]
         )
-        self.assertIn("Entries", response)
+        assert response.get("Entries")
 
-    def test_trigger_event_on_ssm_change(self):
-        sqs = aws_stack.create_external_boto_client("sqs")
-        ssm = aws_stack.create_external_boto_client("ssm")
+    def test_trigger_event_on_ssm_change(self, events_client, sqs_client, ssm_client):
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
 
         # create queue
         queue_name = "queue-{}".format(short_uid())
-        queue_url = sqs.create_queue(QueueName=queue_name)["QueueUrl"]
+        queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
         # put rule listening on SSM changes
         ssm_prefix = "/test/local/"
-        self.events_client.put_rule(
+        events_client.put_rule(
             Name=rule_name,
             EventPattern=json.dumps(
                 {
@@ -1107,17 +1120,17 @@ class EventsTest(unittest.TestCase):
         )
 
         # put target
-        self.events_client.put_targets(
+        events_client.put_targets(
             Rule=rule_name,
             EventBusName=TEST_EVENT_BUS_NAME,
             Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
         )
 
         # change SSM param to trigger event
-        ssm.put_parameter(Name=f"{ssm_prefix}/test123", Value="value1", Type="String")
+        ssm_client.put_parameter(Name=f"{ssm_prefix}/test123", Value="value1", Type="String")
 
         def assert_message():
-            resp = sqs.receive_message(QueueUrl=queue_url)
+            resp = sqs_client.receive_message(QueueUrl=queue_url)
             result = resp.get("Messages")
             body = json.loads(result[0]["Body"])
             assert body == {"name": "/test/local/test123", "operation": "Create"}
@@ -1128,12 +1141,11 @@ class EventsTest(unittest.TestCase):
         # clean up
         self.cleanup(rule_name=rule_name, target_ids=target_id)
 
-    def test_put_event_with_content_base_rule_in_pattern(self):
-        queue_name = "queue-{}".format(short_uid())
-        rule_name = "rule-{}".format(short_uid())
-        target_id = "target-{}".format(short_uid())
+    def test_put_event_with_content_base_rule_in_pattern(self, events_client, sqs_client):
+        queue_name = f"queue-{short_uid()}"
+        rule_name = f"rule-{short_uid()}"
+        target_id = f"target-{short_uid()}"
 
-        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
@@ -1190,48 +1202,63 @@ class EventsTest(unittest.TestCase):
             ),
         }
 
-        self.events_client.create_event_bus(Name=TEST_EVENT_BUS_NAME)
-        self.events_client.put_rule(
+        events_client.create_event_bus(Name=TEST_EVENT_BUS_NAME)
+        events_client.put_rule(
             Name=rule_name,
             EventBusName=TEST_EVENT_BUS_NAME,
             EventPattern=json.dumps(pattern),
         )
 
-        self.events_client.put_targets(
+        events_client.put_targets(
             Rule=rule_name,
             EventBusName=TEST_EVENT_BUS_NAME,
             Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
         )
-        self.events_client.put_events(Entries=[event])
+        events_client.put_events(Entries=[event])
 
         def get_message(queue_url):
             resp = sqs_client.receive_message(QueueUrl=queue_url)
             return resp.get("Messages")
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(1, len(messages))
-        self.assertEqual(json.loads(event["Detail"]), json.loads(messages[0].get("Body")))
+        assert len(messages) == 1
+        assert json.loads(messages[0].get("Body")) == json.loads(event["Detail"])
         event_details = json.loads(event["Detail"])
         event_details["admins"] = "no"
         event["Detail"] = json.dumps(event_details)
 
-        self.events_client.put_events(Entries=[event])
+        events_client.put_events(Entries=[event])
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertIsNone(messages)
+        assert messages is None
 
         # clean up
         self.cleanup(TEST_EVENT_BUS_NAME, rule_name, target_id, queue_url=queue_url)
 
-    def cleanup(self, bus_name=None, rule_name=None, target_ids=None, queue_url=None):
+    def _get_queue_arn(self, queue_url, sqs_client):
+        queue_attrs = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )
+        return queue_attrs["Attributes"]["QueueArn"]
+
+    def cleanup(
+        self,
+        bus_name=None,
+        rule_name=None,
+        target_ids=None,
+        queue_url=None,
+        events_client=None,
+        sqs_client=None,
+    ):
+        events_client = events_client or aws_stack.create_external_boto_client("events")
         kwargs = {"EventBusName": bus_name} if bus_name else {}
         if target_ids:
             target_ids = target_ids if isinstance(target_ids, list) else [target_ids]
-            self.events_client.remove_targets(Rule=rule_name, Ids=target_ids, Force=True, **kwargs)
+            events_client.remove_targets(Rule=rule_name, Ids=target_ids, Force=True, **kwargs)
         if rule_name:
-            self.events_client.delete_rule(Name=rule_name, Force=True, **kwargs)
+            events_client.delete_rule(Name=rule_name, Force=True, **kwargs)
         if bus_name:
-            self.events_client.delete_event_bus(Name=bus_name)
+            events_client.delete_event_bus(Name=bus_name)
         if queue_url:
-            sqs_client = aws_stack.create_external_boto_client("sqs")
+            sqs_client = sqs_client or aws_stack.create_external_boto_client("sqs")
             sqs_client.delete_queue(QueueUrl=queue_url)

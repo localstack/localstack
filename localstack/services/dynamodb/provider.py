@@ -397,6 +397,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         # forward request to backend
         result = self.forward_request(context)
+        table_description = result["TableDescription"]
 
         backend = DynamoDBRegion.get()
         backend.table_definitions[table_name] = table_definitions = dict(create_table_input)
@@ -411,19 +412,20 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if table_definitions:
             table_content = result.get("Table", {})
             table_content.update(table_definitions)
-            result["TableDescription"].update(table_content)
+            table_description.update(table_content)
 
         if "StreamSpecification" in table_definitions:
-            create_dynamodb_stream(
-                table_definitions, result["TableDescription"].get("LatestStreamLabel")
-            )
+            create_dynamodb_stream(table_definitions, table_description.get("LatestStreamLabel"))
 
         tags = table_definitions.pop("Tags", [])
-        result["TableDescription"].pop("Tags", None)
         if tags:
-            table_arn = result["TableDescription"]["TableArn"]
+            table_arn = table_description["TableArn"]
             table_arn = self.fix_table_arn(table_arn)
             DynamoDBRegion.TABLE_TAGS[table_arn] = {tag["Key"]: tag["Value"] for tag in tags}
+
+        # remove invalid attributes from result
+        table_description.pop("Tags", None)
+        table_description.pop("BillingMode", None)
 
         event_publisher.fire_event(
             event_publisher.EVENT_DYNAMODB_CREATE_TABLE,
