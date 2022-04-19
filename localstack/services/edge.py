@@ -6,7 +6,7 @@ import re
 import subprocess
 import sys
 import threading
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from requests.models import Response
 
@@ -29,6 +29,7 @@ from localstack.http.router import RegexConverter
 from localstack.runtime import events
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
 from localstack.services.infra import PROXY_LISTENERS
+from localstack.services.messages import Headers
 from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
@@ -332,7 +333,12 @@ def get_auth_string(method, path, headers, data=None):
 
 
 # TODO: refactor this function -> returning the port is redundant (given the returned service name)
-def get_api_from_headers(headers, method=None, path=None, data=None):
+def get_api_from_headers(
+    headers: Headers,
+    method: Optional[str] = None,
+    path: Optional[str] = None,
+    data: Optional[Union[str, bytes]] = None,
+):
     """Determine API and backend port based on "Authorization" or "Host" headers."""
 
     # initialize result
@@ -426,7 +432,7 @@ def is_s3_form_data(data_bytes):
 
 
 # TODO: refactor this function -> returning the port is redundant (given the returned service name)
-def get_api_from_custom_rules(method, path, data, headers):
+def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], headers: Headers):
     """Determine backend port based on custom rules."""
 
     # API Gateway invocation URLs
