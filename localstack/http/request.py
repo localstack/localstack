@@ -48,20 +48,17 @@ def dummy_wsgi_environment(
         "REQUEST_METHOD": method,
         "SCRIPT_NAME": root_path.rstrip("/"),
         "PATH_INFO": path,
+        "SERVER_PROTOCOL": "HTTP/1.1",
     }
+
+    data = strings.to_bytes(body) if body else b""
 
     if query_string is not None:
         environ["QUERY_STRING"] = query_string
 
-    if headers:
-        content_type = headers.get("Content-Type")
-        if content_type:
-            environ["CONTENT_TYPE"] = content_type
-
-    data = strings.to_bytes(body) if body else b""
-    environ["CONTENT_LENGTH"] = str(len(data))
-
-    environ["SERVER_PROTOCOL"] = "HTTP/1.1"
+    if raw_uri:
+        environ["RAW_URI"] = raw_uri
+        environ["REQUEST_URI"] = environ["RAW_URI"]
 
     if server:
         environ["SERVER_NAME"] = server[0]
@@ -77,13 +74,23 @@ def dummy_wsgi_environment(
         environ["REMOTE_ADDR"] = remote_addr
 
     if headers:
-        # TODO: set HTTP_ Variables (header fields), not needed currently because we set them
-        #  directly after ``Request`` construction.
-        pass
+        for k, v in headers.items():
+            name = k.upper().replace("-", "_")
 
-    if raw_uri:
-        environ["RAW_URI"] = raw_uri
-        environ["REQUEST_URI"] = environ["RAW_URI"]
+            if name not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
+                name = f"HTTP_{name}"
+
+            val = v
+            if name in environ:
+                val = environ[name] + "," + val
+
+            environ[name] = val
+
+    if "CONTENT_LENGTH" not in environ:
+        # try to determine content length from body
+        environ["CONTENT_LENGTH"] = str(len(data))
+
+    print("content length", environ["CONTENT_LENGTH"], data)
 
     # WSGI environ keys
     environ["wsgi.version"] = (1, 0)
@@ -118,14 +125,6 @@ class Request(WerkzeugRequest):
         server: Optional[Tuple[str, Optional[int]]] = None,
         raw_path: str = None,
     ):
-        # build werkzeug Headers from input headers
-        if not headers:
-            headers = Headers()
-        elif isinstance(headers, Headers):
-            headers = headers
-        else:
-            headers = Headers(headers)
-
         # decode query string if necessary (latin-1 is what werkzeug would expect)
         query_string = strings.to_str(query_string, "latin-1")
 
@@ -145,9 +144,9 @@ class Request(WerkzeugRequest):
 
         super(Request, self).__init__(environ)
 
-        # werkzeug normally provides read-only access to headers set in the WSGIEnvironment, but we
-        # can forego that here since we have the headers in a mutable structure already
-        self.headers = headers
+        # werkzeug normally provides read-only access to headers set in the WSGIEnvironment through the EnvironHeaders
+        # class, this makes them mutable.
+        self.headers = Headers(self.headers)
 
 
 def get_raw_path(request) -> str:
