@@ -2,8 +2,8 @@ import logging
 from typing import Optional
 
 from localstack.aws.api import CommonServiceException
-from localstack.aws.protocol.request import guess_aws_service_name
 from localstack.aws.protocol.serializer import create_serializer
+from localstack.aws.protocol.service_router import guess_aws_service_name
 from localstack.aws.spec import ServiceCatalog
 from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
