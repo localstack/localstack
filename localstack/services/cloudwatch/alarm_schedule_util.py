@@ -3,9 +3,14 @@ import math
 import threading
 import traceback
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING, List
 
+from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery
 from localstack.utils.aws import aws_stack
 from localstack.utils.scheduler import Scheduler
+
+if TYPE_CHECKING:
+    from mypy_boto3_cloudwatch import CloudWatchClient
 
 LOG = logging.getLogger(__name__)
 
@@ -34,11 +39,11 @@ class AlarmScheduler:
         self.thread.start()
         self.scheduled_alarms = {}
 
-    def shutdown_scheduler(self):
+    def shutdown_scheduler(self) -> None:
         self.scheduler.close()
         self.thread.join(5)
 
-    def schedule_metric_alarm(self, alarm_arn):
+    def schedule_metric_alarm(self, alarm_arn: str) -> None:
         """(Re-)schedules the alarm, if the alarm is re-scheduled, the running alarm scheduler will be cancelled before
         starting a new one"""
         alarm_details = get_metric_alarm_details_for_alarm_arn(alarm_arn)
@@ -61,18 +66,18 @@ class AlarmScheduler:
         self.scheduled_alarms[alarm_arn] = task
 
 
-def get_metric_alarm_details_for_alarm_arn(alarm_arn):
+def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> MetricAlarm:
     alarm_name = aws_stack.extract_resource_from_arn(alarm_arn).split(":", 1)[1]
     client = get_cloudwatch_client_for_region_of_alarm(alarm_arn)
     return client.describe_alarms(AlarmNames=[alarm_name])["MetricAlarms"][0]
 
 
-def get_cloudwatch_client_for_region_of_alarm(alarm_arn):
+def get_cloudwatch_client_for_region_of_alarm(alarm_arn: str) -> "CloudWatchClient":
     region = aws_stack.extract_region_from_arn(alarm_arn)
     return aws_stack.connect_to_service("cloudwatch", region_name=region)
 
 
-def generate_metric_query(alarm_details):
+def generate_metric_query(alarm_details: MetricAlarm) -> MetricDataQuery:
     """Creates the dict with the required data for MetricDataQueries when calling client.get_metric_data"""
     return {
         "Id": alarm_details["AlarmName"],
@@ -89,7 +94,7 @@ def generate_metric_query(alarm_details):
     }
 
 
-def is_threshold_exceeded(metric_values, alarm_details):
+def is_threshold_exceeded(metric_values: List[float], alarm_details: MetricAlarm) -> bool:
     """Evaluates if the threshold is exceeded for the configured alarm and given metric values
 
     :param metric_values: values to compare against threshold
@@ -118,7 +123,7 @@ def is_threshold_exceeded(metric_values, alarm_details):
     return False
 
 
-def is_triggering_premature_alarm(metric_values, alarm_details):
+def is_triggering_premature_alarm(metric_values: List[float], alarm_details: MetricAlarm) -> bool:
     """
     Checks if a premature alarm should be triggered.
     https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html#CloudWatch-alarms-avoiding-premature-transition:
@@ -150,7 +155,7 @@ def is_triggering_premature_alarm(metric_values, alarm_details):
     return False
 
 
-def collect_metric_data(alarm_details, client):
+def collect_metric_data(alarm_details: MetricAlarm, client: "CloudWatchClient") -> List[float]:
     """
     Collects the metric data for the evaluation interval.
 
@@ -166,10 +171,10 @@ def collect_metric_data(alarm_details, client):
     # points than the number specified as Evaluation Periods."
     # No other indication, try to calculate a reasonable value:
     magic_number = max(math.floor(evaluation_periods / 3), 2)
+    collected_periods = evaluation_periods + magic_number
 
     now = datetime.utcnow().replace(tzinfo=timezone.utc)
     metric_query = generate_metric_query(alarm_details)
-    collected_periods = evaluation_periods + magic_number
 
     # get_metric_data needs to be run in a loop, so we also collect empty data points on the right position
     for i in range(0, collected_periods):
@@ -184,7 +189,9 @@ def collect_metric_data(alarm_details, client):
     return metric_values
 
 
-def update_alarm_state(client, alarm_name, current_state, desired_state):
+def update_alarm_state(
+    client: "CloudWatchClient", alarm_name: str, current_state: str, desired_state: str
+) -> None:
     """Updates the alarm state, if the current_state is different than the desired_state
 
     :param client: the cloudwatch client
@@ -197,7 +204,7 @@ def update_alarm_state(client, alarm_name, current_state, desired_state):
     client.set_alarm_state(AlarmName=alarm_name, StateValue=desired_state, StateReason=REASON)
 
 
-def calculate_alarm_state(alarm_arn):
+def calculate_alarm_state(alarm_arn: str) -> None:
     """
     Calculates and updates the state of the alarm
 
