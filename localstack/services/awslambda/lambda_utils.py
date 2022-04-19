@@ -136,7 +136,7 @@ def format_name_to_path(handler_name: str, delimiter: str, extension: str):
     if os.path.sep not in file_path:
         file_path = file_path.replace(".", os.path.sep)
 
-    if file_path.startswith(".%s" % os.path.sep):
+    if file_path.startswith(f".{os.path.sep}"):
         file_path = file_path[2:]
 
     return "%s%s" % (file_path, extension)
