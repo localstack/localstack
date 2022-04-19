@@ -251,7 +251,6 @@ class TestEvents:
                 entries = entry_asserts[0]
                 for entry in entries:
                     entry.setdefault("EventBusName", bus_name)
-                print("!!PUT", entries)
                 self._put_entries_assert_results_sqs(
                     events_client,
                     sqs_client,
