@@ -278,7 +278,7 @@ def validate_empty_message_batch(data, req_data):
 
 def is_sqs_queue_url(url):
     path = path_from_url(url).partition("?")[0]
-    return re.match(r"^/(queue|%s)/[a-zA-Z0-9_-]+$" % constants.TEST_AWS_ACCOUNT_ID, path)
+    return re.match(r"^/(queue|%s)/[a-zA-Z0-9_-]+(.fifo)?$" % constants.TEST_AWS_ACCOUNT_ID, path)
 
 
 class ProxyListenerSQS(PersistingProxyListener):
