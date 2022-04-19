@@ -878,9 +878,10 @@ def test_restxml_headers_parsing():
     _botocore_parser_integration_test(
         service="s3",
         action="PutObject",
+        ContentLength=0,
         Bucket="test-bucket",
         Key="test.json",
-        Metadata={"key": "value", "key2": "value2"},
+        Metadata={"Key": "value", "Key2": "value2"},
     )
 
 
@@ -891,6 +892,7 @@ def test_restxml_header_date_parsing():
         action="PutObject",
         Bucket="test-bucket",
         Key="test-key",
+        ContentLength=3,
         Body=b"foo",
         Metadata={},
         Expires=datetime(2015, 1, 1, 0, 0, tzinfo=timezone.utc),

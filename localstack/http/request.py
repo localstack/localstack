@@ -90,12 +90,11 @@ def dummy_wsgi_environment(
         # try to determine content length from body
         environ["CONTENT_LENGTH"] = str(len(data))
 
-    print("content length", environ["CONTENT_LENGTH"], data)
-
     # WSGI environ keys
     environ["wsgi.version"] = (1, 0)
     environ["wsgi.url_scheme"] = scheme
     environ["wsgi.input"] = BytesIO(data)
+    environ["wsgi.input_terminated"] = True
     environ["wsgi.errors"] = BytesIO()
     environ["wsgi.multithread"] = True
     environ["wsgi.multiprocess"] = False
