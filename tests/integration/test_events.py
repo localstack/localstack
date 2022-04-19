@@ -231,7 +231,6 @@ class TestEvents:
         )
 
         events_client.create_event_bus(Name=bus_name)
-        print("!!!pattern", pattern)
         events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
