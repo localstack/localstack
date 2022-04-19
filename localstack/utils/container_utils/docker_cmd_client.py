@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from localstack import config
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
+    CancellableStream,
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
@@ -26,6 +27,26 @@ from localstack.utils.run import run
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
+
+
+class CancellableProcessStream(CancellableStream):
+    process: subprocess.Popen
+
+    def __init__(self, process: subprocess.Popen) -> None:
+        super().__init__()
+        self.process = process
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        line = self.process.stdout.readline()
+        if not line:
+            raise StopIteration
+        return line
+
+    def close(self):
+        return self.process.terminate()
 
 
 class CmdDockerClient(ContainerClient):
@@ -309,6 +330,18 @@ class CmdDockerClient(ContainerClient):
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 )
+
+    def stream_container_logs(self, container_name_or_id: str) -> CancellableStream:
+        self.inspect_container(container_name_or_id)  # guard to check whether container is there
+
+        cmd = self._docker_cmd()
+        cmd += ["logs", container_name_or_id, "--follow"]
+
+        process: subprocess.Popen = run(
+            cmd, asynchronous=True, outfile=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+
+        return CancellableProcessStream(process)
 
     def _inspect_object(self, object_name_or_id: str) -> Dict[str, Union[Dict, str]]:
         cmd = self._docker_cmd()

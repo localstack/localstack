@@ -5,6 +5,7 @@ import re
 import shlex
 import signal
 import threading
+import time
 import warnings
 from functools import wraps
 from typing import Dict, Iterable, List, Optional, Set
@@ -22,6 +23,7 @@ from localstack.utils.container_utils.container_client import (
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, chmod_r, mkdir
+from localstack.utils.functions import call_safe
 from localstack.utils.run import run, to_str
 from localstack.utils.serving import Server
 from localstack.utils.sync import poll_condition
@@ -764,6 +766,7 @@ def start_infra_in_docker_detached(console):
 def wait_container_is_ready(timeout: Optional[float] = None):
     """Blocks until the localstack main container is running and the ready marker has been printed."""
     container_name = config.MAIN_CONTAINER_NAME
+    started = time.time()
 
     def is_container_running():
         return DOCKER_CLIENT.is_container_running(container_name)
@@ -771,29 +774,33 @@ def wait_container_is_ready(timeout: Optional[float] = None):
     if not poll_condition(is_container_running, timeout=timeout):
         return False
 
-    logfile = LocalstackContainer(container_name).logfile
+    stream = DOCKER_CLIENT.stream_container_logs(container_name)
 
-    ready = threading.Event()
-
-    def set_ready_if_marker_found(_line: str):
-        if _line == constants.READY_MARKER_OUTPUT:
-            ready.set()
-
-    # start a tail on the logfile
-    listener = FileListener(logfile, set_ready_if_marker_found)
-    listener.start()
+    # create a timer that will terminate the log stream after the remaining timeout
+    timer = None
+    if timeout:
+        waited = time.time() - started
+        remaining = timeout - waited
+        # check the rare case that the timeout has already been reached
+        if remaining <= 0:
+            stream.close()
+            return False
+        timer = threading.Timer(remaining, stream.close)
+        timer.start()
 
     try:
-        # but also check the existing log in case the container has been running longer
-        with open(logfile, "r") as fd:
-            for line in fd:
-                if constants.READY_MARKER_OUTPUT == line.strip():
-                    return True
+        for line in stream:
+            line = line.decode("utf-8").strip()
+            if line == constants.READY_MARKER_OUTPUT:
+                return True
 
-        # TODO: calculate remaining timeout
-        return ready.wait(timeout)
+        # EOF was reached or the stream was closed
+        return False
     finally:
-        listener.close()
+        call_safe(stream.close)
+        if timer:
+            # make sure the timer is stopped (does nothing if it has already run)
+            timer.cancel()
 
 
 # ---------------
