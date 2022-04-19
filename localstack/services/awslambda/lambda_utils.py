@@ -139,7 +139,7 @@ def format_name_to_path(handler_name: str, delimiter: str, extension: str):
     if file_path.startswith(f".{os.path.sep}"):
         file_path = file_path[2:]
 
-    return "%s%s" % (file_path, extension)
+    return f"{file_path}{extension}"
 
 
 def get_handler_file_from_name(handler_name: str, runtime: str = None):
