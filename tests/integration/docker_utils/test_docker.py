@@ -749,11 +749,7 @@ class TestDockerClient:
 
     def test_stream_logs_non_existent_container(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchContainer):
-            docker_client.get_container_logs("container_hopefully_does_not_exist", safe=False)
-
-        assert "" == docker_client.get_container_logs(
-            "container_hopefully_does_not_exist", safe=True
-        )
+            docker_client.stream_container_logs("container_hopefully_does_not_exist")
 
     def test_stream_logs(self, docker_client: ContainerClient):
         container_name = _random_container_name()

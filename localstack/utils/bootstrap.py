@@ -23,6 +23,7 @@ from localstack.utils.container_utils.container_client import (
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, chmod_r, mkdir
+from localstack.utils.functions import call_safe
 from localstack.utils.run import run, to_str
 from localstack.utils.serving import Server
 from localstack.utils.sync import poll_condition
@@ -796,6 +797,7 @@ def wait_container_is_ready(timeout: Optional[float] = None):
         # EOF was reached or the stream was closed
         return False
     finally:
+        call_safe(stream.close)
         if timer:
             # make sure the timer is stopped (does nothing if it has already run)
             timer.cancel()

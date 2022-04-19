@@ -332,7 +332,7 @@ class CmdDockerClient(ContainerClient):
                 )
 
     def stream_container_logs(self, container_name_or_id: str) -> CancellableStream:
-        self._inspect_object(container_name_or_id)  # guard to check whether container is there
+        self.inspect_container(container_name_or_id)  # guard to check whether container is there
 
         cmd = self._docker_cmd()
         cmd += ["logs", container_name_or_id, "--follow"]
