@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 import boto3
 import botocore.config
 import pytest
-from _pytest.mark import MarkGenerator
 
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -854,10 +853,6 @@ only_localstack = pytest.mark.skipif(
     os.environ.get("TEST_TARGET") == "AWS_CLOUD",
     reason="test only applicable if run against localstack",
 )
-
-
-# define markers programmatically via MarkGenerator (could also be moved to pytest.ini)
-MarkGenerator._markers.add("aws_validated")
 
 
 @pytest.fixture

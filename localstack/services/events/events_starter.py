@@ -69,6 +69,7 @@ def handle_numeric_conditions(conditions: List[Any], value: float):
 def filter_event_based_on_event_format(self, rule_name: str, event: Dict[str, Any]):
     def filter_event(event_pattern_filter: Dict[str, Any], event: Dict[str, Any]):
         for key, value in event_pattern_filter.items():
+            # match keys in the event in a case-agnostic way
             event_value = event.get(key.lower(), event.get(key))
             if event_value is None:
                 return False
