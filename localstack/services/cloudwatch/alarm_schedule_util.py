@@ -33,6 +33,9 @@ REASON = "Alarm Evaluation"  # TODO
 
 class AlarmScheduler:
     def __init__(self) -> None:
+        """
+        Creates a new AlarmScheduler, with a Scheduler, that will be started in a new thread
+        """
         super().__init__()
         self.scheduler = Scheduler()
         self.thread = threading.Thread(target=self.scheduler.run)
@@ -40,6 +43,9 @@ class AlarmScheduler:
         self.scheduled_alarms = {}
 
     def shutdown_scheduler(self) -> None:
+        """
+        Shutsdown the scheduler, must be called before application stops
+        """
         self.scheduler.close()
         self.thread.join(5)
 
@@ -47,9 +53,7 @@ class AlarmScheduler:
         """(Re-)schedules the alarm, if the alarm is re-scheduled, the running alarm scheduler will be cancelled before
         starting a new one"""
         alarm_details = get_metric_alarm_details_for_alarm_arn(alarm_arn)
-        task = self.scheduled_alarms.get(alarm_arn)
-        if task:
-            task.cancel()
+        self.delete_scheduler_for_alarm(alarm_arn)
 
         period = alarm_details["Period"]
         evaluation_periods = alarm_details["EvaluationPeriods"]
@@ -64,6 +68,16 @@ class AlarmScheduler:
         )
 
         self.scheduled_alarms[alarm_arn] = task
+
+    def delete_scheduler_for_alarm(self, alarm_arn: str) -> None:
+        """
+        Deletes the recurring scheduler for an alarm
+
+        :param alarm_arn: the arn of the alarm to be removed
+        """
+        task = self.scheduled_alarms.get(alarm_arn)
+        if task:
+            task.cancel()
 
 
 def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> MetricAlarm:

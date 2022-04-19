@@ -7,6 +7,7 @@ from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
+    AlarmNames,
     AmazonResourceName,
     CloudwatchApi,
     ListTagsForResourceOutput,
@@ -188,15 +189,17 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
-        self.alarm_scheduler = AlarmScheduler()  # TODO start in new thread
-        # TODO init scheduler
+        self.alarm_scheduler = AlarmScheduler()
         # TODO restart -> persistence -> from all regions??
 
     def on_before_stop(self):
-        # TODO shutdown scheduler
         self.alarm_scheduler.shutdown_scheduler()
 
-    # TODO delete scheduler on delete_alarm
+    def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+        moto.call_moto(context)
+        for alarm_name in alarm_names:
+            arn = aws_stack.cloudwatch_alarm_arn(alarm_name)
+            self.alarm_scheduler.delete_scheduler_for_alarm(arn)
 
     def get_raw_metrics(self, request: Request):
         region = aws_stack.extract_region_from_auth_header(request.headers)
