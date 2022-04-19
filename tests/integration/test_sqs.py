@@ -1620,6 +1620,15 @@ class TestSqsProvider:
             assert k in keys
             assert attributes[k] == result_attributes[k]
 
+    def test_call_fifo_queue_url(self, sqs_client, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}.fifo"
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes={"FifoQueue": "true"})
+
+        assert queue_url.endswith(".fifo")
+        response = requests.get(queue_url)
+        assert response.ok
+        assert queue_url in response.text
+
 
 def get_region():
     return os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
