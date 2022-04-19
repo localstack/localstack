@@ -16,6 +16,7 @@ on:
 jobs:
   run-integration-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 100
     defaults:
       run:
         working-directory: localstack-ext
@@ -97,9 +98,10 @@ jobs:
           AWS_ACCESS_KEY_ID: "test"
           AWS_DEFAULT_REGION: "us-east-1"
           HOST_TMP_FOLDER: /tmp/localstack
+          PYTEST_LOGLEVEL: debug
         run: |
           source .venv/bin/activate
-          python -m pytest --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
+          python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
       - name: Run Lambda Tests for lambda executor docker
         env:
           DEBUG: 0
