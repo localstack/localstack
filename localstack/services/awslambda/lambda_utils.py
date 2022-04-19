@@ -128,24 +128,35 @@ def is_provided_runtime(runtime_details: Union[LambdaFunction, str]) -> bool:
     return runtime.startswith("provided")
 
 
+def format_name_to_path(handler_name: str, delimiter: str, extension: str):
+    file_path = handler_name.rpartition(delimiter)[0]
+    if delimiter == ":":
+        file_path = file_path.split(delimiter)[0]
+
+    if os.path.sep not in file_path:
+        file_path = file_path.replace(".", os.path.sep)
+
+    if file_path.startswith(f".{os.path.sep}"):
+        file_path = file_path[2:]
+
+    return f"{file_path}{extension}"
+
+
 def get_handler_file_from_name(handler_name: str, runtime: str = None):
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
+
     if runtime.startswith(LAMBDA_RUNTIME_PROVIDED):
         return "bootstrap"
-    delimiter = "."
     if runtime.startswith(LAMBDA_RUNTIME_NODEJS):
-        file_ext = ".js"
-    elif runtime.startswith(LAMBDA_RUNTIME_GOLANG):
-        file_ext = ""
-    elif runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
-        file_ext = ".dll"
-        delimiter = ":"
-    elif runtime.startswith(LAMBDA_RUNTIME_RUBY):
-        file_ext = ".rb"
-    else:
-        handler_name = handler_name.rpartition(delimiter)[0].replace(delimiter, os.path.sep)
-        file_ext = ".py"
-    return "%s%s" % (handler_name.split(delimiter)[0], file_ext)
+        return format_name_to_path(handler_name, ".", ".js")
+    if runtime.startswith(LAMBDA_RUNTIME_GOLANG):
+        return format_name_to_path(handler_name, ".", "")
+    if runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
+        return format_name_to_path(handler_name, ":", ".dll")
+    if runtime.startswith(LAMBDA_RUNTIME_RUBY):
+        return format_name_to_path(handler_name, ".", ".rb")
+
+    return format_name_to_path(handler_name, ".", ".py")
 
 
 def is_java_lambda(lambda_details):
