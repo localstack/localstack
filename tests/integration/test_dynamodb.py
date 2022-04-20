@@ -506,30 +506,29 @@ class TestDynamoDB:
         )
         assert "ShardIterator" in response
 
-    def test_dynamodb_partiql_missing(self):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    def test_dynamodb_partiql_missing(self, dynamodb_client):
         table_name = "table_with_stream_%s" % short_uid()
 
         # create table
-        dynamodb.create_table(
+        dynamodb_client.create_table(
             TableName=table_name,
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
         # create items with FirstName attribute
-        dynamodb.execute_statement(
+        dynamodb_client.execute_statement(
             Statement=f"INSERT INTO {table_name} VALUE {{'Username': 'Alice123', 'FirstName':'Alice'}}"
         )
-        items = dynamodb.execute_statement(
+        items = dynamodb_client.execute_statement(
             Statement=f"SELECT * FROM {table_name} WHERE FirstName IS NOT MISSING"
         )["Items"]
         assert len(items) == 1
-        items = dynamodb.execute_statement(
+        items = dynamodb_client.execute_statement(
             Statement=f"SELECT * FROM {table_name} WHERE FirstName IS MISSING"
         )["Items"]
         assert len(items) == 0
-        delete_table(table_name)
+        dynamodb_client.delete_table(TableName=table_name)
 
     def test_dynamodb_stream_stream_view_type(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
