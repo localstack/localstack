@@ -956,7 +956,7 @@ def extract_query_string_params(path: str) -> Tuple[str, Dict[str, str]]:
 
     # strip trailing slashes from path to fix downstream lookups
     path = path.rstrip("/") or "/"
-    return [path, query_string_params]
+    return [path, query_string_params or None]
 
 
 def get_cors_response(headers):

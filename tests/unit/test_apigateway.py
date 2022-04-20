@@ -30,6 +30,12 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertEqual("/foo/bar", path)
         self.assertEqual({"foo": "foo", "bar": ["bar", "baz"]}, query_params)
 
+        path, query_params = apigateway_listener.extract_query_string_params(
+            "/foo/bar"
+        )
+        self.assertEqual("/foo/bar", path)
+        self.assertEqual(None, query_params)
+
     def test_extract_path_params(self):
         params = apigateway_listener.extract_path_params("/foo/bar", "/foo/{param1}")
         self.assertEqual({"param1": "bar"}, params)
