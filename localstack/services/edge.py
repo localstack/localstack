@@ -445,18 +445,22 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
     if ("/%s/" % PATH_USER_REQUEST) in path or (
         host_header.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host_header
     ):
+        # TODO stays here, NOT parsed by ASF
         return "apigateway", config.service_port("apigateway")
 
     # detect S3 presigned URLs
     if "AWSAccessKeyId=" in path or "Signature=" in path:
+        # TODO MOVE, parsed by ASF!
         return "s3", config.service_port("s3")
 
     # heuristic for SQS queue URLs
     if is_sqs_queue_url(path):
+        # TODO MOVE, parsed by ASF!
         return "sqs", config.service_port("sqs")
 
     # DynamoDB shell URLs
     if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
+        # TODO stays here, NOT parsed by ASF
         return "dynamodb", config.service_port("dynamodb")
 
     data_bytes = to_bytes(data or "")
@@ -466,41 +470,52 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
         return to_str(search_str) in path or to_bytes(search_str) in data_bytes
 
     if path == "/" and b"QueueName=" in data_bytes:
+        # TODO MOVE, parsed by ASF!
         return "sqs", config.service_port("sqs")
 
     if "Action=ConfirmSubscription" in path:
+        # TODO MOVE, parsed by ASF!
         return "sns", config.service_port("sns")
 
     if path.startswith("/2015-03-31/functions/"):
+        # TODO MOVE, parsed by ASF!
         return "lambda", config.service_port("lambda")
 
     if _in_path_or_payload("Action=AssumeRoleWithWebIdentity"):
+        # TODO MOVE, parsed by ASF!
         return "sts", config.service_port("sts")
 
     if _in_path_or_payload("Action=AssumeRoleWithSAML"):
+        # TODO MOVE, parsed by ASF!
         return "sts", config.service_port("sts")
 
     if _in_path_or_payload("Action=AssumeRole"):
+        # TODO MOVE, parsed by ASF!
         return "sts", config.service_port("sts")
 
     # SQS queue requests
     if _in_path_or_payload("QueueUrl=") and _in_path_or_payload("Action="):
+        # TODO MOVE, parsed by ASF!
         return "sqs", config.service_port("sqs")
     if matches_service_action("sqs", action, version=version):
+        # TODO MOVE, parsed by ASF!
         return "sqs", config.service_port("sqs")
 
     # SNS topic requests
     if matches_service_action("sns", action, version=version):
+        # TODO MOVE, parsed by ASF!
         return "sns", config.service_port("sns")
 
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip("/")
     if method in ["GET", "HEAD"] and stripped:
+        # TODO MOVE, parsed by ASF!
         # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
         return "s3", config.service_port("s3")
 
     # detect S3 URLs
     if stripped and "/" not in stripped:
+        # TODO MOVE, parsed by ASF!
         if method == "PUT":
             # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
             return "s3", config.service_port("s3")
@@ -510,6 +525,7 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
 
     # detect S3 requests sent from aws-cli using --no-sign-request option
     if "aws-cli/" in headers.get("User-Agent", ""):
+        # TODO MOVE, parsed by ASF!
         return "s3", config.service_port("s3")
 
     # S3 delete object requests
@@ -519,10 +535,12 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
         and b"<Delete" in data_bytes
         and b"<Key>" in data_bytes
     ):
+        # TODO MOVE, parsed by ASF!
         return "s3", config.service_port("s3")
 
     # Put Object API can have multiple keys
     if stripped.count("/") >= 1 and method == "PUT":
+        # TODO MOVE, parsed by ASF!
         # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
         # or `/<bucket>/object/object1/+`
         return "s3", config.service_port("s3")
@@ -531,10 +549,12 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
 
     # detect S3 requests with "AWS id:key" Auth headers
     if auth_header.startswith("AWS "):
+        # TODO MOVE, parsed by ASF!
         return "s3", config.service_port("s3")
 
     # certain EC2 requests from Java SDK contain no Auth headers (issue #3805)
     if b"Version=2016-11-15" in data_bytes:
+        # TODO MOVE, parsed by ASF!
         return "ec2", config.service_port("ec2")
 
 

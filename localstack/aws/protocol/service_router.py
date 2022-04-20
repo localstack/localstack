@@ -87,13 +87,13 @@ signing_name_path_prefix_rules = {
 def custom_signing_name_rules(signing_name: str, request: Request) -> Optional[str]:
     rules = signing_name_path_prefix_rules.get(signing_name)
     if not rules:
-
         if signing_name == "servicecatalog":
-            if request.path == "/" and request.method == "POST":
+            # servicecatalog uses the protocol json (only uses root path /)
+            # servicecatalog-appregistry uses rest-json (only uses non-root path)
+            if request.path == "/":
                 return "servicecatalog"
             else:
                 return "servicecatalog-appregistry"
-
         return
 
     for prefix, name in rules.items():

@@ -26,7 +26,6 @@ class ServiceNamerParserChallenger(ProxyListenerAdapter):
 
     def request(self, request: Request) -> Optional[Response]:
         actual = determine_aws_service_name(request, services)
-
         if self.expected == actual:
             LOG.info("successful service name match for %s", actual)
             return None
