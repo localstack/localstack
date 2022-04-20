@@ -14,7 +14,7 @@ from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
-from localstack.utils.common import clone, epoch_timestamp, json_safe, now_utc, to_bytes, to_str
+from localstack.utils.common import clone, json_safe, now_utc, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 

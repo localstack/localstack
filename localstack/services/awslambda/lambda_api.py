@@ -47,7 +47,6 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
-from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import (
     TMP_FILES,
     empty_context_manager,

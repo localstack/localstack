@@ -1,6 +1,4 @@
 import base64
-
-base64
 import json
 import os
 import time
@@ -33,7 +31,6 @@ from .test_lambda import (
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
-    is_old_provider,
 )
 
 TEST_STAGE_NAME = "testing"
@@ -41,7 +38,6 @@ TEST_SNS_TOPIC_NAME = "sns-topic-1"
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PARALLEL_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_parallel.py")
-
 
 lambda_role = {
     "Version": "2012-10-17",
@@ -725,7 +721,7 @@ class TestKinesisSource:
 
         kinesis_client.put_records(
             Records=[
-                {"Data": json.dumps({"record_id": i}), "PartitionKey": f"test"}
+                {"Data": json.dumps({"record_id": i}), "PartitionKey": "test"}
                 for i in range(0, num_records_per_batch)
             ],
             StreamName=stream_name,
@@ -738,7 +734,7 @@ class TestKinesisSource:
         time.sleep(2)
         kinesis_client.put_records(
             Records=[
-                {"Data": json.dumps({"record_id": i}), "PartitionKey": f"test"}
+                {"Data": json.dumps({"record_id": i}), "PartitionKey": "test"}
                 for i in range(0, num_records_per_batch)
             ],
             StreamName=stream_name,
