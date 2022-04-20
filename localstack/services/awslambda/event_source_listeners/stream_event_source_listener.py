@@ -98,7 +98,7 @@ class StreamEventSourceListener(EventSourceListener):
     ) -> Tuple[str, str]:
         """
         to be implemented by subclasses
-        :returns: the times the given records were created/entered the source stream
+        :returns: the timestamps the given records were created/entered the source stream in iso8601 format
         """
         raise NotImplementedError
 
@@ -266,8 +266,8 @@ class StreamEventSourceListener(EventSourceListener):
             "shardId": shard_id,
             "startSequenceNumber": start_sequence_num,
             "endSequenceNumber": end_sequence_num,
-            "approximateArrivalOfFirstRecord": first_record_arrival_time.isoformat() + "Z",
-            "approximateArrivalOfLastRecord": last_record_arrival_time.isoformat() + "Z",
+            "approximateArrivalOfFirstRecord": first_record_arrival_time,
+            "approximateArrivalOfLastRecord": last_record_arrival_time,
             "batchSize": batch_size,
             "streamArn": source_arn,
         }

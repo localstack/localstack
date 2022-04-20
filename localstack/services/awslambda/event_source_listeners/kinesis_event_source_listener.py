@@ -70,6 +70,6 @@ class KinesisEventSourceListener(StreamEventSourceListener):
 
     def _get_first_and_last_arrival_time(self, first_record, last_record):
         return (
-            first_record["ApproximateArrivalTimestamp"],
-            last_record["ApproximateArrivalTimestamp"],
+            first_record["ApproximateArrivalTimestamp"].isoformat() + "Z",
+            last_record["ApproximateArrivalTimestamp"].isoformat() + "Z",
         )

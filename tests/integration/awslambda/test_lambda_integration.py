@@ -93,6 +93,9 @@ class TestSNSSubscription:
     ):
         function_name = f"{TEST_LAMBDA_FUNCTION_PREFIX}-{short_uid()}"
         permission_id = f"test-statement-{short_uid()}"
+        subject = "[Subject] Test subject"
+        message = "Hello world."
+        topic_arn = sns_topic["Attributes"]["TopicArn"]
 
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
@@ -101,9 +104,6 @@ class TestSNSSubscription:
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
-
-        topic_arn = sns_topic["Attributes"]["TopicArn"]
-
         lambda_client.add_permission(
             FunctionName=function_name,
             StatementId=permission_id,
@@ -117,9 +117,6 @@ class TestSNSSubscription:
             Protocol="lambda",
             Endpoint=lambda_arn,
         )
-
-        subject = "[Subject] Test subject"
-        message = "Hello world."
         sns_client.publish(TopicArn=topic_arn, Subject=subject, Message=message)
 
         events = retry(
@@ -132,7 +129,6 @@ class TestSNSSubscription:
             logs_client=logs_client,
         )
         notification = events[0]["Records"][0]["Sns"]
-
         assert "Subject" in notification
         assert subject == notification["Subject"]
 
@@ -152,6 +148,8 @@ class TestSQSEventSourceMapping:
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         queue_name_2 = f"queue-{short_uid()}-2"
+        queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
+        queue_arn_1 = sqs_queue_arn(queue_url_1)
 
         create_lambda_function(
             func_name=function_name,
@@ -160,19 +158,12 @@ class TestSQSEventSourceMapping:
             role=lambda_su_role,
         )
 
-        queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
-        queue_arn_1 = sqs_queue_arn(queue_url_1)
-
         rs = lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn_1, FunctionName=function_name
         )
-        assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
         uuid = rs["UUID"]
-
-        def _wait_for_event_source_mapping():
-            return lambda_client.get_event_source_mapping(UUID=uuid)["State"] == "Enabled"
-
-        assert poll_condition(_wait_for_event_source_mapping, timeout=30)
+        assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
+        _await_event_source_mapping_enabled(lambda_client, uuid)
 
         with pytest.raises(ClientError) as e:
             # Update batch size with invalid value
@@ -214,22 +205,23 @@ class TestSQSEventSourceMapping:
             runtime=LAMBDA_RUNTIME_PYTHON36,
             role=lambda_su_role,
         )
-
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
         queue_arn_1 = sqs_queue_arn(queue_url_1)
-
-        lambda_client.create_event_source_mapping(
+        mapping_uuid = lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn_1, FunctionName=function_name, MaximumBatchingWindowInSeconds=1
-        )
+        )["UUID"]
+        _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
 
         sqs_client.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps({"foo": "bar"}))
 
-        def assert_lambda_log_events():
-            events = get_lambda_log_events(function_name=function_name, logs_client=logs_client)
-            # lambda was invoked 1 time
-            assert 1 == len(events[0]["Records"])
-
-        retry(assert_lambda_log_events, sleep_before=3, retries=30)
+        retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=1,
+            function_name=function_name,
+            expected_length=1,
+            logs_client=logs_client,
+        )
 
         rs = sqs_client.receive_message(QueueUrl=queue_url_1)
         assert rs.get("Messages") is None
@@ -246,9 +238,22 @@ class TestDynamoDBEventSourceMapping:
         logs_client,
         check_lambda_logs,
     ):
+        def check_logs():
+            expected = [
+                r'.*"Records":.*',
+                r'.*"dynamodb": {(.*)}.*',
+                r'.*"eventSource": ("aws:dynamodb").*',
+                r'.*"eventName": ("INSERT").*',
+                r'.*"Keys": {0}.*'.format(json.dumps(db_item)),
+            ]
+            check_lambda_logs(function_name, expected_lines=expected)
+
         function_name = f"lambda_func-{short_uid()}"
         role = f"test-lambda-role-{short_uid()}"
         policy_name = f"test-lambda-policy-{short_uid()}"
+        table_name = f"test-table-{short_uid()}"
+        partition_key = "my_partition_key"
+        db_item = {partition_key: {"S": "hello world"}}
         role_arn = create_iam_role_with_policy(
             RoleName=role,
             PolicyName=policy_name,
@@ -262,67 +267,23 @@ class TestDynamoDBEventSourceMapping:
             runtime=LAMBDA_RUNTIME_PYTHON37,
             role=role_arn,
         )
-
-        # test destination-config for create_event_source_mapping
-        table_name = f"test-table-{short_uid()}"
-
-        partition_key = "my_partition_key"
-        result = dynamodb_create_table(table_name=table_name, partition_key=partition_key)
-
-        status = result["TableDescription"]["TableStatus"]
-        # wait for status "ACTIVE"
-        if status != "ACTIVE":
-            retry(
-                _check_table_active,
-                retries=6,
-                sleep=1.0,
-                sleep_before=2.0,
-                dynamodb_client=dynamodb_client,
-                table_name=table_name,
-            )
-
-        # activate stream
-        result = dynamodb_client.update_table(
+        dynamodb_create_table(table_name=table_name, partition_key=partition_key)
+        _await_dynamodb_table_active(dynamodb_client, table_name)
+        stream_arn = dynamodb_client.update_table(
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
-        )
-        stream_arn = result["TableDescription"]["LatestStreamArn"]
-
-        result = lambda_client.create_event_source_mapping(
+        )["TableDescription"]["LatestStreamArn"]
+        event_source_uuid = lambda_client.create_event_source_mapping(
             FunctionName=function_name,
             BatchSize=1,
             StartingPosition="LATEST",
             EventSourceArn=stream_arn,
             MaximumBatchingWindowInSeconds=1,
             MaximumRetryAttempts=1,
-        )
-        time.sleep(2)
-        event_source_mapping_uuid = result["UUID"]
-        event_source_mapping_state = result["State"]
-        if event_source_mapping_state != "Enabled":
-            retry(
-                _check_mapping_state,
-                retries=6,
-                sleep_before=2.0,
-                sleep=1.0,
-                lambda_client=lambda_client,
-                uuid=event_source_mapping_uuid,
-            )
+        )["UUID"]
+        _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
 
-        insert = {partition_key: {"S": "hello world"}}
-        dynamodb_client.put_item(TableName=table_name, Item=insert)
-
-        def check_logs():
-            # assert that logs are present
-            expected = [
-                r'.*"Records":.*',
-                r'.*"dynamodb": {(.*)}.*',
-                r'.*"eventSource": ("aws:dynamodb").*',
-                r'.*"eventName": ("INSERT").*',
-                r'.*"Keys": {("my_partition_key": {"S": "hello world"})}.*',
-            ]
-            check_lambda_logs(function_name, expected_lines=expected)
-
+        dynamodb_client.put_item(TableName=table_name, Item=db_item)
         retry(check_logs, retries=50, sleep=2)
 
     def test_disabled_dynamodb_event_source_mapping(
@@ -336,8 +297,20 @@ class TestDynamoDBEventSourceMapping:
         dynamodbstreams_client,
         lambda_su_role,
     ):
+        def is_stream_enabled():
+            return (
+                    dynamodbstreams_client.describe_stream(StreamArn=latest_stream_arn)[
+                        "StreamDescription"
+                    ]["StreamStatus"]
+                    == "ENABLED"
+            )
+
         function_name = f"lambda_func-{short_uid()}"
         ddb_table = f"ddb_table-{short_uid()}"
+        items = [
+            {"id": short_uid(), "data": "data1"},
+            {"id": short_uid(), "data": "data2"},
+        ]
 
         create_lambda_function(
             func_name=function_name,
@@ -345,11 +318,9 @@ class TestDynamoDBEventSourceMapping:
             runtime=LAMBDA_RUNTIME_PYTHON36,
             role=lambda_su_role,
         )
-
         latest_stream_arn = dynamodb_create_table(
             table_name=ddb_table, partition_key="id", stream_view_type="NEW_IMAGE"
         )["TableDescription"]["LatestStreamArn"]
-
         rs = lambda_client.create_event_source_mapping(
             FunctionName=function_name,
             EventSourceArn=latest_stream_arn,
@@ -357,51 +328,26 @@ class TestDynamoDBEventSourceMapping:
             MaximumBatchingWindowInSeconds=1,
         )
         uuid = rs["UUID"]
+        _await_event_source_mapping_enabled(lambda_client, uuid)
 
-        def wait_for_table_created():
-            return (
-                dynamodb_client.describe_table(TableName=ddb_table)["Table"]["TableStatus"]
-                == "ACTIVE"
-            )
-
-        assert poll_condition(wait_for_table_created, timeout=30)
-
-        def wait_for_stream_created():
-            return (
-                dynamodbstreams_client.describe_stream(StreamArn=latest_stream_arn)[
-                    "StreamDescription"
-                ]["StreamStatus"]
-                == "ENABLED"
-            )
-
-        assert poll_condition(wait_for_stream_created, timeout=30)
-
+        assert poll_condition(is_stream_enabled, timeout=30)
         table = dynamodb_resource.Table(ddb_table)
 
-        items = [
-            {"id": short_uid(), "data": "data1"},
-            {"id": short_uid(), "data": "data2"},
-        ]
-
         table.put_item(Item=items[0])
-
-        def assert_events():
-            events = get_lambda_log_events(function_name, logs_client=logs_client)
-
-            # lambda was invoked 1 time
-            assert 1 == len(events[0]["Records"])
-
-        # might take some time against AWS
-        retry(assert_events, sleep=3, retries=10)
-
+        # Lambda should be invoked 1 time
+        retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=3,
+            function_name=function_name,
+            expected_length=1,
+            logs_client=logs_client,
+        )
         # disable event source mapping
         lambda_client.update_event_source_mapping(UUID=uuid, Enabled=False)
-
         table.put_item(Item=items[1])
-        events = get_lambda_log_events(function_name, logs_client=logs_client)
-
         # lambda no longer invoked, still have 1 event
-        assert 1 == len(events[0]["Records"])
+        check_expected_lambda_log_events_length(expected_length=1, function_name=function_name, logs_client=logs_client)
 
     # TODO invalid test against AWS, this behavior just is not correct
     def test_deletion_event_source_mapping_with_dynamodb(
@@ -416,30 +362,19 @@ class TestDynamoDBEventSourceMapping:
             runtime=LAMBDA_RUNTIME_PYTHON36,
             role=lambda_su_role,
         )
-
         latest_stream_arn = aws_stack.create_dynamodb_table(
             table_name=ddb_table,
             partition_key="id",
             client=dynamodb_client,
             stream_view_type="NEW_IMAGE",
         )["TableDescription"]["LatestStreamArn"]
-
         lambda_client.create_event_source_mapping(
             FunctionName=function_name,
             EventSourceArn=latest_stream_arn,
             StartingPosition="TRIM_HORIZON",
         )
-
-        def wait_for_table_created():
-            return (
-                dynamodb_client.describe_table(TableName=ddb_table)["Table"]["TableStatus"]
-                == "ACTIVE"
-            )
-
-        assert poll_condition(wait_for_table_created, timeout=30)
-
+        _await_dynamodb_table_active(dynamodb_client, ddb_table)
         dynamodb_client.delete_table(TableName=ddb_table)
-
         result = lambda_client.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         assert 1 == len(result["EventSourceMappings"])
 
@@ -457,6 +392,10 @@ class TestDynamoDBEventSourceMapping:
         function_name = f"lambda_func-{short_uid()}"
         role = f"test-lambda-role-{short_uid()}"
         policy_name = f"test-lambda-policy-{short_uid()}"
+        table_name = f"test-table-{short_uid()}"
+        partition_key = "my_partition_key"
+        item = {partition_key: {"S": "hello world"}}
+
         role_arn = create_iam_role_with_policy(
             RoleName=role,
             PolicyName=policy_name,
@@ -470,35 +409,16 @@ class TestDynamoDBEventSourceMapping:
             runtime=LAMBDA_RUNTIME_PYTHON37,
             role=role_arn,
         )
-
-        # test destination-config for create_event_source_mapping
-        table_name = f"test-table-{short_uid()}"
-
-        partition_key = "my_partition_key"
-        result = dynamodb_create_table(table_name=table_name, partition_key=partition_key)
-
-        status = result["TableDescription"]["TableStatus"]
-        # wait for status "ACTIVE"
-        if status != "ACTIVE":
-            retry(
-                _check_table_active,
-                retries=6,
-                sleep=1.0,
-                sleep_before=2.0,
-                dynamodb_client=dynamodb_client,
-                table_name=table_name,
-            )
-
-        # activate stream
+        dynamodb_create_table(table_name=table_name, partition_key=partition_key)
+        _await_dynamodb_table_active(dynamodb_client, table_name)
         result = dynamodb_client.update_table(
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
         )
         stream_arn = result["TableDescription"]["LatestStreamArn"]
-        queue_event_source_mapping = sqs_create_queue()
-        queue_failure_event_source_mapping_arn = sqs_queue_arn(queue_event_source_mapping)
+        destination_queue = sqs_create_queue()
+        queue_failure_event_source_mapping_arn = sqs_queue_arn(destination_queue)
         destination_config = {"OnFailure": {"Destination": queue_failure_event_source_mapping_arn}}
-
         result = lambda_client.create_event_source_mapping(
             FunctionName=function_name,
             BatchSize=1,
@@ -508,26 +428,13 @@ class TestDynamoDBEventSourceMapping:
             MaximumRetryAttempts=1,
             DestinationConfig=destination_config,
         )
-        time.sleep(2)
-
         event_source_mapping_uuid = result["UUID"]
-        event_source_mapping_state = result["State"]
-        if event_source_mapping_state != "Enabled":
-            retry(
-                _check_mapping_state,
-                retries=6,
-                sleep_before=2.0,
-                sleep=1.0,
-                lambda_client=lambda_client,
-                uuid=event_source_mapping_uuid,
-            )
+        _await_event_source_mapping_enabled(lambda_client, event_source_mapping_uuid)
 
-        insert = {partition_key: {"S": "hello world"}}
-
-        dynamodb_client.put_item(TableName=table_name, Item=insert)
+        dynamodb_client.put_item(TableName=table_name, Item=item)
 
         def verify_failure_received():
-            res = sqs_client.receive_message(QueueUrl=queue_event_source_mapping)
+            res = sqs_client.receive_message(QueueUrl=destination_queue)
             msg = res["Messages"][0]
             body = json.loads(msg["Body"])
             assert body["requestContext"]["condition"] == "RetryAttemptsExhausted"
@@ -545,7 +452,6 @@ class TestLambdaHttpInvocation:
         lambda_request_context_path = "/" + TEST_STAGE_NAME + lambda_path
         lambda_request_context_resource_path = lambda_resource
 
-        # create lambda function
         create_lambda_function(
             func_name=lambda_name,
             handler_file=TEST_LAMBDA_PYTHON,
@@ -555,14 +461,12 @@ class TestLambdaHttpInvocation:
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(lambda_name)
         target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
-
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway2",
             target_uri,
             path=lambda_resource,
             stage_name=TEST_STAGE_NAME,
         )
-
         api_id = result["id"]
         url = path_based_url(api_id=api_id, stage_name=TEST_STAGE_NAME, path=lambda_path)
         result = safe_requests.post(
@@ -589,6 +493,7 @@ class TestKinesisSource:
     ):
         function_name = f"lambda_func-{short_uid()}"
         stream_name = f"test-foobar-{short_uid()}"
+        record_data = "hello"
         num_events_kinesis = 10
 
         create_lambda_function(
@@ -606,41 +511,31 @@ class TestKinesisSource:
             "StreamARN"
         ]
 
-        # only valid against AWS / new provider (once implemented)
-        if not is_old_provider():
-            with pytest.raises(ClientError) as e:
-                lambda_client.create_event_source_mapping(
-                    EventSourceArn=stream_arn, FunctionName=function_name
-                )
-            e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
-        else:
-            lambda_client.create_event_source_mapping(
-                EventSourceArn=stream_arn, FunctionName=function_name, StartingPosition="LATEST"
-            )
-        time.sleep(2)
-
+        uuid = lambda_client.create_event_source_mapping(
+            EventSourceArn=stream_arn, FunctionName=function_name, StartingPosition="LATEST"
+        )["UUID"]
+        _await_event_source_mapping_enabled(lambda_client, uuid)
         kinesis_client.put_records(
             Records=[
-                {"Data": "{}", "PartitionKey": f"test_{i}"} for i in range(0, num_events_kinesis)
+                {"Data": record_data, "PartitionKey": f"test_{i}"} for i in range(0, num_events_kinesis)
             ],
             StreamName=stream_name,
         )
 
-        def get_lambda_events():
-            events = get_lambda_log_events(function_name, logs_client=logs_client)
-            assert events
-            return events
-
-        events = retry(get_lambda_events, retries=30)
-        assert len(events[0]["Records"]) == num_events_kinesis
-        assert "eventID" in events[0]["Records"][0]
-        assert "eventSourceARN" in events[0]["Records"][0]
-        assert "eventSource" in events[0]["Records"][0]
-        assert "eventVersion" in events[0]["Records"][0]
-        assert "eventName" in events[0]["Records"][0]
-        assert "invokeIdentityArn" in events[0]["Records"][0]
-        assert "awsRegion" in events[0]["Records"][0]
-        assert "kinesis" in events[0]["Records"][0]
+        events = _get_lambda_invocation_events(logs_client, function_name, expected_num_events=1)
+        records = events[0]["Records"]
+        assert len(records) == num_events_kinesis
+        for record in records:
+            assert "eventID" in record
+            assert "eventSourceARN" in record
+            assert "eventSource" in record
+            assert "eventVersion" in record
+            assert "eventName" in record
+            assert "invokeIdentityArn" in record
+            assert "awsRegion" in record
+            assert "kinesis" in record
+            actual_record_data = base64.b64decode(record["kinesis"]["data"]).decode("utf-8")
+            assert actual_record_data == record_data
 
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
     def test_kinesis_event_source_mapping_with_async_invocation(
@@ -665,21 +560,17 @@ class TestKinesisSource:
             runtime=LAMBDA_RUNTIME_PYTHON36,
             role=lambda_su_role,
         )
-
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
         stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
             "StreamARN"
         ]
-
         wait_for_stream_ready(stream_name=stream_name)
-
         lambda_client.create_event_source_mapping(
             EventSourceArn=stream_arn,
             FunctionName=function_name,
             StartingPosition="LATEST",
             BatchSize=num_records_per_batch,
         )
-
         stream_summary = kinesis_client.describe_stream_summary(StreamName=stream_name)
         assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
 
@@ -694,15 +585,7 @@ class TestKinesisSource:
             )
             assert (time.perf_counter() - start) < 1  # this should not take more than a second
 
-        def get_lambda_invocation_events():
-            events = get_lambda_log_events(
-                function_name, regex_filter=r"event.*Records", logs_client=logs_client
-            )
-            assert len(events) == 2
-            return events
-
-        invocation_events = retry(get_lambda_invocation_events, retries=30)
-
+        invocation_events = _get_lambda_invocation_events(logs_client, function_name, expected_num_events=num_batches)
         for i in range(num_batches):
             event = invocation_events[i]
             assert len(event["event"]["Records"]) == num_records_per_batch
@@ -747,7 +630,6 @@ class TestKinesisSource:
             runtime=LAMBDA_RUNTIME_PYTHON36,
             role=lambda_su_role,
         )
-
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
         stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
             "StreamARN"
@@ -765,14 +647,12 @@ class TestKinesisSource:
                 ],
                 StreamName=stream_name,
             )
-
         lambda_client.create_event_source_mapping(
             EventSourceArn=stream_arn,
             FunctionName=function_name,
             StartingPosition="TRIM_HORIZON",
             BatchSize=num_records_per_batch,
         )
-
         # insert some more records
         kinesis_client.put_records(
             Records=[
@@ -782,15 +662,7 @@ class TestKinesisSource:
             StreamName=stream_name,
         )
 
-        def get_lambda_invocation_events():
-            events = get_lambda_log_events(
-                function_name, regex_filter=r"event.*Records", logs_client=logs_client
-            )
-            assert len(events) == num_batches
-            return events
-
-        invocation_events = retry(get_lambda_invocation_events, retries=30)
-
+        invocation_events = _get_lambda_invocation_events(logs_client, function_name, expected_num_events=num_batches)
         for i in range(num_batches):
             event = invocation_events[i]
             assert len(event["event"]["Records"]) == num_records_per_batch
@@ -811,7 +683,7 @@ class TestKinesisSource:
             actual_record_ids.sort()
             assert actual_record_ids == [i for i in range(num_records_per_batch)]
 
-    def test_disabled_kinesis_event_source_mapping(
+    def test_disable_kinesis_event_source_mapping(
         self,
         lambda_client,
         kinesis_client,
@@ -831,20 +703,18 @@ class TestKinesisSource:
             runtime=LAMBDA_RUNTIME_PYTHON36,
             role=lambda_su_role,
         )
-
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
         stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
             "StreamARN"
         ]
         wait_for_stream_ready(stream_name=stream_name)
-
         event_source_uuid = lambda_client.create_event_source_mapping(
             EventSourceArn=stream_arn,
             FunctionName=function_name,
             StartingPosition="LATEST",
             BatchSize=num_records_per_batch,
         )["UUID"]
-        time.sleep(2)  # wait for mapping to become active
+        _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
 
         kinesis_client.put_records(
             Records=[
@@ -854,12 +724,8 @@ class TestKinesisSource:
             StreamName=stream_name,
         )
 
-        def get_lambda_invocation_events():
-            events = get_lambda_log_events(function_name, logs_client=logs_client)
-            assert len(events) == 1
-            return events
-
-        retry(get_lambda_invocation_events, retries=30)
+        events = _get_lambda_invocation_events(logs_client, function_name, expected_num_events=1)
+        assert len(events) == 1
 
         lambda_client.update_event_source_mapping(UUID=event_source_uuid, Enabled=False)
         time.sleep(2)
@@ -871,7 +737,9 @@ class TestKinesisSource:
             StreamName=stream_name,
         )
         time.sleep(7)  # wait for records to pass through stream
-        get_lambda_invocation_events()  # should still only get the first batch from before mapping was disabled
+        # should still only get the first batch from before mapping was disabled
+        events = _get_lambda_invocation_events(logs_client, function_name, expected_num_events=1)
+        assert len(events) == 1
 
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
@@ -888,6 +756,7 @@ class TestKinesisSource:
             function_name = f"lambda_func-{short_uid()}"
             role = f"test-lambda-role-{short_uid()}"
             policy_name = f"test-lambda-policy-{short_uid()}"
+            kinesis_name = f"test-kinesis-{short_uid()}"
             role_arn = create_iam_role_with_policy(
                 RoleName=role,
                 PolicyName=policy_name,
@@ -895,26 +764,25 @@ class TestKinesisSource:
                 PolicyDefinition=s3_lambda_permission,
             )
 
-            response = create_lambda_function(
+            create_lambda_function(
                 handler_file=TEST_LAMBDA_PYTHON,
                 func_name=function_name,
                 runtime=LAMBDA_RUNTIME_PYTHON37,
                 role=role_arn,
             )
-
-            response["CreateFunctionResponse"]["FunctionArn"]
-
-            # test destination-config for create_event_source_mapping
-            kinesis_name = f"test-kinesis-{short_uid()}"
             kinesis_client.create_stream(StreamName=kinesis_name, ShardCount=1)
             result = kinesis_client.describe_stream(StreamName=kinesis_name)["StreamDescription"]
             kinesis_arn = result["StreamARN"]
             wait_for_stream_ready(stream_name=kinesis_name)
-
             queue_event_source_mapping = sqs_create_queue()
-            queue_failure_event_source_mapping_arn = sqs_queue_arn(queue_event_source_mapping)
+            destination_queue = sqs_queue_arn(queue_event_source_mapping)
             destination_config = {
-                "OnFailure": {"Destination": queue_failure_event_source_mapping_arn}
+                "OnFailure": {"Destination": destination_queue}
+            }
+            message = {
+                "input": "hello",
+                "value": "world",
+                lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
             }
 
             result = lambda_client.create_event_source_mapping(
@@ -926,25 +794,8 @@ class TestKinesisSource:
                 MaximumRetryAttempts=1,
                 DestinationConfig=destination_config,
             )
-            time.sleep(2)
             event_source_mapping_uuid = result["UUID"]
-            event_source_mapping_state = result["State"]
-            # TODO I'm not positive this actually blocks until the mapping is available
-            if event_source_mapping_state != "Enabled":
-                retry(
-                    _check_mapping_state,
-                    retries=6,
-                    sleep_before=2.0,
-                    sleep=1.0,
-                    lambda_client=lambda_client,
-                    uuid=event_source_mapping_uuid,
-                )
-
-            message = {
-                "input": "hello",
-                "value": "world",
-                lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
-            }
+            _await_event_source_mapping_enabled(lambda_client, event_source_mapping_uuid)
             kinesis_client.put_record(
                 StreamName=kinesis_name, Data=to_bytes(json.dumps(message)), PartitionKey="custom"
             )
@@ -964,11 +815,27 @@ class TestKinesisSource:
             lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
 
 
-def _check_mapping_state(lambda_client, uuid):
-    assert lambda_client.get_event_source_mapping(UUID=uuid)["State"] == "Enabled"
+def _await_event_source_mapping_enabled(lambda_client, uuid, retries=30):
+    def assert_mapping_enabled():
+        assert lambda_client.get_event_source_mapping(UUID=uuid)["State"] == "Enabled"
+    retry(assert_mapping_enabled, sleep_before=2, retries=retries)
 
 
-def _check_table_active(dynamodb_client, table_name):
-    state = dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"]
-    if state != "ACTIVE":
-        raise Exception(f"TableStatus is {state}")
+def _await_dynamodb_table_active(dynamodb_client, table_name, retries=6):
+    def assert_table_active():
+        assert dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"] == "ACTIVE"
+    retry(
+        assert_table_active,
+        retries=retries,
+        sleep_before=2
+    )
+
+
+def _get_lambda_invocation_events(logs_client, function_name, expected_num_events, retries=30):
+    def get_events():
+        events = get_lambda_log_events(
+            function_name, logs_client=logs_client
+        )
+        assert len(events) == expected_num_events
+        return events
+    return retry(get_events, retries=retries, sleep_before=2)
