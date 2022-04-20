@@ -299,10 +299,10 @@ class TestDynamoDBEventSourceMapping:
     ):
         def is_stream_enabled():
             return (
-                    dynamodbstreams_client.describe_stream(StreamArn=latest_stream_arn)[
-                        "StreamDescription"
-                    ]["StreamStatus"]
-                    == "ENABLED"
+                dynamodbstreams_client.describe_stream(StreamArn=latest_stream_arn)[
+                    "StreamDescription"
+                ]["StreamStatus"]
+                == "ENABLED"
             )
 
         function_name = f"lambda_func-{short_uid()}"
@@ -347,7 +347,9 @@ class TestDynamoDBEventSourceMapping:
         lambda_client.update_event_source_mapping(UUID=uuid, Enabled=False)
         table.put_item(Item=items[1])
         # lambda no longer invoked, still have 1 event
-        check_expected_lambda_log_events_length(expected_length=1, function_name=function_name, logs_client=logs_client)
+        check_expected_lambda_log_events_length(
+            expected_length=1, function_name=function_name, logs_client=logs_client
+        )
 
     # TODO invalid test against AWS, this behavior just is not correct
     def test_deletion_event_source_mapping_with_dynamodb(
@@ -517,7 +519,8 @@ class TestKinesisSource:
         _await_event_source_mapping_enabled(lambda_client, uuid)
         kinesis_client.put_records(
             Records=[
-                {"Data": record_data, "PartitionKey": f"test_{i}"} for i in range(0, num_events_kinesis)
+                {"Data": record_data, "PartitionKey": f"test_{i}"}
+                for i in range(0, num_events_kinesis)
             ],
             StreamName=stream_name,
         )
@@ -585,7 +588,9 @@ class TestKinesisSource:
             )
             assert (time.perf_counter() - start) < 1  # this should not take more than a second
 
-        invocation_events = _get_lambda_invocation_events(logs_client, function_name, expected_num_events=num_batches)
+        invocation_events = _get_lambda_invocation_events(
+            logs_client, function_name, expected_num_events=num_batches
+        )
         for i in range(num_batches):
             event = invocation_events[i]
             assert len(event["event"]["Records"]) == num_records_per_batch
@@ -662,7 +667,9 @@ class TestKinesisSource:
             StreamName=stream_name,
         )
 
-        invocation_events = _get_lambda_invocation_events(logs_client, function_name, expected_num_events=num_batches)
+        invocation_events = _get_lambda_invocation_events(
+            logs_client, function_name, expected_num_events=num_batches
+        )
         for i in range(num_batches):
             event = invocation_events[i]
             assert len(event["event"]["Records"]) == num_records_per_batch
@@ -776,9 +783,7 @@ class TestKinesisSource:
             wait_for_stream_ready(stream_name=kinesis_name)
             queue_event_source_mapping = sqs_create_queue()
             destination_queue = sqs_queue_arn(queue_event_source_mapping)
-            destination_config = {
-                "OnFailure": {"Destination": destination_queue}
-            }
+            destination_config = {"OnFailure": {"Destination": destination_queue}}
             message = {
                 "input": "hello",
                 "value": "world",
@@ -818,24 +823,23 @@ class TestKinesisSource:
 def _await_event_source_mapping_enabled(lambda_client, uuid, retries=30):
     def assert_mapping_enabled():
         assert lambda_client.get_event_source_mapping(UUID=uuid)["State"] == "Enabled"
+
     retry(assert_mapping_enabled, sleep_before=2, retries=retries)
 
 
 def _await_dynamodb_table_active(dynamodb_client, table_name, retries=6):
     def assert_table_active():
-        assert dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"] == "ACTIVE"
-    retry(
-        assert_table_active,
-        retries=retries,
-        sleep_before=2
-    )
+        assert (
+            dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"] == "ACTIVE"
+        )
+
+    retry(assert_table_active, retries=retries, sleep_before=2)
 
 
 def _get_lambda_invocation_events(logs_client, function_name, expected_num_events, retries=30):
     def get_events():
-        events = get_lambda_log_events(
-            function_name, logs_client=logs_client
-        )
+        events = get_lambda_log_events(function_name, logs_client=logs_client)
         assert len(events) == expected_num_events
         return events
+
     return retry(get_events, retries=retries, sleep_before=2)

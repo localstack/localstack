@@ -62,8 +62,10 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
 
     def _get_first_and_last_arrival_time(self, first_record, last_record):
         return (
-            first_record.get("ApproximateArrivalTimestamp", datetime.datetime.utcnow()).isoformat() + "Z",
-            last_record.get("ApproximateArrivalTimestamp", datetime.datetime.utcnow()).isoformat() + "Z",
+            first_record.get("ApproximateArrivalTimestamp", datetime.datetime.utcnow()).isoformat()
+            + "Z",
+            last_record.get("ApproximateArrivalTimestamp", datetime.datetime.utcnow()).isoformat()
+            + "Z",
         )
 
     def process_event(self, event: Any):
