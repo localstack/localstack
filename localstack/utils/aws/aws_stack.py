@@ -25,6 +25,7 @@ from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
     APPLICATION_X_WWW_FORM_URLENCODED,
+    AWS_REGION_US_EAST_1,
     ENV_DEV,
     INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
@@ -794,12 +795,23 @@ def get_events_target_attributes(target):
     return pick_attributes(target, EVENT_TARGET_PARAMETERS)
 
 
-def get_or_create_bucket(bucket_name, s3_client=None):
+def get_or_create_bucket(bucket_name: str, s3_client=None):
     s3_client = s3_client or connect_to_service("s3")
     try:
         return s3_client.head_bucket(Bucket=bucket_name)
     except Exception:
-        return s3_client.create_bucket(Bucket=bucket_name)
+        return create_s3_bucket(bucket_name, s3_client=s3_client)
+
+
+def create_s3_bucket(bucket_name: str, s3_client=None):
+    """Creates a bucket in the region that is associated with the current request
+    context, or with the given boto3 S3 client, if specified."""
+    s3_client = s3_client or connect_to_service("s3")
+    region = s3_client.meta.region_name
+    kwargs = {}
+    if region != AWS_REGION_US_EAST_1:
+        kwargs = {"CreateBucketConfiguration": {"LocationConstraint": region}}
+    return s3_client.create_bucket(Bucket=bucket_name, **kwargs)
 
 
 def create_sqs_queue(queue_name, env=None):
