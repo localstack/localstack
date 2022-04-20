@@ -131,9 +131,6 @@ def dispatch_to_moto(context: RequestContext) -> MotoResponse:
     service = context.service
     request = context.request
 
-    # hack to avoid call to request.form (see moto's BaseResponse.dispatch)
-    request.body = request.data
-
     # this is where we skip the HTTP roundtrip between the moto server and the boto client
     dispatch = get_dispatcher(service.service_name, request.path)
 
