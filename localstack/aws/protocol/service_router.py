@@ -44,7 +44,11 @@ def _extract_service_indicators(request: Request) -> _ServiceIndicators:
             LOG.debug("auth header could not be parsed for service routing: %s", authorization)
             pass
     if x_amz_target:
-        target_prefix, operation = x_amz_target.split(".", 1)
+        if "." in x_amz_target:
+            target_prefix, operation = x_amz_target.split(".", 1)
+        else:
+            target_prefix = None
+            operation = x_amz_target
     else:
         target_prefix, operation = None, None
 
