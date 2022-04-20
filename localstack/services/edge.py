@@ -11,7 +11,6 @@ from typing import Dict, Optional, Union
 from requests.models import Response
 
 from localstack import config
-from localstack.aws.challenger import ServiceNamerParserChallenger
 from localstack.constants import (
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
@@ -103,6 +102,8 @@ class ProxyListenerEdge(ProxyListener):
         api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
 
         if port and api:
+            from localstack.aws.challenger import ServiceNamerParserChallenger
+
             response = ServiceNamerParserChallenger(api).forward_request(
                 method, path, data, headers
             )

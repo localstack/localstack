@@ -34,13 +34,15 @@ def _extract_service_indicators(request: Request) -> _ServiceIndicators:
 
     signing_name = None
     if authorization:
-        auth_type, auth_info = authorization.split(None, 1)
-        auth_type = auth_type.lower().strip()
-
-        if auth_type == "aws4-hmac-sha256":
-            values = parse_dict_header(auth_info)
-            aws_access_key_id, date, region, signing_name, _ = values["Credential"].split("/")
-
+        try:
+            auth_type, auth_info = authorization.split(None, 1)
+            auth_type = auth_type.lower().strip()
+            if auth_type == "aws4-hmac-sha256":
+                values = parse_dict_header(auth_info)
+                _, _, _, signing_name, _ = values["Credential"].split("/")
+        except (ValueError, KeyError):
+            LOG.debug("auth header could not be parsed for service routing: %s", authorization)
+            pass
     if x_amz_target:
         target_prefix, operation = x_amz_target.split(".", 1)
     else:
