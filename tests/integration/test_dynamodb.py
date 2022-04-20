@@ -506,7 +506,7 @@ class TestDynamoDB:
         )
         assert "ShardIterator" in response
 
-    def test_dynamodb_partiql_is_not_missing(self):
+    def test_dynamodb_partiql_missing(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         table_name = "table_with_stream_%s" % short_uid()
 
