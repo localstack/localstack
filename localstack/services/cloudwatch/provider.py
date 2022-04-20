@@ -20,7 +20,7 @@ from localstack.aws.api.cloudwatch import (
 )
 from localstack.http import Request
 from localstack.services import moto
-from localstack.services.cloudwatch.alarm_schedule_util import AlarmScheduler
+from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
@@ -190,7 +190,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
         self.alarm_scheduler = AlarmScheduler()
-        # TODO restart -> persistence -> from all regions??
+
+        # TODO -> persistence: reschedule all alarms
+        # cannot start here, as the service is not yet available
+        # self.alarm_scheduler.restart_existing_alarms()
 
     def on_before_stop(self):
         self.alarm_scheduler.shutdown_scheduler()
@@ -246,31 +249,39 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         request: PutMetricAlarmInput,
     ) -> None:
 
-        # Supported values are [breaching, notBreaching, ignore, missing]
-        if not request.get("TreatMissingData"):
-            # missing is the default
-            # TODO test with AWS
-            request["TreatMissingData"] = "missing"
-            moto.call_moto_with_request(context, request)
-        else:
-            # validate "TreatMissingData" input
-            if not request.get("TreatMissingData") in [
-                "breaching",
-                "notBreaching",
-                "ignore",
-                "missing",
+        # missing will be the default, when not set (but it will not explicitly be set)
+        if not request.get("TreatMissingData", "missing") in [
+            "breaching",
+            "notBreaching",
+            "ignore",
+            "missing",
+        ]:
+            raise ValidationError(
+                f"The value {request['TreatMissingData']} is not supported for TreatMissingData parameter. Supported values are [breaching, notBreaching, ignore, missing]."
+            )
+        # TODO verification of parameters
+        if request.get("Period"):
+            # Valid values are 10, 30, and any multiple of 60.
+            value = request.get("Period")
+            if value not in (10, 30):
+                if value % 60 != 0:
+                    raise ValidationError("Period must be 10, 30 or a multiple of 60")
+        if request.get("Statistic"):
+            if not request.get("Statistic") in [
+                "SampleCount",
+                "Average",
+                "Sum",
+                "Minimum",
+                "Maximum",
             ]:
                 raise ValidationError(
-                    f"The value {request['TreatMissingData']} is not supported for TreatMissingData parameter. Supported values are [breaching, notBreaching, ignore, missing]."
+                    f"Value '{request.get('Statistic')}' at 'statistic' failed to satisfy constraint: Member must satisfy enum value set: [Maximum, SampleCount, Sum, Minimum, Average]"
                 )
-            # TODO verification of parameters
-            # period: Valid values are 10, 30, and any multiple of 60.
-            # statistic: possible values: SampleCount, Average, Sum, Minimum, Maximum; either Statistics or ExtendedStatics can be set -> not both!
             # ExtendedStatistics:
             # Unit: list of possible values
             # EvaluationPeriod: number multiplied by period, must not be greater than 86,400
             # datapoints-to-alarm
-            moto.call_moto(context)
+        moto.call_moto(context)
 
         name = request.get("AlarmName")
         arn = aws_stack.cloudwatch_alarm_arn(name)

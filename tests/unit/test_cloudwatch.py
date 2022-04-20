@@ -1,12 +1,8 @@
-from unittest.mock import Mock, call, patch
+from unittest.mock import ANY, Mock, call, patch
 
 import pytest
 
-from localstack.services.cloudwatch.alarm_schedule_util import (
-    COMPARISON_OPS,
-    REASON,
-    calculate_alarm_state,
-)
+from localstack.services.cloudwatch.alarm_scheduler import COMPARISON_OPS, calculate_alarm_state
 
 
 class TestAlarmScheduler:
@@ -214,16 +210,17 @@ def run_and_assert_calculate_alarm_state(
     def mock_cloudwatch_client(alarm_arn):
         return mock_client
 
+    alarm_scheduler_pckg = "localstack.services.cloudwatch.alarm_scheduler"
     with patch(
-        "localstack.services.cloudwatch.alarm_schedule_util.get_metric_alarm_details_for_alarm_arn",
+        f"{alarm_scheduler_pckg}.get_metric_alarm_details_for_alarm_arn",
         mock_metric_alarm_details,
     ):
         with patch(
-            "localstack.services.cloudwatch.alarm_schedule_util.get_cloudwatch_client_for_region_of_alarm",
+            f"{alarm_scheduler_pckg}.get_cloudwatch_client_for_region_of_alarm",
             mock_cloudwatch_client,
         ):
             with patch(
-                "localstack.services.cloudwatch.alarm_schedule_util.collect_metric_data",
+                f"{alarm_scheduler_pckg}.collect_metric_data",
                 mock_collect_metric_data,
             ):
                 calculate_alarm_state("helloworld")
@@ -231,7 +228,7 @@ def run_and_assert_calculate_alarm_state(
                 if expected_calls != 0:
                     expected_calls = [
                         call.set_alarm_state(
-                            AlarmName="test-alarm", StateValue=expected_state, StateReason=REASON
+                            AlarmName="test-alarm", StateValue=expected_state, StateReason=ANY
                         )
                     ]
                     mock_client.assert_has_calls(expected_calls)

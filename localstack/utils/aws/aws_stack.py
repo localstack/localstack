@@ -89,6 +89,13 @@ def get_valid_regions():
     return valid_regions
 
 
+def get_valid_regions_for_service(service_name):
+    regions = list(boto3.Session().get_available_regions(service_name))
+    regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-us-gov"))
+    regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-cn"))
+    return regions
+
+
 class Environment:
     def __init__(self, region=None, prefix=None):
         # target is the runtime environment to use, e.g.,

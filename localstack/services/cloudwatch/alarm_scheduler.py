@@ -28,7 +28,7 @@ COMPARISON_OPS = {
 STATE_ALARM = "ALARM"
 STATE_OK = "OK"
 STATE_INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
-REASON = "Alarm Evaluation"  # TODO
+REASON = "Threshold crossed"  # TODO
 
 
 class AlarmScheduler:
@@ -55,6 +55,10 @@ class AlarmScheduler:
         alarm_details = get_metric_alarm_details_for_alarm_arn(alarm_arn)
         self.delete_scheduler_for_alarm(alarm_arn)
 
+        if not self._is_alarm_supported(alarm_details):
+            LOG.debug("Alarm configuration not yet supported, alarm will not be scheduled.")
+            return
+
         period = alarm_details["Period"]
         evaluation_periods = alarm_details["EvaluationPeriods"]
         schedule_period = evaluation_periods * period
@@ -64,7 +68,11 @@ class AlarmScheduler:
             LOG.error(traceback.format_exc())
 
         task = self.scheduler.schedule(
-            func=calculate_alarm_state, period=schedule_period, args=[alarm_arn], on_error=on_error
+            func=calculate_alarm_state,
+            period=schedule_period,
+            fixed_rate=True,
+            args=[alarm_arn],
+            on_error=on_error,
         )
 
         self.scheduled_alarms[alarm_arn] = task
@@ -78,6 +86,33 @@ class AlarmScheduler:
         task = self.scheduled_alarms.get(alarm_arn)
         if task:
             task.cancel()
+
+    def restart_existing_alarms(self) -> None:
+        """
+        Only used re-create persistent state. Reschedules alarms that already exist
+        """
+        service = "cloudwatch"
+        for region in aws_stack.get_valid_regions_for_service(service):
+            client = aws_stack.connect_to_service(service, region_name=region)
+            result = client.describe_alarms()
+            for metric_alarm in result["MetricAlarms"]:
+                arn = metric_alarm["AlarmArn"]
+                self.schedule_metric_alarm(alarm_arn=arn)
+
+    def _is_alarm_supported(self, alarm_details: MetricAlarm) -> bool:
+        required_parameters = ["Period", "Statistic", "MetricName", "Threshold"]
+        for param in required_parameters:
+            if param not in alarm_details.keys():
+                LOG.debug(
+                    f"Currently only simple MetricAlarm are supported. Alarm is missing '{param}'. ExtendedStatistic is not yet supported."
+                )
+                return False
+        if alarm_details["ComparisonOperator"] not in COMPARISON_OPS.keys():
+            LOG.debug(
+                f"ComparisonOperator {alarm_details['ComparisonOperator']} not yet supported."
+            )
+            return False
+        return True
 
 
 def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> MetricAlarm:
@@ -93,18 +128,22 @@ def get_cloudwatch_client_for_region_of_alarm(alarm_arn: str) -> "CloudWatchClie
 
 def generate_metric_query(alarm_details: MetricAlarm) -> MetricDataQuery:
     """Creates the dict with the required data for MetricDataQueries when calling client.get_metric_data"""
+
+    metric = {
+        "MetricName": alarm_details["MetricName"],
+    }
+    if alarm_details.get("Namespace"):
+        metric["Namespace"] = alarm_details["Namespace"]
+    if alarm_details.get("Dimensions"):
+        metric["Dimensions"] = alarm_details["Dimensions"]
     return {
         "Id": alarm_details["AlarmName"],
         "MetricStat": {
-            "Metric": {
-                "Namespace": alarm_details["Namespace"],
-                "MetricName": alarm_details["MetricName"],
-                "Dimensions": alarm_details["Dimensions"],
-            },
+            "Metric": metric,
             "Period": alarm_details["Period"],
-            "Stat": alarm_details["Statistic"],
+            "Stat": alarm_details["Statistic"].capitalize(),
         },
-        # TODO other fields might be required
+        # TODO other fields might be required in the future
     }
 
 
@@ -118,8 +157,9 @@ def is_threshold_exceeded(metric_values: List[float], alarm_details: MetricAlarm
     """
     threshold = alarm_details["Threshold"]
     comparison_operator = alarm_details["ComparisonOperator"]
-    treat_missing_data = alarm_details["TreatMissingData"]
-    datapoints_to_alarm = alarm_details.get("DatapointsToAlarm", 1)
+    treat_missing_data = alarm_details.get("TreatMissingData", "missing")
+    evaluation_periods = alarm_details.get("EvaluationPeriods")
+    datapoints_to_alarm = alarm_details.get("DatapointsToAlarm", evaluation_periods)
     evaluated_datapoints = []
     for value in metric_values:
         if not value:
@@ -148,7 +188,7 @@ def is_triggering_premature_alarm(metric_values: List[float], alarm_details: Met
     available is lower than M (Datapoints to Alarm).
     This alarm logic applies to M out of N alarms as well.
     """
-    treat_missing_data = alarm_details["TreatMissingData"]
+    treat_missing_data = alarm_details.get("TreatMissingData", "missing")
     if treat_missing_data not in ("missing", "ignore"):
         return False
 
@@ -198,13 +238,18 @@ def collect_metric_data(alarm_details: MetricAlarm, client: "CloudWatchClient") 
             MetricDataQueries=[metric_query], StartTime=start_time, EndTime=end_time
         )["MetricDataResults"][0]
         val = metric_data["Values"]
-        metric_values.append(val[0] if val else None)
+        # oldest datapoint should be at the beginning of the list
+        metric_values.insert(0, val[0] if val else None)
         now = start_time
     return metric_values
 
 
 def update_alarm_state(
-    client: "CloudWatchClient", alarm_name: str, current_state: str, desired_state: str
+    client: "CloudWatchClient",
+    alarm_name: str,
+    current_state: str,
+    desired_state: str,
+    reason: str = REASON,
 ) -> None:
     """Updates the alarm state, if the current_state is different than the desired_state
 
@@ -212,10 +257,11 @@ def update_alarm_state(
     :param alarm_name: the name of the alarm
     :param current_state: the state the alarm is currently in
     :param desired_state: the state the alarm should have after updating
+    :param reason: reason why the state is set, will be used to for set_alarm_state
     """
     if current_state == desired_state:
         return
-    client.set_alarm_state(AlarmName=alarm_name, StateValue=desired_state, StateReason=REASON)
+    client.set_alarm_state(AlarmName=alarm_name, StateValue=desired_state, StateReason=reason)
 
 
 def calculate_alarm_state(alarm_arn: str) -> None:
@@ -231,7 +277,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
 
     alarm_name = alarm_details["AlarmName"]
     alarm_state = alarm_details["StateValue"]
-    treat_missing_data = alarm_details["TreatMissingData"]
+    treat_missing_data = alarm_details.get("TreatMissingData", "missing")
 
     empty_datapoints = metric_values.count(None)
     if empty_datapoints == len(metric_values):
