@@ -435,6 +435,10 @@ def is_s3_form_data(data_bytes):
 def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], headers: Headers):
     """Determine backend port based on custom rules."""
 
+    # TODO:
+    # These rules contain lots of things the service router should cover!
+    # - Migrate the rules which are in the scope of the service router to get_api_from_headers!
+
     # API Gateway invocation URLs
     host_header = hostname_from_url(headers.get("host"))
     if ("/%s/" % PATH_USER_REQUEST) in path or (

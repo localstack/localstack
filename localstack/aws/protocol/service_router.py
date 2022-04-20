@@ -1,6 +1,6 @@
 import logging
 from functools import lru_cache
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Set
 
 from werkzeug.http import parse_dict_header
 
@@ -51,7 +51,7 @@ def _extract_service_indicators(request: Request) -> _ServiceIndicators:
     )
 
 
-_signing_name_path_prefix_rules = {
+signing_name_path_prefix_rules = {
     # custom rules based on URI path prefixes that are not easily generalizable
     "apigateway": {
         "/v2": "apigatewayv2",
@@ -82,8 +82,8 @@ _signing_name_path_prefix_rules = {
 }
 
 
-def _custom_signing_name_rules(signing_name: str, request: Request) -> Optional[str]:
-    rules = _signing_name_path_prefix_rules.get(signing_name)
+def custom_signing_name_rules(signing_name: str, request: Request) -> Optional[str]:
+    rules = signing_name_path_prefix_rules.get(signing_name)
     if not rules:
 
         if signing_name == "servicecatalog":
@@ -101,21 +101,33 @@ def _custom_signing_name_rules(signing_name: str, request: Request) -> Optional[
     return rules.get("*", signing_name)
 
 
-def _custom_host_addressing_rules(host: str) -> Optional[str]:
+def custom_host_addressing_rules(host: str) -> Optional[str]:
     if uses_host_addressing(host):
         return "s3"
     elif ".execute-api." in host:
         return "apigateway"
 
 
+def custom_payload_rules(candidates: Set[str], request: Request) -> Optional[str]:
+    """
+    This function allows defining rules which need to inspect the payload (and therefore are very expensive to perform).
+    Be careful and make sure that there really is no other way to distinguish the requests than inspecting the payload!
+
+    :param candidates: limited amount of services where the matching service needs to be found
+    :param request: complete request
+    :return: selected service or None
+    """
+    return None
+
+
 @lru_cache()
-def _get_service_catalog() -> ServiceCatalog:
+def get_service_catalog() -> ServiceCatalog:
     """Loads the ServiceCatalog (which contains all the service specs)."""
     return ServiceCatalog()
 
 
 def determine_aws_service_name(
-    request: Request, services: ServiceCatalog = _get_service_catalog()
+    request: Request, services: ServiceCatalog = get_service_catalog()
 ) -> Optional[str]:
     """
     Tries to determine the name of the AWS service an incoming request is targeting.
@@ -134,7 +146,7 @@ def determine_aws_service_name(
             return by_signing_name[0]
 
         # try to find a match with the custom signing name rules
-        custom_match = _custom_signing_name_rules(signing_name, request)
+        custom_match = custom_signing_name_rules(signing_name, request)
         if custom_match:
             return custom_match
 
@@ -159,6 +171,14 @@ def determine_aws_service_name(
 
         if len(candidates) == 1:
             return candidates.pop()
+    else:
+        # exclude services which have a target prefix (the current request does not have one)
+        for service_name in list(candidates):
+            service = services.get(service_name)
+            if service.metadata.get("targetPrefix") is not None:
+                candidates.remove(service_name)
+        if len(candidates) == 1:
+            return candidates.pop()
 
     # 3. check the path / endpoint prefix
     if path:
@@ -170,11 +190,17 @@ def determine_aws_service_name(
 
     # 4. check the host (custom host addressing rules)
     if host:
-        custom_host_match = _custom_host_addressing_rules(host)
+        custom_host_match = custom_host_addressing_rules(host)
         if custom_host_match:
             return custom_host_match
 
+    # 5. finally perform the expensive rules which need to parse the payload
+    custom_payload_match = custom_payload_rules(candidates, request)
+    if custom_payload_match:
+        return custom_payload_match
+
     LOG.warning("could not uniquely determine service from request, candidates=%s", candidates)
 
-    # TODO maybe raise exception here?
-    return None
+    if signing_name:
+        return signing_name
+    return candidates.pop()
