@@ -804,7 +804,8 @@ def get_or_create_bucket(bucket_name: str, s3_client=None):
 
 
 def create_s3_bucket(bucket_name: str, s3_client=None):
-    """Creates a bucket in the region that is associated with the current request context"""
+    """Creates a bucket in the region that is associated with the current request
+    context, or with the given boto3 S3 client, if specified."""
     s3_client = s3_client or connect_to_service("s3")
     region = s3_client.meta.region_name
     kwargs = {}
