@@ -294,7 +294,7 @@ class StreamEventSourceListener(EventSourceListener):
                         self._STREAM_LISTENER_THREADS.pop(thread_id)
                     return
 
-                # make sure each event source dynamodb stream has a lambda listening on each of its shards
+                # make sure each event source stream has a lambda listening on each of its shards
                 for source in sources:
                     stream_arn = source["EventSourceArn"]
                     region_name = stream_arn.split(":")[3]
