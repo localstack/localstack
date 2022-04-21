@@ -97,7 +97,7 @@ SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
 
 # patches for DynamoDB Local
 DDB_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/2b345094f8b451440ef488c83f534cb82ebe604d/dynamodb-local-patch"
+    f"{ARTIFACTS_REPO}/raw/388cd73f45bfd3bcf7ad40aa35499093061c7962/dynamodb-local-patch"
 )
 DDB_AGENT_JAR_URL = f"{DDB_PATCH_URL_PREFIX}/target/ddb-local-loader-0.1.jar"
 DDB_AGENT_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "ddb-local-loader-0.1.jar")
