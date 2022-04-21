@@ -3,7 +3,7 @@ import wsgiref.validate
 import pytest
 from werkzeug.exceptions import BadRequest
 
-from localstack.http.request import Request, dummy_wsgi_environment
+from localstack.http.request import Request, dummy_wsgi_environment, get_raw_path
 
 
 def test_get_json():
@@ -14,6 +14,7 @@ def test_get_json():
         body=b'{"foo": "bar", "baz": 420}',
     )
     assert r.json == {"foo": "bar", "baz": 420}
+    assert r.content_type == "application/json"
 
 
 def test_get_json_force():
@@ -100,3 +101,23 @@ def test_validate_dummy_environment():
     validate(server=("localstack.cloud", None))
     validate(remote_addr="127.0.0.1")
     validate(headers={"Content-Type": "text/xml"}, body=b"")
+    validate(headers={"Content-Type": "text/xml", "x-amz-target": "foobar"}, body=b"")
+
+
+def test_get_content_length():
+    request = Request("GET", "/", body="foobar", headers={"Content-Length": "7"})
+    assert request.content_length == 7  # checking that the value from headers take precedence
+
+    request = Request("GET", "/", body="foobar")
+    assert request.content_length == 6  # checking that the value is calculated
+
+
+def test_get_custom_headers():
+    request = Request("GET", "/", body="foobar", headers={"x-amz-target": "foobar"})
+    assert request.headers["x-amz-target"] == "foobar"
+
+
+def test_get_raw_path():
+    request = Request("GET", "/foo/bar/ed", raw_path="/foo%2Fbar/ed")
+
+    assert get_raw_path(request) == "/foo%2Fbar/ed"
