@@ -22,10 +22,12 @@ from localstack.http import Request
 from localstack.services import moto
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
-from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
+from localstack.utils.sync import poll_condition
 from localstack.utils.tagging import TaggingService
+from localstack.utils.threads import start_worker_thread
 
 PATH_GET_RAW_METRICS = "/cloudwatch/metrics/raw"
 
@@ -191,9 +193,13 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
         self.alarm_scheduler = AlarmScheduler()
 
-        # TODO -> persistence: reschedule all alarms
-        # cannot start here, as the service is not yet available
-        # self.alarm_scheduler.restart_existing_alarms()
+    def on_before_start(self):
+        # re-schedule alarms for persistence use-case
+        def restart_alarms(*args):
+            poll_condition(lambda: SERVICE_PLUGINS.is_running("cloudwatch"))
+            self.alarm_scheduler.restart_existing_alarms()
+
+        start_worker_thread(restart_alarms)
 
     def on_before_stop(self):
         self.alarm_scheduler.shutdown_scheduler()
