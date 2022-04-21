@@ -496,12 +496,13 @@ class TestCloudwatch:
                 result = sqs_client.receive_message(QueueUrl=sqs_queue, VisibilityTimeout=0)
 
                 msg = result["Messages"][0]
-                receipt_handle = msg["ReceiptHandle"]
-                sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
 
                 body = json.loads(msg["Body"])
                 message = json.loads(body["Message"])
                 assert message["NewStateValue"] == expected_state
+
+                receipt_handle = msg["ReceiptHandle"]
+                sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
 
             retry(check_alarm_triggered, retries=60, sleep=3.0, expected_state="ALARM")
 

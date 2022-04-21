@@ -112,7 +112,6 @@ class TestAlarmScheduler:
                 return [3.0, 1.5, 1.0, None, 1.5]
             if metric_data == self.TEST_5_DATA:
                 return [None, None, 1.0, None, None]
-            return metric_data
 
         run_and_assert_calculate_alarm_state(
             mock_metric_alarm_details, mock_collect_metric_data, expected_calls, expected_state
@@ -166,7 +165,6 @@ class TestAlarmScheduler:
         |TEST_4_M_OF_N | - - - - 0    | OK               | OK          | ALARM     | OK            | 2                    |
         |TEST_5_M_OF_N | - - - X -    | ALARM            | Retain state| ALARM     | OK            | 2 -> Premature alarm |
         """
-        mock_client = Mock()
 
         def mock_metric_alarm_details(alarm_arn):
             details = {
@@ -181,11 +179,8 @@ class TestAlarmScheduler:
             }
             return details
 
-        def mock_cloudwatch_client(alarm_arn):
-            return mock_client
-
         def mock_collect_metric_data(alarm_details, client):
-            if metric_data == self.TEST_1_DATA:
+            if metric_data == self.TEST_1_M_OF_N:
                 return [2.5, None, 1, None, 1.7]
             if metric_data == self.TEST_2_M_OF_N:
                 return [3.0, 4.0, 1.0, 3.5, 1.5]
@@ -195,7 +190,6 @@ class TestAlarmScheduler:
                 return [None, None, None, None, 8]
             if metric_data == self.TEST_5_M_OF_N:
                 return [None, None, None, 1.0, None]
-            return metric_data
 
         run_and_assert_calculate_alarm_state(
             mock_metric_alarm_details, mock_collect_metric_data, expected_calls, expected_state
