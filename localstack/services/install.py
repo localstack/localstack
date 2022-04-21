@@ -68,9 +68,10 @@ INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFu
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, "kinesalite", "cli.js")
+
+MAVEN_REPO = "https://repo1.maven.org/maven2"
 URL_LOCALSTACK_FAT_JAR = (
-    "https://repo1.maven.org/maven2/"
-    + "cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
+    MAVEN_REPO + "/cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
 ).format(v=LOCALSTACK_MAVEN_VERSION)
 
 MARKER_FILE_LIGHT_VERSION = f"{dirs.static_libs}/.light-version"
@@ -96,17 +97,14 @@ SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
 
 # patches for DynamoDB Local
 DDB_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/7b7ae923d9cc0fcd13e1807ab54fe3f14ed67b60/dynamodb-local-patch"
+    f"{ARTIFACTS_REPO}/raw/2b345094f8b451440ef488c83f534cb82ebe604d/dynamodb-local-patch"
 )
-DDB_PATCH_CLASS1 = (
-    "com/amazonaws/services/dynamodbv2/local/shared/access/api/cp/CreateTableFunction.class"
-)
-DDB_PATCH_CLASS2 = (
-    "com/amazonaws/services/dynamodbv2/local/shared/access/api/cp/CreateTableFunction$1.class"
-)
+DDB_AGENT_JAR_URL = f"{DDB_PATCH_URL_PREFIX}/target/ddb-local-loader-0.1.jar"
+DDB_AGENT_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "ddb-local-loader-0.1.jar")
+JAVASSIST_JAR_URL = f"{MAVEN_REPO}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
+JAVASSIST_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "javassist.jar")
 
 # additional JAR libs required for multi-region and persistence (PRO only) support
-MAVEN_REPO = "https://repo1.maven.org/maven2"
 URL_ASPECTJRT = f"{MAVEN_REPO}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
 URL_ASPECTJWEAVER = f"{MAVEN_REPO}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
 JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
@@ -527,11 +525,19 @@ def install_dynamodb_local():
     save_file(log4j2_file, log4j2_config)
     run_safe(lambda: run(["zip", "-u", "DynamoDBLocal.jar", "log4j2.xml"], cwd=INSTALL_DIR_DDB))
 
-    # patch classes
-    classes = [DDB_PATCH_CLASS1, DDB_PATCH_CLASS2]
-    for patch_class in classes:
-        patch_url = f"{DDB_PATCH_URL_PREFIX}/{patch_class}"
-        add_file_to_jar(patch_class, patch_url, target_jar=INSTALL_PATH_DDB_JAR)
+    # download agent JAR
+    if not os.path.exists(DDB_AGENT_JAR_PATH):
+        download(DDB_AGENT_JAR_URL, DDB_AGENT_JAR_PATH)
+    if not os.path.exists(JAVASSIST_JAR_PATH):
+        download(JAVASSIST_JAR_URL, JAVASSIST_JAR_PATH)
+    # ensure that javassist.jar is in the manifest classpath
+    run(["unzip", "-o", "DynamoDBLocal.jar", "META-INF/MANIFEST.MF"], cwd=INSTALL_DIR_DDB)
+    manifest_file = os.path.join(INSTALL_DIR_DDB, "META-INF", "MANIFEST.MF")
+    manifest = load_file(manifest_file)
+    if "javassist.jar" not in manifest:
+        manifest = manifest.replace("Class-Path:", "Class-Path: javassist.jar", 1)
+        save_file(manifest_file, manifest)
+        run(["zip", "-u", "DynamoDBLocal.jar", "META-INF/MANIFEST.MF"], cwd=INSTALL_DIR_DDB)
 
 
 def install_amazon_kinesis_client_libs():
