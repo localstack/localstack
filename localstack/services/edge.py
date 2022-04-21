@@ -374,7 +374,7 @@ def get_api_from_headers(
         result = "cognito-identity", config.service_port("cognito-identity")
     elif result[0] == "s3" and path.startswith(S3CONTROL_COMMON_PATH):
         result = "s3control", config.service_port("s3control")
-    elif result[0] == "s3" or uses_host_addressing(headers):
+    elif result[0] == "s3":
         result = "s3", config.service_port("s3")
     elif result[0] == "states" in auth_header or host.startswith("states."):
         result = "stepfunctions", config.service_port("stepfunctions")
@@ -556,6 +556,10 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
     if b"Version=2016-11-15" in data_bytes:
         # TODO MOVE, parsed by ASF!
         return "ec2", config.service_port("ec2")
+
+    if uses_host_addressing(headers):
+        # TODO needs to be here and not with the regular rules, since this is incredibly greedy!
+        return "s3", config.service_port("s3")
 
 
 def get_service_port_for_account(service, headers):

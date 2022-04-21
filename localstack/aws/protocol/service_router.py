@@ -6,7 +6,6 @@ from werkzeug.http import parse_dict_header
 
 from localstack.aws.spec import ServiceCatalog
 from localstack.http import Request
-from localstack.services.s3.s3_utils import uses_host_addressing
 
 LOG = logging.getLogger(__name__)
 
@@ -108,10 +107,11 @@ def custom_signing_name_rules(signing_name: str, request: Request) -> Optional[s
 
 
 def custom_host_addressing_rules(host: str) -> Optional[str]:
-    if uses_host_addressing(host):
-        return "s3"
-    elif ".execute-api." in host:
+    if ".execute-api." in host:
         return "apigateway"
+    # TODO this has been removed here, since it has been moved to the custom rules in the current implementation
+    # if uses_host_addressing(host):
+    #     return "s3"
 
 
 def custom_payload_rules(candidates: Set[str], request: Request) -> Optional[str]:
@@ -209,4 +209,6 @@ def determine_aws_service_name(
 
     if signing_name:
         return signing_name
-    return candidates.pop()
+    if candidates:
+        return candidates.pop()
+    return None
