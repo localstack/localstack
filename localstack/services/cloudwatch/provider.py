@@ -259,7 +259,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             raise ValidationError(
                 f"The value {request['TreatMissingData']} is not supported for TreatMissingData parameter. Supported values are [breaching, notBreaching, ignore, missing]."
             )
-        # TODO verification of parameters
+        # do some sanity checks:
         if request.get("Period"):
             # Valid values are 10, 30, and any multiple of 60.
             value = request.get("Period")
@@ -277,10 +277,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 raise ValidationError(
                     f"Value '{request.get('Statistic')}' at 'statistic' failed to satisfy constraint: Member must satisfy enum value set: [Maximum, SampleCount, Sum, Minimum, Average]"
                 )
-            # ExtendedStatistics:
-            # Unit: list of possible values
-            # EvaluationPeriod: number multiplied by period, must not be greater than 86,400
-            # datapoints-to-alarm
+
         moto.call_moto(context)
 
         name = request.get("AlarmName")
@@ -319,4 +316,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             threshold_metric_id=None,
             rule=request.get("AlarmRule"),
             tags=request.get("Tags", []),
+        )
+        LOG.warning(
+            "Composite Alarms configuration is not yet supported, alarm state will not be evaluated"
         )

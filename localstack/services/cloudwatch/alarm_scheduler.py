@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
-# TODO used for anomaly detection models:
+# TODO currently not supported, used for anomaly detection models:
 # LessThanLowerOrGreaterThanUpperThreshold
 # LessThanLowerThreshold
 # GreaterThanUpperThreshold
@@ -28,7 +28,10 @@ COMPARISON_OPS = {
 STATE_ALARM = "ALARM"
 STATE_OK = "OK"
 STATE_INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
-REASON = "Threshold crossed"  # TODO
+DEFAULT_REASON = "Alarm Evaluation"
+THRESHOLD_CROSSED = "Threshold crossed"
+THRESHOLD_OK = "Threshold ok"
+INSUFFICIENT_DATA = "Insufficient Data"
 
 
 class AlarmScheduler:
@@ -56,7 +59,9 @@ class AlarmScheduler:
         self.delete_scheduler_for_alarm(alarm_arn)
 
         if not self._is_alarm_supported(alarm_details):
-            LOG.debug("Alarm configuration not yet supported, alarm will not be scheduled.")
+            LOG.warning(
+                "Given alarm configuration not yet supported, alarm state will not be evaluated."
+            )
             return
 
         period = alarm_details["Period"]
@@ -109,7 +114,7 @@ class AlarmScheduler:
                 return False
         if alarm_details["ComparisonOperator"] not in COMPARISON_OPS.keys():
             LOG.debug(
-                f"ComparisonOperator {alarm_details['ComparisonOperator']} not yet supported."
+                f"ComparisonOperator '{alarm_details['ComparisonOperator']}' not yet supported."
             )
             return False
         return True
@@ -249,7 +254,7 @@ def update_alarm_state(
     alarm_name: str,
     current_state: str,
     desired_state: str,
-    reason: str = REASON,
+    reason: str = DEFAULT_REASON,
 ) -> None:
     """Updates the alarm state, if the current_state is different than the desired_state
 
@@ -282,17 +287,41 @@ def calculate_alarm_state(alarm_arn: str) -> None:
     empty_datapoints = metric_values.count(None)
     if empty_datapoints == len(metric_values):
         if treat_missing_data == "missing":
-            update_alarm_state(client, alarm_name, alarm_state, STATE_INSUFFICIENT_DATA)
+            update_alarm_state(
+                client,
+                alarm_name,
+                alarm_state,
+                STATE_INSUFFICIENT_DATA,
+                f"{INSUFFICIENT_DATA}: empty datapoints",
+            )
         elif treat_missing_data == "breaching":
-            update_alarm_state(client, alarm_name, alarm_state, STATE_ALARM)
+            update_alarm_state(
+                client,
+                alarm_name,
+                alarm_state,
+                STATE_ALARM,
+                f"{THRESHOLD_CROSSED}: empty datapoints - treated as breaching",
+            )
         elif treat_missing_data == "notBreaching":
-            update_alarm_state(client, alarm_name, alarm_state, STATE_OK)
+            update_alarm_state(
+                client,
+                alarm_name,
+                alarm_state,
+                STATE_OK,
+                f"{THRESHOLD_OK}: empty datapoints - treated as notBreaching",
+            )
         # 'ignore': keep the same state
         return
 
     if is_triggering_premature_alarm(metric_values, alarm_details):
         if treat_missing_data == "missing":
-            update_alarm_state(client, alarm_name, alarm_state, STATE_ALARM)
+            update_alarm_state(
+                client,
+                alarm_name,
+                alarm_state,
+                STATE_ALARM,
+                f"{THRESHOLD_CROSSED}: premature alarm for missing datapoints",
+            )
         # for 'ignore' the state should be retained
         return
 
@@ -310,6 +339,6 @@ def calculate_alarm_state(alarm_arn: str) -> None:
         collected_datapoints.append(None)
 
     if is_threshold_exceeded(collected_datapoints, alarm_details):
-        update_alarm_state(client, alarm_name, alarm_state, STATE_ALARM)
+        update_alarm_state(client, alarm_name, alarm_state, STATE_ALARM, THRESHOLD_CROSSED)
     else:
-        update_alarm_state(client, alarm_name, alarm_state, STATE_OK)
+        update_alarm_state(client, alarm_name, alarm_state, STATE_OK, THRESHOLD_OK)
