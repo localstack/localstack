@@ -233,6 +233,7 @@ def setup_logging(log_level=None):
     logging.getLogger("botocore").setLevel(logging.ERROR)
     logging.getLogger("docker").setLevel(logging.WARNING)
     logging.getLogger("elasticsearch").setLevel(logging.ERROR)
+    logging.getLogger("hpack").setLevel(logging.ERROR)
     logging.getLogger("moto").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("s3transfer").setLevel(logging.INFO)
