@@ -7,7 +7,7 @@ import werkzeug
 from werkzeug.exceptions import NotFound
 
 from localstack.http import Request, Response, Router
-from localstack.http.router import E, RegexConverter, RequestArguments
+from localstack.http.router import E, RegexConverter, RequestArguments, route
 from localstack.utils.common import get_free_tcp_port
 
 
@@ -165,6 +165,61 @@ class TestRouter:
             assert router.dispatch(Request("GET", "/"))
         with pytest.raises(NotFound):
             assert router.dispatch(Request("GET", "/users/12"))
+
+    def test_remove_non_existing_rule(self):
+        router = Router()
+
+        def index(_: Request, args) -> Response:
+            return Response(b"index")
+
+        rule = router.add("/", index)
+        router.remove_rule(rule)
+
+        with pytest.raises(KeyError) as e:
+            router.remove_rule(rule)
+        e.match("no such rule")
+
+    def test_router_route_decorator(self):
+        router = Router()
+
+        @router.route("/users")
+        def user(_: Request, args):
+            assert not args
+            return Response("user")
+
+        @router.route("/users/<int:user_id>")
+        def user_id(_: Request, args):
+            assert args
+            return Response(f"{args['user_id']}")
+
+        assert router.dispatch(Request("GET", "/users")).data == b"user"
+        assert router.dispatch(Request("GET", "/users/123")).data == b"123"
+
+    def test_add_route_endpoint_with_object(self):
+        class MySuperApi:
+            @route("/users")
+            def user(self, _: Request, args):
+                # should be inherited
+                assert not args
+                return Response("user")
+
+        class MyApi(MySuperApi):
+            @route("/users/<int:user_id>")
+            def user_id(self, _: Request, args):
+                assert args
+                return Response(f"{args['user_id']}")
+
+            def foo(self, _: Request, args):
+                # should be ignored
+                raise NotImplementedError
+
+        api = MyApi()
+        router = Router()
+        rules = router.add_route_endpoints(api)
+        assert len(rules) == 2
+
+        assert router.dispatch(Request("GET", "/users")).data == b"user"
+        assert router.dispatch(Request("GET", "/users/123")).data == b"123"
 
 
 class TestWsgiIntegration:
