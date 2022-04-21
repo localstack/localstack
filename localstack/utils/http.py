@@ -90,8 +90,7 @@ def add_query_params_to_url(uri: str, query_params: Dict) -> str:
     query_dict = dict(parse_qsl(url.query))
 
     # updates the dict with new query parameters
-    if query_params:
-        query_dict.update(query_params)
+    query_dict.update(query_params)
 
     # encodes query parameters
     url_query = urlencode(query_dict)
