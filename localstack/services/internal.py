@@ -36,7 +36,7 @@ class HealthResource:
         self.state = {}
 
     def on_post(self, request):
-        data = request.json()
+        data = request.json
         # backdoor API to support restarting the instance
         if data.get("action") in ["kill", "restart"]:
             terminate_all_processes_in_docker()
