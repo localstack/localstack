@@ -298,10 +298,10 @@ class TestCloudwatch:
         cloudwatch_client.put_metric_alarm(
             AlarmName="cpu-mon",
             AlarmDescription="<",
-            MetricName="CPUUtilization",
+            MetricName="CPUUtilization-2",
             Namespace="AWS/EC2",
             Statistic="Sum",
-            Period=180,
+            Period=600,
             Threshold=1,
             ComparisonOperator="GreaterThanThreshold",
             EvaluationPeriods=1,
@@ -310,6 +310,7 @@ class TestCloudwatch:
 
         result = cloudwatch_client.describe_alarms()
         assert result.get("MetricAlarms")[0]["AlarmDescription"] == "<"
+        cloudwatch_client.delete_alarms(AlarmNames=["cpu-mon"])
 
     def test_set_alarm(
         self, sns_client, cloudwatch_client, sqs_client, sns_create_topic, sqs_create_queue
@@ -343,11 +344,11 @@ class TestCloudwatch:
         alarm_description = "Test Alarm when CPU exceeds 50 percent"
 
         expected_trigger = {
-            "MetricName": "CPUUtilization",
+            "MetricName": "CPUUtilization-3",
             "Namespace": "AWS/EC2",
             "Unit": "Percent",
             "Period": 300,
-            "EvaluationPeriods": 1,
+            "EvaluationPeriods": 2,
             "ComparisonOperator": "GreaterThanThreshold",
             "Threshold": 50.0,
             "TreatMissingData": "ignore",
@@ -499,10 +500,10 @@ class TestCloudwatch:
 
                 body = json.loads(msg["Body"])
                 message = json.loads(body["Message"])
-                assert message["NewStateValue"] == expected_state
 
                 receipt_handle = msg["ReceiptHandle"]
                 sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
+                assert message["NewStateValue"] == expected_state
 
             retry(check_alarm_triggered, retries=60, sleep=3.0, expected_state="ALARM")
 
@@ -531,6 +532,8 @@ def check_message(
         body = json.loads(msg["Body"])
         if body["TopicArn"] == expected_topic_arn:
             message = json.loads(body["Message"])
+            receipt_handle = msg["ReceiptHandle"]
+            sqs_client.delete_message(QueueUrl=expected_queue_url, ReceiptHandle=receipt_handle)
             break
     assert message["NewStateValue"] == expected_new
     assert message["NewStateReason"] == expected_reason
