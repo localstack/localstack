@@ -338,7 +338,7 @@ def terminate_all_processes_in_docker():
     print("INFO: Received command to restart all processes ...")
     cmd = (
         'ps aux | grep -v supervisor | grep -v docker-entrypoint.sh | grep -v "bin/localstack" | '
-        "grep -v localstack_infra.log | awk '{print $1}' | grep -v PID"
+        "grep -v localstack_infra.log | awk '{print $2}' | grep -v PID"
     )
     pids = run(cmd).strip()
     pids = re.split(r"\s+", pids)
@@ -352,7 +352,7 @@ def terminate_all_processes_in_docker():
             except Exception:
                 pass
     # kill the process itself
-    sys.exit(0)
+    os.kill(this_pid, signal.SIGKILL)
 
 
 # -------------
