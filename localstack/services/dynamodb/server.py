@@ -5,6 +5,7 @@ from typing import List, Optional
 from localstack import config
 from localstack.config import dirs, is_env_true
 from localstack.services import install
+from localstack.services.install import DDB_AGENT_JAR_PATH
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.run import FuncThread
@@ -54,7 +55,8 @@ class DynamodbServer(Server):
         cmd = [
             "java",
             "-Xmx%s" % self.heap_size,
-            "-Djava.library.path=%s" % self.library_path,
+            f"-javaagent:{DDB_AGENT_JAR_PATH}",
+            f"-Djava.library.path={self.library_path}",
             "-jar",
             self.jar_path,
         ]
