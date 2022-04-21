@@ -831,6 +831,21 @@ class TestDynamoDB:
         # clean up
         dynamodb.delete_table(TableName=table_name)
 
+    def test_transact_get_items(self, dynamodb_client):
+        table_name = "test-ddb-table-%s" % short_uid()
+        dynamodb_client.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        dynamodb_client.put_item(TableName=table_name, Item={"id": {"S": "John"}})
+        result = dynamodb_client.transact_get_items(
+            TransactItems=[{"Get": {"Key": {"id": {"S": "John"}}, "TableName": table_name}}]
+        )
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+        dynamodb_client.delete_table(TableName=table_name)
+
     def test_batch_write_items(self):
         table_name = "test-ddb-table-%s" % short_uid()
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
