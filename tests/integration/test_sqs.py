@@ -1151,6 +1151,32 @@ class TestSqsProvider:
 
         assert queue_url
 
+    def test_dead_letter_queue_list_sources(self, sqs_client, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}"
+        queue_name_2 = f"queue-{short_uid()}"
+        dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
+
+        dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
+        url_parts = dl_queue_url.split("/")
+        region = get_region()
+        dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
+        )
+
+        conf = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 50}
+        attributes = {"RedrivePolicy": json.dumps(conf)}
+
+        queue_url_1 = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+        queue_url_2 = sqs_create_queue(QueueName=queue_name_2, Attributes=attributes)
+
+        assert queue_url_1
+        assert queue_url_2
+
+        source_urls = sqs_client.list_dead_letter_source_queues(QueueUrl=dl_queue_url)
+        assert len(source_urls) == 2
+        assert queue_url_1 in source_urls["queueUrls"]
+        assert queue_url_2 in source_urls["queueUrls"]
+
     def test_dead_letter_queue_execution(
         self, sqs_client, sqs_create_queue, lambda_client, create_lambda_function
     ):
