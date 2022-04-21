@@ -67,6 +67,8 @@ from localstack.aws.api.dynamodb import (
     TagKeyList,
     TagList,
     TimeToLiveSpecification,
+    TransactGetItemList,
+    TransactGetItemsOutput,
     TransactWriteItemsInput,
     TransactWriteItemsOutput,
     UpdateGlobalTableOutput,
@@ -767,6 +769,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         return result
 
+    @handler("TransactGetItems", expand=False)
+    def transact_get_items(
+        self,
+        context: RequestContext,
+        transact_items: TransactGetItemList,
+        return_consumed_capacity: ReturnConsumedCapacity = None,
+    ) -> TransactGetItemsOutput:
+        return self.forward_request(context)
+
     @handler("ExecuteStatement", expand=False)
     def execute_statement(
         self,
@@ -1286,7 +1297,7 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
 
     # if kinesis streaming destination is enabled
     # get table name from table_arn
-    # since batch_wrtie and transact write operations passing table_arn instead of table_name
+    # since batch_write and transact write operations passing table_arn instead of table_name
     table_name = table_arn.split("/", 1)[-1]
     table_definitions = DynamoDBRegion.get().table_definitions
     if not result and table_definitions.get(table_name):
