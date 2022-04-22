@@ -1069,7 +1069,7 @@ class TestDynamoDB:
 
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.create_event_source_mapping(
-            EventSourceArn=latest_stream_arn, FunctionName=function_name
+            EventSourceArn=latest_stream_arn, FunctionName=function_name, StartingPosition="TRIM_HORIZON"
         )
 
         item = {"SK": short_uid(), "Name": "name-{}".format(short_uid())}
