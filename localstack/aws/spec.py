@@ -51,6 +51,16 @@ class ServiceCatalog:
         return dict(result)
 
     @cached_property
+    def operations_index(self) -> Dict[str, List[ServiceName]]:
+        result = defaultdict(list)
+        for service in self.services.values():
+            operations = service.operation_names
+            if operations:
+                for operation in operations:
+                    result[operation].append(service.service_name)
+        return dict(result)
+
+    @cached_property
     def endpoint_prefix_index(self) -> Dict[str, List[ServiceName]]:
         result = defaultdict(list)
         for service in self.services.values():
@@ -62,3 +72,6 @@ class ServiceCatalog:
 
     def by_signing_name(self, signing_name: str) -> List[ServiceName]:
         return self.signing_name_index.get(signing_name, [])
+
+    def by_operation(self, operation_name: str) -> List[ServiceName]:
+        return self.operations_index.get(operation_name, [])

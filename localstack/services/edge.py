@@ -6,7 +6,7 @@ import re
 import subprocess
 import sys
 import threading
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Tuple, Union
 
 from requests.models import Response
 
@@ -339,7 +339,7 @@ def get_api_from_headers(
     method: Optional[str] = None,
     path: Optional[str] = None,
     data: Optional[Union[str, bytes]] = None,
-):
+) -> Tuple[str, int, str, str]:
     """Determine API and backend port based on "Authorization" or "Host" headers."""
 
     # initialize result
@@ -408,6 +408,54 @@ def get_api_from_headers(
         # version) it is a request to the opensearch API.
         result = "opensearch", config.service_port("opensearch")
 
+    # heuristic for SQS queue URLs
+    if is_sqs_queue_url(path):
+        # TODO MOVE, parsed by ASF!
+        return "sqs", config.service_port("sqs"), path, host
+
+    data_bytes = to_bytes(data or "")
+    version, action = extract_version_and_action(path, data_bytes)
+
+    def _in_path_or_payload(search_str):
+        return to_str(search_str) in path or to_bytes(search_str) in data_bytes
+
+    if path == "/" and b"QueueName=" in data_bytes:
+        # TODO check: What kind of URLs are these? Do they contain some kind of action?
+        return "sqs", config.service_port("sqs"), path, host
+
+    # SQS queue requests
+    if _in_path_or_payload("QueueUrl=") and _in_path_or_payload("Action="):
+        # TODO check: What kind of URLs are these? Do they contain some kind of action?
+        return "sqs", config.service_port("sqs"), path, host
+
+    if path.startswith("/2015-03-31/functions/"):
+        # TODO check: Do these requests really not contain an Auth Header?
+        return "lambda", config.service_port("lambda"), path, host
+
+    # TODO implement the rules below with some kind of version / action check:
+    if "Action=ConfirmSubscription" in path:
+        return "sns", config.service_port("sns"), path, host
+
+    if _in_path_or_payload("Action=AssumeRoleWithWebIdentity"):
+        return "sts", config.service_port("sts"), path, host
+
+    if _in_path_or_payload("Action=AssumeRoleWithSAML"):
+        return "sts", config.service_port("sts"), path, host
+
+    if _in_path_or_payload("Action=AssumeRole"):
+        return "sts", config.service_port("sts"), path, host
+
+    if matches_service_action("sqs", action, version=version):
+        return "sqs", config.service_port("sqs"), path, host
+
+    # SNS topic requests
+    if matches_service_action("sns", action, version=version):
+        return "sns", config.service_port("sns"), path, host
+
+    # certain EC2 requests from Java SDK contain no Auth headers (issue #3805)
+    if b"Version=2016-11-15" in data_bytes:
+        return "ec2", config.service_port("ec2"), path, host
+
     return result[0], result_before[1] or result[1], path, host
 
 
@@ -436,86 +484,31 @@ def is_s3_form_data(data_bytes):
 def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], headers: Headers):
     """Determine backend port based on custom rules."""
 
-    # TODO:
-    # These rules contain lots of things the service router should cover!
-    # - Migrate the rules which are in the scope of the service router to get_api_from_headers!
-
     # API Gateway invocation URLs
     host_header = hostname_from_url(headers.get("host"))
     if ("/%s/" % PATH_USER_REQUEST) in path or (
         host_header.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host_header
     ):
-        # TODO stays here, NOT parsed by ASF
         return "apigateway", config.service_port("apigateway")
-
-    # detect S3 presigned URLs
-    if "AWSAccessKeyId=" in path or "Signature=" in path:
-        # TODO MOVE, parsed by ASF!
-        return "s3", config.service_port("s3")
-
-    # heuristic for SQS queue URLs
-    if is_sqs_queue_url(path):
-        # TODO MOVE, parsed by ASF!
-        return "sqs", config.service_port("sqs")
 
     # DynamoDB shell URLs
     if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
-        # TODO stays here, NOT parsed by ASF
         return "dynamodb", config.service_port("dynamodb")
 
-    data_bytes = to_bytes(data or "")
-    version, action = extract_version_and_action(path, data_bytes)
-
-    def _in_path_or_payload(search_str):
-        return to_str(search_str) in path or to_bytes(search_str) in data_bytes
-
-    if path == "/" and b"QueueName=" in data_bytes:
-        # TODO MOVE, parsed by ASF!
-        return "sqs", config.service_port("sqs")
-
-    if "Action=ConfirmSubscription" in path:
-        # TODO MOVE, parsed by ASF!
-        return "sns", config.service_port("sns")
-
-    if path.startswith("/2015-03-31/functions/"):
-        # TODO MOVE, parsed by ASF!
-        return "lambda", config.service_port("lambda")
-
-    if _in_path_or_payload("Action=AssumeRoleWithWebIdentity"):
-        # TODO MOVE, parsed by ASF!
-        return "sts", config.service_port("sts")
-
-    if _in_path_or_payload("Action=AssumeRoleWithSAML"):
-        # TODO MOVE, parsed by ASF!
-        return "sts", config.service_port("sts")
-
-    if _in_path_or_payload("Action=AssumeRole"):
-        # TODO MOVE, parsed by ASF!
-        return "sts", config.service_port("sts")
-
-    # SQS queue requests
-    if _in_path_or_payload("QueueUrl=") and _in_path_or_payload("Action="):
-        # TODO MOVE, parsed by ASF!
-        return "sqs", config.service_port("sqs")
-    if matches_service_action("sqs", action, version=version):
-        # TODO MOVE, parsed by ASF!
-        return "sqs", config.service_port("sqs")
-
-    # SNS topic requests
-    if matches_service_action("sns", action, version=version):
-        # TODO MOVE, parsed by ASF!
-        return "sns", config.service_port("sns")
+    # TODO the remaining rules are special S3 rules - needs to be discussed how these should be handled.
+    #  - Some are similar to other rules and not that greedy, others are nearly general fallbacks
 
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip("/")
     if method in ["GET", "HEAD"] and stripped:
-        # TODO MOVE, parsed by ASF!
         # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
         return "s3", config.service_port("s3")
 
+    data_bytes = to_bytes(data or "")
+    version, action = extract_version_and_action(path, data_bytes)
+
     # detect S3 URLs
     if stripped and "/" not in stripped:
-        # TODO MOVE, parsed by ASF!
         if method == "PUT":
             # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
             return "s3", config.service_port("s3")
@@ -525,8 +518,14 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
 
     # detect S3 requests sent from aws-cli using --no-sign-request option
     if "aws-cli/" in headers.get("User-Agent", ""):
-        # TODO MOVE, parsed by ASF!
         return "s3", config.service_port("s3")
+
+    # detect S3 presigned URLs
+    if "AWSAccessKeyId=" in path or "Signature=" in path:
+        return "s3", config.service_port("s3")
+
+    def _in_path_or_payload(search_str):
+        return to_str(search_str) in path or to_bytes(search_str) in data_bytes
 
     # S3 delete object requests
     if (
@@ -535,12 +534,10 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
         and b"<Delete" in data_bytes
         and b"<Key>" in data_bytes
     ):
-        # TODO MOVE, parsed by ASF!
         return "s3", config.service_port("s3")
 
     # Put Object API can have multiple keys
     if stripped.count("/") >= 1 and method == "PUT":
-        # TODO MOVE, parsed by ASF!
         # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
         # or `/<bucket>/object/object1/+`
         return "s3", config.service_port("s3")
@@ -551,11 +548,6 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
     if auth_header.startswith("AWS "):
         # TODO MOVE, parsed by ASF!
         return "s3", config.service_port("s3")
-
-    # certain EC2 requests from Java SDK contain no Auth headers (issue #3805)
-    if b"Version=2016-11-15" in data_bytes:
-        # TODO MOVE, parsed by ASF!
-        return "ec2", config.service_port("ec2")
 
     if uses_host_addressing(headers):
         # TODO needs to be here and not with the regular rules, since this is incredibly greedy!

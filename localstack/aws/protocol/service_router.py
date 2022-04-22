@@ -1,11 +1,12 @@
 import logging
 from functools import lru_cache
-from typing import NamedTuple, Optional, Set
+from typing import NamedTuple, Optional
 
 from werkzeug.http import parse_dict_header
 
 from localstack.aws.spec import ServiceCatalog
 from localstack.http import Request
+from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 
 LOG = logging.getLogger(__name__)
 
@@ -89,6 +90,7 @@ signing_name_path_prefix_rules = {
 
 def custom_signing_name_rules(signing_name: str, request: Request) -> Optional[str]:
     rules = signing_name_path_prefix_rules.get(signing_name)
+
     if not rules:
         if signing_name == "servicecatalog":
             # servicecatalog uses the protocol json (only uses root path /)
@@ -114,16 +116,9 @@ def custom_host_addressing_rules(host: str) -> Optional[str]:
     #     return "s3"
 
 
-def custom_payload_rules(candidates: Set[str], request: Request) -> Optional[str]:
-    """
-    This function allows defining rules which need to inspect the payload (and therefore are very expensive to perform).
-    Be careful and make sure that there really is no other way to distinguish the requests than inspecting the payload!
-
-    :param candidates: limited amount of services where the matching service needs to be found
-    :param request: complete request
-    :return: selected service or None
-    """
-    return None
+def custom_path_addressing_rules(path: str) -> Optional[str]:
+    if is_sqs_queue_url(path):
+        return "sqs"
 
 
 @lru_cache()
@@ -146,10 +141,10 @@ def determine_aws_service_name(
 
     # 1. check the signing names
     if signing_name:
-        by_signing_name = services.by_signing_name(signing_name)
-        if len(by_signing_name) == 1:
+        signing_name_candidates = services.by_signing_name(signing_name)
+        if len(signing_name_candidates) == 1:
             # a unique signing-name -> service name mapping is the case for ~75% of service operations
-            return by_signing_name[0]
+            return signing_name_candidates[0]
 
         # try to find a match with the custom signing name rules
         custom_match = custom_signing_name_rules(signing_name, request)
@@ -157,7 +152,7 @@ def determine_aws_service_name(
             return custom_match
 
         # still ambiguous - add the services to the list of candidates
-        candidates.update(by_signing_name)
+        candidates.update(signing_name_candidates)
 
     # 2. check the target prefix
     if target_prefix and operation:
@@ -186,13 +181,19 @@ def determine_aws_service_name(
         if len(candidates) == 1:
             return candidates.pop()
 
-    # 3. check the path / endpoint prefix
+    # 3. check the path
     if path:
+        # iterate over the service spec's endpoint prefix
         for prefix, services_per_prefix in services.endpoint_prefix_index.items():
             if path.startswith(prefix):
                 if len(services_per_prefix) == 1:
                     return services_per_prefix[0]
                 candidates.update(services_per_prefix)
+
+        # try to find a match with the custom path rules
+        custom_path_match = custom_path_addressing_rules(host)
+        if custom_path_match:
+            return custom_path_match
 
     # 4. check the host (custom host addressing rules)
     if host:
@@ -200,10 +201,24 @@ def determine_aws_service_name(
         if custom_host_match:
             return custom_host_match
 
-    # 5. finally perform the expensive rules which need to parse the payload
-    custom_payload_match = custom_payload_rules(candidates, request)
-    if custom_payload_match:
-        return custom_payload_match
+    # 5. check the query / form-data
+    values = request.values
+    if "Action" in values and "Version" in values:
+        # query / ec2 protocol requests always have an action and a version (the action is more significant)
+        query_candidates = services.by_operation(values["Action"])
+        if len(query_candidates) == 1:
+            return query_candidates[0]
+
+        for service in list(query_candidates):
+            service_model = services.get(service)
+            if values["Version"] != service_model.api_version:
+                # the combination of Version and Action is not unique, add matches to the candidates
+                query_candidates.remove(service)
+
+        if len(query_candidates) == 1:
+            return query_candidates[0]
+
+        candidates.update(query_candidates)
 
     LOG.warning("could not uniquely determine service from request, candidates=%s", candidates)
 
