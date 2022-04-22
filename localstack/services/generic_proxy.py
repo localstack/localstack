@@ -473,10 +473,7 @@ def should_enforce_self_managed_service(method, path, headers, data):
     # allow only certain api calls without checking origin
     import localstack.services.edge
 
-    api, _ = localstack.services.edge.get_api_from_custom_rules(method, path, data, headers) or (
-        "",
-        None,
-    )
+    api = localstack.services.edge.get_api_from_custom_rules(method, path, data, headers) or ""
     if not config.DISABLE_CUSTOM_CORS_S3 and api == "s3":
         return False
     if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and api == "apigateway":

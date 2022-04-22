@@ -52,9 +52,7 @@ def _extract_service_indicators(request: Request) -> _ServiceIndicators:
     else:
         target_prefix, operation = None, None
 
-    return _ServiceIndicators(
-        signing_name, target_prefix, operation, request.host, request.root_path
-    )
+    return _ServiceIndicators(signing_name, target_prefix, operation, request.host, request.path)
 
 
 signing_name_path_prefix_rules = {
@@ -191,7 +189,7 @@ def determine_aws_service_name(
                 candidates.update(services_per_prefix)
 
         # try to find a match with the custom path rules
-        custom_path_match = custom_path_addressing_rules(host)
+        custom_path_match = custom_path_addressing_rules(path)
         if custom_path_match:
             return custom_path_match
 

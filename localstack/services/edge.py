@@ -116,10 +116,9 @@ class ProxyListenerEdge(ProxyListener):
             return 404
 
         if not port:
-            api, port = get_api_from_custom_rules(method, path, data, headers) or (
-                api,
-                port,
-            )
+            api = get_api_from_custom_rules(method, path, data, headers)
+            if api:
+                port = config.service_port(api)
 
         should_log_trace = is_trace_logging_enabled(headers)
         if api and should_log_trace:
@@ -344,13 +343,9 @@ def get_api_from_headers(
 
     # initialize result
     result = API_UNKNOWN, 0
-
-    target = headers.get("x-amz-target", "")
     host = headers.get("host", "")
+    target = headers.get("x-amz-target", "")
     auth_header = headers.get("authorization", "")
-
-    if not auth_header and not target and "." not in host:
-        return result[0], result[1], path, host
 
     path = path or "/"
 
@@ -408,53 +403,53 @@ def get_api_from_headers(
         # version) it is a request to the opensearch API.
         result = "opensearch", config.service_port("opensearch")
 
-    # heuristic for SQS queue URLs
-    if is_sqs_queue_url(path):
-        # TODO MOVE, parsed by ASF!
-        return "sqs", config.service_port("sqs"), path, host
+    # Rules which might not have an auth header have lower priority than others
+    # - They are only executed if there is no result yet
+    if result[0] == API_UNKNOWN:
+        # heuristic for SQS queue URLs
+        if is_sqs_queue_url(path):
+            return "sqs", config.service_port("sqs"), path, host
 
-    data_bytes = to_bytes(data or "")
-    version, action = extract_version_and_action(path, data_bytes)
+        data_bytes = to_bytes(data or "")
+        version, action = extract_version_and_action(path, data_bytes)
 
-    def _in_path_or_payload(search_str):
-        return to_str(search_str) in path or to_bytes(search_str) in data_bytes
+        def _in_path_or_payload(search_str):
+            return to_str(search_str) in path or to_bytes(search_str) in data_bytes
 
-    if path == "/" and b"QueueName=" in data_bytes:
-        # TODO check: What kind of URLs are these? Do they contain some kind of action?
-        return "sqs", config.service_port("sqs"), path, host
+        if path == "/" and b"QueueName=" in data_bytes:
+            # TODO check: What kind of URLs are these? Do they contain some kind of action?
+            return "sqs", config.service_port("sqs"), path, host
 
-    # SQS queue requests
-    if _in_path_or_payload("QueueUrl=") and _in_path_or_payload("Action="):
-        # TODO check: What kind of URLs are these? Do they contain some kind of action?
-        return "sqs", config.service_port("sqs"), path, host
+        if path.startswith("/2015-03-31/functions/"):
+            return "lambda", config.service_port("lambda"), path, host
 
-    if path.startswith("/2015-03-31/functions/"):
-        # TODO check: Do these requests really not contain an Auth Header?
-        return "lambda", config.service_port("lambda"), path, host
+        # SQS queue requests
+        if _in_path_or_payload("QueueUrl=") and _in_path_or_payload("Action="):
+            return "sqs", config.service_port("sqs"), path, host
 
-    # TODO implement the rules below with some kind of version / action check:
-    if "Action=ConfirmSubscription" in path:
-        return "sns", config.service_port("sns"), path, host
+        if "Action=ConfirmSubscription" in path:
+            return "sns", config.service_port("sns"), path, host
 
-    if _in_path_or_payload("Action=AssumeRoleWithWebIdentity"):
-        return "sts", config.service_port("sts"), path, host
+        if _in_path_or_payload("Action=AssumeRoleWithWebIdentity"):
+            return "sts", config.service_port("sts"), path, host
 
-    if _in_path_or_payload("Action=AssumeRoleWithSAML"):
-        return "sts", config.service_port("sts"), path, host
+        if _in_path_or_payload("Action=AssumeRoleWithSAML"):
+            return "sts", config.service_port("sts"), path, host
 
-    if _in_path_or_payload("Action=AssumeRole"):
-        return "sts", config.service_port("sts"), path, host
+        if _in_path_or_payload("Action=AssumeRole"):
+            return "sts", config.service_port("sts"), path, host
 
-    if matches_service_action("sqs", action, version=version):
-        return "sqs", config.service_port("sqs"), path, host
+        if matches_service_action("sqs", action, version=version):
+            return "sqs", config.service_port("sqs"), path, host
 
-    # SNS topic requests
-    if matches_service_action("sns", action, version=version):
-        return "sns", config.service_port("sns"), path, host
+        # SNS topic requests
+        if matches_service_action("sns", action, version=version):
+            # TODO these checks are too greedy! They need to have lower prio than the auth header
+            return "sns", config.service_port("sns"), path, host
 
-    # certain EC2 requests from Java SDK contain no Auth headers (issue #3805)
-    if b"Version=2016-11-15" in data_bytes:
-        return "ec2", config.service_port("ec2"), path, host
+        # certain EC2 requests from Java SDK contain no Auth headers (issue #3805)
+        if b"Version=2016-11-15" in data_bytes:
+            return "ec2", config.service_port("ec2"), path, host
 
     return result[0], result_before[1] or result[1], path, host
 
@@ -480,29 +475,31 @@ def is_s3_form_data(data_bytes):
     return False
 
 
-# TODO: refactor this function -> returning the port is redundant (given the returned service name)
-def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], headers: Headers):
+def get_api_from_custom_rules(
+    method: str, path: str, data: Union[str, bytes], headers: Headers
+) -> Optional[str]:
     """Determine backend port based on custom rules."""
+    # FIXME: These custom rules should become obsolete by migrating these to use the http/router.py
 
     # API Gateway invocation URLs
     host_header = hostname_from_url(headers.get("host"))
     if ("/%s/" % PATH_USER_REQUEST) in path or (
         host_header.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host_header
     ):
-        return "apigateway", config.service_port("apigateway")
+        return "apigateway"
 
     # DynamoDB shell URLs
     if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
-        return "dynamodb", config.service_port("dynamodb")
+        return "dynamodb"
 
-    # TODO the remaining rules are special S3 rules - needs to be discussed how these should be handled.
+    # TODO the remaining rules here are special S3 rules - needs to be discussed how these should be handled.
     #  - Some are similar to other rules and not that greedy, others are nearly general fallbacks
 
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip("/")
     if method in ["GET", "HEAD"] and stripped:
         # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
-        return "s3", config.service_port("s3")
+        return "s3"
 
     data_bytes = to_bytes(data or "")
     version, action = extract_version_and_action(path, data_bytes)
@@ -511,21 +508,18 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
     if stripped and "/" not in stripped:
         if method == "PUT":
             # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
-            return "s3", config.service_port("s3")
+            return "s3"
         if method == "POST" and is_s3_form_data(data_bytes):
             # assume that this is an S3 POST request with form parameters or multipart form in the body
-            return "s3", config.service_port("s3")
+            return "s3"
 
     # detect S3 requests sent from aws-cli using --no-sign-request option
     if "aws-cli/" in headers.get("User-Agent", ""):
-        return "s3", config.service_port("s3")
+        return "s3"
 
     # detect S3 presigned URLs
     if "AWSAccessKeyId=" in path or "Signature=" in path:
-        return "s3", config.service_port("s3")
-
-    def _in_path_or_payload(search_str):
-        return to_str(search_str) in path or to_bytes(search_str) in data_bytes
+        return "s3"
 
     # S3 delete object requests
     if (
@@ -534,24 +528,23 @@ def get_api_from_custom_rules(method: str, path: str, data: Union[str, bytes], h
         and b"<Delete" in data_bytes
         and b"<Key>" in data_bytes
     ):
-        return "s3", config.service_port("s3")
+        return "s3"
 
     # Put Object API can have multiple keys
     if stripped.count("/") >= 1 and method == "PUT":
         # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
         # or `/<bucket>/object/object1/+`
-        return "s3", config.service_port("s3")
+        return "s3"
 
     auth_header = headers.get("Authorization") or ""
 
     # detect S3 requests with "AWS id:key" Auth headers
     if auth_header.startswith("AWS "):
-        # TODO MOVE, parsed by ASF!
-        return "s3", config.service_port("s3")
+        return "s3"
 
     if uses_host_addressing(headers):
         # TODO needs to be here and not with the regular rules, since this is incredibly greedy!
-        return "s3", config.service_port("s3")
+        return "s3"
 
 
 def get_service_port_for_account(service, headers):
