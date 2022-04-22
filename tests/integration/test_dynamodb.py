@@ -506,6 +506,26 @@ class TestDynamoDB:
         )
         assert "ShardIterator" in response
 
+    def test_dynamodb_execute_transaction(self, dynamodb_client):
+        table_name = "table_%s" % short_uid()
+        dynamodb_client.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        statements = [
+            {"Statement": f"INSERT INTO {table_name} VALUE {{'Username': 'user01'}}"},
+            {"Statement": f"INSERT INTO {table_name} VALUE {{'Username': 'user02'}}"},
+        ]
+        result = dynamodb_client.execute_transaction(TransactStatements=statements)
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        result = dynamodb_client.scan(TableName=table_name)
+        assert result["ScannedCount"] == 2
+
+        dynamodb_client.delete_table(TableName=table_name)
+
     def test_dynamodb_partiql_missing(self, dynamodb_client):
         table_name = "table_with_stream_%s" % short_uid()
 
