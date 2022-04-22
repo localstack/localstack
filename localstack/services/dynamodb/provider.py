@@ -421,6 +421,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if "StreamSpecification" in table_definitions:
             create_dynamodb_stream(table_definitions, table_description.get("LatestStreamLabel"))
 
+        if "TableClass" in table_description:
+            table_class = table_description.pop("TableClass")
+            table_description["TableClassSummary"] = {"TableClass": table_class}
+
         tags = table_definitions.pop("Tags", [])
         if tags:
             table_arn = table_description["TableArn"]
