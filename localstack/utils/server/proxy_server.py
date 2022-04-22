@@ -130,7 +130,7 @@ def _do_start_ssl_proxy(port: int, target: PortOrUrl, target_ssl=False):
     server = pproxy.Server("secure+tunnel://0.0.0.0:%s" % port)
     target_proto = "ssl+tunnel" if target_ssl else "tunnel"
     remote = pproxy.Connection("%s://%s" % (target_proto, target))
-    args = dict(rserver=[remote], verbose=print)
+    args = dict(rserver=[remote])
 
     # set SSL contexts
     _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert()

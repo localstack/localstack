@@ -170,7 +170,7 @@ def run_server(
     """
 
     ensure_event_loop()
-    app = Quart(__name__)
+    app = Quart(__name__, static_folder=None)
     app.config["MAX_CONTENT_LENGTH"] = max_content_length or DEFAULT_MAX_CONTENT_LENGTH
     if send_timeout:
         app.config["BODY_TIMEOUT"] = send_timeout
