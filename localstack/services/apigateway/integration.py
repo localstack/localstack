@@ -17,10 +17,6 @@ from requests import Response
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway import helpers
-from localstack.services.apigateway.apigateway_listener import (
-    apply_request_parameters,
-    update_content_length,
-)
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import extract_path_params, make_error_response
 from localstack.services.awslambda import lambda_api
@@ -111,6 +107,33 @@ class BackendIntegration(ABC):
         response._content = data
         return response
 
+    @classmethod
+    def apply_request_parameters(
+        cls,
+        uri: str,
+        integration: Dict[str, Any],
+        path_params: Dict[str, str],
+        query_params: Dict[str, str],
+    ):
+        request_parameters = integration.get("requestParameters")
+        uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
+        if request_parameters:
+            for key in path_params:
+                # check if path_params is present in the integration request parameters
+                request_param_key = f"integration.request.path.{key}"
+                request_param_value = f"method.request.path.{key}"
+                if request_parameters.get(request_param_key, None) == request_param_value:
+                    uri = uri.replace(f"{{{key}}}", path_params[key])
+
+        if integration.get("type") != "HTTP_PROXY" and request_parameters:
+            for key in query_params.copy():
+                request_query_key = f"integration.request.querystring.{key}"
+                request_param_val = f"method.request.querystring.{key}"
+                if request_parameters.get(request_query_key, None) != request_param_val:
+                    query_params.pop(key)
+
+        return add_query_params_to_url(uri, query_params)
+
 
 class SnsIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
@@ -185,33 +208,6 @@ class MockIntegration(BackendIntegration):
 
 
 class HttpIntegration(BackendIntegration):
-    @classmethod
-    def apply_request_parameters(
-        cls,
-        uri: str,
-        integration: Dict[str, Any],
-        path_params: Dict[str, str],
-        query_params: Dict[str, str],
-    ):
-        request_parameters = integration.get("requestParameters")
-        uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
-        if request_parameters:
-            for key in path_params:
-                # check if path_params is present in the integration request parameters
-                request_param_key = f"integration.request.path.{key}"
-                request_param_value = f"method.request.path.{key}"
-                if request_parameters.get(request_param_key, None) == request_param_value:
-                    uri = uri.replace(f"{{{key}}}", path_params[key])
-
-        if integration.get("type") != "HTTP_PROXY" and request_parameters:
-            for key in query_params.copy():
-                request_query_key = f"integration.request.querystring.{key}"
-                request_param_val = f"method.request.querystring.{key}"
-                if request_parameters.get(request_query_key, None) != request_param_val:
-                    query_params.pop(key)
-
-        return add_query_params_to_url(uri, query_params)
-
     def invoke(self, invocation_context: ApiInvocationContext):
         uri = (
             invocation_context.integration.get("uri")
@@ -267,6 +263,11 @@ class HttpIntegration(BackendIntegration):
 
 
 class LambdaIntegration(BackendIntegration):
+    @classmethod
+    def update_content_length(cls, response: Response):
+        if response and response.content is not None:
+            response.headers["Content-Length"] = str(len(response.content))
+
     def invoke(self, invocation_context: ApiInvocationContext):
         uri = (
             invocation_context.integration.get("uri")
@@ -341,7 +342,7 @@ class LambdaIntegration(BackendIntegration):
             except Exception as e:
                 LOG.warning("Couldn't set Lambda response content: %s", e)
                 response._content = "{}"
-            update_content_length(response)
+            self.update_content_length(response)
             response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
 
         # apply custom response template
@@ -440,7 +441,7 @@ class S3Integration(BackendIntegration):
         except Exception:
             path_params = {}
 
-        uri = apply_request_parameters(
+        uri = self.apply_request_parameters(
             uri,
             integration=invocation_context.integration,
             path_params=path_params,

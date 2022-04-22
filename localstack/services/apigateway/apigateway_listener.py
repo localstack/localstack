@@ -3,10 +3,9 @@ import json
 import logging
 import re
 from http import HTTPStatus
-from typing import Any, Dict, Union
+from typing import Dict, Optional, Tuple
 
 from jsonschema import ValidationError, validate
-from requests.models import Response
 
 from localstack.constants import (
     APPLICATION_JSON,
@@ -48,7 +47,6 @@ from localstack.services.apigateway.integration import (
     S3Integration,
     SnsIntegration,
     SqsIntegration,
-    VtlTemplate,
 )
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
@@ -57,7 +55,6 @@ from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import camel_to_snake_case, json_safe, to_str
 # set up logger
-from localstack.utils.http import add_query_params_to_url
 
 LOG = logging.getLogger(__name__)
 
@@ -134,9 +131,11 @@ class ProxyListenerApiGateway(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
         # fix backend issue (missing support for API documentation)
-        if re.match(r"/restapis/[^/]+/documentation/versions", path):
-            if response.status_code == 404:
-                return requests_response({"position": "1", "items": []})
+        if (
+            re.match(r"/restapis/[^/]+/documentation/versions", path)
+            and response.status_code == 404
+        ):
+            return requests_response({"position": "1", "items": []})
 
         # add missing implementations
         if response.status_code == 404:
@@ -279,9 +278,9 @@ def validate_api_key(api_key: str, stage: str):
     usage_plans = client.get_usage_plans()
     for item in usage_plans.get("items", []):
         api_stages = item.get("apiStages", [])
-        for api_stage in api_stages:
-            if api_stage.get("stage") == stage:
-                usage_plan_ids.append(item.get("id"))
+        usage_plan_ids.extend(
+            item.get("id") for api_stage in api_stages if api_stage.get("stage") == stage
+        )
 
     for usage_plan_id in usage_plan_ids:
         usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
@@ -303,32 +302,32 @@ def is_api_key_valid(is_api_key_required: bool, headers: Dict[str, str], stage: 
     return validate_api_key(api_key, stage)
 
 
-def update_content_length(response: Response):
-    if response and response.content is not None:
-        response.headers["Content-Length"] = str(len(response.content))
+# def update_content_length(response: Response):
+#     if response and response.content is not None:
+#         response.headers["Content-Length"] = str(len(response.content))
 
 
-def apply_request_parameters(
-    uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
-):
-    request_parameters = integration.get("requestParameters")
-    uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
-    if request_parameters:
-        for key in path_params:
-            # check if path_params is present in the integration request parameters
-            request_param_key = f"integration.request.path.{key}"
-            request_param_value = f"method.request.path.{key}"
-            if request_parameters.get(request_param_key, None) == request_param_value:
-                uri = uri.replace(f"{{{key}}}", path_params[key])
-
-    if integration.get("type") != "HTTP_PROXY" and request_parameters:
-        for key in query_params.copy():
-            request_query_key = f"integration.request.querystring.{key}"
-            request_param_val = f"method.request.querystring.{key}"
-            if request_parameters.get(request_query_key, None) != request_param_val:
-                query_params.pop(key)
-
-    return add_query_params_to_url(uri, query_params)
+# def apply_request_parameters(
+#     uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
+# ):
+#     request_parameters = integration.get("requestParameters")
+#     uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
+#     if request_parameters:
+#         for key in path_params:
+#             # check if path_params is present in the integration request parameters
+#             request_param_key = f"integration.request.path.{key}"
+#             request_param_value = f"method.request.path.{key}"
+#             if request_parameters.get(request_param_key, None) == request_param_value:
+#                 uri = uri.replace(f"{{{key}}}", path_params[key])
+#
+#     if integration.get("type") != "HTTP_PROXY" and request_parameters:
+#         for key in query_params.copy():
+#             request_query_key = f"integration.request.querystring.{key}"
+#             request_param_val = f"method.request.querystring.{key}"
+#             if request_parameters.get(request_query_key, None) != request_param_val:
+#                 query_params.pop(key)
+#
+#     return add_query_params_to_url(uri, query_params)
 
 
 def apply_response_parameters(invocation_context: ApiInvocationContext):

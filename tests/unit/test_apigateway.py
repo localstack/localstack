@@ -14,6 +14,7 @@ from localstack.services.apigateway.apigateway_listener import (
 )
 from localstack.services.apigateway.helpers import apply_json_patch_safe, get_resource_for_path
 from localstack.services.apigateway.integration import (
+    BackendIntegration,
     RequestTemplates,
     ResponseTemplates,
     VelocityUtil,
@@ -104,7 +105,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
             "cacheKeyParameters": [],
         }
 
-        uri = apigateway_listener.apply_request_parameters(
+        uri = BackendIntegration.apply_request_parameters(
             uri="https://httpbin.org/anything/{proxy}",
             integration=integration,
             path_params={"proxy": "foo/bar/baz"},
