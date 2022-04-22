@@ -1078,8 +1078,8 @@ class TestDynamoDB:
 
         events = retry(
             check_expected_lambda_log_events_length,
-            retries=3,
-            sleep=1,
+            retries=10,
+            sleep=3,
             function_name=function_name,
             expected_length=1,
             regex_filter=r"Records",

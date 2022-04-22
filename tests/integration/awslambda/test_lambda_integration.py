@@ -341,6 +341,7 @@ class TestDynamoDBEventSourceMapping:
         )
         # disable event source mapping
         lambda_client.update_event_source_mapping(UUID=uuid, Enabled=False)
+        time.sleep(2)
         table.put_item(Item=items[1])
         # lambda no longer invoked, still have 1 event
         check_expected_lambda_log_events_length(
