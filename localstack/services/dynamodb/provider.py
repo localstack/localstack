@@ -37,6 +37,8 @@ from localstack.aws.api.dynamodb import (
     DynamodbApi,
     ExecuteStatementInput,
     ExecuteStatementOutput,
+    ExecuteTransactionInput,
+    ExecuteTransactionOutput,
     GetItemInput,
     GetItemOutput,
     GlobalTableAlreadyExistsException,
@@ -777,6 +779,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return_consumed_capacity: ReturnConsumedCapacity = None,
     ) -> TransactGetItemsOutput:
         return self.forward_request(context)
+
+    @handler("ExecuteTransaction", expand=False)
+    def execute_transaction(
+        self, context: RequestContext, execute_transaction_input: ExecuteTransactionInput
+    ) -> ExecuteTransactionOutput:
+        result = self.forward_request(context)
+        return result
 
     @handler("ExecuteStatement", expand=False)
     def execute_statement(
