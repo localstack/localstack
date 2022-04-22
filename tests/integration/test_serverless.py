@@ -85,7 +85,7 @@ class TestServerless(unittest.TestCase):
 
         resp = lambda_client.list_event_source_mappings(FunctionName=function_name)
         mappings = resp["EventSourceMappings"]
-        self.assertEqual(1, len(mappings))
+        self.assertEqual(len(mappings), 1)
         event_source_arn = mappings[0]["EventSourceArn"]
 
         resp = kinesis_client.describe_stream(StreamName=stream_name)
@@ -94,7 +94,7 @@ class TestServerless(unittest.TestCase):
         # assert that stream consumer is properly connected and Lambda gets invoked
         def assert_invocations():
             events = get_lambda_log_events(function_name2)
-            self.assertEqual(1, len(events))
+            self.assertEqual(len(events), 1)
 
         kinesis_client.put_record(StreamName=stream_name, Data=b"test123", PartitionKey="key1")
         retry(assert_invocations, sleep=1, retries=5)

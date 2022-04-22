@@ -6,7 +6,6 @@ from localstack.services.awslambda.event_source_listeners.stream_event_source_li
 )
 from localstack.services.awslambda.lambda_api import get_event_sources
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import first_char_to_lower
 
 
 class DynamoDBEventSourceListener(StreamEventSourceListener):
@@ -34,13 +33,9 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
     def _create_lambda_event_payload(self, stream_arn, records, shard_id=None):
         record_payloads = []
         for record in records:
-            creation_time = record.get("dynamodb", {}).get(
-                "ApproximateCreationDateTime", None
-            )
+            creation_time = record.get("dynamodb", {}).get("ApproximateCreationDateTime", None)
             if creation_time is not None:
-                record["dynamodb"]["ApproximateCreationDateTime"] = (
-                    creation_time.timestamp() * 1000
-                )
+                record["dynamodb"]["ApproximateCreationDateTime"] = creation_time.timestamp() * 1000
             record_payloads.append(
                 {
                     "eventID": record["eventID"],

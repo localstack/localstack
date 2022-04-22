@@ -1,3 +1,4 @@
+import logging
 import math
 import threading
 import time
@@ -8,11 +9,13 @@ from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.awslambda.lambda_api import LOG, run_lambda
+from localstack.services.awslambda.lambda_api import run_lambda
 from localstack.services.awslambda.lambda_executors import InvocationResult
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import long_uid, timestamp_millis
 from localstack.utils.threads import FuncThread
+
+LOG = logging.getLogger(__name__)
 
 
 class StreamEventSourceListener(EventSourceListener):
@@ -347,5 +350,5 @@ class StreamEventSourceListener(EventSourceListener):
                     self._STREAM_LISTENER_THREADS.pop(thread_id)
 
             except Exception as e:
-                LOG.error(e)
+                LOG.exception(e)
             time.sleep(self._POLL_INTERVAL_SEC)
