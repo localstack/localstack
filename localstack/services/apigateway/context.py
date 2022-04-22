@@ -30,6 +30,9 @@ class ApiInvocationContext:
 
     # invocation context
     context: Dict[str, Any]
+
+    # authorizer configuration
+    auth_config: Dict[str, Any]
     # authentication info for this invocation
     auth_info: Dict[str, Any]
 
@@ -86,6 +89,7 @@ class ApiInvocationContext:
         self.response_templates = {}
         self.stage_variables = {}
         self.path_params = {}
+        self.auth_config = None
 
     @property
     def resource_id(self) -> Optional[str]:
