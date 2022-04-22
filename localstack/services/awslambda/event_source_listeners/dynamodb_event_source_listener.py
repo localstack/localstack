@@ -34,25 +34,22 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
     def _create_lambda_event_payload(self, stream_arn, records, shard_id=None):
         record_payloads = []
         for record in records:
-            record_payload = {}
-            for key, val in record.items():
-                record_payload[first_char_to_lower(key)] = val
-            creation_time = record_payload.get("dynamodb", {}).get(
+            creation_time = record.get("dynamodb", {}).get(
                 "ApproximateCreationDateTime", None
             )
             if creation_time is not None:
-                record_payload["dynamodb"]["ApproximateCreationDateTime"] = (
+                record["dynamodb"]["ApproximateCreationDateTime"] = (
                     creation_time.timestamp() * 1000
                 )
             record_payloads.append(
                 {
-                    "eventID": record_payload.pop("eventID"),
+                    "eventID": record["eventID"],
                     "eventVersion": "1.0",
                     "awsRegion": aws_stack.get_region(),
-                    "eventName": record_payload.pop("eventName"),
+                    "eventName": record["eventName"],
                     "eventSourceARN": stream_arn,
                     "eventSource": "aws:dynamodb",
-                    "dynamodb": record_payload,
+                    "dynamodb": record["dynamodb"],
                 }
             )
         return {"Records": record_payloads}

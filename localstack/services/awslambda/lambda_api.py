@@ -226,7 +226,7 @@ def build_mapping_obj(data) -> Dict:
     else:
         source_arn = data["EventSourceArn"]
         mapping["EventSourceArn"] = source_arn
-        mapping["StartingPosition"] = data.get("StartingPosition")
+        mapping["StartingPosition"] = data.get("StartingPosition") or "LATEST"
     batch_size = check_batch_size_range(source_arn, batch_size)
     mapping["BatchSize"] = batch_size
 
