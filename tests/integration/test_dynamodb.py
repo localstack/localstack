@@ -526,6 +526,36 @@ class TestDynamoDB:
 
         dynamodb_client.delete_table(TableName=table_name)
 
+    def test_dynamodb_batch_execute_statement(self, dynamodb_client):
+        table_name = "table_%s" % short_uid()
+        dynamodb_client.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+
+        dynamodb_client.put_item(TableName=table_name, Item={"Username": {"S": "user02"}})
+        statements = [
+            {"Statement": f"INSERT INTO {table_name} VALUE {{'Username': 'user01'}}"},
+            {"Statement": f"UPDATE {table_name} SET Age=20 WHERE Username='user02'"},
+        ]
+        result = dynamodb_client.batch_execute_statement(Statements=statements)
+        # actions always succeeds
+        assert not any("Error" in r for r in result["Responses"])
+
+        item = dynamodb_client.get_item(TableName=table_name, Key={"Username": {"S": "user02"}})[
+            "Item"
+        ]
+        assert item["Age"]["N"] == "20"
+
+        item = dynamodb_client.get_item(TableName=table_name, Key={"Username": {"S": "user01"}})[
+            "Item"
+        ]
+        assert item
+
+        dynamodb_client.delete_table(TableName=table_name)
+
     def test_dynamodb_partiql_missing(self, dynamodb_client):
         table_name = "table_with_stream_%s" % short_uid()
 
