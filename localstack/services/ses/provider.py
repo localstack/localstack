@@ -63,6 +63,7 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
     kwargs should consist of following keys related to the email:
     - Body
     - Destinations
+    - HtmlBody
     - RawData
     - Source
     - Subject
@@ -199,6 +200,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             Destination=destination,
             Subject=message["Subject"].get("Data"),
             Body=message["Body"].get("Text", {}).get("Data"),
+            HtmlBody=message["Body"].get("Html", {}).get("Data"),
         )
 
         return response
