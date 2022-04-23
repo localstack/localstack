@@ -422,7 +422,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             create_dynamodb_stream(table_definitions, table_description.get("LatestStreamLabel"))
 
         if "TableClass" in table_definitions:
-            table_class = table_description.pop("TableClass", None) or table_definitions.pop("TableClass")
+            table_class = table_description.pop("TableClass", None) or table_definitions.pop(
+                "TableClass"
+            )
             table_description["TableClassSummary"] = {"TableClass": table_class}
 
         tags = table_definitions.pop("Tags", [])
@@ -482,7 +484,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 if table_definitions.get(key):
                     result.get("Table", {})[key] = table_definitions[key]
             if "TableClass" in table_definitions:
-                result.get("Table", {})["TableClassSummary"] = {"TableClass": table_definitions["TableClass"]}
+                result.get("Table", {})["TableClassSummary"] = {
+                    "TableClass": table_definitions["TableClass"]
+                }
 
         return result
 
@@ -497,7 +501,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             is_no_update_error = (
                 e.code == "ValidationException" and "Nothing to update" in e.message
             )
-            if is_no_update_error and not list({"TableClass", "ReplicaUpdates"} & set(update_table_input.keys())):
+            if is_no_update_error and not list(
+                {"TableClass", "ReplicaUpdates"} & set(update_table_input.keys())
+            ):
                 raise
 
             table_name = update_table_input.get("TableName")
