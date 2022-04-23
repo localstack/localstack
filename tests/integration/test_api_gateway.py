@@ -1654,9 +1654,7 @@ def test_apigw_test_invoke_method_api(apigateway_client):
         httpMethod="GET",
         integrationHttpMethod="GET",
         type="AWS",
-        uri="arn:aws:apigateway:{}:lambda:path//2015-03-31/functions/{}/invocations".format(
-            aws_stack.get_region(), lambda_arn_1
-        ),
+        uri=f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path//2015-03-31/functions/{lambda_arn_1}/invocations",
     )
 
     # run test_invoke_method API #1
@@ -1664,7 +1662,7 @@ def test_apigw_test_invoke_method_api(apigateway_client):
         restApiId=api_id,
         resourceId=resource_id,
         httpMethod="GET",
-        pathWithQueryString="/foo",
+        pathWithQueryString="/test",
     )
     assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
     assert 200 == response.get("status")

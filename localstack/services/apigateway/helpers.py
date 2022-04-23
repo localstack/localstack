@@ -1235,6 +1235,7 @@ class UrlParts:
     host_based_style = re.compile(HOST_REGEX_EXECUTE_API)
     path_based_style = re.compile(PATH_REGEX_USER_REQUEST)
     custom_based_style = re.compile(HOST_REGEX_CUSTOM_DOMAIN)
+    test_invoke_style = re.compile(PATH_REGEX_TEST_INVOKE_API)
     """
     Parse and split the API gateway request url into logical parts like "stage", "api_id"
 
@@ -1272,6 +1273,11 @@ class UrlParts:
             if api_details := self.get_api_details_from_domain(domain_name):
                 api_id, stage, invoke_path = api_details
 
+        elif (m := self.is_test_invoke_based()) is not None and self.method == "POST":
+            api_id = m.group(1)
+            stage = None
+            invoke_path = self.path
+
         return api_id, stage, conn_id, invoke_path
 
     def is_path_based(self):
@@ -1280,11 +1286,11 @@ class UrlParts:
     def is_host_based(self):
         return self.host_based_style.search(self.headers.get("Host", ""))
 
-    def is_ws_path_based(self):
-        return self.ws_path_based_style.search(self.path)
-
     def is_custom_domain(self):
         return self.custom_based_style.search(self.headers.get("Host", ""))
+
+    def is_test_invoke_based(self):
+        return self.test_invoke_style.search(self.path)
 
     def _detect_path(self, api_id):
         return self.get_invocation_path_from_path()

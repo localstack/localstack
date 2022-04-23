@@ -241,9 +241,11 @@ class MockIntegration(BackendIntegration):
         )
         response = self.response_templates.render(invocation_context, response=response)
         if isinstance(response, Response):
+            response = self.apply_response_parameters(invocation_context)
             return response
         if not invocation_context.headers.get(HEADER_CONTENT_TYPE):
             invocation_context.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
+        self.apply_response_parameters(invocation_context)
         return MockIntegration._create_response(status_code, invocation_context.headers, response)
 
 
@@ -404,7 +406,7 @@ class KinesisIntegration(BackendIntegration):
         }
 
     def _kinesis_action(self, uri):
-        res = {key: val for key, val in self.actions_map.items() if uri.endswith(key)}
+        res = next(val for key, val in self.actions_map.items() if uri.endswith(key))
         return res or None
 
     def invoke(self, invocation_context: ApiInvocationContext):
@@ -416,7 +418,6 @@ class KinesisIntegration(BackendIntegration):
         invocation_context.context = get_event_request_context(invocation_context)
         try:
             payload = self.request_templates.render(invocation_context)
-
         except Exception as e:
             LOG.warning("Unable to convert API Gateway payload to str", e)
             raise IntegrationError from e

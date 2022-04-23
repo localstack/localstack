@@ -349,7 +349,7 @@ class TestTemplates:
         }
         api_context.stage_variables = {"stageVariable1": "value1", "stageVariable2": "value2"}
 
-        rendered_request = template.render(api_context=api_context)
+rendered_request = template.render(api_context=api_context)
         result_as_json = json.loads(rendered_request)
 
         assert result_as_json.get("body") == {"spam": "eggs"}

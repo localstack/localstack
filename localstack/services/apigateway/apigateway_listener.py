@@ -10,6 +10,7 @@ from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_AUTHORIZATION,
     HEADER_LOCALSTACK_EDGE_URL,
+    LOCALHOST_HOSTNAME,
 )
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -59,6 +60,12 @@ from localstack.utils.aws.request_context import (
     mock_request_for_region,
 )
 from localstack.utils.common import to_str
+
+# URL pattern for invocations
+HOST_REGEX_EXECUTE_API = (
+    r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(%s|([^\.]+)\.amazonaws\.com)(.*)"
+    % LOCALHOST_HOSTNAME
+)
 
 # set up logger
 
@@ -402,8 +409,7 @@ def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
 
 
 def invoke_rest_api(invocation_context: ApiInvocationContext):
-    invocation_path = invocation_context.path_with_query_string
-    raw_path = invocation_context.path or invocation_path
+    raw_path = invocation_context.path or invocation_context.path_with_query_string
     method = invocation_context.method
     headers = invocation_context.headers
 
@@ -437,7 +443,8 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
             # default to returning CORS headers if this is an OPTIONS request
             return get_cors_response(headers)
         return make_error_response(
-            f"Unable to find integration for: {method} {invocation_path} ({raw_path})", 404
+            f"Unable to find integration for: {method} {invocation_context.path_with_query_string} ({raw_path})",
+            404,
         )
 
     res_methods = resource.get("resourceMethods", {})
@@ -495,7 +502,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
         invocation_context.path_params = path_params
     except Exception:
-        path_params = {}
+        invocation_context.path_params = {}
 
     if (uri.startswith("arn:aws:apigateway:") and ":lambda:path" in uri) or uri.startswith(
         "arn:aws:lambda"
