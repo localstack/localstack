@@ -509,7 +509,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             table_name = update_table_input.get("TableName")
 
             if update_table_input.get("TableClass"):
-                table_definitions = DynamoDBRegion.get().table_definitions.get(table_name)
+                table_definitions = DynamoDBRegion.get().table_definitions.setdefault(
+                    table_name, {}
+                )
                 table_definitions["TableClass"] = update_table_input.get("TableClass")
 
             if update_table_input.get("ReplicaUpdates"):
