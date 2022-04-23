@@ -28,8 +28,7 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.aws_stack import parse_arn
-from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.strings import long_uid
+from localstack.utils.collections import ensure_list
 
 LOG = logging.getLogger(__name__)
 
@@ -44,6 +43,8 @@ HOST_REGEX_EXECUTE_API = (
     r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(%s|([^\.]+)\.amazonaws\.com)(.*)"
     % LOCALHOST_HOSTNAME
 )
+# host regex to match custom domain API invocations
+HOST_REGEX_CUSTOM_DOMAIN = r"^(?!localhost\.localstack\.cloud.*|.*amazonaws\.com)((?!-|.*execute\-api.*)[A-Za-z0-9-]{1,63}(?<!-)\.)+(localhost|[A-Za-z]{2,6})"
 
 # regex path patterns
 PATH_REGEX_MAIN = r"^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?"
@@ -1228,6 +1229,92 @@ def import_api_from_openapi_spec(
         rest_api.endpoint_configuration = endpoint_config
 
     return rest_api
+
+
+class UrlParts:
+    host_based_style = re.compile(HOST_REGEX_EXECUTE_API)
+    path_based_style = re.compile(PATH_REGEX_USER_REQUEST)
+    custom_based_style = re.compile(HOST_REGEX_CUSTOM_DOMAIN)
+    """
+    Parse and split the API gateway request url into logical parts like "stage", "api_id"
+
+    Note:
+    - For some cases the extracted "stage" property won't be correct, for example, APIv2 calls
+    where stage is not part of the path request. At the invocation level if the stage is not
+    found we fallback to the $default stage.
+    """
+
+    def __init__(self, method: str, path: str, headers: Dict[str, str]):
+        self.method = method
+        self.path = path
+        self.headers = headers
+
+        self.api_id, self.stage, self.conn_id, self.invocation_path = self._extract_url_parts()
+
+    def _extract_url_parts(self) -> Tuple[str, str, str, str]:
+        api_id = None
+        stage = None
+        conn_id = None
+        invoke_path = self.path
+
+        if (m := self.is_path_based()) is not None:
+            api_id = m.group(1)
+            stage = m.group(2)
+            invoke_path = f"/{m.group(3)}"
+
+        elif (m := self.is_host_based()) is not None:
+            api_id = m.group(1)
+            stage = self._detect_stage(api_id)
+            invoke_path = self._detect_path(api_id)
+
+        elif (m := self.is_custom_domain()) is not None:
+            domain_name = m.group(0)
+            if api_details := self.get_api_details_from_domain(domain_name):
+                api_id, stage, invoke_path = api_details
+
+        return api_id, stage, conn_id, invoke_path
+
+    def is_path_based(self):
+        return self.path_based_style.search(self.path)
+
+    def is_host_based(self):
+        return self.host_based_style.search(self.headers.get("Host", ""))
+
+    def is_ws_path_based(self):
+        return self.ws_path_based_style.search(self.path)
+
+    def is_custom_domain(self):
+        return self.custom_based_style.search(self.headers.get("Host", ""))
+
+    def _detect_path(self, api_id):
+        return self.get_invocation_path_from_path()
+
+    def _detect_stage(self, api_id):
+        return self.get_stage_from_path()
+
+    def get_invocation_path_from_path(self):
+        return f'/{self.path.lstrip("/").partition("/")[2]}'
+
+    def get_stage_from_path(self):
+        return self.path.strip("/").split("/")[0]
+
+    def get_api_details_from_domain(self, domain_name):
+        # search v1 APIs
+        resource_path = self.path
+        for region_name, backend in APIGatewayRegion.regions().items():
+            mappings = backend.base_path_mappings.get(domain_name) or []
+            mappings = ensure_list(mappings)
+            for mapping in mappings:
+                base_path = mapping["basePath"]
+                base_path_with_slash = f"{base_path.rstrip('/')}/"
+                is_base_path_prefix = self.path.startswith(base_path_with_slash)
+                if not is_base_path_prefix and base_path != "(none)":
+                    continue
+                stage = mapping.get("stage") or "(none)"
+                stage = self.path.lstrip("/").partition("/")[0] if stage == "(none)" else stage
+                if is_base_path_prefix:
+                    resource_path = self.path[len(base_path) :]
+                return mapping["restApiId"], stage, resource_path
 
 
 def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tuple[str, Dict]:

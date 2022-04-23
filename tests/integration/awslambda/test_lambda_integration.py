@@ -402,7 +402,7 @@ class TestLambdaHttpInvocation:
         lambda_name = f"test_lambda_{short_uid()}"
         lambda_resource = "/api/v1/{proxy+}"
         lambda_path = "/api/v1/hello/world"
-        lambda_request_context_path = "/" + TEST_STAGE_NAME + lambda_path
+        lambda_request_context_path = f"/{TEST_STAGE_NAME}{lambda_path}"
         lambda_request_context_resource_path = lambda_resource
 
         # create lambda function
