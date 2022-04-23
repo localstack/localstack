@@ -17,23 +17,26 @@ from requests import Response
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway import helpers
+from localstack.services.apigateway.apigateway_listener import get_event_request_context
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import extract_path_params, make_error_response
 from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
+from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
     flask_to_requests_response,
     request_response_stream,
+    requests_response,
 )
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.http import add_query_params_to_url
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
 from localstack.utils.objects import recurse_object
-from localstack.utils.strings import to_bytes
+from localstack.utils.strings import camel_to_snake_case, to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -42,6 +45,12 @@ TARGET_REGEX_PATH_S3_URI = (
     r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
 )
 TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
+
+
+class IntegrationError(Exception):
+    """
+    Integration error exception
+    """
 
 
 class PassthroughBehavior(Enum):
@@ -134,9 +143,33 @@ class BackendIntegration(ABC):
 
         return add_query_params_to_url(uri, query_params)
 
+    @classmethod
+    def apply_response_parameters(cls, invocation_context: ApiInvocationContext):
+        response = invocation_context.response
+        integration = invocation_context.integration
+
+        int_responses = integration.get("integrationResponses") or {}
+        if not int_responses:
+            return response
+        entries = list(int_responses.keys())
+        return_code = str(response.status_code)
+        if return_code not in entries:
+            if len(entries) > 1:
+                LOG.info("Found multiple integration response status codes: %s", entries)
+                return response
+            return_code = entries[0]
+        response_params = int_responses[return_code].get("responseParameters", {})
+        for key, value in response_params.items():
+            # TODO: add support for method.response.body, etc ...
+            if str(key).lower().startswith("method.response.header."):
+                header_name = key[len("method.response.header.") :]
+                response.headers[header_name] = value.strip("'")
+        return response
+
 
 class SnsIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
+        invocation_context.context = get_event_request_context(invocation_context)
         try:
             payload = self.request_templates.render(invocation_context)
         except Exception as e:
@@ -209,6 +242,7 @@ class MockIntegration(BackendIntegration):
 
 class HttpIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
+        invocation_context.context = get_event_request_context(invocation_context)
         uri = (
             invocation_context.integration.get("uri")
             or invocation_context.integration.get("integrationUri")
@@ -281,7 +315,7 @@ class LambdaIntegration(BackendIntegration):
         stage = invocation_context.stage
         headers = invocation_context.headers
         resource_path = invocation_context.resource_path
-
+        invocation_context.context = get_event_request_context(invocation_context)
         try:
             path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
             invocation_context.path_params = path_params
@@ -354,34 +388,37 @@ class LambdaIntegration(BackendIntegration):
 
 
 class KinesisIntegration(BackendIntegration):
+    def __init__(self):
+        super().__init__()
+        self.actions_map = {
+            "kinesis:action/PutRecord": kinesis_listener.ACTION_PUT_RECORD,
+            "kinesis:action/PutRecords": kinesis_listener.ACTION_PUT_RECORDS,
+            "kinesis:action/ListStreams": kinesis_listener.ACTION_LIST_STREAMS,
+        }
+
+    def _kinesis_action(self, uri):
+        res = {key: val for key, val in self.actions_map.items() if uri.endswith(key)}
+        return res or None
+
     def invoke(self, invocation_context: ApiInvocationContext):
         uri = (
             invocation_context.integration.get("uri")
             or invocation_context.integration.get("integrationUri")
             or ""
         )
-        if uri.endswith("kinesis:action/PutRecord"):
-            target = kinesis_listener.ACTION_PUT_RECORD
-        elif uri.endswith("kinesis:action/PutRecords"):
-            target = kinesis_listener.ACTION_PUT_RECORDS
-        elif uri.endswith("kinesis:action/ListStreams"):
-            target = kinesis_listener.ACTION_LIST_STREAMS
-        else:
-            LOG.info(f"Unexpected API Gateway integration URI '{uri}' for integration type")
-            target = ""
-
+        invocation_context.context = get_event_request_context(invocation_context)
         try:
             payload = self.request_templates.render(invocation_context)
 
         except Exception as e:
             LOG.warning("Unable to convert API Gateway payload to str", e)
-            raise
+            raise IntegrationError from e
 
         # forward records to target kinesis stream
         headers = aws_stack.mock_aws_request_headers(
             service="kinesis", region_name=invocation_context.region_name
         )
-        headers["X-Amz-Target"] = target
+        headers["X-Amz-Target"] = self._kinesis_action(uri) or ""
 
         result = common.make_http_request(
             url=config.service_url("kineses"), data=payload, headers=headers, method="POST"
@@ -415,8 +452,7 @@ class SqsIntegration(BackendIntegration):
         headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
 
         url = urljoin(config.service_url("sqs"), f"{TEST_AWS_ACCOUNT_ID}/{queue}")
-        result = common.make_http_request(url, method="POST", headers=headers, data=new_request)
-        return result
+        return common.make_http_request(url, method="POST", headers=headers, data=new_request)
 
 
 class S3Integration(BackendIntegration):
@@ -473,6 +509,113 @@ class S3Integration(BackendIntegration):
             headers["Content-Type"] = s3_object["ContentType"]
 
         return request_response_stream(stream=s3_object["Body"], headers=headers)
+
+
+class DynamoDbIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
+        response_templates = invocation_context.response_templates
+        method = invocation_context.method
+        data = invocation_context.data
+
+        # arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
+        table_name = uri.split(":dynamodb:action")[1].split("&Table=")[1]
+        action = uri.split(":dynamodb:action")[1].split("&Table=")[0]
+
+        if "PutItem" in action and method == "PUT":
+            response_template = response_templates.get("application/json")
+
+            if response_template is None:
+                msg = "Invalid response template defined in integration response."
+                LOG.info("%s Existing: %s", msg, response_templates)
+                return make_error_response(msg, 404)
+
+            response_template = json.loads(response_template)
+            if response_template["TableName"] != table_name:
+                msg = "Invalid table name specified in integration response template."
+                return make_error_response(msg, 404)
+
+            dynamo_client = aws_stack.connect_to_resource("dynamodb")
+            table = dynamo_client.Table(table_name)
+
+            event_data = {}
+            data_dict = json.loads(data)
+            for key, _ in response_template["Item"].items():
+                event_data[key] = data_dict[key]
+
+            table.put_item(Item=event_data)
+            response = requests_response(event_data)
+            return response
+
+
+class StepFunctionsIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
+        data = invocation_context.data
+        action = uri.split("/")[-1]
+        integration = invocation_context.integration
+
+        if APPLICATION_JSON in integration.get("requestTemplates", {}):
+            request_templates = RequestTemplates()
+            payload = request_templates.render(invocation_context)
+            payload = json.loads(payload)
+        else:
+            # XXX decoding in py3 sounds wrong, this actually might break
+            payload = json.loads(data.decode("utf-8"))
+        client = aws_stack.connect_to_service("stepfunctions")
+
+        if isinstance(payload.get("input"), dict):
+            payload["input"] = json.dumps(payload["input"])
+
+        # Hot fix since step functions local package responses: Unsupported Operation:
+        # 'StartSyncExecution'
+        method_name = (
+            camel_to_snake_case(action) if action != "StartSyncExecution" else "start_execution"
+        )
+
+        try:
+            method = getattr(client, method_name)
+        except AttributeError:
+            msg = f"Invalid step function action: {method_name}"
+            LOG.error(msg)
+            return make_error_response(msg, 400)
+
+        result = method(**payload)
+        result = json_safe({k: result[k] for k in result if k not in "ResponseMetadata"})
+        response = requests_response(
+            content=result,
+            headers=aws_stack.mock_aws_request_headers(),
+        )
+
+        if action == "StartSyncExecution":
+            # poll for the execution result and return it
+            result = await_sfn_execution_result(result["executionArn"])
+            result_status = result.get("status")
+            if result_status != "SUCCEEDED":
+                return make_error_response(
+                    "StepFunctions execution %s failed with status '%s'"
+                    % (result["executionArn"], result_status),
+                    500,
+                )
+            result = json_safe(result)
+            response = requests_response(content=result)
+
+        # apply response templates
+        invocation_context.response = response
+        response_templates = ResponseTemplates()
+        response_templates.render(invocation_context)
+        # response = apply_request_response_templates(
+        #     response, response_templates, content_type=APPLICATION_JSON
+        # )
+        return response
 
 
 class VelocityUtil(object):

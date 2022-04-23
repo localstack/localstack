@@ -3,7 +3,7 @@ import json
 import logging
 import re
 from http import HTTPStatus
-from typing import Dict, Optional, Tuple
+from typing import Dict
 
 from jsonschema import ValidationError, validate
 
@@ -38,22 +38,23 @@ from localstack.services.apigateway.helpers import (
     make_error_response,
 )
 from localstack.services.apigateway.integration import (
+    DynamoDbIntegration,
     HttpIntegration,
+    IntegrationError,
     KinesisIntegration,
     LambdaIntegration,
     MockIntegration,
-    RequestTemplates,
-    ResponseTemplates,
     S3Integration,
     SnsIntegration,
     SqsIntegration,
+    StepFunctionsIntegration,
 )
 from localstack.services.generic_proxy import ProxyListener
-from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_responses import requests_response
-from localstack.utils.common import camel_to_snake_case, json_safe, to_str
+from localstack.utils.common import to_str
+
 # set up logger
 
 LOG = logging.getLogger(__name__)
@@ -108,25 +109,7 @@ class ProxyListenerApiGateway(ProxyListener):
             return handle_base_path_mappings(method, path, data, headers)
 
         if helpers.is_test_invoke_method(method, path):
-            # if call is from test_invoke_api then use http_method to find the integration,
-            #   as test_invoke_api makes a POST call to request the test invocation
-            match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
-            invocation_context.method = match[3]
-            if data:
-                orig_data = data
-                path_with_query_string = orig_data.get("pathWithQueryString", None)
-                if path_with_query_string:
-                    invocation_context.path_with_query_string = path_with_query_string
-                invocation_context.data = data.get("body")
-                invocation_context.headers = orig_data.get("headers", {})
-            result = invoke_rest_api_from_request(invocation_context)
-            result = {
-                "status": result.status_code,
-                "body": to_str(result.content),
-                "headers": dict(result.headers),
-            }
-            return result
-
+            return handle_test_invoke_request(path, invocation_context, data)
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -254,6 +237,24 @@ class RequestValidator:
 # ------------
 # API METHODS
 # ------------
+def handle_test_invoke_request(path, invocation_context, data):
+    # if call is from test_invoke_api then use http_method to find the integration,
+    #   as test_invoke_api makes a POST call to request the test invocation
+    match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
+    invocation_context.method = match[3]
+    if data:
+        orig_data = data
+        if path_with_query_string := orig_data.get("pathWithQueryString", None):
+            invocation_context.path_with_query_string = path_with_query_string
+        invocation_context.data = data.get("body")
+        invocation_context.headers = orig_data.get("headers", {})
+    result = invoke_rest_api_from_request(invocation_context)
+    result = {
+        "status": result.status_code,
+        "body": to_str(result.content),
+        "headers": dict(result.headers),
+    }
+    return result
 
 
 def run_authorizer(invocation_context: ApiInvocationContext, authorizer: Dict):
@@ -271,7 +272,6 @@ def authorize_invocation(invocation_context: ApiInvocationContext):
 
 
 def validate_api_key(api_key: str, stage: str):
-
     usage_plan_ids = []
 
     client = aws_stack.connect_to_service("apigateway")
@@ -302,55 +302,27 @@ def is_api_key_valid(is_api_key_required: bool, headers: Dict[str, str], stage: 
     return validate_api_key(api_key, stage)
 
 
-# def update_content_length(response: Response):
-#     if response and response.content is not None:
-#         response.headers["Content-Length"] = str(len(response.content))
-
-
-# def apply_request_parameters(
-#     uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
-# ):
-#     request_parameters = integration.get("requestParameters")
-#     uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
-#     if request_parameters:
-#         for key in path_params:
-#             # check if path_params is present in the integration request parameters
-#             request_param_key = f"integration.request.path.{key}"
-#             request_param_value = f"method.request.path.{key}"
-#             if request_parameters.get(request_param_key, None) == request_param_value:
-#                 uri = uri.replace(f"{{{key}}}", path_params[key])
+# def apply_response_parameters(invocation_context: ApiInvocationContext):
+#     response = invocation_context.response
+#     integration = invocation_context.integration
 #
-#     if integration.get("type") != "HTTP_PROXY" and request_parameters:
-#         for key in query_params.copy():
-#             request_query_key = f"integration.request.querystring.{key}"
-#             request_param_val = f"method.request.querystring.{key}"
-#             if request_parameters.get(request_query_key, None) != request_param_val:
-#                 query_params.pop(key)
-#
-#     return add_query_params_to_url(uri, query_params)
-
-
-def apply_response_parameters(invocation_context: ApiInvocationContext):
-    response = invocation_context.response
-    integration = invocation_context.integration
-
-    int_responses = integration.get("integrationResponses") or {}
-    if not int_responses:
-        return response
-    entries = list(int_responses.keys())
-    return_code = str(response.status_code)
-    if return_code not in entries:
-        if len(entries) > 1:
-            LOG.info("Found multiple integration response status codes: %s", entries)
-            return response
-        return_code = entries[0]
-    response_params = int_responses[return_code].get("responseParameters", {})
-    for key, value in response_params.items():
-        # TODO: add support for method.response.body, etc ...
-        if str(key).lower().startswith("method.response.header."):
-            header_name = key[len("method.response.header.") :]
-            response.headers[header_name] = value.strip("'")
-    return response
+#     int_responses = integration.get("integrationResponses") or {}
+#     if not int_responses:
+#         return response
+#     entries = list(int_responses.keys())
+#     return_code = str(response.status_code)
+#     if return_code not in entries:
+#         if len(entries) > 1:
+#             LOG.info("Found multiple integration response status codes: %s", entries)
+#             return response
+#         return_code = entries[0]
+#     response_params = int_responses[return_code].get("responseParameters", {})
+#     for key, value in response_params.items():
+#         # TODO: add support for method.response.body, etc ...
+#         if str(key).lower().startswith("method.response.header."):
+#             header_name = key[len("method.response.header.") :]
+#             response.headers[header_name] = value.strip("'")
+#     return response
 
 
 def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
@@ -421,11 +393,8 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
         response = invoke_rest_api_integration_backend(invocation_context)
         if response.status_code == HTTPStatus.UNSUPPORTED_MEDIA_TYPE:
             return response
-
-        # TODO remove this setter once all the integrations are migrated to the new response
-        #  handling
-        invocation_context.response = response
-        response = apply_response_parameters(invocation_context)
+        # invocation_context.response = response
+        # response = apply_response_parameters(invocation_context)
         return response
     except Exception as e:
         msg = f"Error invoking integration for API Gateway ID '{invocation_context.api_id}': {e}"
@@ -439,11 +408,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     # define local aliases from invocation context
     invocation_path = invocation_context.path_with_query_string
     method = invocation_context.method
-    data = invocation_context.data
     headers = invocation_context.headers
 
     resource_path = invocation_context.resource_path
-    response_templates = invocation_context.response_templates
     integration = invocation_context.integration
     # extract integration type and path parameters
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
@@ -471,133 +438,42 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             integration = LambdaIntegration()
             return integration.invoke(invocation_context)
-
-        raise Exception(
+        raise IntegrationError(
             f'API Gateway integration type "{integration_type}", action "{uri}", method "{method}"'
         )
-
     elif integration_type == "AWS":
         if "kinesis:action/" in uri:
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             integration = KinesisIntegration()
             return integration.invoke(invocation_context)
-
         elif "states:action/" in uri:
-            action = uri.split("/")[-1]
-
-            if APPLICATION_JSON in integration.get("requestTemplates", {}):
-                request_templates = RequestTemplates()
-                payload = request_templates.render(invocation_context)
-                payload = json.loads(payload)
-            else:
-                # XXX decoding in py3 sounds wrong, this actually might break
-                payload = json.loads(data.decode("utf-8"))
-            client = aws_stack.connect_to_service("stepfunctions")
-
-            if isinstance(payload.get("input"), dict):
-                payload["input"] = json.dumps(payload["input"])
-
-            # Hot fix since step functions local package responses: Unsupported Operation: 'StartSyncExecution'
-            method_name = (
-                camel_to_snake_case(action) if action != "StartSyncExecution" else "start_execution"
-            )
-
-            try:
-                method = getattr(client, method_name)
-            except AttributeError:
-                msg = "Invalid step function action: %s" % method_name
-                LOG.error(msg)
-                return make_error_response(msg, 400)
-
-            result = method(**payload)
-            result = json_safe({k: result[k] for k in result if k not in "ResponseMetadata"})
-            response = requests_response(
-                content=result,
-                headers=aws_stack.mock_aws_request_headers(),
-            )
-
-            if action == "StartSyncExecution":
-                # poll for the execution result and return it
-                result = await_sfn_execution_result(result["executionArn"])
-                result_status = result.get("status")
-                if result_status != "SUCCEEDED":
-                    return make_error_response(
-                        "StepFunctions execution %s failed with status '%s'"
-                        % (result["executionArn"], result_status),
-                        500,
-                    )
-                result = json_safe(result)
-                response = requests_response(content=result)
-
-            # apply response templates
-            invocation_context.response = response
-            response_templates = ResponseTemplates()
-            response_templates.render(invocation_context)
-            # response = apply_request_response_templates(
-            #     response, response_templates, content_type=APPLICATION_JSON
-            # )
-            return response
+            integration = StepFunctionsIntegration()
+            return integration.invoke(invocation_context)
         # https://docs.aws.amazon.com/apigateway/api-reference/resource/integration/
         elif ("s3:path/" in uri or "s3:action/" in uri) and method == "GET":
             integration = S3Integration()
             return integration.invoke(invocation_context)
-
-        if method == "POST":
-            if uri.startswith("arn:aws:apigateway:") and ":sqs:path" in uri:
+        if method == "POST" and uri.startswith("arn:aws:apigateway:"):
+            if ":sqs:path" in uri:
                 integration = SqsIntegration()
                 return integration.invoke(invocation_context)
             elif uri.startswith("arn:aws:apigateway:") and ":sns:path" in uri:
                 invocation_context.context = helpers.get_event_request_context(invocation_context)
+            elif ":sns:path" in uri:
                 integration = SnsIntegration()
                 return integration.invoke(invocation_context)
-                # integration_response = SnsIntegration().invoke(invocation_context)
-                # return apply_request_response_templates(
-                #     integration_response, response_templates, content_type=APPLICATION_JSON
-                # )
-
-        raise Exception(
-            'API Gateway AWS integration action URI "%s", method "%s" not yet implemented'
-            % (uri, method)
+        raise IntegrationError(
+            f"API Gateway AWS integration action URI '{uri}', method '{method}' not yet implemented"
         )
-
     elif integration_type == "AWS_PROXY":
-        if uri.startswith("arn:aws:apigateway:") and ":dynamodb:action" in uri:
-            # arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
-            table_name = uri.split(":dynamodb:action")[1].split("&Table=")[1]
-            action = uri.split(":dynamodb:action")[1].split("&Table=")[0]
-
-            if "PutItem" in action and method == "PUT":
-                response_template = response_templates.get("application/json")
-
-                if response_template is None:
-                    msg = "Invalid response template defined in integration response."
-                    LOG.info("%s Existing: %s", msg, response_templates)
-                    return make_error_response(msg, 404)
-
-                response_template = json.loads(response_template)
-                if response_template["TableName"] != table_name:
-                    msg = "Invalid table name specified in integration response template."
-                    return make_error_response(msg, 404)
-
-                dynamo_client = aws_stack.connect_to_resource("dynamodb")
-                table = dynamo_client.Table(table_name)
-
-                event_data = {}
-                data_dict = json.loads(data)
-                for key, _ in response_template["Item"].items():
-                    event_data[key] = data_dict[key]
-
-                table.put_item(Item=event_data)
-                response = requests_response(event_data)
-                return response
-        else:
-            raise Exception(
-                'API Gateway action uri "%s", integration type %s not yet implemented'
-                % (uri, integration_type)
+        if not uri.startswith("arn:aws:apigateway:") or ":dynamodb:action" not in uri:
+            raise IntegrationError(
+                f"API Gateway action uri '{uri}', integration type '{integration_type}' not yet "
+                f"implemented"
             )
-
+        integration = DynamoDbIntegration()
+        return integration.invoke(invocation_context)
     elif integration_type in ["HTTP_PROXY", "HTTP"]:
-        invocation_context.context = helpers.get_event_request_context(invocation_context)
         integration = HttpIntegration()
         return integration.invoke(invocation_context=invocation_context)
     elif integration_type == "MOCK":
@@ -606,9 +482,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     if method == "OPTIONS":
         # fall back to returning CORS headers if this is an OPTIONS request
         return get_cors_response(headers)
-    raise Exception(
-        'API Gateway integration type "%s", method "%s", URI "%s" not yet implemented'
-        % (integration_type, method, uri)
+    raise IntegrationError(
+        f"API Gateway integration type '{integration_type}', method '{method}', URI '{uri}' not "
+        f"yet implemented"
     )
 
 

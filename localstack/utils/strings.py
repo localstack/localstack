@@ -39,7 +39,7 @@ def to_bytes(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="s
 
 def truncate(data: str, max_length: int = 100) -> str:
     data = str(data or "")
-    return ("%s..." % data[:max_length]) if len(data) > max_length else data
+    return f"{data[:max_length]}..." if len(data) > max_length else data
 
 
 def is_string(s, include_unicode=True, exclude_binary=False):
@@ -86,9 +86,7 @@ def convert_to_printable_chars(value: Union[List, Dict, str]) -> str:
     if isinstance(value, (dict, list)):
 
         def _convert(obj, **kwargs):
-            if isinstance(obj, str):
-                return convert_to_printable_chars(obj)
-            return obj
+            return convert_to_printable_chars(obj) if isinstance(obj, str) else obj
 
         return recurse_object(value, _convert)
 
@@ -97,30 +95,30 @@ def convert_to_printable_chars(value: Union[List, Dict, str]) -> str:
 
 
 def first_char_to_lower(s: str) -> str:
-    return s and "%s%s" % (s[0].lower(), s[1:])
+    return s and f"{s[0].lower()}{s[1:]}"
 
 
 def first_char_to_upper(s: str) -> str:
-    return s and "%s%s" % (s[0].upper(), s[1:])
+    return s and f"{s[0].upper()}{s[1:]}"
 
 
 def str_to_bool(value):
     """Return the boolean value of the given string, or the verbatim value if it is not a string"""
-    true_strings = ["true", "True"]
     if isinstance(value, str):
+        true_strings = ["true", "True"]
         return value in true_strings
     return value
 
 
 def str_insert(string, index, content):
     """Insert a substring into an existing string at a certain index."""
-    return "%s%s%s" % (string[:index], content, string[index:])
+    return f"{string[:index]}{content}{string[index:]}"
 
 
 def str_remove(string, index, end_index=None):
     """Remove a substring from an existing string at a certain from-to index range."""
     end_index = end_index or (index + 1)
-    return "%s%s" % (string[:index], string[end_index:])
+    return f"{string[:index]}{string[end_index:]}"
 
 
 def str_startswith_ignore_case(value: str, prefix: str) -> bool:
@@ -128,7 +126,7 @@ def str_startswith_ignore_case(value: str, prefix: str) -> bool:
 
 
 def short_uid() -> str:
-    return str(uuid.uuid4())[0:8]
+    return str(uuid.uuid4())[:8]
 
 
 def long_uid() -> str:
