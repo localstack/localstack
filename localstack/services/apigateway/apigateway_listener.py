@@ -1,5 +1,4 @@
 import json
-import json
 import logging
 import re
 from http import HTTPStatus
@@ -11,6 +10,8 @@ from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_AUTHORIZATION,
     HEADER_LOCALSTACK_EDGE_URL,
+    LOCALHOST_HOSTNAME,
+    PATH_USER_REQUEST,
 )
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -73,8 +74,6 @@ HOST_REGEX_EXECUTE_API = (
     r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(%s|([^\.]+)\.amazonaws\.com)(.*)"
     % LOCALHOST_HOSTNAME
 )
-
-REQUEST_TIME_DATE_FORMAT = "%d/%b/%Y:%H:%M:%S %z"
 
 
 class AuthorizationError(Exception):
@@ -325,13 +324,80 @@ def is_api_key_valid(is_api_key_required: bool, headers: Dict[str, str], stage: 
 #     return response
 
 
+# def set_api_id_stage_invocation_path(
+#     invocation_context: ApiInvocationContext,
+# ) -> ApiInvocationContext:
+#     # skip if all details are already available
+#     values = (
+#         invocation_context.api_id,
+#         invocation_context.stage,
+#         invocation_context.path_with_query_string,
+#     )
+#     if all(values):
+#         return invocation_context
+#
+#     # skip if this is a websocket request
+#     if invocation_context.is_websocket_request():
+#         return invocation_context
+#
+#     path = invocation_context.path
+#     headers = invocation_context.headers
+#
+#     path_match = re.search(PATH_REGEX_USER_REQUEST, path)
+#     host_header = headers.get(HEADER_LOCALSTACK_EDGE_URL, "") or headers.get("Host") or ""
+#     host_match = re.search(HOST_REGEX_EXECUTE_API, host_header)
+#     test_invoke_match = re.search(PATH_REGEX_TEST_INVOKE_API, path)
+#     if path_match:
+#         api_id = path_match.group(1)
+#         stage = path_match.group(2)
+#         relative_path_w_query_params = f"/{path_match.group(3)}"
+#     elif host_match:
+#         api_id = extract_api_id_from_hostname_in_url(host_header)
+#         stage = path.strip("/").split("/")[0]
+#         relative_path_w_query_params = f'/{path.lstrip("/").partition("/")[2]}'
+#     elif test_invoke_match:
+#         # special case: fetch the resource details for TestInvokeApi invocations
+#         stage = None
+#         region_name = invocation_context.region_name
+#         api_id = test_invoke_match.group(1)
+#         resource_id = test_invoke_match.group(2)
+#         query_string = test_invoke_match.group(4) or ""
+#         apigateway = aws_stack.connect_to_service(
+#             service_name="apigateway", region_name=region_name
+#         )
+#         resource = apigateway.get_resource(restApiId=api_id, resourceId=resource_id)
+#         resource_path = resource.get("path")
+#         relative_path_w_query_params = f"{resource_path}{query_string}"
+#     else:
+#         raise Exception(
+#             f"Unable to extract API Gateway details from request: {path} {dict(headers)}"
+#         )
+#     if api_id and getattr(THREAD_LOCAL, "request_context", None) is not None:
+#         THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = API_REGIONS.get(
+#             api_id, ""
+#         )
+#
+#     # set details in invocation context
+#     invocation_context.api_id = api_id
+#     invocation_context.stage = stage
+#     invocation_context.path_with_query_string = relative_path_w_query_params
+#     return invocation_context
+
+
+def extract_api_id_from_hostname_in_url(hostname: str) -> str:
+    """Extract API ID 'id123' from URLs like
+    https://id123.execute-api.localhost.localstack.cloud:4566"""
+    match = re.match(HOST_REGEX_EXECUTE_API, hostname)
+    return match.group(1)
+
+
 def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
-    helpers.set_api_id_stage_invocation_path(invocation_context)
+    # set_api_id_stage_invocation_path(invocation_context)
     try:
         return invoke_rest_api(invocation_context)
     except AuthorizationError as e:
         api_id = invocation_context.api_id
-        return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
+        return make_error_response(f"Not authorized to invoke REST API {api_id}: {e}", 403)
 
 
 def invoke_rest_api(invocation_context: ApiInvocationContext):
@@ -345,7 +411,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 
     extracted_path, resource = helpers.get_target_resource_details(invocation_context)
     if not resource:
-        return make_error_response("Unable to find path %s" % invocation_context.path, 404)
+        return make_error_response(f"Unable to find path {invocation_context.path}", 404)
 
     # validate request
     validator = RequestValidator(invocation_context, aws_stack.connect_to_service("apigateway"))
@@ -370,8 +436,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
             # default to returning CORS headers if this is an OPTIONS request
             return get_cors_response(headers)
         return make_error_response(
-            "Unable to find integration for: %s %s (%s)" % (method, invocation_path, raw_path),
-            404,
+            f"Unable to find integration for: {method} {invocation_path} ({raw_path})", 404
         )
 
     res_methods = resource.get("resourceMethods", {})
@@ -496,6 +561,91 @@ def apply_request_response_templates(
 ):
     """Apply the matching request/response template (if it exists) to the payload data and return the result"""
 
+def get_target_resource_method(invocation_context: ApiInvocationContext) -> Optional[Dict]:
+    """Look up and return the API GW resource method for the given invocation context."""
+    _, resource = get_target_resource_details(invocation_context)
+    if not resource:
+        return None
+    methods = resource.get("resourceMethods") or {}
+    method_name = invocation_context.method.upper()
+    return methods.get(method_name) or methods.get("ANY")
+
+
+# def get_event_request_context(invocation_context: ApiInvocationContext):
+#     method = invocation_context.method
+#     path = invocation_context.path
+#     headers = invocation_context.headers
+#     integration_uri = invocation_context.integration_uri
+#     resource_path = invocation_context.resource_path
+#     resource_id = invocation_context.resource_id
+#
+#     set_api_id_stage_invocation_path(invocation_context)
+#     relative_path, query_string_params = extract_query_string_params(
+#         path=invocation_context.path_with_query_string
+#     )
+#     api_id = invocation_context.api_id
+#     stage = invocation_context.stage
+#
+#     source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
+#     integration_uri = integration_uri or ""
+#     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
+#     account_id = account_id or TEST_AWS_ACCOUNT_ID
+#     request_context = {
+#         "accountId": account_id,
+#         "apiId": api_id,
+#         "resourcePath": resource_path or relative_path,
+#         "domainPrefix": invocation_context.domain_prefix,
+#         "domainName": invocation_context.domain_name,
+#         "resourceId": resource_id,
+#         "requestId": long_uid(),
+#         "identity": {
+#             "accountId": account_id,
+#             "sourceIp": source_ip,
+#             "userAgent": headers.get("User-Agent"),
+#         },
+#         "httpMethod": method,
+#         "protocol": "HTTP/1.1",
+#         "requestTime": pytz.utc.localize(datetime.datetime.utcnow()).strftime(
+#             REQUEST_TIME_DATE_FORMAT
+#         ),
+#         "requestTimeEpoch": int(time.time() * 1000),
+#         "authorizer": {},
+#     }
+#
+#     # set "authorizer" and "identity" event attributes from request context
+#     auth_context = invocation_context.auth_context
+#     if auth_context:
+#         request_context["authorizer"] = auth_context
+#     request_context["identity"].update(invocation_context.auth_identity or {})
+#
+#     if not helpers.is_test_invoke_method(method, path):
+#         request_context["path"] = (f"/{stage}" if stage else "") + relative_path
+#         request_context["stage"] = stage
+#     return request_context
+
+
+# def apply_request_response_templates(
+#     data: Union[Response, bytes],
+#     templates: Dict[str, str],
+#     content_type: str = None,
+#     as_json: bool = False,
+# ):
+#     """Apply the matching request/response template (if it exists) to the payload data and
+#     return the result"""
+#
+#     content_type = content_type or APPLICATION_JSON
+#     is_response = isinstance(data, Response)
+#     templates = templates or {}
+#     template = templates.get(content_type)
+#     if not template:
+#         return data
+#     content = (data.content if is_response else data) or ""
+#     result = VtlTemplate().render_vtl(template, content, as_json=as_json)
+#     if is_response:
+#         data._content = result
+#         update_content_length(data)
+#         return data
+#     return result
     content_type = content_type or APPLICATION_JSON
     is_response = isinstance(data, Response)
     templates = templates or {}

@@ -1,8 +1,10 @@
 import base64
 import copy
+import datetime
 import json
 import logging
 import re
+import time
 from abc import ABC, abstractmethod
 from enum import Enum
 from http import HTTPStatus
@@ -10,6 +12,7 @@ from typing import Any, Dict
 from urllib.parse import quote_plus, unquote_plus, urljoin
 
 import airspeed
+import pytz
 import requests
 from flask import Response as FlaskResponse
 from requests import Response
@@ -17,9 +20,13 @@ from requests import Response
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway import helpers
-from localstack.services.apigateway.apigateway_listener import get_event_request_context
 from localstack.services.apigateway.context import ApiInvocationContext
-from localstack.services.apigateway.helpers import extract_path_params, make_error_response
+from localstack.services.apigateway.helpers import (
+    REQUEST_TIME_DATE_FORMAT,
+    extract_path_params,
+    extract_query_string_params,
+    make_error_response,
+)
 from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
@@ -36,7 +43,7 @@ from localstack.utils.http import add_query_params_to_url
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
 from localstack.utils.objects import recurse_object
-from localstack.utils.strings import camel_to_snake_case, to_bytes
+from localstack.utils.strings import camel_to_snake_case, long_uid, to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -885,3 +892,56 @@ class ResponseTemplates(Templates):
         # backwards compatibility
         api_context.response = response
         return response
+
+
+def get_event_request_context(invocation_context: ApiInvocationContext):
+    method = invocation_context.method
+    path = invocation_context.path
+    headers = invocation_context.headers
+    integration_uri = invocation_context.integration_uri
+    resource_path = invocation_context.resource_path
+    resource_id = invocation_context.resource_id
+
+    # set_api_id_stage_invocation_path(invocation_context)
+    relative_path, query_string_params = extract_query_string_params(
+        path=invocation_context.path_with_query_string
+    )
+    api_id = invocation_context.api_id
+    stage = invocation_context.stage
+
+    source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
+    integration_uri = integration_uri or ""
+    account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
+    account_id = account_id or TEST_AWS_ACCOUNT_ID
+    request_context = {
+        "accountId": account_id,
+        "apiId": api_id,
+        "resourcePath": resource_path or relative_path,
+        "domainPrefix": invocation_context.domain_prefix,
+        "domainName": invocation_context.domain_name,
+        "resourceId": resource_id,
+        "requestId": long_uid(),
+        "identity": {
+            "accountId": account_id,
+            "sourceIp": source_ip,
+            "userAgent": headers.get("User-Agent"),
+        },
+        "httpMethod": method,
+        "protocol": "HTTP/1.1",
+        "requestTime": pytz.utc.localize(datetime.datetime.utcnow()).strftime(
+            REQUEST_TIME_DATE_FORMAT
+        ),
+        "requestTimeEpoch": int(time.time() * 1000),
+        "authorizer": {},
+    }
+
+    # set "authorizer" and "identity" event attributes from request context
+    auth_context = invocation_context.auth_context
+    if auth_context:
+        request_context["authorizer"] = auth_context
+    request_context["identity"].update(invocation_context.auth_identity or {})
+
+    if not helpers.is_test_invoke_method(method, path):
+        request_context["path"] = (f"/{stage}" if stage else "") + relative_path
+        request_context["stage"] = stage
+    return request_context
