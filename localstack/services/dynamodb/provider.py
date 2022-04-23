@@ -421,8 +421,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if "StreamSpecification" in table_definitions:
             create_dynamodb_stream(table_definitions, table_description.get("LatestStreamLabel"))
 
-        if "TableClass" in table_description:
-            table_class = table_description.pop("TableClass")
+        if "TableClass" in table_definitions:
+            table_class = table_description.pop("TableClass", None) or table_definitions.pop("TableClass")
             table_description["TableClassSummary"] = {"TableClass": table_class}
 
         tags = table_definitions.pop("Tags", [])
@@ -481,6 +481,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             for key in ["TableId", "SSEDescription"]:
                 if table_definitions.get(key):
                     result.get("Table", {})[key] = table_definitions[key]
+            if "TableClass" in table_definitions:
+                result.get("Table", {})["TableClassSummary"] = {"TableClass": table_definitions["TableClass"]}
 
         return result
 
@@ -495,8 +497,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             is_no_update_error = (
                 e.code == "ValidationException" and "Nothing to update" in e.message
             )
-            if is_no_update_error and update_table_input.get("ReplicaUpdates"):
-                table_name = update_table_input.get("TableName")
+            if is_no_update_error and not list({"TableClass", "ReplicaUpdates"} & set(update_table_input.keys())):
+                raise
+
+            table_name = update_table_input.get("TableName")
+
+            if update_table_input.get("TableClass"):
+                table_definitions = DynamoDBRegion.get().table_definitions.get(table_name)
+                table_definitions["TableClass"] = update_table_input.get("TableClass")
+
+            if update_table_input.get("ReplicaUpdates"):
                 # update local table props (replicas)
                 table_properties = DynamoDBRegion.get().table_properties
                 table_properties[table_name] = table_props = table_properties.get(table_name) or {}
@@ -515,10 +525,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                             table_props["Replicas"] = [
                                 r for r in replicas if r.get("RegionName") != region
                             ]
-                # update response content
-                schema = SchemaExtractor.get_table_schema(table_name)
-                return UpdateTableOutput(TableDescription=schema["Table"])
-            raise
+
+            # update response content
+            schema = SchemaExtractor.get_table_schema(table_name)
+            return UpdateTableOutput(TableDescription=schema["Table"])
 
         if "StreamSpecification" in update_table_input:
             create_dynamodb_stream(
