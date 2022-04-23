@@ -8,7 +8,7 @@ from werkzeug.exceptions import NotFound
 
 from localstack.services.generic_proxy import ProxyListener
 
-from .request import Request
+from .request import Request, get_raw_path
 from .response import Response
 from .router import Router
 
@@ -24,7 +24,7 @@ class ProxyListenerAdapter(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
         split_url = urlsplit(path)
-        raw_path = quart_request.scope.get("raw_path")
+        raw_path = get_raw_path(quart_request)
 
         request = Request(
             method=method,
