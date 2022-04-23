@@ -43,14 +43,13 @@ def dummy_wsgi_environment(
     :param raw_uri: The original path that may contain url encoded path elements.
     :return: A WSGIEnvironment dictionary
     """
-    # prepare the path for the "WSGI decoding dance" done by werkzeug
-    wsgi_encoded_path = unquote(quote(path), "latin-1")
 
     # Standard environ keys
     environ = {
         "REQUEST_METHOD": method,
-        "SCRIPT_NAME": root_path.rstrip("/"),
-        "PATH_INFO": wsgi_encoded_path,
+        # prepare the paths for the "WSGI decoding dance" done by werkzeug
+        "SCRIPT_NAME": unquote(quote(root_path.rstrip("/")), "latin-1"),
+        "PATH_INFO": unquote(quote(path), "latin-1"),
         "SERVER_PROTOCOL": "HTTP/1.1",
     }
 
