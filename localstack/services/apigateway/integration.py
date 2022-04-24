@@ -854,26 +854,31 @@ class ResponseTemplates(Templates):
         # the body field in the template. We need to improve this by using the right source
         # depending on the type of templates.
         api_context.data = response._content
-        int_responses = integration.get("integrationResponses") or {}
-        if not int_responses:
+        integration_responses = integration.get("integrationResponses") or {}
+        if not integration_responses:
             return response._content
-        entries = list(int_responses.keys())
+        entries = list(integration_responses.keys())
         return_code = str(response.status_code)
         if return_code not in entries and len(entries) > 1:
             LOG.info("Found multiple integration response status codes: %s", entries)
             return response._content
 
-        selected_integration = int_responses.get(return_code)
+        selected_integration_response = integration_responses.get(return_code)
         # if "selectionPattern" is not present in the integration response we use the default
-        if not int_responses.get(return_code) and entries:
-            for status_code_entry in int_responses.keys():
-                integration_response = int_responses[status_code_entry]
+        if not selected_integration_response and entries:
+            for status_code_entry in integration_responses.keys():
+                integration_response = integration_responses[status_code_entry]
                 if "selectionPattern" not in integration_response:
-                    selected_integration = integration_response
+                    selected_integration_response = integration_response
                     response.status_code = status_code_entry
                     break
 
-        response_templates = selected_integration.get("responseTemplates", {})
+        if not selected_integration_response:
+            response.status_code = 500
+            response.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
+            return response._content
+
+        response_templates = selected_integration_response.get("responseTemplates", {})
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
             return response._content
@@ -883,9 +888,6 @@ class ResponseTemplates(Templates):
         response.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
         LOG.info("Endpoint response body after transformations:\n%s", response._content)
         return response._content
-        # backwards compatibility
-        # api_context.response = response
-        # return response
 
 
 def get_event_request_context(invocation_context: ApiInvocationContext):

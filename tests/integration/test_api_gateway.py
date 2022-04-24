@@ -1802,26 +1802,30 @@ def test_mock_integration_request_template_when_no_match_mapping_template(apigat
         resourceId=resource_id,
         httpMethod="POST",
         statusCode="201",
-        selectionPattern="2\\d{2}",
+        selectionPattern="201",
         responseTemplates={"application/json": '{"id": "$context.requestId"}'},
     )
 
     # https://docs.aws.amazon.com/apigateway/latest/developerguide/integration-passthrough-behaviors.html
 
-    # request with content-type "application-json"
+    # request with content-type "application-json", should use the request template and match the
+    # status code in the response template, return a json payload with an id and a random id
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
-    response = requests.post(url, headers={"Content-Type": "application/json"})
+    response = requests.post(
+        url, headers={"Content-Type": "application/json"}, data='{"statusCode":201}'
+    )
 
     assert response.status_code == 201
     assert response.headers["Content-Type"] == "application/json"
     assert "id" in json.loads(response._content)
 
+    # request with content-type "text/plain", should not use the template and pass "hello world"
+    # payload which doesn't match any response template.
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
     response = requests.post(url, headers={"Content-Type": "text/plain"}, data="hello world")
 
-    assert response.status_code == 201
+    assert response.status_code == 500
     assert response.headers["Content-Type"] == "application/json"
-    assert "id" in json.loads(response._content)
 
     delete_rest_api(apigateway_client, restApiId=api_id)
 
