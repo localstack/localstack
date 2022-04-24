@@ -36,7 +36,7 @@ from localstack.services.apigateway.helpers import (
     handle_gateway_responses,
     handle_validators,
     handle_vpc_links,
-    make_error_response,
+    make_error_response, get_api_region,
 )
 from localstack.services.apigateway.integration import (
     DynamoDbIntegration,
@@ -399,7 +399,7 @@ def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
     # set_api_id_stage_invocation_path(invocation_context)
     try:
         context = mock_request_for_region(
-            get_region_from_request_context(), service_name="apigateway"
+            get_api_region(invocation_context.api_id), service_name="apigateway"
         )
         with RequestContextManager(context):
             return invoke_rest_api(invocation_context)

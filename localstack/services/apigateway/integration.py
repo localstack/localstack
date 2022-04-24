@@ -15,7 +15,7 @@ import airspeed
 import pytz
 import requests
 from flask import Response as FlaskResponse
-from requests import Response
+from requests.models import Response
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE, TEST_AWS_ACCOUNT_ID
@@ -151,21 +151,19 @@ class BackendIntegration(ABC):
         return add_query_params_to_url(uri, query_params)
 
     @classmethod
-    def apply_response_parameters(cls, invocation_context: ApiInvocationContext):
-        response = invocation_context.response
+    def apply_response_parameters(cls, invocation_context: ApiInvocationContext, response: Response):
         integration = invocation_context.integration
-
-        int_responses = integration.get("integrationResponses") or {}
-        if not int_responses:
+        integration_responses = integration.get("integrationResponses") or {}
+        if not integration_responses:
             return response
-        entries = list(int_responses.keys())
+        entries = list(integration_responses.keys())
         return_code = str(response.status_code)
         if return_code not in entries:
             if len(entries) > 1:
                 LOG.info("Found multiple integration response status codes: %s", entries)
                 return response
             return_code = entries[0]
-        response_params = int_responses[return_code].get("responseParameters", {})
+        response_params = integration_responses[return_code].get("responseParameters", {})
         for key, value in response_params.items():
             # TODO: add support for method.response.body, etc ...
             if str(key).lower().startswith("method.response.header."):
@@ -239,14 +237,12 @@ class MockIntegration(BackendIntegration):
         response = MockIntegration._create_response(
             status_code, invocation_context.headers, data=request_payload
         )
-        response = self.response_templates.render(invocation_context, response=response)
-        if isinstance(response, Response):
-            response = self.apply_response_parameters(invocation_context)
-            return response
+        response._content = self.response_templates.render(invocation_context, response=response)
+        # apply response parameters
+        response = self.apply_response_parameters(invocation_context, response)
         if not invocation_context.headers.get(HEADER_CONTENT_TYPE):
             invocation_context.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
-        self.apply_response_parameters(invocation_context)
-        return MockIntegration._create_response(status_code, invocation_context.headers, response)
+        return response
 
 
 class HttpIntegration(BackendIntegration):
@@ -858,19 +854,15 @@ class ResponseTemplates(Templates):
         api_context.data = response._content
         int_responses = integration.get("integrationResponses") or {}
         if not int_responses:
-            # backwards compatibility
-            api_context.response = response
-            return response
+            return response._content
         entries = list(int_responses.keys())
         return_code = str(response.status_code)
         if return_code not in entries and len(entries) > 1:
             LOG.info("Found multiple integration response status codes: %s", entries)
-            # backwards compatibility
-            api_context.response = response
-            return response
+            return response._content
 
         selected_integration = int_responses.get(return_code)
-        # select the default, the default integration has an "empty" selection pattern
+        # if "selectionPattern" is not present in the integration response we use the default
         if not int_responses.get(return_code) and entries:
             for status_code_entry in int_responses.keys():
                 integration_response = int_responses[status_code_entry]
@@ -882,17 +874,16 @@ class ResponseTemplates(Templates):
         response_templates = selected_integration.get("responseTemplates", {})
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
-            # backwards compatibility
-            api_context.response = response
-            return response
+            return response._content
 
         variables = self.build_variables_mapping(api_context)
         response._content = self.render_vtl(template, variables=variables)
         response.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
         LOG.info("Endpoint response body after transformations:\n%s", response._content)
+        return response._content
         # backwards compatibility
-        api_context.response = response
-        return response
+        # api_context.response = response
+        # return response
 
 
 def get_event_request_context(invocation_context: ApiInvocationContext):

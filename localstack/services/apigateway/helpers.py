@@ -1006,6 +1006,9 @@ def get_rest_api_paths(rest_api_id, region_name=None):
     return resource_map
 
 
+def get_api_region(api_id: str):
+    return API_REGIONS.get(api_id)
+
 # TODO: Extract this to a set of rules that have precedence and easy to test individually.
 #
 #  https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-method-settings
@@ -1018,7 +1021,7 @@ def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Optional[Tupl
     for api_path, details in path_map.items():
         api_path_regex = re.sub(r"{[^+]+\+}", r"[^\?#]+", api_path)
         api_path_regex = re.sub(r"{[^}]+}", r"[^/]+", api_path_regex)
-        if re.match(r"^%s$" % api_path_regex, path):
+        if re.match(f"^{api_path_regex}$", path):
             matches.append((api_path, details))
 
     # if there are no matches, it's not worth to proceed, bail here!

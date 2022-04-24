@@ -1281,9 +1281,7 @@ class TestAPIGateway(unittest.TestCase):
         )
 
     def test_api_mock_integration_response_params(self):
-        # apigw_client = aws_stack.create_external_boto_client('apigateway')
-
-        resps = [
+        responses = [
             {
                 "statusCode": "204",
                 "httpMethod": "OPTIONS",
@@ -1294,7 +1292,7 @@ class TestAPIGateway(unittest.TestCase):
             }
         ]
         api_id = self.create_api_gateway_and_deploy(
-            integration_type="MOCK", integration_responses=resps
+            integration_type="MOCK", integration_responses=responses
         )
 
         url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/")
@@ -1769,7 +1767,7 @@ def test_mock_integration_empty_response(apigateway_client):
     response = requests.get(url)
 
     assert response.status_code == 200
-    assert response.headers["Content-Type"] == "text/html; charset=utf-8"
+    assert response.headers["Content-Type"] == "application/json"
     assert to_str(response._content) == ""
 
     delete_rest_api(apigateway_client, restApiId=api_id)
@@ -1807,7 +1805,7 @@ def test_mock_integration_request_template_when_no_match_mapping_template(apigat
         responseTemplates={"application/json": '{"id": "$context.requestId"}'},
     )
 
-    # template for "application/json" should return 415
+    # https://docs.aws.amazon.com/apigateway/latest/developerguide/integration-passthrough-behaviors.html
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
     response = requests.post(url, headers={"Content-Type": "application/json"})
 
@@ -1815,7 +1813,6 @@ def test_mock_integration_request_template_when_no_match_mapping_template(apigat
     assert response.headers["Content-Type"] == "application/json"
     assert "id" in json.loads(response._content)
 
-    # no template for "text/plain" should return 415
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
     response = requests.post(url, headers={"Content-Type": "text/plain"}, data="hello world")
 

@@ -569,7 +569,7 @@ def modify_and_forward(
     def get_proxy_backend_url(_path, original_url=None, run_listeners=False):
         if is_full_url(_path):
             _path = _path.split("://", 1)[1]
-            _path = "/%s" % (_path.split("/", 1)[1] if "/" in _path else "")
+            _path = f'/{_path.split("/", 1)[1] if "/" in _path else ""}'
         base_url = forward_base_url or original_url
         result = update_path_in_url(base_url, _path)
         if run_listeners:
