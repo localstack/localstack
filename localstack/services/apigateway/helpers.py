@@ -10,6 +10,7 @@ import pytz
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
+from localstack.utils.strings import long_uid
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
@@ -19,7 +20,7 @@ from localstack.constants import (
     APPLICATION_JSON,
     LOCALHOST_HOSTNAME,
     PATH_USER_REQUEST,
-    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_ACCOUNT_ID, HEADER_LOCALSTACK_EDGE_URL,
 )
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.generic_proxy import RegionBackend
@@ -1304,6 +1305,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
         request_context["stage"] = stage
     return request_context
 
+
 def set_api_id_stage_invocation_path(
     invocation_context: ApiInvocationContext,
 ) -> ApiInvocationContext:
@@ -1364,6 +1366,7 @@ def set_api_id_stage_invocation_path(
     invocation_context.stage = stage
     invocation_context.path_with_query_string = relative_path_w_query_params
     return invocation_context
+
 
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     """Extract API ID 'id123' from URLs like https://id123.execute-api.localhost.localstack.cloud:4566"""

@@ -27,6 +27,7 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_PATH_MAPPINGS,
     PATH_REGEX_RESPONSES,
     PATH_REGEX_TEST_INVOKE_API,
+    PATH_REGEX_USER_REQUEST,
     PATH_REGEX_VALIDATORS,
     extract_path_params,
     extract_query_string_params,
@@ -39,7 +40,7 @@ from localstack.services.apigateway.helpers import (
     handle_gateway_responses,
     handle_validators,
     handle_vpc_links,
-    make_error_response, PATH_REGEX_USER_REQUEST,
+    make_error_response,
 )
 from localstack.services.apigateway.integration import (
     RequestTemplates,
@@ -61,6 +62,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
 )
 from localstack.utils.common import camel_to_snake_case, json_safe, to_bytes, to_str
+
 # set up logger
 from localstack.utils.http import add_query_params_to_url
 
