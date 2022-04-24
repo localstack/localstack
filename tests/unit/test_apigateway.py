@@ -12,7 +12,7 @@ from localstack.services.apigateway.apigateway_listener import (
     ApiInvocationContext,
     RequestValidator,
 )
-from localstack.services.apigateway.helpers import apply_json_patch_safe
+from localstack.services.apigateway.helpers import apply_json_patch_safe, get_resource_for_path
 from localstack.services.apigateway.integration import (
     RequestTemplates,
     ResponseTemplates,
@@ -44,60 +44,52 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertEqual({"proxy": "bar/baz"}, params)
 
     def test_path_matches(self):
-        path, details = apigateway_listener.get_resource_for_path("/foo/bar", {"/foo/{param1}": {}})
+        path, details = get_resource_for_path("/foo/bar", {"/foo/{param1}": {}})
         self.assertEqual("/foo/{param1}", path)
 
-        path, details = apigateway_listener.get_resource_for_path(
-            "/foo/bar", {"/foo/bar": {}, "/foo/{param1}": {}}
-        )
+        path, details = get_resource_for_path("/foo/bar", {"/foo/bar": {}, "/foo/{param1}": {}})
         self.assertEqual("/foo/bar", path)
 
-        path, details = apigateway_listener.get_resource_for_path(
-            "/foo/bar/baz", {"/foo/bar": {}, "/foo/{proxy+}": {}}
-        )
+        path, details = get_resource_for_path("/foo/bar/baz", {"/foo/bar": {}, "/foo/{proxy+}": {}})
         self.assertEqual("/foo/{proxy+}", path)
 
-        path, details = apigateway_listener.get_resource_for_path(
+        path, details = get_resource_for_path(
             "/foo/bar/baz", {"/{proxy+}": {}, "/foo/{proxy+}": {}}
         )
         self.assertEqual("/foo/{proxy+}", path)
 
-        result = apigateway_listener.get_resource_for_path(
-            "/foo/bar", {"/foo/bar1": {}, "/foo/bar2": {}}
-        )
+        result = get_resource_for_path("/foo/bar", {"/foo/bar1": {}, "/foo/bar2": {}})
         self.assertEqual(None, result)
 
-        result = apigateway_listener.get_resource_for_path(
-            "/foo/bar", {"/{param1}/bar1": {}, "/foo/bar2": {}}
-        )
+        result = get_resource_for_path("/foo/bar", {"/{param1}/bar1": {}, "/foo/bar2": {}})
         self.assertEqual(None, result)
 
         path_args = {"/{param1}/{param2}/foo/{param3}": {}, "/{param}/bar": {}}
-        path, details = apigateway_listener.get_resource_for_path("/foo/bar", path_args)
+        path, details = get_resource_for_path("/foo/bar", path_args)
         self.assertEqual("/{param}/bar", path)
 
         path_args = {"/{param1}/{param2}": {}, "/{param}/bar": {}}
-        path, details = apigateway_listener.get_resource_for_path("/foo/bar", path_args)
+        path, details = get_resource_for_path("/foo/bar", path_args)
         self.assertEqual("/{param}/bar", path)
 
         path_args = {"/{param1}/{param2}": {}, "/{param1}/bar": {}}
-        path, details = apigateway_listener.get_resource_for_path("/foo/baz", path_args)
+        path, details = get_resource_for_path("/foo/baz", path_args)
         self.assertEqual("/{param1}/{param2}", path)
 
         path_args = {"/{param1}/{param2}/baz": {}, "/{param1}/bar/{param2}": {}}
-        path, details = apigateway_listener.get_resource_for_path("/foo/bar/baz", path_args)
+        path, details = get_resource_for_path("/foo/bar/baz", path_args)
         self.assertEqual("/{param1}/{param2}/baz", path)
 
         path_args = {"/{param1}/{param2}/baz": {}, "/{param1}/{param2}/{param2}": {}}
-        path, details = apigateway_listener.get_resource_for_path("/foo/bar/baz", path_args)
+        path, details = get_resource_for_path("/foo/bar/baz", path_args)
         self.assertEqual("/{param1}/{param2}/baz", path)
 
         path_args = {"/foo123/{param1}/baz": {}}
-        result = apigateway_listener.get_resource_for_path("/foo/bar/baz", path_args)
+        result = get_resource_for_path("/foo/bar/baz", path_args)
         self.assertEqual(None, result)
 
         path_args = {"/foo/{param1}/baz": {}, "/foo/{param1}/{param2}": {}}
-        path, result = apigateway_listener.get_resource_for_path("/foo/bar/baz", path_args)
+        path, result = get_resource_for_path("/foo/bar/baz", path_args)
         self.assertEqual("/foo/{param1}/baz", path)
 
     def test_apply_request_parameters(self):
