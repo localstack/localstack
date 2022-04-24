@@ -394,12 +394,12 @@ def is_api_key_valid(is_api_key_required: bool, headers: Dict[str, str], stage: 
 #     invocation_context.path_with_query_string = relative_path_w_query_params
 #     return invocation_context
 
-
-# def extract_api_id_from_hostname_in_url(hostname: str) -> str:
-#     """Extract API ID 'id123' from URLs like
-#     https://id123.execute-api.localhost.localstack.cloud:4566"""
-#     match = re.match(HOST_REGEX_EXECUTE_API, hostname)
-#     return match.group(1)
+# TODO: remove dependency on localstack-ext
+def extract_api_id_from_hostname_in_url(hostname: str) -> str:
+    """Extract API ID 'id123' from URLs like
+    https://id123.execute-api.localhost.localstack.cloud:4566"""
+    match = re.match(HOST_REGEX_EXECUTE_API, hostname)
+    return match.group(1)
 
 
 def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
