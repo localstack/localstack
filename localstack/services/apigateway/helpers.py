@@ -10,7 +10,6 @@ import pytz
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
-from localstack.utils.strings import long_uid
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
@@ -18,9 +17,10 @@ from requests.models import Response
 from localstack import config
 from localstack.constants import (
     APPLICATION_JSON,
+    HEADER_LOCALSTACK_EDGE_URL,
     LOCALHOST_HOSTNAME,
     PATH_USER_REQUEST,
-    TEST_AWS_ACCOUNT_ID, HEADER_LOCALSTACK_EDGE_URL,
+    TEST_AWS_ACCOUNT_ID,
 )
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.generic_proxy import RegionBackend
@@ -29,6 +29,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
+from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
