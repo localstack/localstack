@@ -298,7 +298,11 @@ def sqs():
 @aws_provider(api="sqs", name="asf")
 def sqs_asf():
     from localstack.aws.proxy import AwsApiListener
+    from localstack.services import edge
+    from localstack.services.sqs import query_api
     from localstack.services.sqs.provider import SqsProvider
+
+    query_api.register(edge.ROUTER)
 
     provider = SqsProvider()
 

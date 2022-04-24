@@ -495,7 +495,7 @@ DYNAMODB_SHARE_DB = int(os.environ.get("DYNAMODB_SHARE_DB") or 0)
 # expose SQS on a specific port externally
 SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
 
-# Strategy used when creating SQS queue urls
+# Strategy used when creating SQS queue urls. can be "off", "domain", or "path"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY") or "domain"
 
 # host under which the LocalStack services are available from Lambda Docker containers

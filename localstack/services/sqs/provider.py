@@ -66,7 +66,6 @@ from localstack.aws.spec import load_service
 from localstack.config import external_service_url
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.sqs.query_api import handler as handle_query_api
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.common import long_uid, md5, now, start_thread
 from localstack.utils.run import FuncThread
@@ -269,7 +268,8 @@ class SqsQueue:
         return f"arn:aws:sqs:{self.key.region}:{self.key.account_id}:{self.key.name}"
 
     def url(self, context: RequestContext) -> str:
-        """Return queue URL using either SQS_PORT_EXTERNAL (if configured), or based on the 'Host' request header"""
+        """Return queue URL using either SQS_PORT_EXTERNAL (if configured), the SQS_ENDPOINT_STRATEGY (if configured)
+        or based on the 'Host' request header"""
 
         host_url = context.request.host_url
 
@@ -277,6 +277,8 @@ class SqsQueue:
             region = "" if self.key.region == "us-east-1" else self.key.region + "."
             scheme = context.request.scheme
             host_url = f"{scheme}://{region}queue.localhost.localstack.cloud:{config.EDGE_PORT}"
+        elif config.SQS_ENDPOINT_STRATEGY == "path":
+            host_url = f"{context.request.host}/queue/{self.key.region}"
         else:
             if config.SQS_PORT_EXTERNAL:
                 host_url = external_service_url("sqs")
@@ -665,11 +667,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._inflight_worker = InflightUpdateWorker(self.queues)
 
     def on_after_init(self):
-        ROUTER.add(
-            '/<regex("[0-9]{12}"):account_id>/<regex("[a-zA-Z0-9_-]+(.fifo)?"):queue_name>',
-            handle_query_api,
-            methods=["POST", "GET"],
-        )
+        from localstack.services.sqs import query_api
+
+        query_api.register(ROUTER)
 
     def start(self):
         self._inflight_worker.start()
