@@ -495,6 +495,9 @@ DYNAMODB_SHARE_DB = int(os.environ.get("DYNAMODB_SHARE_DB") or 0)
 # expose SQS on a specific port externally
 SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
 
+# Strategy used when creating SQS queue urls
+SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY") or "domain"
+
 # host under which the LocalStack services are available from Lambda Docker containers
 HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
 
@@ -654,6 +657,7 @@ CONFIG_ENV_VARS = [
     "LOG_LICENSE_ISSUES",
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
+    "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
     "PERSISTENCE_SINGLE_FILE",
@@ -662,6 +666,7 @@ CONFIG_ENV_VARS = [
     "SERVICES",
     "SKIP_INFRA_DOWNLOADS",
     "SKIP_SSL_CERT_DOWNLOAD",
+    "SQS_ENDPOINT_STRATEGY",
     "SQS_PORT_EXTERNAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "SYNCHRONOUS_API_GATEWAY_EVENTS",
