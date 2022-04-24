@@ -151,7 +151,9 @@ class BackendIntegration(ABC):
         return add_query_params_to_url(uri, query_params)
 
     @classmethod
-    def apply_response_parameters(cls, invocation_context: ApiInvocationContext, response: Response):
+    def apply_response_parameters(
+        cls, invocation_context: ApiInvocationContext, response: Response
+    ):
         integration = invocation_context.integration
         integration_responses = integration.get("integrationResponses") or {}
         if not integration_responses:

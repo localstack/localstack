@@ -1802,10 +1802,13 @@ def test_mock_integration_request_template_when_no_match_mapping_template(apigat
         resourceId=resource_id,
         httpMethod="POST",
         statusCode="201",
+        selectionPattern="2\\d{2}",
         responseTemplates={"application/json": '{"id": "$context.requestId"}'},
     )
 
     # https://docs.aws.amazon.com/apigateway/latest/developerguide/integration-passthrough-behaviors.html
+
+    # request with content-type "application-json"
     url = api_invoke_url(api_id=api_id, stage="local", path="/demo")
     response = requests.post(url, headers={"Content-Type": "application/json"})
 

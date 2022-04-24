@@ -1009,6 +1009,7 @@ def get_rest_api_paths(rest_api_id, region_name=None):
 def get_api_region(api_id: str):
     return API_REGIONS.get(api_id)
 
+
 # TODO: Extract this to a set of rules that have precedence and easy to test individually.
 #
 #  https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-method-settings

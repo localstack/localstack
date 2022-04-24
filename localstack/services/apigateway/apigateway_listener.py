@@ -1,9 +1,12 @@
+import datetime
 import json
 import logging
 import re
+import time
 from http import HTTPStatus
 from typing import Dict
 
+import pytz
 from jsonschema import ValidationError, validate
 
 from localstack.constants import (
@@ -11,6 +14,7 @@ from localstack.constants import (
     HEADER_LOCALSTACK_AUTHORIZATION,
     HEADER_LOCALSTACK_EDGE_URL,
     LOCALHOST_HOSTNAME,
+    TEST_AWS_ACCOUNT_ID,
 )
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -24,9 +28,11 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_USER_REQUEST,
     PATH_REGEX_VALIDATORS,
+    REQUEST_TIME_DATE_FORMAT,
     UrlParts,
     extract_path_params,
     extract_query_string_params,
+    get_api_region,
     get_cors_response,
     handle_accounts,
     handle_authorizers,
@@ -36,7 +42,7 @@ from localstack.services.apigateway.helpers import (
     handle_gateway_responses,
     handle_validators,
     handle_vpc_links,
-    make_error_response, get_api_region,
+    make_error_response,
 )
 from localstack.services.apigateway.integration import (
     DynamoDbIntegration,
@@ -60,6 +66,7 @@ from localstack.utils.aws.request_context import (
     mock_request_for_region,
 )
 from localstack.utils.common import to_str
+from localstack.utils.strings import long_uid
 
 # URL pattern for invocations
 HOST_REGEX_EXECUTE_API = (
@@ -579,57 +586,57 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
     return methods.get(method_name) or methods.get("ANY")
 
 
-# def get_event_request_context(invocation_context: ApiInvocationContext):
-#     method = invocation_context.method
-#     path = invocation_context.path
-#     headers = invocation_context.headers
-#     integration_uri = invocation_context.integration_uri
-#     resource_path = invocation_context.resource_path
-#     resource_id = invocation_context.resource_id
-#
-#     set_api_id_stage_invocation_path(invocation_context)
-#     relative_path, query_string_params = extract_query_string_params(
-#         path=invocation_context.path_with_query_string
-#     )
-#     api_id = invocation_context.api_id
-#     stage = invocation_context.stage
-#
-#     source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
-#     integration_uri = integration_uri or ""
-#     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
-#     account_id = account_id or TEST_AWS_ACCOUNT_ID
-#     request_context = {
-#         "accountId": account_id,
-#         "apiId": api_id,
-#         "resourcePath": resource_path or relative_path,
-#         "domainPrefix": invocation_context.domain_prefix,
-#         "domainName": invocation_context.domain_name,
-#         "resourceId": resource_id,
-#         "requestId": long_uid(),
-#         "identity": {
-#             "accountId": account_id,
-#             "sourceIp": source_ip,
-#             "userAgent": headers.get("User-Agent"),
-#         },
-#         "httpMethod": method,
-#         "protocol": "HTTP/1.1",
-#         "requestTime": pytz.utc.localize(datetime.datetime.utcnow()).strftime(
-#             REQUEST_TIME_DATE_FORMAT
-#         ),
-#         "requestTimeEpoch": int(time.time() * 1000),
-#         "authorizer": {},
-#     }
-#
-#     # set "authorizer" and "identity" event attributes from request context
-#     auth_context = invocation_context.auth_context
-#     if auth_context:
-#         request_context["authorizer"] = auth_context
-#     request_context["identity"].update(invocation_context.auth_identity or {})
-#
-#     if not helpers.is_test_invoke_method(method, path):
-#         request_context["path"] = (f"/{stage}" if stage else "") + relative_path
-#         request_context["stage"] = stage
-#     return request_context
+def get_event_request_context(invocation_context: ApiInvocationContext):
+    method = invocation_context.method
+    path = invocation_context.path
+    headers = invocation_context.headers
+    integration_uri = invocation_context.integration_uri
+    resource_path = invocation_context.resource_path
+    resource_id = invocation_context.resource_id
+
+    # set_api_id_stage_invocation_path(invocation_context)
+    relative_path, query_string_params = extract_query_string_params(
+        path=invocation_context.path_with_query_string
+    )
+    api_id = invocation_context.api_id
+    stage = invocation_context.stage
+
+    source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
+    integration_uri = integration_uri or ""
+    account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
+    account_id = account_id or TEST_AWS_ACCOUNT_ID
+    request_context = {
+        "accountId": account_id,
+        "apiId": api_id,
+        "resourcePath": resource_path or relative_path,
+        "domainPrefix": invocation_context.domain_prefix,
+        "domainName": invocation_context.domain_name,
+        "resourceId": resource_id,
+        "requestId": long_uid(),
+        "identity": {
+            "accountId": account_id,
+            "sourceIp": source_ip,
+            "userAgent": headers.get("User-Agent"),
+        },
+        "httpMethod": method,
+        "protocol": "HTTP/1.1",
+        "requestTime": pytz.utc.localize(datetime.datetime.utcnow()).strftime(
+            REQUEST_TIME_DATE_FORMAT
+        ),
+        "requestTimeEpoch": int(time.time() * 1000),
+        "authorizer": {},
+    }
+
+    # set "authorizer" and "identity" event attributes from request context
+    auth_context = invocation_context.auth_context
+    if auth_context:
+        request_context["authorizer"] = auth_context
+    request_context["identity"].update(invocation_context.auth_identity or {})
+
+    if not helpers.is_test_invoke_method(method, path):
+        request_context["path"] = (f"/{stage}" if stage else "") + relative_path
+        request_context["stage"] = stage
+    return request_context
 
 
 # def apply_request_response_templates(
