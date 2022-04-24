@@ -47,14 +47,10 @@ class ApiGatewayPathsTest(unittest.TestCase):
         path, details = get_resource_for_path("/foo/bar", {"/foo/{param1}": {}})
         self.assertEqual("/foo/{param1}", path)
 
-        path, details = get_resource_for_path(
-            "/foo/bar", {"/foo/bar": {}, "/foo/{param1}": {}}
-        )
+        path, details = get_resource_for_path("/foo/bar", {"/foo/bar": {}, "/foo/{param1}": {}})
         self.assertEqual("/foo/bar", path)
 
-        path, details = get_resource_for_path(
-            "/foo/bar/baz", {"/foo/bar": {}, "/foo/{proxy+}": {}}
-        )
+        path, details = get_resource_for_path("/foo/bar/baz", {"/foo/bar": {}, "/foo/{proxy+}": {}})
         self.assertEqual("/foo/{proxy+}", path)
 
         path, details = get_resource_for_path(
@@ -62,14 +58,10 @@ class ApiGatewayPathsTest(unittest.TestCase):
         )
         self.assertEqual("/foo/{proxy+}", path)
 
-        result = get_resource_for_path(
-            "/foo/bar", {"/foo/bar1": {}, "/foo/bar2": {}}
-        )
+        result = get_resource_for_path("/foo/bar", {"/foo/bar1": {}, "/foo/bar2": {}})
         self.assertEqual(None, result)
 
-        result = get_resource_for_path(
-            "/foo/bar", {"/{param1}/bar1": {}, "/foo/bar2": {}}
-        )
+        result = get_resource_for_path("/foo/bar", {"/{param1}/bar1": {}, "/foo/bar2": {}})
         self.assertEqual(None, result)
 
         path_args = {"/{param1}/{param2}/foo/{param3}": {}, "/{param}/bar": {}}
