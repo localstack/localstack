@@ -101,15 +101,6 @@ class ProxyListenerEdge(ProxyListener):
         # extract API details
         api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
 
-        if port and api:
-            from localstack.aws.challenger import ServiceNamerParserChallenger
-
-            response = ServiceNamerParserChallenger(api).forward_request(
-                method, path, data, headers
-            )
-            if response is not None:
-                return response
-
         set_default_region_in_headers(headers)
 
         if port and int(port) < 0:
@@ -119,6 +110,15 @@ class ProxyListenerEdge(ProxyListener):
             api = get_api_from_custom_rules(method, path, data, headers)
             if api:
                 port = config.service_port(api)
+
+        if port and api:
+            from localstack.aws.challenger import ServiceNamerParserChallenger
+
+            response = ServiceNamerParserChallenger(api).forward_request(
+                method, path, data, headers
+            )
+            if response is not None:
+                return response
 
         should_log_trace = is_trace_logging_enabled(headers)
         if api and should_log_trace:

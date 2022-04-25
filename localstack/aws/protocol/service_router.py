@@ -5,8 +5,10 @@ from typing import NamedTuple, Optional
 from werkzeug.http import parse_dict_header
 
 from localstack.aws.spec import ServiceCatalog
+from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
-from localstack.services.sqs.sqs_listener import is_sqs_queue_url
+from localstack.services.s3.s3_utils import uses_host_addressing
+from localstack.services.sqs.sqs_utils import is_sqs_queue_url
 
 LOG = logging.getLogger(__name__)
 
@@ -109,14 +111,76 @@ def custom_signing_name_rules(signing_name: str, request: Request) -> Optional[s
 def custom_host_addressing_rules(host: str) -> Optional[str]:
     if ".execute-api." in host:
         return "apigateway"
-    # TODO this has been removed here, since it has been moved to the custom rules in the current implementation
-    # if uses_host_addressing(host):
-    #     return "s3"
 
 
 def custom_path_addressing_rules(path: str) -> Optional[str]:
     if is_sqs_queue_url(path):
         return "sqs"
+
+    if path.startswith("/2015-03-31/functions/"):
+        # TODO clarify if this is on purpose - should the lambda API be reachable without an auth header?
+        return "lambda"
+
+
+def legacy_rules(request: Request) -> Optional[str]:
+    """
+    This rule function encapsulates all _legacy_ rules.
+    All rules which are implemented here should be migrated to the new router once these services are migrated to ASF.
+    """
+    # TODO: These custom rules should become obsolete by migrating these to use the http/router.py
+
+    path = request.path
+    method = request.method
+    host = request.host
+
+    # API Gateway invocation URLs
+    if ("/%s/" % PATH_USER_REQUEST) in request.path or (
+        host.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host
+    ):
+        return "apigateway"
+
+    # DynamoDB shell URLs
+    if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
+        return "dynamodb"
+
+    # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
+    #      Some are similar to other rules and not that greedy, others are nearly general fallbacks.
+    stripped = path.strip("/")
+    if method in ["GET", "HEAD"] and stripped:
+        # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
+        return "s3"
+
+    # detect S3 URLs
+    if stripped and "/" not in stripped:
+        if method == "PUT":
+            # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
+            return "s3"
+        if method == "POST" and "key" in request.values:
+            # assume that this is an S3 POST request with form parameters or multipart form in the body
+            return "s3"
+
+    # detect S3 requests sent from aws-cli using --no-sign-request option
+    if "aws-cli/" in str(request.user_agent):
+        return "s3"
+
+    # detect S3 pre-signed URLs
+    if "AWSAccessKeyId=" in path or "Signature=" in path:
+        return "s3"
+
+    # Put Object API can have multiple keys
+    if stripped.count("/") >= 1 and method == "PUT":
+        # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
+        # or `/<bucket>/object/object1/+`
+        return "s3"
+
+    # detect S3 requests with "AWS id:key" Auth headers
+    auth_header = request.headers.get("Authorization") or ""
+    if auth_header.startswith("AWS "):
+        return "s3"
+
+    if uses_host_addressing(request.headers):
+        # Note: This needs to be the last rule (and therefore is not in the host rules), since it is incredibly greedy
+        return "s3"
 
 
 @lru_cache()
@@ -217,6 +281,11 @@ def determine_aws_service_name(
             return query_candidates[0]
 
         candidates.update(query_candidates)
+
+    # 6. check the legacy rules in the end
+    legacy_match = legacy_rules(request)
+    if legacy_match:
+        return legacy_match
 
     LOG.warning("could not uniquely determine service from request, candidates=%s", candidates)
 
