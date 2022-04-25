@@ -28,7 +28,9 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.aws_stack import parse_arn
+from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.collections import ensure_list
+from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 

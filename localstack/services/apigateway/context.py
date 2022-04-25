@@ -182,4 +182,3 @@ class ApiInvocationContext:
     def domain_prefix(self):
         host = self._extract_host_from_header()
         return host.split(".")[0]
-
