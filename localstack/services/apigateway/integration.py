@@ -217,7 +217,7 @@ class MockIntegration(BackendIntegration):
                 data=json.dumps({"message": f"{http_status.phrase}"}),
             )
 
-        # request template
+        # request template rendering
         request_payload = self.request_templates.render(invocation_context)
 
         # mapping is done based on "statusCode" field

@@ -312,89 +312,7 @@ def is_api_key_valid(is_api_key_required: bool, headers: Dict[str, str], stage: 
     return validate_api_key(api_key, stage)
 
 
-# def apply_response_parameters(invocation_context: ApiInvocationContext):
-#     response = invocation_context.response
-#     integration = invocation_context.integration
-#
-#     int_responses = integration.get("integrationResponses") or {}
-#     if not int_responses:
-#         return response
-#     entries = list(int_responses.keys())
-#     return_code = str(response.status_code)
-#     if return_code not in entries:
-#         if len(entries) > 1:
-#             LOG.info("Found multiple integration response status codes: %s", entries)
-#             return response
-#         return_code = entries[0]
-#     response_params = int_responses[return_code].get("responseParameters", {})
-#     for key, value in response_params.items():
-#         # TODO: add support for method.response.body, etc ...
-#         if str(key).lower().startswith("method.response.header."):
-#             header_name = key[len("method.response.header.") :]
-#             response.headers[header_name] = value.strip("'")
-#     return response
-
-
-# def set_api_id_stage_invocation_path(
-#     invocation_context: ApiInvocationContext,
-# ) -> ApiInvocationContext:
-#     # skip if all details are already available
-#     values = (
-#         invocation_context.api_id,
-#         invocation_context.stage,
-#         invocation_context.path_with_query_string,
-#     )
-#     if all(values):
-#         return invocation_context
-#
-#     # skip if this is a websocket request
-#     if invocation_context.is_websocket_request():
-#         return invocation_context
-#
-#     path = invocation_context.path
-#     headers = invocation_context.headers
-#
-#     path_match = re.search(PATH_REGEX_USER_REQUEST, path)
-#     host_header = headers.get(HEADER_LOCALSTACK_EDGE_URL, "") or headers.get("Host") or ""
-#     host_match = re.search(HOST_REGEX_EXECUTE_API, host_header)
-#     test_invoke_match = re.search(PATH_REGEX_TEST_INVOKE_API, path)
-#     if path_match:
-#         api_id = path_match.group(1)
-#         stage = path_match.group(2)
-#         relative_path_w_query_params = f"/{path_match.group(3)}"
-#     elif host_match:
-#         api_id = extract_api_id_from_hostname_in_url(host_header)
-#         stage = path.strip("/").split("/")[0]
-#         relative_path_w_query_params = f'/{path.lstrip("/").partition("/")[2]}'
-#     elif test_invoke_match:
-#         # special case: fetch the resource details for TestInvokeApi invocations
-#         stage = None
-#         region_name = invocation_context.region_name
-#         api_id = test_invoke_match.group(1)
-#         resource_id = test_invoke_match.group(2)
-#         query_string = test_invoke_match.group(4) or ""
-#         apigateway = aws_stack.connect_to_service(
-#             service_name="apigateway", region_name=region_name
-#         )
-#         resource = apigateway.get_resource(restApiId=api_id, resourceId=resource_id)
-#         resource_path = resource.get("path")
-#         relative_path_w_query_params = f"{resource_path}{query_string}"
-#     else:
-#         raise Exception(
-#             f"Unable to extract API Gateway details from request: {path} {dict(headers)}"
-#         )
-#     if api_id and getattr(THREAD_LOCAL, "request_context", None) is not None:
-#         THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = API_REGIONS.get(
-#             api_id, ""
-#         )
-#
-#     # set details in invocation context
-#     invocation_context.api_id = api_id
-#     invocation_context.stage = stage
-#     invocation_context.path_with_query_string = relative_path_w_query_params
-#     return invocation_context
-
-# TODO: remove dependency on localstack-ext
+# TODO: remove dependency from downstream
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     """Extract API ID 'id123' from URLs like
     https://id123.execute-api.localhost.localstack.cloud:4566"""
@@ -403,7 +321,6 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
 
 
 def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
-    # set_api_id_stage_invocation_path(invocation_context)
     try:
         context = mock_request_for_region(
             get_api_region(invocation_context.api_id), service_name="apigateway"
@@ -586,6 +503,7 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
     return methods.get(method_name) or methods.get("ANY")
 
 
+# TODO: remove dependency from downstream
 def get_event_request_context(invocation_context: ApiInvocationContext):
     method = invocation_context.method
     path = invocation_context.path
@@ -637,43 +555,6 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
         request_context["path"] = (f"/{stage}" if stage else "") + relative_path
         request_context["stage"] = stage
     return request_context
-
-
-# def apply_request_response_templates(
-#     data: Union[Response, bytes],
-#     templates: Dict[str, str],
-#     content_type: str = None,
-#     as_json: bool = False,
-# ):
-#     """Apply the matching request/response template (if it exists) to the payload data and
-#     return the result"""
-#
-#     content_type = content_type or APPLICATION_JSON
-#     is_response = isinstance(data, Response)
-#     templates = templates or {}
-#     template = templates.get(content_type)
-#     if not template:
-#         return data
-#     content = (data.content if is_response else data) or ""
-#     result = VtlTemplate().render_vtl(template, content, as_json=as_json)
-#     if is_response:
-#         data._content = result
-#         update_content_length(data)
-#         return data
-#     return result
-    content_type = content_type or APPLICATION_JSON
-    is_response = isinstance(data, Response)
-    templates = templates or {}
-    template = templates.get(content_type)
-    if not template:
-        return data
-    content = (data.content if is_response else data) or ""
-    result = VtlTemplate().render_vtl(template, content, as_json=as_json)
-    if is_response:
-        data._content = result
-        update_content_length(data)
-        return data
-    return result
 
 
 # instantiate listener
