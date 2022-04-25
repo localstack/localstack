@@ -2706,6 +2706,14 @@ class TestS3New:
         resp = s3_client.list_buckets()
         assert len(resp["Buckets"]) == 0
 
+    @pytest.mark.aws_validated
+    def test_put_and_get_object_with_utf8_key(self, s3_client, s3_create_bucket):
+        bucket = s3_create_bucket()
+        response = s3_client.put_object(Bucket=bucket, Key="Ā0Ä", Body=b"abc123")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        response = s3_client.get_object(Bucket=bucket, Key="Ā0Ä")
+        assert response["Body"].read() == b"abc123"
+
 
 @pytest.mark.parametrize(
     "api_version, bucket_name, payload",

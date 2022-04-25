@@ -1,5 +1,6 @@
 from io import BytesIO
 from typing import TYPE_CHECKING, Dict, Mapping, Optional, Tuple, Union
+from urllib.parse import quote, unquote
 
 if TYPE_CHECKING:
     from _typeshed.wsgi import WSGIEnvironment
@@ -46,8 +47,9 @@ def dummy_wsgi_environment(
     # Standard environ keys
     environ = {
         "REQUEST_METHOD": method,
-        "SCRIPT_NAME": root_path.rstrip("/"),
-        "PATH_INFO": path,
+        # prepare the paths for the "WSGI decoding dance" done by werkzeug
+        "SCRIPT_NAME": unquote(quote(root_path.rstrip("/")), "latin-1"),
+        "PATH_INFO": unquote(quote(path), "latin-1"),
         "SERVER_PROTOCOL": "HTTP/1.1",
     }
 
@@ -158,11 +160,11 @@ def get_raw_path(request) -> str:
     :return: the raw path if any
     """
     if hasattr(request, "environ"):
-        # werkzeug/flask request
+        # werkzeug/flask request (already a string)
         return request.environ.get("RAW_URI", request.path)
 
     if hasattr(request, "scope"):
-        # quart request
-        return request.scope.get("raw_path", request.path)
+        # quart request raw_path comes as bytes
+        return request.scope.get("raw_path", request.path).decode("utf-8")
 
     raise ValueError("cannot extract raw path from request object %s" % request)
