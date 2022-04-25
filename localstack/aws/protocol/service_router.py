@@ -9,6 +9,7 @@ from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_utils import is_sqs_queue_url
+from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -164,8 +165,15 @@ def legacy_rules(request: Request) -> Optional[str]:
         return "s3"
 
     # detect S3 pre-signed URLs
-    if "AWSAccessKeyId=" in path or "Signature=" in path:
+    values = request.values
+    if "AWSAccessKeyId" in values or "Signature" in values:
         return "s3"
+
+    # S3 delete object requests
+    if method == "POST" and "delete" in values:
+        data_bytes = to_bytes(request.get_data())
+        if b"<Delete" in data_bytes and b"<Key>" in data_bytes:
+            return "s3"
 
     # Put Object API can have multiple keys
     if stripped.count("/") >= 1 and method == "PUT":
