@@ -501,7 +501,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             is_no_update_error = (
                 e.code == "ValidationException" and "Nothing to update" in e.message
             )
-            if is_no_update_error and not list(
+            if not is_no_update_error or not list(
                 {"TableClass", "ReplicaUpdates"} & set(update_table_input.keys())
             ):
                 raise
