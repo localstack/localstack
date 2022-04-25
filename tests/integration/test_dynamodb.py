@@ -506,6 +506,31 @@ class TestDynamoDB:
         )
         assert "ShardIterator" in response
 
+    def test_dynamodb_create_table_with_class(self, dynamodb_client):
+        table_name = "table_with_class_%s" % short_uid()
+        # create table
+        result = dynamodb_client.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            TableClass="STANDARD",
+        )
+        assert result["TableDescription"]["TableClassSummary"]["TableClass"] == "STANDARD"
+        result = dynamodb_client.describe_table(TableName=table_name)
+        assert result["Table"]["TableClassSummary"]["TableClass"] == "STANDARD"
+        result = dynamodb_client.update_table(
+            TableName=table_name, TableClass="STANDARD_INFREQUENT_ACCESS"
+        )
+        assert (
+            result["TableDescription"]["TableClassSummary"]["TableClass"]
+            == "STANDARD_INFREQUENT_ACCESS"
+        )
+        result = dynamodb_client.describe_table(TableName=table_name)
+        assert result["Table"]["TableClassSummary"]["TableClass"] == "STANDARD_INFREQUENT_ACCESS"
+        # clean resources
+        dynamodb_client.delete_table(TableName=table_name)
+
     def test_dynamodb_execute_transaction(self, dynamodb_client):
         table_name = "table_%s" % short_uid()
         dynamodb_client.create_table(
