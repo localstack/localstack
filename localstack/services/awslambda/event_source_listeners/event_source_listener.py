@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, Optional
 
 from localstack.utils.objects import SubtypesInstanceManager
 from localstack.utils.threads import start_worker_thread
@@ -8,9 +8,9 @@ class EventSourceListener(SubtypesInstanceManager):
     INSTANCES: Dict[str, "EventSourceListener"] = {}
 
     @staticmethod
-    def get_source_type() -> str:
+    def get_source_type() -> Optional[str]:
         """Type discriminator - to be implemented by subclasses."""
-        raise NotImplementedError
+        return None
 
     def start(self):
         """Start listener in the background (for polling mode) - to be implemented by subclasses."""
