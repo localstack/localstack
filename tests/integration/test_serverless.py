@@ -97,7 +97,7 @@ class TestServerless(unittest.TestCase):
             self.assertEqual(len(events), 1)
 
         kinesis_client.put_record(StreamName=stream_name, Data=b"test123", PartitionKey="key1")
-        retry(assert_invocations, sleep=1, retries=5)
+        retry(assert_invocations, sleep=2, retries=10)
 
     @pytest.mark.skip_offline
     def test_queue_handler_deployed(self):

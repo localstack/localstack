@@ -509,7 +509,7 @@ class IntegrationTest(unittest.TestCase):
                 self.assertEqual({"id": item_id, "data": "foobar123"}, matching["old_image"])
 
         # this can take a long time in CI, make sure we give it enough time/retries
-        retry(check_events, retries=9, sleep=4)
+        retry(check_events, retries=15, sleep=4)
 
         # clean up
         testutil.delete_lambda_function(lambda_ddb_name)
@@ -639,7 +639,7 @@ def test_kinesis_lambda_forward_chain(kinesis_client, s3_client, create_lambda_f
             testutil.assert_objects(test_data, all_objects)
 
         # check results
-        retry(check_results, retries=5, sleep=3)
+        retry(check_results, retries=10, sleep=3)
     finally:
         # clean up
         kinesis_client.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
