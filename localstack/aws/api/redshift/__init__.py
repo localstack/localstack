@@ -70,6 +70,11 @@ class DataShareStatusForProducer(str):
     REJECTED = "REJECTED"
 
 
+class LogDestinationType(str):
+    s3 = "s3"
+    cloudwatch = "cloudwatch"
+
+
 class Mode(str):
     standard = "standard"
     high_performance = "high-performance"
@@ -2081,12 +2086,15 @@ class UpdateTarget(TypedDict, total=False):
 
 
 EligibleTracksToUpdateList = List[UpdateTarget]
+LogTypeList = List[String]
 
 
 class EnableLoggingMessage(ServiceRequest):
     ClusterIdentifier: String
-    BucketName: String
+    BucketName: Optional[String]
     S3KeyPrefix: Optional[String]
+    LogDestinationType: Optional[LogDestinationType]
+    LogExports: Optional[LogTypeList]
 
 
 class EnableSnapshotCopyMessage(ServiceRequest):
@@ -2273,6 +2281,8 @@ class LoggingStatus(TypedDict, total=False):
     LastSuccessfulDeliveryTime: Optional[TStamp]
     LastFailureTime: Optional[TStamp]
     LastFailureMessage: Optional[String]
+    LogDestinationType: Optional[LogDestinationType]
+    LogExports: Optional[LogTypeList]
 
 
 class MaintenanceTrack(TypedDict, total=False):
@@ -3616,8 +3626,10 @@ class RedshiftApi:
         self,
         context: RequestContext,
         cluster_identifier: String,
-        bucket_name: String,
+        bucket_name: String = None,
         s3_key_prefix: String = None,
+        log_destination_type: LogDestinationType = None,
+        log_exports: LogTypeList = None,
     ) -> LoggingStatus:
         raise NotImplementedError
 
