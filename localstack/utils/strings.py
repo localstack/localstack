@@ -143,3 +143,14 @@ def md5(string: Union[str, bytes]) -> str:
 
 def base64_to_hex(b64_string: str) -> bytes:
     return binascii.hexlify(base64.b64decode(b64_string))
+
+
+def base64_decode(data: Union[str, bytes]) -> bytes:
+    """Decode base64 data - with optional padding, and able to handle urlsafe encoding (containing -/_)."""
+    data = to_str(data)
+    missing_padding = len(data) % 4
+    if missing_padding != 0:
+        data = to_str(data) + "=" * (4 - missing_padding)
+    if "-" in data or "_" in data:
+        return base64.urlsafe_b64decode(data)
+    return base64.b64decode(data)
