@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type, Optional
+from typing import Any, Dict, Optional, Type
 
 from localstack.utils.objects import SubtypesInstanceManager
 from localstack.utils.threads import start_worker_thread
