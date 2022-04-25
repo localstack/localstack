@@ -42,7 +42,7 @@ class CustomEncoder(json.JSONEncoder):
             return None
 
 
-class JsonObject(object):
+class JsonObject:
     """Generic JSON serializable object for simplified subclassing"""
 
     def to_json(self, indent=None):

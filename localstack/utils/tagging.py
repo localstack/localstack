@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 
 
-class TaggingService(object):
+class TaggingService:
     def __init__(self):
         self.tags = {}
 

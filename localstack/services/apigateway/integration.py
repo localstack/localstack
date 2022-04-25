@@ -46,7 +46,7 @@ class SnsIntegration(BackendIntegration):
         )
 
 
-class VelocityUtil(object):
+class VelocityUtil:
     """
     Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
     velocity templates.
@@ -87,7 +87,7 @@ class VelocityUtil(object):
         return json.dumps(s)
 
 
-class VelocityInput(object):
+class VelocityInput:
     """
     Simple class to mimic the behavior of variable '$input' in AWS API Gateway integration
     velocity templates.

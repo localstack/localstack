@@ -40,7 +40,7 @@ def transform_template(req_data) -> Optional[str]:
             # 'AWSLambdaBasicExecutionRole': 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
         }
 
-        class MockPolicyLoader(object):
+        class MockPolicyLoader:
             def load(self):
                 return policy_map
 

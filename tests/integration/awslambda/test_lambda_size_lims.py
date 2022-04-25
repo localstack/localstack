@@ -25,7 +25,7 @@ def generate_sized_python_str(size):
     return py_str
 
 
-class TestLambdaSizeLimits(object):
+class TestLambdaSizeLimits:
     def test_oversized_lambda(self, lambda_client, s3_client, s3_bucket):
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"

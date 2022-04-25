@@ -638,7 +638,7 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
 
     # process requires privileged port but we're not root -> try running as sudo
 
-    class Terminator(object):
+    class Terminator:
         def stop(self, quiet=True):
             try:
                 url = "http%s://%s:%s" % ("s" if use_ssl else "", LOCALHOST, port)

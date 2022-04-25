@@ -335,7 +335,7 @@ class ShellCommandThread(FuncThread):
         self.stopped = True
 
 
-class CaptureOutput(object):
+class CaptureOutput:
     """A context manager that captures stdout/stderr of the current thread. Use it as follows:
 
     with CaptureOutput() as c:

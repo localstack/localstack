@@ -444,7 +444,7 @@ def convert_to_binary_event_payload(result, event_type=None, message_type=None):
     return result
 
 
-class LambdaResponse(object):
+class LambdaResponse:
     """Helper class to support multi_value_headers in Lambda responses"""
 
     def __init__(self):
@@ -458,7 +458,7 @@ class LambdaResponse(object):
         return self._content
 
 
-class MessageConversion(object):
+class MessageConversion:
     @staticmethod
     def fix_date_format(response):
         """Normalize date to format '2019-06-13T18:10:09.1234Z'"""
