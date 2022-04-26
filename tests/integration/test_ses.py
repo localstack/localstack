@@ -3,8 +3,11 @@ import os
 from datetime import date, datetime
 
 import pytest
+import requests
 
 import localstack.config as config
+from localstack.constants import INTERNAL_RESOURCE_PATH
+from localstack.services.ses.provider import EMAILS_ENDPOINT
 
 TEST_TEMPLATE_ATTRIBUTES = {
     "TemplateName": "hello-world",
@@ -67,7 +70,8 @@ class TestSES:
         assert "VerificationToken" in response[domain]
         assert "VerificationToken" not in response[email]
 
-    def test_send_email_save(self, ses_client):
+    def test_send_email_can_retrospect(self, ses_client):
+        # Test that sent emails can be retrospected through saved file and API access
         data_dir = config.dirs.data or config.dirs.tmp
         email = "user@example.com"
         ses_client.verify_email_address(EmailAddress=email)
@@ -81,14 +85,18 @@ class TestSES:
                     "Text": {
                         "Data": "A_MESSAGE",
                     },
+                    "Html": {
+                        "Data": "A_HTML",
+                    },
                 },
             },
             Destination={
                 "ToAddresses": ["success@example.com"],
             },
         )
+        message_id = message["MessageId"]
 
-        with open(os.path.join(data_dir, "ses", message["MessageId"] + ".json"), "r") as f:
+        with open(os.path.join(data_dir, "ses", message_id + ".json"), "r") as f:
             message = f.read()
 
         contents = json.loads(message)
@@ -96,9 +104,17 @@ class TestSES:
         assert email == contents["Source"]
         assert "A_SUBJECT" == contents["Subject"]
         assert "A_MESSAGE" == contents["Body"]
-        assert ["success@example.com"] == contents["Destinations"]["ToAddresses"]
+        assert "A_HTML" == contents["HtmlBody"]
+        assert ["success@example.com"] == contents["Destination"]["ToAddresses"]
 
-    def test_send_templated_email_save(self, ses_client, create_template):
+        emails_url = config.get_edge_url() + INTERNAL_RESOURCE_PATH + EMAILS_ENDPOINT
+        api_contents = requests.get(emails_url).json()
+        api_contents = {msg["Id"]: msg for msg in api_contents["messages"]}
+        assert message_id in api_contents
+        assert api_contents[message_id] == contents
+
+    def test_send_templated_email_can_retrospect(self, ses_client, create_template):
+        # Test that sent emails can be retrospected through saved file and API access
         data_dir = config.dirs.data or config.dirs.tmp
         email = "user@example.com"
         ses_client.verify_email_address(EmailAddress=email)
@@ -113,13 +129,19 @@ class TestSES:
                 "ToAddresses": ["success@example.com"],
             },
         )
+        message_id = message["MessageId"]
 
-        with open(os.path.join(data_dir, "ses", message["MessageId"] + ".json"), "r") as f:
+        with open(os.path.join(data_dir, "ses", message_id + ".json"), "r") as f:
             message = f.read()
 
         contents = json.loads(message)
 
         assert email == contents["Source"]
-        assert [TEST_TEMPLATE_ATTRIBUTES["TemplateName"]] == contents["Template"]
-        assert ['{"A key": "A value"}'] == contents["TemplateData"]
-        assert ["success@example.com"] == contents["Destinations"]["ToAddresses"]
+        assert TEST_TEMPLATE_ATTRIBUTES["TemplateName"] == contents["Template"]
+        assert '{"A key": "A value"}' == contents["TemplateData"]
+        assert ["success@example.com"] == contents["Destination"]["ToAddresses"]
+
+        api_contents = requests.get("http://localhost:4566/_localstack/ses").json()
+        api_contents = {msg["Id"]: msg for msg in api_contents["messages"]}
+        assert message_id in api_contents
+        assert api_contents[message_id] == contents

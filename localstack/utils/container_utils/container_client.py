@@ -10,7 +10,7 @@ import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Protocol, Tuple, Union
 
 from localstack import config
 from localstack.utils.collections import HashableList
@@ -77,7 +77,20 @@ class AccessDenied(ContainerException):
         self.object_name = object_name
 
 
-class PortMappings(object):
+class CancellableStream(Protocol):
+    """Describes a generator that can be closed. Borrowed from ``docker.types.daemon``."""
+
+    def __iter__(self):
+        raise NotImplementedError
+
+    def __next__(self):
+        raise NotImplementedError
+
+    def close(self):
+        raise NotImplementedError
+
+
+class PortMappings:
     """Maps source to target port ranges for Docker port mappings."""
 
     def __init__(self, bind_host=None):
@@ -447,6 +460,11 @@ class ContainerClient(metaclass=ABCMeta):
     @abstractmethod
     def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
         """Get all logs of a given container"""
+        pass
+
+    @abstractmethod
+    def stream_container_logs(self, container_name_or_id: str) -> CancellableStream:
+        """Returns a blocking generator you can iterate over to retrieve log output as it happens."""
         pass
 
     @abstractmethod

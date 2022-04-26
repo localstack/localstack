@@ -1,5 +1,20 @@
+import functools
+import inspect
 import threading
-from typing import Any, Callable, Generic, Iterable, Mapping, Optional, Protocol, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Protocol,
+    Type,
+    TypeVar,
+)
 
 from werkzeug.routing import BaseConverter, Map, Rule, RuleFactory
 
@@ -12,7 +27,7 @@ E = TypeVar("E")
 RequestArguments = Mapping[str, Any]
 
 
-class Dispatcher(Protocol):
+class Dispatcher(Protocol[E]):
     """
     A Dispatcher is called when a URL route matches a request. The dispatcher is responsible for appropriately
     creating a Response from the incoming Request and the matching endpoint.
@@ -28,6 +43,49 @@ class Dispatcher(Protocol):
         :return: an HTTP Response
         """
         pass
+
+
+class _RuleAttributes(NamedTuple):
+    path: str
+    host: Optional[str] = (None,)
+    methods: Optional[Iterable[str]] = None
+    kwargs: Optional[Dict[str, Any]] = {}
+
+
+class _RouteEndpoint(Protocol):
+    """
+    An endpoint that encapsulates ``_RuleAttributes`` for the creation of a ``Rule`` inside a ``Router``.
+    """
+
+    rule_attributes: _RuleAttributes
+
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+def route(
+    path: str, host: Optional[str] = None, methods: Optional[Iterable[str]] = None, **kwargs
+) -> Callable[[E], _RouteEndpoint]:
+    """
+    Decorator that indicates that the given function is a Router Rule.
+
+    :param path: the path pattern to match
+    :param host: an optional host matching pattern. if not pattern is given, the rule matches any host
+    :param methods: the allowed HTTP verbs for this rule
+    :param kwargs: any other argument that can be passed to ``werkzeug.routing.Rule``
+    :return: the function endpoint wrapped as a ``_RouteEndpoint``
+    """
+
+    def wrapper(fn: E):
+        @functools.wraps(fn)
+        def route_marker(*args, **kwargs):
+            return fn(*args, **kwargs)
+
+        route_marker.rule_attributes = _RuleAttributes(path, host, methods, kwargs)
+
+        return route_marker
+
+    return wrapper
 
 
 def call_endpoint(
@@ -63,10 +121,10 @@ class Router(Generic[E]):
     """
 
     url_map: Map
-    dispatcher: Dispatcher
+    dispatcher: Dispatcher[E]
 
     def __init__(
-        self, dispatcher: Dispatcher = None, converters: Mapping[str, BaseConverter] = None
+        self, dispatcher: Dispatcher[E] = None, converters: Mapping[str, Type[BaseConverter]] = None
     ):
         self.url_map = Map(host_matching=True, strict_slashes=False, converters=converters)
         self.dispatcher = dispatcher or call_endpoint
@@ -100,6 +158,31 @@ class Router(Generic[E]):
         rule = Rule(path, endpoint=endpoint, methods=methods, host=host, **kwargs)
         self.add_rule(rule)
         return rule
+
+    def add_route_endpoint(self, fn: _RouteEndpoint) -> Rule:
+        """
+        Adds a RouteEndpoint (typically a function decorated with ``@route``) as a rule to the router.
+        :param fn: the RouteEndpoint function
+        :return: the rule that was added
+        """
+        attr: _RuleAttributes = fn.rule_attributes
+
+        return self.add(path=attr.path, endpoint=fn, host=attr.host, **attr.kwargs)
+
+    def add_route_endpoints(self, obj: object) -> List[Rule]:
+        """
+        Scans the given object for members that can be used as a `RouteEndpoint` and adds them to the router.
+        :param obj: the object to scan
+        :return: the rules that were added
+        """
+        rules = []
+
+        members = inspect.getmembers(obj)
+        for _, member in members:
+            if hasattr(member, "rule_attributes"):
+                rules.append(self.add_route_endpoint(member))
+
+        return rules
 
     def add_rule(self, rule: RuleFactory):
         with self._mutex:
@@ -147,6 +230,32 @@ class Router(Generic[E]):
         )
         args.pop("__host__", None)
         return self.dispatcher(request, handler, args)
+
+    def route(
+        self,
+        path: str,
+        host: Optional[str] = None,
+        methods: Optional[Iterable[str]] = None,
+        **kwargs,
+    ) -> Callable[[E], _RouteEndpoint]:
+        """
+        Returns a ``route`` decorator and immediately adds it to the router instance. This effectively mimics flask's
+        ``@app.route``.
+
+        :param path: the path pattern to match
+        :param host: an optional host matching pattern. if not pattern is given, the rule matches any host
+        :param methods: the allowed HTTP verbs for this rule
+        :param kwargs: any other argument that can be passed to ``werkzeug.routing.Rule``
+        :return: the function endpoint wrapped as a ``_RouteEndpoint``
+        """
+
+        def wrapper(fn):
+            r = route(path, host, methods, **kwargs)
+            fn = r(fn)
+            self.add_route_endpoint(fn)
+            return fn
+
+        return wrapper
 
 
 class RegexConverter(BaseConverter):

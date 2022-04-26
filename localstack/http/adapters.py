@@ -2,12 +2,13 @@
 migration from the edge proxy to the new HTTP framework, and will be removed in the future. """
 from urllib.parse import urlsplit
 
+from quart import request as quart_request
 from requests.models import Response as _RequestsResponse
 from werkzeug.exceptions import NotFound
 
 from localstack.services.generic_proxy import ProxyListener
 
-from .request import Request
+from .request import Request, get_raw_path
 from .response import Response
 from .router import Router
 
@@ -23,12 +24,15 @@ class ProxyListenerAdapter(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
         split_url = urlsplit(path)
+        raw_path = get_raw_path(quart_request)
+
         request = Request(
             method=method,
             path=split_url.path,
             query_string=split_url.query,
             headers=headers,
             body=data,
+            raw_path=raw_path,
         )
 
         response = self.request(request)

@@ -1,3 +1,4 @@
+import base64
 import io
 import itertools
 import os
@@ -28,6 +29,7 @@ from localstack.utils.common import (
     short_uid,
 )
 from localstack.utils.objects import Mock
+from localstack.utils.strings import base64_decode, to_bytes
 from localstack.utils.testutil import create_zip_file
 
 
@@ -47,6 +49,24 @@ class TestCommon:
     def test_base64_to_hex(self):
         env = common.base64_to_hex("Zm9vIGJhcg ==")
         assert env == b"666f6f20626172"
+
+    def test_base64_decode(self):
+        def roundtrip(data):
+            encoded = base64.urlsafe_b64encode(to_bytes(data))
+            result = base64_decode(encoded)
+            assert to_bytes(data) == result
+
+        # simple examples
+        roundtrip("test")
+        roundtrip(b"test \x64 \x01 \x55")
+
+        # strings that require urlsafe encoding (containing "-" or "/" in base64 encoded form)
+        examples = ((b"=@~", b"PUB+"), (b"???", b"Pz8/"))
+        for decoded, encoded in examples:
+            assert base64.b64encode(decoded) == encoded
+            expected = encoded.replace(b"+", b"-").replace(b"/", b"_")
+            assert base64.urlsafe_b64encode(decoded) == expected
+            roundtrip(decoded)
 
     def test_now(self):
         env = common.now()

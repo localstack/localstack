@@ -1,8 +1,9 @@
+import base64
 import json
 import logging
 import re
 import uuid
-from typing import Dict
+from typing import Dict, Optional
 
 from moto.events.models import events_backends as moto_events_backends
 
@@ -15,9 +16,9 @@ from localstack.utils.aws.aws_stack import (
     get_sqs_queue_url,
 )
 from localstack.utils.generic import dict_utils
-from localstack.utils.http import add_query_params_to_url
+from localstack.utils.http import add_path_parameters_to_url, add_query_params_to_url
 from localstack.utils.http import safe_requests as requests
-from localstack.utils.strings import long_uid, to_bytes
+from localstack.utils.strings import long_uid, to_bytes, to_str
 from localstack.utils.time import now_utc, timestamp_millis
 
 LOG = logging.getLogger(__name__)
@@ -71,7 +72,11 @@ def lambda_result_to_destination(
 
 
 def send_event_to_target(
-    target_arn: str, event: Dict, target_attributes: Dict = None, asynchronous: bool = True
+    target_arn: str,
+    event: Dict,
+    target_attributes: Dict = None,
+    asynchronous: bool = True,
+    target: Dict = {},
 ):
     region = target_arn.split(":")[3]
 
@@ -107,7 +112,7 @@ def send_event_to_target(
 
     elif ":events:" in target_arn:
         if ":api-destination/" in target_arn or ":destination/" in target_arn:
-            send_event_to_api_destination(target_arn, event)
+            send_event_to_api_destination(target_arn, event, target.get("HttpParameters"))
 
         else:
             events_client = connect_to_service("events", region_name=region)
@@ -163,7 +168,10 @@ def auth_keys_from_connection(connection: Dict):
         basic_auth_parameters = auth_parameters.get("BasicAuthParameters", {})
         username = basic_auth_parameters.get("Username", "")
         password = basic_auth_parameters.get("Password", "")
-        headers.update({"authorization": "Basic {}:{}".format(username, password)})
+        auth = "Basic " + to_str(
+            base64.b64encode("{}:{}".format(username, password).encode("ascii"))
+        )
+        headers.update({"authorization": auth})
 
     if auth_type == AUTH_API_KEY:
         api_key_parameters = auth_parameters.get("ApiKeyAuthParameters", {})
@@ -173,11 +181,12 @@ def auth_keys_from_connection(connection: Dict):
 
     if auth_type == AUTH_OAUTH:
         oauth_parameters = auth_parameters.get("OAuthParameters", {})
-
         oauth_method = oauth_parameters.get("HttpMethod")
+
+        oauth_http_parameters = oauth_parameters.get("OAuthHttpParameters", {})
         oauth_endpoint = oauth_parameters.get("AuthorizationEndpoint", "")
         query_object = list_of_parameters_to_object(
-            oauth_parameters.get("QueryStringParameters", [])
+            oauth_http_parameters.get("QueryStringParameters", [])
         )
         oauth_endpoint = add_query_params_to_url(oauth_endpoint, query_object)
 
@@ -185,17 +194,18 @@ def auth_keys_from_connection(connection: Dict):
         client_id = client_parameters.get("ClientID", "")
         client_secret = client_parameters.get("ClientSecret", "")
 
-        oauth_body = list_of_parameters_to_object(oauth_parameters.get("BodyParameters", []))
+        oauth_body = list_of_parameters_to_object(oauth_http_parameters.get("BodyParameters", []))
         oauth_body.update({"client_id": client_id, "client_secret": client_secret})
 
-        oauth_header = list_of_parameters_to_object(oauth_parameters.get("HeaderParameters", []))
+        oauth_header = list_of_parameters_to_object(
+            oauth_http_parameters.get("HeaderParameters", [])
+        )
         oauth_result = requests.request(
             method=oauth_method,
             url=oauth_endpoint,
             data=json.dumps(oauth_body),
             headers=oauth_header,
         )
-
         oauth_data = json.loads(oauth_result.text)
 
         token_type = oauth_data.get("token_type", "")
@@ -210,7 +220,7 @@ def list_of_parameters_to_object(items):
     return {item.get("Key"): item.get("Value") for item in items}
 
 
-def send_event_to_api_destination(target_arn, event):
+def send_event_to_api_destination(target_arn, event, http_parameters: Optional[Dict] = None):
     """Send an event to an EventBridge API destination
     See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
 
@@ -236,6 +246,8 @@ def send_event_to_api_destination(target_arn, event):
     }
 
     endpoint = add_api_destination_authorization(destination, headers, event)
+    if http_parameters:
+        endpoint = add_http_parameters(http_parameters, endpoint, headers, event)
 
     result = requests.request(
         method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
@@ -276,4 +288,11 @@ def add_api_destination_authorization(destination, headers, event):
         query_object = list_of_parameters_to_object(query_parameters)
         endpoint = add_query_params_to_url(endpoint, query_object)
 
+    return endpoint
+
+
+def add_http_parameters(http_parameters: Dict, endpoint: str, headers: Dict, body):
+    headers.update(http_parameters.get("HeaderParameters", {}))
+    endpoint = add_path_parameters_to_url(endpoint, http_parameters.get("PathParameterValues", []))
+    endpoint = add_query_params_to_url(endpoint, http_parameters.get("QueryStringParameters", {}))
     return endpoint

@@ -1,7 +1,7 @@
 ARG IMAGE_TYPE=full
 
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM python:3.8.12-slim-buster@sha256:26ab58f6b8936fe59303b0ca0e915d5f9e071ef8b9bf7b3d716b4068f11443dc as java-builder
+FROM python:3.8.13-slim-buster@sha256:36a1e0babd716393ab6203f6081b3d61f8d7f0c770458ee5009d883d0f3c68ef as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -34,7 +34,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java, maven,...)
-FROM python:3.8.12-slim-buster@sha256:26ab58f6b8936fe59303b0ca0e915d5f9e071ef8b9bf7b3d716b4068f11443dc as base
+FROM python:3.8.13-slim-buster@sha256:36a1e0babd716393ab6203f6081b3d61f8d7f0c770458ee5009d883d0f3c68ef as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -134,7 +134,8 @@ ARG DYNAMODB_ZIP_URL=https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_
 RUN mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
       curl -L -o /tmp/localstack.ddb.zip ${DYNAMODB_ZIP_URL} && \
       (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip) && \
-    curl -L -o /opt/code/localstack/localstack/infra/elasticmq-server.jar \
+    mkdir -p /opt/code/localstack/localstack/infra/elasticmq && \
+    curl -L -o /opt/code/localstack/localstack/infra/elasticmq/elasticmq-server.jar \
         https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar
 
 # upgrade python build tools

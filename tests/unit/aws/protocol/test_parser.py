@@ -5,15 +5,15 @@ import pytest
 from botocore.awsrequest import prepare_request_dict
 from botocore.serialize import create_serializer
 
-from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.parser import (
+    OperationNotFoundParserError,
     ProtocolParserError,
     QueryRequestParser,
-    RestJSONRequestParser,
     UnknownParserError,
     create_parser,
 )
 from localstack.aws.spec import load_service
+from localstack.http import Request as HttpRequest
 from localstack.services.s3 import s3_utils
 from localstack.utils.common import to_bytes, to_str
 
@@ -255,6 +255,7 @@ def _botocore_parser_integration_test(
             query_string=to_str(query_string),
             headers=headers,
             body=body,
+            raw_path=path,
         )
     )
 
@@ -656,17 +657,11 @@ def test_ec2_parser_ec2_with_botocore():
 
 
 def test_restjson_parser_path_params_with_slashes():
-    parser = RestJSONRequestParser(load_service("qldb"))
-    resource_arn = "arn:aws:qldb:eu-central-1:000000000000:ledger/c-c67c827a"
-    request = HttpRequest(
-        body=b"",
-        method="GET",
-        headers={},
-        path=f"/tags/{resource_arn}",
+    _botocore_parser_integration_test(
+        service="qldb",
+        action="ListTagsForResource",
+        ResourceArn="arn:aws:qldb:eu-central-1:000000000000:ledger/c-c67c827a",
     )
-    operation, params = parser.parse(request)
-    assert operation.name == "ListTagsForResource"
-    assert params == {"ResourceArn": resource_arn}
 
 
 def test_parse_cloudtrail_with_botocore():
@@ -732,6 +727,21 @@ def test_parse_appconfig_non_json_blob_payload():
     )
 
 
+def test_parse_appconfig_deprecated_operation():
+    """
+    Tests if the parsing works correctly if the request targets a deprecated operation (without alternative, i.e.
+    another function having the same signature).
+    """
+    _botocore_parser_integration_test(
+        service="appconfig",
+        action="GetConfiguration",
+        Application="test-application",
+        Environment="test-environment",
+        Configuration="test-configuration",
+        ClientId="test-client-id",
+    )
+
+
 def test_parse_s3_with_extended_uri_pattern():
     """
     Tests if the parsing works for operations where the operation defines a request URI with a "+" in the variable name,
@@ -741,6 +751,18 @@ def test_parse_s3_with_extended_uri_pattern():
     """
     _botocore_parser_integration_test(
         service="s3", action="ListParts", Bucket="foo", Key="bar/test", UploadId="test-upload-id"
+    )
+
+
+def test_parse_s3_utf8_url():
+    """Test the parsing of a map with the location trait 'headers'."""
+    _botocore_parser_integration_test(
+        service="s3",
+        action="PutObject",
+        ContentLength=0,
+        Bucket="test-bucket",
+        Key="Ā0",
+        Metadata={"Key": "value", "Key2": "value2"},
     )
 
 
@@ -783,6 +805,41 @@ def test_restjson_operation_detection_with_query_suffix_in_requesturi():
     _botocore_parser_integration_test(service="apigateway", action="ImportRestApi", body=b"Test")
 
 
+def test_restxml_operation_detection_with_query_suffix_without_value_in_requesturi():
+    # Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
+    # parameter without a specific value, f.e. CloudFront's CreateDistributionWithTags:
+    # "/2020-05-31/distribution?WithTags"
+    _botocore_parser_integration_test(
+        service="cloudfront",
+        action="CreateDistributionWithTags",
+        DistributionConfigWithTags={
+            "DistributionConfig": {
+                "CallerReference": "string",
+                "Origins": {
+                    "Quantity": 1,
+                    "Items": [
+                        {
+                            "Id": "string",
+                            "DomainName": "string",
+                        }
+                    ],
+                },
+                "Comment": "string",
+                "Enabled": True,
+                "DefaultCacheBehavior": {
+                    "TargetOriginId": "string",
+                    "ViewerProtocolPolicy": "allow-all",
+                },
+            },
+            "Tags": {
+                "Items": [
+                    {"Key": "string", "Value": "string"},
+                ]
+            },
+        },
+    )
+
+
 def test_restjson_operation_detection_with_length_prio():
     """
     Tests if the correct operation is detected if the requestURI patterns are conflicting and the length of the
@@ -800,6 +857,23 @@ def test_restjson_operation_detection_with_length_prio():
     )
 
 
+def test_restjson_operation_detection_with_subpath():
+    """
+    Tests if the operation lookup correctly fails for a subpath of an operation.
+    For example: The detection of a URL which is routed through API Gateway.
+    """
+    service = load_service("apigateway")
+    parser = create_parser(service)
+    with pytest.raises(OperationNotFoundParserError):
+        parser.parse(
+            HttpRequest(
+                method="GET",
+                path="/restapis/cmqinv79uh/local/_user_request_/",
+                raw_path="/restapis/cmqinv79uh/local/_user_request_/",
+            )
+        )
+
+
 def test_s3_operation_detection():
     """
     Test if the S3 operation detection works for ambiguous operations. GetObject is the worst, because it is
@@ -807,7 +881,7 @@ def test_s3_operation_detection():
     matched required parameter.
     """
     _botocore_parser_integration_test(
-        service="s3", action="GetObject", Bucket="test-bucket", Key="test.json"
+        service="s3", action="GetObject", Bucket="test-bucket", Key="foo/bar/test.json"
     )
 
 
@@ -816,9 +890,10 @@ def test_restxml_headers_parsing():
     _botocore_parser_integration_test(
         service="s3",
         action="PutObject",
+        ContentLength=0,
         Bucket="test-bucket",
         Key="test.json",
-        Metadata={"key": "value", "key2": "value2"},
+        Metadata={"Key": "value", "Key2": "value2"},
     )
 
 
@@ -829,6 +904,7 @@ def test_restxml_header_date_parsing():
         action="PutObject",
         Bucket="test-bucket",
         Key="test-key",
+        ContentLength=3,
         Body=b"foo",
         Metadata={},
         Expires=datetime(2015, 1, 1, 0, 0, tzinfo=timezone.utc),

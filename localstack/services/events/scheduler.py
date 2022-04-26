@@ -9,7 +9,7 @@ from localstack.utils.run import FuncThread
 LOG = logging.getLogger(__name__)
 
 
-class Job(object):
+class Job:
     def __init__(self, job_func, schedule, enabled):
         self.job_func = job_func
         self.schedule = schedule
@@ -32,7 +32,7 @@ class Job(object):
         FuncThread(self.job_func).start()
 
 
-class JobScheduler(object):
+class JobScheduler:
 
     _instance = None
 

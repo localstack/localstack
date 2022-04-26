@@ -814,9 +814,52 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
 
 def do_unsubscribe(subscription_arn):
     sns_backend = SNSBackend.get()
+
+    def should_be_kept(current_subscription, target_subscription_arn):
+        if current_subscription["SubscriptionArn"] != target_subscription_arn:
+            return True
+
+        if current_subscription["Protocol"] in ["http", "https"]:
+            external_url = external_service_url("sns")
+            token = short_uid()
+            message_id = long_uid()
+            subscription_url = "%s/?Action=ConfirmSubscription&SubscriptionArn=%s&Token=%s" % (
+                external_url,
+                target_subscription_arn,
+                token,
+            )
+            message = {
+                "Type": ["UnsubscribeConfirmation"],
+                "MessageId": [message_id],
+                "Token": [token],
+                "TopicArn": [current_subscription["TopicArn"]],
+                "Message": [
+                    "You have chosen to deactivate subscription %s.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message."
+                    % target_subscription_arn
+                ],
+                "SubscribeURL": [subscription_url],
+                "Timestamp": [datetime.datetime.utcnow().timestamp()],
+            }
+
+            headers = {
+                "x-amz-sns-message-type": "UnsubscribeConfirmation",
+                "x-amz-sns-message-id": message_id,
+                "x-amz-sns-topic-arn": current_subscription["TopicArn"],
+                "x-amz-sns-subscription-arn": target_subscription_arn,
+            }
+            publish_message(
+                current_subscription["TopicArn"],
+                message,
+                headers,
+                subscription_arn,
+                skip_checks=True,
+            )
+
+        return False
+
     for topic_arn, existing_subs in sns_backend.sns_subscriptions.items():
         sns_backend.sns_subscriptions[topic_arn] = [
-            sub for sub in existing_subs if sub["SubscriptionArn"] != subscription_arn
+            sub for sub in existing_subs if should_be_kept(sub, subscription_arn)
         ]
 
 

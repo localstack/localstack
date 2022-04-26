@@ -5,11 +5,18 @@ from typing import List, Optional
 from localstack import config
 from localstack.config import dirs, is_env_true
 from localstack.services import install
+from localstack.services.install import DDB_AGENT_JAR_PATH
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
+from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
+
+# server singleton
+# TODO: consider removing this module-level singleton, and instead making the DynamodDB server part of the provider
+_server: Optional["DynamodbServer"] = None
 
 
 class DynamodbServer(Server):
@@ -48,7 +55,8 @@ class DynamodbServer(Server):
         cmd = [
             "java",
             "-Xmx%s" % self.heap_size,
-            "-Djava.library.path=%s" % self.library_path,
+            f"-javaagent:{DDB_AGENT_JAR_PATH}",
+            f"-Djava.library.path={self.library_path}",
             "-jar",
             self.jar_path,
         ]
@@ -108,3 +116,51 @@ def create_dynamodb_server(port=None) -> DynamodbServer:
     server.cors = os.getenv("DYNAMODB_CORS", None)
 
     return server
+
+
+def wait_for_dynamodb():
+    retry(check_dynamodb, sleep=0.4, retries=10)
+
+
+def check_dynamodb(expect_shutdown=False, print_error=False):
+    out = None
+
+    if not expect_shutdown:
+        assert _server
+
+    try:
+        _server.wait_is_up()
+        out = aws_stack.connect_to_service("dynamodb", endpoint_url=_server.url).list_tables()
+    except Exception:
+        if print_error:
+            LOG.exception("DynamoDB health check failed")
+    if expect_shutdown:
+        assert out is None
+    else:
+        assert isinstance(out["TableNames"], list)
+
+
+def start_dynamodb(port=None, asynchronous=True, update_listener=None):
+    global _server
+    if not _server:
+        _server = create_dynamodb_server()
+
+    _server.start()
+
+    return _server
+
+
+def get_server():
+    return _server
+
+
+def restart_dynamodb():
+    global _server
+    if _server:
+        _server.shutdown()
+        _server.join(timeout=10)
+        _server = None
+
+    LOG.debug("Restarting DynamoDB process ...")
+    start_dynamodb()
+    wait_for_dynamodb()

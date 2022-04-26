@@ -2279,30 +2279,24 @@ class TestCloudFormation:
         vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
         assert not vpcs
 
-    def test_cfn_with_kms_resources(self):
+    def test_cfn_with_kms_resources(self, deploy_cfn_template, cleanup_changesets, cleanup_stacks):
         kms = aws_stack.create_external_boto_client("kms")
-        aliases_before = kms.list_aliases()["Aliases"]
 
-        template = load_file(os.path.join(THIS_FOLDER, "templates", "template34.yaml"))
+        result = deploy_cfn_template(template_file_name="template34.yaml")
 
-        stack_name = "stack-%s" % short_uid()
-        create_and_await_stack(StackName=stack_name, TemplateBody=template)
+        alias_name = "alias/sample-5302"
+        assert result.outputs.get("KeyAlias") == alias_name
 
-        aliases = kms.list_aliases()["Aliases"]
-        # TODO: fix assertion, to make tests parallelizable!
-        assert len(aliases) == len(aliases_before) + 1
+        def _get_matching_aliases():
+            aliases = kms.list_aliases()["Aliases"]
+            return [alias for alias in aliases if alias["AliasName"] == alias_name]
 
-        alias_names = [alias["AliasName"] for alias in aliases]
-        assert "alias/sample-kms-alias" in alias_names
+        assert len(_get_matching_aliases()) == 1
 
         # clean up
-        self.cleanup(stack_name)
-
-        aliases = kms.list_aliases()["Aliases"]
-        assert len(aliases) == len(aliases_before)
-
-        alias_names = [alias["AliasName"] for alias in aliases]
-        assert "alias/sample-kms-alias" not in alias_names
+        cleanup_changesets(result.change_set_id)
+        cleanup_stacks(result.stack_id)
+        assert not _get_matching_aliases()
 
     def test_cfn_with_apigateway_resources(self):
         template = load_file(os.path.join(THIS_FOLDER, "templates", "template35.yaml"))

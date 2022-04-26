@@ -66,6 +66,15 @@ def canonicalize_headers(headers: Union[Dict, CaseInsensitiveDict]) -> Dict:
     return result
 
 
+def add_path_parameters_to_url(uri: str, path_params: list):
+    url = urlparse(uri)
+    last_character = (
+        "/" if (len(url.path) == 0 or url.path[-1] != "/") and len(path_params) > 0 else ""
+    )
+    new_path = url.path + last_character + "/".join(path_params)
+    return urlunparse(url._replace(path=new_path))
+
+
 def add_query_params_to_url(uri: str, query_params: Dict) -> str:
     """
     Add query parameters to the uri.

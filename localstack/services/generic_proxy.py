@@ -34,6 +34,7 @@ from localstack.constants import (
     APPLICATION_JSON,
     AWS_REGION_US_EAST_1,
     BIND_HOST,
+    HEADER_LOCALSTACK_AUTHORIZATION,
     HEADER_LOCALSTACK_REQUEST_URL,
 )
 from localstack.services.messages import Headers, MessagePayload
@@ -113,12 +114,14 @@ ALLOWED_CORS_ORIGINS = [
     f"http://localhost.localstack.cloud:{config.EDGE_PORT}",
     "https://localhost",
     "https://localhost.localstack.cloud",
+    # for requests from Electron apps, e.g., DynamoDB NoSQL Workbench
+    "file://",
 ]
 if EXTRA_CORS_ALLOWED_ORIGINS:
     ALLOWED_CORS_ORIGINS += EXTRA_CORS_ALLOWED_ORIGINS.split(",")
 
 
-class ProxyListener(object):
+class ProxyListener:
     # List of `ProxyListener` instances that are enabled by default for all requests.
     # For inbound flows, the default listeners are applied *before* forwarding requests
     # to the backend; for outbound flows, the default listeners are applied *after* the
@@ -348,7 +351,7 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
 T = TypeVar("T", bound="RegionBackend")
 
 
-class RegionBackend(object):
+class RegionBackend:
     """Base class for region-specific backends for the different APIs.
     RegionBackend lookup methods are not thread safe."""
 
@@ -768,7 +771,7 @@ class DuplexSocket(ssl.SSLSocket):
 ssl.SSLContext.sslsocket_class = DuplexSocket
 
 
-class GenericProxy(object):
+class GenericProxy:
     # TODO: move methods to different class?
     @classmethod
     def create_ssl_cert(cls, serial_number=None):
@@ -965,8 +968,8 @@ def start_proxy_server(
         method = request.method
         headers = request.headers
         headers[HEADER_LOCALSTACK_REQUEST_URL] = str(request.url)
-
-        response = modify_and_forward(
+        headers[HEADER_LOCALSTACK_AUTHORIZATION] = headers.get("Authorization", "")
+        return modify_and_forward(
             method=method,
             path=path_with_params,
             data_bytes=data,
@@ -976,8 +979,6 @@ def start_proxy_server(
             client_address=request.remote_addr,
             server_address=parsed_url.netloc,
         )
-
-        return response
 
     ssl_creds = (None, None)
     if use_ssl:

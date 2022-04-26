@@ -98,9 +98,13 @@ class TestSNS:
         proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
         wait_for_port_open(local_port)
         queue_arn = "%s://localhost:%s" % (get_service_protocol(), local_port)
-        self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol="http", Endpoint=queue_arn)
+        response = self.sns_client.subscribe(
+            TopicArn=self.topic_arn, Protocol="http", Endpoint=queue_arn
+        )
+        self.sns_client.unsubscribe(SubscriptionArn=response["SubscriptionArn"])
 
         def received():
+            assert len(records) == 2
             assert records[0][0]["Type"] == "SubscriptionConfirmation"
             assert records[0][1]["x-amz-sns-message-type"] == "SubscriptionConfirmation"
 
@@ -114,6 +118,10 @@ class TestSNS:
 
             assert "Signature" in records[0][0]
             assert "SigningCertURL" in records[0][0]
+
+            # Assert unsubscribe confirmation
+            assert records[1][0]["Type"] == "UnsubscribeConfirmation"
+            assert records[1][1]["x-amz-sns-message-type"] == "UnsubscribeConfirmation"
 
         retry(received, retries=5, sleep=1)
         proxy.stop()

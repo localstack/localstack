@@ -16,6 +16,7 @@ from localstack.constants import (
     HEADER_LOCALSTACK_REQUEST_URL,
     INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
+    LOCALHOST_HOSTNAME,
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
     LS_LOG_TRACE_INTERNAL,
@@ -43,6 +44,7 @@ from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.utils.strings import to_bytes, to_str, truncate
 from localstack.utils.sync import sleep_forever
 from localstack.utils.threads import TMP_THREADS, start_thread
+from localstack.utils.urls import hostname_from_url
 
 LOG = logging.getLogger(__name__)
 
@@ -267,22 +269,27 @@ def do_forward_request_inmem(api, method, path, data, headers, port=None):
 
 def do_forward_request_network(port, method, path, data, headers, target_url=None):
     # TODO: enable per-service endpoints, to allow deploying in distributed settings
-    target_url = target_url or "%s://%s:%s" % (config.get_protocol(), LOCALHOST, port)
-    url = "%s%s" % (target_url, path)
-    response = requests.request(
-        method, url, data=data, headers=headers, verify=False, stream=True, allow_redirects=False
+    target_url = target_url or f"{config.get_protocol()}://{LOCALHOST}:{port}"
+    url = f"{target_url}{path}"
+    return requests.request(
+        method,
+        url,
+        data=data,
+        headers=headers,
+        verify=False,
+        stream=True,
+        allow_redirects=False,
     )
-    return response
 
 
 def get_auth_string(method, path, headers, data=None):
     """
     Get Auth header from Header (this is how aws client's like boto typically
-    provide it) or from query string or url encoded parameters (sometimes
-    happens with presigned requests. Always return in the Authorization Header
+    provide it) or from query string or url encoded parameters sometimes
+    happens with presigned requests. Always return to the Authorization Header
     form.
 
-    Typically an auth string comes in as a header:
+    Typically, an auth string comes in as a header:
 
         Authorization: AWS4-HMAC-SHA256 \
         Credential=_not_needed_locally_/20210312/us-east-1/sqs/aws4_request, \
@@ -297,9 +304,7 @@ def get_auth_string(method, path, headers, data=None):
        &X-Amz-Signature=2c652c7bc9a3b75579db3d987d1e6dd056f0ac776c1e1d4ec91e2ce84e5ad3ae
     """
 
-    auth_header = headers.get("authorization", "")
-
-    if auth_header:
+    if auth_header := headers.get("authorization", ""):
         return auth_header
 
     data_components = parse_request_data(method, path, data)
@@ -362,6 +367,9 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = "route53", config.service_port("route53")
     elif result[0] == "monitoring":
         result = "cloudwatch", config.service_port("cloudwatch")
+    elif result[0] == "ses":
+        if path.startswith("/v2"):
+            result = "sesv2", config.service_port("sesv2")
     elif result[0] == "email":
         result = "ses", config.service_port("ses")
     elif result[0] == "execute-api" or ".execute-api." in host:
@@ -414,7 +422,10 @@ def get_api_from_custom_rules(method, path, data, headers):
     """Determine backend port based on custom rules."""
 
     # API Gateway invocation URLs
-    if ("/%s/" % PATH_USER_REQUEST) in path:
+    host_header = hostname_from_url(headers.get("host"))
+    if ("/%s/" % PATH_USER_REQUEST) in path or (
+        host_header.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host_header
+    ):
         return "apigateway", config.service_port("apigateway")
 
     # detect S3 presigned URLs
@@ -627,7 +638,7 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
 
     # process requires privileged port but we're not root -> try running as sudo
 
-    class Terminator(object):
+    class Terminator:
         def stop(self, quiet=True):
             try:
                 url = "http%s://%s:%s" % ("s" if use_ssl else "", LOCALHOST, port)

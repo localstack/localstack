@@ -93,7 +93,7 @@ def get_scheduled_rule_func(data):
             event = json.loads(event_str)
             attr = aws_stack.get_events_target_attributes(target)
             try:
-                send_event_to_target(arn, event, target_attributes=attr)
+                send_event_to_target(arn, event, target_attributes=attr, target=target)
             except Exception as e:
                 LOG.info(
                     f"Unable to send event notification {truncate(event)} to target {target}: {e}"

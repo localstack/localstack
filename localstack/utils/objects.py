@@ -28,7 +28,7 @@ class ArbitraryAccessObj:
         return ArbitraryAccessObj()
 
 
-class Mock(object):
+class Mock:
     """Dummy class that can be used for mocking custom attributes."""
 
     pass

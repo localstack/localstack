@@ -1698,3 +1698,13 @@ class TestSecretsManager:
         self.secretsmanager_http_delete_secret_val_res(
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
+
+    def test_delete_non_existent_secret_returns_as_if_secret_exists(self, sm_client):
+        """When ForceDeleteWithoutRecovery=True, AWS responds as if the non-existent secret was successfully deleted."""
+        secret_id = "non-existent-secret"
+
+        response = sm_client.delete_secret(SecretId=secret_id, ForceDeleteWithoutRecovery=True)
+
+        assert response["Name"] == secret_id
+        assert response["ARN"] is not None
+        assert response["DeletionDate"] is not None

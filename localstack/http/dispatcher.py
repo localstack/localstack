@@ -15,6 +15,9 @@ ResultValue = Union[
 
 
 def _populate_response(response: Response, result: ResultValue):
+    if result is None:
+        return response
+
     if isinstance(result, dict):
         response.set_json(result)
     else:
