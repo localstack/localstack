@@ -1181,7 +1181,7 @@ def add_default_resource_props(
 # -----------------------
 
 
-class TemplateDeployer(object):
+class TemplateDeployer:
     def __init__(self, stack):
         self.stack = stack
 

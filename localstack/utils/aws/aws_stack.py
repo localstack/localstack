@@ -89,7 +89,7 @@ def get_valid_regions():
     return valid_regions
 
 
-class Environment(object):
+class Environment:
     def __init__(self, region=None, prefix=None):
         # target is the runtime environment to use, e.g.,
         # 'local' for local mode

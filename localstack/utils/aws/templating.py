@@ -16,7 +16,7 @@ from localstack.utils.strings import short_uid
 # - graphql_executor.py
 
 
-class VelocityInput(object):
+class VelocityInput:
     """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration
     velocity templates.
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
@@ -44,7 +44,7 @@ class VelocityInput(object):
         return "$input"
 
 
-class VelocityUtil(object):
+class VelocityUtil:
     """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration
     velocity templates.
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""

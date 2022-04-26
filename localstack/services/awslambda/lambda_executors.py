@@ -128,7 +128,7 @@ class InvocationException(Exception):
         self.result = result
 
 
-class LambdaContext(object):
+class LambdaContext:
     DEFAULT_MEMORY_LIMIT = 1536
 
     def __init__(
@@ -377,7 +377,7 @@ class LambdaAsyncLocks:
 LAMBDA_ASYNC_LOCKS = LambdaAsyncLocks()
 
 
-class LambdaExecutor(object):
+class LambdaExecutor:
     """Base class for Lambda executors. Subclasses must overwrite the _execute method"""
 
     def __init__(self):

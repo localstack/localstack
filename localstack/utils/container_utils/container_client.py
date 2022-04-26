@@ -90,7 +90,7 @@ class CancellableStream(Protocol):
         raise NotImplementedError
 
 
-class PortMappings(object):
+class PortMappings:
     """Maps source to target port ranges for Docker port mappings."""
 
     def __init__(self, bind_host=None):

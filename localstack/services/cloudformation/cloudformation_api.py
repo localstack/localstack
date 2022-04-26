@@ -38,7 +38,7 @@ LOG = logging.getLogger(__name__)
 XMLNS_CF = "http://cloudformation.amazonaws.com/doc/2010-05-15/"
 
 
-class StackSet(object):
+class StackSet:
     """A stack set contains multiple stack instances."""
 
     def __init__(self, metadata=None):
@@ -55,7 +55,7 @@ class StackSet(object):
         return self.metadata.get("StackSetName")
 
 
-class StackInstance(object):
+class StackInstance:
     """A stack instance belongs to a stack set and is specific to a region / account ID."""
 
     def __init__(self, metadata=None):
@@ -66,7 +66,7 @@ class StackInstance(object):
         self.stack = None
 
 
-class Stack(object):
+class Stack:
     def __init__(self, metadata=None, template=None):
         if template is None:
             template = {}

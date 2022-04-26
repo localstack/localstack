@@ -121,7 +121,7 @@ if EXTRA_CORS_ALLOWED_ORIGINS:
     ALLOWED_CORS_ORIGINS += EXTRA_CORS_ALLOWED_ORIGINS.split(",")
 
 
-class ProxyListener(object):
+class ProxyListener:
     # List of `ProxyListener` instances that are enabled by default for all requests.
     # For inbound flows, the default listeners are applied *before* forwarding requests
     # to the backend; for outbound flows, the default listeners are applied *after* the
@@ -351,7 +351,7 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
 T = TypeVar("T", bound="RegionBackend")
 
 
-class RegionBackend(object):
+class RegionBackend:
     """Base class for region-specific backends for the different APIs.
     RegionBackend lookup methods are not thread safe."""
 
@@ -771,7 +771,7 @@ class DuplexSocket(ssl.SSLSocket):
 ssl.SSLContext.sslsocket_class = DuplexSocket
 
 
-class GenericProxy(object):
+class GenericProxy:
     # TODO: move methods to different class?
     @classmethod
     def create_ssl_cert(cls, serial_number=None):

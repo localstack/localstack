@@ -133,7 +133,7 @@ class ServiceLifecycleHook:
         pass
 
 
-class Service(object):
+class Service:
     def __init__(
         self,
         name,

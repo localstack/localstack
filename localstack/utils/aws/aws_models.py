@@ -8,7 +8,7 @@ from localstack.utils.time import timestamp_millis
 LOG = logging.getLogger(__name__)
 
 
-class Component(object):
+class Component:
     def __init__(self, id, env=None):
         self.id = id
         self.env = env
