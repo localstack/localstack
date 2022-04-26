@@ -305,6 +305,7 @@ S3BucketName = str
 S3KeyPrefix = str
 S3Region = str
 ScheduleExpression = str
+ScheduleOffset = int
 ServiceRole = str
 ServiceSettingId = str
 ServiceSettingValue = str
@@ -1587,6 +1588,7 @@ class Association(TypedDict, total=False):
     Overview: Optional[AssociationOverview]
     ScheduleExpression: Optional[ScheduleExpression]
     AssociationName: Optional[AssociationName]
+    ScheduleOffset: Optional[ScheduleOffset]
 
 
 Regions = List[Region]
@@ -1650,6 +1652,7 @@ class AssociationDescription(TypedDict, total=False):
     ApplyOnlyAtCronInterval: Optional[ApplyOnlyAtCronInterval]
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
+    ScheduleOffset: Optional[ScheduleOffset]
 
 
 AssociationDescriptionList = List[AssociationDescription]
@@ -1730,6 +1733,7 @@ class AssociationVersionInfo(TypedDict, total=False):
     ApplyOnlyAtCronInterval: Optional[ApplyOnlyAtCronInterval]
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
+    ScheduleOffset: Optional[ScheduleOffset]
 
 
 AssociationVersionList = List[AssociationVersionInfo]
@@ -2197,6 +2201,7 @@ class CreateAssociationBatchRequestEntry(TypedDict, total=False):
     ApplyOnlyAtCronInterval: Optional[ApplyOnlyAtCronInterval]
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
+    ScheduleOffset: Optional[ScheduleOffset]
 
 
 CreateAssociationBatchRequestEntries = List[CreateAssociationBatchRequestEntry]
@@ -2237,6 +2242,7 @@ class CreateAssociationRequest(ServiceRequest):
     ApplyOnlyAtCronInterval: Optional[ApplyOnlyAtCronInterval]
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
+    ScheduleOffset: Optional[ScheduleOffset]
 
 
 class CreateAssociationResult(TypedDict, total=False):
@@ -4837,6 +4843,7 @@ class UpdateAssociationRequest(ServiceRequest):
     ApplyOnlyAtCronInterval: Optional[ApplyOnlyAtCronInterval]
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
+    ScheduleOffset: Optional[ScheduleOffset]
 
 
 class UpdateAssociationResult(TypedDict, total=False):
@@ -5136,6 +5143,7 @@ class SsmApi:
         apply_only_at_cron_interval: ApplyOnlyAtCronInterval = None,
         calendar_names: CalendarNameOrARNList = None,
         target_locations: TargetLocations = None,
+        schedule_offset: ScheduleOffset = None,
     ) -> CreateAssociationResult:
         raise NotImplementedError
 
@@ -6328,6 +6336,7 @@ class SsmApi:
         apply_only_at_cron_interval: ApplyOnlyAtCronInterval = None,
         calendar_names: CalendarNameOrARNList = None,
         target_locations: TargetLocations = None,
+        schedule_offset: ScheduleOffset = None,
     ) -> UpdateAssociationResult:
         raise NotImplementedError
 
