@@ -665,7 +665,7 @@ def http_server(handler, host="127.0.0.1", port=None) -> str:
 
     host = host
     port = port or get_free_tcp_port()
-    thread = run_server(port, host, handler=handler, asynchronous=True)
+    thread = run_server(port, [host], handler=handler, asynchronous=True)
     url = f"http://{host}:{port}"
     assert poll_condition(
         lambda: is_port_open(port), timeout=5

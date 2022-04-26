@@ -5,7 +5,7 @@ import os
 import ssl
 import threading
 import traceback
-from typing import Callable, Tuple
+from typing import Callable, List, Tuple
 
 import h11
 from hypercorn import utils as hypercorn_utils
@@ -151,7 +151,7 @@ def get_async_generator_result(result):
 
 def run_server(
     port: int,
-    bind_address: str,
+    bind_addresses: List[str],
     handler: Callable = None,
     asynchronous: bool = True,
     ssl_creds: Tuple[str, str] = None,
@@ -161,7 +161,7 @@ def run_server(
     """
     Run an HTTP2-capable Web server on the given port, processing incoming requests via a `handler` function.
     :param port: port to bind to
-    :param bind_address: address to bind to
+    :param bind_addresses: addresses to bind to
     :param handler: callable that receives the request and returns a response
     :param asynchronous: whether to start the server asynchronously in the background
     :param ssl_creds: optional tuple with SSL cert file names (cert file, key file)
@@ -242,7 +242,8 @@ def run_server(
             kwargs["keyfile"] = key_file_name
             config.keyfile = key_file_name
         setup_quart_logging()
-        config.bind = [f"{bind_address}:{port}"]
+        config.bind = [f"{bind_address}:{port}" for bind_address in bind_addresses]
+        config.workers = len(bind_addresses)
         loop = loop or ensure_event_loop()
         run_kwargs = {}
         if shutdown_event:
