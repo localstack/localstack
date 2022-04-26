@@ -942,7 +942,7 @@ def get_cert_pem_file_path():
 
 def start_proxy_server(
     port,
-    bind_address=None,
+    bind_address: Union[str, List[str]] = None,
     forward_url=None,
     use_ssl=None,
     update_listener: Optional[Union[ProxyListener, List[ProxyListener]]] = None,
@@ -953,7 +953,10 @@ def start_proxy_server(
     max_content_length: int = None,
     send_timeout: int = None,
 ):
-    bind_address = bind_address if bind_address else BIND_HOST
+    if bind_address:
+        bind_addresses = bind_address if isinstance(bind_address, List) else [bind_address]
+    else:
+        bind_addresses = [BIND_HOST]
 
     if update_listener is None:
         listeners = []
@@ -988,7 +991,7 @@ def start_proxy_server(
 
     result = http2_server.run_server(
         port,
-        bind_address,
+        bind_addresses=bind_addresses,
         handler=handler,
         asynchronous=asynchronous,
         ssl_creds=ssl_creds,
