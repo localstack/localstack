@@ -600,7 +600,9 @@ def test_sqs_batch_lambda_forward(lambda_client, sqs_client, create_lambda_funct
     sqs_client.delete_queue(QueueUrl=queue_url)
 
 
-def test_kinesis_lambda_forward_chain(kinesis_client, s3_client, create_lambda_function):
+def test_kinesis_lambda_forward_chain(
+    kinesis_client, s3_client, lambda_client, create_lambda_function
+):
 
     try:
         aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM1_NAME, delete=True)
@@ -611,16 +613,18 @@ def test_kinesis_lambda_forward_chain(kinesis_client, s3_client, create_lambda_f
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS
         )
-        create_lambda_function(
+        lambda_1_resp = create_lambda_function(
             func_name=TEST_CHAIN_LAMBDA1_NAME,
             zip_file=zip_file,
             event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME),
         )
-        create_lambda_function(
+        lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
+        lambda_2_resp = create_lambda_function(
             func_name=TEST_CHAIN_LAMBDA2_NAME,
             zip_file=zip_file,
             event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME),
         )
+        lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
 
         # publish test record
         test_data = {"test_data": "forward_chain_data_%s with 'quotes\\\"" % short_uid()}
@@ -644,6 +648,8 @@ def test_kinesis_lambda_forward_chain(kinesis_client, s3_client, create_lambda_f
         # clean up
         kinesis_client.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
         kinesis_client.delete_stream(StreamName=TEST_CHAIN_STREAM2_NAME)
+        lambda_client.delete_event_source_mapping(UUID=lambda_1_event_source_uuid)
+        lambda_client.delete_event_source_mapping(UUID=lambda_2_event_source_uuid)
 
 
 # ---------------

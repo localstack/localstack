@@ -1068,11 +1068,11 @@ class TestDynamoDB:
         )
 
         lambda_client = aws_stack.create_external_boto_client("lambda")
-        lambda_client.create_event_source_mapping(
+        mapping_uuid = lambda_client.create_event_source_mapping(
             EventSourceArn=latest_stream_arn,
             FunctionName=function_name,
             StartingPosition="TRIM_HORIZON",
-        )
+        )["UUID"]
 
         item = {"SK": short_uid(), "Name": "name-{}".format(short_uid())}
 
@@ -1098,6 +1098,7 @@ class TestDynamoDB:
 
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         dynamodb.delete_table(TableName=table_name)
+        lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
 
     def test_dynamodb_batch_write_item(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
