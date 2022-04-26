@@ -127,6 +127,56 @@ def publish_message(
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
+    def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
+        sns_backend = SNSBackend.get()
+
+        def should_be_kept(current_subscription, target_subscription_arn):
+            if current_subscription["SubscriptionArn"] != target_subscription_arn:
+                return True
+
+            if current_subscription["Protocol"] in ["http", "https"]:
+                external_url = external_service_url("sns")
+                token = short_uid()
+                message_id = long_uid()
+                subscription_url = "%s/?Action=ConfirmSubscription&SubscriptionArn=%s&Token=%s" % (
+                    external_url,
+                    target_subscription_arn,
+                    token,
+                )
+                message = {
+                    "Type": ["UnsubscribeConfirmation"],
+                    "MessageId": [message_id],
+                    "Token": [token],
+                    "TopicArn": [current_subscription["TopicArn"]],
+                    "Message": [
+                        "You have chosen to deactivate subscription %s.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message."
+                        % target_subscription_arn
+                    ],
+                    "SubscribeURL": [subscription_url],
+                    "Timestamp": [datetime.datetime.utcnow().timestamp()],
+                }
+
+                headers = {
+                    "x-amz-sns-message-type": "UnsubscribeConfirmation",
+                    "x-amz-sns-message-id": message_id,
+                    "x-amz-sns-topic-arn": current_subscription["TopicArn"],
+                    "x-amz-sns-subscription-arn": target_subscription_arn,
+                }
+                publish_message(
+                    current_subscription["TopicArn"],
+                    message,
+                    headers,
+                    subscription_arn,
+                    skip_checks=True,
+                )
+
+            return False
+
+        for topic_arn, existing_subs in sns_backend.sns_subscriptions.items():
+            sns_backend.sns_subscriptions[topic_arn] = [
+                sub for sub in existing_subs if should_be_kept(sub, subscription_arn)
+            ]
+
     def get_subscription_attributes(
         self, context: RequestContext, subscription_arn: subscriptionARN
     ) -> GetSubscriptionAttributesResponse:
@@ -267,6 +317,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 ],
             }
             publish_message(topic_arn, confirmation, {}, subscription_arn, skip_checks=True)
+        return SubscribeResponse(SubscriptionArn=subscription_arn)
 
     def tag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
@@ -599,6 +650,7 @@ def get_subscription_by_arn(sub_arn):
 def create_sns_message_body(subscriber, req_data, message_id=None):
     message = req_data["Message"][0]
     protocol = subscriber["Protocol"]
+    attributes = get_message_attributes(req_data)
 
     if req_data.get("MessageStructure") == ["json"]:
         message = json.loads(message)
@@ -608,6 +660,8 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
             raise Exception("Unable to find 'default' key in message payload")
 
     if is_raw_message_delivery(subscriber):
+        if attributes:
+            message["MessageAttributes"] = attributes
         return message
 
     data = {
@@ -631,7 +685,6 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
         if key in subscriber:
             data[key] = subscriber[key]
 
-    attributes = get_message_attributes(req_data)
     if attributes:
         data["MessageAttributes"] = attributes
 
@@ -648,8 +701,6 @@ def is_raw_message_delivery(susbcriber):
 
 
 def create_sqs_message_attributes(subscriber, attributes):
-    if not is_raw_message_delivery(subscriber):
-        return {}
 
     message_attributes = {}
     for key, value in attributes.items():

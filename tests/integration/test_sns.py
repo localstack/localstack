@@ -1542,6 +1542,8 @@ class TestSNSSubscription:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
+        sns_client.unsubscribe(SubscriptionArn=subscription_arn)
+
     def test_filter_policy(
         self, sqs_create_queue, sqs_queue_arn, sns_client, sns_create_topic, sqs_client
     ):
@@ -1708,3 +1710,43 @@ class TestSNSSubscription:
             return num_msgs_2
 
         retry(check_message3, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
+    def test_subscribe_sqs_queue(
+        self, sqs_create_queue, sqs_queue_arn, sns_create_topic, sns_client, sqs_client
+    ):
+        # TODO: check with non default external port
+
+        # connect SNS topic to an SQS queue
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_arn = sqs_queue_arn(queue_url)
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        # create subscription with filter policy
+        filter_policy = {"attr1": [{"numeric": [">", 0, "<=", 100]}]}
+        subscription = sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+            Attributes={"FilterPolicy": json.dumps(filter_policy)},
+        )
+        # publish message that satisfies the filter policy
+        message = "This is a test message"
+        sns_client.publish(
+            TopicArn=topic_arn,
+            Message=message,
+            MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "99.12"}},
+        )
+
+        # assert that message is received
+        def check_message():
+            messages = sqs_client.receive_message(
+                QueueUrl=queue_url, VisibilityTimeout=0, MessageAttributeNames=["All"]
+            )["Messages"]
+            message = messages[0]
+            assert message["MessageAttributes"]["attr1"]["StringValue"] == "99.12"
+
+        retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
+        # clean up
+        sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
