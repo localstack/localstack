@@ -207,7 +207,9 @@ class TestSQSEventSourceMapping:
             queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
             queue_arn_1 = sqs_queue_arn(queue_url_1)
             mapping_uuid = lambda_client.create_event_source_mapping(
-                EventSourceArn=queue_arn_1, FunctionName=function_name, MaximumBatchingWindowInSeconds=1
+                EventSourceArn=queue_arn_1,
+                FunctionName=function_name,
+                MaximumBatchingWindowInSeconds=1,
             )["UUID"]
             _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
 
@@ -429,7 +431,9 @@ class TestDynamoDBEventSourceMapping:
             stream_arn = result["TableDescription"]["LatestStreamArn"]
             destination_queue = sqs_create_queue()
             queue_failure_event_source_mapping_arn = sqs_queue_arn(destination_queue)
-            destination_config = {"OnFailure": {"Destination": queue_failure_event_source_mapping_arn}}
+            destination_config = {
+                "OnFailure": {"Destination": queue_failure_event_source_mapping_arn}
+            }
             result = lambda_client.create_event_source_mapping(
                 FunctionName=function_name,
                 BatchSize=1,
@@ -521,9 +525,9 @@ class TestKinesisSource:
             wait_for_stream_ready(stream_name=stream_name)
             stream_summary = kinesis_client.describe_stream_summary(StreamName=stream_name)
             assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
-            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-                "StreamARN"
-            ]
+            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)[
+                "StreamDescription"
+            ]["StreamARN"]
 
             uuid = lambda_client.create_event_source_mapping(
                 EventSourceArn=stream_arn, FunctionName=function_name, StartingPosition="LATEST"
@@ -537,7 +541,9 @@ class TestKinesisSource:
                 StreamName=stream_name,
             )
 
-            events = _get_lambda_invocation_events(logs_client, function_name, expected_num_events=1)
+            events = _get_lambda_invocation_events(
+                logs_client, function_name, expected_num_events=1
+            )
             records = events[0]["Records"]
             assert len(records) == num_events_kinesis
             for record in records:
@@ -553,7 +559,6 @@ class TestKinesisSource:
                 assert actual_record_data == record_data
         finally:
             lambda_client.delete_event_source_mapping(UUID=uuid)
-
 
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
     def test_kinesis_event_source_mapping_with_async_invocation(
@@ -579,9 +584,9 @@ class TestKinesisSource:
                 role=lambda_su_role,
             )
             kinesis_create_stream(StreamName=stream_name, ShardCount=1)
-            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-                "StreamARN"
-            ]
+            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)[
+                "StreamDescription"
+            ]["StreamARN"]
             wait_for_stream_ready(stream_name=stream_name)
             uuid = lambda_client.create_event_source_mapping(
                 EventSourceArn=stream_arn,
@@ -625,10 +630,11 @@ class TestKinesisSource:
                 actual_record_ids.sort()
                 assert actual_record_ids == [i for i in range(num_records_per_batch)]
 
-            assert (invocation_events[1]["executionStart"] - invocation_events[0]["executionStart"]) > 5
+            assert (
+                invocation_events[1]["executionStart"] - invocation_events[0]["executionStart"]
+            ) > 5
         finally:
             lambda_client.delete_event_source_mapping(UUID=uuid)
-
 
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
     def test_kinesis_event_source_trim_horizon(
@@ -655,9 +661,9 @@ class TestKinesisSource:
                 role=lambda_su_role,
             )
             kinesis_create_stream(StreamName=stream_name, ShardCount=1)
-            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-                "StreamARN"
-            ]
+            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)[
+                "StreamDescription"
+            ]["StreamARN"]
             wait_for_stream_ready(stream_name=stream_name)
             stream_summary = kinesis_client.describe_stream_summary(StreamName=stream_name)
             assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
@@ -711,7 +717,6 @@ class TestKinesisSource:
         finally:
             lambda_client.delete_event_source_mapping(UUID=uuid)
 
-
     def test_disable_kinesis_event_source_mapping(
         self,
         lambda_client,
@@ -734,9 +739,9 @@ class TestKinesisSource:
                 role=lambda_su_role,
             )
             kinesis_create_stream(StreamName=stream_name, ShardCount=1)
-            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
-                "StreamARN"
-            ]
+            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)[
+                "StreamDescription"
+            ]["StreamARN"]
             wait_for_stream_ready(stream_name=stream_name)
             event_source_uuid = lambda_client.create_event_source_mapping(
                 EventSourceArn=stream_arn,
@@ -754,7 +759,9 @@ class TestKinesisSource:
                 StreamName=stream_name,
             )
 
-            events = _get_lambda_invocation_events(logs_client, function_name, expected_num_events=1)
+            events = _get_lambda_invocation_events(
+                logs_client, function_name, expected_num_events=1
+            )
             assert len(events) == 1
 
             lambda_client.update_event_source_mapping(UUID=event_source_uuid, Enabled=False)
@@ -768,11 +775,12 @@ class TestKinesisSource:
             )
             time.sleep(7)  # wait for records to pass through stream
             # should still only get the first batch from before mapping was disabled
-            events = _get_lambda_invocation_events(logs_client, function_name, expected_num_events=1)
+            events = _get_lambda_invocation_events(
+                logs_client, function_name, expected_num_events=1
+            )
             assert len(events) == 1
         finally:
             lambda_client.delete_event_source_mapping(UUID=event_source_uuid)
-
 
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
