@@ -80,6 +80,9 @@ jobs:
         run: |
           source .venv/bin/activate
           pip install -e ../localstack[runtime]
+      - name: Create Pro Entrypoints
+        # Entrypoints need to be generated _after_ the community edition has been linked into the venv
+        run: make entrypoints
       - name: Test LocalStack Pro startup
         env:
           DEBUG: 1
