@@ -11,7 +11,6 @@ from typing import Dict
 from requests.models import Response
 
 from localstack import config
-from localstack.aws.protocol.service_router import determine_aws_service_name
 from localstack.constants import (
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
@@ -95,6 +94,8 @@ class ProxyListenerEdge(ProxyListener):
 
         # re-create an HTTP request from the given parts
         request = create_request_from_parts(method, path, data, headers)
+        from localstack.aws.protocol.service_router import determine_aws_service_name
+
         api = determine_aws_service_name(request)
         port = None
         if api:

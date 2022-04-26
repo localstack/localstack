@@ -25,7 +25,6 @@ from requests.models import Request, Response
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
-from localstack.aws.protocol.service_router import determine_aws_service_name
 from localstack.config import (
     EXTRA_CORS_ALLOWED_HEADERS,
     EXTRA_CORS_ALLOWED_ORIGINS,
@@ -472,6 +471,7 @@ def should_enforce_self_managed_service(method, path, headers, data):
     if config.DISABLE_CUSTOM_CORS_S3 and config.DISABLE_CUSTOM_CORS_APIGATEWAY:
         return True
     # allow only certain api calls without checking origin
+    from localstack.aws.protocol.service_router import determine_aws_service_name
     from localstack.http.adapters import create_request_from_parts
 
     request = create_request_from_parts(method, path, data, headers)

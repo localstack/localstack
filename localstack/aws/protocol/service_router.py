@@ -10,12 +10,18 @@ from localstack.http import Request
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_utils import is_sqs_queue_url
 from localstack.utils.strings import to_bytes
+from localstack.utils.urls import hostname_from_url
 
 LOG = logging.getLogger(__name__)
 
 
 class _ServiceIndicators(NamedTuple):
-    """Encapsulates the different fields that might indicate which service a request is targeting."""
+    """
+    Encapsulates the different fields that might indicate which service a request is targeting.
+
+    This class does _not_ contain any data which is parsed from the body of the request in order to defer or even avoid
+    processing the body.
+    """
 
     # AWS service's "signing name" - Contained in the Authorization header
     # (https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html)
@@ -89,50 +95,60 @@ signing_name_path_prefix_rules = {
 }
 
 
-def custom_signing_name_rules(signing_name: str, request: Request) -> Optional[str]:
+def custom_signing_name_rules(signing_name: str, path: str) -> Optional[str]:
+    """
+    Rules which are based on the signing name (in the auth header) and the request path.
+    """
     rules = signing_name_path_prefix_rules.get(signing_name)
 
     if not rules:
         if signing_name == "servicecatalog":
-            # servicecatalog uses the protocol json (only uses root path /)
-            # servicecatalog-appregistry uses rest-json (only uses non-root path)
-            if request.path == "/":
+            if path == "/":
+                # servicecatalog uses the protocol json (only uses root-path URIs, i.e. only /)
                 return "servicecatalog"
             else:
+                # servicecatalog-appregistry uses rest-json (only uses non-root-path request URIs)
                 return "servicecatalog-appregistry"
         return
 
     for prefix, name in rules.items():
-        if request.path.startswith(prefix):
+        if path.startswith(prefix):
             return name
 
     return rules.get("*", signing_name)
 
 
 def custom_host_addressing_rules(host: str) -> Optional[str]:
+    """
+    Rules based on the host header of the request.
+    """
     if ".execute-api." in host:
         return "apigateway"
 
 
 def custom_path_addressing_rules(path: str) -> Optional[str]:
+    """
+    Rules which are only based on the request path.
+    """
+
     if is_sqs_queue_url(path):
         return "sqs"
 
     if path.startswith("/2015-03-31/functions/"):
-        # TODO clarify if this is on purpose - should the lambda API be reachable without an auth header?
         return "lambda"
 
 
 def legacy_rules(request: Request) -> Optional[str]:
     """
-    This rule function encapsulates all _legacy_ rules.
+    *Legacy* rules which migrate routing logic which will become obsolete with the ASF Gateway.
     All rules which are implemented here should be migrated to the new router once these services are migrated to ASF.
+
+    TODO: These custom rules should become obsolete by migrating these to use the http/router.py
     """
-    # TODO: These custom rules should become obsolete by migrating these to use the http/router.py
 
     path = request.path
     method = request.method
-    host = request.host
+    host = hostname_from_url(request.host)
 
     # API Gateway invocation URLs
     if ("/%s/" % PATH_USER_REQUEST) in request.path or (
@@ -217,7 +233,7 @@ def determine_aws_service_name(
             return signing_name_candidates[0]
 
         # try to find a match with the custom signing name rules
-        custom_match = custom_signing_name_rules(signing_name, request)
+        custom_match = custom_signing_name_rules(signing_name, path)
         if custom_match:
             return custom_match
 
@@ -239,17 +255,15 @@ def determine_aws_service_name(
             service = services.get(service_name)
             if operation not in service.operation_names:
                 candidates.remove(service_name)
-
-        if len(candidates) == 1:
-            return candidates.pop()
     else:
         # exclude services which have a target prefix (the current request does not have one)
         for service_name in list(candidates):
             service = services.get(service_name)
             if service.metadata.get("targetPrefix") is not None:
                 candidates.remove(service_name)
-        if len(candidates) == 1:
-            return candidates.pop()
+
+    if len(candidates) == 1:
+        return candidates.pop()
 
     # 3. check the path
     if path:
