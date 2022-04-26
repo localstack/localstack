@@ -1,7 +1,18 @@
 from localstack.aws.api import RequestContext
-from localstack.aws.api.iam import IamApi, arnType, ActionNameListType, SimulationPolicyListType, ResourceNameListType, \
-    policyDocumentType, ResourceNameType, ContextEntryListType, ResourceHandlingOptionType, maxItemsType, markerType, \
-    SimulatePolicyResponse
+from localstack.aws.api.iam import (
+    ActionNameListType,
+    ContextEntryListType,
+    IamApi,
+    ResourceHandlingOptionType,
+    ResourceNameListType,
+    ResourceNameType,
+    SimulatePolicyResponse,
+    SimulationPolicyListType,
+    arnType,
+    markerType,
+    maxItemsType,
+    policyDocumentType,
+)
 from localstack.services.apigateway.apigateway_starter import apply_patches
 from localstack.services.moto import call_moto
 
@@ -26,5 +37,6 @@ class IamProvider(IamApi):
         max_items: maxItemsType = None,
         marker: markerType = None,
     ) -> SimulatePolicyResponse:
+        # TODO: migrate patches from iam_starter
         res = call_moto(context)
         return res

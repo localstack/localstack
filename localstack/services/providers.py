@@ -113,8 +113,8 @@ def firehose():
 
 @aws_provider()
 def iam():
-    from localstack.services.moto import MotoFallbackDispatcher
     from localstack.services.iam.provider import IamProvider
+    from localstack.services.moto import MotoFallbackDispatcher
 
     provider = IamProvider()
     return Service(
