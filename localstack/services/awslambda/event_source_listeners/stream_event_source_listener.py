@@ -293,8 +293,7 @@ class StreamEventSourceListener(EventSourceListener):
                     # anymore. The loop will get restarted next time a record
                     # arrives and if an event source is configured.
                     self._COORDINATOR_THREAD = None
-                    for thread_id in self._STREAM_LISTENER_THREADS:
-                        self._STREAM_LISTENER_THREADS.pop(thread_id)
+                    self._STREAM_LISTENER_THREADS = {}
                     return
 
                 # make sure each event source stream has a lambda listening on each of its shards
