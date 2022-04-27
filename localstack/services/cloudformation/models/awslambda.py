@@ -136,6 +136,7 @@ class LambdaFunction(GenericBaseModel):
                     "FunctionName": "FunctionName",
                     "Handler": "Handler",
                     "ImageConfig": "ImageConfig",
+                    "PackageType": "PackageType",
                     "Layers": "Layers",
                     "MemorySize": "MemorySize",
                     "Runtime": "Runtime",

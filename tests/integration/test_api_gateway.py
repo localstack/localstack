@@ -49,7 +49,8 @@ from .awslambda.test_lambda import (
 )
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, "files", "swagger.json")
+TEST_SWAGGER_FILE_JSON = os.path.join(THIS_FOLDER, "files", "swagger.json")
+TEST_SWAGGER_FILE_YAML = os.path.join(THIS_FOLDER, "files", "swagger.yaml")
 TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "files", "pets.json")
 
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
@@ -1131,7 +1132,11 @@ class TestAPIGateway(unittest.TestCase):
         client = aws_stack.create_external_boto_client("apigateway")
         rest_api_id = client.create_rest_api(name=rest_api_name)["id"]
 
-        spec_file = load_file(TEST_SWAGGER_FILE)
+        spec_file = load_file(TEST_SWAGGER_FILE_JSON)
+        rs = client.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
+        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+
+        spec_file = load_file(TEST_SWAGGER_FILE_YAML)
         rs = client.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
         self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
 

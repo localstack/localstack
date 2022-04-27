@@ -217,6 +217,7 @@ ResultRange = int
 RouteGatewayId = str
 RouteTableAssociationId = str
 RouteTableId = str
+RunInstancesUserData = str
 ScheduledInstanceId = str
 SecurityGroupId = str
 SecurityGroupName = str
@@ -14847,7 +14848,7 @@ class RunInstancesRequest(ServiceRequest):
     SecurityGroupIds: Optional[SecurityGroupIdStringList]
     SecurityGroups: Optional[SecurityGroupStringList]
     SubnetId: Optional[SubnetId]
-    UserData: Optional[String]
+    UserData: Optional[RunInstancesUserData]
     AdditionalInfo: Optional[String]
     ClientToken: Optional[String]
     DisableApiTermination: Optional[Boolean]
@@ -20738,7 +20739,7 @@ class Ec2Api:
         security_group_ids: SecurityGroupIdStringList = None,
         security_groups: SecurityGroupStringList = None,
         subnet_id: SubnetId = None,
-        user_data: String = None,
+        user_data: RunInstancesUserData = None,
         additional_info: String = None,
         client_token: String = None,
         disable_api_termination: Boolean = None,

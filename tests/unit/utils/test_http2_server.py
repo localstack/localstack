@@ -16,14 +16,20 @@ class TestHttp2Server:
     def test_run_and_stop_server(self):
         port = get_free_tcp_port()
         host = "127.0.0.1"
+        host_2 = "127.0.0.2"
 
         LOG.info("%.2f starting server on port %d", time.time(), port)
-        thread = run_server(port=port, bind_address=host, asynchronous=True)
+        thread = run_server(port=port, bind_addresses=[host, host_2], asynchronous=True)
         try:
             url = f"http://{host}:{port}"
+            url_2 = f"http://{host_2}:{port}"
             assert poll_condition(
                 lambda: is_port_open(url, http_path="/"), timeout=15
             ), f"gave up waiting for port {port}"
+            assert poll_condition(
+                lambda: is_port_open(url_2, http_path="/"), timeout=15
+            ), f"gave up waiting for port {port}"
+            assert not is_port_open(f"http://127.0.0.3:{port}", http_path="/")
         finally:
             LOG.info("%.2f stopping server on port %d", time.time(), port)
             thread.stop()
@@ -38,7 +44,7 @@ class TestHttp2Server:
         host = "127.0.0.1"
 
         LOG.info("%.2f starting server on port %d", time.time(), port)
-        thread = run_server(port=port, bind_address=host, asynchronous=True)
+        thread = run_server(port=port, bind_addresses=[host], asynchronous=True)
 
         try:
             url = f"http://{host}:{port}"
@@ -61,7 +67,7 @@ class TestHttp2Server:
         host = "127.0.0.1"
         thread = run_server(
             port=port,
-            bind_address=host,
+            bind_addresses=[host],
             asynchronous=True,
             max_content_length=max_length,
             handler=lambda *args: None,

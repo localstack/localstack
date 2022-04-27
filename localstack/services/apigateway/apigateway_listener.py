@@ -65,6 +65,7 @@ from localstack.utils.common import camel_to_snake_case, json_safe, to_bytes, to
 
 # set up logger
 from localstack.utils.http import add_query_params_to_url
+from localstack.utils.json import parse_json_or_yaml
 
 LOG = logging.getLogger(__name__)
 
@@ -89,7 +90,7 @@ class ProxyListenerApiGateway(ProxyListener):
             if result is not None:
                 return result
 
-        data = data and json.loads(to_str(data))
+        data = parse_json_or_yaml(to_str(data or b""))
 
         if re.match(PATH_REGEX_AUTHORIZERS, path):
             return handle_authorizers(method, path, data, headers)

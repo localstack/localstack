@@ -74,6 +74,10 @@ class CustomerMasterKeySpec(str):
     ECC_NIST_P521 = "ECC_NIST_P521"
     ECC_SECG_P256K1 = "ECC_SECG_P256K1"
     SYMMETRIC_DEFAULT = "SYMMETRIC_DEFAULT"
+    HMAC_224 = "HMAC_224"
+    HMAC_256 = "HMAC_256"
+    HMAC_384 = "HMAC_384"
+    HMAC_512 = "HMAC_512"
 
 
 class DataKeyPairSpec(str):
@@ -117,6 +121,8 @@ class GrantOperation(str):
     DescribeKey = "DescribeKey"
     GenerateDataKeyPair = "GenerateDataKeyPair"
     GenerateDataKeyPairWithoutPlaintext = "GenerateDataKeyPairWithoutPlaintext"
+    GenerateMac = "GenerateMac"
+    VerifyMac = "VerifyMac"
 
 
 class KeyManagerType(str):
@@ -133,6 +139,10 @@ class KeySpec(str):
     ECC_NIST_P521 = "ECC_NIST_P521"
     ECC_SECG_P256K1 = "ECC_SECG_P256K1"
     SYMMETRIC_DEFAULT = "SYMMETRIC_DEFAULT"
+    HMAC_224 = "HMAC_224"
+    HMAC_256 = "HMAC_256"
+    HMAC_384 = "HMAC_384"
+    HMAC_512 = "HMAC_512"
 
 
 class KeyState(str):
@@ -149,6 +159,14 @@ class KeyState(str):
 class KeyUsageType(str):
     SIGN_VERIFY = "SIGN_VERIFY"
     ENCRYPT_DECRYPT = "ENCRYPT_DECRYPT"
+    GENERATE_VERIFY_MAC = "GENERATE_VERIFY_MAC"
+
+
+class MacAlgorithmSpec(str):
+    HMAC_SHA_224 = "HMAC_SHA_224"
+    HMAC_SHA_256 = "HMAC_SHA_256"
+    HMAC_SHA_384 = "HMAC_SHA_384"
+    HMAC_SHA_512 = "HMAC_SHA_512"
 
 
 class MessageType(str):
@@ -283,6 +301,10 @@ class KMSInternalException(ServiceException):
     message: Optional[ErrorMessageType]
 
 
+class KMSInvalidMacException(ServiceException):
+    message: Optional[ErrorMessageType]
+
+
 class KMSInvalidSignatureException(ServiceException):
     message: Optional[ErrorMessageType]
 
@@ -412,6 +434,9 @@ class CreateKeyRequest(ServiceRequest):
     MultiRegion: Optional[NullableBooleanType]
 
 
+MacAlgorithmSpecList = List[MacAlgorithmSpec]
+
+
 class MultiRegionKey(TypedDict, total=False):
     Arn: Optional[ArnType]
     Region: Optional[RegionType]
@@ -453,6 +478,7 @@ class KeyMetadata(TypedDict, total=False):
     MultiRegion: Optional[NullableBooleanType]
     MultiRegionConfiguration: Optional[MultiRegionConfiguration]
     PendingDeletionWindowInDays: Optional[PendingWindowInDaysType]
+    MacAlgorithms: Optional[MacAlgorithmSpecList]
 
 
 class CreateKeyResponse(TypedDict, total=False):
@@ -621,6 +647,19 @@ class GenerateDataKeyWithoutPlaintextRequest(ServiceRequest):
 
 class GenerateDataKeyWithoutPlaintextResponse(TypedDict, total=False):
     CiphertextBlob: Optional[CiphertextType]
+    KeyId: Optional[KeyIdType]
+
+
+class GenerateMacRequest(ServiceRequest):
+    Message: PlaintextType
+    KeyId: KeyIdType
+    MacAlgorithm: MacAlgorithmSpec
+    GrantTokens: Optional[GrantTokenList]
+
+
+class GenerateMacResponse(TypedDict, total=False):
+    Mac: Optional[CiphertextType]
+    MacAlgorithm: Optional[MacAlgorithmSpec]
     KeyId: Optional[KeyIdType]
 
 
@@ -900,6 +939,20 @@ class UpdatePrimaryRegionRequest(ServiceRequest):
     PrimaryRegion: RegionType
 
 
+class VerifyMacRequest(ServiceRequest):
+    Message: PlaintextType
+    KeyId: KeyIdType
+    MacAlgorithm: MacAlgorithmSpec
+    Mac: CiphertextType
+    GrantTokens: Optional[GrantTokenList]
+
+
+class VerifyMacResponse(TypedDict, total=False):
+    KeyId: Optional[KeyIdType]
+    MacValid: Optional[BooleanType]
+    MacAlgorithm: Optional[MacAlgorithmSpec]
+
+
 class VerifyRequest(ServiceRequest):
     KeyId: KeyIdType
     Message: PlaintextType
@@ -1101,6 +1154,17 @@ class KmsApi:
         number_of_bytes: NumberOfBytesType = None,
         grant_tokens: GrantTokenList = None,
     ) -> GenerateDataKeyWithoutPlaintextResponse:
+        raise NotImplementedError
+
+    @handler("GenerateMac")
+    def generate_mac(
+        self,
+        context: RequestContext,
+        message: PlaintextType,
+        key_id: KeyIdType,
+        mac_algorithm: MacAlgorithmSpec,
+        grant_tokens: GrantTokenList = None,
+    ) -> GenerateMacResponse:
         raise NotImplementedError
 
     @handler("GenerateRandom")
@@ -1336,4 +1400,16 @@ class KmsApi:
         message_type: MessageType = None,
         grant_tokens: GrantTokenList = None,
     ) -> VerifyResponse:
+        raise NotImplementedError
+
+    @handler("VerifyMac")
+    def verify_mac(
+        self,
+        context: RequestContext,
+        message: PlaintextType,
+        key_id: KeyIdType,
+        mac_algorithm: MacAlgorithmSpec,
+        mac: CiphertextType,
+        grant_tokens: GrantTokenList = None,
+    ) -> VerifyMacResponse:
         raise NotImplementedError

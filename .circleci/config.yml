@@ -53,6 +53,7 @@ jobs:
       - run:
           name: Unit tests
           environment:
+            DEBUG: 1
             TEST_PATH: "tests/unit"
             PYTEST_ARGS: "--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests"
             COVERAGE_ARGS: "-p"

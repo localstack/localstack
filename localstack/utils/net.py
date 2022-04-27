@@ -45,7 +45,9 @@ def is_port_open(
     nw_protocols += [socket.SOCK_STREAM] if "tcp" in protocols else []
     nw_protocols += [socket.SOCK_DGRAM] if "udp" in protocols else []
     for nw_protocol in nw_protocols:
-        with closing(socket.socket(socket.AF_INET, nw_protocol)) as sock:
+        with closing(
+            socket.socket(socket.AF_INET if ":" not in host else socket.AF_INET6, nw_protocol)
+        ) as sock:
             sock.settimeout(1)
             if nw_protocol == socket.SOCK_DGRAM:
                 try:
@@ -74,7 +76,8 @@ def is_port_open(
                     return False
     if "tcp" not in protocols or not http_path:
         return True
-    url = "%s://%s:%s%s" % (protocol, host, port, http_path)
+    host = f"[{host}]" if ":" in host else host
+    url = f"{protocol}://{host}:{port}{http_path}"
     try:
         response = safe_requests.get(url, verify=False)
         return not expect_success or response.status_code < 400
