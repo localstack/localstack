@@ -6,10 +6,17 @@ from localstack.services.awslambda.event_source_listeners.stream_event_source_li
 )
 from localstack.services.awslambda.lambda_api import get_event_sources
 from localstack.utils.aws import aws_stack
+from localstack.utils.threads import FuncThread
 
 
 class DynamoDBEventSourceListener(StreamEventSourceListener):
     _FAILURE_PAYLOAD_DETAILS_FIELD_NAME = "DDBStreamBatchInfo"
+    _COORDINATOR_THREAD: Optional[
+        FuncThread
+    ] = None  # Thread for monitoring state of event source mappings
+    _STREAM_LISTENER_THREADS: Dict[
+        str, FuncThread
+    ] = {}  # Threads for listening to stream shards and forwarding data to mapped Lambdas
 
     @staticmethod
     def get_source_type() -> Optional[str]:

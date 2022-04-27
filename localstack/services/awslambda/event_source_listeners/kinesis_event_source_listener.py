@@ -8,10 +8,17 @@ from localstack.services.awslambda.event_source_listeners.stream_event_source_li
 from localstack.services.awslambda.lambda_api import get_event_sources
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import first_char_to_lower, to_str
+from localstack.utils.threads import FuncThread
 
 
 class KinesisEventSourceListener(StreamEventSourceListener):
     _FAILURE_PAYLOAD_DETAILS_FIELD_NAME = "KinesisBatchInfo"
+    _COORDINATOR_THREAD: Optional[
+        FuncThread
+    ] = None  # Thread for monitoring state of event source mappings
+    _STREAM_LISTENER_THREADS: Dict[
+        str, FuncThread
+    ] = {}  # Threads for listening to stream shards and forwarding data to mapped Lambdas
 
     @staticmethod
     def get_source_type() -> Optional[str]:
@@ -58,7 +65,7 @@ class KinesisEventSourceListener(StreamEventSourceListener):
                     "eventName": "aws:kinesis:record",
                     "invokeIdentityArn": "arn:aws:iam::{0}:role/lambda-role".format(
                         constants.TEST_AWS_ACCOUNT_ID
-                    ),  # TODO: is this the correct value to use?
+                    ),
                     "awsRegion": aws_stack.get_region(),
                     "kinesis": record_payload,
                 }

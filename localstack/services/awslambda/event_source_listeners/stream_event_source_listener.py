@@ -298,10 +298,11 @@ class StreamEventSourceListener(EventSourceListener):
 
                 # make sure each event source stream has a lambda listening on each of its shards
                 for source in sources:
+                    mapping_uuid = source["UUID"]
                     stream_arn = source["EventSourceArn"]
                     region_name = stream_arn.split(":")[3]
                     stream_client = self._get_stream_client(region_name)
-                    batch_size = max(min(source.get("BatchSize", 1), 10), 1)
+                    batch_size = source.get("BatchSize", 10)
                     failure_destination = (
                         source.get("DestinationConfig", {})
                         .get("OnFailure", {})
@@ -316,7 +317,7 @@ class StreamEventSourceListener(EventSourceListener):
                     shard_ids = [shard["ShardId"] for shard in stream_description["Shards"]]
 
                     for shard_id in shard_ids:
-                        lock_discriminator = f"{stream_arn}/{shard_id}"
+                        lock_discriminator = f"{mapping_uuid}/{stream_arn}/{shard_id}"
                         mapped_shard_ids.add(lock_discriminator)
                         if lock_discriminator not in self._STREAM_LISTENER_THREADS:
                             shard_iterator = self._get_shard_iterator(
