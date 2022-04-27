@@ -243,6 +243,7 @@ class IntegrationTest(unittest.TestCase):
             libs=TEST_LAMBDA_LIBS,
             func_name=lambda_ddb_name,
             event_source_arn=ddb_event_source_arn,
+            starting_position="TRIM_HORIZON",
             delete=True,
         )
 
@@ -623,6 +624,7 @@ def test_kinesis_lambda_forward_chain(
             func_name=TEST_CHAIN_LAMBDA2_NAME,
             zip_file=zip_file,
             event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME),
+            starting_position="TRIM_HORIZON",
         )
         lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
 
