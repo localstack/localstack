@@ -1,7 +1,6 @@
 import gzip
 import json
 import logging
-import unittest
 
 import requests
 
@@ -21,17 +20,9 @@ from localstack.utils.server.proxy_server import start_ssl_proxy
 LOG = logging.getLogger(__name__)
 
 
-class TestProxyServer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.cfg_val = config.FORWARD_EDGE_INMEM
-        config.FORWARD_EDGE_INMEM = False
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        config.FORWARD_EDGE_INMEM = cls.cfg_val
-
-    def test_start_and_stop(self):
+class TestProxyServer:
+    def test_start_and_stop(self, monkeypatch):
+        monkeypatch.setattr(config, "FORWARD_EDGE_INMEM", False)
         proxy_port = get_free_tcp_port()
         backend_port = get_free_tcp_port()
 
@@ -44,59 +35,75 @@ class TestProxyServer(unittest.TestCase):
             params={"protocol_version": "HTTP/1.0"},
         )
 
-        self.assertIsNotNone(server)
+        assert server
 
         try:
-            self.assertTrue(
-                poll_condition(lambda: is_port_open(proxy_port), timeout=15),
-                "gave up waiting for port %d" % proxy_port,
-            )
+            assert poll_condition(lambda: is_port_open(proxy_port), timeout=15)
         finally:
-            print("stopping proxy server")
             server.stop()
+            server.join(timeout=15)
 
-        print("waiting max 15 seconds for server to terminate")
-        server.join(timeout=15)
+        assert not is_port_open(proxy_port)
 
-        self.assertFalse(is_port_open(proxy_port))
+    def test_ssl_proxy_server(self):
+        class MyListener(ProxyListener):
+            def forward_request(self, *args, **kwargs):
+                invocations.append((args, kwargs))
+                return {"foo": "bar"}
 
+        invocations = []
 
-def test_ssl_proxy_server():
-    class MyListener(ProxyListener):
-        def forward_request(self, *args, **kwargs):
-            invocations.append((args, kwargs))
-            return {"foo": "bar"}
+        # start SSL proxy
+        listener = MyListener()
+        port = get_free_tcp_port()
+        server = start_proxy_server(port, update_listener=listener, use_ssl=True)
+        wait_for_port_open(port)
 
-    invocations = []
+        # start SSL proxy
+        proxy_port = get_free_tcp_port()
+        proxy = start_ssl_proxy(proxy_port, port, asynchronous=True, fix_encoding=True)
+        wait_for_port_open(proxy_port)
 
-    # start SSL proxy
-    listener = MyListener()
-    port = get_free_tcp_port()
-    server = start_proxy_server(port, update_listener=listener, use_ssl=True)
-    wait_for_port_open(port)
+        # invoke SSL proxy server
+        url = f"https://{LOCALHOST_HOSTNAME}:{proxy_port}"
+        num_requests = 3
+        for i in range(num_requests):
+            response = requests.get(url, verify=False)
+            assert response.status_code == 200
 
-    # start SSL proxy
-    proxy_port = get_free_tcp_port()
-    proxy = start_ssl_proxy(proxy_port, port, asynchronous=True, fix_encoding=True)
-    wait_for_port_open(proxy_port)
+        # assert backend server has been invoked
+        assert len(invocations) == num_requests
 
-    # invoke SSL proxy server
-    url = f"https://{LOCALHOST_HOSTNAME}:{proxy_port}"
-    num_requests = 3
-    for i in range(num_requests):
+        # invoke SSL proxy server with gzip response
+        for encoding in ["gzip", "gzip, deflate"]:
+            headers = {HEADER_ACCEPT_ENCODING: encoding}
+            response = requests.get(url, headers=headers, verify=False, stream=True)
+            result = response.raw.read()
+            assert to_str(gzip.decompress(result)) == json.dumps({"foo": "bar"})
+
+        # clean up
+        proxy.stop()
+        server.stop()
+
+    def test_static_route(self):
+        class MyListener(ProxyListener):
+            def forward_request(self, method, path, *args, **kwargs):
+                return {"method": method, "path": path}
+
+        # start proxy server
+        listener = MyListener()
+        port = get_free_tcp_port()
+        server = start_proxy_server(port, update_listener=listener)
+        wait_for_port_open(port)
+
+        # request a /static/... path from the server and assert result
+        url = f"http://{LOCALHOST_HOSTNAME}:{port}/static/index.html"
         response = requests.get(url, verify=False)
-        assert response.status_code == 200
+        assert response.ok
+        assert json.loads(to_str(response.content)) == {
+            "method": "GET",
+            "path": "/static/index.html",
+        }
 
-    # assert backend server has been invoked
-    assert len(invocations) == num_requests
-
-    # invoke SSL proxy server with gzip response
-    for encoding in ["gzip", "gzip, deflate"]:
-        headers = {HEADER_ACCEPT_ENCODING: encoding}
-        response = requests.get(url, headers=headers, verify=False, stream=True)
-        result = response.raw.read()
-        assert to_str(gzip.decompress(result)) == json.dumps({"foo": "bar"})
-
-    # clean up
-    proxy.stop()
-    server.stop()
+        # clean up
+        server.stop()

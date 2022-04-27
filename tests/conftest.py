@@ -24,6 +24,10 @@ def pytest_configure(config):
         "skip_offline: mark the test to be skipped when the tests are run offline "
         "(this test explicitly / semantically needs an internet connection)",
     )
+    config.addinivalue_line(
+        "markers",
+        "aws_validated: mark the test as validated / verified against real AWS",
+    )
 
 
 def pytest_collection_modifyitems(config, items):

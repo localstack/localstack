@@ -261,9 +261,15 @@ def secretsmanager():
 
 @aws_provider()
 def ses():
-    from localstack.services.ses import ses_listener, ses_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.ses.provider import SesProvider
 
-    return Service("ses", listener=ses_listener.UPDATE_SES, start=ses_starter.start_ses)
+    provider = SesProvider()
+    return Service(
+        "ses",
+        listener=AwsApiListener("ses", MotoFallbackDispatcher(provider)),
+        lifecycle_hook=provider,
+    )
 
 
 @aws_provider()
@@ -318,13 +324,13 @@ def events():
 
 @aws_provider()
 def stepfunctions():
-    from localstack.services.stepfunctions import stepfunctions_listener, stepfunctions_starter
+    from localstack.services.stepfunctions.provider import StepFunctionsApiListener
 
+    listener = StepFunctionsApiListener()
     return Service(
         "stepfunctions",
-        listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS,
-        start=stepfunctions_starter.start_stepfunctions,
-        check=stepfunctions_starter.check_stepfunctions,
+        listener=listener,
+        lifecycle_hook=listener.provider,
     )
 
 

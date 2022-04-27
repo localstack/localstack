@@ -678,7 +678,7 @@ class TestSqsProvider:
         e.match("InvalidParameterValue")
 
     @pytest.mark.skipif(
-        os.environ.get("PROVIDER_OVERRIDE_SQS") != "asf",
+        config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf",
         reason="New provider test which isn't covered by old one",
     )
     def test_standard_queue_cannot_have_fifo_suffix(self, sqs_create_queue):
@@ -1042,7 +1042,8 @@ class TestSqsProvider:
         )
 
     @pytest.mark.skipif(
-        os.environ.get("PROVIDER_OVERRIDE_SQS") != "asf", reason="Currently fails for moto provider"
+        config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf",
+        reason="Currently fails for moto provider",
     )
     def test_dead_letter_queue_chain(self, sqs_client, sqs_create_queue):
         # test a chain of 3 queues, with DLQ flow q1 -> q2 -> q3
@@ -1600,7 +1601,7 @@ class TestSqsProvider:
         )[0].get("MD5OfBody")
 
     @pytest.mark.skipif(
-        os.environ.get("PROVIDER_OVERRIDE_SQS") != "asf",
+        config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf",
         reason="New provider test which isn't covered by old one",
     )
     def test_sse_attributes_are_accepted(self, sqs_client, sqs_create_queue):
@@ -1619,6 +1620,19 @@ class TestSqsProvider:
         for k in attributes.keys():
             assert k in keys
             assert attributes[k] == result_attributes[k]
+
+    @pytest.mark.skipif(
+        config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") == "asf",
+        reason="this behaviour needs to be re-evaluated",
+    )
+    def test_call_fifo_queue_url(self, sqs_client, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}.fifo"
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes={"FifoQueue": "true"})
+
+        assert queue_url.endswith(".fifo")
+        response = requests.get(queue_url)
+        assert response.ok
+        assert queue_url in response.text
 
 
 def get_region():

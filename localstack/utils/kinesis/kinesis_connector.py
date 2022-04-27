@@ -233,7 +233,7 @@ class OutputReaderThread(FuncThread):
                 yield line.replace("\n", "")
 
 
-class KclLogListener(object):
+class KclLogListener:
     def __init__(self, regex=".*"):
         self.regex = regex
 

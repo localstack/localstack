@@ -615,8 +615,8 @@ def construct_invocation_event(
         "body": data,
         "isBase64Encoded": is_base64_encoded,
         "httpMethod": method,
-        "queryStringParameters": query_string_params,
-        "multiValueQueryStringParameters": multi_value_dict_for_list(query_string_params),
+        "queryStringParameters": query_string_params or None,
+        "multiValueQueryStringParameters": multi_value_dict_for_list(query_string_params) or None,
     }
 
 
@@ -1292,6 +1292,15 @@ def lookup_function(function, region, request_url):
         "Tags": function["Tags"],
     }
     lambda_details = region.lambdas.get(function["FunctionArn"])
+
+    # patch for image lambdas (still missing RepositoryType and ResolvedImageUri)
+    # please note that usage is still only available with a PRO license
+    if lambda_details.package_type == "Image":
+        result["Code"] = lambda_details.code
+        result["Configuration"]["CodeSize"] = 0
+        del result["Configuration"]["Handler"]
+        del result["Configuration"]["Layers"]
+
     if lambda_details.concurrency is not None:
         result["Concurrency"] = lambda_details.concurrency
     return jsonify(result)

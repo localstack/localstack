@@ -729,6 +729,48 @@ class TestDockerClient:
             "container_hopefully_does_not_exist", safe=True
         )
 
+    def test_get_logs(self, docker_client: ContainerClient):
+        container_name = _random_container_name()
+        try:
+            docker_client.run_container(
+                "alpine",
+                name=container_name,
+                detach=True,
+                command=["env"],
+            )
+
+            logs = docker_client.get_container_logs(container_name)
+            assert "PATH=" in logs
+            assert "HOSTNAME=" in logs
+            assert "HOME=/root" in logs
+
+        finally:
+            docker_client.remove_container(container_name)
+
+    def test_stream_logs_non_existent_container(self, docker_client: ContainerClient):
+        with pytest.raises(NoSuchContainer):
+            docker_client.stream_container_logs("container_hopefully_does_not_exist")
+
+    def test_stream_logs(self, docker_client: ContainerClient):
+        container_name = _random_container_name()
+        try:
+            docker_client.run_container(
+                "alpine",
+                name=container_name,
+                detach=True,
+                command=["env"],
+            )
+
+            stream = docker_client.stream_container_logs(container_name)
+            for line in stream:
+                line = line.decode("utf-8")
+                assert line.split("=")[0] in ["HOME", "PATH", "HOSTNAME"]
+
+            stream.close()
+
+        finally:
+            docker_client.remove_container(container_name)
+
     @pytest.mark.skip_offline
     def test_pull_docker_image(self, docker_client: ContainerClient):
         try:

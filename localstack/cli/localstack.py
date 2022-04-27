@@ -171,34 +171,19 @@ def cmd_stop():
 )
 def cmd_logs(follow: bool):
     from localstack import config
-    from localstack.utils.bootstrap import LocalstackContainer
-    from localstack.utils.common import FileListener
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     container_name = config.MAIN_CONTAINER_NAME
-    logfile = LocalstackContainer(container_name).logfile
 
     if not DOCKER_CLIENT.is_container_running(container_name):
         console.print("localstack container not running")
         sys.exit(1)
 
-    if not os.path.exists(logfile):
-        console.print("localstack container logfile not found at %s" % logfile)
-        sys.exit(1)
-
     if follow:
-        listener = FileListener(logfile, print)
-        listener.start()
-        try:
-            listener.join()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            listener.close()
+        for line in DOCKER_CLIENT.stream_container_logs(container_name):
+            print(line.decode("utf-8").rstrip("\r\n"))
     else:
-        with open(logfile) as fd:
-            for line in fd:
-                print(line.rstrip("\n\r"))
+        print(DOCKER_CLIENT.get_container_logs(container_name))
 
 
 @localstack.command(name="wait", help="Wait on the LocalStack container to start")

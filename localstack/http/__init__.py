@@ -1,5 +1,5 @@
 from .request import Request
 from .response import Response
-from .router import Router
+from .router import Router, route
 
-__all__ = ["Router", "Response", "Request"]
+__all__ = ["Router", "route", "Response", "Request"]

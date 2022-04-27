@@ -26,6 +26,7 @@ from pytz import timezone
 
 from localstack import config, constants
 from localstack.constants import (
+    AWS_REGION_US_EAST_1,
     S3_VIRTUAL_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
@@ -115,7 +116,12 @@ class TestS3(unittest.TestCase):
     OVERWRITTEN_CLIENT = None
 
     def setUp(self):
-        self._s3_client = aws_stack.create_external_boto_client("s3")
+        # Default S3 operations should be happening in us-east-1, hence passing in the region
+        # here (otherwise create_bucket(..) would fail without specifying a location constraint.
+        # Dedicated multi-region tests use specific clients further below.
+        self._s3_client = aws_stack.create_external_boto_client(
+            "s3", region_name=AWS_REGION_US_EAST_1
+        )
         self.sqs_client = aws_stack.create_external_boto_client("sqs")
 
     @property
@@ -2492,6 +2498,15 @@ class TestS3(unittest.TestCase):
         response = client_2.get_bucket_location(Bucket=bucket_2_name)
         self.assertEqual(region_2, response["LocationConstraint"])
 
+        # assert creation fails without location constraint for us-east-2 region
+        with pytest.raises(Exception) as exc:
+            client_2.create_bucket(Bucket=f"bucket-{short_uid()}")
+        exc.match("IllegalLocationConstraintException")
+        bucket_3_name = f"bucket-{short_uid()}"
+        # assert that creation succeeds with utility function that configures the location constraint
+        result = aws_stack.create_s3_bucket(bucket_3_name, s3_client=client_2)
+        assert result.get("Location")
+
         # make raw request, assert that newline is contained after XML preamble: <?xml ...>\n
         url = f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_2_name}?location="
         response = requests.get(url)
@@ -2500,8 +2515,8 @@ class TestS3(unittest.TestCase):
         assert re.match(r"^<\?xml [^>]+>\n<.*", content, flags=re.MULTILINE)
 
         # clean up
-        self.s3_client.delete_bucket(Bucket=bucket_1_name)
-        self.s3_client.delete_bucket(Bucket=bucket_2_name)
+        for bucket in [bucket_1_name, bucket_2_name, bucket_3_name]:
+            self.s3_client.delete_bucket(Bucket=bucket)
 
     def test_upload_file_with_xml_preamble(self):
         bucket_name = f"bucket-{short_uid()}"
@@ -2690,6 +2705,14 @@ class TestS3New:
 
         resp = s3_client.list_buckets()
         assert len(resp["Buckets"]) == 0
+
+    @pytest.mark.aws_validated
+    def test_put_and_get_object_with_utf8_key(self, s3_client, s3_create_bucket):
+        bucket = s3_create_bucket()
+        response = s3_client.put_object(Bucket=bucket, Key="Ā0Ä", Body=b"abc123")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        response = s3_client.get_object(Bucket=bucket, Key="Ā0Ä")
+        assert response["Body"].read() == b"abc123"
 
 
 @pytest.mark.parametrize(

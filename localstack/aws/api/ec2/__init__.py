@@ -217,6 +217,7 @@ ResultRange = int
 RouteGatewayId = str
 RouteTableAssociationId = str
 RouteTableId = str
+RunInstancesUserData = str
 ScheduledInstanceId = str
 SecurityGroupId = str
 SecurityGroupName = str
@@ -1524,6 +1525,28 @@ class InstanceType(str):
     z1d_6xlarge = "z1d.6xlarge"
     z1d_12xlarge = "z1d.12xlarge"
     z1d_metal = "z1d.metal"
+    x2idn_16xlarge = "x2idn.16xlarge"
+    x2idn_24xlarge = "x2idn.24xlarge"
+    x2idn_32xlarge = "x2idn.32xlarge"
+    x2iedn_xlarge = "x2iedn.xlarge"
+    x2iedn_2xlarge = "x2iedn.2xlarge"
+    x2iedn_4xlarge = "x2iedn.4xlarge"
+    x2iedn_8xlarge = "x2iedn.8xlarge"
+    x2iedn_16xlarge = "x2iedn.16xlarge"
+    x2iedn_24xlarge = "x2iedn.24xlarge"
+    x2iedn_32xlarge = "x2iedn.32xlarge"
+    c6a_large = "c6a.large"
+    c6a_xlarge = "c6a.xlarge"
+    c6a_2xlarge = "c6a.2xlarge"
+    c6a_4xlarge = "c6a.4xlarge"
+    c6a_8xlarge = "c6a.8xlarge"
+    c6a_12xlarge = "c6a.12xlarge"
+    c6a_16xlarge = "c6a.16xlarge"
+    c6a_24xlarge = "c6a.24xlarge"
+    c6a_32xlarge = "c6a.32xlarge"
+    c6a_48xlarge = "c6a.48xlarge"
+    c6a_metal = "c6a.metal"
+    m6a_metal = "m6a.metal"
 
 
 class InstanceTypeHypervisor(str):
@@ -14825,7 +14848,7 @@ class RunInstancesRequest(ServiceRequest):
     SecurityGroupIds: Optional[SecurityGroupIdStringList]
     SecurityGroups: Optional[SecurityGroupStringList]
     SubnetId: Optional[SubnetId]
-    UserData: Optional[String]
+    UserData: Optional[RunInstancesUserData]
     AdditionalInfo: Optional[String]
     ClientToken: Optional[String]
     DisableApiTermination: Optional[Boolean]
@@ -20716,7 +20739,7 @@ class Ec2Api:
         security_group_ids: SecurityGroupIdStringList = None,
         security_groups: SecurityGroupStringList = None,
         subnet_id: SubnetId = None,
-        user_data: String = None,
+        user_data: RunInstancesUserData = None,
         additional_info: String = None,
         client_token: String = None,
         disable_api_termination: Boolean = None,

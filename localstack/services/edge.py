@@ -16,6 +16,7 @@ from localstack.constants import (
     HEADER_LOCALSTACK_REQUEST_URL,
     INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
+    LOCALHOST_HOSTNAME,
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
     LS_LOG_TRACE_INTERNAL,
@@ -43,6 +44,7 @@ from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.utils.strings import to_bytes, to_str, truncate
 from localstack.utils.sync import sleep_forever
 from localstack.utils.threads import TMP_THREADS, start_thread
+from localstack.utils.urls import hostname_from_url
 
 LOG = logging.getLogger(__name__)
 
@@ -365,6 +367,9 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = "route53", config.service_port("route53")
     elif result[0] == "monitoring":
         result = "cloudwatch", config.service_port("cloudwatch")
+    elif result[0] == "ses":
+        if path.startswith("/v2"):
+            result = "sesv2", config.service_port("sesv2")
     elif result[0] == "email":
         result = "ses", config.service_port("ses")
     elif result[0] == "execute-api" or ".execute-api." in host:
@@ -417,7 +422,10 @@ def get_api_from_custom_rules(method, path, data, headers):
     """Determine backend port based on custom rules."""
 
     # API Gateway invocation URLs
-    if ("/%s/" % PATH_USER_REQUEST) in path:
+    host_header = hostname_from_url(headers.get("host"))
+    if ("/%s/" % PATH_USER_REQUEST) in path or (
+        host_header.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host_header
+    ):
         return "apigateway", config.service_port("apigateway")
 
     # detect S3 presigned URLs
@@ -630,7 +638,7 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
 
     # process requires privileged port but we're not root -> try running as sudo
 
-    class Terminator(object):
+    class Terminator:
         def stop(self, quiet=True):
             try:
                 url = "http%s://%s:%s" % ("s" if use_ssl else "", LOCALHOST, port)

@@ -18,6 +18,7 @@ from localstack.services.apigateway.helpers import (
 )
 from localstack.services.infra import start_moto_server
 from localstack.utils.common import DelSafeDict, short_uid, str_to_bool, to_str
+from localstack.utils.json import parse_json_or_yaml
 
 LOG = logging.getLogger(__name__)
 
@@ -148,7 +149,7 @@ def apply_patches():
 
         # handle import rest_api via swagger file
         if self.method == "PUT":
-            body = json.loads(to_str(self.body))
+            body = parse_json_or_yaml(to_str(self.body))
             rest_api = self.backend.put_rest_api(function_id, body, self.querystring)
             return 200, {}, json.dumps(rest_api.to_dict())
 
@@ -487,7 +488,7 @@ def apply_patches():
             return status, _, rest_api
 
         function_id = json.loads(rest_api)["id"]
-        body = json.loads(request.data.decode("utf-8"))
+        body = parse_json_or_yaml(request.data.decode("utf-8"))
         self.backend.put_rest_api(function_id, body, parsed_qs)
 
         return 200, {}, rest_api

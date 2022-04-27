@@ -1,18 +1,114 @@
-import json
 from io import BytesIO
-from typing import IO, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Mapping, Optional, Tuple, Union
+from urllib.parse import quote, unquote
+
+if TYPE_CHECKING:
+    from _typeshed.wsgi import WSGIEnvironment
 
 from werkzeug.datastructures import Headers
-from werkzeug.sansio.request import Request as _SansIORequest
-from werkzeug.utils import cached_property
+from werkzeug.wrappers.request import Request as WerkzeugRequest
 
-from localstack.utils.common import to_bytes
+from localstack.utils import strings
 
 
-class Request(_SansIORequest):
+def dummy_wsgi_environment(
+    method: str = "GET",
+    path: str = "",
+    headers: Optional[Union[Dict, Headers]] = None,
+    body: Optional[Union[bytes, str]] = None,
+    scheme: str = "http",
+    root_path: str = "/",
+    query_string: Optional[str] = None,
+    remote_addr: Optional[str] = None,
+    server: Optional[Tuple[str, Optional[int]]] = None,
+    raw_uri: Optional[str] = None,
+) -> "WSGIEnvironment":
     """
-    An HTTP request object. This is (and should remain) a drop-in replacement for werkzeug's WSGI compliant Request
-    objects. It allows simple sans-IO requests outside a web server environment.
+    Creates a dummy WSGIEnvironment that represents a standalone sans-IO HTTP requests.
+
+    See https://wsgi.readthedocs.io/en/latest/definitions.html#standard-environ-keys
+
+    :param method: The HTTP request method (such as GET or POST)
+    :param path: The remainder of the request URL's path. This may be an empty string, if the
+        request URL targets the application root and does not have a trailing slash.
+    :param headers: optional HTTP headers
+    :param body: the body of the request
+    :param scheme: the scheme (http or https)
+    :param root_path: The initial portion of the request URL's path that corresponds to the
+        application object.
+    :param query_string: The portion of the request URL that follows the “?”, if any. May be
+        empty or absent.
+    :param remote_addr: The address making the request
+    :param server: The server (tuple of server name and port)
+    :param raw_uri: The original path that may contain url encoded path elements.
+    :return: A WSGIEnvironment dictionary
+    """
+
+    # Standard environ keys
+    environ = {
+        "REQUEST_METHOD": method,
+        # prepare the paths for the "WSGI decoding dance" done by werkzeug
+        "SCRIPT_NAME": unquote(quote(root_path.rstrip("/")), "latin-1"),
+        "PATH_INFO": unquote(quote(path), "latin-1"),
+        "SERVER_PROTOCOL": "HTTP/1.1",
+    }
+
+    data = strings.to_bytes(body) if body else b""
+
+    if query_string is not None:
+        environ["QUERY_STRING"] = query_string
+
+    if raw_uri:
+        environ["RAW_URI"] = raw_uri
+        environ["REQUEST_URI"] = environ["RAW_URI"]
+
+    if server:
+        environ["SERVER_NAME"] = server[0]
+        if server[1]:
+            environ["SERVER_PORT"] = str(server[1])
+        else:
+            environ["SERVER_PORT"] = "80"
+    else:
+        environ["SERVER_NAME"] = "127.0.0.1"
+        environ["SERVER_PORT"] = "80"
+
+    if remote_addr:
+        environ["REMOTE_ADDR"] = remote_addr
+
+    if headers:
+        for k, v in headers.items():
+            name = k.upper().replace("-", "_")
+
+            if name not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
+                name = f"HTTP_{name}"
+
+            val = v
+            if name in environ:
+                val = environ[name] + "," + val
+
+            environ[name] = val
+
+    if "CONTENT_LENGTH" not in environ:
+        # try to determine content length from body
+        environ["CONTENT_LENGTH"] = str(len(data))
+
+    # WSGI environ keys
+    environ["wsgi.version"] = (1, 0)
+    environ["wsgi.url_scheme"] = scheme
+    environ["wsgi.input"] = BytesIO(data)
+    environ["wsgi.input_terminated"] = True
+    environ["wsgi.errors"] = BytesIO()
+    environ["wsgi.multithread"] = True
+    environ["wsgi.multiprocess"] = False
+    environ["wsgi.run_once"] = False
+
+    return environ
+
+
+class Request(WerkzeugRequest):
+    """
+    An HTTP request object. This is (and should remain) a drop-in replacement for werkzeug's WSGI
+    compliant Request objects. It allows simple sans-IO requests outside a web server environment.
 
     DO NOT add methods that are not also part of werkzeug.wrappers.request.Request object.
     """
@@ -21,7 +117,7 @@ class Request(_SansIORequest):
         self,
         method: str = "GET",
         path: str = "",
-        headers: Union[Dict, Headers] = None,
+        headers: Union[Mapping, Headers] = None,
         body: Union[bytes, str] = None,
         scheme: str = "http",
         root_path: str = "/",
@@ -30,108 +126,45 @@ class Request(_SansIORequest):
         server: Optional[Tuple[str, Optional[int]]] = None,
         raw_path: str = None,
     ):
-        if not headers:
-            headers = Headers()
-        elif isinstance(headers, Headers):
-            headers = headers
-        else:
-            headers = Headers(headers)
+        # decode query string if necessary (latin-1 is what werkzeug would expect)
+        query_string = strings.to_str(query_string, "latin-1")
 
-        if not body:
-            self._body = b""
-        elif isinstance(body, str):
-            self._body = body.encode("utf-8")
-        else:
-            self._body = body
-
-        # TODO storing the raw_path here violates the drop-in assumption
-        self.raw_path = raw_path
-
-        super(Request, self).__init__(
+        # create the WSGIEnvironment dictionary that represents this request
+        environ = dummy_wsgi_environment(
             method=method,
-            scheme=scheme,
-            server=server or ("127.0.0.1", None),
-            root_path=root_path,
             path=path,
-            query_string=to_bytes(query_string),
             headers=headers,
+            body=body,
+            scheme=scheme,
+            root_path=root_path,
+            query_string=query_string,
             remote_addr=remote_addr,
+            server=server,
+            raw_uri=raw_path,
         )
 
-    # properties for compatibility with werkzeug wsgi Request wrapper
+        super(Request, self).__init__(environ)
 
-    @cached_property
-    def stream(self) -> IO[bytes]:
-        return BytesIO(self._body)
-
-    @cached_property
-    def data(self) -> bytes:
-        return self.get_data()
-
-    @cached_property
-    def json(self) -> Optional[Any]:
-        return self.get_json()
-
-    @property
-    def form(self):
-        raise NotImplementedError
-
-    @property
-    def values(self):
-        raise NotImplementedError
-
-    @property
-    def files(self):
-        raise NotImplementedError
-
-    @cached_property
-    def url_root(self) -> str:
-        return self.root_url
-
-    def get_data(
-        self, cache: bool = True, as_text: bool = False, parse_form_data: bool = False
-    ) -> Union[bytes, str]:
-        # copied from werkzeug.wrappers.Request
-        rv = getattr(self, "_cached_data", None)
-        if rv is None:
-            if parse_form_data:
-                self._load_form_data()
-            rv = self.stream.read()
-            if cache:
-                self._cached_data = rv
-        if as_text:
-            rv = rv.decode(self.charset, self.encoding_errors)
-
-        return rv  # type: ignore
-
-    _cached_json: Optional[None] = None
-
-    def get_json(
-        self, force: bool = False, silent: bool = False, cache: bool = True
-    ) -> Optional[Any]:
-
-        if cache and self._cached_json:
-            return self._cached_json
-
-        if not (force or self.is_json):
-            return None
-
-        try:
-            doc = json.loads(self.get_data(cache=cache))
-            if cache:
-                self._cached_json = doc
-            return doc
-        except ValueError:
-            if silent:
-                return None
-            raise
-
-    def _load_form_data(self):
-        pass
-
-    def close(self) -> None:
-        pass
+        # werkzeug normally provides read-only access to headers set in the WSGIEnvironment through the EnvironHeaders
+        # class, this makes them mutable.
+        self.headers = Headers(self.headers)
 
 
-def get_raw_path(request: Request) -> str:
-    return request.raw_path
+def get_raw_path(request) -> str:
+    """
+    Returns the raw_path inside the request. The request can either be a Quart Request object (that
+    encodes the raw path in request.scope['raw_path']) or a Werkzeug WSGi request (that encodes the
+    raw path in request.environ['RAW_URI']).
+
+    :param request: the request object
+    :return: the raw path if any
+    """
+    if hasattr(request, "environ"):
+        # werkzeug/flask request (already a string)
+        return request.environ.get("RAW_URI", request.path)
+
+    if hasattr(request, "scope"):
+        # quart request raw_path comes as bytes
+        return request.scope.get("raw_path", request.path).decode("utf-8")
+
+    raise ValueError("cannot extract raw path from request object %s" % request)

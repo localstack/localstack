@@ -45,6 +45,7 @@ from localstack.utils.files import (
     rm_rf,
     save_file,
 )
+from localstack.utils.functions import run_safe
 from localstack.utils.http import download
 from localstack.utils.platform import get_arch, is_windows
 from localstack.utils.run import run
@@ -67,12 +68,13 @@ INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFu
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, "kinesalite", "cli.js")
+
+MAVEN_REPO = "https://repo1.maven.org/maven2"
 URL_LOCALSTACK_FAT_JAR = (
-    "https://repo1.maven.org/maven2/"
-    + "cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
+    MAVEN_REPO + "/cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
 ).format(v=LOCALSTACK_MAVEN_VERSION)
 
-MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.static_libs
+MARKER_FILE_LIGHT_VERSION = f"{dirs.static_libs}/.light-version"
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SFN_PATCH_URL_PREFIX = (
@@ -93,14 +95,22 @@ SFN_AWS_SDK_URL_PREFIX = (
 )
 SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
 
+# patches for DynamoDB Local
+DDB_PATCH_URL_PREFIX = (
+    f"{ARTIFACTS_REPO}/raw/388cd73f45bfd3bcf7ad40aa35499093061c7962/dynamodb-local-patch"
+)
+DDB_AGENT_JAR_URL = f"{DDB_PATCH_URL_PREFIX}/target/ddb-local-loader-0.1.jar"
+DDB_AGENT_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "ddb-local-loader-0.1.jar")
+JAVASSIST_JAR_URL = f"{MAVEN_REPO}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
+JAVASSIST_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "javassist.jar")
+
 # additional JAR libs required for multi-region and persistence (PRO only) support
-MAVEN_REPO = "https://repo1.maven.org/maven2"
 URL_ASPECTJRT = f"{MAVEN_REPO}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
 URL_ASPECTJWEAVER = f"{MAVEN_REPO}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
 JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
 
 # kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.2"
+KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.4"
 KINESIS_MOCK_RELEASE_URL = (
     "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
 )
@@ -176,16 +186,16 @@ def install_elasticsearch(version=None):
     install_dir = get_elasticsearch_install_dir(version)
     installed_executable = os.path.join(install_dir, "bin", "elasticsearch")
     if not os.path.exists(installed_executable):
-        log_install_msg("Elasticsearch (%s)" % version)
+        log_install_msg(f"Elasticsearch ({version})")
         es_url = versions.get_download_url(version, EngineType.Elasticsearch)
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
-        tmp_archive = os.path.join(config.dirs.tmp, "localstack.%s" % os.path.basename(es_url))
+        tmp_archive = os.path.join(config.dirs.tmp, f"localstack.{os.path.basename(es_url)}")
         download_and_extract_with_retry(es_url, tmp_archive, install_dir_parent)
         elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, "elasticsearch*"))
         if not elasticsearch_dir:
-            raise Exception("Unable to find Elasticsearch folder in %s" % install_dir_parent)
+            raise Exception(f"Unable to find Elasticsearch folder in {install_dir_parent}")
         shutil.move(elasticsearch_dir[0], install_dir)
 
         for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
@@ -231,7 +241,7 @@ def install_elasticsearch(version=None):
     if os.path.exists(jvm_options_file):
         jvm_options = load_file(jvm_options_file)
         jvm_options_replaced = re.sub(
-            r"(^-Xm[sx][a-zA-Z0-9\.]+$)", r"# \1", jvm_options, flags=re.MULTILINE
+            r"(^-Xm[sx][a-zA-Z0-9.]+$)", r"# \1", jvm_options, flags=re.MULTILINE
         )
         if jvm_options != jvm_options_replaced:
             save_file(jvm_options_file, jvm_options_replaced)
@@ -264,7 +274,7 @@ def install_opensearch(version=None):
     if not os.path.exists(installed_executable):
         with OS_INSTALL_LOCKS.setdefault(version, threading.Lock()):
             if not os.path.exists(installed_executable):
-                log_install_msg("OpenSearch (%s)" % version)
+                log_install_msg(f"OpenSearch ({version})")
                 opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
                 install_dir_parent = os.path.dirname(install_dir)
                 mkdir(install_dir_parent)
@@ -275,7 +285,7 @@ def install_opensearch(version=None):
                 download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
                 opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
                 if not opensearch_dir:
-                    raise Exception("Unable to find OpenSearch folder in %s" % install_dir_parent)
+                    raise Exception(f"Unable to find OpenSearch folder in {install_dir_parent}")
                 shutil.move(opensearch_dir[0], install_dir)
 
                 for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
@@ -288,7 +298,7 @@ def install_opensearch(version=None):
     if os.path.exists(jvm_options_file):
         jvm_options = load_file(jvm_options_file)
         jvm_options_replaced = re.sub(
-            r"(^-Xm[sx][a-zA-Z0-9\.]+$)", r"# \1", jvm_options, flags=re.MULTILINE
+            r"(^-Xm[sx][a-zA-Z0-9.]+$)", r"# \1", jvm_options, flags=re.MULTILINE
         )
         if jvm_options != jvm_options_replaced:
             save_file(jvm_options_file, jvm_options_replaced)
@@ -320,7 +330,7 @@ def install_kinesis():
         if not is_installed:
             install_kinesis_mock(bin_path)
         return
-    raise ValueError("unknown kinesis provider %s" % config.KINESIS_PROVIDER)
+    raise ValueError(f"Unknown Kinesis provider {config.KINESIS_PROVIDER}")
 
 
 def _apply_patches_kinesalite():
@@ -336,7 +346,7 @@ def _apply_patches_kinesalite():
 def install_kinesalite():
     if not os.path.exists(INSTALL_PATH_KINESALITE_CLI):
         log_install_msg("Kinesis")
-        run('cd "%s" && npm install' % MODULE_MAIN_PATH)
+        run(["npm", "install"], cwd=MODULE_MAIN_PATH)
         _apply_patches_kinesalite()
 
 
@@ -382,7 +392,7 @@ def install_kinesis_mock(bin_file_path: str = None):
     response = requests.get(KINESIS_MOCK_RELEASE_URL)
     if not response.ok:
         raise ValueError(
-            "Could not get list of releases from %s: %s" % (KINESIS_MOCK_RELEASE_URL, response.text)
+            f"Could not get list of releases from {KINESIS_MOCK_RELEASE_URL}: {response.text}"
         )
 
     bin_file_path = bin_file_path or kinesis_mock_install_path()
@@ -396,8 +406,7 @@ def install_kinesis_mock(bin_file_path: str = None):
             break
     if download_url is None:
         raise ValueError(
-            "could not find required binary %s in release %s"
-            % (bin_file_name, KINESIS_MOCK_RELEASE_URL)
+            f"Could not find required binary {bin_file_name} in release {KINESIS_MOCK_RELEASE_URL}"
         )
 
     mkdir(INSTALL_DIR_KINESIS_MOCK)
@@ -444,7 +453,7 @@ def install_stepfunctions_local():
         path = Path(f"{dirs.static_libs}/stepfunctionslocal/")
         for file in path.glob("*.jar"):
             file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
-        rm_rf("%s/stepfunctionslocal" % dirs.static_libs)
+        rm_rf(str(path))
 
     classes = [
         SFN_PATCH_CLASS1,
@@ -514,7 +523,21 @@ def install_dynamodb_local():
     </Configuration>"""
     log4j2_file = os.path.join(INSTALL_DIR_DDB, "log4j2.xml")
     save_file(log4j2_file, log4j2_config)
-    run('cd "%s" && zip -u DynamoDBLocal.jar log4j2.xml || true' % INSTALL_DIR_DDB)
+    run_safe(lambda: run(["zip", "-u", "DynamoDBLocal.jar", "log4j2.xml"], cwd=INSTALL_DIR_DDB))
+
+    # download agent JAR
+    if not os.path.exists(DDB_AGENT_JAR_PATH):
+        download(DDB_AGENT_JAR_URL, DDB_AGENT_JAR_PATH)
+    if not os.path.exists(JAVASSIST_JAR_PATH):
+        download(JAVASSIST_JAR_URL, JAVASSIST_JAR_PATH)
+    # ensure that javassist.jar is in the manifest classpath
+    run(["unzip", "-o", "DynamoDBLocal.jar", "META-INF/MANIFEST.MF"], cwd=INSTALL_DIR_DDB)
+    manifest_file = os.path.join(INSTALL_DIR_DDB, "META-INF", "MANIFEST.MF")
+    manifest = load_file(manifest_file)
+    if "javassist.jar" not in manifest:
+        manifest = manifest.replace("Class-Path:", "Class-Path: javassist.jar", 1)
+        save_file(manifest_file, manifest)
+        run(["zip", "-u", "DynamoDBLocal.jar", "META-INF/MANIFEST.MF"], cwd=INSTALL_DIR_DDB)
 
 
 def install_amazon_kinesis_client_libs():
@@ -532,12 +555,11 @@ def install_amazon_kinesis_client_libs():
 
     if is_windows():
         classpath = re.sub(r":([^\\])", r";\1", classpath)
-    java_files = "%s/utils/kinesis/java/cloud/localstack/*.java" % MODULE_MAIN_PATH
-    class_files = "%s/utils/kinesis/java/cloud/localstack/*.class" % MODULE_MAIN_PATH
+    java_files = f"{MODULE_MAIN_PATH}/utils/kinesis/java/cloud/localstack/*.java"
+    class_files = f"{MODULE_MAIN_PATH}/utils/kinesis/java/cloud/localstack/*.class"
     if not glob.glob(class_files):
         run(
-            'javac -source %s -target %s -cp "%s" %s'
-            % (JAVAC_TARGET_VERSION, JAVAC_TARGET_VERSION, classpath, java_files)
+            f'javac -source {JAVAC_TARGET_VERSION} -target {JAVAC_TARGET_VERSION} -cp "{classpath}" {java_files}'
         )
 
 
@@ -565,9 +587,9 @@ def install_go_lambda_runtime():
     arch = get_arch()
 
     if system not in ["linux"]:
-        raise ValueError("unsupported os %s for awslambda-go-runtime" % system)
+        raise ValueError(f"Unsupported os {system} for awslambda-go-runtime")
     if arch not in ["amd64", "arm64"]:
-        raise ValueError("unsupported arch %s for awslambda-go-runtime" % arch)
+        raise ValueError(f"Unsupported arch {arch} for awslambda-go-runtime")
 
     url = GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
         version=GO_RUNTIME_VERSION,
@@ -666,7 +688,7 @@ def install_debugpy_and_dependencies():
 
 
 def log_install_msg(component, verbatim=False):
-    component = component if verbatim else "local %s server" % component
+    component = component if verbatim else f"local {component} server"
     LOG.info("Downloading and installing %s. This may take some time.", component)
 
 

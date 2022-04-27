@@ -9,10 +9,10 @@ import requests
 from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
-from localstack.http import Router
+from localstack.http import Request, Response, Router
 from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import resource_dispatcher
-from localstack.services.infra import terminate_all_processes_in_docker
+from localstack.services.infra import SHUTDOWN_INFRA, terminate_all_processes_in_docker
 from localstack.utils.collections import merge_recursive
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
@@ -35,13 +35,19 @@ class HealthResource:
         self.service_manager = service_manager
         self.state = {}
 
-    def on_post(self, request):
-        data = request.json()
+    def on_post(self, request: Request):
+        data = request.get_json(True, True)
+        if not data:
+            return Response("invalid request", 400)
+
         # backdoor API to support restarting the instance
         if data.get("action") in ["kill", "restart"]:
             terminate_all_processes_in_docker()
+            SHUTDOWN_INFRA.set()
 
-    def on_get(self, request):
+        return Response("ok", 200)
+
+    def on_get(self, request: Request):
         path = request.path
 
         reload = "reload" in path
@@ -59,8 +65,8 @@ class HealthResource:
         result["version"] = constants.VERSION
         return result
 
-    def on_put(self, request):
-        data = json.loads(to_str(request.data or "{}"))
+    def on_put(self, request: Request):
+        data = request.get_json(True, True) or {}
 
         # keys like "features:initScripts" should be interpreted as ['features']['initScripts']
         state = defaultdict(dict)

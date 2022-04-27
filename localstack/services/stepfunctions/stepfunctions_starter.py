@@ -3,10 +3,10 @@ import logging
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import install
-from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
-from localstack.services.stepfunctions import stepfunctions_listener
+from localstack.services.infra import do_run, log_startup_message
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import wait_for_port_open
+from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
@@ -64,14 +64,13 @@ def get_command(backend_port):
     return cmd
 
 
-def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
-    port = port or config.service_port("stepfunctions")
+def start_stepfunctions(asynchronous=True):
+    # TODO: introduce Server abstraction for StepFunctions process
+    global PROCESS_THREAD
     backend_port = config.LOCAL_PORT_STEPFUNCTIONS
     install.install_stepfunctions_local()
     cmd = get_command(backend_port)
     log_startup_message("StepFunctions")
-    start_proxy_for_service("stepfunctions", port, backend_port, update_listener)
-    global PROCESS_THREAD
     # TODO: change ports in stepfunctions.jar, then update here
     PROCESS_THREAD = do_run(
         cmd,
@@ -86,6 +85,10 @@ def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
     return PROCESS_THREAD
 
 
+def wait_for_stepfunctions():
+    retry(check_stepfunctions, sleep=0.5, retries=15)
+
+
 def check_stepfunctions(expect_shutdown=False, print_error=False):
     out = None
     try:
@@ -96,7 +99,7 @@ def check_stepfunctions(expect_shutdown=False, print_error=False):
         ).list_state_machines()
     except Exception:
         if print_error:
-            LOG.exception("Stepfunctions health check failed")
+            LOG.exception("StepFunctions health check failed")
 
     if expect_shutdown:
         assert out is None
@@ -109,6 +112,4 @@ def restart_stepfunctions():
         return
     LOG.debug("Restarting StepFunctions process ...")
     PROCESS_THREAD.stop()
-    start_stepfunctions(
-        asynchronous=True, update_listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS
-    )
+    start_stepfunctions(asynchronous=True)

@@ -86,7 +86,7 @@ def get_request_context():
             return req
 
 
-class RequestContextManager(object):
+class RequestContextManager:
     """Context manager which sets the given request context (i.e., region) for the scope of the block."""
 
     def __init__(self, request_context):

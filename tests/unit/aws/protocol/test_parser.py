@@ -1,11 +1,10 @@
 from datetime import datetime, timezone
-from urllib.parse import unquote, urlencode, urlsplit
+from urllib.parse import urlencode, urlsplit
 
 import pytest
 from botocore.awsrequest import prepare_request_dict
 from botocore.serialize import create_serializer
 
-from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.parser import (
     OperationNotFoundParserError,
     ProtocolParserError,
@@ -14,6 +13,7 @@ from localstack.aws.protocol.parser import (
     create_parser,
 )
 from localstack.aws.spec import load_service
+from localstack.http import Request as HttpRequest
 from localstack.services.s3 import s3_utils
 from localstack.utils.common import to_bytes, to_str
 
@@ -251,7 +251,7 @@ def _botocore_parser_integration_test(
     parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method") or "GET",
-            path=unquote(path),
+            path=path,
             query_string=to_str(query_string),
             headers=headers,
             body=body,
@@ -754,6 +754,18 @@ def test_parse_s3_with_extended_uri_pattern():
     )
 
 
+def test_parse_s3_utf8_url():
+    """Test the parsing of a map with the location trait 'headers'."""
+    _botocore_parser_integration_test(
+        service="s3",
+        action="PutObject",
+        ContentLength=0,
+        Bucket="test-bucket",
+        Key="Ā0",
+        Metadata={"Key": "value", "Key2": "value2"},
+    )
+
+
 def test_parse_restjson_uri_location():
     """Tests if the parsing of uri parameters works correctly for the rest-json protocol"""
     _botocore_parser_integration_test(
@@ -878,9 +890,10 @@ def test_restxml_headers_parsing():
     _botocore_parser_integration_test(
         service="s3",
         action="PutObject",
+        ContentLength=0,
         Bucket="test-bucket",
         Key="test.json",
-        Metadata={"key": "value", "key2": "value2"},
+        Metadata={"Key": "value", "Key2": "value2"},
     )
 
 
@@ -891,6 +904,7 @@ def test_restxml_header_date_parsing():
         action="PutObject",
         Bucket="test-bucket",
         Key="test-key",
+        ContentLength=3,
         Body=b"foo",
         Metadata={},
         Expires=datetime(2015, 1, 1, 0, 0, tzinfo=timezone.utc),

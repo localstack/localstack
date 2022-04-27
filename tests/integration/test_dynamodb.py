@@ -392,6 +392,32 @@ class TestDynamoDB:
         finally:
             dynamodb_client.delete_table(TableName=table_name)
 
+    def test_more_than_20_global_secondary_indexes(self, dynamodb, dynamodb_client):
+        table_name = f"test-table-{short_uid()}"
+        num_gsis = 25
+        attrs = [{"AttributeName": f"a{i}", "AttributeType": "S"} for i in range(num_gsis)]
+        gsis = [
+            {
+                "IndexName": f"gsi_{i}",
+                "KeySchema": [{"AttributeName": f"a{i}", "KeyType": "HASH"}],
+                "Projection": {"ProjectionType": "ALL"},
+            }
+            for i in range(num_gsis)
+        ]
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}, *attrs],
+            GlobalSecondaryIndexes=gsis,
+            BillingMode="PAY_PER_REQUEST",
+        )
+
+        table = dynamodb_client.describe_table(TableName=table_name)
+        assert len(table["Table"]["GlobalSecondaryIndexes"]) == num_gsis
+
+        # clean up
+        delete_table(table_name)
+
     def test_return_values_in_put_item(self, dynamodb):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
@@ -479,6 +505,105 @@ class TestDynamoDB:
             .get("StartingSequenceNumber"),
         )
         assert "ShardIterator" in response
+
+    def test_dynamodb_create_table_with_class(self, dynamodb_client):
+        table_name = "table_with_class_%s" % short_uid()
+        # create table
+        result = dynamodb_client.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            TableClass="STANDARD",
+        )
+        assert result["TableDescription"]["TableClassSummary"]["TableClass"] == "STANDARD"
+        result = dynamodb_client.describe_table(TableName=table_name)
+        assert result["Table"]["TableClassSummary"]["TableClass"] == "STANDARD"
+        result = dynamodb_client.update_table(
+            TableName=table_name, TableClass="STANDARD_INFREQUENT_ACCESS"
+        )
+        assert (
+            result["TableDescription"]["TableClassSummary"]["TableClass"]
+            == "STANDARD_INFREQUENT_ACCESS"
+        )
+        result = dynamodb_client.describe_table(TableName=table_name)
+        assert result["Table"]["TableClassSummary"]["TableClass"] == "STANDARD_INFREQUENT_ACCESS"
+        # clean resources
+        dynamodb_client.delete_table(TableName=table_name)
+
+    def test_dynamodb_execute_transaction(self, dynamodb_client):
+        table_name = "table_%s" % short_uid()
+        dynamodb_client.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        statements = [
+            {"Statement": f"INSERT INTO {table_name} VALUE {{'Username': 'user01'}}"},
+            {"Statement": f"INSERT INTO {table_name} VALUE {{'Username': 'user02'}}"},
+        ]
+        result = dynamodb_client.execute_transaction(TransactStatements=statements)
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        result = dynamodb_client.scan(TableName=table_name)
+        assert result["ScannedCount"] == 2
+
+        dynamodb_client.delete_table(TableName=table_name)
+
+    def test_dynamodb_batch_execute_statement(self, dynamodb_client):
+        table_name = "table_%s" % short_uid()
+        dynamodb_client.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+
+        dynamodb_client.put_item(TableName=table_name, Item={"Username": {"S": "user02"}})
+        statements = [
+            {"Statement": f"INSERT INTO {table_name} VALUE {{'Username': 'user01'}}"},
+            {"Statement": f"UPDATE {table_name} SET Age=20 WHERE Username='user02'"},
+        ]
+        result = dynamodb_client.batch_execute_statement(Statements=statements)
+        # actions always succeeds
+        assert not any("Error" in r for r in result["Responses"])
+
+        item = dynamodb_client.get_item(TableName=table_name, Key={"Username": {"S": "user02"}})[
+            "Item"
+        ]
+        assert item["Age"]["N"] == "20"
+
+        item = dynamodb_client.get_item(TableName=table_name, Key={"Username": {"S": "user01"}})[
+            "Item"
+        ]
+        assert item
+
+        dynamodb_client.delete_table(TableName=table_name)
+
+    def test_dynamodb_partiql_missing(self, dynamodb_client):
+        table_name = "table_with_stream_%s" % short_uid()
+
+        # create table
+        dynamodb_client.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        # create items with FirstName attribute
+        dynamodb_client.execute_statement(
+            Statement=f"INSERT INTO {table_name} VALUE {{'Username': 'Alice123', 'FirstName':'Alice'}}"
+        )
+        items = dynamodb_client.execute_statement(
+            Statement=f"SELECT * FROM {table_name} WHERE FirstName IS NOT MISSING"
+        )["Items"]
+        assert len(items) == 1
+        items = dynamodb_client.execute_statement(
+            Statement=f"SELECT * FROM {table_name} WHERE FirstName IS MISSING"
+        )["Items"]
+        assert len(items) == 0
+        dynamodb_client.delete_table(TableName=table_name)
 
     def test_dynamodb_stream_stream_view_type(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
@@ -781,6 +906,21 @@ class TestDynamoDB:
         # clean up
         dynamodb.delete_table(TableName=table_name)
 
+    def test_transact_get_items(self, dynamodb_client):
+        table_name = "test-ddb-table-%s" % short_uid()
+        dynamodb_client.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        dynamodb_client.put_item(TableName=table_name, Item={"id": {"S": "John"}})
+        result = dynamodb_client.transact_get_items(
+            TransactItems=[{"Get": {"Key": {"id": {"S": "John"}}, "TableName": table_name}}]
+        )
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+        dynamodb_client.delete_table(TableName=table_name)
+
     def test_batch_write_items(self):
         table_name = "test-ddb-table-%s" % short_uid()
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
@@ -977,6 +1117,20 @@ class TestDynamoDB:
         )
 
         assert result.get("UnprocessedItems") == {}
+
+    def test_dynamodb_pay_per_request(self):
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        table_name = "ddb-table-%s" % short_uid()
+
+        with pytest.raises(Exception) as e:
+            dynamodb.create_table(
+                TableName=table_name,
+                KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+                AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+                ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+                BillingMode="PAY_PER_REQUEST",
+            )
+        assert e.match("ValidationException")
 
     def test_dynamodb_create_table_with_sse_specification(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")

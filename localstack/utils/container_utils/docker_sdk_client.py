@@ -13,6 +13,7 @@ from docker.utils.socket import STDERR, STDOUT, frames_iter
 
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
+    CancellableStream,
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
@@ -277,6 +278,15 @@ class SdkDockerClient(ContainerClient):
         except APIError:
             if safe:
                 return ""
+            raise ContainerException()
+
+    def stream_container_logs(self, container_name_or_id: str) -> CancellableStream:
+        try:
+            container = self.client().containers.get(container_name_or_id)
+            return container.logs(stream=True, follow=True)
+        except NotFound:
+            raise NoSuchContainer(container_name_or_id)
+        except APIError:
             raise ContainerException()
 
     def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
