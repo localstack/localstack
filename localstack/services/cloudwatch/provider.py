@@ -5,8 +5,9 @@ from xml.sax.saxutils import escape
 from moto.cloudwatch import cloudwatch_backends
 from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm
 
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
+    AlarmNames,
     AmazonResourceName,
     CloudwatchApi,
     ListTagsForResourceOutput,
@@ -19,11 +20,14 @@ from localstack.aws.api.cloudwatch import (
 )
 from localstack.http import Request
 from localstack.services import moto
+from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
-from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
+from localstack.utils.sync import poll_condition
 from localstack.utils.tagging import TaggingService
+from localstack.utils.threads import start_worker_thread
 
 PATH_GET_RAW_METRICS = "/cloudwatch/metrics/raw"
 
@@ -168,6 +172,11 @@ def create_message_response_update_state(alarm, old_state):
     return json.dumps(response)
 
 
+class ValidationError(CommonServiceException):
+    def __init__(self, message: str):
+        super().__init__("ValidationError", message, 400, True)
+
+
 class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     """
     Cloudwatch provider.
@@ -178,9 +187,28 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def __init__(self):
         self.tags = TaggingService()
+        self.alarm_scheduler = None
 
     def on_after_init(self):
         ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
+        self.alarm_scheduler = AlarmScheduler()
+
+    def on_before_start(self):
+        # re-schedule alarms for persistence use-case
+        def restart_alarms(*args):
+            poll_condition(lambda: SERVICE_PLUGINS.is_running("cloudwatch"))
+            self.alarm_scheduler.restart_existing_alarms()
+
+        start_worker_thread(restart_alarms)
+
+    def on_before_stop(self):
+        self.alarm_scheduler.shutdown_scheduler()
+
+    def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+        moto.call_moto(context)
+        for alarm_name in alarm_names:
+            arn = aws_stack.cloudwatch_alarm_arn(alarm_name)
+            self.alarm_scheduler.delete_scheduler_for_alarm(arn)
 
     def get_raw_metrics(self, request: Request):
         region = aws_stack.extract_region_from_auth_header(request.headers)
@@ -226,11 +254,42 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutMetricAlarmInput,
     ) -> None:
+
+        # missing will be the default, when not set (but it will not explicitly be set)
+        if not request.get("TreatMissingData", "missing") in [
+            "breaching",
+            "notBreaching",
+            "ignore",
+            "missing",
+        ]:
+            raise ValidationError(
+                f"The value {request['TreatMissingData']} is not supported for TreatMissingData parameter. Supported values are [breaching, notBreaching, ignore, missing]."
+            )
+        # do some sanity checks:
+        if request.get("Period"):
+            # Valid values are 10, 30, and any multiple of 60.
+            value = request.get("Period")
+            if value not in (10, 30):
+                if value % 60 != 0:
+                    raise ValidationError("Period must be 10, 30 or a multiple of 60")
+        if request.get("Statistic"):
+            if not request.get("Statistic") in [
+                "SampleCount",
+                "Average",
+                "Sum",
+                "Minimum",
+                "Maximum",
+            ]:
+                raise ValidationError(
+                    f"Value '{request.get('Statistic')}' at 'statistic' failed to satisfy constraint: Member must satisfy enum value set: [Maximum, SampleCount, Sum, Minimum, Average]"
+                )
+
         moto.call_moto(context)
 
         name = request.get("AlarmName")
         arn = aws_stack.cloudwatch_alarm_arn(name)
         self.tags.tag_resource(arn, request.get("Tags"))
+        self.alarm_scheduler.schedule_metric_alarm(arn)
 
     @handler("PutCompositeAlarm", expand=False)
     def put_composite_alarm(
@@ -238,7 +297,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutCompositeAlarmInput,
     ) -> None:
-        pass
         backend = cloudwatch_backends[context.region]
         backend.put_metric_alarm(
             name=request.get("AlarmName"),
@@ -264,4 +322,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             threshold_metric_id=None,
             rule=request.get("AlarmRule"),
             tags=request.get("Tags", []),
+        )
+        LOG.warning(
+            "Composite Alarms configuration is not yet supported, alarm state will not be evaluated"
         )
