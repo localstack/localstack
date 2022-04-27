@@ -1,7 +1,6 @@
 import logging
 import math
 import threading
-import traceback
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, List
 
@@ -69,8 +68,7 @@ class AlarmScheduler:
         schedule_period = evaluation_periods * period
 
         def on_error(e):
-            LOG.error(f"Error executing scheduled alarm: {e}")
-            LOG.error(traceback.format_exc())
+            LOG.exception("Error executing scheduled alarm", exc_info=e)
 
         task = self.scheduler.schedule(
             func=calculate_alarm_state,
