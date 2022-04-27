@@ -4,14 +4,18 @@ from unittest.mock import Mock
 
 import boto3
 import pytest
+from moto.apigateway.models import APIGatewayBackend
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
+    get_resource_for_path,
+    import_api_from_openapi_spec,
+)
+from localstack.services.apigateway.helpers import (
     extract_path_params,
     extract_query_string_params,
-    get_resource_for_path,
 )
 from localstack.services.apigateway.integration import (
     RequestTemplates,
@@ -25,6 +29,7 @@ from localstack.services.apigateway.invocations import (
 )
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
+from tests.unit.utils.test_common import load_test_resource
 
 
 class ApiGatewayPathsTest(unittest.TestCase):
@@ -369,3 +374,19 @@ class TestTemplates:
             "stageVariable1": "value1",
             "stageVariable2": "value2",
         }
+
+
+def test_import_swagger_api():
+    api_spec = load_test_resource("openapi.swagger.json")
+    api_spec_dict = json.loads(api_spec)
+
+    # patch integration model
+    apigateway_starter.apply_patches()
+
+    backend = APIGatewayBackend(region_name="eu-west-1")
+    api_model = backend.create_rest_api(name="", description="")
+
+    imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})
+
+    assert imported_api.name == api_spec_dict.get("info").get("title")
+    assert imported_api.description == api_spec_dict.get("info").get("description")

@@ -522,9 +522,12 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
 
 
 def import_api_from_openapi_spec(
-    rest_api: apigateway_models.RestAPI, function_id: str, body: Dict, query_params: Dict
+    rest_api: apigateway_models.RestAPI, body: Dict, query_params: Dict
 ) -> apigateway_models.RestAPI:
     """Import an API from an OpenAPI spec document"""
+
+    rest_api.name = body.get("info", {}).get("title")
+    rest_api.description = body.get("info", {}).get("description")
 
     # Remove default root, then add paths from API spec
     rest_api.resources = {}
