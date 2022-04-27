@@ -86,7 +86,7 @@ class AlarmScheduler:
 
         :param alarm_arn: the arn of the alarm to be removed
         """
-        task = self.scheduled_alarms.get(alarm_arn)
+        task = self.scheduled_alarms.pop(alarm_arn, None)
         if task:
             task.cancel()
 
