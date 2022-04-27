@@ -562,7 +562,12 @@ def import_api_from_openapi_spec(
             m = m.upper()
             payload = payload["x-amazon-apigateway-integration"]
 
-            child.add_method(m, None, None)
+            method = child.add_method(m, None, None)
+            method.create_response(
+                payload.get("responses", {}).get("default", {}).get("statusCode"),
+                None,
+                payload.get("responses", {}).get("default", {}).get("responseParameters"),
+            )
             integration = apigateway_models.Integration(
                 http_method=m,
                 uri=payload.get("uri"),
@@ -573,7 +578,9 @@ def import_api_from_openapi_spec(
             integration.create_integration_response(
                 status_code=payload.get("responses", {}).get("default", {}).get("statusCode", 200),
                 selection_pattern=None,
-                response_templates=None,
+                response_templates=payload.get("responses", {})
+                .get("default", {})
+                .get("responseTemplates"),
                 content_handling=None,
             )
             child.resource_methods[m]["methodIntegration"] = integration

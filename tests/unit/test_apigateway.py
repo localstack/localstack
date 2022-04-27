@@ -390,3 +390,18 @@ def test_import_swagger_api():
 
     assert imported_api.name == api_spec_dict.get("info").get("title")
     assert imported_api.description == api_spec_dict.get("info").get("description")
+
+    paths = {v.path_part for k, v in imported_api.resources.items()}
+    assert paths == {"/", "pets", "{petId}"}
+
+    resource_methods = {v.path_part: v.resource_methods for k, v in imported_api.resources.items()}
+    methods = {kk[0] for k, v in resource_methods.items() for kk in v.items()}
+    assert methods == {"POST", "OPTIONS", "GET"}
+
+    assert resource_methods.get("/").get("GET").method_responses == {
+        "200": {
+            "statusCode": "200",
+            "responseModels": None,
+            "responseParameters": {"method.response.header.Content-Type": "'text/html'"},
+        }
+    }
