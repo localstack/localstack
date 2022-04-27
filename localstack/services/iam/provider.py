@@ -47,9 +47,6 @@ from localstack.utils.patch import patch
 
 
 class IamProvider(IamApi):
-    def __init__(self):
-        apply_patches()
-
     @staticmethod
     def build_evaluation_result(
         action_name: ActionNameType, resource_name: ResourceNameType, policy_statements: List[Dict]
