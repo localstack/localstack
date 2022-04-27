@@ -8,9 +8,33 @@ from werkzeug.exceptions import NotFound
 
 from localstack.services.generic_proxy import ProxyListener
 
+from ..services.messages import Headers, MessagePayload
 from .request import Request, get_raw_path
 from .response import Response
 from .router import Router
+
+
+def create_request_from_parts(method: str, path: str, data: MessagePayload, headers: Headers):
+    """
+    Creates an HTTP Request object from the given parts of a request.
+
+    :param method: HTTP method
+    :param path: HTTP path including the query arguments
+    :param data: body of the HTTP request
+    :param headers: of the HTTP request
+    :return: created Request object
+    """
+    split_url = urlsplit(path)
+    raw_path = get_raw_path(quart_request)
+
+    return Request(
+        method=method,
+        path=split_url.path,
+        query_string=split_url.query,
+        headers=headers,
+        body=data,
+        raw_path=raw_path,
+    )
 
 
 class ProxyListenerAdapter(ProxyListener):
@@ -22,19 +46,8 @@ class ProxyListenerAdapter(ProxyListener):
     def request(self, request: Request) -> Response:
         raise NotImplementedError
 
-    def forward_request(self, method, path, data, headers):
-        split_url = urlsplit(path)
-        raw_path = get_raw_path(quart_request)
-
-        request = Request(
-            method=method,
-            path=split_url.path,
-            query_string=split_url.query,
-            headers=headers,
-            body=data,
-            raw_path=raw_path,
-        )
-
+    def forward_request(self, method: str, path: str, data: MessagePayload, headers: Headers):
+        request = create_request_from_parts(method, path, data, headers)
         response = self.request(request)
 
         return self.to_proxy_response(response)

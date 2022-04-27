@@ -52,7 +52,6 @@ from localstack.utils.server import http2_server
 from localstack.utils.serving import Server
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.threads import start_thread
-from localstack.utils.urls import path_from_url
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -472,12 +471,11 @@ def should_enforce_self_managed_service(method, path, headers, data):
     if config.DISABLE_CUSTOM_CORS_S3 and config.DISABLE_CUSTOM_CORS_APIGATEWAY:
         return True
     # allow only certain api calls without checking origin
-    import localstack.services.edge
+    from localstack.aws.protocol.service_router import determine_aws_service_name
+    from localstack.http.adapters import create_request_from_parts
 
-    api, _ = localstack.services.edge.get_api_from_custom_rules(method, path, data, headers) or (
-        "",
-        None,
-    )
+    request = create_request_from_parts(method, path, data, headers)
+    api = determine_aws_service_name(request)
     if not config.DISABLE_CUSTOM_CORS_S3 and api == "s3":
         return False
     if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and api == "apigateway":
@@ -967,7 +965,7 @@ def start_proxy_server(
 
     def handler(request, data):
         parsed_url = urlparse(request.url)
-        path_with_params = path_from_url(request.url)
+        path_with_params = request.full_path.strip("?")
         method = request.method
         headers = request.headers
         headers[HEADER_LOCALSTACK_REQUEST_URL] = str(request.url)

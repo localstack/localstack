@@ -1,6 +1,7 @@
 import logging
 import re
 import threading
+from typing import Dict, Optional
 from urllib.parse import urlparse
 
 from flask import request
@@ -150,11 +151,19 @@ def mock_request_for_region(region_name: str, service_name: str = "dummy") -> Re
     return result
 
 
+def extract_service_name_from_auth_header(headers: Dict) -> Optional[str]:
+    try:
+        auth_header = headers.get("authorization", "")
+        credential_scope = auth_header.split(",")[0].split()[1]
+        _, _, _, service, _ = credential_scope.split("/")
+        return service
+    except Exception:
+        return
+
+
 def patch_moto_request_handling():
     # leave here to avoid import issues
     from moto.core import utils as moto_utils
-
-    from localstack.services.edge import extract_service_name_from_auth_header
 
     # make sure we properly handle/propagate "not implemented" errors
     @patch(moto_utils.convert_to_flask_response.__call__)
