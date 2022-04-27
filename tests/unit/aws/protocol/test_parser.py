@@ -800,15 +800,30 @@ def test_parse_restjson_querystring_list_parsing():
 
 
 def test_restjson_operation_detection_with_query_suffix_in_requesturi():
-    # Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
-    # parameter, f.e. API Gateway's ImportRestApi: "/restapis?mode=import"
+    """
+    Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
+    parameter, f.e. API Gateway's ImportRestApi: "/restapis?mode=import
+    """
     _botocore_parser_integration_test(service="apigateway", action="ImportRestApi", body=b"Test")
 
 
+def test_rest_url_parameter_with_dashes():
+    """
+    Test if requestUri parameters with dashes in them (e.g., "/v2/tags/{resource-arn}") are parsed correctly.
+    """
+    _botocore_parser_integration_test(
+        service="apigatewayv2",
+        action="GetTags",
+        ResourceArn="arn:aws:apigatewayv2:us-east-1:000000000000:foobar",
+    )
+
+
 def test_restxml_operation_detection_with_query_suffix_without_value_in_requesturi():
-    # Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
-    # parameter without a specific value, f.e. CloudFront's CreateDistributionWithTags:
-    # "/2020-05-31/distribution?WithTags"
+    """
+    Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
+    parameter without a specific value, f.e. CloudFront's CreateDistributionWithTags:
+    "/2020-05-31/distribution?WithTags"
+    """
     _botocore_parser_integration_test(
         service="cloudfront",
         action="CreateDistributionWithTags",
