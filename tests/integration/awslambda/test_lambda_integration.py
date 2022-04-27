@@ -535,14 +535,16 @@ class TestKinesisSource:
                 "StreamDescription"
             ]["StreamARN"]
             wait_for_stream_ready(stream_name=stream_name)
+            stream_summary = kinesis_client.describe_stream_summary(StreamName=stream_name)
+            assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
+
             uuid = lambda_client.create_event_source_mapping(
                 EventSourceArn=stream_arn,
                 FunctionName=function_name,
                 StartingPosition="LATEST",
                 BatchSize=num_records_per_batch,
             )["UUID"]
-            stream_summary = kinesis_client.describe_stream_summary(StreamName=stream_name)
-            assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
+            _await_event_source_mapping_enabled(lambda_client, uuid)
 
             for i in range(num_batches):
                 start = time.perf_counter()
