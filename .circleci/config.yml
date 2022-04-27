@@ -454,14 +454,14 @@ workflows:
       - docker-test:
           name: docker-test-arm64
           platform: arm64
-          resource_class: arm.medium
+          resource_class: arm.medium+
           machine_image: ubuntu-2004:202101-01
           requires:
             - docker-build-arm64
       - docker-test:
           name: docker-test-amd64
           platform: amd64
-          resource_class: medium
+          resource_class: medium+
           machine_image: ubuntu-2004:202107-02
           requires:
             - docker-build-amd64
