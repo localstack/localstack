@@ -618,6 +618,7 @@ def test_kinesis_lambda_forward_chain(
             func_name=TEST_CHAIN_LAMBDA1_NAME,
             zip_file=zip_file,
             event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME),
+            starting_position="TRIM_HORIZON",
         )
         lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
         lambda_2_resp = create_lambda_function(
