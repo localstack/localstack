@@ -1,8 +1,10 @@
-from unittest.mock import ANY, Mock, call, patch
+from unittest.mock import ANY, Mock, call
 
 import pytest
 
-from localstack.services.cloudwatch.alarm_scheduler import COMPARISON_OPS, calculate_alarm_state
+from localstack.services.cloudwatch import alarm_scheduler
+from localstack.services.cloudwatch.alarm_scheduler import COMPARISON_OPS
+from localstack.utils.patch import Patch, Patches
 
 
 class TestAlarmScheduler:
@@ -204,25 +206,30 @@ def run_and_assert_calculate_alarm_state(
     def mock_cloudwatch_client(alarm_arn):
         return mock_client
 
-    alarm_scheduler_pckg = "localstack.services.cloudwatch.alarm_scheduler"
-    with patch(
-        f"{alarm_scheduler_pckg}.get_metric_alarm_details_for_alarm_arn",
-        mock_metric_alarm_details,
-    ):
-        with patch(
-            f"{alarm_scheduler_pckg}.get_cloudwatch_client_for_region_of_alarm",
-            mock_cloudwatch_client,
-        ):
-            with patch(
-                f"{alarm_scheduler_pckg}.collect_metric_data",
+    patches = Patches(
+        [
+            Patch.function(
+                alarm_scheduler.get_metric_alarm_details_for_alarm_arn,
+                mock_metric_alarm_details,
+            ),
+            Patch.function(
+                alarm_scheduler.get_cloudwatch_client_for_region_of_alarm,
+                mock_cloudwatch_client,
+            ),
+            Patch.function(
+                alarm_scheduler.collect_metric_data,
                 mock_collect_metric_data,
-            ):
-                calculate_alarm_state("helloworld")
-                assert len(mock_client.mock_calls) == expected_calls
-                if expected_calls != 0:
-                    expected_calls = [
-                        call.set_alarm_state(
-                            AlarmName="test-alarm", StateValue=expected_state, StateReason=ANY
-                        )
-                    ]
-                    mock_client.assert_has_calls(expected_calls)
+            ),
+        ]
+    )
+
+    with patches:
+        alarm_scheduler.calculate_alarm_state("helloworld")
+        assert len(mock_client.mock_calls) == expected_calls
+        if expected_calls != 0:
+            expected_calls = [
+                call.set_alarm_state(
+                    AlarmName="test-alarm", StateValue=expected_state, StateReason=ANY
+                )
+            ]
+            mock_client.assert_has_calls(expected_calls)
