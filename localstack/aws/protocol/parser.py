@@ -980,7 +980,9 @@ class S3RequestParser(RestXMLRequestParser):
         """Handle virtual-host-addressing for S3."""
         if (
             # TODO implement a more sophisticated determination if the host contains S3 virtual host addressing
-            not request.host.startswith("s3.")
+            not request.host == "localhost"
+            and not request.host.startswith("localhost:")
+            and not request.host.startswith("s3.")
             and not request.host.startswith("localhost.")
             and not request.host.startswith("127.0.0.1")
         ):
