@@ -5,11 +5,13 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.aws.api.iam import Tag
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.strings import long_uid
 
 
 class TestIAMIntegrations:
@@ -114,6 +116,80 @@ class TestIAMIntegrations:
 
         # clean up
         iam_client.delete_role(RoleName=role_name)
+
+    def test_instance_profile_tags(self, iam_client):
+        def gen_tag():
+            return Tag(Key=f"key-{long_uid()}", Value=f"value-{short_uid()}")
+
+        user_name = "user-role-{}".format(short_uid())
+        iam_client.create_instance_profile(InstanceProfileName=user_name)
+
+        tags_v0 = []
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == tags_v0
+
+        tags_v1 = [gen_tag()]
+        #
+        rs = iam_client.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v1)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == tags_v1
+
+        tags_v2_new = [gen_tag() for _ in range(5)]
+        tags_v2 = tags_v1 + tags_v2_new
+        rs = iam_client.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v2)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == tags_v2
+
+        rs = iam_client.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v2)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == tags_v2
+
+        tags_v3_new = [gen_tag()]
+        tags_v3 = tags_v1 + tags_v3_new
+        target_tags_v3 = tags_v2 + tags_v3_new
+        rs = iam_client.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v3)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == target_tags_v3
+
+        tags_v4 = tags_v1
+        target_tags_v4 = target_tags_v3
+        rs = iam_client.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v4)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == target_tags_v4
+
+        tags_u_v1 = [tag["Key"] for tag in tags_v1]
+        target_tags_u_v1 = tags_v2_new + tags_v3_new
+        iam_client.untag_instance_profile(InstanceProfileName=user_name, TagKeys=tags_u_v1)
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == target_tags_u_v1
+
+        tags_u_v2 = [f"key-{long_uid()}"]
+        target_tags_u_v2 = target_tags_u_v1
+        iam_client.untag_instance_profile(InstanceProfileName=user_name, TagKeys=tags_u_v2)
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == target_tags_u_v2
+
+        tags_u_v3 = [tag["Key"] for tag in target_tags_u_v1]
+        target_tags_u_v3 = []
+        iam_client.untag_instance_profile(InstanceProfileName=user_name, TagKeys=tags_u_v3)
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == target_tags_u_v3
+
+        iam_client.delete_instance_profile(InstanceProfileName=user_name)
 
     def test_create_user_with_tags(self, iam_client):
         user_name = "user-role-{}".format(short_uid())

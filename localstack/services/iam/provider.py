@@ -1,21 +1,13 @@
 import json
 import re
 from typing import Dict, List
-from urllib.parse import quote
 
-import moto.iam.models
-import xmltodict
-from moto.iam.models import (
-    AWSManagedPolicy,
-    IAMNotFoundException,
-    InlinePolicy,
-    Policy,
-    aws_managed_policies,
-    aws_managed_policies_data_parsed,
-)
+from moto.iam.models import AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy
+from moto.iam.models import Role as MotoRole
+from moto.iam.models import aws_managed_policies, aws_managed_policies_data_parsed
 from moto.iam.models import iam_backend as moto_iam_backend
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
-from moto.iam.responses import GET_ROLE_TEMPLATE, IamResponse
+from moto.iam.responses import IamResponse
 
 from localstack import config, constants
 from localstack.aws.api import RequestContext
@@ -23,9 +15,14 @@ from localstack.aws.api.iam import (
     ActionNameListType,
     ActionNameType,
     ContextEntryListType,
+    CreateServiceLinkedRoleResponse,
+    DeleteServiceLinkedRoleResponse,
+    DeletionTaskIdType,
+    DeletionTaskStatusType,
     EvaluationResult,
+    GetServiceLinkedRoleDeletionStatusResponse,
     IamApi,
-    ListRolesResponse,
+    ListInstanceProfileTagsResponse,
     PolicyEvaluationDecisionType,
     ResourceHandlingOptionType,
     ResourceNameListType,
@@ -33,14 +30,19 @@ from localstack.aws.api.iam import (
     Role,
     SimulatePolicyResponse,
     SimulationPolicyListType,
+    Tag,
     arnType,
+    customSuffixType,
     groupNameType,
+    instanceProfileNameType,
     markerType,
     maxItemsType,
-    pathPrefixType,
     pathType,
     policyDocumentType,
+    roleDescriptionType,
     roleNameType,
+    tagKeyListType,
+    tagListType,
 )
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
@@ -153,7 +155,7 @@ class IamProvider(IamApi):
             raise IAMNotFoundException("Policy {0} was not found.".format(policy_arn))
 
     @staticmethod
-    def moto_role_to_role_type(moto_role: moto.iam.models.Role) -> Role:
+    def moto_role_to_role_type(moto_role: MotoRole) -> Role:
         role = Role()
         role["Path"]: moto_role.path
         role["RoleName"]: moto_role.name
@@ -168,65 +170,66 @@ class IamProvider(IamApi):
         # role["RoleLastUsed"]: # TODO not supported
         return role
 
-    def list_roles(
-        self,
-        context: RequestContext,
-        path_prefix: pathPrefixType = None,
-        marker: markerType = None,
-        max_items: maxItemsType = None,
-    ) -> ListRolesResponse:
-        moto_roles = moto_iam_backend.get_roles()
-
-        res_roles = []
-        if path_prefix:
-            for moto_role in moto_roles:
-                if moto_role.path.startswith(path_prefix):
-                    res_roles.append(self.moto_role_to_role_type(moto_role))
-        else:
-            for moto_role in moto_roles:
-                role = self.moto_role_to_role_type(moto_role)
-                assume_role_policy_doc = role["AssumeRolePolicyDocument"]
-                role["AssumeRolePolicyDocument"] = quote(json.dumps(assume_role_policy_doc or {}))
-                res_roles.append(role)
-
-        # TODO: verify what other defaults are not carried forward from original response template:
-        #  <ListRolesResult>
-        #     <IsTruncated>{{ 'true' if marker else 'false' }}</IsTruncated>
-        #     {% if marker %}
-        #     <Marker>{{ marker }}</Marker>
-        #     {% endif %}
-        #     <Roles>
-        #       {% for role in roles %}
-        #       <member>
-        #         <Path>{{ role.path }}</Path>
-        #         <Arn>{{ role.arn }}</Arn>
-        #         <RoleName>{{ role.name }}</RoleName>
-        #         <AssumeRolePolicyDocument>{{ role.assume_role_policy_document }}</AssumeRolePolicyDocument>
-        #         <CreateDate>{{ role.created_iso_8601 }}</CreateDate>
-        #         <RoleId>{{ role.id }}</RoleId>
-        #         <MaxSessionDuration>{{ role.max_session_duration }}</MaxSessionDuration>
-        #         {% if role.permissions_boundary %}
-        #         <PermissionsBoundary>
-        #           <PermissionsBoundaryType>PermissionsBoundaryPolicy</PermissionsBoundaryType>
-        #           <PermissionsBoundaryArn>{{ role.permissions_boundary }}</PermissionsBoundaryArn>
-        #         </PermissionsBoundary>
-        #         {% endif %}
-        #         {% if role.description is not none %}
-        #         <Description>{{ role.description_escaped }}</Description>
-        #         {% endif %}
-        #       </member>
-        #       {% endfor %}
-        #     </Roles>
-        #   </ListRolesResult>
-        #   <ResponseMetadata>
-        #     <RequestId>20f7279f-99ee-11e1-a4c3-27EXAMPLE804</RequestId>
-        #   </ResponseMetadata>
-        # </ListRolesResponse>
-
-        response = ListRolesResponse()
-        response["Roles"] = res_roles
-        response["IsTruncated"] = False
-        return response
+    #
+    # def list_roles(
+    #     self,
+    #     context: RequestContext,
+    #     path_prefix: pathPrefixType = None,
+    #     marker: markerType = None,
+    #     max_items: maxItemsType = None,
+    # ) -> ListRolesResponse:
+    #     moto_roles = moto_iam_backend.get_roles()
+    #
+    #     res_roles = []
+    #     if path_prefix:
+    #         for moto_role in moto_roles:
+    #             if moto_role.path.startswith(path_prefix):
+    #                 res_roles.append(self.moto_role_to_role_type(moto_role))
+    #     else:
+    #         for moto_role in moto_roles:
+    #             role = self.moto_role_to_role_type(moto_role)
+    #             assume_role_policy_doc = role["AssumeRolePolicyDocument"]
+    #             role["AssumeRolePolicyDocument"] = quote(json.dumps(assume_role_policy_doc or {}))
+    #             res_roles.append(role)
+    #
+    #     # TODO: verify what other defaults are not carried forward from original response template:
+    #     #  <ListRolesResult>
+    #     #     <IsTruncated>{{ 'true' if marker else 'false' }}</IsTruncated>
+    #     #     {% if marker %}
+    #     #     <Marker>{{ marker }}</Marker>
+    #     #     {% endif %}
+    #     #     <Roles>
+    #     #       {% for role in roles %}
+    #     #       <member>
+    #     #         <Path>{{ role.path }}</Path>
+    #     #         <Arn>{{ role.arn }}</Arn>
+    #     #         <RoleName>{{ role.name }}</RoleName>
+    #     #         <AssumeRolePolicyDocument>{{ role.assume_role_policy_document }}</AssumeRolePolicyDocument>
+    #     #         <CreateDate>{{ role.created_iso_8601 }}</CreateDate>
+    #     #         <RoleId>{{ role.id }}</RoleId>
+    #     #         <MaxSessionDuration>{{ role.max_session_duration }}</MaxSessionDuration>
+    #     #         {% if role.permissions_boundary %}
+    #     #         <PermissionsBoundary>
+    #     #           <PermissionsBoundaryType>PermissionsBoundaryPolicy</PermissionsBoundaryType>
+    #     #           <PermissionsBoundaryArn>{{ role.permissions_boundary }}</PermissionsBoundaryArn>
+    #     #         </PermissionsBoundary>
+    #     #         {% endif %}
+    #     #         {% if role.description is not none %}
+    #     #         <Description>{{ role.description_escaped }}</Description>
+    #     #         {% endif %}
+    #     #       </member>
+    #     #       {% endfor %}
+    #     #     </Roles>
+    #     #   </ListRolesResult>
+    #     #   <ResponseMetadata>
+    #     #     <RequestId>20f7279f-99ee-11e1-a4c3-27EXAMPLE804</RequestId>
+    #     #   </ResponseMetadata>
+    #     # </ListRolesResponse>
+    #
+    #     response = ListRolesResponse()
+    #     response["Roles"] = res_roles
+    #     response["IsTruncated"] = False
+    #     return response
 
     def update_group(
         self,
@@ -241,29 +244,89 @@ class IamProvider(IamApi):
         group.name = new_group_name
         moto_iam_backend.groups[new_group_name] = moto_iam_backend.groups.pop(group_name)
 
-    # TODO: tag patches seem outdated?
-    # def list_instance_profile_tags(
-    #     self,
-    #     context: RequestContext,
-    #     instance_profile_name: instanceProfileNameType,
-    #     marker: markerType = None,
-    #     max_items: maxItemsType = None,
-    # ) -> ListInstanceProfileTagsResponse:
-    #     # TODO: test
-    #     profile = moto_iam_backend.get_instance_profile(instance_profile_name)
-    #     # result = {
-    #     #     "ListInstanceProfileTagsResponse": {
-    #     #         "@xmlns": XMLNS_IAM,
-    #     #         "ListInstanceProfileTagsResult": {"Tags": profile.tags},
-    #     #     }
-    #     # }
-    #     tags = []
-    #     for role in profile["roles"]:
-    #         for k, v in role
-    #         tags.append(Tag(Key=))
-    #     response = ListInstanceProfileTagsResponse()
-    #     response["Tags"] = [Tag(k, v) for k, v in profile.tags.items()]
-    #     return response
+    def list_instance_profile_tags(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+    ) -> ListInstanceProfileTagsResponse:
+        profile = moto_iam_backend.get_instance_profile(instance_profile_name)
+        response = ListInstanceProfileTagsResponse()
+        response["Tags"] = [Tag(Key=k, Value=v) for k, v in profile.tags.items()]
+        return response
+
+    def tag_instance_profile(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        tags: tagListType,
+    ) -> None:
+        profile = moto_iam_backend.get_instance_profile(instance_profile_name)
+        value_by_key = {tag["Key"]: tag["Value"] for tag in tags}
+        profile.tags.update(value_by_key)
+
+    def untag_instance_profile(
+        self,
+        context: RequestContext,
+        instance_profile_name: instanceProfileNameType,
+        tag_keys: tagKeyListType,
+    ) -> None:
+        profile = moto_iam_backend.get_instance_profile(instance_profile_name)
+        for tag in tag_keys:
+            profile.tags.pop(tag, None)
+
+    def create_service_linked_role(
+        self,
+        context: RequestContext,
+        aws_service_name: groupNameType,
+        description: roleDescriptionType = None,
+        custom_suffix: customSuffixType = None,
+    ) -> CreateServiceLinkedRoleResponse:
+        # TODO: test
+        # TODO: how to support "CustomSuffix" API request parameter?
+        policy_doc = json.dumps(
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": {"Service": aws_service_name},
+                        "Action": "sts:AssumeRole",
+                    }
+                ],
+            }
+        )
+        path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{aws_service_name}"
+        role_name = f"r-{short_uid()}"
+        role = moto_iam_backend.create_role(
+            role_name=role_name,
+            assume_role_policy_document=policy_doc,
+            path=path,
+            permissions_boundary="",
+            description=description,
+            tags={},
+            max_session_duration=3600,
+        )
+        role.service_linked_role_arn = "arn:aws:iam::{0}:role/aws-service-role/{1}/{2}".format(
+            constants.TEST_AWS_ACCOUNT_ID, aws_service_name, role.name
+        )
+
+        res_role = self.moto_role_to_role_type(role)
+        return CreateServiceLinkedRoleResponse(Role=res_role)
+
+    def delete_service_linked_role(
+        self, context: RequestContext, role_name: roleNameType
+    ) -> DeleteServiceLinkedRoleResponse:
+        # TODO: test
+        moto_iam_backend.delete_role(role_name)
+        return DeleteServiceLinkedRoleResponse(DeletionTaskId=short_uid())
+
+    def get_service_linked_role_deletion_status(
+        self, context: RequestContext, deletion_task_id: DeletionTaskIdType
+    ) -> GetServiceLinkedRoleDeletionStatusResponse:
+        # TODO: test
+        return GetServiceLinkedRoleDeletionStatusResponse(Status=DeletionTaskStatusType.SUCCEEDED)
 
 
 # TODO: complete migrating patches below into asf provider.
@@ -363,6 +426,18 @@ class AWSManagedPolicyUSGov(AWSManagedPolicy):
         return "arn:aws-us-gov:iam::aws:policy{0}{1}".format(self.path, self.name)
 
 
+# support service linked roles
+
+
+@property
+def moto_role_arn(self):
+    return getattr(self, "service_linked_role_arn", None) or moto_role_og_arn_prop.__get__(self)
+
+
+moto_role_og_arn_prop = MotoRole.arn
+MotoRole.arn = moto_role_arn
+
+
 def apply_patches():
     # Add missing managed polices
     aws_managed_policies.extend(
@@ -428,151 +503,6 @@ def apply_patches():
         except Exception:
             # Actually role can be deleted before policy being deleted in cloudformation
             pass
-
-    # support instance profile tags
-
-    def list_instance_profile_tags(self):
-        profile_name = self._get_param("InstanceProfileName")
-        profile = moto_iam_backend.get_instance_profile(profile_name)
-        result = {
-            "ListInstanceProfileTagsResponse": {
-                "@xmlns": XMLNS_IAM,
-                "ListInstanceProfileTagsResult": {"Tags": profile.tags},
-            }
-        }
-        return xmltodict.unparse(result)
-
-    if not hasattr(IamResponse, "list_instance_profile_tags"):
-        IamResponse.list_instance_profile_tags = list_instance_profile_tags
-
-    # patch/implement tag_instance_profile
-
-    def tag_instance_profile(self):
-        profile_name = self._get_param("InstanceProfileName")
-        tags = self._get_multi_param("Tags.member")
-        tags = {tag["Key"]: tag["Value"] for tag in tags or []}
-        profile = moto_iam_backend.get_instance_profile(profile_name)
-        profile.tags.update(tags)
-        return ""
-
-    if not hasattr(IamResponse, "tag_instance_profile"):
-        IamResponse.tag_instance_profile = tag_instance_profile
-
-    # patch/implement untag_instance_profile
-
-    def untag_instance_profile(self):
-        profile_name = self._get_param("InstanceProfileName")
-        tag_keys = self._get_multi_param("TagKeys.member")
-        profile = moto_iam_backend.get_instance_profile(profile_name)
-        profile.tags = {k: v for k, v in profile.tags.items() if k not in tag_keys}
-        return ""
-
-    if not hasattr(IamResponse, "untag_instance_profile"):
-        IamResponse.untag_instance_profile = untag_instance_profile
-
-    # support policy tags
-
-    def tag_policy(self):
-        policy_arn = self._get_param("PolicyArn")
-        tags = self._get_multi_param("Tags.member")
-        tags = {tag["Key"]: tag["Value"] for tag in tags or []}
-        policy = moto_iam_backend.get_policy(policy_arn)
-        policy.tags.update(tags)
-        return ""
-
-    if not hasattr(IamResponse, "tag_policy"):
-        IamResponse.tag_policy = tag_policy
-
-    def untag_policy(self):
-        policy_arn = self._get_param("PolicyArn")
-        tag_keys = self._get_multi_param("TagKeys.member")
-        policy = moto_iam_backend.get_policy(policy_arn)
-        policy.tags = {k: v for k, v in policy.tags.items() if k not in tag_keys}
-        return ""
-
-    if not hasattr(IamResponse, "untag_policy"):
-        IamResponse.untag_policy = untag_policy
-
-    # support service linked roles
-
-    if not hasattr(IamResponse, "create_service_linked_role"):
-
-        @property
-        def role_arn(self):
-            return getattr(self, "service_linked_role_arn", None) or role_arn_orig.__get__(self)
-
-        role_arn_orig = Role.arn
-        Role.arn = role_arn
-
-        def create_service_linked_role(self):
-            service_name = self._get_param("AWSServiceName")
-            description = self._get_param("Description")
-            # TODO: how to support "CustomSuffix" API request parameter?
-            policy_doc = json.dumps(
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Principal": {"Service": service_name},
-                            "Action": "sts:AssumeRole",
-                        }
-                    ],
-                }
-            )
-            path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{service_name}"
-            role_name = f"r-{short_uid()}"
-            role = moto_iam_backend.create_role(
-                role_name=role_name,
-                assume_role_policy_document=policy_doc,
-                path=path,
-                permissions_boundary="",
-                description=description,
-                tags={},
-                max_session_duration=3600,
-            )
-            template = self.response_template(GET_ROLE_TEMPLATE)
-            role.service_linked_role_arn = "arn:aws:iam::{0}:role/aws-service-role/{1}/{2}".format(
-                constants.TEST_AWS_ACCOUNT_ID, service_name, role.name
-            )
-            result = re.sub(
-                r"<(/)?GetRole",
-                r"<\1CreateServiceLinkedRole",
-                template.render(role=role),
-            )
-            return result
-
-        IamResponse.create_service_linked_role = create_service_linked_role
-
-    if not hasattr(IamResponse, "delete_service_linked_role"):
-
-        def delete_service_linked_role(self):
-            role_name = self._get_param("RoleName")
-            moto_iam_backend.delete_role(role_name)
-            result = {
-                "DeleteServiceLinkedRoleResponse": {
-                    "@xmlns": XMLNS_IAM,
-                    "DeleteServiceLinkedRoleResult": {"DeletionTaskId": short_uid()},
-                }
-            }
-            return xmltodict.unparse(result)
-
-        IamResponse.delete_service_linked_role = delete_service_linked_role
-
-    if not hasattr(IamResponse, "get_service_linked_role_deletion_status"):
-
-        def get_service_linked_role_deletion_status(self):
-            result = {
-                "GetServiceLinkedRoleDeletionStatusResponse": {
-                    "@xmlns": XMLNS_IAM,
-                    "GetServiceLinkedRoleDeletionStatusResult": {"Status": "SUCCEEDED"},
-                }
-            }
-            return xmltodict.unparse(result)
-
-        IamResponse.get_service_linked_role_deletion_status = (
-            get_service_linked_role_deletion_status
-        )
 
     managed_policies = moto_iam_backend.managed_policies
     if "arn:aws-us-gov:iam::aws:policy/AmazonRDSFullAccess" not in managed_policies:
