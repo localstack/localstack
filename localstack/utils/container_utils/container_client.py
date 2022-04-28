@@ -420,12 +420,12 @@ class ContainerClient(metaclass=ABCMeta):
 
     @abstractmethod
     def pull_image(self, docker_image: str) -> None:
-        """Pulls a image with a given name from a Docker registry"""
+        """Pulls an image with a given name from a Docker registry"""
         pass
 
     @abstractmethod
     def push_image(self, docker_image: str) -> None:
-        """Pushes a image with a given name to a Docker registry"""
+        """Pushes an image with a given name to a Docker registry"""
         pass
 
     @abstractmethod

@@ -377,6 +377,8 @@ class SdkDockerClient(ContainerClient):
         except ImageNotFound:
             if not force:
                 raise NoSuchImage(image)
+        except APIError:
+            raise ContainerException()
 
     def commit(
         self,
