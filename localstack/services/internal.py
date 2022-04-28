@@ -145,10 +145,7 @@ class CloudFormationUi:
         for key, value in params.items():
             deploy_html = deploy_html.replace(f"<{key}>", value)
 
-        response = Response()
-        response.data = deploy_html
-        response.headers["content-type"] = "text/html"
-        return response
+        return Response(deploy_html, mimetype="text/html")
 
 
 class DiagnoseResource:
