@@ -1,3 +1,5 @@
+import asyncio
+
 from botocore.model import ServiceModel
 from requests.models import Response as RequestsResponse
 from werkzeug.datastructures import Headers
@@ -9,6 +11,7 @@ from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
 from localstack.http import Request, Response
 from localstack.services.generic_proxy import ProxyListener
+from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.utils.aws.request_context import extract_region_from_headers
 
 
@@ -89,20 +92,35 @@ class ServiceListener(ProxyListener):
 
 
 def serve_gateway(bind_address, port, use_ssl, asynchronous=False):
+    from hypercorn import Config
+
     from localstack.aws.app import LocalstackAwsGateway
-    from localstack.aws.serving.http2_server import serve_threaded
+    from localstack.aws.serving.asgi import AsgiGateway
+    from localstack.http.hypercorn import HypercornServer
     from localstack.services.generic_proxy import GenericProxy, install_predefined_cert_if_available
 
-    ssl_creds = (None, None)
+    # build server config
+    config = Config()
+
+    if isinstance(bind_address, str):
+        bind_address = [bind_address]
+    config.bind = [f"{addr}:{port}" for addr in bind_address]
+
     if use_ssl:
         install_predefined_cert_if_available()
         _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
-        ssl_creds = (cert_file_name, key_file_name)
+        config.certfile = cert_file_name
+        config.keyfile = key_file_name
 
-    thread = serve_threaded(
-        LocalstackAwsGateway(), host=bind_address, port=port, ssl_creds=ssl_creds
-    )
+    # build gateway
+    loop = asyncio.new_event_loop()
+    app = AsgiGateway(LocalstackAwsGateway(SERVICE_PLUGINS), event_loop=loop)
+
+    # start serving gateway
+    server = HypercornServer(app, config, loop)
+    server.start()
+
     if not asynchronous:
-        thread.join()
+        server.join()
 
-    return thread
+    return server._thread

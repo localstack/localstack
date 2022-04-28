@@ -44,4 +44,6 @@ class GatewayHandler:
 
 
 def serve_threaded(gateway: Gateway, host="localhost", port=4566, ssl_creds=None) -> FuncThread:
-    return http2_server.run_server(port, host, handler=GatewayHandler(gateway), ssl_creds=ssl_creds)
+    return http2_server.run_server(
+        port, [host], handler=GatewayHandler(gateway), ssl_creds=ssl_creds
+    )
