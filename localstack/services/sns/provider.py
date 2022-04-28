@@ -11,15 +11,21 @@ from typing import Dict, List
 
 import requests as requests
 from flask import Response as FlaskResponse
+from moto.sns.exceptions import DuplicateSnsEndpointError
 from requests.models import Response
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
+    ConfirmSubscriptionResponse,
+    CreateEndpointResponse,
+    CreatePlatformApplicationResponse,
     CreateTopicResponse,
     GetSubscriptionAttributesResponse,
     InvalidParameterException,
     ListSubscriptionsResponse,
+    ListTagsForResourceResponse,
+    MapStringToString,
     MessageAttributeMap,
     NotFoundException,
     PublishResponse,
@@ -27,9 +33,14 @@ from localstack.aws.api.sns import (
     String,
     SubscribeResponse,
     SubscriptionAttributesMap,
+    TagKeyList,
     TagList,
     TagResourceResponse,
     TopicAttributesMap,
+    UntagResourceResponse,
+    attributeName,
+    attributeValue,
+    authenticateOnUnsubscribe,
     boolean,
     endpoint,
     message,
@@ -38,6 +49,7 @@ from localstack.aws.api.sns import (
     protocol,
     subject,
     subscriptionARN,
+    token,
     topicARN,
     topicName,
 )
@@ -101,10 +113,11 @@ def publish_message(
     message = req_data["Message"][0]
     message_id = str(uuid.uuid4())
 
-    if topic_arn and ":endpoint/" in topic_arn:
+    target_arn = req_data.get("TargetArn")
+    if target_arn and ":endpoint/" in target_arn:
         # cache messages published to platform endpoints
-        cache = sns_backend.platform_endpoint_messages[topic_arn] = (
-            sns_backend.platform_endpoint_messages.get(topic_arn) or []
+        cache = sns_backend.platform_endpoint_messages[target_arn] = (
+            sns_backend.platform_endpoint_messages.get(target_arn) or []
         )
         # TODO: check this in the old provider
         cache.append(req_data)
@@ -127,6 +140,84 @@ def publish_message(
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
+    def set_subscription_attributes(
+        self,
+        context: RequestContext,
+        subscription_arn: subscriptionARN,
+        attribute_name: attributeName,
+        attribute_value: attributeValue = None,
+    ) -> None:
+        sub = get_subscription_by_arn(subscription_arn)
+        if not sub:
+            raise NotFoundException(
+                f"Unable to find subscription for given ARN: {subscription_arn}"
+            )
+        sub[attribute_name] = attribute_value
+
+    def confirm_subscription(
+        self,
+        context: RequestContext,
+        topic_arn: topicARN,
+        token: token,
+        authenticate_on_unsubscribe: authenticateOnUnsubscribe = None,
+    ) -> ConfirmSubscriptionResponse:
+        sns_backend = SNSBackend.get()
+        sub_arn = None
+        for k, v in sns_backend.subscription_status.items():
+            if v["Token"] == token and v["TopicArn"] == topic_arn:
+                v["Status"] = "Subscribed"
+                sub_arn = k
+
+        return ConfirmSubscriptionResponse(SubscriptionArn=sub_arn)
+
+    def untag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+    ) -> UntagResourceResponse:
+        moto_response = call_moto(context)
+        return UntagResourceResponse(**moto_response)
+
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName
+    ) -> ListTagsForResourceResponse:
+        moto_response = call_moto(context)
+        return ListTagsForResourceResponse(**moto_response)
+
+    def delete_platform_application(
+        self, context: RequestContext, platform_application_arn: String
+    ) -> None:
+        call_moto(context)
+
+    def delete_endpoint(self, context: RequestContext, endpoint_arn: String) -> None:
+        call_moto(context)
+
+    def create_platform_application(
+        self, context: RequestContext, name: String, platform: String, attributes: MapStringToString
+    ) -> CreatePlatformApplicationResponse:
+        moto_response = call_moto(context)
+        return CreatePlatformApplicationResponse(**moto_response)
+
+    def create_platform_endpoint(
+        self,
+        context: RequestContext,
+        platform_application_arn: String,
+        token: String,
+        custom_user_data: String = None,
+        attributes: MapStringToString = None,
+    ) -> CreateEndpointResponse:
+        result = None
+        try:
+            result = call_moto(context)
+        except DuplicateSnsEndpointError:
+            # TODO: this was unclear in the old provider, check against aws and moto
+            for e in self.platform_endpoints.values():
+                if e.token == token:
+                    if custom_user_data and custom_user_data != e.custom_user_data:
+                        # TODO: check error against aws
+                        raise DuplicateSnsEndpointError(
+                            f"Endpoint already exist for token: {token} with different attributes"
+                        )
+        return CreateEndpointResponse(**result)
+
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
         sns_backend = SNSBackend.get()
 
@@ -533,7 +624,7 @@ async def message_to_subscriber(
                 message_id,
                 message_attributes,
                 unsubscribe_url,
-                subject=req_data.get("Subject", [None])[0],
+                subject=req_data.get("Subject"),
             )
 
             if response is not None:
