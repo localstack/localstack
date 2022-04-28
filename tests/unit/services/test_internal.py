@@ -87,6 +87,7 @@ class TestLocalstackResourceHandlerIntegration:
             response = requests.get(f"{url}/_localstack/cloudformation/deploy")
             assert response.ok
             assert "</html>" in response.text, "deploy UI did not render HTML"
+            assert "text/html" in response.headers.get("content-type", "")
 
     def test_fallthrough(self):
         class RaiseError(ProxyListener):

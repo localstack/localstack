@@ -144,7 +144,11 @@ class CloudFormationUi:
         # using simple string replacement here, for simplicity (could be replaced with, e.g., jinja)
         for key, value in params.items():
             deploy_html = deploy_html.replace(f"<{key}>", value)
-        return deploy_html
+
+        response = Response()
+        response.data = deploy_html
+        response.headers["content-type"] = "text/html"
+        return response
 
 
 class DiagnoseResource:
