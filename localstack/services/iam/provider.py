@@ -1,10 +1,15 @@
 import json
 import re
 from typing import Dict, List
+from urllib.parse import quote
 
 from moto.iam.models import AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy
 from moto.iam.models import Role as MotoRole
-from moto.iam.models import aws_managed_policies, aws_managed_policies_data_parsed
+from moto.iam.models import (
+    aws_managed_policies,
+    aws_managed_policies_data_parsed,
+    filter_items_with_path_prefix,
+)
 from moto.iam.models import iam_backend as moto_iam_backend
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.responses import IamResponse
@@ -23,6 +28,7 @@ from localstack.aws.api.iam import (
     GetServiceLinkedRoleDeletionStatusResponse,
     IamApi,
     ListInstanceProfileTagsResponse,
+    ListRolesResponse,
     PolicyEvaluationDecisionType,
     ResourceHandlingOptionType,
     ResourceNameListType,
@@ -37,6 +43,7 @@ from localstack.aws.api.iam import (
     instanceProfileNameType,
     markerType,
     maxItemsType,
+    pathPrefixType,
     pathType,
     policyDocumentType,
     roleDescriptionType,
@@ -47,8 +54,38 @@ from localstack.aws.api.iam import (
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
 
+SERVICE_LINKED_ROLE_PATH_PREFIX = "/aws-service-role"
+
+ADDITIONAL_MANAGED_POLICIES = {
+    "AWSLambdaExecute": {
+        "Arn": "arn:aws:iam::aws:policy/AWSLambdaExecute",
+        "Path": "/",
+        "CreateDate": "2017-10-20T17:23:10+00:00",
+        "DefaultVersionId": "v4",
+        "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["logs:*"],
+                    "Resource": "arn:aws:logs:*:*:*",
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": ["s3:GetObject", "s3:PutObject"],
+                    "Resource": "arn:aws:s3:::*",
+                },
+            ],
+        },
+        "UpdateDate": "2019-05-20T18:22:18+00:00",
+    }
+}
+
 
 class IamProvider(IamApi):
+    def __init__(self):
+        apply_patches()
+
     @staticmethod
     def build_evaluation_result(
         action_name: ActionNameType, resource_name: ResourceNameType, policy_statements: List[Dict]
@@ -65,7 +102,7 @@ class IamProvider(IamApi):
                 and statement["Effect"] == "Allow"
             ):
                 eval_res["EvalDecision"] = PolicyEvaluationDecisionType.allowed
-                eval_res["MatchedStatements"] = []  # TODO: always an empty list?
+                eval_res["MatchedStatements"] = []  # TODO: add support for statement compilation.
         return eval_res
 
     def simulate_principal_policy(
@@ -99,40 +136,6 @@ class IamProvider(IamApi):
             for resource_arn in resource_arns
         ]
 
-        # TODO: check what else is missing from the original template (MatchedStatements, Metadata, ?)
-        # TODO: originally patch returned some ResponseMetadata.RequestId constant? see:
-        # <SimulatePrincipalPolicyResponse xmlns="__xmlns__">
-        #   <SimulatePrincipalPolicyResult>
-        #     <IsTruncated>false</IsTruncated>
-        #     <EvaluationResults>
-        #       {% for eval in evaluations %}
-        #       <member>
-        #         <MatchedStatements>
-        #           <member>
-        #             <SourcePolicyId>PolicyInputList.1</SourcePolicyId>
-        #             <EndPosition>
-        #               <Column>4</Column>
-        #               <Line>7</Line>
-        #             </EndPosition>
-        #             <StartPosition>
-        #               <Column>16</Column>
-        #               <Line>3</Line>
-        #             </StartPosition>
-        #           </member>
-        #         </MatchedStatements>
-        #         <MissingContextValues/>
-        #         <EvalResourceName>{{eval.resourceName}}</EvalResourceName>
-        #         <EvalDecision>{{eval.decision}}</EvalDecision>
-        #         <EvalActionName>{{eval.actionName}}</EvalActionName>
-        #       </member>
-        #       {% endfor %}
-        #     </EvaluationResults>
-        #   </SimulatePrincipalPolicyResult>
-        #   <ResponseMetadata>
-        #     <RequestId>004d7059-4c14-11e5-b121-bd8c7EXAMPLE</RequestId>
-        #   </ResponseMetadata>
-        # </SimulatePrincipalPolicyResponse>
-
         response = SimulatePolicyResponse()
         response["IsTruncated"] = False
         response["EvaluationResults"] = evaluations
@@ -157,79 +160,43 @@ class IamProvider(IamApi):
     @staticmethod
     def moto_role_to_role_type(moto_role: MotoRole) -> Role:
         role = Role()
-        role["Path"]: moto_role.path
-        role["RoleName"]: moto_role.name
-        role["RoleId"]: moto_role.id
-        role["Arn"]: moto_role.arn
-        role["CreateDate"]: moto_role.create_date
-        role["AssumeRolePolicyDocument"]: moto_role.assume_role_policy_document
-        role["Description"]: moto_role.description
-        role["MaxSessionDuration"]: moto_role.max_session_duration
-        role["PermissionsBoundary"]: moto_role.permissions_boundary
-        role["Tags"]: moto_role.tags
-        # role["RoleLastUsed"]: # TODO not supported
+        role["Path"] = moto_role.path
+        role["RoleName"] = moto_role.name
+        role["RoleId"] = moto_role.id
+        role["Arn"] = moto_role.arn
+        role["CreateDate"] = moto_role.create_date
+        role["AssumeRolePolicyDocument"] = moto_role.assume_role_policy_document
+        role["Description"] = moto_role.description
+        role["MaxSessionDuration"] = moto_role.max_session_duration
+        role["PermissionsBoundary"] = moto_role.permissions_boundary
+        role["Tags"] = moto_role.tags
+        # role["RoleLastUsed"]: # TODO: add support
         return role
 
-    #
-    # def list_roles(
-    #     self,
-    #     context: RequestContext,
-    #     path_prefix: pathPrefixType = None,
-    #     marker: markerType = None,
-    #     max_items: maxItemsType = None,
-    # ) -> ListRolesResponse:
-    #     moto_roles = moto_iam_backend.get_roles()
-    #
-    #     res_roles = []
-    #     if path_prefix:
-    #         for moto_role in moto_roles:
-    #             if moto_role.path.startswith(path_prefix):
-    #                 res_roles.append(self.moto_role_to_role_type(moto_role))
-    #     else:
-    #         for moto_role in moto_roles:
-    #             role = self.moto_role_to_role_type(moto_role)
-    #             assume_role_policy_doc = role["AssumeRolePolicyDocument"]
-    #             role["AssumeRolePolicyDocument"] = quote(json.dumps(assume_role_policy_doc or {}))
-    #             res_roles.append(role)
-    #
-    #     # TODO: verify what other defaults are not carried forward from original response template:
-    #     #  <ListRolesResult>
-    #     #     <IsTruncated>{{ 'true' if marker else 'false' }}</IsTruncated>
-    #     #     {% if marker %}
-    #     #     <Marker>{{ marker }}</Marker>
-    #     #     {% endif %}
-    #     #     <Roles>
-    #     #       {% for role in roles %}
-    #     #       <member>
-    #     #         <Path>{{ role.path }}</Path>
-    #     #         <Arn>{{ role.arn }}</Arn>
-    #     #         <RoleName>{{ role.name }}</RoleName>
-    #     #         <AssumeRolePolicyDocument>{{ role.assume_role_policy_document }}</AssumeRolePolicyDocument>
-    #     #         <CreateDate>{{ role.created_iso_8601 }}</CreateDate>
-    #     #         <RoleId>{{ role.id }}</RoleId>
-    #     #         <MaxSessionDuration>{{ role.max_session_duration }}</MaxSessionDuration>
-    #     #         {% if role.permissions_boundary %}
-    #     #         <PermissionsBoundary>
-    #     #           <PermissionsBoundaryType>PermissionsBoundaryPolicy</PermissionsBoundaryType>
-    #     #           <PermissionsBoundaryArn>{{ role.permissions_boundary }}</PermissionsBoundaryArn>
-    #     #         </PermissionsBoundary>
-    #     #         {% endif %}
-    #     #         {% if role.description is not none %}
-    #     #         <Description>{{ role.description_escaped }}</Description>
-    #     #         {% endif %}
-    #     #       </member>
-    #     #       {% endfor %}
-    #     #     </Roles>
-    #     #   </ListRolesResult>
-    #     #   <ResponseMetadata>
-    #     #     <RequestId>20f7279f-99ee-11e1-a4c3-27EXAMPLE804</RequestId>
-    #     #   </ResponseMetadata>
-    #     # </ListRolesResponse>
-    #
-    #     response = ListRolesResponse()
-    #     response["Roles"] = res_roles
-    #     response["IsTruncated"] = False
-    #     return response
+    def list_roles(
+        self,
+        context: RequestContext,
+        path_prefix: pathPrefixType = None,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+    ) -> ListRolesResponse:
+        moto_roles = moto_iam_backend.roles.values()
+        if path_prefix:
+            moto_roles = filter_items_with_path_prefix(path_prefix, moto_roles)
+        moto_roles = sorted(moto_roles, key=lambda role: role.id)
+
+        response_roles = []
+        for moto_role in moto_roles:
+            response_role = self.moto_role_to_role_type(moto_role)
+            response_roles.append(response_role)
+            if (
+                path_prefix
+            ):  # TODO: this is consistent with the patch it migrates, but should add tests for this.
+                response_role["AssumeRolePolicyDocument"] = quote(
+                    json.dumps(moto_role.assume_role_policy_document or {})
+                )
+
+        return ListRolesResponse(Roles=response_roles, IsTruncated=False)
 
     def update_group(
         self,
@@ -328,93 +295,40 @@ class IamProvider(IamApi):
         # TODO: test
         return GetServiceLinkedRoleDeletionStatusResponse(Status=DeletionTaskStatusType.SUCCEEDED)
 
-
-# TODO: complete migrating patches below into asf provider.
-
-XMLNS_IAM = "https://iam.amazonaws.com/doc/2010-05-08/"
-
-SERVICE_LINKED_ROLE_PATH_PREFIX = "/aws-service-role"
-
-USER_RESPONSE_TEMPLATE = """<{{ action }}UserResponse>
-   <{{ action }}UserResult>
-      <User>
-         <Path>{{ user.path }}</Path>
-         <UserName>{{ user.name }}</UserName>
-         <UserId>{{ user.id }}</UserId>
-         <Arn>{{ user.arn }}</Arn>
-         <CreateDate>{{ user.created_iso_8601 }}</CreateDate>
-         <Tags>
-            {% for tag in user.tags %}<member>
-                <Key>{{ tag.Key }}</Key>
-                <Value>{{ tag.Value }}</Value>
-            </member>{% endfor %}
-         </Tags>
-     </User>
-   </{{ action }}UserResult>
-   <ResponseMetadata>
-      <RequestId>{{request_id}}</RequestId>
-   </ResponseMetadata>
-</{{ action }}UserResponse>"""
-
-ADDITIONAL_MANAGED_POLICIES = {
-    "AWSLambdaExecute": {
-        "Arn": "arn:aws:iam::aws:policy/AWSLambdaExecute",
-        "Path": "/",
-        "CreateDate": "2017-10-20T17:23:10+00:00",
-        "DefaultVersionId": "v4",
-        "Document": {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Action": ["logs:*"],
-                    "Resource": "arn:aws:logs:*:*:*",
-                },
-                {
-                    "Effect": "Allow",
-                    "Action": ["s3:GetObject", "s3:PutObject"],
-                    "Resource": "arn:aws:s3:::*",
-                },
-            ],
-        },
-        "UpdateDate": "2019-05-20T18:22:18+00:00",
-    }
-}
-
-SIMULATE_PRINCIPAL_POLICY_RESPONSE = """
-<SimulatePrincipalPolicyResponse xmlns="__xmlns__">
-  <SimulatePrincipalPolicyResult>
-    <IsTruncated>false</IsTruncated>
-    <EvaluationResults>
-      {% for eval in evaluations %}
-      <member>
-        <MatchedStatements>
-          <member>
-            <SourcePolicyId>PolicyInputList.1</SourcePolicyId>
-            <EndPosition>
-              <Column>4</Column>
-              <Line>7</Line>
-            </EndPosition>
-            <StartPosition>
-              <Column>16</Column>
-              <Line>3</Line>
-            </StartPosition>
-          </member>
-        </MatchedStatements>
-        <MissingContextValues/>
-        <EvalResourceName>{{eval.resourceName}}</EvalResourceName>
-        <EvalDecision>{{eval.decision}}</EvalDecision>
-        <EvalActionName>{{eval.actionName}}</EvalActionName>
-      </member>
-      {% endfor %}
-    </EvaluationResults>
-  </SimulatePrincipalPolicyResult>
-  <ResponseMetadata>
-    <RequestId>004d7059-4c14-11e5-b121-bd8c7EXAMPLE</RequestId>
-  </ResponseMetadata>
-</SimulatePrincipalPolicyResponse>""".replace(
-    "__xmlns__", XMLNS_IAM
-)
+    # def get_user(
+    #     self, context: RequestContext, user_name: existingUserNameType = None
+    # ) -> GetUserResponse:
+    #     # TODO: The following migrates patch 'iam_response_get_user' as a provider function.
+    #     #  However, there are concerns with utilising 'aws_stack.extract_access_key_id_from_auth_header'
+    #     #  in place of 'moto.core.responses.get_current_user'.
+    #     if not user_name:
+    #         access_key_id = aws_stack.extract_access_key_id_from_auth_header(context.request.headers)
+    #         moto_user = moto_iam_backend.get_user_from_access_key_id(access_key_id)
+    #         if moto_user is None:
+    #             moto_user = MotoUser("default_user")
+    #     else:
+    #         moto_user = moto_iam_backend.get_user(user_name)
+    #
+    #     response_user_name = config.TEST_IAM_USER_NAME or moto_user.name
+    #     response_user_id = config.TEST_IAM_USER_ID or moto_user.id
+    #     moto_user = moto_iam_backend.users.get(response_user_name) or moto_user
+    #     moto_tags = moto_iam_backend.tagger.list_tags_for_resource(moto_user.arn).get("Tags", [])
+    #     response_tags = None
+    #     if moto_tags:
+    #         response_tags = [Tag(Key=t["Key"], Value=t["Value"]) for t in moto_tags]
+    #
+    #     response_user = User()
+    #     response_user["Path"] = moto_user.path
+    #     response_user["UserName"] = response_user_name
+    #     response_user["UserId"] = response_user_id
+    #     response_user["Arn"] = moto_user.arn
+    #     response_user["CreateDate"] = moto_user.create_date
+    #     if moto_user.password_last_used:
+    #         response_user["PasswordLastUsed"] = moto_user.password_last_used
+    #     # response_user["PermissionsBoundary"] =   # TODO
+    #     if response_tags:
+    #         response_user["Tags"] = response_tags
+    #     return GetUserResponse(User=response_user)
 
 
 class AWSManagedPolicyUSGov(AWSManagedPolicy):
@@ -426,20 +340,18 @@ class AWSManagedPolicyUSGov(AWSManagedPolicy):
         return "arn:aws-us-gov:iam::aws:policy{0}{1}".format(self.path, self.name)
 
 
-# support service linked roles
-
-
-@property
-def moto_role_arn(self):
-    return getattr(self, "service_linked_role_arn", None) or moto_role_og_arn_prop.__get__(self)
-
-
-moto_role_og_arn_prop = MotoRole.arn
-MotoRole.arn = moto_role_arn
-
-
 def apply_patches():
+    # support service linked roles
+
+    @property
+    def moto_role_arn(self):
+        return getattr(self, "service_linked_role_arn", None) or moto_role_og_arn_prop.__get__(self)
+
+    moto_role_og_arn_prop = MotoRole.arn
+    MotoRole.arn = moto_role_arn
+
     # Add missing managed polices
+
     aws_managed_policies.extend(
         [AWSManagedPolicy.from_data(k, v) for k, v in ADDITIONAL_MANAGED_POLICIES.items()]
     )
@@ -455,6 +367,7 @@ def apply_patches():
             statement["Resource"] = ["*"]
 
     # patch get_user to include tags
+    # TODO: remove this patch in favour of IamProvider.get_user.
 
     @patch(IamResponse.get_user)
     def iam_response_get_user(fn, self):
