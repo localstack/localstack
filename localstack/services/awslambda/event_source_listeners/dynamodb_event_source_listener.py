@@ -19,7 +19,7 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
     ] = {}  # Threads for listening to stream shards and forwarding data to mapped Lambdas
 
     @staticmethod
-    def get_source_type() -> Optional[str]:
+    def source_type() -> Optional[str]:
         return "dynamodb"
 
     def _get_matching_event_sources(self) -> List[Dict]:

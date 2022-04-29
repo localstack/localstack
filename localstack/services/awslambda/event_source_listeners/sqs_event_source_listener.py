@@ -25,7 +25,7 @@ class SQSEventSourceListener(EventSourceListener):
     USE_POLLING = True
 
     @staticmethod
-    def get_source_type():
+    def source_type():
         return "sqs"
 
     def start(self):

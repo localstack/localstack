@@ -38,7 +38,7 @@ class StreamEventSourceListener(EventSourceListener):
     _FAILURE_PAYLOAD_DETAILS_FIELD_NAME = ""  # To be defined by inheriting classes
 
     @staticmethod
-    def get_source_type() -> Optional[str]:
+    def source_type() -> Optional[str]:
         """
         to be implemented by subclasses
         :returns: The type of event source this listener is associated with
@@ -119,7 +119,7 @@ class StreamEventSourceListener(EventSourceListener):
         if self._COORDINATOR_THREAD is not None:
             return
 
-        LOG.debug(f"Starting {self.get_source_type()} event source listener coordinator thread")
+        LOG.debug(f"Starting {self.source_type()} event source listener coordinator thread")
         self._COORDINATOR_THREAD = FuncThread(self._monitor_stream_event_sources)
         self._COORDINATOR_THREAD.start()
 

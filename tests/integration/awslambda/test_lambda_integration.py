@@ -518,6 +518,10 @@ class TestKinesisSource:
         logs_client,
         lambda_su_role,
     ):
+        if config.LAMBDA_EXECUTOR == "local":
+            pytest.skip(
+                "asynchronous kinesis events are not supported with local lambda executor mode"
+            )
         try:
             function_name = f"lambda_func-{short_uid()}"
             stream_name = f"test-foobar-{short_uid()}"
@@ -585,7 +589,6 @@ class TestKinesisSource:
         finally:
             lambda_client.delete_event_source_mapping(UUID=uuid)
 
-    @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
     def test_kinesis_event_source_trim_horizon(
         self,
         lambda_client,

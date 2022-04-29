@@ -16,7 +16,7 @@ on:
 jobs:
   run-integration-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 130
+    timeout-minutes: 100
     defaults:
       run:
         working-directory: localstack-ext
