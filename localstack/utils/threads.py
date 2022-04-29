@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 import logging
 import threading
@@ -29,6 +30,7 @@ class FuncThread(threading.Thread):
         self.on_stop = on_stop
 
     def run(self):
+        result = None
         try:
             kwargs = {}
             argspec = inspect.getfullargspec(self.func)
@@ -49,8 +51,9 @@ class FuncThread(threading.Thread):
         finally:
             try:
                 self.result_future.set_result(result)
-            except Exception:
-                # this can happen as InvalidStateError on shutdown, if the task is already canceled
+            except asyncio.InvalidStateError as e:
+                # this can happen if the task is already canceled
+                LOG.debug(e)
                 pass
 
     @property
