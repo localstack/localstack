@@ -938,6 +938,22 @@ def test_s3_virtual_host_addressing():
     assert parsed_request["Bucket"] == "test-bucket"
 
 
+def test_s3_list_buckets_with_localhost():
+    # this is the canonical request of `awslocal s3 ls` when running on a standard port
+    request = HttpRequest("GET", "/", headers={"host": "localhost"})
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "ListBuckets"
+
+
+def test_s3_list_buckets_with_localhost_and_port():
+    # this is the canonical request of `awslocal s3 ls`
+    request = HttpRequest("GET", "/", headers={"host": "localhost:4566"})
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "ListBuckets"
+
+
 def test_parser_error_on_protocol_error():
     """Test that the parser raises a ProtocolParserError in case of invalid data to parse."""
     parser = QueryRequestParser(load_service("sqs"))
