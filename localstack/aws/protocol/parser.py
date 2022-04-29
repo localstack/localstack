@@ -975,13 +975,6 @@ class EC2RequestParser(QueryRequestParser):
 
 
 class S3RequestParser(RestXMLRequestParser):
-    def __init__(self, service_model: ServiceModel):
-        super().__init__(service_model)
-
-        # hack to make sure we only call import lib once and not on every request
-        from localstack.services.s3.s3_utils import uses_host_addressing
-
-        self._is_vhost_address_by_headers = uses_host_addressing
 
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
@@ -992,11 +985,9 @@ class S3RequestParser(RestXMLRequestParser):
         return super().parse(request)
 
     def _is_vhost_address(self, request: HttpRequest) -> bool:
-        # TODO implement properly here
-        return self._is_vhost_address_by_headers(request.headers)
+        from localstack.services.s3.s3_utils import uses_host_addressing
 
-    def _is_vhost_address_by_headers(self, request: HttpRequest) -> bool:
-        return False
+        return uses_host_addressing(request.headers)
 
     def _revert_virtual_host_style(self, request: HttpRequest):
         # extract the bucket name from the host part of the request
