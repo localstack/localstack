@@ -338,7 +338,7 @@ class ProxyListenerSQS(PersistingProxyListener):
                     return False
 
                 if req_data.get("QueueName").endswith(".fifo") and not _is_fifo():
-                    LOG.info(
+                    LOG.warn(
                         'You are trying to create a queue ending in ".fifo".  Please use the --attributes parameter to set FifoQueue appropriately.'
                     )
                     msg = "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
