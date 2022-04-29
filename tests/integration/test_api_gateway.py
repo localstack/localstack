@@ -1148,6 +1148,10 @@ class TestAPIGateway(unittest.TestCase):
         resource = [res for res in rs["items"] if res["path"] == "/test"][0]
         self.assertIn("GET", resource["resourceMethods"])
 
+        url = path_based_url(api_id=rest_api_id, stage_name="dev", path="/test")
+        response = requests.get(url)
+        self.assertEqual(200, response.status_code)
+
         # clean up
         client.delete_rest_api(restApiId=rest_api_id)
 
