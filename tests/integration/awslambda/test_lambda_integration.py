@@ -518,6 +518,9 @@ class TestKinesisSource:
         logs_client,
         lambda_su_role,
     ):
+        # TODO: this test will fail if `log_cli=true` is set and `LAMBDA_EXECUTOR=local`!
+        # apparently this particular configuration prevents lambda logs from being extracted properly, giving the
+        # appearance that the function was never invoked.
         try:
             function_name = f"lambda_func-{short_uid()}"
             stream_name = f"test-foobar-{short_uid()}"
