@@ -90,7 +90,7 @@ from botocore.model import (
 from werkzeug.exceptions import NotFound
 
 from localstack.aws.api import HttpRequest
-from localstack.aws.protocol.router import RestServiceOperationRouter
+from localstack.aws.protocol.op_router import RestServiceOperationRouter
 
 
 def _text_content(func):

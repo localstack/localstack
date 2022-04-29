@@ -13,6 +13,7 @@ from localstack.config import SQS_PORT_EXTERNAL
 from localstack.services.awslambda.lambda_api import EventSourceListener
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns import sns_listener
+from localstack.services.sqs.sqs_utils import is_sqs_queue_url
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
@@ -26,7 +27,6 @@ from localstack.utils.common import (
     ensure_list,
     get_service_protocol,
     parse_request_data,
-    path_from_url,
     to_str,
 )
 from localstack.utils.persistence import PersistingProxyListener
@@ -274,11 +274,6 @@ def validate_empty_message_batch(data, req_data):
     if len(data) > 1 and not req_data.get("Entries"):
         return True
     return False
-
-
-def is_sqs_queue_url(url):
-    path = path_from_url(url).partition("?")[0]
-    return re.match(r"^/(queue|%s)/[a-zA-Z0-9_-]+(.fifo)?$" % constants.TEST_AWS_ACCOUNT_ID, path)
 
 
 class ProxyListenerSQS(PersistingProxyListener):

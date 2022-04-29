@@ -6,7 +6,7 @@ import re
 import subprocess
 import sys
 import threading
-from typing import Dict, Optional
+from typing import Dict
 
 from requests.models import Response
 
@@ -16,35 +16,30 @@ from localstack.constants import (
     HEADER_LOCALSTACK_REQUEST_URL,
     INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
-    LOCALHOST_HOSTNAME,
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
     LS_LOG_TRACE_INTERNAL,
-    PATH_USER_REQUEST,
 )
 from localstack.http import Router
+from localstack.http.adapters import create_request_from_parts
 from localstack.http.dispatcher import Handler, handler_dispatcher
 from localstack.http.router import RegexConverter
 from localstack.runtime import events
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.services.plugins import SERVICE_PLUGINS
-from localstack.services.s3.s3_utils import uses_host_addressing
-from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import is_internal_call_context, set_default_region_in_headers
-from localstack.utils.aws.request_routing import extract_version_and_action, matches_service_action
 from localstack.utils.functions import empty_context_manager
 from localstack.utils.http import parse_request_data
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.net import is_port_open
 from localstack.utils.run import is_root, run
 from localstack.utils.server.http2_server import HTTPErrorResponse
-from localstack.utils.strings import to_bytes, to_str, truncate
+from localstack.utils.strings import to_bytes, truncate
 from localstack.utils.sync import sleep_forever
 from localstack.utils.threads import TMP_THREADS, start_thread
-from localstack.utils.urls import hostname_from_url
 
 LOG = logging.getLogger(__name__)
 
@@ -97,19 +92,16 @@ class ProxyListenerEdge(ProxyListener):
             re.sub(r"^([^:]+://[^/]+).*", r"\1", orig_req_url) or "http://%s" % host
         )
 
-        # extract API details
-        api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
+        # re-create an HTTP request from the given parts
+        request = create_request_from_parts(method, path, data, headers)
+        from localstack.aws.protocol.service_router import determine_aws_service_name
+
+        api = determine_aws_service_name(request)
+        port = None
+        if api:
+            port = get_service_port_for_account(api, headers)
 
         set_default_region_in_headers(headers)
-
-        if port and int(port) < 0:
-            return 404
-
-        if not port:
-            api, port = get_api_from_custom_rules(method, path, data, headers) or (
-                api,
-                port,
-            )
 
         should_log_trace = is_trace_logging_enabled(headers)
         if api and should_log_trace:
@@ -321,202 +313,6 @@ def get_auth_string(method, path, headers, data=None):
         )
 
     return ""
-
-
-# TODO: refactor this function -> returning the port is redundant (given the returned service name)
-def get_api_from_headers(headers, method=None, path=None, data=None):
-    """Determine API and backend port based on "Authorization" or "Host" headers."""
-
-    # initialize result
-    result = API_UNKNOWN, 0
-
-    target = headers.get("x-amz-target", "")
-    host = headers.get("host", "")
-    auth_header = headers.get("authorization", "")
-
-    if not auth_header and not target and "." not in host:
-        return result[0], result[1], path, host
-
-    path = path or "/"
-
-    # https://docs.aws.amazon.com/general/latest/gr/sigv4-signed-request-examples.html
-    try:
-        service = extract_service_name_from_auth_header(headers)
-        assert service
-        result = service, get_service_port_for_account(service, headers)
-    except Exception:
-        pass
-
-    result_before = result
-
-    # Fallback rules and route customizations applied below
-    if host.endswith("cloudfront.net"):
-        path = path or "/"
-        result = "cloudfront", config.service_port("cloudfront")
-    elif target.startswith("AWSCognitoIdentityProviderService") or "cognito-idp." in host:
-        result = "cognito-idp", config.service_port("cognito-idp")
-    elif target.startswith("AWSCognitoIdentityService") or "cognito-identity." in host:
-        result = "cognito-identity", config.service_port("cognito-identity")
-    elif result[0] == "s3" and path.startswith(S3CONTROL_COMMON_PATH):
-        result = "s3control", config.service_port("s3control")
-    elif result[0] == "s3" or uses_host_addressing(headers):
-        result = "s3", config.service_port("s3")
-    elif result[0] == "states" in auth_header or host.startswith("states."):
-        result = "stepfunctions", config.service_port("stepfunctions")
-    elif "route53." in host:
-        result = "route53", config.service_port("route53")
-    elif result[0] == "monitoring":
-        result = "cloudwatch", config.service_port("cloudwatch")
-    elif result[0] == "ses":
-        if path.startswith("/v2"):
-            result = "sesv2", config.service_port("sesv2")
-    elif result[0] == "email":
-        result = "ses", config.service_port("ses")
-    elif result[0] == "execute-api" or ".execute-api." in host:
-        result = "apigateway", config.service_port("apigateway")
-    elif target.startswith("Firehose_"):
-        result = "firehose", config.service_port("firehose")
-    elif target.startswith("DynamoDB_"):
-        result = "dynamodb", config.service_port("dynamodb")
-    elif target.startswith("DynamoDBStreams") or host.startswith("streams.dynamodb."):
-        # Note: DDB streams requests use ../dynamodb/.. auth header, hence we also need to update result_before
-        result = result_before = "dynamodbstreams", config.service_port("dynamodbstreams")
-    elif result[0] == "EventBridge" or target.startswith("AWSEvents"):
-        result = "events", config.service_port("events")
-    elif target.startswith("ResourceGroupsTaggingAPI_"):
-        result = "resourcegroupstaggingapi", config.service_port("resourcegroupstaggingapi")
-    elif result[0] == "resource-groups":
-        result = "resource-groups", config.service_port("resource-groups")
-    elif result[0] == "es" and path is not None and not path.startswith("/2015-01-01/"):
-        # For OpenSearch, the auth header points to the API ("es").
-        # However, if the path does _not_ start with /2015-01-01 (the API version path prefix for the only ES API
-        # version) it is a request to the opensearch API.
-        result = "opensearch", config.service_port("opensearch")
-
-    return result[0], result_before[1] or result[1], path, host
-
-
-def extract_service_name_from_auth_header(headers: Dict) -> Optional[str]:
-    try:
-        auth_header = headers.get("authorization", "")
-        credential_scope = auth_header.split(",")[0].split()[1]
-        _, _, _, service, _ = credential_scope.split("/")
-        return service
-    except Exception:
-        return
-
-
-def is_s3_form_data(data_bytes):
-    if to_bytes("key=") in data_bytes:
-        return True
-    if (
-        to_bytes("Content-Disposition: form-data") in data_bytes
-        and to_bytes('name="key"') in data_bytes
-    ):
-        return True
-    return False
-
-
-# TODO: refactor this function -> returning the port is redundant (given the returned service name)
-def get_api_from_custom_rules(method, path, data, headers):
-    """Determine backend port based on custom rules."""
-
-    # API Gateway invocation URLs
-    host_header = hostname_from_url(headers.get("host"))
-    if ("/%s/" % PATH_USER_REQUEST) in path or (
-        host_header.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host_header
-    ):
-        return "apigateway", config.service_port("apigateway")
-
-    # detect S3 presigned URLs
-    if "AWSAccessKeyId=" in path or "Signature=" in path:
-        return "s3", config.service_port("s3")
-
-    # heuristic for SQS queue URLs
-    if is_sqs_queue_url(path):
-        return "sqs", config.service_port("sqs")
-
-    # DynamoDB shell URLs
-    if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
-        return "dynamodb", config.service_port("dynamodb")
-
-    data_bytes = to_bytes(data or "")
-    version, action = extract_version_and_action(path, data_bytes)
-
-    def _in_path_or_payload(search_str):
-        return to_str(search_str) in path or to_bytes(search_str) in data_bytes
-
-    if path == "/" and b"QueueName=" in data_bytes:
-        return "sqs", config.service_port("sqs")
-
-    if "Action=ConfirmSubscription" in path:
-        return "sns", config.service_port("sns")
-
-    if path.startswith("/2015-03-31/functions/"):
-        return "lambda", config.service_port("lambda")
-
-    if _in_path_or_payload("Action=AssumeRoleWithWebIdentity"):
-        return "sts", config.service_port("sts")
-
-    if _in_path_or_payload("Action=AssumeRoleWithSAML"):
-        return "sts", config.service_port("sts")
-
-    if _in_path_or_payload("Action=AssumeRole"):
-        return "sts", config.service_port("sts")
-
-    # SQS queue requests
-    if _in_path_or_payload("QueueUrl=") and _in_path_or_payload("Action="):
-        return "sqs", config.service_port("sqs")
-    if matches_service_action("sqs", action, version=version):
-        return "sqs", config.service_port("sqs")
-
-    # SNS topic requests
-    if matches_service_action("sns", action, version=version):
-        return "sns", config.service_port("sns")
-
-    # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
-    stripped = path.strip("/")
-    if method in ["GET", "HEAD"] and stripped:
-        # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
-        return "s3", config.service_port("s3")
-
-    # detect S3 URLs
-    if stripped and "/" not in stripped:
-        if method == "PUT":
-            # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
-            return "s3", config.service_port("s3")
-        if method == "POST" and is_s3_form_data(data_bytes):
-            # assume that this is an S3 POST request with form parameters or multipart form in the body
-            return "s3", config.service_port("s3")
-
-    # detect S3 requests sent from aws-cli using --no-sign-request option
-    if "aws-cli/" in headers.get("User-Agent", ""):
-        return "s3", config.service_port("s3")
-
-    # S3 delete object requests
-    if (
-        method == "POST"
-        and "delete=" in path
-        and b"<Delete" in data_bytes
-        and b"<Key>" in data_bytes
-    ):
-        return "s3", config.service_port("s3")
-
-    # Put Object API can have multiple keys
-    if stripped.count("/") >= 1 and method == "PUT":
-        # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
-        # or `/<bucket>/object/object1/+`
-        return "s3", config.service_port("s3")
-
-    auth_header = headers.get("Authorization") or ""
-
-    # detect S3 requests with "AWS id:key" Auth headers
-    if auth_header.startswith("AWS "):
-        return "s3", config.service_port("s3")
-
-    # certain EC2 requests from Java SDK contain no Auth headers (issue #3805)
-    if b"Version=2016-11-15" in data_bytes:
-        return "ec2", config.service_port("ec2")
 
 
 def get_service_port_for_account(service, headers):

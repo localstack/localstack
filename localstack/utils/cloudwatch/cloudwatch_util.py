@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from flask import Response
@@ -37,7 +37,7 @@ def publish_lambda_metric(metric, value, kwargs):
                 {
                     "MetricName": metric,
                     "Dimensions": dimension_lambda(kwargs),
-                    "Timestamp": datetime.now(),
+                    "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
                     "Value": value,
                 }
             ],

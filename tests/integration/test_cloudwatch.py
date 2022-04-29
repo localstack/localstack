@@ -1,6 +1,6 @@
 import gzip
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 
 import requests
@@ -298,10 +298,10 @@ class TestCloudwatch:
         cloudwatch_client.put_metric_alarm(
             AlarmName="cpu-mon",
             AlarmDescription="<",
-            MetricName="CPUUtilization",
+            MetricName="CPUUtilization-2",
             Namespace="AWS/EC2",
             Statistic="Sum",
-            Period=180,
+            Period=600,
             Threshold=1,
             ComparisonOperator="GreaterThanThreshold",
             EvaluationPeriods=1,
@@ -310,6 +310,7 @@ class TestCloudwatch:
 
         result = cloudwatch_client.describe_alarms()
         assert result.get("MetricAlarms")[0]["AlarmDescription"] == "<"
+        cloudwatch_client.delete_alarms(AlarmNames=["cpu-mon"])
 
     def test_set_alarm(
         self, sns_client, cloudwatch_client, sqs_client, sns_create_topic, sqs_create_queue
@@ -343,11 +344,11 @@ class TestCloudwatch:
         alarm_description = "Test Alarm when CPU exceeds 50 percent"
 
         expected_trigger = {
-            "MetricName": "CPUUtilization",
+            "MetricName": "CPUUtilization-3",
             "Namespace": "AWS/EC2",
             "Unit": "Percent",
             "Period": 300,
-            "EvaluationPeriods": 1,
+            "EvaluationPeriods": 2,
             "ComparisonOperator": "GreaterThanThreshold",
             "Threshold": 50.0,
             "TreatMissingData": "ignore",
@@ -431,6 +432,89 @@ class TestCloudwatch:
             sns_client.unsubscribe(SubscriptionArn=subscription_ok["SubscriptionArn"])
             cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
 
+    def test_put_metric_alarm(
+        self, sns_client, cloudwatch_client, sqs_client, sns_create_topic, sqs_create_queue
+    ):
+        sns_topic_alarm = sns_create_topic()
+        topic_arn_alarm = sns_topic_alarm["TopicArn"]
+
+        sqs_queue = sqs_create_queue()
+        arn_queue = sqs_client.get_queue_attributes(
+            QueueUrl=sqs_queue, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        # required for AWS:
+        sqs_client.set_queue_attributes(
+            QueueUrl=sqs_queue,
+            Attributes={"Policy": get_sqs_policy(arn_queue, topic_arn_alarm)},
+        )
+        metric_name = "my-metric1"
+        dimension = [{"Name": "InstanceId", "Value": "abc"}]
+        namespace = "test/nsp"
+        alarm_name = f"test-alarm-{short_uid()}"
+
+        try:
+            subscription = sns_client.subscribe(
+                TopicArn=topic_arn_alarm, Protocol="sqs", Endpoint=arn_queue
+            )
+            data = [
+                {
+                    "MetricName": metric_name,
+                    "Dimensions": dimension,
+                    "Value": 21,
+                    "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
+                    "Unit": "Seconds",
+                },
+                {
+                    "MetricName": metric_name,
+                    "Dimensions": dimension,
+                    "Value": 22,
+                    "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
+                    "Unit": "Seconds",
+                },
+            ]
+            cloudwatch_client.put_metric_data(Namespace=namespace, MetricData=data)
+
+            # create alarm with action for "ALARM"
+            cloudwatch_client.put_metric_alarm(
+                AlarmName=alarm_name,
+                AlarmDescription="testing cloudwatch alarms",
+                MetricName=metric_name,
+                Namespace=namespace,
+                ActionsEnabled=True,
+                Period=30,
+                Threshold=2,
+                Dimensions=dimension,
+                Unit="Seconds",
+                Statistic="Average",
+                OKActions=[topic_arn_alarm],
+                AlarmActions=[topic_arn_alarm],
+                EvaluationPeriods=1,
+                ComparisonOperator="GreaterThanThreshold",
+                TreatMissingData="notBreaching",
+            )
+
+            def check_alarm_triggered(expected_state):
+                result = sqs_client.receive_message(QueueUrl=sqs_queue, VisibilityTimeout=0)
+
+                msg = result["Messages"][0]
+
+                body = json.loads(msg["Body"])
+                message = json.loads(body["Message"])
+
+                receipt_handle = msg["ReceiptHandle"]
+                sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
+                assert message["NewStateValue"] == expected_state
+
+            retry(check_alarm_triggered, retries=60, sleep=3.0, expected_state="ALARM")
+
+            # missing are treated as not breaching, so we should reach OK state again
+            retry(
+                check_alarm_triggered, retries=60, sleep=3.0, sleep_before=25, expected_state="OK"
+            )
+        finally:
+            sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
+            cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
+
 
 def check_message(
     sqs_client,
@@ -448,6 +532,8 @@ def check_message(
         body = json.loads(msg["Body"])
         if body["TopicArn"] == expected_topic_arn:
             message = json.loads(body["Message"])
+            receipt_handle = msg["ReceiptHandle"]
+            sqs_client.delete_message(QueueUrl=expected_queue_url, ReceiptHandle=receipt_handle)
             break
     assert message["NewStateValue"] == expected_new
     assert message["NewStateReason"] == expected_reason

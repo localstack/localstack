@@ -1,6 +1,6 @@
 import re
 from collections import defaultdict
-from typing import Any, Dict, List, Mapping, NamedTuple, Optional, Tuple
+from typing import Any, AnyStr, Dict, List, Mapping, Match, NamedTuple, Optional, Tuple
 from urllib.parse import parse_qs, unquote
 
 from botocore.model import OperationModel, ServiceModel, StructureShape
@@ -144,22 +144,52 @@ class _RequestMatchingRule(Rule):
         raise NotFound()
 
 
-# Regex to find path parameters which should be greedy according to the spec
-_greedy_regex = re.compile(r"{(\w+)\+}")
+# Regex to find path parameters in requestUris of AWS service specs (f.e. /{param1}/{param2+})
+_path_param_regex = re.compile(r"({.+?})")
+# Translation table which replaces characters forbidden in Werkzeug rule names with temporary replacements
+# Note: The temporary replacements must not occur in any requestUri of any operation in any service!
+_rule_replacements = {"-": "_0_"}
+# String translation table for #_rule_replacements for str#translate
+_rule_replacement_table = str.maketrans(_rule_replacements)
 
 
-def _request_uri_path_to_rule_string(request_uri_path: str):
+def _transform_path_params_to_rule_vars(match: Match[AnyStr]) -> str:
     """
-    Translates the given requestUri path (without a potential query suffix) to a Werkzeug rule string which can be used
-    with Werkzeug's route matching framework.
+    Transforms a request URI path param to a valid Werkzeug Rule string variable placeholder.
+    This transformation function should be used in combination with _path_param_regex on the request URIs (without any
+    query params).
 
-    :param request_uri_path: path section of the operation model's http request URI (without a potential query suffix)
-    :return: a Werkzeug routing framework compatible rule string
+    :param match: Regex match which contains a single group. The match group is a request URI path param, including the
+                    surrounding curly braces.
+    :return: Werkzeug rule string variable placeholder which is semantically equal to the given request URI path param
+
     """
-    # replace any greedy URI params (f.e. /foo/{Bar+}) with the werkzeug notation (/foo/{path:Bar})
-    rule_string = _greedy_regex.sub(r"{path:\g<1>}", request_uri_path)
-    # replace the spec param notation (f.e. /foo/{Bar}) with the werkzeug path param notation (/foo/<Bar>)
-    return rule_string.replace("{", "<").replace("}", ">")
+    # get the group match and strip the curly braces
+    request_uri_variable: str = match.group(0)[1:-1]
+
+    # if the request URI param is greedy (f.e. /foo/{Bar+}), add Werkzeug's "path" prefix (/foo/{path:Bar})
+    greedy_prefix = ""
+    if request_uri_variable.endswith("+"):
+        greedy_prefix = "path:"
+        request_uri_variable = request_uri_variable.strip("+")
+
+    # replace forbidden chars (not allowed in Werkzeug rule variable names) with their placeholder
+    escaped_request_uri_variable = request_uri_variable.translate(_rule_replacement_table)
+
+    return f"<{greedy_prefix}{escaped_request_uri_variable}>"
+
+
+def _post_process_arg_name(arg_key: str) -> str:
+    """
+    Reverses previous manipulations to the path parameters names (like replacing forbidden characters with
+    placeholders).
+    :param arg_key: Path param key name extracted using Werkzeug rules
+    :return: Post-processed ("un-sanitized") path param key
+    """
+    result = arg_key
+    for original, substitution in _rule_replacements.items():
+        result = result.replace(substitution, original)
+    return result
 
 
 def _create_service_map(service: ServiceModel) -> Map:
@@ -167,7 +197,6 @@ def _create_service_map(service: ServiceModel) -> Map:
     Creates a Werkzeug Map object with all rules necessary for the specific service.
     :param service: botocore service model to create the rules for
     :return: a Map instance which is used to perform the in-service operation routing
-             -
     """
     ops = [service.operation_model(op_name) for op_name in service.operation_names]
 
@@ -182,7 +211,7 @@ def _create_service_map(service: ServiceModel) -> Map:
     # create a matching rule for each (path, method) combination
     for (path, method), ops in path_index.items():
         # translate the requestUri to a Werkzeug rule string
-        rule_string = _request_uri_path_to_rule_string(path)
+        rule_string = _path_param_regex.sub(_transform_path_params_to_rule_vars, path)
 
         if len(ops) == 1:
             # if there is only a single operation for a (path, method) combination,
@@ -228,8 +257,10 @@ class RestServiceOperationRouter:
         if isinstance(rule, _RequestMatchingRule):
             rule = rule.match_request(request)
 
-        # the path params might still be url-encoded
-        args = {k: unquote(v) for k, v in args.items()}
+        # post process the arg keys and values
+        # - the path param keys need to be "un-sanitized", i.e. sanitized rule variable names need to be reverted
+        # - the path param values might still be url-encoded
+        args = {_post_process_arg_name(k): unquote(v) for k, v in args.items()}
 
         # extract the operation model from the rule
         operation: OperationModel = rule.endpoint
