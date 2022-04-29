@@ -667,6 +667,9 @@ class TestDynamoDB:
         assert len(records) == 6
         events = [rec["eventName"] for rec in records]
         assert events == ["INSERT", "MODIFY", "REMOVE"] * 2
+        # assert that all records contain proper event IDs
+        event_ids = [rec.get("eventID") for rec in records]
+        assert all(event_ids)
 
         # assert that updates have been received from regular table operations and PartiQL query operations
         for idx, record in enumerate(records):
