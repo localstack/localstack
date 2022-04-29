@@ -120,4 +120,14 @@ def test_get_custom_headers():
 def test_get_raw_path():
     request = Request("GET", "/foo/bar/ed", raw_path="/foo%2Fbar/ed")
 
+    assert request.path == "/foo/bar/ed"
+    assert request.environ["RAW_URI"] == "/foo%2Fbar/ed"
+    assert get_raw_path(request) == "/foo%2Fbar/ed"
+
+
+def test_get_raw_path_with_query():
+    request = Request("GET", "/foo/bar/ed", raw_path="/foo%2Fbar/ed?fizz=buzz")
+
+    assert request.path == "/foo/bar/ed"
+    assert request.environ["RAW_URI"] == "/foo%2Fbar/ed?fizz=buzz"
     assert get_raw_path(request) == "/foo%2Fbar/ed"

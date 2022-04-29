@@ -59,6 +59,8 @@ def dummy_wsgi_environment(
         environ["QUERY_STRING"] = query_string
 
     if raw_uri:
+        if query_string:
+            raw_uri += "?" + query_string
         environ["RAW_URI"] = raw_uri
         environ["REQUEST_URI"] = environ["RAW_URI"]
 
@@ -152,19 +154,19 @@ class Request(WerkzeugRequest):
 
 def get_raw_path(request) -> str:
     """
-    Returns the raw_path inside the request. The request can either be a Quart Request object (that
-    encodes the raw path in request.scope['raw_path']) or a Werkzeug WSGi request (that encodes the
-    raw path in request.environ['RAW_URI']).
+    Returns the raw_path inside the request without the query string. The request can either be a Quart Request
+    object (that encodes the raw path in request.scope['raw_path']) or a Werkzeug WSGi request (that encodes the raw
+    path in request.environ['RAW_URI']).
 
     :param request: the request object
     :return: the raw path if any
     """
     if hasattr(request, "environ"):
-        # werkzeug/flask request (already a string)
-        return request.environ.get("RAW_URI", request.path)
+        # werkzeug/flask request (already a string, and contains the query part)
+        return request.environ.get("RAW_URI", request.path).split("?")[0]
 
     if hasattr(request, "scope"):
-        # quart request raw_path comes as bytes
+        # quart request raw_path comes as bytes, and without the query part
         return request.scope.get("raw_path", request.path).decode("utf-8")
 
     raise ValueError("cannot extract raw path from request object %s" % request)
