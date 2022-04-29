@@ -2,6 +2,7 @@
 A set of common handlers to build an AWS server application.
 """
 import logging
+import traceback
 from functools import lru_cache
 from typing import Any, Dict, Optional, Union
 
@@ -10,7 +11,7 @@ from requests import Response as RequestsResponse
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
 
-from localstack import constants
+from localstack import config, constants
 from localstack.http import Request, Response, Router
 from localstack.services.internal import LocalstackResources
 
@@ -387,6 +388,14 @@ class ServiceExceptionSerializer(ExceptionHandler):
         elif not isinstance(exception, ServiceException):
             if not self.handle_internal_failures:
                 return
+
+            if config.DEBUG:
+                exception = "".join(
+                    traceback.format_exception(
+                        etype=type(exception), value=exception, tb=exception.__traceback__
+                    )
+                )
+
             # wrap exception for serialization
             service_name = operation.service_model.service_name
             operation_name = operation.name
