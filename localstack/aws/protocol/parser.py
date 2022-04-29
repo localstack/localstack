@@ -975,7 +975,6 @@ class EC2RequestParser(QueryRequestParser):
 
 
 class S3RequestParser(RestXMLRequestParser):
-
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         """Handle virtual-host-addressing for S3."""
