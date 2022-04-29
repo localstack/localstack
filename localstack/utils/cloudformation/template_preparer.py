@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 import boto3
 import moto.cloudformation.utils
 import yaml
+from moto.iam.models import aws_managed_policies_data_parsed
 from requests.structures import CaseInsensitiveDict
 from samtranslator.translator.transform import transform as transform_sam
 
@@ -39,6 +40,10 @@ def transform_template(req_data) -> Optional[str]:
             "dummy": "entry"
             # 'AWSLambdaBasicExecutionRole': 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
         }
+
+        policy_map.update(
+            dict([(name, d.Arn) for name, d in aws_managed_policies_data_parsed.items()])
+        )
 
         class MockPolicyLoader:
             def load(self):
