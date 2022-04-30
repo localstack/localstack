@@ -27,9 +27,11 @@ def apigateway():
 
 @aws_provider()
 def cloudformation():
-    from localstack.services.cloudformation import cloudformation_starter
+    from localstack.services.cloudformation.provider import CloudformationProvider
 
-    return Service("cloudformation", start=cloudformation_starter.start_cloudformation)
+    provider = CloudformationProvider()
+
+    return Service("cloudformation", listener=AwsApiListener("cloudformation", provider))
 
 
 @aws_provider(api="config")

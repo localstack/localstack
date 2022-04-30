@@ -84,7 +84,7 @@ RESOURCE_TO_FUNCTION = {}
 
 
 def find_stack(stack_name):
-    from localstack.services.cloudformation.cloudformation_api import find_stack as api_find_stack
+    from localstack.services.cloudformation.provider import find_stack as api_find_stack
 
     return api_find_stack(stack_name)
 
@@ -1454,7 +1454,7 @@ class TemplateDeployer:
         change_set_id=None,
         append_to_changeset=False,
     ):
-        from localstack.services.cloudformation.cloudformation_api import StackChangeSet
+        from localstack.services.cloudformation.provider import StackChangeSet
 
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
@@ -1522,7 +1522,7 @@ class TemplateDeployer:
         )
 
     def apply_changes_in_loop(self, changes, stack, stack_name, action=None, new_stack=None):
-        from localstack.services.cloudformation.cloudformation_api import StackChangeSet
+        from localstack.services.cloudformation.provider import StackChangeSet
 
         def _run(*args):
             try:

@@ -476,7 +476,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             try:
                 member_shape = shape.members[key]
             except KeyError:
-                LOG.exception(
+                LOG.warning(
                     "Response object %s contains a member which is not specified: %s",
                     shape.name,
                     key,
