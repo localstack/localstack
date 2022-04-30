@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from typing import Dict
 from urllib.parse import urlencode
@@ -30,6 +31,8 @@ from localstack.utils.common import (
     to_str,
 )
 from localstack.utils.persistence import PersistingProxyListener
+
+LOG = logging.getLogger(__name__)
 
 API_VERSION = "2012-11-05"
 XMLNS_SQS = "http://queue.amazonaws.com/doc/%s/" % API_VERSION
@@ -335,6 +338,9 @@ class ProxyListenerSQS(PersistingProxyListener):
                     return False
 
                 if req_data.get("QueueName").endswith(".fifo") and not _is_fifo():
+                    LOG.warn(
+                        'You are trying to create a queue ending in ".fifo".  Please use the --attributes parameter to set FifoQueue appropriately.'
+                    )
                     msg = "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
                     return make_requests_error(
                         code=400, code_string="InvalidParameterValue", message=msg
