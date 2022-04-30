@@ -118,6 +118,41 @@ class IntegrationTest(unittest.TestCase):
         for key in all_objects.keys():
             self.assertRegex(key, r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*")
 
+    def test_firehose_extended_s3(self):
+        s3_resource = aws_stack.connect_to_resource("s3")
+        firehose = aws_stack.create_external_boto_client("firehose")
+
+        s3_prefix = "/testdata2"
+        test_data = '{"test": "firehose_data_%s"}' % short_uid()
+        # create Firehose stream
+        stream = firehose.create_delivery_stream(
+            DeliveryStreamName=TEST_FIREHOSE_NAME,
+            ExtendedS3DestinationConfiguration={
+                "RoleARN": aws_stack.iam_resource_arn("firehose"),
+                "BucketARN": aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
+                "Prefix": s3_prefix,
+            },
+            Tags=TEST_TAGS,
+        )
+        self.assertTrue(stream)
+        self.assertIn(TEST_FIREHOSE_NAME, firehose.list_delivery_streams()["DeliveryStreamNames"])
+        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=TEST_FIREHOSE_NAME)
+        self.assertEqual(TEST_TAGS, tags["Tags"])
+
+        s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
+
+        # put records
+        firehose.put_record(
+            DeliveryStreamName=TEST_FIREHOSE_NAME, Record={"Data": to_bytes(test_data)}
+        )
+        # check records in target bucket
+        all_objects = testutil.list_all_s3_objects()
+        testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+        # check file layout in target bucket
+        all_objects = testutil.map_all_s3_objects(buckets=[TEST_BUCKET_NAME])
+        for key in all_objects.keys():
+            self.assertRegex(key, r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*")
+
     def test_firehose_kinesis_to_s3(self):
         kinesis = aws_stack.create_external_boto_client("kinesis")
         s3_resource = aws_stack.connect_to_resource("s3")

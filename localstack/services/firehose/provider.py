@@ -476,7 +476,10 @@ class FirehoseProvider(FirehoseApi):
                     unprocessed_records,
                 )
             if "S3DestinationDescription" in destination:
-                s3_dest_desc = destination["S3DestinationDescription"]
+                s3_dest_desc = (
+                    destination["S3DestinationDescription"]
+                    or destination["ExtendedS3DestinationDescription"]
+                )
                 self._put_records_to_s3_bucket(delivery_stream_name, records, s3_dest_desc)
             if "HttpEndpointDestinationDescription" in destination:
                 http_dest = destination["HttpEndpointDestinationDescription"]
