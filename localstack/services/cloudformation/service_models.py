@@ -187,7 +187,7 @@ class GenericBaseModel:
     @classmethod
     def resolve_refs_recursively(cls, stack_name, value, resources):
         # TODO: restructure code to avoid circular import here
-        from localstack.services.cloudformation.cloudformation_api import find_stack
+        from localstack.services.cloudformation.provider import find_stack
         from localstack.utils.cloudformation.template_deployer import resolve_refs_recursively
 
         stack = find_stack(stack_name)
