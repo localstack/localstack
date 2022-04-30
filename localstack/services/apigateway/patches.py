@@ -113,7 +113,7 @@ def apply_patches():
             if path_start not in model_attributes and path_start_usc in model_attributes:
                 operation["path"] = operation["path"].replace(path_start, path_start_usc)
             if operation["path"] in not_supported_attributes:
-                msg = "Invalid patch path %s" % (operation["path"])
+                msg = f'Invalid patch path {operation["path"]}'
                 return 400, {}, msg
 
         apply_json_patch_safe(entity, patch_operations, in_place=True)
@@ -490,9 +490,9 @@ def apply_patches():
         if "import" not in modes:
             return status, _, rest_api
 
-        api_id = json.loads(rest_api)["id"]
+        function_id = json.loads(rest_api)["id"]
         body = parse_json_or_yaml(request.data.decode("utf-8"))
-        self.backend.put_rest_api(api_id, body, parsed_qs)
+        self.backend.put_rest_api(function_id, body, parsed_qs)
 
         return 200, {}, rest_api
 

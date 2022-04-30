@@ -652,20 +652,19 @@ def import_api_from_openapi_spec(
                     response_parameters,
                 )
 
-            method_schema = method_schema["x-amazon-apigateway-integration"]
             integration = apigateway_models.Integration(
                 http_method=method,
-                uri=method_schema.get("uri"),
-                integration_type=method_schema["type"],
-                passthrough_behavior=method_schema.get("passthroughBehavior"),
-                request_templates=method_schema.get("requestTemplates") or {},
+                uri=method_integration.get("uri"),
+                integration_type=method_integration["type"],
+                passthrough_behavior=method_integration.get("passthroughBehavior"),
+                request_templates=method_integration.get("requestTemplates") or {},
             )
             integration.create_integration_response(
-                status_code=method_schema.get("responses", {})
+                status_code=responses
                 .get("default", {})
                 .get("statusCode", 200),
                 selection_pattern=None,
-                response_templates=method_schema.get("responses", {})
+                response_templates=responses
                 .get("default", {})
                 .get("responseTemplates"),
                 content_handling=None,
