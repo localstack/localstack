@@ -660,9 +660,9 @@ def import_api_from_openapi_spec(
                 request_templates=method_integration.get("requestTemplates") or {},
             )
             integration.create_integration_response(
-                status_code=responses.get("default", {}).get("statusCode", 200),
+                status_code=method_integration.get("default", {}).get("statusCode", 200),
                 selection_pattern=None,
-                response_templates=responses.get("default", {}).get("responseTemplates"),
+                response_templates=method_integration.get("default", {}).get("responseTemplates", None),
                 content_handling=None,
             )
             child.resource_methods[method]["methodIntegration"] = integration
