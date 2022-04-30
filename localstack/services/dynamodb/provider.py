@@ -223,7 +223,6 @@ class EventForwarder:
         # StreamViewType determines what information is written to the stream for the table
         # When an item in the table is inserted, updated or deleted
         for record in records:
-            record.pop("eventID", None)
             ddb_record = record["dynamodb"]
             stream_type = ddb_record.get("StreamViewType")
             if not stream_type:
