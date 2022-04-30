@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
@@ -768,6 +769,25 @@ class TestEvents:
 
         # clean up
         proxy.stop()
+
+    def test_create_connection_validations(self, events_client):
+        connection_name = "This should fail with two errors 123467890123412341234123412341234"
+
+        with pytest.raises(ClientError) as ctx:
+            events_client.create_connection(
+                Name=connection_name,
+                AuthorizationType="INVALID",
+                AuthParameters={"BasicAuthParameters": {"Username": "user", "Password": "pass"}},
+            ),
+
+        assert ctx.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert ctx.value.response["Error"]["Code"] == "ValidationException"
+
+        message = ctx.value.response["Error"]["Message"]
+        assert "3 validation errors" in message
+        assert "must satisfy regular expression pattern" in message
+        assert "must have length less than or equal to 64" in message
+        assert "must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]" in message
 
     def test_put_events_with_target_firehose(self, events_client, s3_client, firehose_client):
         s3_bucket = "s3-{}".format(short_uid())

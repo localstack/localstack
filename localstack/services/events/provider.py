@@ -11,8 +11,13 @@ from moto.events.responses import EventsHandler as MotoEventsHandler
 
 from localstack import config
 from localstack.aws.api import RequestContext
+from localstack.aws.api.core import CommonServiceException
 from localstack.aws.api.events import (
     Boolean,
+    ConnectionAuthorizationType,
+    ConnectionDescription,
+    ConnectionName,
+    CreateConnectionAuthRequestParameters,
     EventBusNameOrArn,
     EventPattern,
     EventsApi,
@@ -41,6 +46,7 @@ TEST_EVENTS_CACHE = []
 EVENTS_TMP_DIR = "cw_events"
 DEFAULT_EVENT_BUS_NAME = "default"
 CONTENT_BASE_FILTER_KEYWORDS = ["prefix", "anything-but", "numeric", "cidr", "exists"]
+CONNECTION_NAME_PATTERN = re.compile("^[\\.\\-_A-Za-z0-9]+$")
 
 
 class EventsProvider(EventsApi):
@@ -148,6 +154,31 @@ class EventsProvider(EventsApi):
             JobScheduler.instance().disable_job(job_id=job_id)
         call_moto(context)
 
+    def create_connection(self, context: RequestContext,
+        name: ConnectionName, authorization_type: ConnectionAuthorizationType, auth_parameters: CreateConnectionAuthRequestParameters,
+        description: ConnectionDescription = None):
+        errors = []
+
+        if not CONNECTION_NAME_PATTERN.match(name):
+            error = F"{name} at 'name' failed to satisfy: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+            errors.append(error)
+
+        if len(name) > 64:
+            error = F"{name} at 'name' failed to satisfy: Member must have length less than or equal to 64"
+            errors.append(error)
+
+        if authorization_type not in ["BASIC", "API_KEY", "OAUTH_CLIENT_CREDENTIALS"]:
+            error = F"{authorization_type} at 'authorizationType' failed to satisfy: Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
+            errors.append(error)
+
+        if len(errors) > 0:
+            error_description = "; ".join(errors)
+            error_plural = "errors" if len(errors) > 1 else "error"
+            errors_amount = len(errors)
+            message = F"{errors_amount} validation {error_plural} detected: {error_description}"
+            raise CommonServiceException(message=message, code='ValidationException')
+
+        call_moto(context)
 
 class EventsBackend(RegionBackend):
     # maps rule name to job_id
@@ -337,7 +368,7 @@ def filter_event_based_on_event_format(self, rule_name: str, event: Dict[str, An
                         if not handle_prefix_filtering(value.get(key_a), value_a):
                             return False
 
-            # 2. check if the pattern is a list and event values are not contained in it
+            # 2. check if the pattern is a list and event values are not contained in itEventsApi
             if isinstance(value, list):
                 if identify_content_base_parameter_in_pattern(value):
                     if not filter_event_with_content_base_parameter(value, event_value):
