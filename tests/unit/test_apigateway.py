@@ -405,3 +405,23 @@ def test_import_swagger_api():
             "responseParameters": {"method.response.header.Content-Type": "'text/html'"},
         }
     }
+
+    assert resource_methods.get("pets").get("GET").method_responses == {
+        "200": {
+            "responseModels": {
+                "application/json": {
+                    "items": {
+                        "properties": {
+                            "id": {"type": "integer"},
+                            "price": {"type": "number"},
+                            "type": {"type": "string"},
+                        },
+                        "type": "object",
+                    },
+                    "type": "array",
+                }
+            },
+            "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
+            "statusCode": "200",
+        }
+    }

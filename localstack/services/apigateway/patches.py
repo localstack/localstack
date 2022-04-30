@@ -68,7 +68,7 @@ def apply_patches():
         uri,
         http_method,
         request_templates=None,
-        pass_through_behavior="WHEN_NO_MATCH",
+        passthrough_behavior="WHEN_NO_MATCH",
         cache_key_parameters=None,
         *args,
         **kwargs,
@@ -85,7 +85,7 @@ def apply_patches():
             **kwargs,
         )
 
-        self["passthroughBehavior"] = pass_through_behavior
+        self["passthroughBehavior"] = passthrough_behavior
         self["cacheKeyParameters"] = cache_key_parameters
         self["cacheNamespace"] = self.get("cacheNamespace") or short_uid()
 
@@ -490,9 +490,9 @@ def apply_patches():
         if "import" not in modes:
             return status, _, rest_api
 
-        function_id = json.loads(rest_api)["id"]
+        api_id = json.loads(rest_api)["id"]
         body = parse_json_or_yaml(request.data.decode("utf-8"))
-        self.backend.put_rest_api(function_id, body, parsed_qs)
+        self.backend.put_rest_api(api_id, body, parsed_qs)
 
         return 200, {}, rest_api
 
