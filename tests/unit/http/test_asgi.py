@@ -1,4 +1,7 @@
 import logging
+import time
+from queue import Queue
+from threading import Thread
 from typing import List
 
 import pytest
@@ -67,6 +70,33 @@ def test_serve_app(serve_app):
     request1 = request_list[1]
     assert request1.path == "/compute"
     assert request1.get_data() == b'{"foo": "bar"}'
+
+
+def test_requests_are_not_blocking_the_server(serve_app):
+    queue = Queue()
+
+    @Request.application
+    def app(request: Request) -> Response:
+        time.sleep(1)
+        queue.put_nowait(request)
+        return Response("ok", 200)
+
+    server = serve_app(ASGIAdapter(app))
+
+    then = time.time()
+
+    Thread(target=requests.get, args=(server.url,)).start()
+    Thread(target=requests.get, args=(server.url,)).start()
+    Thread(target=requests.get, args=(server.url,)).start()
+    Thread(target=requests.get, args=(server.url,)).start()
+
+    # get the four responses
+    queue.get(timeout=5)
+    queue.get(timeout=5)
+    queue.get(timeout=5)
+    queue.get(timeout=5)
+
+    assert (time.time() - then) < 4, "requests did not seem to be parallelized"
 
 
 def test_chunked_transfer_encoding_response(serve_app):
