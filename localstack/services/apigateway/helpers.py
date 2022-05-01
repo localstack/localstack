@@ -611,12 +611,11 @@ def import_api_from_openapi_spec(
             parent_path = "/".join(parts[:-1])
             parent = get_or_create_path(parent_path)
             parent_id = parent.id
-        existing = [
+        if existing := [
             r
             for r in rest_api.resources.values()
             if r.path_part == (parts[-1] or "/") and (r.parent_id or "") == (parent_id or "")
-        ]
-        if existing:
+        ]:
             return existing[0]
         return add_path(path, parts, parent_id=parent_id)
 
@@ -662,7 +661,9 @@ def import_api_from_openapi_spec(
             integration.create_integration_response(
                 status_code=method_integration.get("default", {}).get("statusCode", 200),
                 selection_pattern=None,
-                response_templates=method_integration.get("default", {}).get("responseTemplates", None),
+                response_templates=method_integration.get("default", {}).get(
+                    "responseTemplates", None
+                ),
                 content_handling=None,
             )
             child.resource_methods[method]["methodIntegration"] = integration
