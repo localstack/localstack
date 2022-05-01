@@ -1,9 +1,14 @@
-from werkzeug import run_simple
+from typing import TYPE_CHECKING, Iterable
+
+if TYPE_CHECKING:
+    from _typeshed.wsgi import WSGIEnvironment, StartResponse
+
 from werkzeug.datastructures import Headers
 from werkzeug.wrappers import Request
 
-from localstack.aws.gateway import Gateway
 from localstack.http import Response
+
+from ..gateway import Gateway
 
 
 class WsgiGateway:
@@ -13,21 +18,21 @@ class WsgiGateway:
 
     gateway: Gateway
 
-    def __init__(self, gateway) -> None:
+    def __init__(self, gateway: Gateway) -> None:
         super().__init__()
         self.gateway = gateway
 
-    def __call__(self, environ, start_response):
-        http_request = Request(environ)
-        http_request.headers = Headers(http_request.headers)
-        http_response = Response()
+    def __call__(
+        self, environ: "WSGIEnvironment", start_response: "StartResponse"
+    ) -> Iterable[bytes]:
+        # create request from environment
+        request = Request(environ)
+        # by default, werkzeug requests from environ are immutable
+        request.headers = Headers(request.headers)
 
-        # Request is a drop-in replacement for HttpRequest
-        # noinspection PyTypeChecker
-        self.gateway.process(http_request, http_response)
+        # prepare response
+        response = Response()
 
-        return http_response(environ, start_response)
+        self.gateway.process(request, response)
 
-
-def serve(gateway: Gateway, host="localhost", port=4566, use_reloader=True, **kwargs):
-    run_simple(host, port, WsgiGateway(gateway), use_reloader=use_reloader, **kwargs)
+        return response(environ, start_response)

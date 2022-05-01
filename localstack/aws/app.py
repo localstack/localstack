@@ -4,7 +4,12 @@ from typing import Any
 
 from localstack.aws import handlers
 from localstack.http import Response
-from localstack.services.plugins import Service, ServiceManager, ServicePluginManager
+from localstack.services.plugins import (
+    SERVICE_PLUGINS,
+    Service,
+    ServiceManager,
+    ServicePluginManager,
+)
 
 from .api import RequestContext
 from .chain import HandlerChain
@@ -133,12 +138,31 @@ class LocalstackAwsGateway(Gateway):
 
 
 def main():
-    from .serving import wsgi
+    from .serving.hypercorn import serve
+
+    use_ssl = True
+    port = 4566
 
     # serve the LocalStackAwsGateway in a dev app
-    logging.basicConfig(level=logging.WARNING)
-    gw = LocalstackAwsGateway()
-    wsgi.serve(gw, use_reloader=True)
+    from localstack.utils.bootstrap import setup_logging
+
+    setup_logging()
+
+    if use_ssl:
+        from localstack.services.generic_proxy import (
+            GenericProxy,
+            install_predefined_cert_if_available,
+        )
+
+        install_predefined_cert_if_available()
+        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
+        ssl_creds = (cert_file_name, key_file_name)
+    else:
+        ssl_creds = None
+
+    gw = LocalstackAwsGateway(SERVICE_PLUGINS)
+
+    serve(gw, use_reloader=True, port=port, ssl_creds=ssl_creds)
 
 
 if __name__ == "__main__":

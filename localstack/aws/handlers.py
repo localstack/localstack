@@ -1,12 +1,12 @@
 """
 A set of common handlers to build an AWS server application.
 """
-import json
 import logging
 from functools import lru_cache
 from typing import Any, Dict, Optional, Union
 
 from botocore.model import ServiceModel
+from requests import Response as RequestsResponse
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
 
@@ -415,13 +415,13 @@ class InternalFailureHandler(ExceptionHandler):
 
         LOG.debug("setting internal failure response for %s", exception)
         response.status_code = 500
-        response.data = json.dumps(
+        response.set_json(
             {
                 "message": "Unexpected exception",
                 "error": str(exception),
                 "type": str(exception.__class__.__name__),
             }
-        ).encode("utf-8")
+        )
 
 
 class LegacyPluginHandler(Handler):
@@ -434,19 +434,36 @@ class LegacyPluginHandler(Handler):
 
         request = context.request
 
-        api = context.service.service_name
-        method = request.method
+        result = do_forward_request(
+            api=context.service.service_name,
+            method=request.method,
+            path=request.full_path if request.query_string else request.path,
+            data=request.get_data(True),
+            headers=request.headers,
+            port=None,
+        )
 
-        path_with_query = request.full_path if request.query_string else request.path
-        data = request.data
-        headers = request.headers
+        if type(result) == int:
+            chain.respond(status_code=result)
+            return
 
-        result = do_forward_request(api, method, path_with_query, data, headers, port=None)
-        # TODO: the edge proxy does a lot more to the result, so this may not work for all corner cases
+        if isinstance(result, tuple):
+            # special case for Kinesis SubscribeToShard
+            if len(result) == 2:
+                response.status_code = 200
+                response.set_response(result[0])
+                response.headers.update(dict(result[1]))
+                chain.stop()
+                return
 
-        response.status_code = result.status_code
-        response.data = result.content
-        response.headers.update(dict(result.headers))
+        if isinstance(result, RequestsResponse):
+            response.status_code = result.status_code
+            response.headers.update(dict(result.headers))
+            response.data = result.content
+            chain.stop()
+            return
+
+        raise ValueError("cannot create response for result %s" % result)
 
 
 class EmptyResponseHandler(Handler):
