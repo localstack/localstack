@@ -15,12 +15,12 @@ class AsgiGateway:
     gateway: Gateway
 
     def __init__(
-        self, gateway: Gateway, event_loop: Optional[AbstractEventLoop] = None, threads: int = 32
+        self, gateway: Gateway, event_loop: Optional[AbstractEventLoop] = None, threads: int = 100
     ) -> None:
         self.gateway = gateway
-        self.wsgi = ASGIAdapter(
-            WsgiGateway(gateway), event_loop=event_loop, executor=ThreadPoolExecutor(threads)
-        )
+
+        self.executor = ThreadPoolExecutor(threads, thread_name_prefix="asgi-gw")
+        self.wsgi = ASGIAdapter(WsgiGateway(gateway), event_loop=event_loop, executor=self.executor)
 
     async def __call__(self, scope, receive, send) -> None:
         """

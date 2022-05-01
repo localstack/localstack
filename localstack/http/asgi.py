@@ -1,6 +1,7 @@
 """This module contains code to make ASGI play nice with WSGI."""
 import asyncio
 import io
+import logging
 import math
 import typing as t
 from asyncio import AbstractEventLoop
@@ -10,6 +11,9 @@ from urllib.parse import quote, unquote, urlparse
 if t.TYPE_CHECKING:
     from _typeshed import WSGIApplication, WSGIEnvironment
     from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, HTTPScope, Scope
+
+
+LOG = logging.getLogger(__name__)
 
 
 def populate_wsgi_environment(environ: "WSGIEnvironment", scope: "HTTPScope"):

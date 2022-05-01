@@ -1,3 +1,5 @@
+import logging
+import threading
 from typing import TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
@@ -9,6 +11,8 @@ from werkzeug.wrappers import Request
 from localstack.http import Response
 
 from ..gateway import Gateway
+
+LOG = logging.getLogger(__name__)
 
 
 class WsgiGateway:
@@ -26,6 +30,13 @@ class WsgiGateway:
         self, environ: "WSGIEnvironment", start_response: "StartResponse"
     ) -> Iterable[bytes]:
         # create request from environment
+        LOG.info(
+            "[%s] %s %s%s",
+            threading.currentThread().name,
+            environ["REQUEST_METHOD"],
+            environ.get("HTTP_HOST"),
+            environ["RAW_URI"],
+        )
         request = Request(environ)
         # by default, werkzeug requests from environ are immutable
         request.headers = Headers(request.headers)
