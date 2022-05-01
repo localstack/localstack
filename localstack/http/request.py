@@ -147,9 +147,16 @@ class Request(WerkzeugRequest):
 
         super(Request, self).__init__(environ)
 
+        # restore originally passed headers:
         # werkzeug normally provides read-only access to headers set in the WSGIEnvironment through the EnvironHeaders
-        # class, this makes them mutable.
-        self.headers = Headers(self.headers)
+        # class, here we make them mutable again. moreover, WSGI header encoding conflicts with RFC2616. see this github
+        # issue for a discussion: https://github.com/pallets/werkzeug/issues/940
+        headers = Headers(headers)
+        # these two headers are treated separately in the WSGI environment, so we extract them if necessary
+        for h in ["content-length", "content-type"]:
+            if h not in headers and h in self.headers:
+                headers[h] = self.headers[h]
+        self.headers = headers
 
 
 def get_raw_path(request) -> str:
