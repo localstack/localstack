@@ -104,12 +104,16 @@ def test_validate_dummy_environment():
     validate(headers={"Content-Type": "text/xml", "x-amz-target": "foobar"}, body=b"")
 
 
-def test_get_content_length():
-    request = Request("GET", "/", body="foobar", headers={"Content-Length": "7"})
-    assert request.content_length == 7  # checking that the value from headers take precedence
-
+def test_content_length_is_set_automatically():
+    # checking that the value is calculated automatically
     request = Request("GET", "/", body="foobar")
-    assert request.content_length == 6  # checking that the value is calculated
+    assert request.content_length == 6
+
+
+def test_content_length_is_overwritten():
+    # checking that the value passed from headers take precedence
+    request = Request("GET", "/", body="foobar", headers={"Content-Length": "7"})
+    assert request.content_length == 7
 
 
 def test_get_custom_headers():
@@ -131,3 +135,19 @@ def test_get_raw_path_with_query():
     assert request.path == "/foo/bar/ed"
     assert request.environ["RAW_URI"] == "/foo%2Fbar/ed?fizz=buzz"
     assert get_raw_path(request) == "/foo%2Fbar/ed"
+
+
+def test_headers_retain_dashes():
+    request = Request("GET", "/foo/bar/ed", {"X-Amz-Meta--foo_bar-ed": "foobar"})
+    assert "x-amz-meta--foo_bar-ed" in request.headers
+    assert request.headers["x-amz-meta--foo_bar-ed"] == "foobar"
+
+
+def test_headers_retain_case():
+    request = Request("GET", "/foo/bar/ed", {"X-Amz-Meta--FOO_BaR-ed": "foobar"})
+    keys = list(request.headers.keys())
+    for k in keys:
+        if k.lower().startswith("x-amz-meta"):
+            assert k == "X-Amz-Meta--FOO_BaR-ed"
+            return
+    pytest.fail(f"key not in header keys {keys}")
