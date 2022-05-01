@@ -514,8 +514,7 @@ def apply_patches():
     def create_rest_api(self, *args, tags={}, **kwargs):
         result = create_rest_api_orig(self, *args, tags=tags, **kwargs)
         tags = tags or {}
-        custom_id = tags.get(TAG_KEY_CUSTOM_ID)
-        if custom_id:
+        if custom_id := tags.get(TAG_KEY_CUSTOM_ID):
             self.apis.pop(result.id)
             result.id = custom_id
             self.apis[custom_id] = result
