@@ -648,9 +648,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     queues: Dict[QueueKey, SqsQueue]
 
-    def __init__(self, *args, **kwargs):
-        super(SqsProvider).__init__(*args, **kwargs)
-
+    def __init__(self) -> None:
+        super().__init__()
         self.queues = {}
 
     def start(self):
