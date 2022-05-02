@@ -30,6 +30,7 @@ from localstack.utils.testutil import check_expected_lambda_log_events_length
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import (
     LAMBDA_RUNTIME_PYTHON36,
+    TEST_LAMBDA_FUNCTION_PREFIX,
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
@@ -1393,3 +1394,55 @@ def test_empty_sns_message(sns_client, sqs_client, sns_topic, sqs_queue):
         )["Attributes"]["ApproximateNumberOfMessages"]
         == "0"
     )
+
+
+class TestSNSSubscription:
+    def test_python_lambda_subscribe_sns_topic(
+        self,
+        create_lambda_function,
+        sns_client,
+        lambda_su_role,
+        sns_topic,
+        logs_client,
+        lambda_client,
+    ):
+        function_name = f"{TEST_LAMBDA_FUNCTION_PREFIX}-{short_uid()}"
+        permission_id = f"test-statement-{short_uid()}"
+        subject = "[Subject] Test subject"
+        message = "Hello world."
+        topic_arn = sns_topic["Attributes"]["TopicArn"]
+
+        lambda_creation_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+            role=lambda_su_role,
+        )
+        lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId=permission_id,
+            Action="lambda:InvokeFunction",
+            Principal="sns.amazonaws.com",
+            SourceArn=topic_arn,
+        )
+
+        sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="lambda",
+            Endpoint=lambda_arn,
+        )
+        sns_client.publish(TopicArn=topic_arn, Subject=subject, Message=message)
+
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=1,
+            function_name=function_name,
+            expected_length=1,
+            regex_filter="Records.*Sns",
+            logs_client=logs_client,
+        )
+        notification = events[0]["Records"][0]["Sns"]
+        assert "Subject" in notification
+        assert subject == notification["Subject"]

@@ -11,7 +11,9 @@ from requests.models import Request, Response
 
 from localstack import config, constants
 from localstack.config import SQS_PORT_EXTERNAL
-from localstack.services.awslambda.lambda_api import EventSourceListener
+from localstack.services.awslambda.event_source_listeners.event_source_listener import (
+    EventSourceListener,
+)
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns import sns_listener
 from localstack.services.sqs.sqs_utils import is_sqs_queue_url

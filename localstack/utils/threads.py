@@ -1,3 +1,4 @@
+import concurrent.futures
 import inspect
 import logging
 import threading
@@ -50,9 +51,10 @@ class FuncThread(threading.Thread):
         finally:
             try:
                 self.result_future.set_result(result)
-            except Exception:
-                # this can happen as InvalidStateError on shutdown, if the task is already canceled
                 pass
+            except concurrent.futures.InvalidStateError as e:
+                # this can happen on shutdown if the task is already canceled
+                LOG.debug(e)
 
     @property
     def running(self):

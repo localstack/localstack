@@ -26,12 +26,8 @@ from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.testutil import get_lambda_log_events
 
 from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import (
-    TEST_LAMBDA_LIBS,
-    TEST_LAMBDA_PYTHON,
-    TEST_LAMBDA_PYTHON_ECHO,
-    get_lambda_logs,
-)
+from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from .util import get_lambda_logs
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = "test_source_stream"
@@ -194,228 +190,6 @@ class IntegrationTest(unittest.TestCase):
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
-    # TODO fix duplication with test_lambda_streams_batch_and_transactions(..)!
-    def test_kinesis_lambda_sns_ddb_sqs_streams(self):
-        def create_kinesis_stream(name, delete=False):
-            stream = aws_stack.create_kinesis_stream(name, delete=delete)
-            stream.wait_for()
-
-        ddb_lease_table_suffix = "-kclapp"
-        table_name = TEST_TABLE_NAME + "klsdss" + ddb_lease_table_suffix
-        stream_name = TEST_STREAM_NAME
-        lambda_stream_name = "lambda-stream-%s" % short_uid()
-        lambda_queue_name = "lambda-queue-%s" % short_uid()
-        lambda_ddb_name = "lambda-ddb-%s" % short_uid()
-        queue_name = "queue-%s" % short_uid()
-        dynamodb = aws_stack.connect_to_resource("dynamodb")
-        dynamodb_service = aws_stack.create_external_boto_client("dynamodb")
-        dynamodbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
-        kinesis = aws_stack.create_external_boto_client("kinesis")
-        sns = aws_stack.create_external_boto_client("sns")
-        sqs = aws_stack.create_external_boto_client("sqs")
-
-        LOGGER.info("Creating test streams...")
-        run_safe(
-            lambda: dynamodb_service.delete_table(TableName=stream_name + ddb_lease_table_suffix),
-            print_error=False,
-        )
-
-        create_kinesis_stream(stream_name, delete=True)
-        create_kinesis_stream(TEST_LAMBDA_SOURCE_STREAM_NAME)
-
-        events = []
-
-        # subscribe to inbound Kinesis stream
-        def process_records(records, shard_id):
-            records = [
-                json.loads(base64.b64decode(r["data"])) if r.get("data") else r for r in records
-            ]
-            events.extend(records)
-
-        # start the KCL client process in the background
-        kinesis_connector.listen_to_kinesis(
-            stream_name,
-            listener_func=process_records,
-            wait_until_started=True,
-            ddb_lease_table_suffix=ddb_lease_table_suffix,
-        )
-
-        LOGGER.info("Kinesis consumer initialized.")
-
-        # create table with stream forwarding config
-        aws_stack.create_dynamodb_table(
-            table_name,
-            partition_key=PARTITION_KEY,
-            stream_view_type="NEW_AND_OLD_IMAGES",
-        )
-
-        # list DDB streams and make sure the table stream is there
-        streams = dynamodbstreams.list_streams()
-        ddb_event_source_arn = None
-        for stream in streams["Streams"]:
-            if stream["TableName"] == table_name:
-                ddb_event_source_arn = stream["StreamArn"]
-        self.assertTrue(ddb_event_source_arn)
-
-        # deploy test lambda connected to DynamoDB Stream
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS
-        )
-        testutil.create_lambda_function(
-            func_name=lambda_ddb_name,
-            zip_file=zip_file,
-            event_source_arn=ddb_event_source_arn,
-            delete=True,
-        )
-        # make sure we cannot create Lambda with same name twice
-        with self.assertRaises(Exception):
-            testutil.create_lambda_function(
-                func_name=lambda_ddb_name,
-                zip_file=zip_file,
-                event_source_arn=ddb_event_source_arn,
-            )
-
-        # deploy test lambda connected to Kinesis Stream
-        kinesis_event_source_arn = kinesis.describe_stream(
-            StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME
-        )["StreamDescription"]["StreamARN"]
-        testutil.create_lambda_function(
-            func_name=lambda_stream_name,
-            zip_file=zip_file,
-            event_source_arn=kinesis_event_source_arn,
-        )
-
-        # deploy test lambda connected to SQS queue
-        sqs_queue_info = testutil.create_sqs_queue(queue_name)
-        testutil.create_lambda_function(
-            func_name=lambda_queue_name,
-            zip_file=zip_file,
-            event_source_arn=sqs_queue_info["QueueArn"],
-        )
-
-        # set number of items to update/put to table
-        num_events_ddb = 15
-        num_put_new_items = 5
-        num_put_existing_items = 2
-        num_batch_items = 3
-        num_updates_ddb = (
-            num_events_ddb - num_put_new_items - num_put_existing_items - num_batch_items
-        )
-
-        LOGGER.info("Putting %s items to table...", num_events_ddb)
-        table = dynamodb.Table(table_name)
-        for i in range(0, num_put_new_items):
-            table.put_item(Item={PARTITION_KEY: f"testId{i}", "data": "foobar123"})
-        # Put items with an already existing ID (fix https://github.com/localstack/localstack/issues/522)
-        for i in range(0, num_put_existing_items):
-            table.put_item(Item={PARTITION_KEY: f"testId{i}", "data": "foobar_put_existing"})
-
-        # batch write some items containing non-ASCII characters
-        dynamodb.batch_write_item(
-            RequestItems={
-                table_name: [
-                    {"PutRequest": {"Item": {PARTITION_KEY: short_uid(), "data": "foobaz123 ✓"}}},
-                    {"PutRequest": {"Item": {PARTITION_KEY: short_uid(), "data": "foobaz123 £"}}},
-                    {"PutRequest": {"Item": {PARTITION_KEY: short_uid(), "data": "foobaz123 ¢"}}},
-                ]
-            }
-        )
-        # update some items, which also triggers notification events
-        for i in range(0, num_updates_ddb):
-            dynamodb_service.update_item(
-                TableName=table_name,
-                Key={PARTITION_KEY: {"S": f"testId{i}"}},
-                AttributeUpdates={"data": {"Action": "PUT", "Value": {"S": "foo_updated"}}},
-            )
-
-        # put items to stream
-        num_events_kinesis = 1
-        num_kinesis_records = 10
-        LOGGER.info(
-            "Putting %s records in %s event to stream...", num_kinesis_records, num_events_kinesis
-        )
-        kinesis.put_records(
-            Records=[
-                {"Data": "{}", "PartitionKey": f"testId{i}"} for i in range(0, num_kinesis_records)
-            ],
-            StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME,
-        )
-
-        # put 1 item to stream that will trigger an error in the Lambda
-        num_events_kinesis_err = 1
-        for i in range(num_events_kinesis_err):
-            kinesis.put_record(
-                Data='{"%s": 1}' % lambda_integration.MSG_BODY_RAISE_ERROR_FLAG,
-                PartitionKey="testIdError",
-                StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME,
-            )
-
-        # create SNS topic, connect it to the Lambda, publish test messages
-        num_events_sns = 3
-        response = sns.create_topic(Name=TEST_TOPIC_NAME)
-        sns.subscribe(
-            TopicArn=response["TopicArn"],
-            Protocol="lambda",
-            Endpoint=aws_stack.lambda_function_arn(lambda_stream_name),
-        )
-        for i in range(num_events_sns):
-            sns.publish(
-                TopicArn=response["TopicArn"],
-                Subject="test_subject",
-                Message=f"test message {i}",
-            )
-
-        # get latest records
-        latest = aws_stack.kinesis_get_latest_records(
-            TEST_LAMBDA_SOURCE_STREAM_NAME, shard_id="shardId-000000000000", count=10
-        )
-        self.assertEqual(10, len(latest))
-
-        # send messages to SQS queue
-        num_events_sqs = 4
-        for i in range(num_events_sqs):
-            sqs.send_message(QueueUrl=sqs_queue_info["QueueUrl"], MessageBody=str(i))
-
-        LOGGER.info("Waiting some time before finishing test.")
-        time.sleep(2)
-
-        num_events_lambda = num_events_ddb + num_events_sns + num_events_sqs
-        num_events = num_events_lambda + num_kinesis_records
-
-        def check_events():
-            if len(events) != num_events:
-                msg = "DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s" % (
-                    len(events),
-                    num_events,
-                )
-                LOGGER.warning(msg)
-            self.assertEqual(num_events, len(events))
-            # make sure the we have the right amount of INSERT/MODIFY event types
-            inserts = [e for e in events if e.get("__action_type") == "INSERT"]
-            modifies = [e for e in events if e.get("__action_type") == "MODIFY"]
-            self.assertEqual(num_put_new_items + num_batch_items, len(inserts))
-            self.assertEqual(num_put_existing_items + num_updates_ddb, len(modifies))
-
-        # this can take a long time in CI, make sure we give it enough time/retries
-        retry(check_events, retries=15, sleep=2)
-
-        # check cloudwatch notifications
-        def check_cw_invocations():
-            num_invocations = get_lambda_invocations_count(lambda_stream_name)
-            expected_invocation_count = num_events_kinesis + num_events_kinesis_err + num_events_sns
-            self.assertEqual(expected_invocation_count, num_invocations)
-            num_error_invocations = get_lambda_invocations_count(lambda_stream_name, "Errors")
-            self.assertEqual(num_events_kinesis_err, num_error_invocations)
-
-        # Lambda invocations are running asynchronously, hence sleep some time here to wait for results
-        retry(check_cw_invocations, retries=7, sleep=2)
-
-        # clean up
-        testutil.delete_lambda_function(lambda_stream_name)
-        testutil.delete_lambda_function(lambda_ddb_name)
-        testutil.delete_lambda_function(lambda_queue_name)
-        sqs.delete_queue(QueueUrl=sqs_queue_info["QueueUrl"])
-
     def test_lambda_streams_batch_and_transactions(self):
         ddb_lease_table_suffix = "-kclapp2"
         table_name = TEST_TABLE_NAME + "lsbat" + ddb_lease_table_suffix
@@ -469,6 +243,7 @@ class IntegrationTest(unittest.TestCase):
             libs=TEST_LAMBDA_LIBS,
             func_name=lambda_ddb_name,
             event_source_arn=ddb_event_source_arn,
+            starting_position="TRIM_HORIZON",
             delete=True,
         )
 
@@ -735,7 +510,7 @@ class IntegrationTest(unittest.TestCase):
                 self.assertEqual({"id": item_id, "data": "foobar123"}, matching["old_image"])
 
         # this can take a long time in CI, make sure we give it enough time/retries
-        retry(check_events, retries=9, sleep=4)
+        retry(check_events, retries=30, sleep=4)
 
         # clean up
         testutil.delete_lambda_function(lambda_ddb_name)
@@ -826,7 +601,9 @@ def test_sqs_batch_lambda_forward(lambda_client, sqs_client, create_lambda_funct
     sqs_client.delete_queue(QueueUrl=queue_url)
 
 
-def test_kinesis_lambda_forward_chain(kinesis_client, s3_client, create_lambda_function):
+def test_kinesis_lambda_forward_chain(
+    kinesis_client, s3_client, lambda_client, create_lambda_function
+):
 
     try:
         aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM1_NAME, delete=True)
@@ -837,16 +614,20 @@ def test_kinesis_lambda_forward_chain(kinesis_client, s3_client, create_lambda_f
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS
         )
-        create_lambda_function(
+        lambda_1_resp = create_lambda_function(
             func_name=TEST_CHAIN_LAMBDA1_NAME,
             zip_file=zip_file,
             event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME),
+            starting_position="TRIM_HORIZON",
         )
-        create_lambda_function(
+        lambda_1_event_source_uuid = lambda_1_resp["CreateEventSourceMappingResponse"]["UUID"]
+        lambda_2_resp = create_lambda_function(
             func_name=TEST_CHAIN_LAMBDA2_NAME,
             zip_file=zip_file,
             event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME),
+            starting_position="TRIM_HORIZON",
         )
+        lambda_2_event_source_uuid = lambda_2_resp["CreateEventSourceMappingResponse"]["UUID"]
 
         # publish test record
         test_data = {"test_data": "forward_chain_data_%s with 'quotes\\\"" % short_uid()}
@@ -865,11 +646,13 @@ def test_kinesis_lambda_forward_chain(kinesis_client, s3_client, create_lambda_f
             testutil.assert_objects(test_data, all_objects)
 
         # check results
-        retry(check_results, retries=5, sleep=3)
+        retry(check_results, retries=10, sleep=3)
     finally:
         # clean up
         kinesis_client.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
         kinesis_client.delete_stream(StreamName=TEST_CHAIN_STREAM2_NAME)
+        lambda_client.delete_event_source_mapping(UUID=lambda_1_event_source_uuid)
+        lambda_client.delete_event_source_mapping(UUID=lambda_2_event_source_uuid)
 
 
 # ---------------

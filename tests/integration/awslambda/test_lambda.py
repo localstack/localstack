@@ -2,12 +2,10 @@ import base64
 import json
 import logging
 import os
-import re
 import shutil
 import time
 from datetime import datetime
 from io import BytesIO
-from typing import List
 
 import pytest
 from botocore.exceptions import ClientError
@@ -154,34 +152,6 @@ PROVIDED_TEST_RUNTIMES = [
         LAMBDA_RUNTIME_PROVIDED_AL2, marks=pytest.mark.skip("curl missing in provided.al2 image")
     ),
 ]
-
-
-@pytest.fixture
-def check_lambda_logs(logs_client):
-    def _check_logs(func_name: str, expected_lines: List[str] = None):
-        if not expected_lines:
-            expected_lines = []
-        log_events = get_lambda_logs(func_name, logs_client=logs_client)
-        log_messages = [e["message"] for e in log_events]
-        for line in expected_lines:
-            if ".*" in line:
-                found = [re.match(line, m, flags=re.DOTALL) for m in log_messages]
-                if any(found):
-                    continue
-            assert line in log_messages
-
-    return _check_logs
-
-
-def get_lambda_logs(func_name, logs_client=None):
-    logs_client = logs_client or aws_stack.create_external_boto_client("logs")
-    log_group_name = f"/aws/lambda/{func_name}"
-    streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
-    streams = sorted(streams, key=lambda x: x["creationTime"], reverse=True)
-    log_events = logs_client.get_log_events(
-        logGroupName=log_group_name, logStreamName=streams[0]["logStreamName"]
-    )["events"]
-    return log_events
 
 
 def is_old_provider():

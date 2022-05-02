@@ -2,6 +2,7 @@ import dataclasses
 import json
 import logging
 import os
+import re
 import time
 from typing import TYPE_CHECKING, Dict, List, Optional
 
@@ -19,7 +20,7 @@ from localstack.utils.functions import run_safe
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.testutil import start_http_server
 from tests.integration.cloudformation.utils import render_template, template_path
-from tests.integration.util import is_aws_cloud
+from tests.integration.util import get_lambda_logs, is_aws_cloud
 
 if TYPE_CHECKING:
     from mypy_boto3_acm import ACMClient
@@ -803,6 +804,23 @@ def create_lambda_function(lambda_client, iam_client, wait_until_lambda_ready):
 
 
 @pytest.fixture
+def check_lambda_logs(logs_client):
+    def _check_logs(func_name: str, expected_lines: List[str] = None):
+        if not expected_lines:
+            expected_lines = []
+        log_events = get_lambda_logs(func_name, logs_client=logs_client)
+        log_messages = [e["message"] for e in log_events]
+        for line in expected_lines:
+            if ".*" in line:
+                found = [re.match(line, m, flags=re.DOTALL) for m in log_messages]
+                if any(found):
+                    continue
+            assert line in log_messages
+
+    return _check_logs
+
+
+@pytest.fixture
 def create_parameter(ssm_client):
     params = []
 
@@ -895,6 +913,29 @@ def lambda_su_role():
     run_safe(iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn))
     run_safe(iam_client.delete_role(RoleName=role_name))
     run_safe(iam_client.delete_policy(PolicyArn=policy_arn))
+
+
+@pytest.fixture
+def create_iam_role_with_policy(iam_client):
+    roles = {}
+
+    def _create_role_and_policy(**kwargs):
+        role = kwargs["RoleName"]
+        policy = kwargs["PolicyName"]
+        role_policy = json.dumps(kwargs["RoleDefinition"])
+
+        result = iam_client.create_role(RoleName=role, AssumeRolePolicyDocument=role_policy)
+        role_arn = result["Role"]["Arn"]
+        policy_document = json.dumps(kwargs["PolicyDefinition"])
+        iam_client.put_role_policy(RoleName=role, PolicyName=policy, PolicyDocument=policy_document)
+        roles[role] = policy
+        return role_arn
+
+    yield _create_role_and_policy
+
+    for role_name, policy_name in roles.items():
+        iam_client.delete_role_policy(RoleName=role_name, PolicyName=policy_name)
+        iam_client.delete_role(RoleName=role_name)
 
 
 @pytest.fixture
