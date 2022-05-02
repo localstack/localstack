@@ -3,10 +3,10 @@ version: 2.1
 parameters:
   ubuntu-amd64-machine-image:
     type: string
-    default: "ubuntu-2004:202201-02"
+    default: "ubuntu-2004:2022.04.1"
   ubuntu-arm64-machine-image:
     type: string
-    default: "ubuntu-2004:202101-01"
+    default: "ubuntu-2004:2022.04.1"
 
 executors:
   ubuntu-machine-amd64:
@@ -250,32 +250,6 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
-      - when:
-          condition:
-            equal: [ arm64, << parameters.platform >> ]
-          steps:
-            - run:
-                # Since we are using an old version of ubuntu, we need to install the latest version of docker
-                name: Update docker engine to most current
-                command: |
-                  # Remove old version
-                  sudo apt-get remove --purge docker docker-engine docker.io containerd runc -y
-                  # Install Docker deb package repo
-                  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
-                    sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-                  echo "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
-                    | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-                  sudo apt-get update
-                  # Install the latest version of Docker and haveged
-                  # (https://github.com/docker/compose/issues/6678#issuecomment-526831488)
-                  sudo apt-get install docker-ce docker-ce-cli containerd.io haveged -y
-                  sudo usermod -aG docker $USER
-            - run:
-                # since the 2022 image of ubuntu2004 is not available for arm, we need to manually update pyenv and install python 3.10.2
-                name: Install python version 3.10.2
-                command: |
-                  (cd $(pyenv root) && git checkout master && git pull)
-                  pyenv install 3.10.2
       - run:
           name: Build full docker image
           command: make docker-build
