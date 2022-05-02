@@ -21,19 +21,11 @@ from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     API_REGIONS,
-    PATH_REGEX_AUTHORIZERS,
-    PATH_REGEX_CLIENT_CERTS,
-    PATH_REGEX_DOC_PARTS,
-    PATH_REGEX_PATH_MAPPINGS,
     PATH_REGEX_RESPONSES,
-    PATH_REGEX_TEST_INVOKE_API,
-    PATH_REGEX_USER_REQUEST,
-    PATH_REGEX_VALIDATORS,
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
     handle_gateway_responses,
-    handle_validators,
     make_error_response,
 )
 from localstack.services.apigateway.integration import (
@@ -78,13 +70,13 @@ class ProxyListenerApiGateway(ProxyListener):
     def forward_request(self, method, path, data, headers):
         invocation_context = ApiInvocationContext(method, path, data, headers)
 
-        forwarded_for = headers.get(HEADER_LOCALSTACK_EDGE_URL, "")
-        if re.match(PATH_REGEX_USER_REQUEST, path) or "execute-api" in forwarded_for:
-            result = invoke_rest_api_from_request(invocation_context)
-            if result is not None:
-                return result
-
-        data = parse_json_or_yaml(to_str(data or b""))
+        # forwarded_for = headers.get(HEADER_LOCALSTACK_EDGE_URL, "")
+        # if re.match(PATH_REGEX_USER_REQUEST, path) or "execute-api" in forwarded_for:
+        #     result = invoke_rest_api_from_request(invocation_context)
+        #     if result is not None:
+        #         return result
+        #
+        # data = parse_json_or_yaml(to_str(data or b""))
 
         # if re.match(PATH_REGEX_AUTHORIZERS, path):
         #     return handle_authorizers(method, path, data, headers)
@@ -92,8 +84,8 @@ class ProxyListenerApiGateway(ProxyListener):
         # if re.match(PATH_REGEX_DOC_PARTS, path):
         #     return handle_documentation_parts(method, path, data, headers)
 
-        if re.match(PATH_REGEX_VALIDATORS, path):
-            return handle_validators(method, path, data, headers)
+        # if re.match(PATH_REGEX_VALIDATORS, path):
+        #     return handle_validators(method, path, data, headers)
 
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
@@ -101,25 +93,25 @@ class ProxyListenerApiGateway(ProxyListener):
         # if re.match(PATH_REGEX_PATH_MAPPINGS, path):
         #     return handle_base_path_mappings(method, path, data, headers)
 
-        if helpers.is_test_invoke_method(method, path):
-            # if call is from test_invoke_api then use http_method to find the integration,
-            #   as test_invoke_api makes a POST call to request the test invocation
-            match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
-            invocation_context.method = match[3]
-            if data:
-                orig_data = data
-                path_with_query_string = orig_data.get("pathWithQueryString", None)
-                if path_with_query_string:
-                    invocation_context.path_with_query_string = path_with_query_string
-                invocation_context.data = data.get("body")
-                invocation_context.headers = orig_data.get("headers", {})
-            result = invoke_rest_api_from_request(invocation_context)
-            result = {
-                "status": result.status_code,
-                "body": to_str(result.content),
-                "headers": dict(result.headers),
-            }
-            return result
+        # if helpers.is_test_invoke_method(method, path):
+        #     # if call is from test_invoke_api then use http_method to find the integration,
+        #     #   as test_invoke_api makes a POST call to request the test invocation
+        #     match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
+        #     invocation_context.method = match[3]
+        #     if data:
+        #         orig_data = data
+        #         path_with_query_string = orig_data.get("pathWithQueryString", None)
+        #         if path_with_query_string:
+        #             invocation_context.path_with_query_string = path_with_query_string
+        #         invocation_context.data = data.get("body")
+        #         invocation_context.headers = orig_data.get("headers", {})
+        #     result = invoke_rest_api_from_request(invocation_context)
+        #     result = {
+        #         "status": result.status_code,
+        #         "body": to_str(result.content),
+        #         "headers": dict(result.headers),
+        #     }
+        #     return result
 
         return True
 
@@ -292,7 +284,7 @@ def apply_request_parameters(
             # check if path_params is present in the integration request parameters
             request_param_key = f"integration.request.path.{key}"
             request_param_value = f"method.request.path.{key}"
-            if request_parameters.get(request_param_key, None) == request_param_value:
+            if request_parameters.get(request_param_key) == request_param_value:
                 uri = uri.replace(f"{{{key}}}", path_params[key])
 
     if integration.get("type") != "HTTP_PROXY" and request_parameters:
@@ -735,6 +727,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
 
         if isinstance(payload, dict):
             payload = json.dumps(payload)
+
         uri = apply_request_parameters(
             uri, integration=integration, path_params=path_params, query_params=query_string_params
         )

@@ -1,3 +1,4 @@
+import re
 from abc import ABC
 from copy import deepcopy
 
@@ -9,6 +10,7 @@ from localstack.aws.api.apigateway import (
     Authorizers,
     BasePathMapping,
     BasePathMappings,
+    Boolean,
     ClientCertificate,
     ClientCertificates,
     CreateAuthorizerRequest,
@@ -22,18 +24,65 @@ from localstack.aws.api.apigateway import (
     MapOfStringToString,
     NotFoundException,
     NullableInteger,
+    RequestValidator,
+    RequestValidators,
     String,
     VpcLink,
     VpcLinks,
 )
+from localstack.aws.proxy import AwsApiListener
+from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
+from localstack.services.apigateway import helpers
+from localstack.services.apigateway.apigateway_listener import invoke_rest_api_from_request
+from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    PATH_REGEX_TEST_INVOKE_API,
+    PATH_REGEX_USER_REQUEST,
     APIGatewayRegion,
     apply_json_patch_safe,
     find_api_subentity_by_id,
 )
 from localstack.utils.collections import ensure_list
-from localstack.utils.strings import short_uid
+from localstack.utils.json import parse_json_or_yaml
+from localstack.utils.strings import short_uid, to_str
 from localstack.utils.time import now_utc
+
+
+class ApigatewayApiListener(AwsApiListener):
+    """Custom API listener that handles both, API Gateway API calls (managing the
+    state/metadata of the service) and invocations (invoking a user-created API)."""
+
+    def forward_request(self, method, path, data, headers):
+        invocation_context = ApiInvocationContext(method, path, data, headers)
+
+        forwarded_for = headers.get(HEADER_LOCALSTACK_EDGE_URL, "")
+        if re.match(PATH_REGEX_USER_REQUEST, path) or "execute-api" in forwarded_for:
+            result = invoke_rest_api_from_request(invocation_context)
+            if result is not None:
+                return result
+
+        if helpers.is_test_invoke_method(method, path):
+            # if call is from test_invoke_api then use http_method to find the integration,
+            #   as test_invoke_api makes a POST call to request the test invocation
+            match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
+            invocation_context.method = match[3]
+            data = parse_json_or_yaml(to_str(data or b""))
+            if data:
+                orig_data = data
+                path_with_query_string = orig_data.get("pathWithQueryString", None)
+                if path_with_query_string:
+                    invocation_context.path_with_query_string = path_with_query_string
+                invocation_context.data = data.get("body")
+                invocation_context.headers = orig_data.get("headers", {})
+            result = invoke_rest_api_from_request(invocation_context)
+            result = {
+                "status": result.status_code,
+                "body": to_str(result.content),
+                "headers": dict(result.headers),
+            }
+            return result
+
+        return super(ApigatewayApiListener, self).forward_request(method, path, data, headers)
 
 
 class ApigatewayProvider(ApigatewayApi, ABC):
@@ -258,9 +307,9 @@ class ApigatewayProvider(ApigatewayApi, ABC):
         base_path = base_path or "(none)"
 
         entry = {
-            "domain_name": domain_name,
-            "rest_api_id": rest_api_id,
-            "base_path": base_path,
+            "domainName": domain_name,
+            "restApiId": rest_api_id,
+            "basePath": base_path,
             "stage": stage,
         }
         region_details.base_path_mappings.setdefault(domain_name, []).append(entry)
@@ -423,6 +472,103 @@ class ApigatewayProvider(ApigatewayApi, ABC):
         vpc_link = region_details.vpc_links.pop(vpc_link_id, None)
         if vpc_link is None:
             raise NotFoundException(f'VPC link ID "{vpc_link_id}" not found for deletion')
+
+    # request validators
+
+    def get_request_validators(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        position: String = None,
+        limit: NullableInteger = None,
+    ) -> RequestValidators:
+        region_details = APIGatewayRegion.get()
+
+        auth_list = region_details.validators.get(rest_api_id) or []
+
+        result = [to_validator_response_json(rest_api_id, a) for a in auth_list]
+        return RequestValidators(items=result)
+
+    def get_request_validator(
+        self, context: RequestContext, rest_api_id: String, request_validator_id: String
+    ) -> RequestValidator:
+        region_details = APIGatewayRegion.get()
+
+        auth_list = region_details.validators.get(rest_api_id) or []
+        validator = ([a for a in auth_list if a["id"] == request_validator_id] or [None])[0]
+
+        if validator is None:
+            raise NotFoundException(
+                f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
+            )
+        result = to_validator_response_json(rest_api_id, validator)
+        return RequestValidator(**result)
+
+    def create_request_validator(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        name: String = None,
+        validate_request_body: Boolean = None,
+        validate_request_parameters: Boolean = None,
+    ) -> RequestValidator:
+        region_details = APIGatewayRegion.get()
+
+        # length 6 for AWS parity and TF compatibility
+        validator_id = short_uid()[:6]
+
+        entry = {
+            "id": validator_id,
+            "name": name,
+            "restApiId": rest_api_id,
+            "validateRequestBody": validate_request_body,
+            "validateRequestPparameters": validate_request_parameters,
+        }
+        region_details.validators.setdefault(rest_api_id, []).append(entry)
+
+        return RequestValidator(**entry)
+
+    def update_request_validator(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        request_validator_id: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> RequestValidator:
+        region_details = APIGatewayRegion.get()
+
+        auth_list = region_details.validators.get(rest_api_id) or []
+        validator = ([a for a in auth_list if a["id"] == request_validator_id] or [None])[0]
+
+        if validator is None:
+            raise NotFoundException(
+                f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
+            )
+
+        result = apply_json_patch_safe(validator, patch_operations)
+
+        entry_list = region_details.validators[rest_api_id]
+        for i in range(len(entry_list)):
+            if entry_list[i]["id"] == request_validator_id:
+                entry_list[i] = result
+
+        result = to_validator_response_json(rest_api_id, result)
+        return RequestValidator(**result)
+
+    def delete_request_validator(
+        self, context: RequestContext, rest_api_id: String, request_validator_id: String
+    ) -> None:
+        region_details = APIGatewayRegion.get()
+
+        auth_list = region_details.validators.get(rest_api_id, [])
+        for i in range(len(auth_list)):
+            if auth_list[i]["id"] == request_validator_id:
+                del auth_list[i]
+                return
+
+        raise NotFoundException(
+            f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
+        )
 
 
 # ---------------
