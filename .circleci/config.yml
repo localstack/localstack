@@ -1,5 +1,15 @@
 version: 2.1
 
+commands:
+  install-python:
+    steps:
+      - run:
+          name: Install python 3.10
+          command: |
+            (cd $(pyenv root) && git checkout master && git pull)
+            pyenv install 3.10.3
+            pyenv global 3.10.3
+
 jobs:
   install:
     machine:
@@ -13,7 +23,8 @@ jobs:
           name: Install prerequisites
           command: |
             sudo apt-get update
-            sudo apt-get install -y libsasl2-dev python3.8-venv python3.8-dev
+            sudo apt-get install -y libsasl2-dev
+      - install-python
       - run:
           name: Setup environment
           environment:
@@ -33,23 +44,25 @@ jobs:
             - repo
 
   preflight:
-    docker:
-      - image: buildpack-deps:focal
+    machine:
+      image: ubuntu-2004:202107-02
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - install-python
       - run:
           name: Linting
           command: make lint
 
   unit-tests:
-    docker:
-      - image: buildpack-deps:focal
+    machine:
+      image: ubuntu-2004:202107-02
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - install-python
       - run:
           name: Unit tests
           environment:
@@ -76,6 +89,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - install-python
       - run:
           name: Pull Lambda runtimes
           command: |
@@ -140,6 +154,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - install-python
       - run:
           name: Test ElasticMQ SQS provider
           environment:
@@ -176,6 +191,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - install-python
       - run:
           name: Test ASF Lambda provider
           environment:
@@ -203,6 +219,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - install-python
       - run:
           name: Run bootstrap tests
           environment:
@@ -333,12 +350,13 @@ jobs:
             - repo/target/coverage/
 
   report:
-    docker:
-      - image: buildpack-deps:focal
+    machine:
+      image: ubuntu-2004:202107-02
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - install-python
       - run:
           name: Collect coverage
           command: |
