@@ -276,18 +276,6 @@ def sns():
 
 @aws_provider()
 def sqs():
-    from localstack.services.sqs import sqs_listener, sqs_starter
-
-    return Service(
-        "sqs",
-        listener=sqs_listener.UPDATE_SQS,
-        start=sqs_starter.start_sqs,
-        check=sqs_starter.check_sqs,
-    )
-
-
-@aws_provider(api="sqs", name="asf")
-def sqs_asf():
     from localstack.aws.proxy import AwsApiListener
     from localstack.services.sqs.provider import SqsProvider
 

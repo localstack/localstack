@@ -13,7 +13,6 @@ import time
 from queue import Empty, PriorityQueue
 from typing import Dict, List, NamedTuple, Optional, Set
 
-from localstack.services.generic_proxy import NaiveBackend
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
 
@@ -69,7 +68,6 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.common import long_uid, md5, now, start_thread
 from localstack.utils.run import FuncThread
-from services.base import setup_and_restore_persistence
 
 LOG = logging.getLogger(__name__)
 
@@ -638,15 +636,6 @@ def check_fifo_id(fifo_id):
         )
 
 
-class SqsBackend(NaiveBackend):
-    queues: Dict[QueueKey, SqsQueue]
-
-    def __init__(self):
-        super(SqsBackend, self).__init__()
-
-        self.queues = {}
-
-
 class SqsProvider(SqsApi, ServiceLifecycleHook):
     """
     LocalStack SQS Provider.
@@ -659,6 +648,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     queues: Dict[QueueKey, SqsQueue]
 
+    def __init__(self, *args, **kwargs):
+        super(SqsProvider).__init__(*args, **kwargs)
+
+        self.queues = {}
+
     def start(self):
         self._inflight_worker.start()
 
@@ -666,10 +660,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._inflight_worker.stop()
 
     def on_after_init(self):
-        setup_and_restore_persistence("sqs", naive_backend=SqsBackend)
-
-        self.queues = SqsBackend.get().queues
-
         self._mutex = threading.RLock()
         self._inflight_worker = InflightUpdateWorker(self.queues)
 
