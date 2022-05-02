@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from queue import Queue
@@ -222,3 +223,21 @@ def test_input_stream_readlines_with_limit(serve_app):
     response = requests.post(server.url, data=gen())
     assert response.ok
     assert response.text == "ok"
+
+
+def test_multipart_post(serve_app):
+    @Request.application
+    def app(request: Request) -> Response:
+        assert request.mimetype == "multipart/form-data"
+
+        result = {}
+        for k, file_storage in request.files.items():
+            result[k] = file_storage.stream.read().decode("utf-8")
+
+        return Response(json.dumps(result), 200)
+
+    server = serve_app(ASGIAdapter(app))
+
+    response = requests.post(server.url, files={"foo": "bar", "baz": "ed"})
+    assert response.ok
+    assert response.json() == {"foo": "bar", "baz": "ed"}
