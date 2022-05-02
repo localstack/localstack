@@ -6,7 +6,7 @@ commands:
       - run:
           name: Install python 3.10
           command: |
-            python --version
+            python3 --version
 
 parameters:
   ubuntu-amd64-machine-image:
@@ -38,7 +38,7 @@ jobs:
       - run:
           name: Setup environment
           environment:
-            VENV_BIN: "python3.10 -m venv"
+            VENV_BIN: "python3 -m venv"
           command: |
             make install
             mkdir -p target/reports
