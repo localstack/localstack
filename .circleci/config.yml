@@ -6,14 +6,12 @@ commands:
       - run:
           name: Install python 3.10
           command: |
-            (cd $(pyenv root) && git checkout master && git pull)
-            pyenv install 3.10.3
-            pyenv global 3.10.3
+            python --version
 
 parameters:
   ubuntu-amd64-machine-image:
     type: string
-    default: "ubuntu-2004:202107-02"
+    default: "ubuntu-2004:202201-02"
   ubuntu-arm64-machine-image:
     type: string
     default: "ubuntu-2004:202101-01"
