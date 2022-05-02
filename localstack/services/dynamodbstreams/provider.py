@@ -71,7 +71,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
                 # DynamoDBStream ShardIDs.
                 stream_shards = copy.deepcopy(stream_details["StreamDescription"]["Shards"])
                 for shard in stream_shards:
-                    shard["ShardId"] = shard_id(stream_name, shard["ShardId"])
+                    shard["ShardId"] = shard_id(shard["ShardId"])
                     shard.pop("HashKeyRange", None)
                 stream["Shards"] = stream_shards
                 return DescribeStreamOutput(**result)
