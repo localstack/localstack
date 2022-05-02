@@ -137,134 +137,23 @@ def get_api_id_from_path(path):
 # -------------
 
 
-def get_account():
-    region_details = APIGatewayRegion.get()
-    return to_account_response_json(region_details.account)
-
-
-def update_account(data):
-    region_details = APIGatewayRegion.get()
-    apply_json_patch_safe(region_details.account, data["patchOperations"], in_place=True)
-    return to_account_response_json(region_details.account)
-
-
-def handle_accounts(method, path, data, headers):
-    if method == "GET":
-        return get_account()
-    if method == "PATCH":
-        return update_account(data)
-    return make_error_response("Not implemented for API Gateway accounts: %s" % method, code=404)
-
-
-# -----------------
-# AUTHORIZERS APIs
-# -----------------
-
-
-def get_authorizer_id_from_path(path):
-    match = re.match(PATH_REGEX_AUTHORIZERS, path)
-    return match.group(2) if match else None
-
-
-def _find_authorizer(api_id, authorizer_id):
-    return find_api_subentity_by_id(api_id, authorizer_id, "authorizers")
-
-
-def normalize_authorizer(data):
-    is_list = isinstance(data, list)
-    entries = data if is_list else [data]
-    for i in range(len(entries)):
-        entry = common.clone(entries[i])
-        # terraform sends this as a string in patch, so convert to int
-        entry["authorizerResultTtlInSeconds"] = int(entry.get("authorizerResultTtlInSeconds", 300))
-        entries[i] = entry
-    return entries if is_list else entries[0]
-
-
-def get_authorizers(path):
-    region_details = APIGatewayRegion.get()
-
-    # This function returns either a list or a single authorizer (depending on the path)
-    api_id = get_api_id_from_path(path)
-    authorizer_id = get_authorizer_id_from_path(path)
-
-    auth_list = region_details.authorizers.get(api_id) or []
-
-    if authorizer_id:
-        authorizer = _find_authorizer(api_id, authorizer_id)
-        if authorizer is None:
-            return make_error_response(
-                "Authorizer not found: %s" % authorizer_id,
-                code=404,
-                error_type="NotFoundException",
-            )
-        return to_authorizer_response_json(api_id, authorizer)
-
-    result = [to_authorizer_response_json(api_id, a) for a in auth_list]
-    result = {"item": result}
-    return result
-
-
-def add_authorizer(path, data):
-    region_details = APIGatewayRegion.get()
-
-    api_id = get_api_id_from_path(path)
-    authorizer_id = common.short_uid()[:6]  # length 6 to make TF tests pass
-    result = common.clone(data)
-
-    result["id"] = authorizer_id
-    result = normalize_authorizer(result)
-    region_details.authorizers.setdefault(api_id, []).append(result)
-
-    return make_json_response(to_authorizer_response_json(api_id, result))
-
-
-def update_authorizer(path, data):
-    region_details = APIGatewayRegion.get()
-
-    api_id = get_api_id_from_path(path)
-    authorizer_id = get_authorizer_id_from_path(path)
-
-    authorizer = _find_authorizer(api_id, authorizer_id)
-    if authorizer is None:
-        return make_error_response("Authorizer not found for API: %s" % api_id, code=404)
-
-    result = apply_json_patch_safe(authorizer, data["patchOperations"])
-    result = normalize_authorizer(result)
-
-    auth_list = region_details.authorizers[api_id]
-    for i in range(len(auth_list)):
-        if auth_list[i]["id"] == authorizer_id:
-            auth_list[i] = result
-
-    return make_json_response(to_authorizer_response_json(api_id, result))
-
-
-def delete_authorizer(path):
-    region_details = APIGatewayRegion.get()
-
-    api_id = get_api_id_from_path(path)
-    authorizer_id = get_authorizer_id_from_path(path)
-
-    auth_list = region_details.authorizers[api_id]
-    for i in range(len(auth_list)):
-        if auth_list[i]["id"] == authorizer_id:
-            del auth_list[i]
-            break
-
-    return make_accepted_response()
-
-
-def handle_authorizers(method, path, data, headers):
-    if method == "GET":
-        return get_authorizers(path)
-    if method == "POST":
-        return add_authorizer(path, data)
-    if method == "PATCH":
-        return update_authorizer(path, data)
-    if method == "DELETE":
-        return delete_authorizer(path)
-    return make_error_response("Not implemented for API Gateway authorizers: %s" % method, code=404)
+# def get_account():
+#     region_details = APIGatewayRegion.get()
+#     return to_account_response_json(region_details.account)
+#
+#
+# def update_account(data):
+#     region_details = APIGatewayRegion.get()
+#     apply_json_patch_safe(region_details.account, data["patchOperations"], in_place=True)
+#     return to_account_response_json(region_details.account)
+#
+#
+# def handle_accounts(method, path, data, headers):
+#     if method == "GET":
+#         return get_account()
+#     if method == "PATCH":
+#         return update_account(data)
+#     return make_error_response("Not implemented for API Gateway accounts: %s" % method, code=404)
 
 
 # -------------------------
@@ -272,99 +161,29 @@ def handle_authorizers(method, path, data, headers):
 # -------------------------
 
 
-def get_documentation_part_id_from_path(path):
-    match = re.match(PATH_REGEX_DOC_PARTS, path)
-    return match.group(2) if match else None
+# def get_documentation_part_id_from_path(path):
+#     match = re.match(PATH_REGEX_DOC_PARTS, path)
+#     return match.group(2) if match else None
 
 
-def _find_documentation_part(api_id, documentation_part_id):
-    return find_api_subentity_by_id(api_id, documentation_part_id, "documentation_parts")
+# def _find_documentation_part(api_id, documentation_part_id):
+#     return find_api_subentity_by_id(api_id, documentation_part_id, "documentation_parts")
 
 
-def get_documentation_parts(path):
-    region_details = APIGatewayRegion.get()
-
-    # This function returns either a list or a single entity (depending on the path)
-    api_id = get_api_id_from_path(path)
-    entity_id = get_documentation_part_id_from_path(path)
-
-    auth_list = region_details.documentation_parts.get(api_id) or []
-
-    if entity_id:
-        entity = _find_documentation_part(api_id, entity_id)
-        if entity is None:
-            return make_error_response(
-                "Documentation part not found: %s" % entity_id,
-                code=404,
-                error_type="NotFoundException",
-            )
-        return to_documentation_part_response_json(api_id, entity)
-
-    result = [to_documentation_part_response_json(api_id, a) for a in auth_list]
-    result = {"item": result}
-    return result
-
-
-def add_documentation_part(path, data):
-    region_details = APIGatewayRegion.get()
-
-    api_id = get_api_id_from_path(path)
-    entity_id = common.short_uid()[:6]  # length 6 to make TF tests pass
-    result = common.clone(data)
-
-    result["id"] = entity_id
-    region_details.documentation_parts.setdefault(api_id, []).append(result)
-
-    return make_json_response(to_documentation_part_response_json(api_id, result))
-
-
-def update_documentation_part(path, data):
-    region_details = APIGatewayRegion.get()
-
-    api_id = get_api_id_from_path(path)
-    entity_id = get_documentation_part_id_from_path(path)
-
-    entity = _find_documentation_part(api_id, entity_id)
-    if entity is None:
-        return make_error_response("Documentation part not found for API: %s" % api_id, code=404)
-
-    result = apply_json_patch_safe(entity, data["patchOperations"])
-
-    auth_list = region_details.documentation_parts[api_id]
-    for i in range(len(auth_list)):
-        if auth_list[i]["id"] == entity_id:
-            auth_list[i] = result
-
-    return make_json_response(to_documentation_part_response_json(api_id, result))
-
-
-def delete_documentation_part(path):
-    region_details = APIGatewayRegion.get()
-
-    api_id = get_api_id_from_path(path)
-    entity_id = get_documentation_part_id_from_path(path)
-
-    auth_list = region_details.documentation_parts[api_id]
-    for i in range(len(auth_list)):
-        if auth_list[i]["id"] == entity_id:
-            del auth_list[i]
-            break
-
-    return make_accepted_response()
-
-
-def handle_documentation_parts(method, path, data, headers):
-    if method == "GET":
-        return get_documentation_parts(path)
-    if method == "POST":
-        return add_documentation_part(path, data)
-    if method == "PATCH":
-        return update_documentation_part(path, data)
-    if method == "DELETE":
-        return delete_documentation_part(path)
-    return make_error_response(
-        "Not implemented for API Gateway documentation parts: %s" % method, code=404
-    )
+#
+#
+# def handle_documentation_parts(method, path, data, headers):
+#     if method == "GET":
+#         return get_documentation_parts(path)
+#     if method == "POST":
+#         return add_documentation_part(path, data)
+#     if method == "PATCH":
+#         return update_documentation_part(path, data)
+#     if method == "DELETE":
+#         return delete_documentation_part(path)
+#     return make_error_response(
+#         "Not implemented for API Gateway documentation parts: %s" % method, code=404
+#     )
 
 
 # -----------------------
@@ -381,105 +200,19 @@ def get_base_path_from_path(path):
     return re.match(PATH_REGEX_PATH_MAPPINGS, path).group(2)
 
 
-def get_base_path_mapping(path):
-    region_details = APIGatewayRegion.get()
-
-    # This function returns either a list or a single mapping (depending on the path)
-    domain_name = get_domain_from_path(path)
-    base_path = get_base_path_from_path(path)
-
-    mappings_list = region_details.base_path_mappings.get(domain_name) or []
-
-    if base_path:
-        mapping = ([m for m in mappings_list if m["basePath"] == base_path] or [None])[0]
-        if mapping is None:
-            return make_error_response(
-                "Base path mapping not found: %s" % base_path,
-                code=404,
-                error_type="NotFoundException",
-            )
-        return to_base_mapping_response_json(domain_name, base_path, mapping)
-
-    result = [to_base_mapping_response_json(domain_name, m["basePath"], m) for m in mappings_list]
-    result = {"item": result}
-    return result
-
-
-def add_base_path_mapping(path, data):
-    region_details = APIGatewayRegion.get()
-
-    domain_name = get_domain_from_path(path)
-    # Note: "(none)" is a special value in API GW:
-    # https://docs.aws.amazon.com/apigateway/api-reference/link-relation/basepathmapping-by-base-path
-    base_path = data["basePath"] = data.get("basePath") or "(none)"
-    result = common.clone(data)
-
-    region_details.base_path_mappings.setdefault(domain_name, []).append(result)
-
-    return make_json_response(to_base_mapping_response_json(domain_name, base_path, result))
-
-
-def update_base_path_mapping(path, data):
-    region_details = APIGatewayRegion.get()
-
-    domain_name = get_domain_from_path(path)
-    base_path = get_base_path_from_path(path)
-
-    mappings_list = region_details.base_path_mappings.get(domain_name) or []
-
-    mapping = ([m for m in mappings_list if m["basePath"] == base_path] or [None])[0]
-    if mapping is None:
-        return make_error_response(
-            "Not found: mapping for domain name %s, base path %s in list %s"
-            % (domain_name, base_path, mappings_list),
-            code=404,
-        )
-
-    operations = data["patchOperations"]
-    operations = operations if isinstance(operations, list) else [operations]
-    for operation in operations:
-        if operation["path"] == "/restapiId":
-            operation["path"] = "/restApiId"
-    result = apply_json_patch_safe(mapping, operations)
-
-    for i in range(len(mappings_list)):
-        if mappings_list[i]["basePath"] == base_path:
-            mappings_list[i] = result
-
-    return make_json_response(to_base_mapping_response_json(domain_name, base_path, result))
-
-
-def delete_base_path_mapping(path):
-    region_details = APIGatewayRegion.get()
-
-    domain_name = get_domain_from_path(path)
-    base_path = get_base_path_from_path(path)
-
-    mappings_list = region_details.base_path_mappings.get(domain_name) or []
-    for i in range(len(mappings_list)):
-        if mappings_list[i]["basePath"] == base_path:
-            del mappings_list[i]
-            return make_accepted_response()
-
-    return make_error_response(
-        "Base path mapping %s for domain %s not found" % (base_path, domain_name),
-        code=404,
-    )
-
-
-def handle_base_path_mappings(method, path, data, headers):
-    path = urlparse.unquote(path)
-    if method == "GET":
-        return get_base_path_mapping(path)
-    if method == "POST":
-        return add_base_path_mapping(path, data)
-    if method == "PATCH":
-        return update_base_path_mapping(path, data)
-    if method == "DELETE":
-        return delete_base_path_mapping(path)
-    return make_error_response(
-        "Not implemented for API Gateway base path mappings: %s" % method, code=404
-    )
+# def handle_base_path_mappings(method, path, data, headers):
+#     path = urlparse.unquote(path)
+#     if method == "GET":
+#         return get_base_path_mapping(path)
+#     if method == "POST":
+#         return add_base_path_mapping(path, data)
+#     if method == "PATCH":
+#         return update_base_path_mapping(path, data)
+#     if method == "DELETE":
+#         return delete_base_path_mapping(path)
+#     return make_error_response(
+#         "Not implemented for API Gateway base path mappings: %s" % method, code=404
+#     )
 
 
 # ------------------------
@@ -856,56 +589,6 @@ def handle_gateway_responses(method, path, data, headers):
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
-
-
-def to_authorizer_response_json(api_id, data):
-    return to_response_json("authorizer", data, api_id=api_id)
-
-
-def to_validator_response_json(api_id, data):
-    return to_response_json("validator", data, api_id=api_id)
-
-
-def to_documentation_part_response_json(api_id, data):
-    return to_response_json("documentationpart", data, api_id=api_id)
-
-
-def to_base_mapping_response_json(domain_name, base_path, data):
-    self_link = "/domainnames/%s/basepathmappings/%s" % (domain_name, base_path)
-    return to_response_json("basepathmapping", data, self_link=self_link)
-
-
-def to_account_response_json(data):
-    return to_response_json("account", data, self_link="/account")
-
-
-def to_vpc_link_response_json(data):
-    return to_response_json("vpclink", data)
-
-
-def to_client_cert_response_json(data):
-    return to_response_json("clientcertificate", data, id_attr="clientCertificateId")
-
-
-def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None):
-    if isinstance(data, list) and len(data) == 1:
-        data = data[0]
-    id_attr = id_attr or "id"
-    result = common.clone(data)
-    if not self_link:
-        self_link = "/%ss/%s" % (model_type, data[id_attr])
-        if api_id:
-            self_link = "/restapis/%s/%s" % (api_id, self_link)
-    if "_links" not in result:
-        result["_links"] = {}
-    result["_links"]["self"] = {"href": self_link}
-    result["_links"]["curies"] = {
-        "href": "https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer-latest.html",
-        "name": model_type,
-        "templated": True,
-    }
-    result["_links"]["%s:delete" % model_type] = {"href": self_link}
-    return result
 
 
 def find_api_subentity_by_id(api_id, entity_id, map_name):

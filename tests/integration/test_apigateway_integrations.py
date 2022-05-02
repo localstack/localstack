@@ -10,9 +10,7 @@ def test_http_integration(apigateway_client):
     api_id = response["id"]
 
     resources = apigateway_client.get_resources(restApiId=api_id)
-    root_id = [resource for resource in resources["items"] if resource["path"] == "/"][
-        0
-    ]["id"]
+    root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
 
     apigateway_client.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="none"
@@ -38,6 +36,7 @@ def test_http_integration(apigateway_client):
     response = requests.get(url)
 
     assert response.status_code == 200
+
 
 #
 # def test_aws_integration_dynamodb(apigateway_client):
