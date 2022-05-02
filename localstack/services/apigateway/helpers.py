@@ -220,128 +220,54 @@ def get_base_path_from_path(path):
 # ------------------------
 
 
-def get_cert_id_from_path(path):
-    matched = re.match(PATH_REGEX_CLIENT_CERTS, path)
-    return matched.group(1) if matched else None
+# def get_cert_id_from_path(path):
+#     matched = re.match(PATH_REGEX_CLIENT_CERTS, path)
+#     return matched.group(1) if matched else None
 
 
-def get_client_certificate(path):
-    region_details = APIGatewayRegion.get()
-    cert_id = get_cert_id_from_path(path)
-    result = region_details.client_certificates.get(cert_id)
-    if result is None:
-        return make_error_response('Client certificate ID "%s" not found' % cert_id, code=404)
-    return result
+# def delete_client_certificate(path):
+#     region_details = APIGatewayRegion.get()
+#     entity_id = get_cert_id_from_path(path)
+#     entity = region_details.client_certificates.pop(entity_id, None)
+#     if entity is None:
+#         return make_error_response('VPC link ID "%s" not found for deletion' % entity_id, code=404)
+#     return make_accepted_response()
 
 
-def add_client_certificate(path, data):
-    region_details = APIGatewayRegion.get()
-    result = common.clone(data)
-    result["clientCertificateId"] = cert_id = common.short_uid()
-    result["createdDate"] = common.now_utc()
-    result["expirationDate"] = result["createdDate"] + 60 * 60 * 24 * 30  # assume 30 days validity
-    result["pemEncodedCertificate"] = "testcert-123"  # TODO return proper certificate!
-    region_details.client_certificates[cert_id] = result
-    return make_json_response(to_client_cert_response_json(result))
-
-
-def update_client_certificate(path, data):
-    region_details = APIGatewayRegion.get()
-    entity_id = get_cert_id_from_path(path)
-    entity = region_details.client_certificates.get(entity_id)
-    if entity is None:
-        return make_error_response('Client certificate ID "%s" not found' % entity_id, code=404)
-    result = apply_json_patch_safe(entity, data["patchOperations"])
-    return make_json_response(to_client_cert_response_json(result))
-
-
-def delete_client_certificate(path):
-    region_details = APIGatewayRegion.get()
-    entity_id = get_cert_id_from_path(path)
-    entity = region_details.client_certificates.pop(entity_id, None)
-    if entity is None:
-        return make_error_response('VPC link ID "%s" not found for deletion' % entity_id, code=404)
-    return make_accepted_response()
-
-
-def handle_client_certificates(method, path, data, headers):
-    if method == "GET":
-        return get_client_certificate(path)
-    if method == "POST":
-        return add_client_certificate(path, data)
-    if method == "PATCH":
-        return update_client_certificate(path, data)
-    if method == "DELETE":
-        return delete_client_certificate(path)
-    return make_error_response(
-        "Not implemented for API Gateway base path mappings: %s" % method, code=404
-    )
+# def handle_client_certificates(method, path, data, headers):
+#     if method == "GET":
+#         return get_client_certificate(path)
+#     if method == "POST":
+#         return add_client_certificate(path, data)
+#     if method == "PATCH":
+#         return update_client_certificate(path, data)
+#     if method == "DELETE":
+#         return delete_client_certificate(path)
+#     return make_error_response(
+#         "Not implemented for API Gateway base path mappings: %s" % method, code=404
+#     )
 
 
 # --------------
 # VCP LINK APIs
 # --------------
-
-
-def get_vpc_links(path):
-    region_details = APIGatewayRegion.get()
-    vpc_link_id = get_vpc_link_id_from_path(path)
-    if vpc_link_id:
-        vpc_link = region_details.vpc_links.get(vpc_link_id)
-        if vpc_link is None:
-            return make_error_response('VPC link ID "%s" not found' % vpc_link_id, code=404)
-        return make_json_response(to_vpc_link_response_json(vpc_link))
-    result = region_details.vpc_links.values()
-    result = [to_vpc_link_response_json(r) for r in result]
-    result = {"items": result}
-    return result
-
-
-def add_vpc_link(path, data):
-    region_details = APIGatewayRegion.get()
-    result = common.clone(data)
-    result["id"] = common.short_uid()
-    result["status"] = "AVAILABLE"
-    region_details.vpc_links[result["id"]] = result
-    return make_json_response(to_vpc_link_response_json(result))
-
-
-def update_vpc_link(path, data):
-    region_details = APIGatewayRegion.get()
-    vpc_link_id = get_vpc_link_id_from_path(path)
-    vpc_link = region_details.vpc_links.get(vpc_link_id)
-    if vpc_link is None:
-        return make_error_response('VPC link ID "%s" not found' % vpc_link_id, code=404)
-    result = apply_json_patch_safe(vpc_link, data["patchOperations"])
-    return make_json_response(to_vpc_link_response_json(result))
-
-
-def delete_vpc_link(path):
-    region_details = APIGatewayRegion.get()
-    vpc_link_id = get_vpc_link_id_from_path(path)
-    vpc_link = region_details.vpc_links.pop(vpc_link_id, None)
-    if vpc_link is None:
-        return make_error_response(
-            'VPC link ID "%s" not found for deletion' % vpc_link_id, code=404
-        )
-    return make_accepted_response()
-
-
-def get_vpc_link_id_from_path(path):
-    match = re.match(PATH_REGEX_VPC_LINKS, path)
-    return match.group(1) if match else None
-
-
-def handle_vpc_links(method, path, data, headers):
-    if method == "GET":
-        return get_vpc_links(path)
-    if method == "POST":
-        return add_vpc_link(path, data)
-    if method == "PATCH":
-        return update_vpc_link(path, data)
-    if method == "DELETE":
-        return delete_vpc_link(path)
-    return make_error_response("Not implemented for API Gateway VPC links: %s" % method, code=404)
+#
+#
+# def get_vpc_link_id_from_path(path):
+#     match = re.match(PATH_REGEX_VPC_LINKS, path)
+#     return match.group(1) if match else None
+#
+#
+# def handle_vpc_links(method, path, data, headers):
+#     if method == "GET":
+#         return get_vpc_links(path)
+#     if method == "POST":
+#         return add_vpc_link(path, data)
+#     if method == "PATCH":
+#         return update_vpc_link(path, data)
+#     if method == "DELETE":
+#         return delete_vpc_link(path)
+#     return make_error_response("Not implemented for API Gateway VPC links: %s" % method, code=404)
 
 
 # ----------------

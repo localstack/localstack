@@ -20,12 +20,12 @@ def apigateway():
     from localstack.services.apigateway.provider import ApigatewayProvider
 
     provider = ApigatewayProvider()
-    return Service(
+    listener = AsfWithFallbackListener(
         "apigateway",
-        listener=AsfWithFallbackListener(
-            "apigateway", MotoFallbackDispatcher(provider), apigateway_listener.UPDATE_APIGATEWAY
-        ),
+        MotoFallbackDispatcher(provider),
+        fallback=apigateway_listener.UPDATE_APIGATEWAY,
     )
+    return Service("apigateway", listener=listener)
 
 
 @aws_provider()

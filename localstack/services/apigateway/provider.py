@@ -9,6 +9,8 @@ from localstack.aws.api.apigateway import (
     Authorizers,
     BasePathMapping,
     BasePathMappings,
+    ClientCertificate,
+    ClientCertificates,
     CreateAuthorizerRequest,
     CreateDocumentationPartRequest,
     DocumentationPart,
@@ -16,9 +18,13 @@ from localstack.aws.api.apigateway import (
     DocumentationParts,
     GetDocumentationPartsRequest,
     ListOfPatchOperation,
+    ListOfString,
+    MapOfStringToString,
     NotFoundException,
     NullableInteger,
     String,
+    VpcLink,
+    VpcLinks,
 )
 from localstack.services.apigateway.helpers import (
     APIGatewayRegion,
@@ -27,6 +33,7 @@ from localstack.services.apigateway.helpers import (
 )
 from localstack.utils.collections import ensure_list
 from localstack.utils.strings import short_uid
+from localstack.utils.time import now_utc
 
 
 class ApigatewayProvider(ApigatewayApi, ABC):
@@ -304,6 +311,118 @@ class ApigatewayProvider(ApigatewayApi, ABC):
                 return
 
         raise NotFoundException(f"Base path mapping {base_path} for domain {domain_name} not found")
+
+    # client certificates
+
+    def get_client_certificate(
+        self, context: RequestContext, client_certificate_id: String
+    ) -> ClientCertificate:
+        region_details = APIGatewayRegion.get()
+        result = region_details.client_certificates.get(client_certificate_id)
+        if result is None:
+            raise NotFoundException(f"Client certificate ID {client_certificate_id} not found")
+        return ClientCertificate(**result)
+
+    def get_client_certificates(
+        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+    ) -> ClientCertificates:
+        region_details = APIGatewayRegion.get()
+        result = list(region_details.client_certificates.values())
+        return ClientCertificates(items=result)
+
+    def generate_client_certificate(
+        self, context: RequestContext, description: String = None, tags: MapOfStringToString = None
+    ) -> ClientCertificate:
+        region_details = APIGatewayRegion.get()
+        cert_id = short_uid()
+        creation_time = now_utc()
+        entry = {
+            "description": description,
+            "tags": tags,
+            "clientCertificateId": cert_id,
+            "createdDate": creation_time,
+            "expirationDate": creation_time + 60 * 60 * 24 * 30,  # assume 30 days validity
+            "pemEncodedCertificate": "testcert-123",  # TODO return proper certificate!
+        }
+        region_details.client_certificates[cert_id] = entry
+        result = to_client_cert_response_json(entry)
+        return ClientCertificate(**result)
+
+    def update_client_certificate(
+        self,
+        context: RequestContext,
+        client_certificate_id: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> ClientCertificate:
+        region_details = APIGatewayRegion.get()
+        entity = region_details.client_certificates.get(client_certificate_id)
+        if entity is None:
+            raise NotFoundException(f'Client certificate ID "{client_certificate_id}" not found')
+        result = apply_json_patch_safe(entity, patch_operations)
+        result = to_client_cert_response_json(result)
+        return ClientCertificate(**result)
+
+    def delete_client_certificate(
+        self, context: RequestContext, client_certificate_id: String
+    ) -> None:
+        region_details = APIGatewayRegion.get()
+        entity = region_details.client_certificates.pop(client_certificate_id, None)
+        if entity is None:
+            raise NotFoundException(f'VPC link ID "{client_certificate_id}" not found for deletion')
+
+    # VPC links
+
+    def create_vpc_link(
+        self,
+        context: RequestContext,
+        name: String,
+        target_arns: ListOfString,
+        description: String = None,
+        tags: MapOfStringToString = None,
+    ) -> VpcLink:
+        region_details = APIGatewayRegion.get()
+        link_id = short_uid()
+        entry = {"id": link_id, "status": "AVAILABLE"}
+        region_details.vpc_links[link_id] = entry
+        result = to_vpc_link_response_json(entry)
+        return VpcLink(**result)
+
+    def get_vpc_links(
+        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+    ) -> VpcLinks:
+        region_details = APIGatewayRegion.get()
+        result = region_details.vpc_links.values()
+        result = [to_vpc_link_response_json(r) for r in result]
+        result = {"items": result}
+        return result
+
+    def get_vpc_link(self, context: RequestContext, vpc_link_id: String) -> VpcLink:
+        region_details = APIGatewayRegion.get()
+        vpc_link = region_details.vpc_links.get(vpc_link_id)
+        if vpc_link is None:
+            raise NotFoundException(f'VPC link ID "{vpc_link_id}" not found')
+        result = to_vpc_link_response_json(vpc_link)
+        return VpcLink(**result)
+
+    def update_vpc_link(
+        self,
+        context: RequestContext,
+        vpc_link_id: String,
+        patch_operations: ListOfPatchOperation = None,
+    ) -> VpcLink:
+        region_details = APIGatewayRegion.get()
+        vpc_link = region_details.vpc_links.get(vpc_link_id)
+        if vpc_link is None:
+            raise NotFoundException(f'VPC link ID "{vpc_link_id}" not found')
+        result = apply_json_patch_safe(vpc_link, patch_operations)
+        result = to_vpc_link_response_json(result)
+        return VpcLink(**result)
+
+    def delete_vpc_link(self, context: RequestContext, vpc_link_id: String) -> None:
+        region_details = APIGatewayRegion.get()
+        vpc_link = region_details.vpc_links.pop(vpc_link_id, None)
+        if vpc_link is None:
+            raise NotFoundException(f'VPC link ID "{vpc_link_id}" not found for deletion')
 
 
 # ---------------

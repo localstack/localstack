@@ -32,14 +32,8 @@ from localstack.services.apigateway.helpers import (
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
-    handle_accounts,
-    handle_authorizers,
-    handle_base_path_mappings,
-    handle_client_certificates,
-    handle_documentation_parts,
     handle_gateway_responses,
     handle_validators,
-    handle_vpc_links,
     make_error_response,
 )
 from localstack.services.apigateway.integration import (
@@ -92,11 +86,11 @@ class ProxyListenerApiGateway(ProxyListener):
 
         data = parse_json_or_yaml(to_str(data or b""))
 
-        if re.match(PATH_REGEX_AUTHORIZERS, path):
-            return handle_authorizers(method, path, data, headers)
-
-        if re.match(PATH_REGEX_DOC_PARTS, path):
-            return handle_documentation_parts(method, path, data, headers)
+        # if re.match(PATH_REGEX_AUTHORIZERS, path):
+        #     return handle_authorizers(method, path, data, headers)
+        #
+        # if re.match(PATH_REGEX_DOC_PARTS, path):
+        #     return handle_documentation_parts(method, path, data, headers)
 
         if re.match(PATH_REGEX_VALIDATORS, path):
             return handle_validators(method, path, data, headers)
@@ -104,8 +98,8 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
 
-        if re.match(PATH_REGEX_PATH_MAPPINGS, path):
-            return handle_base_path_mappings(method, path, data, headers)
+        # if re.match(PATH_REGEX_PATH_MAPPINGS, path):
+        #     return handle_base_path_mappings(method, path, data, headers)
 
         if helpers.is_test_invoke_method(method, path):
             # if call is from test_invoke_api then use http_method to find the integration,
@@ -134,23 +128,6 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(r"/restapis/[^/]+/documentation/versions", path):
             if response.status_code == 404:
                 return requests_response({"position": "1", "items": []})
-
-        # add missing implementations
-        if response.status_code == 404:
-            result = None
-            if path == "/account":
-                data = data and json.loads(to_str(data))
-                result = handle_accounts(method, path, data, headers)
-            elif path.startswith("/vpclinks"):
-                data = data and json.loads(to_str(data))
-                result = handle_vpc_links(method, path, data, headers)
-            elif re.match(PATH_REGEX_CLIENT_CERTS, path):
-                data = data and json.loads(to_str(data))
-                result = handle_client_certificates(method, path, data, headers)
-
-            if result is not None:
-                response.status_code = 200
-                aws_responses.set_response_content(response, result, getattr(result, "headers", {}))
 
         # keep track of API regions for faster lookup later on
         if method == "POST" and path == "/restapis":
