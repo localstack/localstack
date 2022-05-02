@@ -35,8 +35,8 @@ TEST_LAMBDA_ROTATE_SECRET = os.path.join(THIS_FOLDER, "functions", "lambda_rotat
 
 class TestSecretsManager:
     @pytest.fixture
-    def sm_client(self):
-        return aws_stack.create_external_boto_client("secretsmanager")
+    def sm_client(self, secretsmanager_client):
+        return secretsmanager_client
 
     @pytest.mark.parametrize(
         "secret_name, is_valid_partial_arn",
@@ -408,6 +408,7 @@ class TestSecretsManager:
     @pytest.mark.parametrize(
         "secret_name", ["Inv Name", " Inv Name", " Inv*Name? ", " Inv *?!]Name\\-"]
     )
+    @pytest.mark.aws_validated
     def test_invalid_secret_name(self, sm_client, secret_name: str):
         def check_validation_exception(exc_info: ExceptionInfo):
             error = exc_info.value.response["Error"]
