@@ -247,7 +247,12 @@ def _create_service_map(service: ServiceModel) -> Map:
             # a custom rule - which can use additional request metadata - needs to be used
             rules.append(_RequestMatchingRule(string=rule_string, method=method, operations=ops))
 
-    return Map(rules=rules, merge_slashes=False, converters={"path": GreedyPathConverter})
+    return Map(
+        rules=rules,
+        strict_slashes=False,
+        merge_slashes=False,
+        converters={"path": GreedyPathConverter},
+    )
 
 
 class RestServiceOperationRouter:
@@ -270,8 +275,8 @@ class RestServiceOperationRouter:
         :raises: Werkzeug's NotFound exception in case the given request does not match any operation
         """
 
-        # bind the map to get the actual matcher (use an empty server_name, since there won't be a hostname matching)
-        matcher: MapAdapter = self._map.bind("")
+        # bind the map to get the actual matcher
+        matcher: MapAdapter = self._map.bind(request.host)
 
         # perform the matching
         rule, args = matcher.match(get_raw_path(request), method=request.method, return_rule=True)
