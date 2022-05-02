@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import Any, Dict, List
 
@@ -6,7 +7,6 @@ from localstack.services.awslambda.event_source_listeners.event_source_listener 
     EventSourceListener,
 )
 from localstack.services.awslambda.lambda_api import (
-    LOG,
     get_event_sources,
     message_attributes_to_lower,
     run_lambda,
@@ -14,6 +14,8 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_executors import InvocationResult
 from localstack.utils.aws import aws_stack
 from localstack.utils.threads import FuncThread
+
+LOG = logging.getLogger(__name__)
 
 
 class SQSEventSourceListener(EventSourceListener):
