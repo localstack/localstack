@@ -629,7 +629,7 @@ class CloudformationProvider(CloudformationApi):
         ]
 
         if stack_name and not stacks:
-            raise ValidationError(f"Stack with id {stack_name} does not exist ")
+            raise ValidationError(f"Stack with id {stack_name} does not exist")
 
         return DescribeStacksOutput(Stacks=stacks)
 
