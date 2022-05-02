@@ -39,6 +39,8 @@ jobs:
       - install-python
       - run:
           name: Setup environment
+          environment:
+            VENV_BIN: "python3.10 -m venv"
           command: |
             make install
             mkdir -p target/reports
