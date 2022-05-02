@@ -1,7 +1,7 @@
 import json
 import os
 import sys
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -302,6 +302,97 @@ def cmd_ssh():
         process.wait()
     except KeyboardInterrupt:
         pass
+
+
+@localstack.group(name="update", help="Update LocalStack components")
+def localstack_update():
+    pass
+
+
+@localstack_update.command(name="all", help="Update all LocalStack components")
+@click.pass_context
+def cmd_update_all(ctx):
+    ctx.invoke(localstack_update.get_command(ctx, "localstack-cli"))
+    ctx.invoke(localstack_update.get_command(ctx, "docker-images"))
+
+
+@localstack_update.command(name="localstack-cli", help="Update LocalStack CLI tools")
+def cmd_update_localstack_cli():
+    import subprocess
+    from subprocess import CalledProcessError
+
+    console.rule("Updating LocalStack CLI")
+    with console.status("Updating LocalStack CLI..."):
+        try:
+            subprocess.check_output(
+                [sys.executable, "-m", "pip", "install", "--upgrade", "localstack"]
+            )
+            console.print(":heavy_check_mark: LocalStack CLI updated")
+        except CalledProcessError:
+            console.print(":heavy_multiplication_x: LocalStack CLI update failed", style="bold red")
+
+
+@localstack_update.command(
+    name="docker-images", help="Update container images LocalStack depends on"
+)
+def cmd_update_docker_images():
+    from localstack.utils.docker_utils import DOCKER_CLIENT
+
+    console.rule("Updating docker images")
+
+    all_images = DOCKER_CLIENT.get_docker_image_names(strip_latest=False)
+    image_prefixes = ["localstack/", "lambci/lambda:", "mlupin/docker-lambda:"]
+    localstack_images = [
+        image
+        for image in all_images
+        if any(
+            image.startswith(image_prefix) or image.startswith(f"docker.io/{image_prefix}")
+            for image_prefix in image_prefixes
+        )
+    ]
+    update_images(localstack_images)
+
+
+def update_images(image_list: List[str]):
+    from rich.markup import escape
+    from rich.progress import MofNCompleteColumn, Progress
+
+    from localstack.utils.container_utils.container_client import ContainerException
+    from localstack.utils.docker_utils import DOCKER_CLIENT
+
+    updated_count = 0
+    failed_count = 0
+    progress = Progress(
+        *Progress.get_default_columns(), MofNCompleteColumn(), transient=True, console=console
+    )
+    with progress:
+        for image in progress.track(image_list, description="Processing image..."):
+            try:
+                updated = False
+                hash_before_pull = DOCKER_CLIENT.inspect_image(image_name=image, pull=False)["Id"]
+                DOCKER_CLIENT.pull_image(image)
+                if (
+                    hash_before_pull
+                    != DOCKER_CLIENT.inspect_image(image_name=image, pull=False)["Id"]
+                ):
+                    updated = True
+                    updated_count += 1
+                console.print(
+                    f":heavy_check_mark: Image {escape(image)} {'updated' if updated else 'up-to-date'}.",
+                    style="bold" if updated else None,
+                    highlight=False,
+                )
+            except ContainerException as e:
+                console.print(
+                    f":heavy_multiplication_x: Image {escape(image)} pull failed: {e.message}",
+                    style="bold red",
+                    highlight=False,
+                )
+                failed_count += 1
+    console.rule()
+    console.print(
+        f"Images updated: {updated_count}, Images failed: {failed_count}, total images processed: {len(image_list)}."
+    )
 
 
 # legacy support
