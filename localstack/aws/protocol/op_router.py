@@ -6,10 +6,14 @@ from urllib.parse import parse_qs, unquote
 from botocore.model import OperationModel, ServiceModel, StructureShape
 from werkzeug.datastructures import Headers, MultiDict
 from werkzeug.exceptions import NotFound
-from werkzeug.routing import Map, MapAdapter, Rule
+from werkzeug.routing import Map, MapAdapter, PathConverter, Rule
 
 from localstack.http import Request
 from localstack.http.request import get_raw_path
+
+
+class GreedyPathConverter(PathConverter):
+    regex = ".*?"
 
 
 class _HttpOperation(NamedTuple):
@@ -223,7 +227,7 @@ def _create_service_map(service: ServiceModel) -> Map:
             # a custom rule - which can use additional request metadata - needs to be used
             rules.append(_RequestMatchingRule(rule_string, methods=[method], operations=ops))
 
-    return Map(rules=rules)
+    return Map(rules=rules, merge_slashes=False, converters={"path": GreedyPathConverter})
 
 
 class RestServiceOperationRouter:
