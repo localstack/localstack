@@ -391,6 +391,34 @@ class RegionBackend:
         return cls.regions()
 
 
+U = TypeVar("U", bound="NaiveBackend")
+
+
+class NaiveBackend:
+    """Base class for the region-naive backends.
+
+    Certain service providers handle region-resolution themselves. The NaiveBackend
+    is suited for such providers. It aims to provide persistence support for
+    these region-neutral global providers."""
+
+    BACKEND: U
+
+    @classmethod
+    def get(cls: Type[U]) -> U:
+        if not hasattr(cls, 'BACKEND'):
+            cls.BACKEND = cls()
+        return cls.BACKEND
+
+    @classmethod
+    def set(cls: Type[U], state: U):
+        cls.BACKEND = state
+
+    @classmethod
+    def reset(cls):
+        cls.BACKEND = cls()
+        return cls.BACKEND
+
+
 # ---------------------
 # PROXY LISTENER UTILS
 # ---------------------
