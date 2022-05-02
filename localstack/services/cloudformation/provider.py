@@ -529,7 +529,7 @@ class ValidationError(CommonServiceException):
     """General validation error type (defined in the AWS docs, but not part of the botocore spec)"""
 
     def __init__(self, message=None):
-        super().__init__("ValidationError", message=message)
+        super().__init__("ValidationError", message=message, sender_fault=True)
 
 
 class ResourceNotFoundException(CommonServiceException):
@@ -629,7 +629,7 @@ class CloudformationProvider(CloudformationApi):
         ]
 
         if stack_name and not stacks:
-            raise ValidationError(f"Stack with id %s does not exist {stack_name}")
+            raise ValidationError(f"Stack with id {stack_name} does not exist")
 
         return DescribeStacksOutput(Stacks=stacks)
 
