@@ -596,9 +596,8 @@ class TestEvents:
 
         # clean up
         proxy.stop()
-        self.cleanup(
-            None, rule_name, target_ids=[topic_target_id, sm_target_id], queue_url=queue_url
-        )
+        target_ids = [topic_target_id, sm_target_id, queue_target_id, fifo_queue_target_id]
+        self.cleanup(None, rule_name, target_ids=target_ids, queue_url=queue_url)
         sns_client.delete_topic(TopicArn=topic_arn)
         stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
