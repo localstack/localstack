@@ -1,4 +1,4 @@
-import asyncio
+import concurrent.futures
 import inspect
 import logging
 import threading
@@ -51,10 +51,10 @@ class FuncThread(threading.Thread):
         finally:
             try:
                 self.result_future.set_result(result)
-            except asyncio.InvalidStateError as e:
-                # this can happen if the task is already canceled
-                LOG.debug(e)
                 pass
+            except concurrent.futures.InvalidStateError as e:
+                # this can happen on shutdown if the task is already canceled
+                LOG.debug(e)
 
     @property
     def running(self):
