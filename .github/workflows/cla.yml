@@ -19,7 +19,7 @@ jobs:
         uses: "cla-assistant/github-action@v2.1.3-beta"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          PERSONAL_ACCESS_TOKEN: "${{ secrets.CLA_ASSISTANT_ACCESS_TOKEN }}"
+          PERSONAL_ACCESS_TOKEN: "${{ secrets.PRO_ACCESS_TOKEN }}"
         with:
           remote-organization-name: "localstack"
           remote-repository-name: "localstack"
