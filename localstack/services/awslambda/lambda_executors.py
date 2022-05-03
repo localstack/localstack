@@ -108,6 +108,9 @@ LAMBDA_CONCURRENCY_LOCK = {}
 # CWD folder of handler code in Lambda containers
 DOCKER_TASK_FOLDER = "/var/task"
 
+# TODO remove once clarification of apigateway contexts is complete. Really bad hack!!
+ALLOWED_IDENTITY_FIELDS = ["cognitoIdentityId", "cognitoIdentityPoolId"]
+
 # Lambda event type
 LambdaEvent = Union[Dict[str, Any], str, bytes]
 
@@ -141,7 +144,11 @@ class LambdaContext:
         self.invoked_function_arn = lambda_function.arn()
         if qualifier:
             self.invoked_function_arn += ":" + qualifier
-        self.cognito_identity = context.get("identity")
+        self.cognito_identity = context.get("identity") and {
+            key: value
+            for key, value in context.get("identity").items()
+            if key in ALLOWED_IDENTITY_FIELDS
+        }
         self.aws_request_id = str(uuid.uuid4())
         self.memory_limit_in_mb = lambda_function.memory_size or self.DEFAULT_MEMORY_LIMIT
         self.log_group_name = "/aws/lambda/%s" % self.function_name
