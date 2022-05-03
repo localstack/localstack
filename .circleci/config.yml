@@ -1,9 +1,21 @@
 version: 2.1
 
+parameters:
+  ubuntu-amd64-machine-image:
+    type: string
+    default: "ubuntu-2004:2022.04.1"
+  ubuntu-arm64-machine-image:
+    type: string
+    default: "ubuntu-2004:2022.04.1"
+
+executors:
+  ubuntu-machine-amd64:
+    machine:
+      image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+
 jobs:
   install:
-    machine:
-      image: ubuntu-2004:202107-02
+    executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - checkout
@@ -13,11 +25,9 @@ jobs:
           name: Install prerequisites
           command: |
             sudo apt-get update
-            sudo apt-get install -y libsasl2-dev python3.8-venv python3.8-dev
+            sudo apt-get install -y libsasl2-dev
       - run:
           name: Setup environment
-          environment:
-            VENV_BIN: "/usr/bin/python3.8 -m venv"
           command: |
             make install
             mkdir -p target/reports
@@ -33,8 +43,7 @@ jobs:
             - repo
 
   preflight:
-    docker:
-      - image: buildpack-deps:focal
+    executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -44,8 +53,7 @@ jobs:
           command: make lint
 
   unit-tests:
-    docker:
-      - image: buildpack-deps:focal
+    executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -70,8 +78,7 @@ jobs:
             - repo/target/coverage/
 
   itest-lambda-docker:
-    machine:
-      image: ubuntu-2004:202107-02
+    executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -134,8 +141,7 @@ jobs:
           path: target/reports/
 
   itest-sqs-provider:
-    machine:
-      image: ubuntu-2004:202107-02
+    executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -170,8 +176,7 @@ jobs:
           path: target/reports/
 
   itest-lambda-provider:
-    machine:
-      image: ubuntu-2004:202107-02
+    executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -197,8 +202,7 @@ jobs:
           path: target/reports/
 
   itest-bootstrap:
-    machine:
-      image: ubuntu-2004:202107-02
+    executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -244,26 +248,6 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
-      - when:
-          condition:
-            equal: [ arm64, << parameters.platform >> ]
-          steps:
-            - run:
-                # Since we are using an old version of ubuntu, we need to install the latest version of docker
-                name: Update docker engine to most current
-                command: |
-                  # Remove old version
-                  sudo apt-get remove --purge docker docker-engine docker.io containerd runc -y
-                  # Install Docker deb package repo
-                  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
-                    sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-                  echo "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
-                    | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-                  sudo apt-get update
-                  # Install the latest version of Docker and haveged
-                  # (https://github.com/docker/compose/issues/6678#issuecomment-526831488)
-                  sudo apt-get install docker-ce docker-ce-cli containerd.io haveged -y
-                  sudo usermod -aG docker $USER
       - run:
           name: Build full docker image
           command: make docker-build
@@ -301,7 +285,7 @@ jobs:
         type: string
       machine_image:
         description: "CircleCI machine type to run at"
-        default: "ubuntu-2004:202107-02"
+        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
         type: string
     machine:
       image: << parameters.machine_image >>
@@ -333,8 +317,7 @@ jobs:
             - repo/target/coverage/
 
   report:
-    docker:
-      - image: buildpack-deps:focal
+    executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -358,8 +341,7 @@ jobs:
           path: htmlcov/
 
   docker-push:
-    machine:
-      image: ubuntu-2004:202107-02
+    executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -438,7 +420,7 @@ workflows:
       - docker-build:
           name: docker-build-amd64
           platform: amd64
-          machine_image: ubuntu-2004:202107-02
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           resource_class: medium
           requires:
             - preflight
@@ -447,7 +429,7 @@ workflows:
           platform: arm64
           # The latest version of ubuntu is not yet supported for ARM:
           # https://circleci.com/docs/2.0/arm-resources/
-          machine_image: ubuntu-2004:202101-01
+          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
           resource_class: arm.medium
           requires:
             - preflight
@@ -455,14 +437,14 @@ workflows:
           name: docker-test-arm64
           platform: arm64
           resource_class: arm.medium
-          machine_image: ubuntu-2004:202101-01
+          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
           requires:
             - docker-build-arm64
       - docker-test:
           name: docker-test-amd64
           platform: amd64
           resource_class: medium
-          machine_image: ubuntu-2004:202107-02
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           requires:
             - docker-build-amd64
       - report:
