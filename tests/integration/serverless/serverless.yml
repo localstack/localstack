@@ -188,9 +188,9 @@ functions:
           consumer:
             Fn::GetAtt:
               - KinesisStreamConsumer
-              - ConsumerARN
+              - StreamARN
           maximumRecordAgeInSeconds: 120
-          startingPosition: LATEST
+          startingPosition: TRIM_HORIZON
           enabled: true
   queueHandler:
     handler: handler.createQueue

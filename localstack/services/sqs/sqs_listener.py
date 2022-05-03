@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from typing import Dict
 from urllib.parse import urlencode
@@ -10,7 +11,9 @@ from requests.models import Request, Response
 
 from localstack import config, constants
 from localstack.config import SQS_PORT_EXTERNAL
-from localstack.services.awslambda.lambda_api import EventSourceListener
+from localstack.services.awslambda.event_source_listeners.event_source_listener import (
+    EventSourceListener,
+)
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns import sns_listener
 from localstack.services.sqs.sqs_utils import is_sqs_queue_url
@@ -30,6 +33,8 @@ from localstack.utils.common import (
     to_str,
 )
 from localstack.utils.persistence import PersistingProxyListener
+
+LOG = logging.getLogger(__name__)
 
 API_VERSION = "2012-11-05"
 XMLNS_SQS = "http://queue.amazonaws.com/doc/%s/" % API_VERSION
@@ -335,6 +340,9 @@ class ProxyListenerSQS(PersistingProxyListener):
                     return False
 
                 if req_data.get("QueueName").endswith(".fifo") and not _is_fifo():
+                    LOG.warn(
+                        'You are trying to create a queue ending in ".fifo".  Please use the --attributes parameter to set FifoQueue appropriately.'
+                    )
                     msg = "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
                     return make_requests_error(
                         code=400, code_string="InvalidParameterValue", message=msg

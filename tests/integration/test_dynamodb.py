@@ -667,6 +667,9 @@ class TestDynamoDB:
         assert len(records) == 6
         events = [rec["eventName"] for rec in records]
         assert events == ["INSERT", "MODIFY", "REMOVE"] * 2
+        # assert that all records contain proper event IDs
+        event_ids = [rec.get("eventID") for rec in records]
+        assert all(event_ids)
 
         # assert that updates have been received from regular table operations and PartiQL query operations
         for idx, record in enumerate(records):
@@ -1065,9 +1068,11 @@ class TestDynamoDB:
         )
 
         lambda_client = aws_stack.create_external_boto_client("lambda")
-        lambda_client.create_event_source_mapping(
-            EventSourceArn=latest_stream_arn, FunctionName=function_name
-        )
+        mapping_uuid = lambda_client.create_event_source_mapping(
+            EventSourceArn=latest_stream_arn,
+            FunctionName=function_name,
+            StartingPosition="TRIM_HORIZON",
+        )["UUID"]
 
         item = {"SK": short_uid(), "Name": "name-{}".format(short_uid())}
 
@@ -1075,7 +1080,7 @@ class TestDynamoDB:
 
         events = retry(
             check_expected_lambda_log_events_length,
-            retries=3,
+            retries=10,
             sleep=1,
             function_name=function_name,
             expected_length=1,
@@ -1093,6 +1098,7 @@ class TestDynamoDB:
 
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         dynamodb.delete_table(TableName=table_name)
+        lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
 
     def test_dynamodb_batch_write_item(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")

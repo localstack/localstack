@@ -67,7 +67,7 @@ class TestEvents:
         assert json.loads(rules[0]["EventPattern"]) == TEST_EVENT_PATTERN
 
         # clean up
-        events_client.delete_rule(Name=rule_name, Force=True)
+        self.cleanup(rule_name=rule_name)
 
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
         self, events_client
@@ -126,7 +126,7 @@ class TestEvents:
         assert actual == expected
 
         # clean up
-        events_client.delete_rule(Name=rule_name, Force=True)
+        self.cleanup(rule_name=rule_name)
 
     @pytest.mark.aws_validated
     def test_put_events_with_target_sqs(self, events_client, sqs_client):
@@ -476,7 +476,7 @@ class TestEvents:
         assert response["Rules"][0]["State"] == "DISABLED"
 
         # clean up
-        events_client.delete_rule(Name=rule_name, Force=True)
+        self.cleanup(rule_name=rule_name)
 
     def test_scheduled_expression_events(
         self, stepfunctions_client, sns_client, sqs_client, events_client
@@ -596,9 +596,8 @@ class TestEvents:
 
         # clean up
         proxy.stop()
-        self.cleanup(
-            None, rule_name, target_ids=[topic_target_id, sm_target_id], queue_url=queue_url
-        )
+        target_ids = [topic_target_id, sm_target_id, queue_target_id, fifo_queue_target_id]
+        self.cleanup(None, rule_name, target_ids=target_ids, queue_url=queue_url)
         sns_client.delete_topic(TopicArn=topic_arn)
         stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
@@ -735,10 +734,10 @@ class TestEvents:
             ]
             events_client.put_events(Entries=entries)
 
-            # cleaning
+            # clean up
             events_client.delete_connection(Name=connection_name)
             events_client.delete_api_destination(Name=dest_name)
-            events_client.delete_rule(Name=rule_name, Force=True)
+            self.cleanup(rule_name=rule_name, target_ids=target_id)
 
         # assert that all events have been received in the HTTP server listener
 
@@ -777,7 +776,7 @@ class TestEvents:
         bus_name = "bus-{}".format(short_uid())
 
         # create firehose target bucket
-        s3_client.create_bucket(Bucket=s3_bucket)
+        aws_stack.get_or_create_bucket(s3_bucket)
 
         # create firehose delivery stream to s3
         stream = firehose_client.create_delivery_stream(
@@ -1072,7 +1071,7 @@ class TestEvents:
         assert messages is None
 
         # clean up
-        self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
+        self.cleanup(bus_name, rule_name, [target_id, target_id_1], queue_url=queue_url)
 
     def test_put_event_without_source(self):
         events_client = aws_stack.create_external_boto_client("events", region_name="eu-west-1")

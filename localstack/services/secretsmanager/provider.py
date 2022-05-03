@@ -9,11 +9,10 @@ from typing import Dict, Final, Optional, Union
 from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
-from moto.secretsmanager.exceptions import SecretNotFoundException, ValidationException
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend, secretsmanager_backends
 from moto.secretsmanager.responses import SecretsManagerResponse
 
-from localstack.aws.api import RequestContext, ServiceResponse, handler
+from localstack.aws.api import CommonServiceException, RequestContext, ServiceResponse, handler
 from localstack.aws.api.secretsmanager import (
     CancelRotateSecretRequest,
     CancelRotateSecretResponse,
@@ -76,6 +75,16 @@ LOG = logging.getLogger(__name__)
 
 # Maps key names to ARNs.
 SECRET_ARN_STORAGE = {}
+
+
+class ValidationException(CommonServiceException):
+    def __init__(self, message: str):
+        super().__init__("ValidationException", message, 400, True)
+
+
+class SecretNotFoundException(CommonServiceException):
+    def __init__(self, message: str):
+        super().__init__("SecretNotFoundException", message, 404, True)
 
 
 class SecretsmanagerProvider(SecretsmanagerApi):

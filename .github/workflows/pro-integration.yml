@@ -104,7 +104,7 @@ jobs:
           PYTEST_LOGLEVEL: debug
         run: |
           source .venv/bin/activate
-          python -m pytest --capture=no --log-cli-level=info --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
+          python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
       - name: Run Lambda Tests for lambda executor docker
         env:
           DEBUG: 0

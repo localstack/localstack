@@ -10,12 +10,11 @@ from requests.models import Response
 
 from localstack import config
 from localstack.constants import APPLICATION_CBOR, APPLICATION_JSON, HEADER_AMZN_ERROR_TYPE
-from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
-from localstack.utils.common import clone, epoch_timestamp, json_safe, now_utc, to_bytes, to_str
+from localstack.utils.common import clone, json_safe, now_utc, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -162,36 +161,6 @@ class ProxyListenerKinesis(ProxyListener):
             if action == "CreateStream":
                 payload["s"] = data.get("ShardCount")
             event_publisher.fire_event(event_type, payload=payload)
-        elif action == "PutRecord":
-            response_body = self.decode_content(response.content)
-            # Note: avoid adding 'encryptionType':'NONE' in the event_record, as this breaks .NET Lambdas
-            event_record = {
-                "approximateArrivalTimestamp": epoch_timestamp(),
-                "data": data["Data"],
-                "partitionKey": data["PartitionKey"],
-                "sequenceNumber": response_body.get("SequenceNumber"),
-            }
-            event_records = [event_record]
-            stream_name = data["StreamName"]
-            lambda_api.process_kinesis_records(event_records, stream_name)
-        elif action == "PutRecords":
-            event_records = []
-            response_body = self.decode_content(response.content)
-            if "Records" in response_body:
-                response_records = response_body["Records"]
-                records = data["Records"]
-                for index in range(0, len(records)):
-                    record = records[index]
-                    # Note: avoid adding 'encryptionType':'NONE' in the event_record, as this breaks .NET Lambdas
-                    event_record = {
-                        "approximateArrivalTimestamp": epoch_timestamp(),
-                        "data": record["Data"],
-                        "partitionKey": record["PartitionKey"],
-                        "sequenceNumber": response_records[index].get("SequenceNumber"),
-                    }
-                    event_records.append(event_record)
-                stream_name = data["StreamName"]
-                lambda_api.process_kinesis_records(event_records, stream_name)
         elif action == "UpdateShardCount" and config.KINESIS_PROVIDER == "kinesalite":
             # Currently kinesalite, which backs the Kinesis implementation for localstack, does
             # not support UpdateShardCount:
@@ -291,7 +260,6 @@ class ProxyListenerKinesis(ProxyListener):
             return cbor2.dumps(json.loads(replaced))
 
     def decode_content(self, data, describe=False):
-        content_type = ""
         try:
             decoded = json.loads(to_str(data))
             content_type = APPLICATION_JSON

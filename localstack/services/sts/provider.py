@@ -1,6 +1,5 @@
 import logging
 import re
-from typing import Optional
 
 import xmltodict
 
@@ -9,8 +8,7 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.sts import GetCallerIdentityResponse, StsApi
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import APPLICATION_JSON
-from localstack.http import Response
-from localstack.services.messages import Headers, MessagePayload, Request
+from localstack.http import Request, Response
 from localstack.services.moto import MotoFallbackDispatcher, call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_str
@@ -35,19 +33,6 @@ class StsAwsApiListener(AwsApiListener):
         self.provider = StsProvider()
         super().__init__("sts", MotoFallbackDispatcher(self.provider))
 
-    def return_response(
-        self, method: str, path: str, data: MessagePayload, headers: Headers, response: Response
-    ) -> Optional[Response]:
-        if headers.get("Accept") == APPLICATION_JSON:
-            try:
-                if response._content or b"".startswith(b"<"):
-                    content = xmltodict.parse(to_str(response._content))
-                    stripped_content = strip_xmlns(content)
-                    response._content = stripped_content
-            except Exception as e:
-                LOG.debug("Unable to convert XML response to JSON", exc_info=e)
-        return super().return_response(method, path, data, headers, response)
-
     def request(self, request: Request) -> Response:
         response = super().request(request)
 
@@ -61,7 +46,10 @@ class StsAwsApiListener(AwsApiListener):
 
             def _replace_response_content(_pattern, _replacement):
                 content = to_str(response.data or "")
-                response.data = re.sub(_pattern, _replacement, content)
+                data = re.sub(_pattern, _replacement, content)
+                content = xmltodict.parse(data)
+                stripped_content = strip_xmlns(content)
+                response.set_json(stripped_content)
 
             pattern = r"<Expiration>([^<]+)</Expiration>"
             _replace_response_content(pattern, _replace)

@@ -164,30 +164,10 @@ class EventForwarder:
             forward_records = cls.prepare_records_to_forward_to_ddb_stream(records)
             records_to_ddb = copy.deepcopy(forward_records)
             cls.forward_to_ddb_stream(records_to_ddb)
-            # lambda receives the same records as the ddb streams
-            cls.forward_to_lambda(forward_records)
 
         if background:
             return start_worker_thread(_forward)
         _forward()
-
-    @staticmethod
-    def forward_to_lambda(records):
-        for record in records:
-            event_source_arn = record.get("eventSourceARN")
-            if not event_source_arn:
-                continue
-            sources = lambda_api.get_event_sources(source_arn=event_source_arn)
-            event = {"Records": [record]}
-            for src in sources:
-                if src.get("State") != "Enabled":
-                    continue
-                lambda_api.run_lambda(
-                    func_arn=src["FunctionArn"],
-                    event=event,
-                    context={},
-                    asynchronous=not config.SYNCHRONOUS_DYNAMODB_EVENTS,
-                )
 
     @staticmethod
     def forward_to_ddb_stream(records):
@@ -223,7 +203,6 @@ class EventForwarder:
         # StreamViewType determines what information is written to the stream for the table
         # When an item in the table is inserted, updated or deleted
         for record in records:
-            record.pop("eventID", None)
             ddb_record = record["dynamodb"]
             stream_type = ddb_record.get("StreamViewType")
             if not stream_type:

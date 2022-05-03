@@ -1766,6 +1766,9 @@ class AttachmentsSource(TypedDict, total=False):
 
 
 AttachmentsSourceList = List[AttachmentsSource]
+TargetMapValueList = List[TargetMapValue]
+TargetMap = Dict[TargetMapKey, TargetMapValueList]
+TargetMaps = List[TargetMap]
 AutomationParameterValueList = List[AutomationParameterValue]
 AutomationParameterMap = Dict[AutomationParameterKey, AutomationParameterValueList]
 
@@ -1776,6 +1779,7 @@ class Runbook(TypedDict, total=False):
     Parameters: Optional[AutomationParameterMap]
     TargetParameterName: Optional[AutomationParameterKey]
     Targets: Optional[Targets]
+    TargetMaps: Optional[TargetMaps]
     MaxConcurrency: Optional[MaxConcurrency]
     MaxErrors: Optional[MaxErrors]
     TargetLocations: Optional[TargetLocations]
@@ -1800,9 +1804,6 @@ class ResolvedTargets(TypedDict, total=False):
     Truncated: Optional[Boolean]
 
 
-TargetMapValueList = List[TargetMapValue]
-TargetMap = Dict[TargetMapKey, TargetMapValueList]
-TargetMaps = List[TargetMap]
 ValidNextStepList = List[ValidNextStep]
 
 

@@ -38,7 +38,7 @@ class EventConnection(GenericBaseModel):
     def get_deploy_templates(cls):
         return {
             "create": {"function": "create_connection"},
-            "delete": {"function": "delete_connection", "parameters": {"Name": "Name"}},
+            "delete": {"function": "delete_connection", "parameters": ["Name"]},
         }
 
 
@@ -65,8 +65,8 @@ class EventBus(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         return {
-            "create": {"function": "create_event_bus", "parameters": {"Name": "Name"}},
-            "delete": {"function": "delete_event_bus", "parameters": {"Name": "Name"}},
+            "create": {"function": "create_event_bus", "parameters": ["Name"]},
+            "delete": {"function": "delete_event_bus", "parameters": ["Name"]},
         }
 
 
@@ -127,6 +127,17 @@ class EventsRule(GenericBaseModel):
                 result["EventPattern"] = json.dumps(wrapped)
             return result
 
+        def _delete_rule(resource_id, resources, *args, **kwargs):
+            events = aws_stack.connect_to_service("events")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            rule_name = props["Name"]
+            targets = events.list_targets_by_rule(Rule=rule_name)["Targets"]
+            target_ids = [tgt["Id"] for tgt in targets]
+            if targets:
+                events.remove_targets(Rule=rule_name, Ids=target_ids, Force=True)
+            events.delete_rule(Name=rule_name)
+
         return {
             "create": [
                 {"function": "put_rule", "parameters": events_put_rule_params},
@@ -139,10 +150,7 @@ class EventsRule(GenericBaseModel):
                     },
                 },
             ],
-            "delete": {
-                "function": "delete_rule",
-                "parameters": {"Name": "PhysicalResourceId"},
-            },
+            "delete": {"function": _delete_rule},
         }
 
 

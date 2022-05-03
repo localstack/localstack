@@ -2714,6 +2714,25 @@ class TestS3New:
         response = s3_client.get_object(Bucket=bucket, Key="Ā0Ä")
         assert response["Body"].read() == b"abc123"
 
+    @pytest.mark.aws_validated
+    def test_s3_resource_object_slashes_in_key(self, s3_resource, s3_create_bucket):
+        bucket = s3_create_bucket()
+        s3_resource.Object(bucket, "/foo").put(Body="foobar")
+        s3_resource.Object(bucket, "bar").put(Body="barfoo")
+
+        with pytest.raises(ClientError) as e:
+            s3_resource.Object(bucket, "foo").get()
+        e.match("NoSuchKey")
+
+        with pytest.raises(ClientError) as e:
+            s3_resource.Object(bucket, "/bar").get()
+        e.match("NoSuchKey")
+
+        response = s3_resource.Object(bucket, "/foo").get()
+        assert response["Body"].read() == b"foobar"
+        response = s3_resource.Object(bucket, "bar").get()
+        assert response["Body"].read() == b"barfoo"
+
 
 @pytest.mark.parametrize(
     "api_version, bucket_name, payload",

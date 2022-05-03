@@ -900,6 +900,27 @@ def test_s3_operation_detection():
     )
 
 
+def test_s3_put_object_keys_with_slashes():
+    _botocore_parser_integration_test(
+        service="s3",
+        action="PutObject",
+        Bucket="test-bucket",
+        Key="/test-key",
+        ContentLength=6,
+        Body=b"foobar",
+        Metadata={},
+    )
+
+
+def test_s3_get_object_keys_with_slashes():
+    _botocore_parser_integration_test(
+        service="s3",
+        action="GetObject",
+        Bucket="test-bucket",
+        Key="/test-key",
+    )
+
+
 def test_restxml_headers_parsing():
     """Test the parsing of a map with the location trait 'headers'."""
     _botocore_parser_integration_test(
@@ -936,6 +957,22 @@ def test_s3_virtual_host_addressing():
     assert parsed_operation_model.name == "CreateBucket"
     assert "Bucket" in parsed_request
     assert parsed_request["Bucket"] == "test-bucket"
+
+
+def test_s3_list_buckets_with_localhost():
+    # this is the canonical request of `awslocal s3 ls` when running on a standard port
+    request = HttpRequest("GET", "/", headers={"host": "localhost"})
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "ListBuckets"
+
+
+def test_s3_list_buckets_with_localhost_and_port():
+    # this is the canonical request of `awslocal s3 ls`
+    request = HttpRequest("GET", "/", headers={"host": "localhost:4566"})
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "ListBuckets"
 
 
 def test_parser_error_on_protocol_error():

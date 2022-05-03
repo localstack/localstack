@@ -1671,6 +1671,11 @@ class Ipv6SupportValue(str):
     disable = "disable"
 
 
+class KeyFormat(str):
+    pem = "pem"
+    ppk = "ppk"
+
+
 class KeyType(str):
     rsa = "rsa"
     ed25519 = "ed25519"
@@ -5313,6 +5318,7 @@ class CreateKeyPairRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     KeyType: Optional[KeyType]
     TagSpecifications: Optional[TagSpecificationList]
+    KeyFormat: Optional[KeyFormat]
 
 
 class LaunchTemplateInstanceMaintenanceOptionsRequest(TypedDict, total=False):
@@ -9737,6 +9743,7 @@ class DescribeKeyPairsRequest(ServiceRequest):
     KeyNames: Optional[KeyNameStringList]
     KeyPairIds: Optional[KeyPairIdStringList]
     DryRun: Optional[Boolean]
+    IncludePublicKey: Optional[Boolean]
 
 
 class KeyPairInfo(TypedDict, total=False):
@@ -9745,6 +9752,8 @@ class KeyPairInfo(TypedDict, total=False):
     KeyName: Optional[String]
     KeyType: Optional[KeyType]
     Tags: Optional[TagList]
+    PublicKey: Optional[String]
+    CreateTime: Optional[MillisecondDateTime]
 
 
 KeyPairList = List[KeyPairInfo]
@@ -15974,6 +15983,7 @@ class Ec2Api:
         dry_run: Boolean = None,
         key_type: KeyType = None,
         tag_specifications: TagSpecificationList = None,
+        key_format: KeyFormat = None,
     ) -> KeyPair:
         raise NotImplementedError
 
@@ -17810,6 +17820,7 @@ class Ec2Api:
         key_names: KeyNameStringList = None,
         key_pair_ids: KeyPairIdStringList = None,
         dry_run: Boolean = None,
+        include_public_key: Boolean = None,
     ) -> DescribeKeyPairsResult:
         raise NotImplementedError
 

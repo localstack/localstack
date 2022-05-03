@@ -978,14 +978,15 @@ class S3RequestParser(RestXMLRequestParser):
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         """Handle virtual-host-addressing for S3."""
-        if (
-            # TODO implement a more sophisticated determination if the host contains S3 virtual host addressing
-            not request.host.startswith("s3.")
-            and not request.host.startswith("localhost.")
-            and not request.host.startswith("127.0.0.1")
-        ):
+        if self._is_vhost_address(request):
             self._revert_virtual_host_style(request)
+
         return super().parse(request)
+
+    def _is_vhost_address(self, request: HttpRequest) -> bool:
+        from localstack.services.s3.s3_utils import uses_host_addressing
+
+        return uses_host_addressing(request.headers)
 
     def _revert_virtual_host_style(self, request: HttpRequest):
         # extract the bucket name from the host part of the request
