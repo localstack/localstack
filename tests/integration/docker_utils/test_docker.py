@@ -1260,3 +1260,15 @@ class TestDockerClient:
             stdout, _ = docker_client.start_container(
                 container_name_or_id=container.container_id, attach=True
             )
+
+    def test_container_with_sec_opt(self, docker_client: ContainerClient, create_container):
+        security_opt = ["apparmor=unrestricted"]
+        container = create_container(
+            "alpine",
+            security_opt=security_opt,
+            command=["sh", "-c", "while true; do sleep 1; done"],
+        )
+        inspect_result = docker_client.inspect_container(
+            container_name_or_id=container.container_id
+        )
+        assert security_opt == inspect_result["HostConfig"]["SecurityOpt"]

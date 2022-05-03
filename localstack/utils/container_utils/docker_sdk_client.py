@@ -98,8 +98,8 @@ class SdkDockerClient(ContainerClient):
                 return DockerContainerStatus.DOWN
         except NotFound:
             return DockerContainerStatus.NON_EXISTENT
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def stop_container(self, container_name: str, timeout: int = None) -> None:
         if timeout is None:
@@ -110,8 +110,8 @@ class SdkDockerClient(ContainerClient):
             container.stop(timeout=timeout)
         except NotFound:
             raise NoSuchContainer(container_name)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def pause_container(self, container_name: str) -> None:
         LOG.debug("Pausing container: %s", container_name)
@@ -120,8 +120,8 @@ class SdkDockerClient(ContainerClient):
             container.pause()
         except NotFound:
             raise NoSuchContainer(container_name)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def unpause_container(self, container_name: str) -> None:
         LOG.debug("Unpausing container: %s", container_name)
@@ -130,8 +130,8 @@ class SdkDockerClient(ContainerClient):
             container.unpause()
         except NotFound:
             raise NoSuchContainer(container_name)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
         LOG.debug("Removing container: %s", container_name)
@@ -144,8 +144,8 @@ class SdkDockerClient(ContainerClient):
         except NotFound:
             if not force:
                 raise NoSuchContainer(container_name)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
         if filter:
@@ -169,8 +169,8 @@ class SdkDockerClient(ContainerClient):
                 except Exception as e:
                     LOG.error(f"Error checking container {container}: {e}")
             return result
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def copy_into_container(
         self, container_name: str, local_path: str, container_path: str
@@ -184,8 +184,8 @@ class SdkDockerClient(ContainerClient):
                 container.put_archive(target_path, tar)
         except NotFound:
             raise NoSuchContainer(container_name)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def copy_from_container(
         self,
@@ -200,8 +200,8 @@ class SdkDockerClient(ContainerClient):
             Util.untar_to_path(bits, local_path)
         except NotFound:
             raise NoSuchContainer(container_name)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def pull_image(self, docker_image: str) -> None:
         LOG.debug("Pulling Docker image: %s", docker_image)
@@ -210,8 +210,8 @@ class SdkDockerClient(ContainerClient):
             self.client().images.pull(docker_image)
         except ImageNotFound:
             raise NoSuchImage(docker_image)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def push_image(self, docker_image: str) -> None:
         LOG.debug("Pushing Docker image: %s", docker_image)
@@ -264,8 +264,8 @@ class SdkDockerClient(ContainerClient):
             if strip_latest:
                 Util.append_without_latest(image_names)
             return image_names
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
         try:
@@ -275,10 +275,10 @@ class SdkDockerClient(ContainerClient):
             if safe:
                 return ""
             raise NoSuchContainer(container_name_or_id)
-        except APIError:
+        except APIError as e:
             if safe:
                 return ""
-            raise ContainerException()
+            raise ContainerException() from e
 
     def stream_container_logs(self, container_name_or_id: str) -> CancellableStream:
         try:
@@ -286,16 +286,16 @@ class SdkDockerClient(ContainerClient):
             return container.logs(stream=True, follow=True)
         except NotFound:
             raise NoSuchContainer(container_name_or_id)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
         try:
             return self.client().containers.get(container_name_or_id).attrs
         except NotFound:
             raise NoSuchContainer(container_name_or_id)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
         try:
@@ -305,16 +305,16 @@ class SdkDockerClient(ContainerClient):
                 self.pull_image(image_name)
                 return self.inspect_image(image_name, pull=False)
             raise NoSuchImage(image_name)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
         try:
             return self.client().networks.get(network_name).attrs
         except NotFound:
             raise NoSuchNetwork(network_name)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def connect_container_to_network(
         self, network_name: str, container_name_or_id: str, aliases: Optional[List] = None
@@ -333,8 +333,8 @@ class SdkDockerClient(ContainerClient):
             network.connect(container=container_name_or_id, aliases=aliases)
         except NotFound:
             raise NoSuchContainer(container_name_or_id)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def disconnect_container_from_network(
         self, network_name: str, container_name_or_id: str
@@ -351,8 +351,8 @@ class SdkDockerClient(ContainerClient):
                 network.disconnect(container_name_or_id)
             except NotFound:
                 raise NoSuchContainer(container_name_or_id)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def get_container_ip(self, container_name_or_id: str) -> str:
         networks = self.inspect_container(container_name_or_id)["NetworkSettings"]["Networks"]
@@ -377,8 +377,8 @@ class SdkDockerClient(ContainerClient):
         except ImageNotFound:
             if not force:
                 raise NoSuchImage(image)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def commit(
         self,
@@ -394,8 +394,8 @@ class SdkDockerClient(ContainerClient):
             container.commit(repository=image_name, tag=image_tag)
         except NotFound:
             raise NoSuchContainer(container_name_or_id)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def start_container(
         self,
@@ -461,7 +461,7 @@ class SdkDockerClient(ContainerClient):
                 exit_code = result_queue.get()
                 if exit_code:
                     raise ContainerException(
-                        "Docker container returned with exit code %s" % exit_code,
+                        f"Docker container returned with exit code {exit_code}",
                         stdout=stdout,
                         stderr=stderr,
                     )
@@ -470,8 +470,8 @@ class SdkDockerClient(ContainerClient):
             return stdout, stderr
         except NotFound:
             raise NoSuchContainer(container_name_or_id)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def create_container(
         self,
@@ -490,6 +490,7 @@ class SdkDockerClient(ContainerClient):
         user: Optional[str] = None,
         cap_add: Optional[List[str]] = None,
         cap_drop: Optional[List[str]] = None,
+        security_opt: Optional[List[str]] = None,
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
@@ -507,6 +508,8 @@ class SdkDockerClient(ContainerClient):
                 kwargs["cap_add"] = cap_add
             if cap_drop:
                 kwargs["cap_drop"] = cap_drop
+            if security_opt:
+                kwargs["security_opt"] = security_opt
             if dns:
                 kwargs["dns"] = [dns]
             if ports:
@@ -543,8 +546,8 @@ class SdkDockerClient(ContainerClient):
             return container.id
         except ImageNotFound:
             raise NoSuchImage(image_name)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
 
     def run_container(
         self,
@@ -564,6 +567,7 @@ class SdkDockerClient(ContainerClient):
         user: Optional[str] = None,
         cap_add: Optional[List[str]] = None,
         cap_drop: Optional[List[str]] = None,
+        security_opt: Optional[List[str]] = None,
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
@@ -587,6 +591,7 @@ class SdkDockerClient(ContainerClient):
                 user=user,
                 cap_add=cap_add,
                 cap_drop=cap_drop,
+                security_opt=security_opt,
                 network=network,
                 dns=dns,
                 additional_flags=additional_flags,
@@ -652,10 +657,10 @@ class SdkDockerClient(ContainerClient):
                     stdout, stderr = result[1]
                 if return_code != 0:
                     raise ContainerException(
-                        "Exec command returned with exit code %s" % return_code, stdout, stderr
+                        f"Exec command returned with exit code {return_code}", stdout, stderr
                     )
                 return stdout, stderr
         except ContainerError:
             raise NoSuchContainer(container_name_or_id)
-        except APIError:
-            raise ContainerException()
+        except APIError as e:
+            raise ContainerException() from e
