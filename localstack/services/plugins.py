@@ -485,6 +485,17 @@ class ServicePluginManager(ServiceManager):
             if self.get_active_provider(service) in providers
         ]
 
+    def list_loaded_services(self) -> List[str]:
+        """
+        Lists all the services which have a provider that has been initialized
+        :return: a list of service names
+        """
+        return [
+            service
+            for service in self.list_available()
+            if super(ServicePluginManager, self).get_service_container(service)
+        ]
+
     def exists(self, name: str) -> bool:
         return name in self.list_available()
 
