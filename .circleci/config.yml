@@ -28,8 +28,6 @@ jobs:
             sudo apt-get install -y libsasl2-dev
       - run:
           name: Setup environment
-          environment:
-            VENV_BIN: "python3 -m venv"
           command: |
             make install
             mkdir -p target/reports
