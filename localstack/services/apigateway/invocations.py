@@ -14,7 +14,6 @@ from localstack import config
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_AUTHORIZATION,
-    HEADER_LOCALSTACK_EDGE_URL,
     TEST_AWS_ACCOUNT_ID,
 )
 from localstack.services.apigateway import helpers
@@ -40,7 +39,7 @@ from localstack.services.kinesis import kinesis_listener
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.analytics import event_publisher
-from localstack.utils.aws import aws_responses, aws_stack
+from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
     flask_to_requests_response,
@@ -51,7 +50,6 @@ from localstack.utils.common import camel_to_snake_case, json_safe, to_bytes, to
 
 # set up logger
 from localstack.utils.http import add_query_params_to_url
-from localstack.utils.json import parse_json_or_yaml
 
 LOG = logging.getLogger(__name__)
 
@@ -61,6 +59,8 @@ TARGET_REGEX_PATH_S3_URI = (
 )
 TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
 
+# TODO: refactor / split up this file into suitable submodules
+
 
 class AuthorizationError(Exception):
     pass
@@ -68,50 +68,10 @@ class AuthorizationError(Exception):
 
 class ProxyListenerApiGateway(ProxyListener):
     def forward_request(self, method, path, data, headers):
-        invocation_context = ApiInvocationContext(method, path, data, headers)
 
-        # forwarded_for = headers.get(HEADER_LOCALSTACK_EDGE_URL, "")
-        # if re.match(PATH_REGEX_USER_REQUEST, path) or "execute-api" in forwarded_for:
-        #     result = invoke_rest_api_from_request(invocation_context)
-        #     if result is not None:
-        #         return result
-        #
-        # data = parse_json_or_yaml(to_str(data or b""))
-
-        # if re.match(PATH_REGEX_AUTHORIZERS, path):
-        #     return handle_authorizers(method, path, data, headers)
-        #
-        # if re.match(PATH_REGEX_DOC_PARTS, path):
-        #     return handle_documentation_parts(method, path, data, headers)
-
-        # if re.match(PATH_REGEX_VALIDATORS, path):
-        #     return handle_validators(method, path, data, headers)
-
+        # TODO needed? remove ...
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
-
-        # if re.match(PATH_REGEX_PATH_MAPPINGS, path):
-        #     return handle_base_path_mappings(method, path, data, headers)
-
-        # if helpers.is_test_invoke_method(method, path):
-        #     # if call is from test_invoke_api then use http_method to find the integration,
-        #     #   as test_invoke_api makes a POST call to request the test invocation
-        #     match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
-        #     invocation_context.method = match[3]
-        #     if data:
-        #         orig_data = data
-        #         path_with_query_string = orig_data.get("pathWithQueryString", None)
-        #         if path_with_query_string:
-        #             invocation_context.path_with_query_string = path_with_query_string
-        #         invocation_context.data = data.get("body")
-        #         invocation_context.headers = orig_data.get("headers", {})
-        #     result = invoke_rest_api_from_request(invocation_context)
-        #     result = {
-        #         "status": result.status_code,
-        #         "body": to_str(result.content),
-        #         "headers": dict(result.headers),
-        #     }
-        #     return result
 
         return True
 

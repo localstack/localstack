@@ -787,7 +787,7 @@ class TestAPIGateway(unittest.TestCase):
         # CREATE
         name = "validator123"
         result = client.create_request_validator(restApiId=rest_api_id, name=name)
-        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(201, result["ResponseMetadata"]["HTTPStatusCode"])
         validator_id = result["id"]
         # LIST
         result = client.get_request_validators(restApiId=rest_api_id)

@@ -14,7 +14,6 @@ from localstack.aws.api.apigateway import (
     ClientCertificate,
     ClientCertificates,
     CreateAuthorizerRequest,
-    CreateDocumentationPartRequest,
     DocumentationPart,
     DocumentationPartLocation,
     DocumentationParts,
@@ -33,7 +32,6 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.apigateway import helpers
-from localstack.services.apigateway.apigateway_listener import invoke_rest_api_from_request
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     PATH_REGEX_TEST_INVOKE_API,
@@ -42,6 +40,7 @@ from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
     find_api_subentity_by_id,
 )
+from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.utils.collections import ensure_list
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import short_uid, to_str
