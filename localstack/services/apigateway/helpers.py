@@ -91,6 +91,8 @@ class APIGatewayRegion(RegionBackend):
     vpc_links: Dict[str, Dict]
     # maps cert ID to client certificate details
     client_certificates: Dict[str, Dict]
+    # maps resource ARN to tags
+    TAGS: Dict[str, Dict[str, str]] = {}
 
     def __init__(self):
         self.authorizers = {}

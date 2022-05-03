@@ -15,6 +15,7 @@ from localstack.aws.api.apigateway import (
     ClientCertificate,
     ClientCertificates,
     CreateAuthorizerRequest,
+    CreateRestApiRequest,
     DocumentationPart,
     DocumentationPartLocation,
     DocumentationParts,
@@ -26,7 +27,9 @@ from localstack.aws.api.apigateway import (
     NullableInteger,
     RequestValidator,
     RequestValidators,
+    RestApi,
     String,
+    Tags,
     VpcLink,
     VpcLinks,
 )
@@ -43,6 +46,7 @@ from localstack.services.apigateway.helpers import (
     find_api_subentity_by_id,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
+from localstack.services.moto import call_moto
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
@@ -97,30 +101,30 @@ class ApigatewayApiListener(AwsApiListener):
                 return requests_response({"position": "1", "items": []})
 
         # keep track of API regions for faster lookup later on
-        # TODO - to be removed - se comment for API_REGIONS variable
+        # TODO - to be removed - see comment for API_REGIONS variable
         if method == "POST" and path == "/restapis":
             content = json.loads(to_str(response.content))
             api_id = content["id"]
             region = aws_stack.extract_region_from_auth_header(headers)
             API_REGIONS[api_id] = region
 
-        # publish event
-        if method == "POST" and path == "/restapis":
-            content = json.loads(to_str(response.content))
-            event_publisher.fire_event(
-                event_publisher.EVENT_APIGW_CREATE_API,
-                payload={"a": event_publisher.get_hash(content["id"])},
-            )
-        api_regex = r"^/restapis/([a-zA-Z0-9\-]+)$"
-        if method == "DELETE" and re.match(api_regex, path):
-            api_id = re.sub(api_regex, r"\1", path)
-            event_publisher.fire_event(
-                event_publisher.EVENT_APIGW_DELETE_API,
-                payload={"a": event_publisher.get_hash(api_id)},
-            )
-
 
 class ApigatewayProvider(ApigatewayApi, ABC):
+    @handler("CreateRestApi", expand=False)
+    def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
+        result = call_moto(context)
+        event_publisher.fire_event(
+            event_publisher.EVENT_APIGW_CREATE_API,
+            payload={"a": event_publisher.get_hash(result["id"])},
+        )
+        return result
+
+    def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
+        call_moto(context)
+        event_publisher.fire_event(
+            event_publisher.EVENT_APIGW_DELETE_API,
+            payload={"a": event_publisher.get_hash(rest_api_id)},
+        )
 
     # authorizers
 
@@ -604,6 +608,31 @@ class ApigatewayProvider(ApigatewayApi, ABC):
         raise NotFoundException(
             f"Validator {request_validator_id} for API Gateway {rest_api_id} not found"
         )
+
+    # tags
+
+    def get_tags(
+        self,
+        context: RequestContext,
+        resource_arn: String,
+        position: String = None,
+        limit: NullableInteger = None,
+    ) -> Tags:
+        result = APIGatewayRegion.TAGS.get(resource_arn, {})
+        return Tags(tags=result)
+
+    def tag_resource(
+        self, context: RequestContext, resource_arn: String, tags: MapOfStringToString
+    ) -> None:
+        resource_tags = APIGatewayRegion.TAGS.setdefault(resource_arn, {})
+        resource_tags.update(tags)
+
+    def untag_resource(
+        self, context: RequestContext, resource_arn: String, tag_keys: ListOfString
+    ) -> None:
+        resource_tags = APIGatewayRegion.TAGS.setdefault(resource_arn, {})
+        for key in tag_keys:
+            resource_tags.pop(key, None)
 
 
 # ---------------
