@@ -165,7 +165,7 @@ def is_threshold_exceeded(metric_values: List[float], alarm_details: MetricAlarm
     datapoints_to_alarm = alarm_details.get("DatapointsToAlarm", evaluation_periods)
     evaluated_datapoints = []
     for value in metric_values:
-        if not value:
+        if value is None:
             if treat_missing_data == "breaching":
                 evaluated_datapoints.append(True)
             elif treat_missing_data == "notBreaching":
@@ -324,7 +324,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
         return
 
     # collect all non-empty datapoints from the evaluation interval
-    collected_datapoints = [val for val in reversed(metric_values) if val]
+    collected_datapoints = [val for val in reversed(metric_values) if val is not None]
 
     # adding empty data points until amount of data points == "evaluation periods"
     evaluation_periods = alarm_details["EvaluationPeriods"]
