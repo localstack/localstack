@@ -12,7 +12,6 @@ import shutil
 import ssl
 import time
 import unittest
-import uuid
 from io import BytesIO
 from unittest.mock import patch
 from urllib.parse import parse_qs, quote, urlparse
@@ -56,7 +55,6 @@ from localstack.utils.server import http2_server
 from tests.integration.fixtures import only_localstack
 
 TEST_BUCKET_NAME_WITH_POLICY = "test-bucket-policy-1"
-TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = "test_queue_for_bucket_notification_1"
 TEST_BUCKET_WITH_VERSIONING = "test-bucket-versioning-1"
 
 TEST_BUCKET_NAME_2 = "test-bucket-2"
@@ -66,9 +64,6 @@ TEST_GET_OBJECT_RANGE = 17
 TEST_REGION_1 = "eu-west-1"
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
-    THIS_FOLDER, "awslambda", "functions", "lambda_triggered_by_s3.py"
-)
 TEST_LAMBDA_PYTHON_DOWNLOAD_FROM_S3 = os.path.join(
     THIS_FOLDER, "awslambda", "functions", "lambda_triggered_by_sqs_download_s3_file.py"
 )
@@ -2011,46 +2006,6 @@ class TestS3(unittest.TestCase):
     # HELPER METHODS
     # ---------------
 
-    @staticmethod
-    def generate_large_file(size):
-        # https://stackoverflow.com/questions/8816059/create-file-of-particular-size-in-python
-        filename = "large_file_%s" % uuid.uuid4()
-        f = open(filename, "wb")
-        f.seek(size - 1)
-        f.write(b"\0")
-        f.close()
-        return open(filename, "r")
-
-    def _create_test_queue(self):
-        queue_url = self.sqs_client.create_queue(QueueName=f"queue-{short_uid()}")["QueueUrl"]
-        queue_attributes = self.sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
-        )
-        return queue_url, queue_attributes
-
-    def _create_test_notification_bucket(
-        self, queue_attributes, bucket_name, event_name="ObjectCreated:*"
-    ):
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        event_name = "s3:%s" % event_name
-        self.s3_client.put_bucket_notification_configuration(
-            Bucket=bucket_name,
-            NotificationConfiguration={
-                "QueueConfigurations": [
-                    {
-                        "QueueArn": queue_attributes["Attributes"]["QueueArn"],
-                        "Events": [event_name],
-                    }
-                ]
-            },
-        )
-
-    def _get_test_queue_message_count(self, queue_url):
-        queue_attributes = self.sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
-        )
-        return queue_attributes["Attributes"]["ApproximateNumberOfMessages"]
-
     def _delete_bucket(self, bucket_name, keys=None):
         if keys is None:
             keys = []
@@ -2133,12 +2088,6 @@ class TestS3(unittest.TestCase):
             MultipartUpload={"Parts": multipart_upload_parts},
             UploadId=upload_id,
         )
-
-    def _perform_presigned_url_upload(self, bucket, key):
-        client = self._get_test_client()
-        url = client.generate_presigned_url("put_object", Params={"Bucket": bucket, "Key": key})
-        url = url + "&X-Amz-Credential=x&X-Amz-Signature=y"
-        requests.put(url, data="something", verify=False)
 
     def _get_test_client(self, region_name="us-east-1"):
         return boto3.client(
