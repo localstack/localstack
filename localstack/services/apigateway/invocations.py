@@ -19,12 +19,9 @@ from localstack.constants import (
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
-    API_REGIONS,
-    PATH_REGEX_RESPONSES,
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
-    handle_gateway_responses,
     make_error_response,
 )
 from localstack.services.apigateway.integration import (
@@ -34,11 +31,9 @@ from localstack.services.apigateway.integration import (
     VtlTemplate,
 )
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import ProxyListener
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
@@ -64,44 +59,6 @@ TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:G
 
 class AuthorizationError(Exception):
     pass
-
-
-class ProxyListenerApiGateway(ProxyListener):
-    def forward_request(self, method, path, data, headers):
-
-        # TODO needed? remove ...
-        if re.match(PATH_REGEX_RESPONSES, path):
-            return handle_gateway_responses(method, path, data, headers)
-
-        return True
-
-    def return_response(self, method, path, data, headers, response):
-        # fix backend issue (missing support for API documentation)
-        if re.match(r"/restapis/[^/]+/documentation/versions", path):
-            if response.status_code == 404:
-                return requests_response({"position": "1", "items": []})
-
-        # keep track of API regions for faster lookup later on
-        if method == "POST" and path == "/restapis":
-            content = json.loads(to_str(response.content))
-            api_id = content["id"]
-            region = aws_stack.extract_region_from_auth_header(headers)
-            API_REGIONS[api_id] = region
-
-        # publish event
-        if method == "POST" and path == "/restapis":
-            content = json.loads(to_str(response.content))
-            event_publisher.fire_event(
-                event_publisher.EVENT_APIGW_CREATE_API,
-                payload={"a": event_publisher.get_hash(content["id"])},
-            )
-        api_regex = r"^/restapis/([a-zA-Z0-9\-]+)$"
-        if method == "DELETE" and re.match(api_regex, path):
-            api_id = re.sub(api_regex, r"\1", path)
-            event_publisher.fire_event(
-                event_publisher.EVENT_APIGW_DELETE_API,
-                payload={"a": event_publisher.get_hash(api_id)},
-            )
 
 
 class RequestValidator:
@@ -740,7 +697,3 @@ def apply_request_response_templates(
         update_content_length(data)
         return data
     return result
-
-
-# instantiate listener
-UPDATE_APIGATEWAY = ProxyListenerApiGateway()

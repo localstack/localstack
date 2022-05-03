@@ -1,3 +1,4 @@
+import json
 import re
 from abc import ABC
 from copy import deepcopy
@@ -34,6 +35,7 @@ from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    API_REGIONS,
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_USER_REQUEST,
     APIGatewayRegion,
@@ -41,6 +43,9 @@ from localstack.services.apigateway.helpers import (
     find_api_subentity_by_id,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
+from localstack.utils.analytics import event_publisher
+from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.collections import ensure_list
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import short_uid, to_str
@@ -82,6 +87,37 @@ class ApigatewayApiListener(AwsApiListener):
             return result
 
         return super(ApigatewayApiListener, self).forward_request(method, path, data, headers)
+
+    def return_response(self, method, path, data, headers, response):
+        # TODO: clean up logic below!
+
+        # fix backend issue (missing support for API documentation)
+        if re.match(r"/restapis/[^/]+/documentation/versions", path):
+            if response.status_code == 404:
+                return requests_response({"position": "1", "items": []})
+
+        # keep track of API regions for faster lookup later on
+        # TODO - to be removed - se comment for API_REGIONS variable
+        if method == "POST" and path == "/restapis":
+            content = json.loads(to_str(response.content))
+            api_id = content["id"]
+            region = aws_stack.extract_region_from_auth_header(headers)
+            API_REGIONS[api_id] = region
+
+        # publish event
+        if method == "POST" and path == "/restapis":
+            content = json.loads(to_str(response.content))
+            event_publisher.fire_event(
+                event_publisher.EVENT_APIGW_CREATE_API,
+                payload={"a": event_publisher.get_hash(content["id"])},
+            )
+        api_regex = r"^/restapis/([a-zA-Z0-9\-]+)$"
+        if method == "DELETE" and re.match(api_regex, path):
+            api_id = re.sub(api_regex, r"\1", path)
+            event_publisher.fire_event(
+                event_publisher.EVENT_APIGW_DELETE_API,
+                payload={"a": event_publisher.get_hash(api_id)},
+            )
 
 
 class ApigatewayProvider(ApigatewayApi, ABC):

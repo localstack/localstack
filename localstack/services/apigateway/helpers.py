@@ -67,7 +67,7 @@ APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
 # special tag name to allow specifying a custom ID for new REST APIs
 TAG_KEY_CUSTOM_ID = "_custom_id_"
 
-# map API IDs to region names
+# map API IDs to region names - TODO remove and replace with in-memory lookup
 API_REGIONS = {}
 
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
@@ -724,10 +724,10 @@ def set_api_id_stage_invocation_path(
         )
     if api_id:
         # set current region in request thread local, to ensure aws_stack.get_region() works properly
+        # TODO: replace with RequestContextManager
         if getattr(THREAD_LOCAL, "request_context", None) is not None:
-            THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = API_REGIONS.get(
-                api_id, ""
-            )
+            api_region = API_REGIONS.get(api_id, "")
+            THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = api_region
 
     # set details in invocation context
     invocation_context.api_id = api_id
