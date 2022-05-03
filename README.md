@@ -47,7 +47,7 @@ LocalStack also provides additional features to make your life as a cloud develo
 
 ## Requirements
 
-* `python` (Python 3.6 up to 3.9 supported)
+* `python` (Python 3.6 up to 3.10 supported)
 * `pip` (Python package manager)
 * `Docker`
 
