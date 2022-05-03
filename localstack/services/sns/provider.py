@@ -173,14 +173,17 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def untag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
     ) -> UntagResourceResponse:
-        moto_response = call_moto(context)
-        return UntagResourceResponse(**moto_response)
+        call_moto(context)
+        sns_backend = SNSBackend.get()
+        sns_backend.sns_tags[resource_arn] = [
+            t for t in _get_tags(resource_arn) if t["Key"] not in tag_keys
+        ]
+        return UntagResourceResponse()
 
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName
     ) -> ListTagsForResourceResponse:
-        moto_response = call_moto(context)
-        return ListTagsForResourceResponse(**moto_response)
+        return ListTagsForResourceResponse(Tags=_get_tags(resource_arn))
 
     def delete_platform_application(
         self, context: RequestContext, platform_application_arn: String
@@ -296,9 +299,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         message_group_id: String = None,
     ) -> PublishResponse:
         # We do not want the request to be forwarded to SNS backend
-        if subject == [""]:
-            # TODO: check against AWS
-            raise InvalidParameterException("Subject")
+        if subject == "":
+            raise InvalidParameterException("Empty string for subject is not supported")
         if not message or all(not m for m in message):
             raise InvalidParameterException("Empty message")
 
@@ -327,7 +329,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             "MessageGroupId": [message_group_id],
             "MessageStructure": [message_structure],
             "PhoneNumber": [phone_number],
-            "Subject": subject,
+            "Subject": [subject],
         }
         message_id = publish_message(
             topic_arn, req_data, context.request.headers, message_attributes=message_attributes
@@ -455,6 +457,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         moto_response = call_moto(context)
         sns_backend = SNSBackend.get()
         topic_arn = moto_response["TopicArn"]
+        tag_resource_success = extract_tags(topic_arn, tags, True, sns_backend)
+        if not tag_resource_success:
+            raise InvalidParameterException("Topic already exists with different tags")
         if tags:
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
         sns_backend.sns_subscriptions[topic_arn] = (
@@ -478,6 +483,8 @@ def message_to_subscribers(
     skip_checks=False,
     message_attributes=None,
 ):
+    if not topic_arn:
+        topic_arn = req_data.get("TargetArn")
     sns_backend = SNSBackend.get()
     subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
 
@@ -782,6 +789,14 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
     return json.dumps(data)
 
 
+def _get_tags(topic_arn):
+    sns_backend = SNSBackend.get()
+    if topic_arn not in sns_backend.sns_tags:
+        sns_backend.sns_tags[topic_arn] = []
+
+    return sns_backend.sns_tags[topic_arn]
+
+
 def get_message_attributes(req_data):
     extracted_msg_attrs = parse_urlencoded_data(req_data, "MessageAttributes.entry")
     return prepare_message_attributes(extracted_msg_attrs)
@@ -961,3 +976,18 @@ def store_delivery_log(
     log_output = json.dumps(json_safe(delivery_log))
 
     return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
+
+
+def extract_tags(topic_arn, tags, is_create_topic_request, sns_backend):
+    existing_tags = list(sns_backend.sns_tags.get(topic_arn, []))
+    existing_sub = sns_backend.sns_subscriptions.get(topic_arn, None)
+    # if this is none there is nothing to check
+    if existing_sub is not None:
+        if tags is None:
+            tags = []
+        for tag in tags:
+            # this means topic already created with empty tags and when we try to create it
+            # again with other tag value then it should fail according to aws documentation.
+            if is_create_topic_request and existing_tags is not None and tag not in existing_tags:
+                return False
+    return True
