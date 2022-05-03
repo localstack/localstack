@@ -120,7 +120,6 @@ class Patches:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.undo()
-        return self
 
     def add(self, patch: Patch):
         self.patches.append(patch)
