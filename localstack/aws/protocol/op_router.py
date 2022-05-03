@@ -115,7 +115,25 @@ class _RequiredArgsRule:
         return True
 
 
-class _RequestMatchingRule(Rule):
+class _StrictMethodRule(Rule):
+    """
+    Small extension to Werkzeug's Rule class which reverts unwanted assumptions made by Werkzeug.
+    Reverted assumptions:
+    - Werkzeug automatically matches HEAD requests to the corresponding GET request (i.e. Werkzeug's rule automatically
+      adds the HEAD HTTP method to a rule which should only match GET requests). This is implemented to simplify
+      implementing an app compliant with HTTP (where a HEAD request needs to return the headers of a corresponding GET
+      request), but it is unwanted for our strict rule matching in here.
+    """
+
+    def __init__(self, string: str, method: str, **kwargs) -> None:
+        super().__init__(string=string, methods=[method], **kwargs)
+
+        # Make sure Werkzeug's Rule does not add any other methods
+        # (f.e. the HEAD method even though the rule should only match GET)
+        self.methods = {method.upper()}
+
+
+class _RequestMatchingRule(_StrictMethodRule):
     """
     A Werkzeug Rule extension which initially acts as a normal rule (i.e. matches a path and method).
 
@@ -125,8 +143,10 @@ class _RequestMatchingRule(Rule):
     The result of `match_request` is only meaningful if this wrapping rule also matches.
     """
 
-    def __init__(self, string: str, *args, operations: List[_HttpOperation], **kwargs) -> None:
-        super().__init__(string, *args, **kwargs)
+    def __init__(
+        self, string: str, operations: List[_HttpOperation], method: str, **kwargs
+    ) -> None:
+        super().__init__(string=string, method=method, **kwargs)
         # Create a rule which checks all required arguments (not only the path and method)
         rules = [_RequiredArgsRule(op) for op in operations]
         # Sort the rules descending based on their rule score
@@ -221,11 +241,11 @@ def _create_service_map(service: ServiceModel) -> Map:
             # if there is only a single operation for a (path, method) combination,
             # the default Werkzeug rule can be used directly (this is the case for most rules)
             op = ops[0]
-            rules.append(Rule(rule_string, methods=[method], endpoint=op.operation))  # type: ignore
+            rules.append(_StrictMethodRule(string=rule_string, method=method, endpoint=op.operation))  # type: ignore
         else:
             # if there is an ambiguity with only the (path, method) combination,
             # a custom rule - which can use additional request metadata - needs to be used
-            rules.append(_RequestMatchingRule(rule_string, methods=[method], operations=ops))
+            rules.append(_RequestMatchingRule(string=rule_string, method=method, operations=ops))
 
     return Map(rules=rules, merge_slashes=False, converters={"path": GreedyPathConverter})
 
