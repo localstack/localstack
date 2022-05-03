@@ -47,3 +47,13 @@ def test_greedy_path_converter():
     assert matcher.match("/some-route//foo/bar/bar") == (None, {"p": "/foo/bar"})
     with pytest.raises(NotFound):
         matcher.match("/some-route//foo/baz")
+
+
+def test_s3_head_request():
+    router = RestServiceOperationRouter(load_service("s3"))
+
+    op, _ = router.match(Request("GET", "/my-bucket/my-key/"))
+    assert op.name == "GetObject"
+
+    op, _ = router.match(Request("HEAD", "/my-bucket/my-key/"))
+    assert op.name == "HeadObject"
