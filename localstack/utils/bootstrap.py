@@ -649,7 +649,7 @@ def configure_container(container: LocalstackContainer):
     container.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
     container.env_vars["HOST_TMP_FOLDER"] = config.dirs.functions  # TODO: rename env var
 
-    # TODO discuss if this should be the default?
+    # TODO this is default now, remove once a considerate time is passed
     # to activate proper signal handling
     container.env_vars["SET_TERM_HANDLER"] = "1"
 
