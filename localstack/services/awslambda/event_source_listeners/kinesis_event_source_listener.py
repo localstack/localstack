@@ -1,5 +1,5 @@
 import base64
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from localstack import constants
 from localstack.services.awslambda.event_source_listeners.stream_event_source_listener import (
@@ -40,9 +40,6 @@ class KinesisEventSourceListener(StreamEventSourceListener):
         return stream_client.get_shard_iterator(
             StreamName=stream_name, ShardId=shard_id, ShardIteratorType=iterator_type
         )["ShardIterator"]
-
-    def process_event(self, event: Any):
-        raise NotImplementedError
 
     def _create_lambda_event_payload(self, stream_arn, records, shard_id=None):
         record_payloads = []
