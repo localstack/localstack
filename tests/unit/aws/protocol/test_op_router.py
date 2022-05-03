@@ -57,3 +57,21 @@ def test_s3_head_request():
 
     op, _ = router.match(Request("HEAD", "/my-bucket/my-key/"))
     assert op.name == "HeadObject"
+
+
+def test_trailing_slashes_are_not_strict():
+    # this is tested against AWS. AWS is not strict about trailing slashes when routing operations.
+
+    router = RestServiceOperationRouter(load_service("lambda"))
+
+    op, _ = router.match(Request("GET", "/2015-03-31/functions"))
+    assert op.name == "ListFunctions"
+
+    op, _ = router.match(Request("GET", "/2015-03-31/functions/"))
+    assert op.name == "ListFunctions"
+
+    op, _ = router.match(Request("POST", "/2015-03-31/functions"))
+    assert op.name == "CreateFunction"
+
+    op, _ = router.match(Request("POST", "/2015-03-31/functions/"))
+    assert op.name == "CreateFunction"
