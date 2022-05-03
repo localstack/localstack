@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
@@ -22,17 +22,12 @@ class SQSEventSourceListener(EventSourceListener):
     # SQS listener thread settings
     SQS_LISTENER_THREAD: Dict = {}
     SQS_POLL_INTERVAL_SEC: float = 1
-    # Whether to use polling via SQS API (or, alternatively, reactive mode with SQS updates received directly in-memory)
-    # Advantage of polling is that we can delete messages directly from the queue (via 'ReceiptHandle') after processing
-    USE_POLLING = True
 
     @staticmethod
     def source_type():
         return "sqs"
 
     def start(self):
-        if not self.USE_POLLING:
-            return
         if self.SQS_LISTENER_THREAD:
             return
 
@@ -42,32 +37,6 @@ class SQSEventSourceListener(EventSourceListener):
 
     def get_matching_event_sources(self) -> List[Dict]:
         return get_event_sources(source_arn=r".*:sqs:.*")
-
-    def process_event(self, event: Any):
-        if self.USE_POLLING:
-            return
-        # feed message into the first listening lambda (message should only get processed once)
-        queue_url = event["QueueUrl"]
-        try:
-            queue_name = queue_url.rpartition("/")[2]
-            queue_arn = aws_stack.sqs_queue_arn(queue_name)
-            sources = get_event_sources(source_arn=queue_arn)
-            arns = [s.get("FunctionArn") for s in sources]
-            source = (sources or [None])[0]
-            if not source:
-                return False
-
-            LOG.debug(
-                "Found %s source mappings for event from SQS queue %s: %s",
-                len(arns),
-                queue_arn,
-                arns,
-            )
-            # TODO: support message BatchSize here, same as for polling mode below
-            messages = event["Messages"]
-            self._process_messages_for_event_source(source, messages)
-        except Exception:
-            LOG.exception(f"Unable to run Lambda function on SQS messages from queue {queue_url}")
 
     def _listener_loop(self, *args):
         while True:

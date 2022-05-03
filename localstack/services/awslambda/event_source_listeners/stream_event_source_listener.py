@@ -2,7 +2,7 @@ import logging
 import math
 import threading
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from localstack import config
 from localstack.services.awslambda import lambda_executors
@@ -102,13 +102,6 @@ class StreamEventSourceListener(EventSourceListener):
         """
         to be implemented by subclasses
         :returns: the timestamps the given records were created/entered the source stream in iso8601 format
-        """
-        raise NotImplementedError
-
-    def process_event(self, event: Any):
-        """
-        to be (optionally) implemented by inheriting classes
-        Process the given event (for reactive mode)
         """
         raise NotImplementedError
 

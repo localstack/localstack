@@ -1,19 +1,15 @@
 import json
 import logging
 import re
-from typing import Dict
 from urllib.parse import urlencode
 
 import xmltodict
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 from moto.sqs.utils import parse_message_attributes
-from requests.models import Request, Response
+from requests.models import Request
 
 from localstack import config, constants
 from localstack.config import SQS_PORT_EXTERNAL
-from localstack.services.awslambda.event_source_listeners.event_source_listener import (
-    EventSourceListener,
-)
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns import sns_listener
 from localstack.services.sqs.sqs_utils import is_sqs_queue_url
@@ -22,16 +18,9 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     calculate_crc32,
     make_requests_error,
-    parse_urlencoded_data,
     requests_response,
 )
-from localstack.utils.common import (
-    clone,
-    ensure_list,
-    get_service_protocol,
-    parse_request_data,
-    to_str,
-)
+from localstack.utils.common import clone, get_service_protocol, parse_request_data, to_str
 from localstack.utils.persistence import PersistingProxyListener
 
 LOG = logging.getLogger(__name__)
@@ -208,39 +197,6 @@ def _list_dead_letter_source_queues(queues, queue_url):
                 if queue_url_split[-1] in f["deadLetterTargetArn"]:
                     dead_letter_source_queues.append(k)
     return format_list_dl_source_queues_response(dead_letter_source_queues)
-
-
-def _process_sent_message(path: str, req_data: Dict[str, str], headers: Dict, response: Response):
-    """Extract one or multiple messages sent via SendMessage/SendMessageBatch from the given
-    request/response data and forward them to the Lambda EventSourceListener for further processing"""
-
-    queue_url = _queue_url(path, req_data, headers)
-    action = req_data.get("Action")
-
-    # extract data from XML response - assume data is wrapped in 2 parent elements
-    response_data = xmltodict.parse(response.content)
-
-    messages = []
-    if action == "SendMessage":
-        response_data = response_data["SendMessageResponse"]["SendMessageResult"]
-        message = clone(req_data)
-        message.update(response_data)
-        messages.append(message)
-    elif action == "SendMessageBatch":
-        response_data = response_data["SendMessageBatchResponse"]["SendMessageBatchResult"]
-        messages = parse_urlencoded_data(req_data, "SendMessageBatchRequestEntry")
-        # Note: only forwarding messages from 'Successful', not from 'Failed' list
-        entries = response_data.get("SendMessageBatchResultEntry") or []
-        entries = ensure_list(entries)
-        for successful in entries:
-            msg = [m for m in messages if m["Id"] == successful["Id"]][0]
-            msg.update(successful)
-
-    event = {
-        "QueueUrl": queue_url,
-        "Messages": messages,
-    }
-    EventSourceListener.process_event_via_listener("sqs", event)
 
 
 def format_list_dl_source_queues_response(queues):
@@ -454,10 +410,6 @@ class ProxyListenerSQS(PersistingProxyListener):
             if validate_empty_message_batch(data, req_data):
                 msg = "There should be at least one SendMessageBatchRequestEntry in the request."
                 return make_requests_error(code=404, code_string="EmptyBatchRequest", message=msg)
-
-        # instruct listeners to process new SQS message
-        if action in ("SendMessage", "SendMessageBatch"):
-            _process_sent_message(path, req_data, headers, response)
 
         if content_str_original != content_str:
             # if changes have been made, return patched response
