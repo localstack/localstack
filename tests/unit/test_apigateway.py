@@ -7,16 +7,21 @@ import pytest
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
-from localstack.services.apigateway import apigateway_listener
-from localstack.services.apigateway.apigateway_listener import (
-    ApiInvocationContext,
-    RequestValidator,
+from localstack.services.apigateway.helpers import (
+    apply_json_patch_safe,
+    extract_path_params,
+    extract_query_string_params,
+    get_resource_for_path,
 )
-from localstack.services.apigateway.helpers import apply_json_patch_safe, get_resource_for_path
 from localstack.services.apigateway.integration import (
     RequestTemplates,
     ResponseTemplates,
     VelocityUtil,
+)
+from localstack.services.apigateway.invocations import (
+    ApiInvocationContext,
+    RequestValidator,
+    apply_request_parameters,
 )
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
@@ -24,23 +29,21 @@ from localstack.utils.common import clone
 
 class ApiGatewayPathsTest(unittest.TestCase):
     def test_extract_query_params(self):
-        path, query_params = apigateway_listener.extract_query_string_params(
-            "/foo/bar?foo=foo&bar=bar&bar=baz"
-        )
+        path, query_params = extract_query_string_params("/foo/bar?foo=foo&bar=bar&bar=baz")
         self.assertEqual("/foo/bar", path)
         self.assertEqual({"foo": "foo", "bar": ["bar", "baz"]}, query_params)
 
     def test_extract_path_params(self):
-        params = apigateway_listener.extract_path_params("/foo/bar", "/foo/{param1}")
+        params = extract_path_params("/foo/bar", "/foo/{param1}")
         self.assertEqual({"param1": "bar"}, params)
 
-        params = apigateway_listener.extract_path_params("/foo/bar1/bar2", "/foo/{param1}/{param2}")
+        params = extract_path_params("/foo/bar1/bar2", "/foo/{param1}/{param2}")
         self.assertEqual({"param1": "bar1", "param2": "bar2"}, params)
 
-        params = apigateway_listener.extract_path_params("/foo/bar", "/foo/bar")
+        params = extract_path_params("/foo/bar", "/foo/bar")
         self.assertEqual({}, params)
 
-        params = apigateway_listener.extract_path_params("/foo/bar/baz", "/foo/{proxy+}")
+        params = extract_path_params("/foo/bar/baz", "/foo/{proxy+}")
         self.assertEqual({"proxy": "bar/baz"}, params)
 
     def test_path_matches(self):
@@ -104,7 +107,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
             "cacheKeyParameters": [],
         }
 
-        uri = apigateway_listener.apply_request_parameters(
+        uri = apply_request_parameters(
             uri="https://httpbin.org/anything/{proxy}",
             integration=integration,
             path_params={"proxy": "foo/bar/baz"},
