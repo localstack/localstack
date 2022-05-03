@@ -135,7 +135,7 @@ class TestS3PresignedUrl:
             assert not response.text
             # AWS does not send a content-length header at all, legacy localstack sends a 0 length header
             assert response.headers.get("content-length") in [
-                0,
+                "0",
                 None,
             ], f"Unexpected content-length in headers {response.headers}"
 
