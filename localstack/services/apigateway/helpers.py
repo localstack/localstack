@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib import parse as urlparse
 
 import pytz
@@ -109,17 +109,17 @@ class APIGatewayRegion(RegionBackend):
 
 
 class Resolver:
-    def __init__(self, document, allow_recursive=True):
+    def __init__(self, document: dict, allow_recursive=True):
         self.document = document
         self.allow_recursive = allow_recursive
         # cache which maps known refs to part of the document
         self._cache = {}
         self._refpaths = ["#"]
 
-    def _is_ref(self, item):
+    def _is_ref(self, item) -> bool:
         return isinstance(item, dict) and "$ref" in item
 
-    def _is_internal_ref(self, refpath):
+    def _is_internal_ref(self, refpath) -> bool:
         return str(refpath).startswith("#/")
 
     @property
@@ -127,7 +127,7 @@ class Resolver:
         return self._refpaths[-1]
 
     @contextlib.contextmanager
-    def _pathctx(self, refpath):
+    def _pathctx(self, refpath: str):
         if not self._is_internal_ref(refpath):
             refpath = "/".join((self.current_path, str(refpath)))
 
@@ -135,7 +135,7 @@ class Resolver:
         yield
         self._refpaths.pop()
 
-    def _resolve_refpath(self, refpath):
+    def _resolve_refpath(self, refpath: str) -> dict:
         if refpath in self._refpaths and not self.allow_recursive:
             raise Exception("recursion detected with allow_recursive=False")
 
@@ -154,11 +154,11 @@ class Resolver:
             self._cache[self.current_path] = cur
             return cur
 
-    def _namespaced_resolution(self, namespace, data):
+    def _namespaced_resolution(self, namespace, data) -> Union[dict, list]:
         with self._pathctx(namespace):
             return self._resolve_references(data)
 
-    def _resolve_references(self, data):
+    def _resolve_references(self, data) -> Union[dict, list]:
         if self._is_ref(data):
             return self._resolve_refpath(data["$ref"])
 
@@ -171,11 +171,11 @@ class Resolver:
 
         return data
 
-    def resolve_references(self):
+    def resolve_references(self) -> dict:
         return self._resolve_references(self.document)
 
 
-def resolve_references(data, allow_recursive=True):
+def resolve_references(data: dict, allow_recursive=True) -> dict:
     resolver = Resolver(data, allow_recursive=allow_recursive)
     return resolver.resolve_references()
 
