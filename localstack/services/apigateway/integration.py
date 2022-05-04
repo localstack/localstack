@@ -144,7 +144,7 @@ class Templates:
     __slots__ = ["vtl"]
 
     def __init__(self):
-        self.vtl = VtlTemplate()
+        self.vtl = ApiGatewayVtlTemplate()
 
     def render(self, api_context: ApiInvocationContext):
         pass
