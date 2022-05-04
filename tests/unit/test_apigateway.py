@@ -4,14 +4,12 @@ from unittest.mock import Mock
 
 import boto3
 import pytest
-from moto.apigateway.models import APIGatewayBackend
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
     get_resource_for_path,
-    import_api_from_openapi_spec,
 )
 from localstack.services.apigateway.helpers import (
     extract_path_params,
@@ -29,7 +27,6 @@ from localstack.services.apigateway.invocations import (
 )
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
-from tests.unit.utils.test_common import load_test_resource
 
 
 class ApiGatewayPathsTest(unittest.TestCase):
@@ -374,55 +371,3 @@ class TestTemplates:
             "stageVariable1": "value1",
             "stageVariable2": "value2",
         }
-
-
-def test_import_swagger_api():
-    api_spec = load_test_resource("openapi.swagger.json")
-    api_spec_dict = json.loads(api_spec)
-
-    # patch integration model
-    apigateway_starter.apply_patches()
-
-    backend = APIGatewayBackend(region_name="eu-west-1")
-    api_model = backend.create_rest_api(name="", description="")
-
-    imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})
-
-    # test_cfn_handle_serverless_api_resource fails if we support title
-    # assert imported_api.name == api_spec_dict.get("info").get("title")
-    assert imported_api.description == api_spec_dict.get("info").get("description")
-
-    paths = {v.path_part for k, v in imported_api.resources.items()}
-    assert paths == {"/", "pets", "{petId}"}
-
-    resource_methods = {v.path_part: v.resource_methods for k, v in imported_api.resources.items()}
-    methods = {kk[0] for k, v in resource_methods.items() for kk in v.items()}
-    assert methods == {"POST", "OPTIONS", "GET"}
-
-    assert resource_methods.get("/").get("GET").method_responses == {
-        "200": {
-            "statusCode": "200",
-            "responseModels": None,
-            "responseParameters": {"method.response.header.Content-Type": "'text/html'"},
-        }
-    }
-
-    assert resource_methods.get("pets").get("GET").method_responses == {
-        "200": {
-            "responseModels": {
-                "application/json": {
-                    "items": {
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "price": {"type": "number"},
-                            "type": {"type": "string"},
-                        },
-                        "type": "object",
-                    },
-                    "type": "array",
-                }
-            },
-            "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
-            "statusCode": "200",
-        }
-    }

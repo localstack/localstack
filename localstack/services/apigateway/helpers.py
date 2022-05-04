@@ -129,7 +129,7 @@ class Resolver:
     @contextlib.contextmanager
     def _pathctx(self, refpath: str):
         if not self._is_internal_ref(refpath):
-            refpath = "/".join((self.current_path, str(refpath)))
+            refpath = "/".join((self.current_path, refpath))
 
         self._refpaths.append(refpath)
         yield
@@ -140,7 +140,7 @@ class Resolver:
             raise Exception("recursion detected with allow_recursive=False")
 
         if refpath in self._cache:
-            return self._cache[refpath]
+            return self._cache.get(refpath)
 
         with self._pathctx(refpath):
             if self._is_internal_ref(self.current_path):
@@ -149,7 +149,7 @@ class Resolver:
                 raise NotImplementedError("External references not yet supported.")
 
             for step in self.current_path.split("/")[1:]:
-                cur = cur[step]
+                cur = cur.get(step)
 
             self._cache[self.current_path] = cur
             return cur
@@ -198,8 +198,7 @@ def make_accepted_response():
 
 
 def get_api_id_from_path(path):
-    match = re.match(PATH_REGEX_SUB, path)
-    if match:
+    if match := re.match(PATH_REGEX_SUB, path):
         return match.group(1)
     return re.match(PATH_REGEX_MAIN, path).group(1)
 
@@ -672,7 +671,7 @@ def import_api_from_openapi_spec(
         rest_api.resources[child_id] = child
         return child
 
-    if definitions := resolved_schema.get("definitions"):
+    if definitions := resolved_schema.get("definitions", {}):
         for name, model in definitions.items():
             rest_api.add_model(name=name, schema=model, content_type=APPLICATION_JSON)
 

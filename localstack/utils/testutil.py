@@ -763,3 +763,9 @@ def response_arn_matches_partition(client, response_arn: str) -> bool:
         == boto3.session.Session().get_partition_for_region(parsed_arn["region"])
         and client.meta.partition == parsed_arn["partition"]
     )
+
+
+def load_test_resource(file_name: str, file_path: str = None) -> str:
+    if file_path:
+        return load_file(os.path.join(os.path.dirname(__file__), file_path, file_name))
+    return load_file(os.path.join(os.path.dirname(__file__), "../templates", file_name))
