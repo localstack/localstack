@@ -856,7 +856,7 @@ async def message_to_subscriber(
                 message_id,
                 message_attributes,
                 unsubscribe_url,
-                subject=req_data.get("Subject"),
+                subject=req_data.get("Subject")[0],
             )
 
             if response is not None:

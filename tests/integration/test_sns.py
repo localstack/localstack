@@ -937,6 +937,7 @@ class TestSNSProvider:
             subs.append(
                 sns_client.subscribe(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
             )
+        time.sleep(10)
         # fetch subscription information
         subscription_list = sns_client.list_subscriptions()
         assert subscription_list["ResponseMetadata"]["HTTPStatusCode"] == 200

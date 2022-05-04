@@ -60,7 +60,7 @@ class TestNotifications(unittest.TestCase):
             # make sure we receive the correct topic ARN in notifications
             assertions.append({"TopicArn": topic_info["TopicArn"]})
             # make sure the notification contains message attributes
-            assertions.append({"Value": test_value})
+            assertions.append({"StringValue": test_value})
             self._receive_assert_delete(queue_url, assertions, sqs_client)
 
         retry(assert_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
@@ -321,9 +321,15 @@ class TestNotifications(unittest.TestCase):
         if not sqs_client:
             sqs_client = aws_stack.create_external_boto_client("sqs")
 
-        response = sqs_client.receive_message(QueueUrl=queue_url)
-
-        messages = [json.loads(to_str(m["Body"])) for m in response["Messages"]]
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, MessageAttributeNames=["All"], VisibilityTimeout=0
+        )
+        messages = []
+        for m in response["Messages"]:
+            message = json.loads(to_str(m["Body"]))
+            message_attributes = m.get("MessageAttributes", {})
+            message.update(message_attributes)
+            messages.append(message)
         testutil.assert_objects(assertions, messages)
         for message in response["Messages"]:
             sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])

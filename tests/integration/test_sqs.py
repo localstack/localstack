@@ -1638,6 +1638,12 @@ class TestSqsProvider:
         assert response.ok
         assert queue_url in response.text
 
+    def test_request_via_url(self, sqs_create_queue):
+        queue_url = sqs_create_queue()
+        response = requests.get(url=queue_url, params={"Action": "ListQueues"})
+        assert response.ok
+        assert queue_url in response.text
+
 
 def get_region():
     return os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
