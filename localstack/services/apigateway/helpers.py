@@ -154,7 +154,7 @@ class Resolver:
             self._cache[self.current_path] = cur
             return cur
 
-    def _namespaced_resolution(self, namespace, data) -> Union[dict, list]:
+    def _namespaced_resolution(self, namespace: str, data: Union[dict, list]) -> Union[dict, list]:
         with self._pathctx(namespace):
             return self._resolve_references(data)
 

@@ -11,6 +11,7 @@ from unittest.mock import patch
 import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
+from moto.apigateway.models import APIGatewayBackend
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
@@ -23,10 +24,12 @@ from localstack.constants import (
 )
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
+    Resolver,
     connect_api_gateway_to_sqs,
     get_resource_for_path,
     get_rest_api_paths,
-    path_based_url, import_api_from_openapi_spec,
+    import_api_from_openapi_spec,
+    path_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source
 from localstack.services.awslambda.lambda_utils import (
@@ -40,7 +43,8 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
-from localstack.utils.testutil import load_test_resource
+
+from ..unit.test_apigateway import load_test_resource
 from .awslambda.test_lambda import (
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS,
@@ -1790,4 +1794,34 @@ def test_import_swagger_api():
             "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
             "statusCode": "200",
         }
+    }
+
+
+def test_openapi_resolver_given_unresolvable_references():
+    document = {
+        "schema": {"$ref": "#/definitions/NotFound"},
+        "definitions": {"Found": {"type": "string"}},
+    }
+    resolver = Resolver(document, allow_recursive=True)
+    result = resolver.resolve_references()
+    assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
+
+
+def test_openapi_resolver_given_invalid_references():
+    document = {"schema": {"$ref": ""}, "definitions": {"Found": {"type": "string"}}}
+    resolver = Resolver(document, allow_recursive=True)
+    result = resolver.resolve_references()
+    assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
+
+
+def test_openapi_resolver_given_list_references():
+    document = {
+        "schema": {"$ref": "#/definitions/Found"},
+        "definitions": {"Found": {"value": ["v1", "v2"]}},
+    }
+    resolver = Resolver(document, allow_recursive=True)
+    result = resolver.resolve_references()
+    assert result == {
+        "schema": {"value": ["v1", "v2"]},
+        "definitions": {"Found": {"value": ["v1", "v2"]}},
     }
