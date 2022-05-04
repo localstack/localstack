@@ -527,7 +527,10 @@ class TestSNSProvider:
     def test_topic_subscription(self, sns_client, sns_create_topic):
         topic_arn = sns_create_topic()["TopicArn"]
         subscription = sns_client.subscribe(
-            TopicArn=topic_arn, Protocol="email", Endpoint="localstack@yopmail.com"
+            TopicArn=topic_arn,
+            Protocol="email",
+            Endpoint="localstack@yopmail.com",
+            ReturnSubscriptionArn=True,
         )
         sns_backend = SNSBackend.get()
 
@@ -539,6 +542,24 @@ class TestSNSProvider:
             _token = subscription_obj["Token"]
             sns_client.confirm_subscription(TopicArn=topic_arn, Token=_token)
             assert subscription_obj["Status"] == "Subscribed"
+
+        retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
+    def test_sqs_topic_subscription_confirmation(
+        self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_arn = sqs_queue_arn(sqs_create_queue())
+        subscription = sns_client.subscribe(
+            TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn, ReturnSubscriptionArn=True
+        )
+
+        def check_subscription():
+            subscription_arn = subscription["SubscriptionArn"]
+            subscription_attrs = sns_client.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            assert subscription_attrs["Attributes"]["PendingConfirmation"] == "false"
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 

@@ -612,6 +612,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             "Protocol": protocol,
             "SubscriptionArn": subscription_arn,
             "FilterPolicy": filter_policy,
+            "PendingConfirmation": "true",
         }
         if attributes:
             subscription.update(attributes)
@@ -645,9 +646,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 ],
             }
             publish_message(topic_arn, confirmation, {}, subscription_arn, skip_checks=True)
-        else:
-            # Auto-confirm non-http subscriptions for now
-            # TODO: revisit
+        elif protocol == "sqs":
+            # Auto-confirm sqs subscriptions for now
+            # TODO: revisit for multi-account
             self.confirm_subscription(context, topic_arn, token)
         return SubscribeResponse(SubscriptionArn=subscription_arn)
 
