@@ -356,7 +356,9 @@ class ServiceExceptionSerializer(ExceptionHandler):
                     exception,
                 )
 
-            error = CommonServiceException("LocalStackError", msg, status_code=500)
+            status_code = 501 if config.FAIL_FAST else 500
+
+            error = CommonServiceException("LocalStackError", msg, status_code=status_code)
 
         serializer = create_serializer(context.service)  # TODO: serializer cache
         return serializer.serialize_error_to_response(error, operation)

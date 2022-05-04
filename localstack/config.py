@@ -316,6 +316,9 @@ USE_SSL = is_env_true("USE_SSL")
 # TODO: change back to is_env_not_false before merge
 LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
+# Whether to report internal failures as 500 or 501 errors.
+FAIL_FAST = is_env_true("FAIL_FAST")
+
 # whether to use the legacy single-region mode, defined via DEFAULT_REGION
 USE_SINGLE_REGION = is_env_true("USE_SINGLE_REGION")
 
