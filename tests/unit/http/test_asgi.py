@@ -241,3 +241,17 @@ def test_multipart_post(serve_app):
     response = requests.post(server.url, files={"foo": "bar", "baz": "ed"})
     assert response.ok
     assert response.json() == {"foo": "bar", "baz": "ed"}
+
+
+def test_utf8_path(serve_app):
+    @Request.application
+    def app(request: Request) -> Response:
+        assert request.path == "/foo/Ā0Ä"
+        assert request.environ["PATH_INFO"] == "/foo/Ä\x800Ã\x84"
+
+        return Response("ok", 200)
+
+    server = serve_app(ASGIAdapter(app))
+
+    response = requests.get(server.url + "/foo/Ā0Ä")
+    assert response.ok
