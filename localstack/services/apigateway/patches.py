@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 from typing import Dict, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
@@ -9,14 +8,14 @@ from moto.apigateway.exceptions import NoIntegrationDefined, UsagePlanNotFoundEx
 from moto.apigateway.responses import APIGatewayResponse
 from moto.core.utils import camelcase_to_underscores
 
-from localstack import config
+from localstack.aws.api.apigateway import NotFoundException
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     apply_json_patch_safe,
     import_api_from_openapi_spec,
 )
-from localstack.services.infra import start_moto_server
+from localstack.utils.collections import ensure_list
 from localstack.utils.common import DelSafeDict, short_uid, str_to_bool, to_str
 from localstack.utils.json import parse_json_or_yaml
 
@@ -25,12 +24,15 @@ LOG = logging.getLogger(__name__)
 # additional REST API attributes
 REST_API_ATTRIBUTES = [
     "apiKeySource",
+    "binaryMediaTypes",
     "disableExecuteApiEndpoint",
     "minimumCompressionSize",
 ]
 
 
 def apply_patches():
+    # TODO refactor patches in this module (e.g., use @patch decorator, simplify, ...)
+
     def apigateway_models_Stage_init(
         self, cacheClusterEnabled=False, cacheClusterSize=None, **kwargs
     ):
@@ -115,6 +117,11 @@ def apply_patches():
                 return 400, {}, msg
 
         apply_json_patch_safe(entity, patch_operations, in_place=True)
+        # apply some type fixes - TODO refactor/generalize
+        if "disable_execute_api_endpoint" in entity:
+            entity["disableExecuteApiEndpoint"] = bool(entity.pop("disable_execute_api_endpoint"))
+        if "binary_media_types" in entity:
+            entity["binaryMediaTypes"] = ensure_list(entity.pop("binary_media_types"))
 
     def apigateway_response_restapis_individual(self, request, full_url, headers):
         if request.method in ["GET", "DELETE"]:
@@ -130,7 +137,7 @@ def apply_patches():
                     TEST_AWS_ACCOUNT_ID,
                     function_id,
                 )
-                return 404, {}, msg
+                raise NotFoundException(msg)
 
             if not isinstance(rest_api.__dict__, DelSafeDict):
                 rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
@@ -465,12 +472,8 @@ def apply_patches():
         for attr in REST_API_ATTRIBUTES:
             if attr not in resp:
                 resp[attr] = getattr(self, camelcase_to_underscores(attr), None)
-        resp["disableExecuteApiEndpoint"] = bool(
-            re.match(
-                r"true",
-                resp.get("disableExecuteApiEndpoint") or "",
-                flags=re.IGNORECASE,
-            )
+        resp["disableExecuteApiEndpoint"] = (
+            str(resp.get("disableExecuteApiEndpoint")).lower() == "true"
         )
 
         return resp
@@ -540,17 +543,3 @@ def apply_patches():
     apigateway_models.Integration.__init__ = apigateway_models_Integration_init
     apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict
     APIGatewayResponse.restapis = apigateway_response_restapis
-
-
-def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):
-    port = port or config.service_port("apigateway")
-    apply_patches()
-    result = start_moto_server(
-        key="apigateway",
-        name="API Gateway",
-        asynchronous=asynchronous,
-        port=port,
-        backend_port=backend_port,
-        update_listener=update_listener,
-    )
-    return result

@@ -39,8 +39,7 @@ class AwsApiListener(ProxyListenerAdapter):
 
     def request(self, request: Request) -> Response:
         context = self.create_request_context(request)
-        response = self.skeleton.invoke(context)
-        return response
+        return self.skeleton.invoke(context)
 
     def create_request_context(self, request: Request) -> RequestContext:
         context = RequestContext()

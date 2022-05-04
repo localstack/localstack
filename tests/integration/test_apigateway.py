@@ -787,7 +787,7 @@ class TestAPIGateway(unittest.TestCase):
         # CREATE
         name = "validator123"
         result = client.create_request_validator(restApiId=rest_api_id, name=name)
-        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(201, result["ResponseMetadata"]["HTTPStatusCode"])
         validator_id = result["id"]
         # LIST
         result = client.get_request_validators(restApiId=rest_api_id)
@@ -1329,7 +1329,7 @@ class TestAPIGateway(unittest.TestCase):
     def test_api_gateway_http_integration_with_path_request_parameter(self):
         client = aws_stack.create_external_boto_client("apigateway")
         test_port = get_free_tcp_port()
-        backend_url = "http://localhost:%s/person/{id}" % (test_port)
+        backend_url = "http://localhost:%s/person/{id}" % test_port
 
         # start test HTTP backend
         proxy = self.start_http_backend(test_port)
@@ -1406,17 +1406,17 @@ class TestAPIGateway(unittest.TestCase):
         apigw_client = aws_stack.create_external_boto_client("apigateway")
         s3_client = aws_stack.create_external_boto_client("s3")
 
+        bucket_name = f"test-bucket-{short_uid()}"
+        apigateway_name = f"test-api-{short_uid()}"
+        object_name = "test.json"
+        object_content = '{ "success": "true" }'
+        object_content_type = "application/json"
+
+        api = apigw_client.create_rest_api(name=apigateway_name)
+        api_id = api["id"]
+
         try:
-            bucket_name = f"test-bucket-{short_uid()}"
-            apigateway_name = f"test-api-{short_uid()}"
-            object_name = "test.json"
-            object_content = '{ "success": "true" }'
-            object_content_type = "application/json"
-
-            api = apigw_client.create_rest_api(name=apigateway_name)
-            api_id = api["id"]
-
-            s3_client.create_bucket(Bucket=bucket_name)
+            aws_stack.get_or_create_bucket(bucket_name)
             s3_client.put_object(
                 Bucket=bucket_name,
                 Key=object_name,
