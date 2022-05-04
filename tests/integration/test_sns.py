@@ -2288,11 +2288,10 @@ class TestSNSProvider:
                 start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
             )
             wait_for_port_open(local_port)
-            http_endpoint = f"{get_service_protocol}://localhost:{local_port}"
+            http_endpoint = f"{get_service_protocol()}://localhost:{local_port}"
             subs.append(
                 sns_client.subscribe(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
             )
-        time.sleep(10)
         # fetch subscription information
         subscription_list = sns_client.list_subscriptions()
         assert subscription_list["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -2302,7 +2301,7 @@ class TestSNSProvider:
         for proxy in proxies:
             proxy.stop()
         for sub in subs:
-            sns_client.unsubscribe(sub["SubscriptionArn"])
+            sns_client.unsubscribe(SubscriptionArn=sub["SubscriptionArn"])
 
     def test_publish_sms_endpoint(self, sns_client, sns_create_topic):
         list_of_contacts = [
