@@ -1837,31 +1837,34 @@ def test_apigateway_rust_lambda(
     )
     lambda_arn = lambda_create_response["CreateFunctionResponse"]["FunctionArn"]
     rest_api_id = apigateway_client.create_rest_api(name=api_gateway_name)["id"]
-    root_resource_id = apigateway_client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
-    apigateway_client.put_method(
-        restApiId=rest_api_id,
-        resourceId=root_resource_id,
-        httpMethod="GET",
-        authorizationType="NONE",
-    )
-    apigateway_client.put_method_response(
-        restApiId=rest_api_id, resourceId=root_resource_id, httpMethod="GET", statusCode="200"
-    )
-    lambda_target_uri = aws_stack.apigateway_invocations_arn(
-        lambda_uri=lambda_arn, region_name=apigateway_client.meta.region_name
-    )
-    apigateway_client.put_integration(
-        restApiId=rest_api_id,
-        resourceId=root_resource_id,
-        httpMethod="GET",
-        type="AWS",
-        integrationHttpMethod="POST",
-        uri=lambda_target_uri,
-        credentials=role_arn,
-    )
-    apigateway_client.create_deployment(restApiId=rest_api_id, stageName=stage_name)
-    url = path_based_url(
-        api_id=rest_api_id, stage_name=stage_name, path=f"/?first_name={first_name}"
-    )
-    result = requests.get(url)
-    assert result.text == f"Hello, {first_name}!"
+    try:
+        root_resource_id = apigateway_client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
+        apigateway_client.put_method(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigateway_client.put_method_response(
+            restApiId=rest_api_id, resourceId=root_resource_id, httpMethod="GET", statusCode="200"
+        )
+        lambda_target_uri = aws_stack.apigateway_invocations_arn(
+            lambda_uri=lambda_arn, region_name=apigateway_client.meta.region_name
+        )
+        apigateway_client.put_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="AWS",
+            integrationHttpMethod="POST",
+            uri=lambda_target_uri,
+            credentials=role_arn,
+        )
+        apigateway_client.create_deployment(restApiId=rest_api_id, stageName=stage_name)
+        url = path_based_url(
+            api_id=rest_api_id, stage_name=stage_name, path=f"/?first_name={first_name}"
+        )
+        result = requests.get(url)
+        assert result.text == f"Hello, {first_name}!"
+    finally:
+        apigateway_client.delete_rest_api(restApiId=rest_api_id)
