@@ -10,11 +10,9 @@ from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
-    get_resource_for_path,
-)
-from localstack.services.apigateway.helpers import (
     extract_path_params,
     extract_query_string_params,
+    get_resource_for_path,
 )
 from localstack.services.apigateway.integration import (
     RequestTemplates,
