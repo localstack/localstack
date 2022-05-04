@@ -1,6 +1,5 @@
 import json
 import re
-from abc import ABC
 from copy import deepcopy
 
 from localstack.aws.api import RequestContext, handler
@@ -46,7 +45,9 @@ from localstack.services.apigateway.helpers import (
     find_api_subentity_by_id,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
+from localstack.services.apigateway.patches import apply_patches
 from localstack.services.moto import call_moto
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
@@ -90,7 +91,7 @@ class ApigatewayApiListener(AwsApiListener):
             }
             return result
 
-        return super(ApigatewayApiListener, self).forward_request(method, path, data, headers)
+        return super().forward_request(method, path, data, headers)
 
     def return_response(self, method, path, data, headers, response):
         # TODO: clean up logic below!
@@ -109,7 +110,10 @@ class ApigatewayApiListener(AwsApiListener):
             API_REGIONS[api_id] = region
 
 
-class ApigatewayProvider(ApigatewayApi, ABC):
+class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
+    def on_after_init(self):
+        apply_patches()
+
     @handler("CreateRestApi", expand=False)
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
         result = call_moto(context)

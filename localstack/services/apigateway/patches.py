@@ -29,10 +29,10 @@ REST_API_ATTRIBUTES = [
     "minimumCompressionSize",
 ]
 
-# TODO refactor patches in this class (e.g., use @patch decorator, simplify, ...)
-
 
 def apply_patches():
+    # TODO refactor patches in this module (e.g., use @patch decorator, simplify, ...)
+
     def apigateway_models_Stage_init(
         self, cacheClusterEnabled=False, cacheClusterSize=None, **kwargs
     ):

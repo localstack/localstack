@@ -16,14 +16,12 @@ def acm():
 
 @aws_provider()
 def apigateway():
-    from localstack.services.apigateway.patches import apply_patches
     from localstack.services.apigateway.provider import ApigatewayApiListener, ApigatewayProvider
 
     provider = ApigatewayProvider()
-    apply_patches()
     listener = ApigatewayApiListener("apigateway", MotoFallbackDispatcher(provider))
 
-    return Service("apigateway", listener=listener)
+    return Service("apigateway", listener=listener, lifecycle_hook=provider)
 
 
 @aws_provider()
