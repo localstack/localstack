@@ -20,7 +20,7 @@ from localstack.utils.functions import run_safe
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.testutil import start_http_server
 from tests.integration.cloudformation.utils import render_template, template_path
-from tests.integration.util import get_lambda_logs, is_aws_cloud
+from tests.integration.util import get_lambda_logs
 
 if TYPE_CHECKING:
     from mypy_boto3_acm import ACMClient
@@ -276,7 +276,7 @@ def dynamodb_create_table(dynamodb_client):
 
 
 @pytest.fixture
-def s3_create_bucket(s3_client):
+def s3_create_bucket(s3_client, s3_resource):
     buckets = []
 
     def factory(**kwargs) -> str:
@@ -292,15 +292,10 @@ def s3_create_bucket(s3_client):
     # cleanup
     for bucket in buckets:
         try:
-            # TODO we should also delete content of bucket, as the delete_bucket will fail if the bucket is not empty
-            # suggested way is using resource model: https://github.com/boto/boto3/issues/1189#issuecomment-317858880
-            # but this does not work against Localstack (InvalidAccessKeyId) -> xfail: test_delete_bucket_with_content
-            if is_aws_cloud():
-                bucket = boto3.resource("s3").Bucket(bucket)
-                bucket.objects.all().delete()
-                bucket.delete()
-            else:
-                s3_client.delete_bucket(Bucket=bucket)
+            bucket = s3_resource.Bucket(bucket)
+            bucket.objects.all().delete()
+            bucket.object_versions.all().delete()
+            bucket.delete()
         except Exception as e:
             LOG.debug("error cleaning up bucket %s: %s", bucket, e)
 
@@ -377,6 +372,57 @@ def sns_create_topic(sns_client):
 def sns_topic(sns_client, sns_create_topic) -> "GetTopicAttributesResponseTypeDef":
     topic_arn = sns_create_topic()["TopicArn"]
     return sns_client.get_topic_attributes(TopicArn=topic_arn)
+
+
+@pytest.fixture
+def sns_create_sqs_subscription(sns_client, sqs_client):
+    subscriptions = []
+
+    def _factory(topic_arn: str, queue_url: str) -> Dict[str, str]:
+        queue_arn = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+
+        # connect sns topic to sqs
+        subscription = sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+        )
+        subscription_arn = subscription["SubscriptionArn"]
+
+        # allow topic to write to sqs queue
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url,
+            Attributes={
+                "Policy": json.dumps(
+                    {
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Principal": {"Service": "sns.amazonaws.com"},
+                                "Action": "sqs:SendMessage",
+                                "Resource": queue_arn,
+                                "Condition": {"ArnEquals": {"aws:SourceArn": topic_arn}},
+                            }
+                        ]
+                    }
+                )
+            },
+        )
+
+        subscriptions.append(subscription_arn)
+        return sns_client.get_subscription_attributes(SubscriptionArn=subscription_arn)[
+            "Attributes"
+        ]
+
+    yield _factory
+
+    for arn in subscriptions:
+        try:
+            sns_client.unsubscribe(SubscriptionArn=arn)
+        except Exception as e:
+            LOG.error("error cleaning up subscription %s: %s", arn, e)
 
 
 @pytest.fixture
