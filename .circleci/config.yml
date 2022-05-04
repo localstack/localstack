@@ -116,7 +116,7 @@ jobs:
             LAMBDA_EXECUTOR: "docker"
             USE_SSL: 1
             TEST_ERROR_INJECTION: 1
-            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py"
+            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/test_api_gateway.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
@@ -125,7 +125,7 @@ jobs:
           environment:
             DEBUG: 1
             LAMBDA_EXECUTOR: "docker-reuse"
-            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py"
+            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/test_api_gateway.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
