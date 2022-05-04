@@ -1,9 +1,10 @@
+import contextlib
 import datetime
 import json
 import logging
 import re
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib import parse as urlparse
 
 import pytz
@@ -40,10 +41,7 @@ PATH_REGEX_USER_REQUEST = (
     r"^/restapis/([A-Za-z0-9_\\-]+)(?:/([A-Za-z0-9\_($|%%24)\\-]+))?/%s/(.*)$" % PATH_USER_REQUEST
 )
 # URL pattern for invocations
-HOST_REGEX_EXECUTE_API = (
-    r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(%s|([^\.]+)\.amazonaws\.com)(.*)"
-    % LOCALHOST_HOSTNAME
-)
+HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(localhost.localstack.cloud|([^\.]+)\.amazonaws\.com)(.*)"
 
 # regex path patterns
 PATH_REGEX_MAIN = r"^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?"
@@ -110,6 +108,78 @@ class APIGatewayRegion(RegionBackend):
         self.client_certificates = {}
 
 
+class Resolver:
+    def __init__(self, document: dict, allow_recursive=True):
+        self.document = document
+        self.allow_recursive = allow_recursive
+        # cache which maps known refs to part of the document
+        self._cache = {}
+        self._refpaths = ["#"]
+
+    def _is_ref(self, item) -> bool:
+        return isinstance(item, dict) and "$ref" in item
+
+    def _is_internal_ref(self, refpath) -> bool:
+        return str(refpath).startswith("#/")
+
+    @property
+    def current_path(self):
+        return self._refpaths[-1]
+
+    @contextlib.contextmanager
+    def _pathctx(self, refpath: str):
+        if not self._is_internal_ref(refpath):
+            refpath = "/".join((self.current_path, refpath))
+
+        self._refpaths.append(refpath)
+        yield
+        self._refpaths.pop()
+
+    def _resolve_refpath(self, refpath: str) -> dict:
+        if refpath in self._refpaths and not self.allow_recursive:
+            raise Exception("recursion detected with allow_recursive=False")
+
+        if refpath in self._cache:
+            return self._cache.get(refpath)
+
+        with self._pathctx(refpath):
+            if self._is_internal_ref(self.current_path):
+                cur = self.document
+            else:
+                raise NotImplementedError("External references not yet supported.")
+
+            for step in self.current_path.split("/")[1:]:
+                cur = cur.get(step)
+
+            self._cache[self.current_path] = cur
+            return cur
+
+    def _namespaced_resolution(self, namespace: str, data: Union[dict, list]) -> Union[dict, list]:
+        with self._pathctx(namespace):
+            return self._resolve_references(data)
+
+    def _resolve_references(self, data) -> Union[dict, list]:
+        if self._is_ref(data):
+            return self._resolve_refpath(data["$ref"])
+
+        if isinstance(data, dict):
+            for k, v in data.items():
+                data[k] = self._namespaced_resolution(k, v)
+        elif isinstance(data, list):
+            for i, v in enumerate(data):
+                data[i] = self._namespaced_resolution(str(i), v)
+
+        return data
+
+    def resolve_references(self) -> dict:
+        return self._resolve_references(self.document)
+
+
+def resolve_references(data: dict, allow_recursive=True) -> dict:
+    resolver = Resolver(data, allow_recursive=allow_recursive)
+    return resolver.resolve_references()
+
+
 def make_json_response(message):
     return requests_response(json.dumps(message), headers={"Content-Type": APPLICATION_JSON})
 
@@ -128,8 +198,7 @@ def make_accepted_response():
 
 
 def get_api_id_from_path(path):
-    match = re.match(PATH_REGEX_SUB, path)
-    if match:
+    if match := re.match(PATH_REGEX_SUB, path):
         return match.group(1)
     return re.match(PATH_REGEX_MAIN, path).group(1)
 
@@ -522,9 +591,15 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
 
 
 def import_api_from_openapi_spec(
-    rest_api: apigateway_models.RestAPI, function_id: str, body: Dict, query_params: Dict
+    rest_api: apigateway_models.RestAPI, body: Dict, query_params: Dict
 ) -> apigateway_models.RestAPI:
     """Import an API from an OpenAPI spec document"""
+
+    resolved_schema = resolve_references(body)
+    # XXX for some reason this makes cf tests fail that's why is commented.
+    # test_cfn_handle_serverless_api_resource
+    # rest_api.name = resolved_schema.get("info", {}).get("title")
+    rest_api.description = resolved_schema.get("info", {}).get("description")
 
     # Remove default root, then add paths from API spec
     rest_api.resources = {}
@@ -536,12 +611,11 @@ def import_api_from_openapi_spec(
             parent_path = "/".join(parts[:-1])
             parent = get_or_create_path(parent_path)
             parent_id = parent.id
-        existing = [
+        if existing := [
             r
             for r in rest_api.resources.values()
             if r.path_part == (parts[-1] or "/") and (r.parent_id or "") == (parent_id or "")
-        ]
-        if existing:
+        ]:
             return existing[0]
         return add_path(path, parts, parent_id=parent_id)
 
@@ -555,42 +629,65 @@ def import_api_from_openapi_spec(
             path_part=parts[-1] or "/",
             parent_id=parent_id,
         )
-        for m, payload in body["paths"].get(path, {}).items():
-            m = m.upper()
-            payload = payload["x-amazon-apigateway-integration"]
 
-            child.add_method(m, None, None)
+        for method, method_schema in resolved_schema["paths"].get(path, {}).items():
+            method = method.upper()
+            method_resource = child.add_method(method, None, None)
+            method_integration = method_schema.get("x-amazon-apigateway-integration", {})
+            responses = method_schema.get("responses", {})
+            for status_code in responses:
+                response_model = None
+                if model_schema := responses.get(status_code, {}).get("schema", {}):
+                    response_model = {APPLICATION_JSON: model_schema}
+
+                response_parameters = (
+                    method_integration.get("responses", {})
+                    .get("default", {})
+                    .get("responseParameters")
+                )
+                method_resource.create_response(
+                    status_code,
+                    response_model,
+                    response_parameters,
+                )
+
             integration = apigateway_models.Integration(
-                http_method=m,
-                uri=payload.get("uri"),
-                integration_type=payload["type"],
-                pass_through_behavior=payload.get("passthroughBehavior"),
-                request_templates=payload.get("requestTemplates") or {},
+                http_method=method,
+                uri=method_integration.get("uri"),
+                integration_type=method_integration["type"],
+                passthrough_behavior=method_integration.get("passthroughBehavior"),
+                request_templates=method_integration.get("requestTemplates") or {},
             )
             integration.create_integration_response(
-                status_code=payload.get("responses", {}).get("default", {}).get("statusCode", 200),
+                status_code=method_integration.get("default", {}).get("statusCode", 200),
                 selection_pattern=None,
-                response_templates=None,
+                response_templates=method_integration.get("default", {}).get(
+                    "responseTemplates", None
+                ),
                 content_handling=None,
             )
-            child.resource_methods[m]["methodIntegration"] = integration
+            child.resource_methods[method]["methodIntegration"] = integration
 
         rest_api.resources[child_id] = child
         return child
 
+    if definitions := resolved_schema.get("definitions", {}):
+        for name, model in definitions.items():
+            rest_api.add_model(name=name, schema=model, content_type=APPLICATION_JSON)
+
     basepath_mode = (query_params.get("basepath") or ["prepend"])[0]
-    base_path = (body.get("basePath") or "") if basepath_mode == "prepend" else ""
-    for path in body.get("paths", {}):
+    base_path = (resolved_schema.get("basePath") or "") if basepath_mode == "prepend" else ""
+    for path in resolved_schema.get("paths", {}):
         get_or_create_path(base_path + path)
 
-    policy = body.get("x-amazon-apigateway-policy")
+    policy = resolved_schema.get("x-amazon-apigateway-policy")
     if policy:
         policy = json.dumps(policy) if isinstance(policy, dict) else str(policy)
         rest_api.policy = policy
-    minimum_compression_size = body.get("x-amazon-apigateway-minimum-compression-size")
+    minimum_compression_size = resolved_schema.get("x-amazon-apigateway-minimum-compression-size")
     if minimum_compression_size is not None:
         rest_api.minimum_compression_size = int(minimum_compression_size)
-    endpoint_config = body.get("x-amazon-apigateway-endpoint-configuration")
+    endpoint_config = resolved_schema.get("x-amazon-apigateway-endpoint-configuration")
     if endpoint_config:
         if endpoint_config.get("vpcEndpointIds"):
             endpoint_config.setdefault("types", ["PRIVATE"])

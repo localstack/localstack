@@ -68,7 +68,7 @@ def apply_patches():
         uri,
         http_method,
         request_templates=None,
-        pass_through_behavior="WHEN_NO_MATCH",
+        passthrough_behavior="WHEN_NO_MATCH",
         cache_key_parameters=None,
         *args,
         **kwargs,
@@ -85,7 +85,7 @@ def apply_patches():
             **kwargs,
         )
 
-        self["passthroughBehavior"] = pass_through_behavior
+        self["passthroughBehavior"] = passthrough_behavior
         self["cacheKeyParameters"] = cache_key_parameters
         self["cacheNamespace"] = self.get("cacheNamespace") or short_uid()
 
@@ -97,7 +97,7 @@ def apply_patches():
 
     def apigateway_models_backend_put_rest_api(self, function_id, body, query_params):
         rest_api = self.get_rest_api(function_id)
-        return import_api_from_openapi_spec(rest_api, function_id, body, query_params)
+        return import_api_from_openapi_spec(rest_api, body, query_params)
 
     def _patch_api_gateway_entity(self, entity: Dict) -> Optional[Tuple[int, Dict, str]]:
         not_supported_attributes = ["/id", "/region_name", "/create_date"]
@@ -113,7 +113,7 @@ def apply_patches():
             if path_start not in model_attributes and path_start_usc in model_attributes:
                 operation["path"] = operation["path"].replace(path_start, path_start_usc)
             if operation["path"] in not_supported_attributes:
-                msg = "Invalid patch path %s" % (operation["path"])
+                msg = f'Invalid patch path {operation["path"]}'
                 return 400, {}, msg
 
         apply_json_patch_safe(entity, patch_operations, in_place=True)
@@ -514,8 +514,7 @@ def apply_patches():
     def create_rest_api(self, *args, tags={}, **kwargs):
         result = create_rest_api_orig(self, *args, tags=tags, **kwargs)
         tags = tags or {}
-        custom_id = tags.get(TAG_KEY_CUSTOM_ID)
-        if custom_id:
+        if custom_id := tags.get(TAG_KEY_CUSTOM_ID):
             self.apis.pop(result.id)
             result.id = custom_id
             self.apis[custom_id] = result
