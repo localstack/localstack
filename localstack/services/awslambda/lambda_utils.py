@@ -150,7 +150,7 @@ def get_handler_file_from_name(handler_name: str, runtime: str = None):
     if runtime.startswith(LAMBDA_RUNTIME_NODEJS):
         return format_name_to_path(handler_name, ".", ".js")
     if runtime.startswith(LAMBDA_RUNTIME_GOLANG):
-        return format_name_to_path(handler_name, ".", "")
+        return handler_name
     if runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
         return format_name_to_path(handler_name, ":", ".dll")
     if runtime.startswith(LAMBDA_RUNTIME_RUBY):
