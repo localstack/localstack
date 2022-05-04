@@ -398,7 +398,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             if v["Token"] == token and v["TopicArn"] == topic_arn:
                 v["Status"] = "Subscribed"
                 sub_arn = k
-
+        for k, v in sns_backend.sns_subscriptions.items():
+            for i in v:
+                if i["TopicArn"] == topic_arn:
+                    i["PendingConfirmation"] = "false"
         return ConfirmSubscriptionResponse(SubscriptionArn=sub_arn)
 
     def untag_resource(
@@ -617,8 +620,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if subscription_arn not in sns_backend.subscription_status:
             sns_backend.subscription_status[subscription_arn] = {}
 
+        token = short_uid()
         sns_backend.subscription_status[subscription_arn].update(
-            {"TopicArn": topic_arn, "Token": short_uid(), "Status": "Not Subscribed"}
+            {"TopicArn": topic_arn, "Token": token, "Status": "Not Subscribed"}
         )
         # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
         if protocol in ["http", "https"]:
@@ -641,6 +645,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 ],
             }
             publish_message(topic_arn, confirmation, {}, subscription_arn, skip_checks=True)
+        else:
+            # Auto-confirm non-http subscriptions for now
+            # TODO: revisit
+            self.confirm_subscription(context, topic_arn, token)
         return SubscribeResponse(SubscriptionArn=subscription_arn)
 
     def tag_resource(

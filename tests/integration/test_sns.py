@@ -922,7 +922,10 @@ class TestSNSProvider:
                 records.append((json.loads(to_str(data)), headers))
                 return 429
 
-        number_of_subscriptions = 4
+        # this is only against remnants of other tests
+        subscription_list = sns_client.list_subscriptions()
+
+        number_of_subscriptions = 4 + len(subscription_list)
         records = []
         proxies = []
 
@@ -937,7 +940,6 @@ class TestSNSProvider:
             subs.append(
                 sns_client.subscribe(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
             )
-        time.sleep(10)
         # fetch subscription information
         subscription_list = sns_client.list_subscriptions()
         assert subscription_list["ResponseMetadata"]["HTTPStatusCode"] == 200
