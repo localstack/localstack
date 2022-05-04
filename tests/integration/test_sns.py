@@ -1447,6 +1447,29 @@ class TestSNSSubscription:
         assert "Subject" in notification
         assert subject == notification["Subject"]
 
+
+class TestSNSProvider:
+    def test_publish_unicode_chars(
+        self, sns_client, sns_create_topic, sqs_create_queue, sqs_client, sqs_queue_arn
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_queue_arn(queue_url)
+        sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+
+        # publish message to SNS, receive it from SQS, assert that messages are equal
+        message = 'ö§a1"_!?,. £$-'
+        sns_client.publish(TopicArn=topic_arn, Message=message)
+
+        def check_message():
+            msgs = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
+            msg_received = msgs["Messages"][0]
+            msg_received = json.loads(to_str(msg_received["Body"]))
+            msg_received = msg_received["Message"]
+            assert message == msg_received
+
+        retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
     def test_subscribe_http_endpoint(self, sns_client, sns_create_topic):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -2280,3 +2303,454 @@ class TestSNSSubscription:
             proxy.stop()
         for sub in subs:
             sns_client.unsubscribe(sub["SubscriptionArn"])
+
+    def test_publish_sms_endpoint(self, sns_client, sns_create_topic):
+        list_of_contacts = [
+            f"+{random.randint(100000000, 9999999999)}",
+            f"+{random.randint(100000000, 9999999999)}",
+            f"+{random.randint(100000000, 9999999999)}",
+        ]
+        message = "Good news everyone!"
+        topic_arn = sns_create_topic()["TopicArn"]
+        for number in list_of_contacts:
+            sns_client.subscribe(TopicArn=topic_arn, Protocol="sms", Endpoint=number)
+
+        sns_client.publish(Message=message, TopicArn=topic_arn)
+
+        from localstack.services.sns.provider import SNSBackend
+
+        sns_backend = SNSBackend.get()
+
+        def check_messages():
+            sms_messages = sns_backend.sms_messages
+            for contact in list_of_contacts:
+                sms_was_found = False
+                for message in sms_messages:
+                    if message["endpoint"] == contact:
+                        sms_was_found = True
+                        break
+
+                assert sms_was_found
+
+        retry(check_messages, sleep=0.5)
+
+    def test_publish_sqs_from_sns(
+        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue, sqs_queue_arn
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_queue_arn(queue_url)
+        subscription_arn = sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+            Attributes={"RawMessageDelivery": "true"},
+        )["SubscriptionArn"]
+
+        string_value = "99.12"
+        sns_client.publish(
+            TopicArn=topic_arn,
+            Message="Test msg",
+            MessageAttributes={"attr1": {"DataType": "Number", "StringValue": string_value}},
+        )
+
+        def get_message_with_attributes(queue_url):
+            response = sqs_client.receive_message(
+                QueueUrl=queue_url, MessageAttributeNames=["All"], VisibilityTimeout=0
+            )
+            assert response["Messages"][0]["MessageAttributes"] == {
+                "attr1": {"DataType": "Number", "StringValue": string_value}
+            }
+            sqs_client.delete_message(
+                QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+            )
+
+        retry(get_message_with_attributes, retries=3, sleep=3, queue_url=queue_url)
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="RawMessageDelivery",
+            AttributeValue="false",
+        )
+        string_value = "100.12"
+        sns_client.publish(
+            TargetArn=topic_arn,
+            Message="Test msg",
+            MessageAttributes={"attr1": {"DataType": "Number", "StringValue": string_value}},
+        )
+
+        retry(get_message_with_attributes, retries=3, sleep=3, queue_url=queue_url)
+
+    def test_publish_batch_messages_from_sns_to_sqs(
+        self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn, sqs_client
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_queue_arn(queue_url)
+        sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+            Attributes={"RawMessageDelivery": "true"},
+        )
+
+        publish_batch_response = sns_client.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=[
+                {
+                    "Id": "1",
+                    "Message": "Test Message with two attributes",
+                    "Subject": "Subject",
+                    "MessageAttributes": {
+                        "attr1": {"DataType": "Number", "StringValue": "99.12"},
+                        "attr2": {"DataType": "Number", "StringValue": "109.12"},
+                    },
+                },
+                {
+                    "Id": "2",
+                    "Message": "Test Message with one attribute",
+                    "Subject": "Subject",
+                    "MessageAttributes": {"attr1": {"DataType": "Number", "StringValue": "19.12"}},
+                },
+                {
+                    "Id": "3",
+                    "Message": "Test Message without attribute",
+                    "Subject": "Subject",
+                },
+                {
+                    "Id": "4",
+                    "Message": "Test Message without subject",
+                },
+            ],
+        )
+
+        assert "Successful" in publish_batch_response
+        assert "Failed" in publish_batch_response
+
+        for successful_resp in publish_batch_response["Successful"]:
+            assert "Id" in successful_resp
+            assert "MessageId" in successful_resp
+
+        def get_messages(queue_url):
+            response = sqs_client.receive_message(
+                QueueUrl=queue_url,
+                MessageAttributeNames=["All"],
+                MaxNumberOfMessages=10,
+                VisibilityTimeout=0,
+            )
+            assert len(response["Messages"]) == 4
+            for message in response["Messages"]:
+                assert "Body" in message
+
+                if message["Body"] == "Test Message with two attributes":
+                    assert len(message["MessageAttributes"]) == 2
+                    assert message["MessageAttributes"]["attr1"] == {
+                        "StringValue": "99.12",
+                        "DataType": "Number",
+                    }
+                    assert message["MessageAttributes"]["attr2"] == {
+                        "StringValue": "109.12",
+                        "DataType": "Number",
+                    }
+
+                elif message["Body"] == "Test Message with one attribute":
+                    assert len(message["MessageAttributes"]) == 1
+                    assert message["MessageAttributes"]["attr1"] == {
+                        "StringValue": "19.12",
+                        "DataType": "Number",
+                    }
+
+                elif message["Body"] == "Test Message without attribute":
+                    assert message.get("MessageAttributes") is None
+
+        retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
+
+    def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
+        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue
+    ):
+        topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}.fifo"
+
+        topic_arn = sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})["TopicArn"]
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={"FifoQueue": "true"},
+        )
+
+        sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_url,
+            Attributes={"RawMessageDelivery": "true"},
+        )
+        message_group_id = "complexMessageGroupId"
+        publish_batch_response = sns_client.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=[
+                {
+                    "Id": "1",
+                    "MessageGroupId": message_group_id,
+                    "Message": "Test Message with two attributes",
+                    "Subject": "Subject",
+                    "MessageAttributes": {
+                        "attr1": {"DataType": "Number", "StringValue": "99.12"},
+                        "attr2": {"DataType": "Number", "StringValue": "109.12"},
+                    },
+                },
+                {
+                    "Id": "2",
+                    "MessageGroupId": message_group_id,
+                    "Message": "Test Message with one attribute",
+                    "Subject": "Subject",
+                    "MessageAttributes": {"attr1": {"DataType": "Number", "StringValue": "19.12"}},
+                },
+                {
+                    "Id": "3",
+                    "MessageGroupId": message_group_id,
+                    "Message": "Test Message without attribute",
+                    "Subject": "Subject",
+                },
+            ],
+        )
+
+        assert "Successful" in publish_batch_response
+        assert "Failed" in publish_batch_response
+
+        for successful_resp in publish_batch_response["Successful"]:
+            assert "Id" in successful_resp
+            assert "MessageId" in successful_resp
+
+        def get_messages(queue_url):
+            response = sqs_client.receive_message(
+                QueueUrl=queue_url,
+                MessageAttributeNames=["All"],
+                AttributeNames=["All"],
+                MaxNumberOfMessages=10,
+                VisibilityTimeout=0,
+            )
+            assert len(response["Messages"]) == 3
+            for message in response["Messages"]:
+                assert "Body" in message
+                assert message["Attributes"]["MessageGroupId"] == message_group_id
+
+                if message["Body"] == "Test Message with two attributes":
+                    assert len(message["MessageAttributes"]) == 2
+                    assert message["MessageAttributes"]["attr1"] == {
+                        "StringValue": "99.12",
+                        "DataType": "Number",
+                    }
+                    assert message["MessageAttributes"]["attr2"] == {
+                        "StringValue": "109.12",
+                        "DataType": "Number",
+                    }
+
+                elif message["Body"] == "Test Message with one attribute":
+                    assert len(message["MessageAttributes"]) == 1
+                    assert message["MessageAttributes"]["attr1"] == {
+                        "StringValue": "19.12",
+                        "DataType": "Number",
+                    }
+
+                elif message["Body"] == "Test Message without attribute":
+                    assert message.get("MessageAttributes") is None
+
+        retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
+
+    def test_publish_batch_exceptions(
+        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue
+    ):
+        topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}.fifo"
+
+        topic_arn = sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})["TopicArn"]
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={"FifoQueue": "true"},
+        )
+
+        queue_arn = aws_stack.sqs_queue_arn(queue_url)
+
+        sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+            Attributes={"RawMessageDelivery": "true"},
+        )
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": "Test Message with two attributes",
+                    }
+                ],
+            )
+        assert e.value.response["Error"]["Code"] == "InvalidParameter"
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {"Id": f"Id_{i}", "Message": f"message_{i}"} for i in range(11)
+                ],
+            )
+        assert e.value.response["Error"]["Code"] == "TooManyEntriesInBatchRequest"
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {"Id": "1", "Message": f"message_{i}"} for i in range(2)
+                ],
+            )
+        assert e.value.response["Error"]["Code"] == "BatchEntryIdsNotDistinct"
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
+    def add_xray_header(self, request, **kwargs):
+        request.headers[
+            "X-Amzn-Trace-Id"
+        ] = "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+
+    def test_publish_sqs_from_sns_with_xray_propagation(
+        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue
+    ):
+        # TODO: remove or adapt for asf
+        if SQS_BACKEND_IMPL != "elasticmq":
+            pytest.skip("not using elasticmq as SQS backend")
+
+        sns_client.meta.events.register("before-send.sns.Publish", self.add_xray_header)
+
+        topic = sns_create_topic()
+        topic_arn = topic["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_url)
+        sns_client.publish(TargetArn=topic_arn, Message="X-Ray propagation test msg")
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            AttributeNames=["SentTimestamp", "AWSTraceHeader"],
+            MaxNumberOfMessages=1,
+            MessageAttributeNames=["All"],
+            VisibilityTimeout=2,
+            WaitTimeSeconds=2,
+        )
+
+        assert len(response["Messages"]) == 1
+        message = response["Messages"][0]
+        assert "Attributes" in message
+        assert "AWSTraceHeader" in message["Attributes"]
+        assert (
+            message["Attributes"]["AWSTraceHeader"]
+            == "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+        )
+
+    def test_create_topic_after_delete_with_new_tags(self, sns_create_topic, sns_client):
+        topic_name = f"test-{short_uid()}"
+        topic = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "pqr"}])
+        sns_client.delete_topic(TopicArn=topic["TopicArn"])
+
+        topic1 = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "abc"}])
+        assert topic["TopicArn"] == topic1["TopicArn"]
+
+    def test_not_found_error_on_get_subscription_attributes(
+        self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn
+    ):
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        queue_arn = sqs_queue_arn(queue_url)
+
+        subscription = sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+
+        subscription_attributes = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"]
+        )
+
+        assert (
+            subscription_attributes.get("Attributes").get("SubscriptionArn")
+            == subscription["SubscriptionArn"]
+        )
+
+        sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
+
+        with pytest.raises(ClientError) as e:
+            sns_client.get_subscription_attributes(SubscriptionArn=subscription["SubscriptionArn"])
+
+        assert e.value.response["Error"]["Code"] == "NotFound"
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
+
+    def test_message_to_fifo_sqs(
+        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue, sqs_queue_arn
+    ):
+        topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}.fifo"
+
+        topic_arn = sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})["TopicArn"]
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={"FifoQueue": "true"},
+        )
+
+        queue_arn = sqs_queue_arn(queue_url)
+
+        sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+
+        message = "Test"
+        sns_client.publish(TopicArn=topic_arn, Message=message, MessageGroupId=short_uid())
+
+        def get_message():
+            received = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)[
+                "Messages"
+            ][0]["Body"]
+            assert json.loads(received)["Message"] == message
+
+        retry(get_message, retries=10, sleep_before=0.15, sleep=1)
+
+    def test_validations_for_fifo(
+        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue, sqs_queue_arn
+    ):
+        topic_name = f"topic-{short_uid()}"
+        fifo_topic_name = f"topic-{short_uid()}.fifo"
+        fifo_queue_name = f"queue-{short_uid()}.fifo"
+
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+
+        fifo_topic_arn = sns_create_topic(Name=fifo_topic_name, Attributes={"FifoTopic": "true"})[
+            "TopicArn"
+        ]
+
+        fifo_queue_url = sqs_create_queue(
+            QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"}
+        )
+
+        fifo_queue_arn = sqs_queue_arn(fifo_queue_url)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=fifo_queue_arn)
+
+        assert e.match("standard SNS topic")
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish(TopicArn=fifo_topic_arn, Message="test")
+
+        assert e.match("MessageGroupId")
+
+    def test_empty_sns_message(self, sns_client, sqs_client, sns_topic, sqs_queue, sqs_queue_arn):
+        topic_arn = sns_topic["Attributes"]["TopicArn"]
+        queue_arn = sqs_queue_arn(sqs_queue)
+        sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        with pytest.raises(ClientError) as e:
+            sns_client.publish(Message="", TopicArn=topic_arn)
+        assert e.match("Empty message")
+        assert (
+            sqs_client.get_queue_attributes(
+                QueueUrl=sqs_queue, AttributeNames=["ApproximateNumberOfMessages"]
+            )["Attributes"]["ApproximateNumberOfMessages"]
+            == "0"
+        )

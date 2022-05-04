@@ -17,17 +17,21 @@ from requests.models import Response
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
+    BatchEntryIdsNotDistinctException,
     ConfirmSubscriptionResponse,
     CreateEndpointResponse,
     CreatePlatformApplicationResponse,
     CreateTopicResponse,
     GetSubscriptionAttributesResponse,
+    GetTopicAttributesResponse,
     InvalidParameterException,
     ListSubscriptionsResponse,
     ListTagsForResourceResponse,
     MapStringToString,
     MessageAttributeMap,
     NotFoundException,
+    PublishBatchRequestEntryList,
+    PublishBatchResponse,
     PublishResponse,
     SnsApi,
     String,
@@ -36,6 +40,7 @@ from localstack.aws.api.sns import (
     TagKeyList,
     TagList,
     TagResourceResponse,
+    TooManyEntriesInBatchRequestException,
     TopicAttributesMap,
     UntagResourceResponse,
     attributeName,
@@ -140,6 +145,61 @@ def publish_message(
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
+    def get_topic_attributes(
+        self, context: RequestContext, topic_arn: topicARN
+    ) -> GetTopicAttributesResponse:
+        moto_response = call_moto(context)
+        return GetTopicAttributesResponse(**moto_response)
+
+    def publish_batch(
+        self,
+        context: RequestContext,
+        topic_arn: topicARN,
+        publish_batch_request_entries: PublishBatchRequestEntryList,
+    ) -> PublishBatchResponse:
+        if len(publish_batch_request_entries) > 10:
+            raise TooManyEntriesInBatchRequestException(
+                "The batch request contains more entries than permissible"
+            )
+
+        ids = [entry["Id"] for entry in publish_batch_request_entries]
+        if len(set(ids)) != len(publish_batch_request_entries):
+            raise BatchEntryIdsNotDistinctException(
+                "Two or more batch entries in the request have the same Id"
+            )
+
+        if topic_arn and ".fifo" in topic_arn:
+            if not all(["MessageGroupId" in entry for entry in publish_batch_request_entries]):
+                raise InvalidParameterException(
+                    "The MessageGroupId parameter is required for FIFO topics"
+                )
+        response = {"Successful": [], "Failed": []}
+        for entry in publish_batch_request_entries:
+            message_id = str(uuid.uuid4())
+            data = {}
+            data["TopicArn"] = [topic_arn]
+            data["Message"] = [entry["Message"]]
+            data["Subject"] = [entry.get("Subject")]
+            if ".fifo" in topic_arn:
+                data["MessageGroupId"] = [entry.get("MessageGroupId")]
+            # TODO: add MessageDeduplication checks once ASF-SQS implementation becomes default
+
+            message_attributes = entry.get("MessageAttributes", [])
+            try:
+                message_to_subscribers(
+                    message_id,
+                    entry["Message"],
+                    topic_arn,
+                    data,
+                    context.request.headers,
+                    message_attributes=message_attributes,
+                )
+                response["Successful"].append({"Id": entry["Id"], "MessageId": message_id})
+            except Exception:
+                response["Failed"].append({"Id": entry["Id"]})
+
+        return PublishBatchResponse(**response)
+
     def set_subscription_attributes(
         self,
         context: RequestContext,
@@ -577,15 +637,9 @@ async def message_to_subscriber(
                 queue_url = aws_stack.get_sqs_queue_url(queue_name)
                 subscriber["sqs_queue_url"] = queue_url
 
-            message_group_id = (
-                req_data.get("MessageGroupId")[0] if req_data.get("MessageGroupId") else ""
-            )
+            message_group_id = req_data.get("MessageGroupId", [""])[0]
 
-            message_deduplication_id = (
-                req_data.get("MessageDeduplicationId")[0]
-                if req_data.get("MessageDeduplicationId")
-                else ""
-            )
+            message_deduplication_id = req_data.get("MessageDeduplicationId", [""])[0]
 
             sqs_client = aws_stack.connect_to_service("sqs")
 
