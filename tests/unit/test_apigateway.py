@@ -9,6 +9,7 @@ import pytest
 from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
+    Resolver,
     apply_json_patch_safe,
     extract_path_params,
     extract_query_string_params,
@@ -377,3 +378,33 @@ class TestTemplates:
             "stageVariable1": "value1",
             "stageVariable2": "value2",
         }
+
+
+def test_openapi_resolver_given_unresolvable_references():
+    document = {
+        "schema": {"$ref": "#/definitions/NotFound"},
+        "definitions": {"Found": {"type": "string"}},
+    }
+    resolver = Resolver(document, allow_recursive=True)
+    result = resolver.resolve_references()
+    assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
+
+
+def test_openapi_resolver_given_invalid_references():
+    document = {"schema": {"$ref": ""}, "definitions": {"Found": {"type": "string"}}}
+    resolver = Resolver(document, allow_recursive=True)
+    result = resolver.resolve_references()
+    assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
+
+
+def test_openapi_resolver_given_list_references():
+    document = {
+        "schema": {"$ref": "#/definitions/Found"},
+        "definitions": {"Found": {"value": ["v1", "v2"]}},
+    }
+    resolver = Resolver(document, allow_recursive=True)
+    result = resolver.resolve_references()
+    assert result == {
+        "schema": {"value": ["v1", "v2"]},
+        "definitions": {"Found": {"value": ["v1", "v2"]}},
+    }

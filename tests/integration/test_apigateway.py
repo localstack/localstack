@@ -24,7 +24,6 @@ from localstack.constants import (
 )
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
-    Resolver,
     connect_api_gateway_to_sqs,
     get_resource_for_path,
     get_rest_api_paths,
@@ -1796,34 +1795,4 @@ def test_import_swagger_api(apigateway_client):
             "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
             "statusCode": "200",
         }
-    }
-
-
-def test_openapi_resolver_given_unresolvable_references():
-    document = {
-        "schema": {"$ref": "#/definitions/NotFound"},
-        "definitions": {"Found": {"type": "string"}},
-    }
-    resolver = Resolver(document, allow_recursive=True)
-    result = resolver.resolve_references()
-    assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
-
-
-def test_openapi_resolver_given_invalid_references():
-    document = {"schema": {"$ref": ""}, "definitions": {"Found": {"type": "string"}}}
-    resolver = Resolver(document, allow_recursive=True)
-    result = resolver.resolve_references()
-    assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
-
-
-def test_openapi_resolver_given_list_references():
-    document = {
-        "schema": {"$ref": "#/definitions/Found"},
-        "definitions": {"Found": {"value": ["v1", "v2"]}},
-    }
-    resolver = Resolver(document, allow_recursive=True)
-    result = resolver.resolve_references()
-    assert result == {
-        "schema": {"value": ["v1", "v2"]},
-        "definitions": {"Found": {"value": ["v1", "v2"]}},
     }
