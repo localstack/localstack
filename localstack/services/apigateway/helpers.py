@@ -604,6 +604,13 @@ def import_api_from_openapi_spec(
     # Remove default root, then add paths from API spec
     rest_api.resources = {}
 
+    def create_authorizer(path_payload: dict, body: dict):
+        if security_schemes := path_payload.get("security"):
+            for security_scheme in security_schemes:
+                for security_scheme_name, scopes in security_scheme.items():
+                    print(security_scheme_name)
+
+
     def get_or_create_path(path):
         parts = path.rstrip("/").replace("//", "/").split("/")
         parent_id = ""
@@ -611,11 +618,7 @@ def import_api_from_openapi_spec(
             parent_path = "/".join(parts[:-1])
             parent = get_or_create_path(parent_path)
             parent_id = parent.id
-        if existing := [
-            r
-            for r in rest_api.resources.values()
-            if r.path_part == (parts[-1] or "/") and (r.parent_id or "") == (parent_id or "")
-        ]:
+        if existing := [r for r in rest_api.resources.values() if r.path_part == (parts[-1] or "/") and (r.parent_id or "") == (parent_id or "")]:
             return existing[0]
         return add_path(path, parts, parent_id=parent_id)
 
