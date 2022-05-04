@@ -1748,7 +1748,9 @@ class TestAPIGateway(unittest.TestCase):
         return api_id
 
 
-def test_import_swagger_api():
+def test_import_swagger_api(apigateway_client):
+    apigateway_client.get_rest_apis()
+
     api_spec = load_test_resource("openapi.swagger.json")
     api_spec_dict = json.loads(api_spec)
 
