@@ -162,7 +162,9 @@ def validate_api_key(api_key: str, stage: str):
     usage_plans = client.get_usage_plans()
     for item in usage_plans.get("items", []):
         api_stages = item.get("apiStages", [])
-        usage_plan_ids.extend(item.get("id") for api_stage in api_stages if api_stage.get("stage") == stage)
+        usage_plan_ids.extend(
+            item.get("id") for api_stage in api_stages if api_stage.get("stage") == stage
+        )
 
     for usage_plan_id in usage_plan_ids:
         usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
