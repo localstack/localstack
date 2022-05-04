@@ -9,6 +9,7 @@ from localstack import config
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
 from localstack.utils.objects import recurse_object
+from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
 # remove all the code below after removing references in:
@@ -81,6 +82,74 @@ class VelocityUtil:
         elif s not in [True, False] and is_number(s):
             s = to_number(s)
         return json.dumps(s)
+
+
+# START of patches for airspeed
+# TODO: contribute these patches upstream, if possible
+
+
+airspeed.MacroDefinition.RESERVED_NAMES = airspeed.MacroDefinition.RESERVED_NAMES + ("return",)
+
+
+@patch(airspeed.VariableExpression.calculate)
+def calculate(fn, self, *args, **kwarg):
+    result = fn(self, *args, **kwarg)
+    result = "" if result is None else result
+    return result
+
+
+class ReturnDirective(airspeed.EvaluateDirective):
+    """Defines an airspeed VTL directive that supports `#return(...)` expressions"""
+
+    START = re.compile(r"#return\b(.*)")
+
+    def evaluate_raw(self, stream, namespace, loader):
+        import json
+
+        value = self.value.calculate(namespace, loader)
+        str_value = str(value)
+        # string conversion of certain values (e.g., dict->JSON)
+        if isinstance(value, dict):
+            try:
+                str_value = json.dumps(value)
+            except Exception:
+                pass
+        stream.write(str_value)
+
+
+@patch(airspeed.Block.parse, pass_target=False)
+def parse(self):
+    # need to copy the entire function body, no easier way to apply the patch here..
+    self.children = []
+    while True:
+        try:
+            self.children.append(
+                self.next_element(
+                    (
+                        airspeed.Text,
+                        airspeed.FormalReference,
+                        airspeed.Comment,
+                        airspeed.IfDirective,
+                        airspeed.SetDirective,
+                        airspeed.ForeachDirective,
+                        airspeed.IncludeDirective,
+                        airspeed.ParseDirective,
+                        airspeed.MacroDefinition,
+                        airspeed.DefineDefinition,
+                        airspeed.StopDirective,
+                        airspeed.UserDefinedDirective,
+                        airspeed.EvaluateDirective,
+                        ReturnDirective,
+                        airspeed.MacroCall,
+                        airspeed.FallthroughHashText,
+                    )
+                )
+            )
+        except airspeed.NoMatch:
+            break
+
+
+# END of patches for airspeed
 
 
 def render_velocity_template(template, context, variables=None, as_json=False):

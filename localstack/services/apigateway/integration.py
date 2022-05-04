@@ -130,6 +130,7 @@ class VelocityInput:
         return "$input"
 
 
+# TODO: move generic VTL logic to utils/aws/templating.py
 class VtlTemplate:
     def render_vtl(self, template, variables: dict, as_json=False):
         if variables is None:
