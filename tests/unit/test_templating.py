@@ -1,10 +1,7 @@
-import base64
 import json
 
-import pytest
-
-from localstack.services.apigateway.integration import VtlTemplate
-from localstack.utils.common import to_str
+from localstack.services.apigateway.integration import ApiGatewayVtlTemplate
+from localstack.utils.aws.templating import render_velocity_template
 
 # template used to transform incoming requests at the API Gateway (forward to Kinesis)
 APIGW_TEMPLATE_TRANSFORM_KINESIS = """{
@@ -19,7 +16,7 @@ APIGW_TEMPLATE_TRANSFORM_KINESIS = """{
         {
             "Data": "$elemJsonB64",
             "PartitionKey": #if( $elem.partitionKey != '')"$elem.partitionKey"
-                            #else"$elemJsonB64.length()"#end
+                            #else"$elemJsonB64"#end
         }#if($foreach.hasNext),#end
         #end
         #end
@@ -83,13 +80,28 @@ APIGW_TEMPLATE_CUSTOM_BODY = """
 """
 
 
-@pytest.fixture
-def velocity_template():
-    return VtlTemplate()
+class TestMessageTransformationBasic:
+    def test_return_macro(self):
+        template = """
+        #set($v1 = {})
+        $v1.put('foo', 'bar')
+        #return($v1)
+        """
+        result = render_velocity_template(template, {})
+        expected = {"foo": "bar"}
+        assert json.loads(result) == expected
 
 
-class TestMessageTransformation:
-    def test_array_size(self, velocity_template):
+class TestMessageTransformationApiGateway:
+    def test_construct_json_using_define(self):
+        template = APIGW_TEMPLATE_CONSTRUCT_JSON
+        data = {"p1": {"test": 123}, "p2": {"foo": "bar", "foo2": False}}
+        variables = {"input": {"body": data}}
+        result = ApiGatewayVtlTemplate().render_vtl(template, variables).strip()
+        result = json.loads(result)
+        assert result == {"p0": True, **data}
+
+    def test_array_size(self):
         template = "#set($list = $input.path('$.records')) $list.size()"
         body = {"records": [{"data": {"foo": "bar1"}}, {"data": {"foo": "bar2"}}]}
         variables = {
@@ -98,10 +110,10 @@ class TestMessageTransformation:
             },
         }
 
-        result = velocity_template.render_vtl(template, variables)
+        result = ApiGatewayVtlTemplate().render_vtl(template, variables)
         assert result == " 2"
 
-    def test_message_transformation(self, velocity_template):
+    def test_message_transformation(self):
         template = APIGW_TEMPLATE_TRANSFORM_KINESIS
         records = [
             {"data": {"foo": "foo1", "bar": "bar2"}},
@@ -109,12 +121,11 @@ class TestMessageTransformation:
         ]
         variables = {"input": {"body": {"records": records}}}
 
-        def do_test(variables):
-            result = velocity_template.render_vtl(template, variables, as_json=True)
-            result_decoded = json.loads(to_str(base64.b64decode(result["Records"][0]["Data"])))
-            assert result_decoded == records[0]["data"]
-            assert result["Records"][0]["PartitionKey"] == "$elem.partitionKey"
-            assert result["Records"][1]["PartitionKey"] == "key123"
+        def do_test(_vars):
+            res = ApiGatewayVtlTemplate().render_vtl(template, _vars, as_json=True)
+            data_encoded = res["Records"][0]["Data"]
+            assert res["Records"][0]["PartitionKey"] == data_encoded
+            assert res["Records"][1]["PartitionKey"] == "key123"
 
         # try rendering the template
         do_test(variables)
@@ -123,46 +134,38 @@ class TestMessageTransformation:
         records = []
         variables = {"input": {"body": {"records": records}}}
         # try rendering the template
-        result = velocity_template.render_vtl(template, variables, as_json=True)
+        result = ApiGatewayVtlTemplate().render_vtl(template, variables, as_json=True)
         assert result["Records"] == []
 
-    def test_array_in_set_expr(self, velocity_template):
+    def test_array_in_set_expr(self):
         template = "#set ($bar = $input.path('$.foo')[1]) \n $bar"
         variables = {"input": {"body": {"foo": ["e1", "e2", "e3", "e4"]}}}
-        result = velocity_template.render_vtl(template, variables).strip()
+        result = ApiGatewayVtlTemplate().render_vtl(template, variables).strip()
         assert result == "e2"
 
         template = "#set ($bar = $input.path('$.foo')[1][1][1]) $bar"
         variables = {"input": {"body": {"foo": [["e1"], ["e2", ["e3", "e4"]]]}}}
-        result = velocity_template.render_vtl(template, variables).strip()
+        result = ApiGatewayVtlTemplate().render_vtl(template, variables).strip()
         assert result == "e4"
 
-    def test_string_methods(self, velocity_template):
+    def test_string_methods(self):
         context = {"foo": {"bar": "BAZ baz"}}
         variables = {"input": {"body": context}}
         template1 = "${foo.bar.strip().lower().replace(' ','-')}"
         template2 = "${foo.bar.trim().toLowerCase().replace(' ','-')}"
         for template in [template1, template2]:
-            result = velocity_template.render_vtl(template, variables=variables)
+            result = ApiGatewayVtlTemplate().render_vtl(template, variables=variables)
             assert result == "baz-baz"
 
-    def test_render_urlencoded_string_data(self, velocity_template):
+    def test_render_urlencoded_string_data(self):
         template = "MessageBody=$util.base64Encode($input.json('$'))"
         variables = {"input": {"body": {"spam": "eggs"}}}
-        result = velocity_template.render_vtl(template, variables)
+        result = ApiGatewayVtlTemplate().render_vtl(template, variables)
         assert result == "MessageBody=eyJzcGFtIjogImVnZ3MifQ=="
 
-    def test_construct_json_using_define(self, velocity_template):
-        template = APIGW_TEMPLATE_CONSTRUCT_JSON
-        data = {"p1": {"test": 123}, "p2": {"foo": "bar", "foo2": False}}
-        variables = {"input": {"body": data}}
-        result = velocity_template.render_vtl(template, variables).strip()
-        result = json.loads(result)
-        assert result == {"p0": True, **data}
-
-    def test_keyset_functions(self, velocity_template):
+    def test_keyset_functions(self):
         template = "#set($list = $input.path('$..var1[1]').keySet()) #foreach($e in $list)$e#end"
         body = {"var1": [{"a": 1}, {"b": 2}]}
         variables = {"input": {"body": body}}
-        result = velocity_template.render_vtl(template, variables)
+        result = ApiGatewayVtlTemplate().render_vtl(template, variables)
         assert result == " b"
