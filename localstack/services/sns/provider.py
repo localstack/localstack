@@ -16,23 +16,48 @@ from requests.models import Response
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sns import (
+    ActionsList,
     AmazonResourceName,
     BatchEntryIdsNotDistinctException,
+    CheckIfPhoneNumberIsOptedOutResponse,
     ConfirmSubscriptionResponse,
     CreateEndpointResponse,
     CreatePlatformApplicationResponse,
+    CreateSMSSandboxPhoneNumberResult,
     CreateTopicResponse,
+    DelegatesList,
+    DeleteSMSSandboxPhoneNumberResult,
+    GetEndpointAttributesResponse,
+    GetPlatformApplicationAttributesResponse,
+    GetSMSAttributesResponse,
+    GetSMSSandboxAccountStatusResult,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
+    LanguageCodeString,
+    ListEndpointsByPlatformApplicationResponse,
+    ListOriginationNumbersResult,
+    ListPhoneNumbersOptedOutResponse,
+    ListPlatformApplicationsResponse,
+    ListSMSSandboxPhoneNumbersResult,
+    ListString,
+    ListSubscriptionsByTopicResponse,
     ListSubscriptionsResponse,
     ListTagsForResourceResponse,
+    ListTopicsResponse,
     MapStringToString,
+    MaxItems,
+    MaxItemsListOriginationNumbers,
     MessageAttributeMap,
     NotFoundException,
+    OptInPhoneNumberResponse,
+    OTPCode,
+    PhoneNumber,
+    PhoneNumberString,
     PublishBatchRequestEntryList,
     PublishBatchResponse,
     PublishResponse,
+    SetSMSAttributesResponse,
     SnsApi,
     String,
     SubscribeResponse,
@@ -43,15 +68,18 @@ from localstack.aws.api.sns import (
     TooManyEntriesInBatchRequestException,
     TopicAttributesMap,
     UntagResourceResponse,
+    VerifySMSSandboxPhoneNumberResult,
     attributeName,
     attributeValue,
     authenticateOnUnsubscribe,
     boolean,
     endpoint,
+    label,
     message,
     messageStructure,
     nextToken,
     protocol,
+    string,
     subject,
     subscriptionARN,
     token,
@@ -145,6 +173,149 @@ def publish_message(
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
+    def add_permission(
+        self,
+        context: RequestContext,
+        topic_arn: topicARN,
+        label: label,
+        aws_account_id: DelegatesList,
+        action_name: ActionsList,
+    ) -> None:
+        call_moto(context)
+
+    def check_if_phone_number_is_opted_out(
+        self, context: RequestContext, phone_number: PhoneNumber
+    ) -> CheckIfPhoneNumberIsOptedOutResponse:
+        moto_response = call_moto(context)
+        return CheckIfPhoneNumberIsOptedOutResponse(**moto_response)
+
+    def create_sms_sandbox_phone_number(
+        self,
+        context: RequestContext,
+        phone_number: PhoneNumberString,
+        language_code: LanguageCodeString = None,
+    ) -> CreateSMSSandboxPhoneNumberResult:
+        call_moto(context)
+        return CreateSMSSandboxPhoneNumberResult()
+
+    def delete_sms_sandbox_phone_number(
+        self, context: RequestContext, phone_number: PhoneNumberString
+    ) -> DeleteSMSSandboxPhoneNumberResult:
+        call_moto(context)
+        return DeleteSMSSandboxPhoneNumberResult()
+
+    def get_endpoint_attributes(
+        self, context: RequestContext, endpoint_arn: String
+    ) -> GetEndpointAttributesResponse:
+        moto_response = call_moto(context)
+        return GetEndpointAttributesResponse(**moto_response)
+
+    def get_platform_application_attributes(
+        self, context: RequestContext, platform_application_arn: String
+    ) -> GetPlatformApplicationAttributesResponse:
+        moto_response = call_moto(context)
+        return GetPlatformApplicationAttributesResponse(**moto_response)
+
+    def get_sms_attributes(
+        self, context: RequestContext, attributes: ListString = None
+    ) -> GetSMSAttributesResponse:
+        moto_response = call_moto(context)
+        return GetSMSAttributesResponse(**moto_response)
+
+    def get_sms_sandbox_account_status(
+        self, context: RequestContext
+    ) -> GetSMSSandboxAccountStatusResult:
+        moto_response = call_moto(context)
+        return GetSMSSandboxAccountStatusResult(**moto_response)
+
+    def list_endpoints_by_platform_application(
+        self, context: RequestContext, platform_application_arn: String, next_token: String = None
+    ) -> ListEndpointsByPlatformApplicationResponse:
+        moto_response = call_moto(context)
+        return ListEndpointsByPlatformApplicationResponse(**moto_response)
+
+    def list_origination_numbers(
+        self,
+        context: RequestContext,
+        next_token: nextToken = None,
+        max_results: MaxItemsListOriginationNumbers = None,
+    ) -> ListOriginationNumbersResult:
+        moto_response = call_moto(context)
+        return ListOriginationNumbersResult(**moto_response)
+
+    def list_phone_numbers_opted_out(
+        self, context: RequestContext, next_token: string = None
+    ) -> ListPhoneNumbersOptedOutResponse:
+        moto_response = call_moto(context)
+        return ListPhoneNumbersOptedOutResponse(**moto_response)
+
+    def list_platform_applications(
+        self, context: RequestContext, next_token: String = None
+    ) -> ListPlatformApplicationsResponse:
+        moto_response = call_moto(context)
+        return ListPlatformApplicationsResponse(**moto_response)
+
+    def list_sms_sandbox_phone_numbers(
+        self, context: RequestContext, next_token: nextToken = None, max_results: MaxItems = None
+    ) -> ListSMSSandboxPhoneNumbersResult:
+        moto_response = call_moto(context)
+        return ListSMSSandboxPhoneNumbersResult(**moto_response)
+
+    def list_subscriptions_by_topic(
+        self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None
+    ) -> ListSubscriptionsByTopicResponse:
+        moto_response = call_moto(context)
+        return ListSubscriptionsByTopicResponse(**moto_response)
+
+    def list_topics(
+        self, context: RequestContext, next_token: nextToken = None
+    ) -> ListTopicsResponse:
+        moto_response = call_moto(context)
+        return ListTopicsResponse(**moto_response)
+
+    def opt_in_phone_number(
+        self, context: RequestContext, phone_number: PhoneNumber
+    ) -> OptInPhoneNumberResponse:
+        call_moto(context)
+        return OptInPhoneNumberResponse()
+
+    def remove_permission(self, context: RequestContext, topic_arn: topicARN, label: label) -> None:
+        call_moto(context)
+
+    def set_endpoint_attributes(
+        self, context: RequestContext, endpoint_arn: String, attributes: MapStringToString
+    ) -> None:
+        call_moto(context)
+
+    def set_platform_application_attributes(
+        self,
+        context: RequestContext,
+        platform_application_arn: String,
+        attributes: MapStringToString,
+    ) -> None:
+        call_moto(context)
+
+    def set_sms_attributes(
+        self, context: RequestContext, attributes: MapStringToString
+    ) -> SetSMSAttributesResponse:
+        call_moto(context)
+        return SetSMSAttributesResponse()
+
+    def set_topic_attributes(
+        self,
+        context: RequestContext,
+        topic_arn: topicARN,
+        attribute_name: attributeName,
+        attribute_value: attributeValue = None,
+    ) -> None:
+        call_moto(context)
+
+    def verify_sms_sandbox_phone_number(
+        self, context: RequestContext, phone_number: PhoneNumberString, one_time_password: OTPCode
+    ) -> VerifySMSSandboxPhoneNumberResult:
+        call_moto(context)
+        return VerifySMSSandboxPhoneNumberResult()
+
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
