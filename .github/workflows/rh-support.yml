@@ -4,6 +4,9 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 jobs:
   test-redhat:
     runs-on: ubuntu-latest
