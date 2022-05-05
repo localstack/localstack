@@ -1,28 +1,24 @@
 import base64
-import copy
 import json
 import logging
-import re
+from abc import ABC
+from typing import Any, Dict
 from urllib.parse import quote_plus, unquote_plus
-
-import airspeed
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
-from localstack.utils.objects import recurse_object
 
 LOG = logging.getLogger(__name__)
 
 
-class BackendIntegration:
-    """
-    Backend integration
-    """
+class BackendIntegration(ABC):
+    """Abstract base class representing a backend integration"""
 
 
 class SnsIntegration(BackendIntegration):
@@ -130,84 +126,25 @@ class VelocityInput:
         return "$input"
 
 
-class VtlTemplate:
-    def render_vtl(self, template, variables: dict, as_json=False):
-        if variables is None:
-            variables = {}
+class ApiGatewayVtlTemplate(VtlTemplate):
+    """Util class for rendering VTL templates with API Gateway specific extensions"""
 
-        if not template:
-            return template
-
-        # fix "#set" commands
-        template = re.sub(r"(^|\n)#\s+set(.*)", r"\1#set\2", template, re.MULTILINE)
-
-        # enable syntax like "test#${foo.bar}"
-        empty_placeholder = " __pLaCe-HoLdEr__ "
-        template = re.sub(
-            r"([^\s]+)#\$({)?(.*)",
-            r"\1#%s$\2\3" % empty_placeholder,
-            template,
-            re.MULTILINE,
-        )
-
-        # add extensions for common string functions below
-
-        class ExtendedString(str):
-            def trim(self, *args, **kwargs):
-                return ExtendedString(self.strip(*args, **kwargs))
-
-            def toLowerCase(self, *args, **kwargs):
-                return ExtendedString(self.lower(*args, **kwargs))
-
-            def toUpperCase(self, *args, **kwargs):
-                return ExtendedString(self.upper(*args, **kwargs))
-
-        def apply(obj, **kwargs):
-            if isinstance(obj, dict):
-                for k, v in obj.items():
-                    if isinstance(v, str):
-                        obj[k] = ExtendedString(v)
-            return obj
-
-        # loop through the variables and enable certain additional util functions (e.g.,
-        # string utils)
-        variables = copy.deepcopy(variables or {})
-        recurse_object(variables, apply)
-
-        # prepare and render template
-        context_var = variables.get("context") or {}
+    def prepare_namespace(self, variables) -> Dict[str, Any]:
+        namespace = super().prepare_namespace(variables)
         input_var = variables.get("input") or {}
-        stage_var = variables.get("stage_variables") or {}
-        t = airspeed.Template(template)
-        namespace = {
+        variables = {
             "input": VelocityInput(input_var.get("body"), input_var.get("params")),
             "util": VelocityUtil(),
-            "context": context_var,
-            "stageVariables": stage_var,
         }
-
-        # this steps prepares the namespace for object traversal,
-        # e.g, foo.bar.trim().toLowerCase().replace
-        dict_pack = input_var.get("body")
-        if isinstance(dict_pack, dict):
-            for k, v in dict_pack.items():
-                namespace.update({k: v})
-
-        rendered_template = t.merge(namespace)
-
-        # revert temporary changes from the fixes above
-        rendered_template = rendered_template.replace(empty_placeholder, "")
-
-        if as_json:
-            rendered_template = json.loads(rendered_template)
-        return rendered_template
+        namespace.update(variables)
+        return namespace
 
 
 class Templates:
     __slots__ = ["vtl"]
 
     def __init__(self):
-        self.vtl = VtlTemplate()
+        self.vtl = ApiGatewayVtlTemplate()
 
     def render(self, api_context: ApiInvocationContext):
         pass

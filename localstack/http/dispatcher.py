@@ -81,7 +81,7 @@ class Handler(Protocol):
         pass
 
 
-def handler_dispatcher() -> Dispatcher:
+def handler_dispatcher() -> Dispatcher[Handler]:
     """
     Creates a Dispatcher that treats endpoints like callables of the Handler Protocol.
 

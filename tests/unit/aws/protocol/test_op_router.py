@@ -47,3 +47,31 @@ def test_greedy_path_converter():
     assert matcher.match("/some-route//foo/bar/bar") == (None, {"p": "/foo/bar"})
     with pytest.raises(NotFound):
         matcher.match("/some-route//foo/baz")
+
+
+def test_s3_head_request():
+    router = RestServiceOperationRouter(load_service("s3"))
+
+    op, _ = router.match(Request("GET", "/my-bucket/my-key/"))
+    assert op.name == "GetObject"
+
+    op, _ = router.match(Request("HEAD", "/my-bucket/my-key/"))
+    assert op.name == "HeadObject"
+
+
+def test_trailing_slashes_are_not_strict():
+    # this is tested against AWS. AWS is not strict about trailing slashes when routing operations.
+
+    router = RestServiceOperationRouter(load_service("lambda"))
+
+    op, _ = router.match(Request("GET", "/2015-03-31/functions"))
+    assert op.name == "ListFunctions"
+
+    op, _ = router.match(Request("GET", "/2015-03-31/functions/"))
+    assert op.name == "ListFunctions"
+
+    op, _ = router.match(Request("POST", "/2015-03-31/functions"))
+    assert op.name == "CreateFunction"
+
+    op, _ = router.match(Request("POST", "/2015-03-31/functions/"))
+    assert op.name == "CreateFunction"

@@ -197,6 +197,26 @@ class TestAlarmScheduler:
             mock_metric_alarm_details, mock_collect_metric_data, expected_calls, expected_state
         )
 
+    def test_calculate_alarm_state_with_datapoints_value_zero(self):
+        def mock_metric_alarm_details(alarm_arn):
+            details = {
+                "AlarmName": "test-alarm",
+                "StateValue": "OK",
+                "TreatMissingData": "notBreaching",
+                "EvaluationPeriods": 1,
+                "Period": 5,
+                "ComparisonOperator": "LessThanThreshold",
+                "Threshold": 1,
+            }
+            return details
+
+        def mock_collect_metric_data(alarm_details, client):
+            return [0.0, None, 0.0]
+
+        run_and_assert_calculate_alarm_state(
+            mock_metric_alarm_details, mock_collect_metric_data, 1, "ALARM"
+        )
+
 
 def run_and_assert_calculate_alarm_state(
     mock_metric_alarm_details, mock_collect_metric_data, expected_calls, expected_state
@@ -211,14 +231,17 @@ def run_and_assert_calculate_alarm_state(
             Patch.function(
                 alarm_scheduler.get_metric_alarm_details_for_alarm_arn,
                 mock_metric_alarm_details,
+                pass_target=False,
             ),
             Patch.function(
                 alarm_scheduler.get_cloudwatch_client_for_region_of_alarm,
                 mock_cloudwatch_client,
+                pass_target=False,
             ),
             Patch.function(
                 alarm_scheduler.collect_metric_data,
                 mock_collect_metric_data,
+                pass_target=False,
             ),
         ]
     )

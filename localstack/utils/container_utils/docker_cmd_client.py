@@ -578,6 +578,7 @@ class CmdDockerClient(ContainerClient):
         user: Optional[str] = None,
         cap_add: Optional[List[str]] = None,
         cap_drop: Optional[List[str]] = None,
+        security_opt: Optional[List[str]] = None,
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
@@ -614,6 +615,10 @@ class CmdDockerClient(ContainerClient):
             cmd += list(itertools.chain.from_iterable(["--cap-add", cap] for cap in cap_add))
         if cap_drop:
             cmd += list(itertools.chain.from_iterable(["--cap-drop", cap] for cap in cap_drop))
+        if security_opt:
+            cmd += list(
+                itertools.chain.from_iterable(["--security-opt", opt] for opt in security_opt)
+            )
         if network:
             cmd += ["--network", network]
         if dns:

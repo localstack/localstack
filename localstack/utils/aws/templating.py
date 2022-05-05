@@ -1,145 +1,161 @@
-import base64
+import copy
 import json
 import re
-from urllib.parse import quote_plus, unquote_plus
+from typing import Dict
 
 import airspeed
 
-from localstack import config
-from localstack.utils.json import extract_jsonpath, json_safe
-from localstack.utils.numbers import is_number, to_number
 from localstack.utils.objects import recurse_object
-from localstack.utils.strings import short_uid
-
-# remove all the code below after removing references in:
-# - invocations.py
-# - graphql_executor.py
+from localstack.utils.patch import patch
 
 
-class VelocityInput:
-    """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration
-    velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
+class VtlTemplate:
+    """Utility class for rendering velocity templates"""
 
-    def __init__(self, value):
-        self.value = value
+    def render_vtl(self, template, variables: dict, as_json=False):
+        if variables is None:
+            variables = {}
 
-    def path(self, path):
-        if not self.value:
-            return {}
-        value = self.value if isinstance(self.value, dict) else json.loads(self.value)
-        return extract_jsonpath(value, path)
+        if not template:
+            return template
 
-    def json(self, path):
-        path = path or "$"
-        matching = self.path(path)
-        if isinstance(matching, (list, dict)):
-            matching = json_safe(matching)
-        return json.dumps(matching)
+        # fix "#set" commands
+        template = re.sub(r"(^|\n)#\s+set(.*)", r"\1#set\2", template, re.MULTILINE)
 
-    def __getattr__(self, name):
-        return self.value.get(name)
+        # enable syntax like "test#${foo.bar}"
+        empty_placeholder = " __pLaCe-HoLdEr__ "
+        template = re.sub(
+            r"([^\s]+)#\$({)?(.*)",
+            r"\1#%s$\2\3" % empty_placeholder,
+            template,
+            re.MULTILINE,
+        )
 
-    def __repr__(self):
-        return "$input"
+        # add extensions for common string functions below
+
+        class ExtendedString(str):
+            def trim(self, *args, **kwargs):
+                return ExtendedString(self.strip(*args, **kwargs))
+
+            def toLowerCase(self, *_, **__):
+                return ExtendedString(self.lower())
+
+            def toUpperCase(self, *_, **__):
+                return ExtendedString(self.upper())
+
+        def apply(obj, **_):
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    if isinstance(v, str):
+                        obj[k] = ExtendedString(v)
+            return obj
+
+        # loop through the variables and enable certain additional util
+        # functions (e.g., string utils)
+        variables = copy.deepcopy(variables or {})
+        recurse_object(variables, apply)
+
+        # prepare and render template
+        t = airspeed.Template(template)
+        namespace = self.prepare_namespace(variables)
+
+        # this steps prepares the namespace for object traversal,
+        # e.g, foo.bar.trim().toLowerCase().replace
+        input_var = variables.get("input") or {}
+        dict_pack = input_var.get("body")
+        if isinstance(dict_pack, dict):
+            for k, v in dict_pack.items():
+                namespace.update({k: v})
+
+        rendered_template = t.merge(namespace)
+
+        # revert temporary changes from the fixes above
+        rendered_template = rendered_template.replace(empty_placeholder, "")
+
+        if as_json:
+            rendered_template = json.loads(rendered_template)
+        return rendered_template
+
+    def prepare_namespace(self, variables) -> Dict:
+        context_var = variables.get("context") or {}
+        stage_var = variables.get("stage_variables") or {}
+        namespace = {
+            "context": context_var,
+            "stageVariables": stage_var,
+        }
+        return namespace
 
 
-class VelocityUtil:
-    """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration
-    velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
-
-    def base64Encode(self, s):
-        if not isinstance(s, str):
-            s = json.dumps(s)
-        encoded_str = s.encode(config.DEFAULT_ENCODING)
-        encoded_b64_str = base64.b64encode(encoded_str)
-        return encoded_b64_str.decode(config.DEFAULT_ENCODING)
-
-    def base64Decode(self, s):
-        if not isinstance(s, str):
-            s = json.dumps(s)
-        return base64.b64decode(s)
-
-    def toJson(self, obj):
-        return obj and json.dumps(obj)
-
-    def urlEncode(self, s):
-        return quote_plus(s)
-
-    def urlDecode(self, s):
-        return unquote_plus(s)
-
-    def escapeJavaScript(self, s):
-        try:
-            return json.dumps(json.loads(s))
-        except Exception:
-            primitive_types = (str, int, bool, float, type(None))
-            s = s if isinstance(s, primitive_types) else str(s)
-        if str(s).strip() in ["true", "false"]:
-            s = bool(s)
-        elif s not in [True, False] and is_number(s):
-            s = to_number(s)
-        return json.dumps(s)
-
-
+# TODO: clean up this function, once all references have been removed (difference between context/variables unclear)
 def render_velocity_template(template, context, variables=None, as_json=False):
-    if variables is None:
-        variables = {}
+    context = context or {}
+    context.update(variables or {})
+    return VtlTemplate().render_vtl(template, context, as_json=as_json)
 
-    if not template:
-        return template
 
-    # fix "#set" commands
-    template = re.sub(r"(^|\n)#\s+set(.*)", r"\1#set\2", template, re.MULTILINE)
+# START of patches for airspeed
+# TODO: contribute these patches upstream!
 
-    # enable syntax like "test#${foo.bar}"
-    empty_placeholder = " __pLaCe-HoLdEr__ "
-    template = re.sub(
-        r"([^\s]+)#\$({)?(.*)",
-        r"\1#%s$\2\3" % empty_placeholder,
-        template,
-        re.MULTILINE,
-    )
 
-    # add extensions for common string functions below
+airspeed.MacroDefinition.RESERVED_NAMES = airspeed.MacroDefinition.RESERVED_NAMES + ("return",)
 
-    class ExtendedString(str):
-        def trim(self, *args, **kwargs):
-            return ExtendedString(self.strip(*args, **kwargs))
 
-        def toLowerCase(self, *args, **kwargs):
-            return ExtendedString(self.lower(*args, **kwargs))
+@patch(airspeed.VariableExpression.calculate)
+def calculate(fn, self, *args, **kwarg):
+    result = fn(self, *args, **kwarg)
+    result = "" if result is None else result
+    return result
 
-        def toUpperCase(self, *args, **kwargs):
-            return ExtendedString(self.upper(*args, **kwargs))
 
-    def apply(obj, **kwargs):
-        if isinstance(obj, dict):
-            for k, v in obj.items():
-                if isinstance(v, str):
-                    obj[k] = ExtendedString(v)
-        return obj
+class ReturnDirective(airspeed.EvaluateDirective):
+    """Defines an airspeed VTL directive that supports `#return(...)` expressions"""
 
-    # loop through the variables and enable certain additional util functions (e.g., string utils)
-    variables = variables or {}
-    recurse_object(variables, apply)
+    START = re.compile(r"#return\b(.*)")
 
-    # prepare and render template
-    context_var = variables.get("context") or {}
-    context_var.setdefault("requestId", short_uid())
-    t = airspeed.Template(template)
-    var_map = {
-        "input": VelocityInput(context),
-        "util": VelocityUtil(),
-        "context": context_var,
-    }
-    var_map.update(variables or {})
-    replaced = t.merge(var_map)
+    def evaluate_raw(self, stream, namespace, loader):
+        import json
 
-    # revert temporary changes from the fixes above
-    replaced = replaced.replace(empty_placeholder, "")
+        value = self.value.calculate(namespace, loader)
+        str_value = str(value)
+        # string conversion of certain values (e.g., dict->JSON)
+        if isinstance(value, dict):
+            try:
+                str_value = json.dumps(value)
+            except Exception:
+                pass
+        stream.write(str_value)
 
-    if as_json:
-        replaced = json.loads(replaced)
-    return replaced
+
+@patch(airspeed.Block.parse, pass_target=False)
+def parse(self):
+    # need to copy the entire function body, no easier way to apply the patch here..
+    self.children = []
+    while True:
+        try:
+            self.children.append(
+                self.next_element(
+                    (
+                        airspeed.Text,
+                        airspeed.FormalReference,
+                        airspeed.Comment,
+                        airspeed.IfDirective,
+                        airspeed.SetDirective,
+                        airspeed.ForeachDirective,
+                        airspeed.IncludeDirective,
+                        airspeed.ParseDirective,
+                        airspeed.MacroDefinition,
+                        airspeed.DefineDefinition,
+                        airspeed.StopDirective,
+                        airspeed.UserDefinedDirective,
+                        airspeed.EvaluateDirective,
+                        ReturnDirective,
+                        airspeed.MacroCall,
+                        airspeed.FallthroughHashText,
+                    )
+                )
+            )
+        except airspeed.NoMatch:
+            break
+
+
+# END of patches for airspeed

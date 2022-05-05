@@ -11,6 +11,7 @@ from unittest.mock import patch
 import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
+from moto.apigateway.models import APIGatewayBackend
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
@@ -26,6 +27,7 @@ from localstack.services.apigateway.helpers import (
     connect_api_gateway_to_sqs,
     get_resource_for_path,
     get_rest_api_paths,
+    import_api_from_openapi_spec,
     path_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source
@@ -41,6 +43,7 @@ from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_fi
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
 
+from ..unit.test_apigateway import load_test_resource
 from .awslambda.test_lambda import (
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS,
@@ -787,7 +790,7 @@ class TestAPIGateway(unittest.TestCase):
         # CREATE
         name = "validator123"
         result = client.create_request_validator(restApiId=rest_api_id, name=name)
-        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(201, result["ResponseMetadata"]["HTTPStatusCode"])
         validator_id = result["id"]
         # LIST
         result = client.get_request_validators(restApiId=rest_api_id)
@@ -1329,7 +1332,7 @@ class TestAPIGateway(unittest.TestCase):
     def test_api_gateway_http_integration_with_path_request_parameter(self):
         client = aws_stack.create_external_boto_client("apigateway")
         test_port = get_free_tcp_port()
-        backend_url = "http://localhost:%s/person/{id}" % (test_port)
+        backend_url = "http://localhost:%s/person/{id}" % test_port
 
         # start test HTTP backend
         proxy = self.start_http_backend(test_port)
@@ -1406,17 +1409,17 @@ class TestAPIGateway(unittest.TestCase):
         apigw_client = aws_stack.create_external_boto_client("apigateway")
         s3_client = aws_stack.create_external_boto_client("s3")
 
+        bucket_name = f"test-bucket-{short_uid()}"
+        apigateway_name = f"test-api-{short_uid()}"
+        object_name = "test.json"
+        object_content = '{ "success": "true" }'
+        object_content_type = "application/json"
+
+        api = apigw_client.create_rest_api(name=apigateway_name)
+        api_id = api["id"]
+
         try:
-            bucket_name = f"test-bucket-{short_uid()}"
-            apigateway_name = f"test-api-{short_uid()}"
-            object_name = "test.json"
-            object_content = '{ "success": "true" }'
-            object_content_type = "application/json"
-
-            api = apigw_client.create_rest_api(name=apigateway_name)
-            api_id = api["id"]
-
-            s3_client.create_bucket(Bucket=bucket_name)
+            aws_stack.get_or_create_bucket(bucket_name)
             s3_client.put_object(
                 Bucket=bucket_name,
                 Key=object_name,
@@ -1742,3 +1745,54 @@ class TestAPIGateway(unittest.TestCase):
         apigw_client.create_deployment(restApiId=api_id, stageName="staging")
 
         return api_id
+
+
+def test_import_swagger_api(apigateway_client):
+    apigateway_client.get_rest_apis()
+
+    api_spec = load_test_resource("openapi.swagger.json")
+    api_spec_dict = json.loads(api_spec)
+
+    backend = APIGatewayBackend(region_name="eu-west-1")
+    api_model = backend.create_rest_api(name="", description="")
+
+    imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})
+
+    # test_cfn_handle_serverless_api_resource fails if we support title
+    # assert imported_api.name == api_spec_dict.get("info").get("title")
+    assert imported_api.description == api_spec_dict.get("info").get("description")
+
+    paths = {v.path_part for k, v in imported_api.resources.items()}
+    assert paths == {"/", "pets", "{petId}"}
+
+    resource_methods = {v.path_part: v.resource_methods for k, v in imported_api.resources.items()}
+    methods = {kk[0] for k, v in resource_methods.items() for kk in v.items()}
+    assert methods == {"POST", "OPTIONS", "GET"}
+
+    assert resource_methods.get("/").get("GET").method_responses == {
+        "200": {
+            "statusCode": "200",
+            "responseModels": None,
+            "responseParameters": {"method.response.header.Content-Type": "'text/html'"},
+        }
+    }
+
+    assert resource_methods.get("pets").get("GET").method_responses == {
+        "200": {
+            "responseModels": {
+                "application/json": {
+                    "items": {
+                        "properties": {
+                            "id": {"type": "integer"},
+                            "price": {"type": "number"},
+                            "type": {"type": "string"},
+                        },
+                        "type": "object",
+                    },
+                    "type": "array",
+                }
+            },
+            "responseParameters": {"method.response.header.Access-Control-Allow-Origin": "'*'"},
+            "statusCode": "200",
+        }
+    }

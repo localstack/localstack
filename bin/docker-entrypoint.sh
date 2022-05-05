@@ -36,7 +36,7 @@ source <(
 )
 
 # Setup trap handler(s)
-if [ "$SET_TERM_HANDLER" != "" ]; then
+if [ "$DISABLE_TERM_HANDLER" == "" ]; then
   # Catch all the main
   trap 'kill -1 ${!}; term_handler 1' SIGHUP
   trap 'kill -2 ${!}; term_handler 2' SIGINT
@@ -71,7 +71,7 @@ function run_startup_scripts {
 run_startup_scripts &
 
 # Run tail on the localstack log files forever until we are told to terminate
-if [ "$SET_TERM_HANDLER" != "" ]; then
+if [ "$DISABLE_TERM_HANDLER" == "" ]; then
   while true; do
     tail -qF /tmp/localstack_infra.log /tmp/localstack_infra.err & wait ${!}
   done

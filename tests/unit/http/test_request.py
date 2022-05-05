@@ -151,3 +151,33 @@ def test_headers_retain_case():
             assert k == "X-Amz-Meta--FOO_BaR-ed"
             return
     pytest.fail(f"key not in header keys {keys}")
+
+
+def test_multipart_parsing():
+    body = (
+        b"--4efd159eae0c4f4e125a5a509e073d85"
+        b"\r\n"
+        b'Content-Disposition: form-data; name="foo"; filename="foo"'
+        b"\r\n\r\n"
+        b"bar"
+        b"\r\n"
+        b"--4efd159eae0c4f4e125a5a509e073d85"
+        b"\r\n"
+        b'Content-Disposition: form-data; name="baz"; filename="baz"'
+        b"\r\n\r\n"
+        b"ed"
+        b"\r\n--4efd159eae0c4f4e125a5a509e073d85--"
+        b"\r\n"
+    )
+
+    request = Request(
+        "POST",
+        path="/",
+        body=body,
+        headers={"Content-Type": "multipart/form-data; boundary=4efd159eae0c4f4e125a5a509e073d85"},
+    )
+    result = {}
+    for k, file_storage in request.files.items():
+        result[k] = file_storage.stream.read().decode("utf-8")
+
+    assert result == {"foo": "bar", "baz": "ed"}

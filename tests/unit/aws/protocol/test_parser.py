@@ -889,7 +889,7 @@ def test_restjson_operation_detection_with_subpath():
         )
 
 
-def test_s3_operation_detection():
+def test_s3_get_operation_detection():
     """
     Test if the S3 operation detection works for ambiguous operations. GetObject is the worst, because it is
     overloaded with the exact same requestURI by another non-deprecated function where the only distinction is the
@@ -897,6 +897,13 @@ def test_s3_operation_detection():
     """
     _botocore_parser_integration_test(
         service="s3", action="GetObject", Bucket="test-bucket", Key="foo/bar/test.json"
+    )
+
+
+def test_s3_head_operation_detection():
+    """Test if the S3 operation detection works for HEAD operations."""
+    _botocore_parser_integration_test(
+        service="s3", action="HeadObject", Bucket="test-bucket", Key="foo/bar/test.json"
     )
 
 
