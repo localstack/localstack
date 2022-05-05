@@ -1,7 +1,6 @@
-from typing import Any, Dict, Optional, Type
+from typing import Dict, Optional, Type
 
 from localstack.utils.objects import SubtypesInstanceManager
-from localstack.utils.threads import start_worker_thread
 
 
 class EventSourceListener(SubtypesInstanceManager):
@@ -14,10 +13,6 @@ class EventSourceListener(SubtypesInstanceManager):
 
     def start(self):
         """Start listener in the background (for polling mode) - to be implemented by subclasses."""
-        pass
-
-    def process_event(self, event: Any):
-        """Process the given event (for reactive mode)"""
         pass
 
     @staticmethod
@@ -40,19 +35,6 @@ class EventSourceListener(SubtypesInstanceManager):
         instance = EventSourceListener.get(service_type, raise_if_missing=False)
         if instance:
             instance.start()
-
-    @staticmethod
-    def process_event_via_listener(service_type: str, event: Any):
-        """Process event for the given service type (for reactive mode)"""
-        instance = EventSourceListener.get(service_type, raise_if_missing=False)
-        if not instance:
-            return
-
-        def _process(*args):
-            instance.process_event(event)
-
-        # start processing in background
-        start_worker_thread(_process)
 
     @classmethod
     def impl_name(cls) -> str:

@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from localstack.services.awslambda.event_source_listeners.stream_event_source_listener import (
     StreamEventSourceListener,
@@ -66,6 +66,3 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
             last_record.get("ApproximateArrivalTimestamp", datetime.datetime.utcnow()).isoformat()
             + "Z",
         )
-
-    def process_event(self, event: Any):
-        raise NotImplementedError

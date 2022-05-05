@@ -1,3 +1,5 @@
+# TODO: migrate tests to tests/integration/s3/
+#  DO NOT ADD ADDITIONAL TESTS HERE. USE PYTEST AND RUN TESTS AGAINST AWS!
 import base64
 import datetime
 import gzip
@@ -10,7 +12,6 @@ import shutil
 import ssl
 import time
 import unittest
-import uuid
 from io import BytesIO
 from unittest.mock import patch
 from urllib.parse import parse_qs, quote, urlparse
@@ -43,9 +44,7 @@ from localstack.utils.common import (
     get_service_protocol,
     load_file,
     new_tmp_dir,
-    new_tmp_file,
     retry,
-    rm_rf,
     run,
     safe_requests,
     short_uid,
@@ -56,7 +55,6 @@ from localstack.utils.server import http2_server
 from tests.integration.fixtures import only_localstack
 
 TEST_BUCKET_NAME_WITH_POLICY = "test-bucket-policy-1"
-TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = "test_queue_for_bucket_notification_1"
 TEST_BUCKET_WITH_VERSIONING = "test-bucket-versioning-1"
 
 TEST_BUCKET_NAME_2 = "test-bucket-2"
@@ -66,9 +64,6 @@ TEST_GET_OBJECT_RANGE = 17
 TEST_REGION_1 = "eu-west-1"
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
-    THIS_FOLDER, "awslambda", "functions", "lambda_triggered_by_s3.py"
-)
 TEST_LAMBDA_PYTHON_DOWNLOAD_FROM_S3 = os.path.join(
     THIS_FOLDER, "awslambda", "functions", "lambda_triggered_by_sqs_download_s3_file.py"
 )
@@ -168,160 +163,6 @@ class TestS3(unittest.TestCase):
         ]
         self.assertEqual(policy, json.loads(saved_policy))
 
-    def test_s3_put_object_notification(self):
-        bucket_name = "notif-%s" % short_uid()
-        key_by_path = "key-by-hostname"
-        key_by_host = "key-by-host"
-        queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
-        self.s3_client.put_bucket_versioning(
-            Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
-        )
-
-        # put an object where the bucket_name is in the path
-        obj = self.s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body="something")
-
-        # put an object where the bucket_name is in the host
-        headers = aws_stack.mock_aws_request_headers("s3")
-        headers["Host"] = s3_utils.get_bucket_hostname(bucket_name)
-        url = f"{config.service_url('s3')}/{key_by_host}"
-        # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
-        response = requests.put(url, data="something else", headers=headers, verify=False)
-        self.assertTrue(response.ok)
-
-        self.assertEqual("2", self._get_test_queue_message_count(queue_url))
-
-        response = self.sqs_client.receive_message(QueueUrl=queue_url)
-        messages = [json.loads(to_str(m["Body"])) for m in response["Messages"]]
-        record = messages[0]["Records"][0]
-        self.assertIsNotNone(record["s3"]["object"]["versionId"])
-        self.assertEqual(obj["VersionId"], record["s3"]["object"]["versionId"])
-
-        # clean up
-        self.s3_client.put_bucket_versioning(
-            Bucket=bucket_name, VersioningConfiguration={"Status": "Disabled"}
-        )
-        self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(bucket_name, [key_by_path, key_by_host])
-
-    def test_s3_put_object_notification_extra_xmlns(self):
-        """Test that request payloads with excessive xmlns attributes are
-        correctly handled.
-
-        This happens with the AWS Rust SDK.
-        See: https://github.com/awslabs/aws-sdk-rust/issues/301
-        """
-        bucket_name = "notif-%s" % short_uid()
-        s3_listener.handle_put_bucket_notification(
-            bucket_name,
-            """
-                <NotificationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                    <QueueConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                        <Id xmlns="http://s3.amazonaws.com/doc/2006-03-01/">queueid</Id>
-                        <Event xmlns="http://s3.amazonaws.com/doc/2006-03-01/">s3:ObjectCreated:Put</Event>
-                        <Event xmlns="http://s3.amazonaws.com/doc/2006-03-01/">s3:ObjectCreated:Post</Event>
-                        <Queue xmlns="http://s3.amazonaws.com/doc/2006-03-01/">queue</Queue>
-                        <Filter xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                            <S3Key xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                                <FilterRule xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                                    <Name xmlns="http://s3.amazonaws.com/doc/2006-03-01/">prefix</Name>
-                                    <Value xmlns="http://s3.amazonaws.com/doc/2006-03-01/">img/</Value>
-                                </FilterRule>
-                            </S3Key>
-                        </Filter>
-                    </QueueConfiguration>
-                    <TopicConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                        <Id xmlns="http://s3.amazonaws.com/doc/2006-03-01/">topicid</Id>
-                        <Event xmlns="http://s3.amazonaws.com/doc/2006-03-01/">s3:ObjectCreated:Put</Event>
-                        <Event xmlns="http://s3.amazonaws.com/doc/2006-03-01/">s3:ObjectCreated:Post</Event>
-                        <Topic xmlns="http://s3.amazonaws.com/doc/2006-03-01/">topic</Topic>
-                        <Filter xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                            <S3Key xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                                <FilterRule xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                                    <Name xmlns="http://s3.amazonaws.com/doc/2006-03-01/">prefix</Name>
-                                    <Value xmlns="http://s3.amazonaws.com/doc/2006-03-01/">img/</Value>
-                                </FilterRule>
-                            </S3Key>
-                        </Filter>
-                    </TopicConfiguration>
-                </NotificationConfiguration>
-            """,
-        )
-        self.assertEqual(
-            s3_listener.S3_NOTIFICATIONS[bucket_name],
-            [
-                {
-                    "Id": "queueid",
-                    "Event": ["s3:ObjectCreated:Put", "s3:ObjectCreated:Post"],
-                    "Queue": "queue",
-                    "Filter": {"S3Key": {"FilterRule": [{"Name": "Prefix", "Value": "img/"}]}},
-                },
-                {
-                    "Id": "topicid",
-                    "Event": ["s3:ObjectCreated:Put", "s3:ObjectCreated:Post"],
-                    "Topic": "topic",
-                    "Filter": {"S3Key": {"FilterRule": [{"Name": "Prefix", "Value": "img/"}]}},
-                },
-            ],
-        )
-
-    def test_s3_upload_fileobj_with_large_file_notification(self):
-        bucket_name = "notif-large-%s" % short_uid()
-        queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
-
-        # has to be larger than 64MB to be broken up into a multipart upload
-        file_size = 75000000
-        large_file = self.generate_large_file(file_size)
-        download_file = new_tmp_file()
-        try:
-            self.s3_client.upload_file(
-                Bucket=bucket_name, Key=large_file.name, Filename=large_file.name
-            )
-
-            self.assertEqual("1", self._get_test_queue_message_count(queue_url))
-
-            # ensure that the first message's eventName is ObjectCreated:CompleteMultipartUpload
-            messages = self.sqs_client.receive_message(QueueUrl=queue_url, AttributeNames=["All"])
-            message = json.loads(messages["Messages"][0]["Body"])
-            self.assertEqual(
-                "ObjectCreated:CompleteMultipartUpload",
-                message["Records"][0]["eventName"],
-            )
-
-            # download the file, check file size
-            self.s3_client.download_file(
-                Bucket=bucket_name, Key=large_file.name, Filename=download_file
-            )
-            self.assertEqual(file_size, os.path.getsize(download_file))
-
-            # clean up
-            self.sqs_client.delete_queue(QueueUrl=queue_url)
-            self._delete_bucket(bucket_name, large_file.name)
-        finally:
-            # clean up large files
-            large_file.close()
-            rm_rf(large_file.name)
-            rm_rf(download_file)
-
-    def test_s3_multipart_upload_with_small_single_part(self):
-        # In a multipart upload "Each part must be at least 5 MB in size, except the last part."
-        # https://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
-
-        bucket_name = "notif-large-%s" % short_uid()
-        key_by_path = "key-by-hostname"
-        queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
-
-        # perform upload
-        self._perform_multipart_upload(bucket=bucket_name, key=key_by_path, zip=True)
-
-        self.assertEqual("1", self._get_test_queue_message_count(queue_url))
-
-        # clean up
-        self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(bucket_name, [key_by_path])
-
     def test_invalid_range_error(self):
         bucket_name = "range-%s" % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
@@ -387,20 +228,6 @@ class TestS3(unittest.TestCase):
         self._perform_multipart_upload(bucket=bucket_name, key="acl-key2", acl="public-read-write")
         check_permissions("acl-key2", 2)
 
-    def test_s3_presigned_url_upload(self):
-        key_by_path = "key-by-hostname"
-        bucket_name = "notif-large-%s" % short_uid()
-        queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
-
-        self._perform_presigned_url_upload(bucket=bucket_name, key=key_by_path)
-
-        self.assertEqual("1", self._get_test_queue_message_count(queue_url))
-
-        # clean up
-        self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(bucket_name, [key_by_path])
-
     def test_s3_get_response_default_content_type_and_headers(self):
         # When no content type is provided by a PUT request
         # 'binary/octet-stream' should be used
@@ -431,52 +258,6 @@ class TestS3(unittest.TestCase):
                 self.assertIn(expected_etag, header_names)
         finally:
             http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
-
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
-
-    def test_s3_put_presigned_url_metadata(self):
-        # Object metadata should be passed as query params via presigned URL
-        # https://github.com/localstack/localstack/issues/544
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-
-        metadata = {"foo": "bar"}
-
-        # put object
-        object_key = "key-by-hostname"
-        url = client.generate_presigned_url(
-            "put_object",
-            Params={"Bucket": bucket_name, "Key": object_key, "Metadata": metadata},
-        )
-        # append metadata manually to URL (this is not easily possible with boto3, as "Metadata" cannot
-        # be passed to generate_presigned_url, and generate_presigned_post works differently)
-        url += "&x-amz-meta-foo=bar"
-
-        # get object and assert metadata is present
-        response = requests.put(url, data="content 123", verify=False)
-        self.assertLess(response.status_code, 400)
-        # response body should be empty, see https://github.com/localstack/localstack/issues/1317
-        self.assertEqual("", to_str(response.content))
-        response = client.head_object(Bucket=bucket_name, Key=object_key)
-        self.assertEqual("bar", response.get("Metadata", {}).get("foo"))
-
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
-
-    def test_s3_put_metadata_underscores(self):
-        # Object metadata keys should accept keys with underscores
-        # https://github.com/localstack/localstack/issues/1790
-        bucket_name = "test-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        # put object
-        object_key = "key-with-metadata"
-        metadata = {"test_meta_1": "foo", "__meta_2": "bar"}
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Metadata=metadata, Body="foo")
-        metadata_saved = self.s3_client.head_object(Bucket=bucket_name, Key=object_key)["Metadata"]
-        self.assertEqual(metadata, metadata_saved)
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
@@ -706,28 +487,6 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
-    def test_s3_head_response_content_length_same_as_upload(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-        body = "something body \n \n\r"
-        # put object
-        object_key = "key-by-hostname"
-        client.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Body=body,
-            ContentType="text/html; charset=utf-8",
-        )
-        url = client.generate_presigned_url(
-            "head_object", Params={"Bucket": bucket_name, "Key": object_key}
-        )
-        # get object and assert headers
-        response = requests.head(url, verify=False)
-        self.assertEqual(str(len(body)), response.headers["content-length"])
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
-
     def test_s3_put_object_chunked_newlines(self):
         # Test for https://github.com/localstack/localstack/issues/1571
         bucket_name = "test-bucket-%s" % short_uid()
@@ -879,39 +638,6 @@ class TestS3(unittest.TestCase):
 
         # clean up
         self._delete_bucket(bucket_name)
-
-    def test_s3_delete_response_content_length_zero(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-
-        for encoding in None, "gzip":
-            # put object
-            object_key = "key-by-hostname"
-            client.put_object(
-                Bucket=bucket_name,
-                Key=object_key,
-                Body="something",
-                ContentType="text/html; charset=utf-8",
-            )
-            url = client.generate_presigned_url(
-                "delete_object", Params={"Bucket": bucket_name, "Key": object_key}
-            )
-
-            # get object and assert headers
-            headers = {}
-            if encoding:
-                headers["Accept-Encoding"] = encoding
-            response = requests.delete(url, headers=headers, verify=False)
-
-            self.assertEqual(
-                "0",
-                response.headers["content-length"],
-                f"Unexpected response Content-Length for encoding {encoding}",
-            )
-
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
 
     def test_delete_object_tagging(self):
         bucket_name = "test-%s" % short_uid()
@@ -1378,38 +1104,6 @@ class TestS3(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("index", response.text)
 
-    def test_s3_event_notification_with_sqs(self):
-        key_by_path = "aws/bucket=2020/test1.txt"
-        bucket_name = "notif-sqs-%s" % short_uid()
-
-        queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
-        self.s3_client.put_bucket_versioning(
-            Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
-        )
-
-        body = "Lorem ipsum dolor sit amet, ... " * 30
-
-        # put an object
-        self.s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body=body)
-
-        self.assertEqual("1", self._get_test_queue_message_count(queue_url))
-
-        rs = self.sqs_client.receive_message(QueueUrl=queue_url)
-        record = [json.loads(to_str(m["Body"])) for m in rs["Messages"]][0]["Records"][0]
-
-        download_file = new_tmp_file()
-        self.s3_client.download_file(Bucket=bucket_name, Key=key_by_path, Filename=download_file)
-
-        self.assertEqual(record["s3"]["object"]["size"], os.path.getsize(download_file))
-
-        # clean up
-        self.s3_client.put_bucket_versioning(
-            Bucket=bucket_name, VersioningConfiguration={"Status": "Disabled"}
-        )
-        self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(bucket_name, [key_by_path])
-
     def test_s3_delete_object_with_version_id(self):
         test_1st_key = "aws/s3/testkey1.txt"
         test_2nd_key = "aws/s3/testkey2.txt"
@@ -1596,146 +1290,6 @@ class TestS3(unittest.TestCase):
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
         self.s3_client.delete_bucket(Bucket=bucket_name)
 
-    def test_s3_multipart_upload_file(self):
-        def upload(size_in_mb, bucket):
-            file_name = "{}.tmp".format(short_uid())
-            path = "{}".format(file_name)
-            with open(path, "wb") as f:
-                f.seek(int(size_in_mb * 1e6))
-                f.write(b"\0")
-                f.flush()
-                self.s3_client.upload_file(
-                    path,
-                    bucket,
-                    f"{file_name}",
-                    ExtraArgs={"StorageClass": "DEEP_ARCHIVE"},
-                )
-
-            os.remove(path)
-
-        bucket_name = "bucket-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        upload(1, bucket_name)
-        upload(9, bucket_name)
-        upload(15, bucket_name)
-
-        s3_resource = aws_stack.connect_to_resource("s3")
-        objects = s3_resource.Bucket(bucket_name).objects.all()
-        keys = []
-        for obj in objects:
-            keys.append(obj.key)
-            self.assertEqual("DEEP_ARCHIVE", obj.storage_class)
-
-        self._delete_bucket(bucket_name, keys)
-
-    def test_s3_put_object_notification_with_lambda(self):
-        bucket_name = "bucket-%s" % short_uid()
-        function_name = "func-%s" % short_uid()
-        table_name = "table-%s" % short_uid()
-
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_TRIGGERED_S3,
-            func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-        )
-
-        aws_stack.create_dynamodb_table(table_name=table_name, partition_key="uuid")
-
-        self.s3_client.put_bucket_notification_configuration(
-            Bucket=bucket_name,
-            NotificationConfiguration={
-                "LambdaFunctionConfigurations": [
-                    {
-                        "LambdaFunctionArn": aws_stack.lambda_function_arn(function_name),
-                        "Events": ["s3:ObjectCreated:*"],
-                    }
-                ]
-            },
-        )
-
-        # put an object
-        obj = self.s3_client.put_object(Bucket=bucket_name, Key=table_name, Body="something..")
-        etag = obj["ETag"]
-        time.sleep(2)
-
-        table = aws_stack.connect_to_resource("dynamodb").Table(table_name)
-
-        def check_table():
-            rs = table.scan()
-            self.assertEqual(1, len(rs["Items"]))
-            return rs
-
-        rs = retry(check_table, retries=4, sleep=3)
-
-        record = rs["Items"][0]
-        self.assertEqual(bucket_name, record["data"]["s3"]["bucket"]["name"])
-        self.assertEqual(etag, record["data"]["s3"]["object"]["eTag"])
-
-        # clean up
-        self._delete_bucket(bucket_name, [table_name])
-
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        lambda_client.delete_function(FunctionName=function_name)
-
-        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
-        dynamodb_client.delete_table(TableName=table_name)
-
-    def test_s3_put_object_notification_with_sns_topic(self):
-        bucket_name = "bucket-%s" % short_uid()
-        topic_name = "topic-%s" % short_uid()
-        queue_name = "queue-%s" % short_uid()
-        key_name = "bucket-key-%s" % short_uid()
-
-        sns_client = aws_stack.create_external_boto_client("sns")
-
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        queue_url = self.sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-
-        topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
-
-        sns_client.subscribe(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=aws_stack.sqs_queue_arn(queue_name),
-        )
-
-        self.s3_client.put_bucket_notification_configuration(
-            Bucket=bucket_name,
-            NotificationConfiguration={
-                "TopicConfigurations": [{"TopicArn": topic_arn, "Events": ["s3:ObjectCreated:*"]}]
-            },
-        )
-
-        # Put an object
-        # This will trigger an event to sns topic, sqs queue will get a message since it's a subscriber of topic
-        self.s3_client.put_object(Bucket=bucket_name, Key=key_name, Body="body content...")
-        time.sleep(2)
-
-        def get_message(q_url):
-            resp = self.sqs_client.receive_message(QueueUrl=q_url)
-            m = resp["Messages"][0]
-            self.sqs_client.delete_message(QueueUrl=q_url, ReceiptHandle=m["ReceiptHandle"])
-            return json.loads(m["Body"])
-
-        message = retry(get_message, retries=3, sleep=2, q_url=queue_url)
-        # We got a notification message in sqs queue (from s3 source)
-        self.assertEqual("Notification", message["Type"])
-        self.assertEqual(topic_arn, message["TopicArn"])
-        self.assertEqual("Amazon S3 Notification", message["Subject"])
-
-        r = json.loads(message["Message"])["Records"][0]
-        self.assertEqual("aws:s3", r["eventSource"])
-        self.assertEqual(bucket_name, r["s3"]["bucket"]["name"])
-        self.assertEqual(key_name, r["s3"]["object"]["key"])
-
-        # clean up
-        self._delete_bucket(bucket_name, [key_name])
-        self.sqs_client.delete_queue(QueueUrl=queue_url)
-        sns_client.delete_topic(TopicArn=topic_arn)
-
     def test_s3_get_deep_archive_object(self):
         bucket_name = "bucket-%s" % short_uid()
         object_key = "key-%s" % short_uid()
@@ -1794,89 +1348,6 @@ class TestS3(unittest.TestCase):
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
-
-    def test_encoding_notification_messages(self):
-        key = "a@b"
-        bucket_name = "notif-enc-%s" % short_uid()
-        queue_url = self.sqs_client.create_queue(QueueName="testQueue")["QueueUrl"]
-        queue_attributes = self.sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
-        )
-
-        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
-
-        # put an object where the bucket_name is in the path
-        self.s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
-
-        response = self.sqs_client.receive_message(QueueUrl=queue_url)
-        self.assertEqual(
-            "a%40b",
-            json.loads(response["Messages"][0]["Body"])["Records"][0]["s3"]["object"]["key"],
-        )
-        # clean up
-        self.s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": key}]})
-
-    def test_s3_notification_copy_event(self):
-        bucket_name = "notif-event-%s" % short_uid()
-        src_key = "key-src-%s" % short_uid()
-        queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(
-            queue_attributes, bucket_name=bucket_name, event_name="ObjectCreated:Copy"
-        )
-
-        self.s3_client.put_object(Bucket=bucket_name, Key=src_key, Body="something")
-
-        self.assertEqual("0", self._get_test_queue_message_count(queue_url))
-
-        dest_key = "key-dest-%s" % short_uid()
-        self.s3_client.copy_object(
-            Bucket=bucket_name,
-            CopySource={"Bucket": bucket_name, "Key": src_key},
-            Key=dest_key,
-        )
-
-        self.assertEqual("1", self._get_test_queue_message_count(queue_url))
-
-        # clean up
-        self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(bucket_name, [src_key, dest_key])
-
-    def add_xray_header(self, request, **kwargs):
-        request.headers[
-            "X-Amzn-Trace-Id"
-        ] = "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
-
-    def test_xray_header_to_sqs(self):
-        key = "test-data"
-        bucket_name = "bucket-%s" % short_uid()
-        self.s3_client.meta.events.register("before-send.s3.*", self.add_xray_header)
-        queue_url = self.sqs_client.create_queue(QueueName="testQueueNew")["QueueUrl"]
-        queue_attributes = self.sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
-        )
-
-        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
-
-        # put an object where the bucket_name is in the path
-        self.s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
-
-        def get_message(queue_url):
-            resp = self.sqs_client.receive_message(
-                QueueUrl=queue_url,
-                AttributeNames=["AWSTraceHeader"],
-                MessageAttributeNames=["All"],
-                VisibilityTimeout=0,
-            )
-
-            self.assertEqual(
-                "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1",
-                resp["Messages"][0]["Attributes"]["AWSTraceHeader"],
-            )
-
-        retry(get_message, retries=3, sleep=10, queue_url=queue_url)
-
-        # clean up
-        self.s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": key}]})
 
     def test_s3_batch_delete_objects_using_requests(self):
         bucket_name = "bucket-%s" % short_uid()
@@ -2535,46 +2006,6 @@ class TestS3(unittest.TestCase):
     # HELPER METHODS
     # ---------------
 
-    @staticmethod
-    def generate_large_file(size):
-        # https://stackoverflow.com/questions/8816059/create-file-of-particular-size-in-python
-        filename = "large_file_%s" % uuid.uuid4()
-        f = open(filename, "wb")
-        f.seek(size - 1)
-        f.write(b"\0")
-        f.close()
-        return open(filename, "r")
-
-    def _create_test_queue(self):
-        queue_url = self.sqs_client.create_queue(QueueName=f"queue-{short_uid()}")["QueueUrl"]
-        queue_attributes = self.sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
-        )
-        return queue_url, queue_attributes
-
-    def _create_test_notification_bucket(
-        self, queue_attributes, bucket_name, event_name="ObjectCreated:*"
-    ):
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        event_name = "s3:%s" % event_name
-        self.s3_client.put_bucket_notification_configuration(
-            Bucket=bucket_name,
-            NotificationConfiguration={
-                "QueueConfigurations": [
-                    {
-                        "QueueArn": queue_attributes["Attributes"]["QueueArn"],
-                        "Events": [event_name],
-                    }
-                ]
-            },
-        )
-
-    def _get_test_queue_message_count(self, queue_url):
-        queue_attributes = self.sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
-        )
-        return queue_attributes["Attributes"]["ApproximateNumberOfMessages"]
-
     def _delete_bucket(self, bucket_name, keys=None):
         if keys is None:
             keys = []
@@ -2658,12 +2089,6 @@ class TestS3(unittest.TestCase):
             UploadId=upload_id,
         )
 
-    def _perform_presigned_url_upload(self, bucket, key):
-        client = self._get_test_client()
-        url = client.generate_presigned_url("put_object", Params={"Bucket": bucket, "Key": key})
-        url = url + "&X-Amz-Credential=x&X-Amz-Signature=y"
-        requests.put(url, data="something", verify=False)
-
     def _get_test_client(self, region_name="us-east-1"):
         return boto3.client(
             "s3",
@@ -2672,66 +2097,6 @@ class TestS3(unittest.TestCase):
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
             region_name=region_name,
         )
-
-
-class TestS3New:
-    def test_region_header_exists(self, s3_client, s3_create_bucket):
-        bucket_name = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": TEST_REGION_1},
-        )
-        bucket_head = s3_client.head_bucket(Bucket=bucket_name)
-        buckets = s3_client.list_objects_v2(Bucket=bucket_name)
-        assert (
-            bucket_head["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == TEST_REGION_1
-        )
-        assert buckets["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == TEST_REGION_1
-
-    @pytest.mark.xfail(
-        reason="Deleting content of bucket with objects.all().delete() not working (InvalidAccessKeyId)"
-    )
-    def test_delete_bucket_with_content(self, s3_client, s3_create_bucket):
-        bucket_name = s3_create_bucket()
-        for i in range(0, 10, 1):
-            body = "test-" + str(i)
-            key = "test-key-" + str(i)
-            s3_client.put_object(Bucket=bucket_name, Key=key, Body=body)
-
-        resp = s3_client.list_objects(Bucket=bucket_name, MaxKeys=100)
-        assert 10 == len(resp["Contents"])
-
-        bucket = boto3.resource("s3").Bucket(bucket_name)
-        bucket.objects.all().delete()
-        bucket.delete()
-
-        resp = s3_client.list_buckets()
-        assert len(resp["Buckets"]) == 0
-
-    @pytest.mark.aws_validated
-    def test_put_and_get_object_with_utf8_key(self, s3_client, s3_create_bucket):
-        bucket = s3_create_bucket()
-        response = s3_client.put_object(Bucket=bucket, Key="Ā0Ä", Body=b"abc123")
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        response = s3_client.get_object(Bucket=bucket, Key="Ā0Ä")
-        assert response["Body"].read() == b"abc123"
-
-    @pytest.mark.aws_validated
-    def test_s3_resource_object_slashes_in_key(self, s3_resource, s3_create_bucket):
-        bucket = s3_create_bucket()
-        s3_resource.Object(bucket, "/foo").put(Body="foobar")
-        s3_resource.Object(bucket, "bar").put(Body="barfoo")
-
-        with pytest.raises(ClientError) as e:
-            s3_resource.Object(bucket, "foo").get()
-        e.match("NoSuchKey")
-
-        with pytest.raises(ClientError) as e:
-            s3_resource.Object(bucket, "/bar").get()
-        e.match("NoSuchKey")
-
-        response = s3_resource.Object(bucket, "/foo").get()
-        assert response["Body"].read() == b"foobar"
-        response = s3_resource.Object(bucket, "bar").get()
-        assert response["Body"].read() == b"barfoo"
 
 
 @pytest.mark.parametrize(

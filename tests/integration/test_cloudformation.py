@@ -1541,7 +1541,7 @@ class TestCloudFormation:
         iam.delete_role(RoleName=role_name)
 
     def test_cfn_handle_serverless_api_resource(self):
-        stack_name = "stack-%s" % short_uid()
+        stack_name = f"stack-{short_uid()}"
 
         cloudformation = aws_stack.create_external_boto_client("cloudformation")
 

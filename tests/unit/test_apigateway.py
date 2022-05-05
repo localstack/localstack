@@ -1,4 +1,5 @@
 import json
+import os
 import unittest
 from unittest.mock import Mock
 
@@ -7,40 +8,51 @@ import pytest
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
-from localstack.services.apigateway import apigateway_listener
-from localstack.services.apigateway.apigateway_listener import (
-    ApiInvocationContext,
-    RequestValidator,
+from localstack.services.apigateway.helpers import (
+    Resolver,
+    apply_json_patch_safe,
+    extract_path_params,
+    extract_query_string_params,
+    get_resource_for_path,
 )
-from localstack.services.apigateway.helpers import apply_json_patch_safe, get_resource_for_path
 from localstack.services.apigateway.integration import (
     RequestTemplates,
     ResponseTemplates,
     VelocityUtil,
 )
+from localstack.services.apigateway.invocations import (
+    ApiInvocationContext,
+    RequestValidator,
+    apply_request_parameters,
+)
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
+from localstack.utils.files import load_file
+
+
+def load_test_resource(file_name: str, file_path: str = None) -> str:
+    if file_path:
+        return load_file(os.path.join(os.path.dirname(__file__), file_path, file_name))
+    return load_file(os.path.join(os.path.dirname(__file__), "./templates", file_name))
 
 
 class ApiGatewayPathsTest(unittest.TestCase):
     def test_extract_query_params(self):
-        path, query_params = apigateway_listener.extract_query_string_params(
-            "/foo/bar?foo=foo&bar=bar&bar=baz"
-        )
+        path, query_params = extract_query_string_params("/foo/bar?foo=foo&bar=bar&bar=baz")
         self.assertEqual("/foo/bar", path)
         self.assertEqual({"foo": "foo", "bar": ["bar", "baz"]}, query_params)
 
     def test_extract_path_params(self):
-        params = apigateway_listener.extract_path_params("/foo/bar", "/foo/{param1}")
+        params = extract_path_params("/foo/bar", "/foo/{param1}")
         self.assertEqual({"param1": "bar"}, params)
 
-        params = apigateway_listener.extract_path_params("/foo/bar1/bar2", "/foo/{param1}/{param2}")
+        params = extract_path_params("/foo/bar1/bar2", "/foo/{param1}/{param2}")
         self.assertEqual({"param1": "bar1", "param2": "bar2"}, params)
 
-        params = apigateway_listener.extract_path_params("/foo/bar", "/foo/bar")
+        params = extract_path_params("/foo/bar", "/foo/bar")
         self.assertEqual({}, params)
 
-        params = apigateway_listener.extract_path_params("/foo/bar/baz", "/foo/{proxy+}")
+        params = extract_path_params("/foo/bar/baz", "/foo/{proxy+}")
         self.assertEqual({"proxy": "bar/baz"}, params)
 
     def test_path_matches(self):
@@ -104,7 +116,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
             "cacheKeyParameters": [],
         }
 
-        uri = apigateway_listener.apply_request_parameters(
+        uri = apply_request_parameters(
             uri="https://httpbin.org/anything/{proxy}",
             integration=integration,
             path_params={"proxy": "foo/bar/baz"},
@@ -366,3 +378,33 @@ class TestTemplates:
             "stageVariable1": "value1",
             "stageVariable2": "value2",
         }
+
+
+def test_openapi_resolver_given_unresolvable_references():
+    document = {
+        "schema": {"$ref": "#/definitions/NotFound"},
+        "definitions": {"Found": {"type": "string"}},
+    }
+    resolver = Resolver(document, allow_recursive=True)
+    result = resolver.resolve_references()
+    assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
+
+
+def test_openapi_resolver_given_invalid_references():
+    document = {"schema": {"$ref": ""}, "definitions": {"Found": {"type": "string"}}}
+    resolver = Resolver(document, allow_recursive=True)
+    result = resolver.resolve_references()
+    assert result == {"schema": None, "definitions": {"Found": {"type": "string"}}}
+
+
+def test_openapi_resolver_given_list_references():
+    document = {
+        "schema": {"$ref": "#/definitions/Found"},
+        "definitions": {"Found": {"value": ["v1", "v2"]}},
+    }
+    resolver = Resolver(document, allow_recursive=True)
+    result = resolver.resolve_references()
+    assert result == {
+        "schema": {"value": ["v1", "v2"]},
+        "definitions": {"Found": {"value": ["v1", "v2"]}},
+    }
