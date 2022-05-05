@@ -26,7 +26,7 @@ class TestLambdaUtils:
         assert ".build/handler.js" == get_handler_file_from_name(
             ".build/handler.execute", LAMBDA_RUNTIME_NODEJS
         )
-        assert ".build/handler" == get_handler_file_from_name(
+        assert "./.build/handler.execute" == get_handler_file_from_name(
             "./.build/handler.execute", LAMBDA_RUNTIME_GOLANG
         )
         assert "CSharpHandlers.dll" == get_handler_file_from_name(
@@ -36,8 +36,9 @@ class TestLambdaUtils:
         assert "test/handler.rb" == get_handler_file_from_name(
             "test.handler.execute", LAMBDA_RUNTIME_RUBY
         )
-        assert "test.handler" == get_handler_file_from_name(
-            "./test.handler.execute", LAMBDA_RUNTIME_GOLANG
+        assert "test.handler.execute" == get_handler_file_from_name(
+            "test.handler.execute", LAMBDA_RUNTIME_GOLANG
         )
+        assert "main" == get_handler_file_from_name("main", LAMBDA_RUNTIME_GOLANG)
         assert "../handler.py" == get_handler_file_from_name("../handler.execute")
         assert "bootstrap" == get_handler_file_from_name("", LAMBDA_RUNTIME_PROVIDED)

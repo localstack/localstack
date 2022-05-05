@@ -36,7 +36,7 @@ lambda_asf_only = pytest.mark.skipif(
 )
 
 
-# TODO: move this to fixtures / reconcile with ohter fixture usage
+# TODO: move this to fixtures / reconcile with other fixture usage
 @pytest.fixture
 def create_lambda_function_aws(
     lambda_client,
@@ -77,18 +77,20 @@ def create_lambda_function_aws(
             LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
 
-code = """
-def handler(event,ctx):
-    print("hello world!")
-"""
+# 1. AWS mit --snapshot-update
+# 2. AWS mit --snapshot-verify
+# 3. localstack mit --snapshot-verify
 
 
+@pytest.mark.snapshot
 @pytest.mark.aws_compatible
 class TestLambdaAsfApi:
-    def test_basic_invoke(self, lambda_client, create_lambda_function_aws, lambda_su_role):
+    def test_basic_invoke(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+    ):
         fn_name = f"ls-fn-{short_uid()}"
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
-            create_lambda_function_aws(
+            response = create_lambda_function_aws(
                 FunctionName=fn_name,
                 Handler="index.handler",
                 Code={"ZipFile": f.read()},
@@ -96,6 +98,10 @@ class TestLambdaAsfApi:
                 Role=lambda_su_role,
                 Runtime="python3.9",
             )
+            snapshot.match("lambda_create_fn", response)
+
+        get_fn_result = lambda_client.get_function(FunctionName=fn_name)
+        snapshot.match("lambda_get_fn", get_fn_result)
 
         invoke_result = lambda_client.invoke(FunctionName=fn_name, Payload=bytes("{}", "utf-8"))
-        assert 200 == invoke_result["StatusCode"]
+        snapshot.match("lambda_invoke_result", invoke_result)

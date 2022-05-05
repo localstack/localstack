@@ -309,6 +309,7 @@ def connect_api_gateway_to_http_with_lambda_proxy(
     auth_type=None,
     auth_creator_func=None,
     http_method=None,
+    client=None,
 ):
     if methods is None:
         methods = []
@@ -336,6 +337,7 @@ def connect_api_gateway_to_http_with_lambda_proxy(
         resources=resources,
         stage_name=stage_name,
         auth_creator_func=auth_creator_func,
+        client=client,
     )
 
 
