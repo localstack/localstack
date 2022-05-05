@@ -3,7 +3,19 @@ dicts, list, sets). """
 
 import logging
 import re
-from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sized,
+    Tuple,
+    Type,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -352,6 +364,6 @@ def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
     )
 
 
-def select_from_typed_dict(typed_dict: "_TypedDict", obj: Dict):
+def select_from_typed_dict(typed_dict: Type[TypedDict], obj: Dict):
     """Select a subset of attributes from a dictionary based on the keys of a given `TypedDict`"""
     return select_attributes(obj, [*typed_dict.__required_keys__, *typed_dict.__optional_keys__])
