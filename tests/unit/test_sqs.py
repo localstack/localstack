@@ -1,4 +1,5 @@
-from localstack.services.sqs import provider, sqs_listener
+from localstack.services.sqs import provider
+from localstack.services.sqs.utils import get_message_attributes_md5
 from localstack.utils.common import convert_to_printable_chars
 
 
@@ -8,7 +9,7 @@ def test_sqs_message_attrs_md5():
         "MessageAttribute.1.Value.StringValue": "1493147359900",
         "MessageAttribute.1.Value.DataType": "Number",
     }
-    md5 = sqs_listener.ProxyListenerSQS.get_message_attributes_md5(msg_attrs)
+    md5 = get_message_attributes_md5(msg_attrs)
     assert md5 == "235c5c510d26fb653d073faed50ae77c"
 
 
@@ -30,7 +31,7 @@ def test_compare_sqs_message_attrs_md5():
         "MessageAttribute.1.Value.StringValue": "1493147359900",
         "MessageAttribute.1.Value.DataType": "Number",
     }
-    md5_listener = sqs_listener.ProxyListenerSQS.get_message_attributes_md5(msg_attrs_listener)
+    md5_listener = get_message_attributes_md5(msg_attrs_listener)
     msg_attrs_provider = {"timestamp": {"StringValue": "1493147359900", "DataType": "Number"}}
     md5_provider = provider._create_message_attribute_hash(msg_attrs_provider)
     assert md5_provider == md5_listener

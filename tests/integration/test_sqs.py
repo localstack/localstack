@@ -73,8 +73,6 @@ def queue_exists(sqs_client, queue_url: str) -> bool:
 class TestSqsProvider:
     @pytest.mark.only_localstack
     def test_get_queue_url_contains_request_host(self, sqs_client, sqs_create_queue, monkeypatch):
-        if config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf":
-            pytest.xfail("this test only works for the ASF provider")
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
         queue_name = "test-queue-" + short_uid()
@@ -446,10 +444,6 @@ class TestSqsProvider:
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
         monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
         monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
-        # TODO: remove once the old provider is discontinued
-        from localstack.services.sqs import sqs_listener as old_sqs_listener
-
-        monkeypatch.setattr(old_sqs_listener, "SQS_PORT_EXTERNAL", external_port)
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -492,8 +486,9 @@ class TestSqsProvider:
         assert re.match(rf".*<QueueUrl>\s*http://[^:]+:{port}[^<]+</QueueUrl>.*", content, **kwargs)
 
     @pytest.mark.only_localstack
-    @pytest.mark.xfail
     def test_external_host_via_header_complete_message_lifecycle(self, monkeypatch):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
+
         queue_name = f"queue-{short_uid()}"
 
         edge_url = config.get_edge_url()
@@ -701,10 +696,6 @@ class TestSqsProvider:
             sqs_create_queue(QueueName=queue_name, Attributes=attributes)
         e.match("InvalidParameterValue")
 
-    @pytest.mark.skipif(
-        config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf",
-        reason="New provider test which isn't covered by old one",
-    )
     def test_standard_queue_cannot_have_fifo_suffix(self, sqs_create_queue):
         queue_name = f"queue-{short_uid()}.fifo"
         with pytest.raises(Exception) as e:
@@ -1065,10 +1056,6 @@ class TestSqsProvider:
             == result_send["MessageId"]
         )
 
-    @pytest.mark.skipif(
-        config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf",
-        reason="Currently fails for moto provider",
-    )
     def test_dead_letter_queue_chain(self, sqs_client, sqs_create_queue):
         # test a chain of 3 queues, with DLQ flow q1 -> q2 -> q3
 
@@ -1597,10 +1584,6 @@ class TestSqsProvider:
             "Messages"
         )[0].get("MD5OfBody")
 
-    @pytest.mark.skipif(
-        config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf",
-        reason="New provider test which isn't covered by old one",
-    )
     def test_sse_attributes_are_accepted(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1637,10 +1620,6 @@ def sqs_http_client(aws_http_client_factory):
     yield aws_http_client_factory("sqs")
 
 
-@pytest.mark.skipif(
-    config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf",
-    reason="query API implemented as part of the new ASF provider",
-)
 class TestSqsQueryApi:
     @pytest.mark.xfail(
         reason="this behaviour is deprecated (see https://github.com/localstack/localstack/pull/5928)",
