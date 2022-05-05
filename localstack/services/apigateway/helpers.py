@@ -650,7 +650,7 @@ def import_api_from_openapi_spec(
     def add_path(path, parts, parent_id=""):
         child_id = create_resource_id()
         path = path or "/"
-        child = apigateway_models.Resource(
+        resource = apigateway_models.Resource(
             resource_id=child_id,
             region_name=rest_api.region_name,
             api_id=rest_api.id,
@@ -661,13 +661,8 @@ def import_api_from_openapi_spec(
         for method, method_schema in resolved_schema["paths"].get(path, {}).items():
             method = method.upper()
 
-            authorizer = create_authorizer(method_schema)
-            method_resource = child.add_method(
-                method,
-                authorization_type=authorizer.get("type"),
-                api_key_required=None,
-                authorizer_id=authorizer.get("id"),
-            )
+            method_resource = create_method_resource(resource, method, method_schema)
+
             method_integration = method_schema.get("x-amazon-apigateway-integration", {})
             responses = method_schema.get("responses", {})
             for status_code in responses:
@@ -701,10 +696,22 @@ def import_api_from_openapi_spec(
                 ),
                 content_handling=None,
             )
-            child.resource_methods[method]["methodIntegration"] = integration
+            resource.resource_methods[method]["methodIntegration"] = integration
 
-        rest_api.resources[child_id] = child
-        return child
+        rest_api.resources[child_id] = resource
+        return resource
+
+    def create_method_resource(child, method, method_schema):
+        return (
+            child.add_method(
+                method,
+                authorization_type=authorizer.get("type"),
+                api_key_required=None,
+                authorizer_id=authorizer.get("id"),
+            )
+            if (authorizer := create_authorizer(method_schema))
+            else child.add_method(method, None, None)
+        )
 
     if definitions := resolved_schema.get("definitions", {}):
         for name, model in definitions.items():

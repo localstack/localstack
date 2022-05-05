@@ -1145,7 +1145,7 @@ class TestAPIGateway(unittest.TestCase):
             self.assertEqual(200, response.status_code)
 
     def test_import_rest_api(self):
-        rest_api_name = "restapi-%s" % short_uid()
+        rest_api_name = f"restapi-{short_uid()}"
 
         client = aws_stack.create_external_boto_client("apigateway")
         rest_api_id = client.create_rest_api(name=rest_api_name)["id"]
