@@ -1154,6 +1154,12 @@ class TestAPIGateway(unittest.TestCase):
         rs = client.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
         self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
 
+        resources = client.get_resources(restApiId=rest_api_id)
+        for rv in resources.get("items"):
+            for method in rv.get("resourceMethods", {}).values():
+                assert method.get("authorizationType") == "request"
+                assert method.get("authorizerId") is not None
+
         spec_file = load_file(TEST_SWAGGER_FILE_YAML)
         rs = client.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
         self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
