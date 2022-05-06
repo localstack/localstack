@@ -61,7 +61,6 @@ jobs:
       - run:
           name: Unit tests
           environment:
-            DEBUG: 1
             TEST_PATH: "tests/unit"
             PYTEST_ARGS: "--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests"
             COVERAGE_ARGS: "-p"
@@ -103,7 +102,6 @@ jobs:
       - run:
           name: Test Docker client
           environment:
-            DEBUG: 1
             TEST_PATH: "tests/integration/docker_utils"
             TEST_SKIP_LOCALSTACK_START: 1
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/docker-client.xml -o junit_suite_name='docker-client'"
@@ -112,20 +110,18 @@ jobs:
       - run:
           name: Test 'docker' Lambda executor
           environment:
-            DEBUG: 1
             LAMBDA_EXECUTOR: "docker"
             USE_SSL: 1
             TEST_ERROR_INJECTION: 1
-            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py"
+            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/test_apigateway.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
       - run:
           name: Test 'docker-reuse' Lambda executor
           environment:
-            DEBUG: 1
             LAMBDA_EXECUTOR: "docker-reuse"
-            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py"
+            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/test_apigateway.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
@@ -149,7 +145,6 @@ jobs:
       - run:
           name: Test ElasticMQ SQS provider
           environment:
-            DEBUG: 1
             SQS_PROVIDER: "elasticmq"
             TEST_PATH: "tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/elasticmq.xml -o junit_suite_name='elasticmq'"
@@ -158,7 +153,6 @@ jobs:
       - run:
           name: Test ASF SQS provider
           environment:
-            DEBUG: 1
             PROVIDER_OVERRIDE_SQS: "asf"
             TEST_PATH: "tests/integration/test_sqs.py"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/sqs_asf.xml -o junit_suite_name='sqs_asf'"
@@ -184,7 +178,6 @@ jobs:
       - run:
           name: Test ASF Lambda provider
           environment:
-            DEBUG: 1
             PROVIDER_OVERRIDE_LAMBDA: "asf"
             TEST_PATH: "tests/integration/awslambda/test_lambda_api.py"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/lambda_asf.xml -o junit_suite_name='lambda_asf'"
@@ -210,7 +203,6 @@ jobs:
       - run:
           name: Run bootstrap tests
           environment:
-            DEBUG: 1
             TEST_PATH: "tests/bootstrap"
             PYTEST_ARGS: "--junitxml=target/reports/bootstrap.xml -o junit_suite_name='bootstrap'"
             COVERAGE_ARGS: "-p"

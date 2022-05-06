@@ -41,6 +41,7 @@ from localstack.utils.aws.dead_letter_queue import (
     sqs_error_to_dead_letter_queue,
 )
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
+from localstack.utils.collections import select_attributes
 from localstack.utils.common import (
     TMP_FILES,
     CaptureOutput,
@@ -108,6 +109,9 @@ LAMBDA_CONCURRENCY_LOCK = {}
 # CWD folder of handler code in Lambda containers
 DOCKER_TASK_FOLDER = "/var/task"
 
+# TODO remove once clarification of apigateway contexts is complete. Really bad hack!!
+ALLOWED_IDENTITY_FIELDS = ["cognitoIdentityId", "cognitoIdentityPoolId"]
+
 # Lambda event type
 LambdaEvent = Union[Dict[str, Any], str, bytes]
 
@@ -141,11 +145,13 @@ class LambdaContext:
         self.invoked_function_arn = lambda_function.arn()
         if qualifier:
             self.invoked_function_arn += ":" + qualifier
-        self.cognito_identity = context.get("identity")
+        self.cognito_identity = context.get("identity") and select_attributes(
+            context.get("identity"), ALLOWED_IDENTITY_FIELDS
+        )
         self.aws_request_id = str(uuid.uuid4())
         self.memory_limit_in_mb = lambda_function.memory_size or self.DEFAULT_MEMORY_LIMIT
-        self.log_group_name = "/aws/lambda/%s" % self.function_name
-        self.log_stream_name = "%s/[1]%s" % (timestamp(format="%Y/%m/%d"), short_uid())
+        self.log_group_name = f"/aws/lambda/{self.function_name}"
+        self.log_stream_name = f"{timestamp(format='%Y/%m/%d')}/[1]{short_uid()}"
 
     def get_remaining_time_in_millis(self):
         # TODO implement!

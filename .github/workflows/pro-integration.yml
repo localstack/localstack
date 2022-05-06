@@ -116,7 +116,8 @@ jobs:
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker' \
             ../localstack/tests/integration/awslambda/ \
-            ../localstack/tests/integration/test_integration.py
+            ../localstack/tests/integration/test_integration.py \
+            ../localstack/tests/integration/test_apigateway.py
       - name: Run Lambda Tests for lambda executor docker-reuse
         env:
           DEBUG: 0
@@ -128,7 +129,8 @@ jobs:
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse' \
             ../localstack/tests/integration/awslambda/ \
-            ../localstack/tests/integration/test_integration.py
+            ../localstack/tests/integration/test_integration.py \
+            ../localstack/tests/integration/test_apigateway.py
       - name: Publish LocalStack Community Integration Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()

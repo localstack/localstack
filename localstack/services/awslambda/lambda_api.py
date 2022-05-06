@@ -101,7 +101,10 @@ BATCH_SIZE_RANGES = {
     "kafka": (100, 10000),
     "kinesis": (100, 10000),
     "dynamodb": (100, 1000),
-    "sqs": (10, 10),
+    "sqs": (
+        10,
+        10,
+    ),  # should be (10,10000) for normal SQS queues, (10,10) for FIFO https://docs.aws.amazon.com/lambda/latest/dg/API_CreateEventSourceMapping.html#SSS-CreateEventSourceMapping-request-BatchSize
 }
 
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+00:00"

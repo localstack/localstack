@@ -5,7 +5,7 @@ import math
 import typing as t
 from asyncio import AbstractEventLoop
 from concurrent.futures import Executor
-from urllib.parse import urlparse
+from urllib.parse import quote, unquote, urlparse
 
 if t.TYPE_CHECKING:
     from _typeshed import WSGIApplication, WSGIEnvironment
@@ -21,11 +21,12 @@ def populate_wsgi_environment(environ: "WSGIEnvironment", scope: "HTTPScope"):
     """
     environ["REQUEST_METHOD"] = scope["method"]
     # path/uri info
-    environ["SCRIPT_NAME"] = scope.get("root_path", "").rstrip("/")
+    # prepare the paths for the "WSGI decoding dance" done by werkzeug
+    environ["SCRIPT_NAME"] = unquote(quote(scope.get("root_path", "").rstrip("/")), "latin-1")
 
     path = scope["path"]
     path = path if path[0] == "/" else urlparse(path).path
-    environ["PATH_INFO"] = path
+    environ["PATH_INFO"] = unquote(quote(path), "latin-1")
 
     query_string = scope.get("query_string")
     if query_string:
