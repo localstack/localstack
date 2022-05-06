@@ -319,10 +319,13 @@ def ssm():
 
 @aws_provider()
 def events():
-    from localstack.services.events import events_listener, events_starter
+    from localstack.services.events.provider import EventsProvider
+    from localstack.services.moto import MotoFallbackDispatcher
 
+    provider = EventsProvider()
     return Service(
-        "events", listener=events_listener.UPDATE_EVENTS, start=events_starter.start_events
+        "events",
+        listener=AwsApiListener("events", MotoFallbackDispatcher(provider)),
     )
 
 

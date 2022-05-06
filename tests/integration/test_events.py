@@ -10,7 +10,7 @@ import pytest
 
 from localstack import config
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
-from localstack.services.events.events_listener import _get_events_tmp_dir
+from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil

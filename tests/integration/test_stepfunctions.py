@@ -5,7 +5,7 @@ import unittest
 import pytest
 
 from localstack.services.awslambda import lambda_api
-from localstack.services.events.events_listener import TEST_EVENTS_CACHE
+from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, load_file, retry, short_uid
