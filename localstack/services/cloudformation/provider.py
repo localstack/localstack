@@ -237,6 +237,7 @@ class Stack:
         result = dict(self.template_resources)
 
         def add_params(defaults=True):
+            # TODO: support UsePreviousValue at some point after cleaning this up
             for param in self.stack_parameters(defaults=defaults):
                 if param["ParameterKey"] not in result:
                     resolved_value = param.get("ResolvedValue")
@@ -247,7 +248,7 @@ class Stack:
                             "Value": (
                                 resolved_value
                                 if resolved_value is not None
-                                else param["ParameterValue"]
+                                else param.get("ParameterValue")
                             )
                         },
                     }

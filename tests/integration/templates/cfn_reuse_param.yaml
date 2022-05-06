@@ -1,0 +1,35 @@
+Parameters:
+  DeployParam:
+    Type: String
+    Default: "yes"
+  CustomTag:
+    Type: String
+    Default: CustomValue
+Resources:
+  requiredTopic979DB646:
+    Type: AWS::SNS::Topic
+    Properties:
+      Tags:
+        - Key: CustomTag
+          Value:
+            Ref: CustomTag
+  optionalTopicC9EB7872:
+    Type: AWS::SNS::Topic
+    Condition: ShouldHaveTopic
+Outputs:
+  RequiredTopicOutput:
+    Value:
+      Fn::GetAtt:
+        - requiredTopic979DB646
+        - TopicName
+  TopicNameOutput:
+    Value:
+      Fn::GetAtt:
+        - optionalTopicC9EB7872
+        - TopicName
+    Condition: ShouldHaveTopic
+Conditions:
+  ShouldHaveTopic:
+    Fn::Equals:
+      - Ref: DeployParam
+      - "yes"
