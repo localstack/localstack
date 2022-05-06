@@ -165,11 +165,16 @@ class IamProvider(IamApi):
         role["RoleId"] = moto_role.id
         role["Arn"] = moto_role.arn
         role["CreateDate"] = moto_role.create_date
-        role["AssumeRolePolicyDocument"] = moto_role.assume_role_policy_document
-        role["Description"] = moto_role.description
-        role["MaxSessionDuration"] = moto_role.max_session_duration
-        role["PermissionsBoundary"] = moto_role.permissions_boundary
-        role["Tags"] = moto_role.tags
+        if moto_role.assume_role_policy_document:
+            role["AssumeRolePolicyDocument"] = moto_role.assume_role_policy_document
+        if moto_role.description:
+            role["Description"] = moto_role.description
+        if moto_role.max_session_duration:
+            role["MaxSessionDuration"] = moto_role.max_session_duration
+        if moto_role.permissions_boundary:
+            role["PermissionsBoundary"] = moto_role.permissions_boundary
+        if moto_role.tags:
+            role["Tags"] = [Tag(Key=k, Value=v) for k, v in moto_role.tags.items()]
         # role["RoleLastUsed"]: # TODO: add support
         return role
 
