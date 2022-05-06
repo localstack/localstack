@@ -181,3 +181,10 @@ def test_multipart_parsing():
         result[k] = file_storage.stream.read().decode("utf-8")
 
     assert result == {"foo": "bar", "baz": "ed"}
+
+
+def test_utf8_path():
+    r = Request("GET", "/foo/Ā0Ä")
+
+    assert r.path == "/foo/Ā0Ä"
+    assert r.environ["PATH_INFO"] == "/foo/Ä\x800Ã\x84"  # quoted and latin-1 encoded

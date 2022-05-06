@@ -6,7 +6,7 @@ VENV_BIN ?= python3 -m venv
 VENV_DIR ?= .venv
 PIP_CMD ?= pip3
 TEST_PATH ?= .
-PYTEST_LOGLEVEL ?= warning
+PYTEST_LOGLEVEL ?=
 MAIN_CONTAINER_NAME ?= localstack_main
 
 MAJOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f1)

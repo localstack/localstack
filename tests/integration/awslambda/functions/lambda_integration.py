@@ -1,3 +1,6 @@
+"""
+TODO: replace this file with smaller scoped lambda handlers
+"""
 import base64
 import json
 import logging
@@ -16,6 +19,7 @@ MSG_BODY_DELETE_BATCH = "delete_batch_test"
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
+LOGGER.flush = lambda: [handler_weakref().flush() for handler_weakref in logging._handlerList]
 
 
 # Do not import this function from localstack.utils.common (this is a standalone application / lambda).
@@ -42,8 +46,9 @@ def handler(event, context):
     """Generic event forwarder Lambda."""
 
     # print test messages (to test CloudWatch Logs integration)
+    print("Lambda log message - print function", flush=True)
     LOGGER.info("Lambda log message - logging module")
-    print("Lambda log message - print function")
+    LOGGER.flush()
 
     if MSG_BODY_RAISE_ERROR_FLAG in event:
         raise Exception("Test exception (this is intentional)")
