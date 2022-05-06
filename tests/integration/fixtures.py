@@ -369,6 +369,29 @@ def sns_create_topic(sns_client):
 
 
 @pytest.fixture
+def sns_subscription(sns_client):
+    sub_arns = []
+
+    def _create_sub(**kwargs):
+        if kwargs.get("ReturnSubscriptionArn") is None:
+            kwargs["ReturnSubscriptionArn"] = True
+
+        # requires 'TopicArn', 'Protocol', and 'Endpoint'
+        response = sns_client.subscribe(**kwargs)
+        sub_arn = response["SubscriptionArn"]
+        sub_arns.append(sub_arn)
+        return response
+
+    yield _create_sub
+
+    for sub_arn in sub_arns:
+        try:
+            sns_client.unsubscribe(SubscriptionArn=sub_arn)
+        except Exception as e:
+            LOG.debug(f"error cleaning up subscription {sub_arn}: {e}")
+
+
+@pytest.fixture
 def sns_topic(sns_client, sns_create_topic) -> "GetTopicAttributesResponseTypeDef":
     topic_arn = sns_create_topic()["TopicArn"]
     return sns_client.get_topic_attributes(TopicArn=topic_arn)

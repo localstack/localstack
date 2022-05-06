@@ -524,13 +524,12 @@ class TestSNSProvider:
         assert tags["Tags"][0]["Key"] == "456"
         assert tags["Tags"][0]["Value"] == "pqr"
 
-    def test_topic_subscription(self, sns_client, sns_create_topic):
+    def test_topic_subscription(self, sns_client, sns_create_topic, sns_subscription):
         topic_arn = sns_create_topic()["TopicArn"]
-        subscription = sns_client.subscribe(
+        subscription = sns_subscription(
             TopicArn=topic_arn,
             Protocol="email",
             Endpoint="localstack@yopmail.com",
-            ReturnSubscriptionArn=True,
         )
         sns_backend = SNSBackend.get()
 
