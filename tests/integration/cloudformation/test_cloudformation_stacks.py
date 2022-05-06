@@ -1,4 +1,5 @@
 import jinja2
+import pytest
 import yaml
 
 from localstack.utils.common import short_uid
@@ -81,4 +82,53 @@ def test_list_stack_resources_for_removed_resource(
     assert statuses == {"CREATE_COMPLETE", "UPDATE_COMPLETE"}
 
 
-# TODO: more tests
+@pytest.mark.xfail(reason="outputs don't behave well in combination with conditions")
+@pytest.mark.aws_validated
+def test_parameter_usepreviousvalue_behavior(cfn_client, cleanups):
+    stack_name = f"stack-{short_uid()}"
+    cleanups.append(lambda _: cfn_client.delete_stack(StackName=stack_name))
+
+    # 1. create with overridden default value. Due to the condition this should neither create the optional topic, nor the corresponding output
+    create_response = cfn_client.create_stack(
+        StackName=stack_name,
+        TemplateBody=load_template_raw("cfn_reuse_param.yaml"),
+        Parameters=[{"ParameterKey": "DeployParam", "ParameterValue": "no"}],
+    )
+    stack_id = create_response["StackId"]
+
+    def wait_stack_done():
+        return cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["StackStatus"] in [
+            "CREATE_COMPLETE",
+            "UPDATE_COMPLETE",
+        ]
+
+    assert wait_until(wait_stack_done)
+    stack_describe_response = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
+    assert len(stack_describe_response["Outputs"]) == 1
+
+    # 2. update using UsePreviousValue. DeployParam should still be "no", still overriding the default and the only change should be the changed tag on the required topic
+    cfn_client.update_stack(
+        StackName=stack_name,
+        TemplateBody=load_template_raw("cfn_reuse_param.yaml"),
+        Parameters=[
+            {"ParameterKey": "CustomTag", "ParameterValue": "trigger-change"},
+            {"ParameterKey": "DeployParam", "UsePreviousValue": True},
+        ],
+    )
+    assert wait_until(wait_stack_done)
+    stack_describe_response = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
+    assert len(stack_describe_response["Outputs"]) == 1
+
+    # 3. update with setting the deployparam to "yes" not. The condition will evaluate to true and thus create the topic + output
+    # note: for an even trickier challenge for the cloudformation engine, remove the second parameter key. Behavior should stay the same.
+    cfn_client.update_stack(
+        StackName=stack_name,
+        TemplateBody=load_template_raw("cfn_reuse_param.yaml"),
+        Parameters=[
+            {"ParameterKey": "CustomTag", "ParameterValue": "trigger-change-2"},
+            {"ParameterKey": "DeployParam", "ParameterValue": "yes"},
+        ],
+    )
+    assert wait_until(wait_stack_done)
+    stack_describe_response = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
+    assert len(stack_describe_response["Outputs"]) == 2
