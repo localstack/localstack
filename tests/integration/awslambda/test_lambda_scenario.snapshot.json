@@ -1,0 +1,53 @@
+{
+  "tests/integration/awslambda/test_lambda_scenario.py::TestLambdaSqsEventSource::test_resource_states": {
+    "queue-attributes": {
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "lambda-get-function": {
+      "ResponseMetadata": "<response-metadata>",
+      "Configuration": {
+        "FunctionName": "<name>",
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.8",
+        "Role": "<arn>",
+        "Handler": "index.handler",
+        "CodeSize": 2299,
+        "Description": "",
+        "Timeout": 3,
+        "LastModified": "<date>",
+        "CodeSha256": "<sha>",
+        "Version": "$LATEST",
+        "VpcConfig": {},
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid>",
+        "State": "Active",
+        "LastUpdateStatus": "Successful",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ]
+      },
+      "Code": {
+        "Location": "<location>"
+      },
+      "Tags": {}
+    },
+    "esm-get": {
+      "ResponseMetadata": "<response-metadata>",
+      "UUID": "<uuid>",
+      "StartingPosition": "LATEST",
+      "BatchSize": 1,
+      "ParallelizationFactor": 1,
+      "EventSourceArn": "<arn>",
+      "FunctionArn": "<arn>",
+      "LastModified": "<date>",
+      "LastProcessingResult": "OK",
+      "State": "Enabled",
+      "StateTransitionReason": "User action",
+      "Topics": [],
+      "MaximumRetryAttempts": -1
+    }
+  }
+}
