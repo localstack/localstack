@@ -54,6 +54,7 @@ class TestSNSSubscription:
         logs_client,
         lambda_client,
         sqs_client,
+        sns_subscription,
     ):
         function_name = f"{TEST_LAMBDA_FUNCTION_PREFIX}-{short_uid()}"
         permission_id = f"test-statement-{short_uid()}"
@@ -76,7 +77,7 @@ class TestSNSSubscription:
             SourceArn=topic_arn,
         )
 
-        sns_client.subscribe(
+        sns_subscription(
             TopicArn=topic_arn,
             Protocol="lambda",
             Endpoint=lambda_arn,
@@ -99,12 +100,18 @@ class TestSNSSubscription:
 
 class TestSNSProvider:
     def test_publish_unicode_chars(
-        self, sns_client, sns_create_topic, sqs_create_queue, sqs_client, sqs_queue_arn
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_client,
+        sqs_queue_arn,
+        sns_subscription,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         queue_arn = sqs_queue_arn(queue_url)
-        sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
         # publish message to SNS, receive it from SQS, assert that messages are equal
         message = 'ö§a1"_!?,. £$-'
@@ -119,7 +126,7 @@ class TestSNSProvider:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-    def test_subscribe_http_endpoint(self, sns_client, sns_create_topic):
+    def test_subscribe_http_endpoint(self, sns_client, sns_create_topic, sns_subscription):
         topic_arn = sns_create_topic()["TopicArn"]
 
         # create HTTP endpoint and connect it to SNS topic
@@ -133,7 +140,7 @@ class TestSNSProvider:
         proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
         wait_for_port_open(local_port)
         queue_arn = "%s://localhost:%s" % (get_service_protocol(), local_port)
-        sns_client.subscribe(TopicArn=topic_arn, Protocol="http", Endpoint=queue_arn)
+        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=queue_arn)
 
         def received():
             assert records[0][0]["Type"] == "SubscriptionConfirmation"
@@ -152,11 +159,11 @@ class TestSNSProvider:
         retry(received, retries=5, sleep=1)
         proxy.stop()
 
-    def test_subscribe_with_invalid_protocol(self, sns_client, sns_create_topic):
+    def test_subscribe_with_invalid_protocol(self, sns_client, sns_create_topic, sns_subscription):
         topic_arn = sns_create_topic(Name=TEST_TOPIC_NAME_2)["TopicArn"]
 
         with pytest.raises(ClientError) as e:
-            sns_client.subscribe(
+            sns_subscription(
                 TopicArn=topic_arn, Protocol="test-protocol", Endpoint="localstack@yopmail.com"
             )
 
@@ -164,14 +171,14 @@ class TestSNSProvider:
         assert e.value.response["Error"]["Code"] == "InvalidParameter"
 
     def test_attribute_raw_subscribe(
-        self, sqs_client, sns_client, sns_create_topic, sqs_queue, sqs_queue_arn
+        self, sqs_client, sns_client, sns_create_topic, sqs_queue, sqs_queue_arn, sns_subscription
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         # create SNS topic and connect it to an SQS queue
         queue_url = sqs_queue
         queue_arn = sqs_queue_arn(queue_url)
         attributes = {"RawMessageDelivery": "True"}
-        sns_client.subscribe(
+        sns_subscription(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
@@ -217,7 +224,13 @@ class TestSNSProvider:
         sns_client.unsubscribe(SubscriptionArn=subscription_arn)
 
     def test_filter_policy(
-        self, sqs_create_queue, sqs_queue_arn, sns_client, sns_create_topic, sqs_client
+        self,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_client,
+        sns_create_topic,
+        sqs_client,
+        sns_subscription,
     ):
         # connect SNS topic to an SQS queue
         queue_name = f"queue-{short_uid()}"
@@ -226,7 +239,7 @@ class TestSNSProvider:
         topic_arn = sns_create_topic()["TopicArn"]
 
         filter_policy = {"attr1": [{"numeric": [">", 0, "<=", 100]}]}
-        sns_client.subscribe(
+        sns_subscription(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
@@ -273,7 +286,13 @@ class TestSNSProvider:
         retry(check_message2, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     def test_exists_filter_policy(
-        self, sqs_create_queue, sqs_queue_arn, sns_create_topic, sns_client, sqs_client
+        self,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_create_topic,
+        sns_client,
+        sqs_client,
+        sns_subscription,
     ):
         # connect SNS topic to an SQS queue
         queue_name = f"queue-{short_uid()}"
@@ -284,7 +303,7 @@ class TestSNSProvider:
         filter_policy = {"store": [{"exists": True}]}
 
         def do_subscribe(filter_policy, queue_arn):
-            sns_client.subscribe(
+            sns_subscription(
                 TopicArn=topic_arn,
                 Protocol="sqs",
                 Endpoint=queue_arn,
@@ -384,7 +403,13 @@ class TestSNSProvider:
         retry(check_message3, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     def test_subscribe_sqs_queue(
-        self, sqs_create_queue, sqs_queue_arn, sns_create_topic, sns_client, sqs_client
+        self,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_create_topic,
+        sns_client,
+        sqs_client,
+        sns_subscription,
     ):
         # TODO: check with non default external port
 
@@ -396,7 +421,7 @@ class TestSNSProvider:
 
         # create subscription with filter policy
         filter_policy = {"attr1": [{"numeric": [">", 0, "<=", 100]}]}
-        subscription = sns_client.subscribe(
+        subscription = sns_subscription(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
@@ -423,7 +448,9 @@ class TestSNSProvider:
         # clean up
         sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
 
-    def test_subscribe_platform_endpoint(self, sns_client, sqs_create_queue, sns_create_topic):
+    def test_subscribe_platform_endpoint(
+        self, sns_client, sqs_create_queue, sns_create_topic, sns_subscription
+    ):
 
         sns_backend = SNSBackend.get()
         topic_arn = sns_create_topic()["TopicArn"]
@@ -437,7 +464,7 @@ class TestSNSProvider:
 
         # create subscription with filter policy
         filter_policy = {"attr1": [{"numeric": [">", 0, "<=", 100]}]}
-        subscription = sns_client.subscribe(
+        subscription = sns_subscription(
             TopicArn=topic_arn,
             Protocol="application",
             Endpoint=platform_arn,
@@ -545,11 +572,11 @@ class TestSNSProvider:
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     def test_sqs_topic_subscription_confirmation(
-        self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn
+        self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn, sns_subscription
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_arn = sqs_queue_arn(sqs_create_queue())
-        subscription = sns_client.subscribe(
+        subscription = sns_subscription(
             TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn, ReturnSubscriptionArn=True
         )
 
@@ -570,6 +597,7 @@ class TestSNSProvider:
         sqs_create_queue,
         sqs_queue_arn,
         create_lambda_function,
+        sns_subscription,
     ):
         lambda_name = f"test-{short_uid()}"
         lambda_arn = aws_stack.lambda_function_arn(lambda_name)
@@ -585,7 +613,7 @@ class TestSNSProvider:
             runtime=LAMBDA_RUNTIME_PYTHON36,
             DeadLetterConfig={"TargetArn": queue_arn},
         )
-        sns_client.subscribe(TopicArn=topic_arn, Protocol="lambda", Endpoint=lambda_arn)
+        sns_subscription(TopicArn=topic_arn, Protocol="lambda", Endpoint=lambda_arn)
 
         payload = {
             lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
@@ -605,7 +633,13 @@ class TestSNSProvider:
         retry(receive_dlq, retries=8, sleep=2)
 
     def test_redrive_policy_http_subscription(
-        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue, sqs_queue_arn
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_client,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_subscription,
     ):
         # self.unsubscribe_all_from_sns()
         dlq_name = f"dlq-{short_uid()}"
@@ -625,9 +659,7 @@ class TestSNSProvider:
         wait_for_port_open(local_port)
         http_endpoint = f"{get_service_protocol()}://localhost:{local_port}"
 
-        subscription = sns_client.subscribe(
-            TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint
-        )
+        subscription = sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
         sns_client.set_subscription_attributes(
             SubscriptionArn=subscription["SubscriptionArn"],
             AttributeName="RedrivePolicy",
@@ -661,6 +693,7 @@ class TestSNSProvider:
         sqs_queue_arn,
         create_lambda_function,
         sqs_client,
+        sns_subscription,
     ):
         # self.unsubscribe_all_from_sns()
         dlq_name = f"dlq-{short_uid()}"
@@ -676,9 +709,7 @@ class TestSNSProvider:
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )["CreateFunctionResponse"]["FunctionArn"]
 
-        subscription = sns_client.subscribe(
-            TopicArn=topic_arn, Protocol="lambda", Endpoint=lambda_arn
-        )
+        subscription = sns_subscription(TopicArn=topic_arn, Protocol="lambda", Endpoint=lambda_arn)
 
         sns_client.set_subscription_attributes(
             SubscriptionArn=subscription["SubscriptionArn"],
@@ -703,7 +734,13 @@ class TestSNSProvider:
         retry(receive_dlq, retries=10, sleep=2)
 
     def test_redrive_policy_queue_subscription(
-        self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn, sqs_client
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sqs_client,
+        sns_subscription,
     ):
         # self.unsubscribe_all_from_sns()
         dlq_name = f"dlq-{short_uid()}"
@@ -713,7 +750,7 @@ class TestSNSProvider:
         topic_arn = sns_create_topic()["TopicArn"]
         invalid_queue_arn = aws_stack.sqs_queue_arn("invalid_queue")
         # subscribe with an invalid queue ARN, to trigger event on DLQ below
-        subscription = sns_client.subscribe(
+        subscription = sns_subscription(
             TopicArn=topic_arn, Protocol="sqs", Endpoint=invalid_queue_arn
         )
 
@@ -762,7 +799,7 @@ class TestSNSProvider:
         assert topic_arn_params[5] == topic_name
 
     def test_publish_message_by_target_arn(
-        self, sns_client, sns_create_topic, create_lambda_function
+        self, sns_client, sns_create_topic, create_lambda_function, sns_subscription
     ):
         # self.unsubscribe_all_from_sns()
 
@@ -774,7 +811,7 @@ class TestSNSProvider:
             func_name=func_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )["CreateFunctionResponse"]["FunctionArn"]
-        subscription_arn = sns_client.subscribe(
+        subscription_arn = sns_subscription(
             TopicArn=topic_arn, Protocol="lambda", Endpoint=lambda_arn
         )["SubscriptionArn"]
 
@@ -809,7 +846,13 @@ class TestSNSProvider:
             assert message["EventSubscriptionArn"] == subscription_arn
 
     def test_publish_message_after_subscribe_topic(
-        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue, sqs_queue_arn
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_client,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_subscription,
     ):
         # self.unsubscribe_all_from_sns()
 
@@ -823,7 +866,7 @@ class TestSNSProvider:
         )
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
         message_subject = "sqs subject"
         message_body = "test_message_2"
@@ -896,7 +939,13 @@ class TestSNSProvider:
         sns_client.delete_platform_application(PlatformApplicationArn=platform_arn)
 
     def test_publish_by_path_parameters(
-        self, sns_create_topic, sns_client, sqs_client, sqs_create_queue, sqs_queue_arn
+        self,
+        sns_create_topic,
+        sns_client,
+        sqs_client,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_subscription,
     ):
         topic_name = f"topic-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
@@ -912,9 +961,9 @@ class TestSNSProvider:
         queue_url = sqs_create_queue(QueueName=queue_name)
         queue_arn = sqs_queue_arn(queue_url)
 
-        subscription_arn = sns_client.subscribe(
-            TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn
-        )["SubscriptionArn"]
+        subscription_arn = sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)[
+            "SubscriptionArn"
+        ]
 
         r = requests.post(
             url="{}/?{}".format(base_url, path),
@@ -932,7 +981,9 @@ class TestSNSProvider:
 
         sns_client.unsubscribe(SubscriptionArn=subscription_arn)
 
-    def test_multiple_subscriptions_http_endpoint(self, sns_client, sns_create_topic):
+    def test_multiple_subscriptions_http_endpoint(
+        self, sns_client, sns_create_topic, sns_subscription
+    ):
         # self.unsubscribe_all_from_sns()
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -958,7 +1009,7 @@ class TestSNSProvider:
             wait_for_port_open(local_port)
             http_endpoint = f"{get_service_protocol()}://localhost:{local_port}"
             subs.append(
-                sns_client.subscribe(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
+                sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
             )
         # fetch subscription information
         subscription_list = sns_client.list_subscriptions()
@@ -971,7 +1022,7 @@ class TestSNSProvider:
         for sub in subs:
             sns_client.unsubscribe(SubscriptionArn=sub["SubscriptionArn"])
 
-    def test_publish_sms_endpoint(self, sns_client, sns_create_topic):
+    def test_publish_sms_endpoint(self, sns_client, sns_create_topic, sns_subscription):
         list_of_contacts = [
             f"+{random.randint(100000000, 9999999999)}",
             f"+{random.randint(100000000, 9999999999)}",
@@ -980,7 +1031,7 @@ class TestSNSProvider:
         message = "Good news everyone!"
         topic_arn = sns_create_topic()["TopicArn"]
         for number in list_of_contacts:
-            sns_client.subscribe(TopicArn=topic_arn, Protocol="sms", Endpoint=number)
+            sns_subscription(TopicArn=topic_arn, Protocol="sms", Endpoint=number)
 
         sns_client.publish(Message=message, TopicArn=topic_arn)
 
@@ -1000,12 +1051,18 @@ class TestSNSProvider:
         retry(check_messages, sleep=0.5)
 
     def test_publish_sqs_from_sns(
-        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue, sqs_queue_arn
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_client,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_subscription,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         queue_arn = sqs_queue_arn(queue_url)
-        subscription_arn = sns_client.subscribe(
+        subscription_arn = sns_subscription(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
@@ -1047,12 +1104,18 @@ class TestSNSProvider:
         retry(get_message_with_attributes, retries=3, sleep=3, queue_url=queue_url)
 
     def test_publish_batch_messages_from_sns_to_sqs(
-        self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn, sqs_client
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sqs_client,
+        sns_subscription,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
         queue_arn = sqs_queue_arn(queue_url)
-        sns_client.subscribe(
+        sns_subscription(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
@@ -1131,7 +1194,7 @@ class TestSNSProvider:
         retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
 
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
-        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue
+        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue, sns_subscription
     ):
         topic_name = f"topic-{short_uid()}.fifo"
         queue_name = f"queue-{short_uid()}.fifo"
@@ -1142,7 +1205,7 @@ class TestSNSProvider:
             Attributes={"FifoQueue": "true"},
         )
 
-        sns_client.subscribe(
+        sns_subscription(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_url,
@@ -1222,7 +1285,7 @@ class TestSNSProvider:
         retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
 
     def test_publish_batch_exceptions(
-        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue
+        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue, sns_subscription
     ):
         topic_name = f"topic-{short_uid()}.fifo"
         queue_name = f"queue-{short_uid()}.fifo"
@@ -1235,7 +1298,7 @@ class TestSNSProvider:
 
         queue_arn = aws_stack.sqs_queue_arn(queue_url)
 
-        sns_client.subscribe(
+        sns_subscription(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
@@ -1281,7 +1344,7 @@ class TestSNSProvider:
         ] = "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
 
     def test_publish_sqs_from_sns_with_xray_propagation(
-        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue
+        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue, sns_subscription
     ):
         # TODO: remove or adapt for asf
         if SQS_BACKEND_IMPL != "elasticmq":
@@ -1293,7 +1356,7 @@ class TestSNSProvider:
         topic_arn = topic["TopicArn"]
         queue_url = sqs_create_queue()
 
-        sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_url)
+        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_url)
         sns_client.publish(TargetArn=topic_arn, Message="X-Ray propagation test msg")
 
         response = sqs_client.receive_message(
@@ -1323,7 +1386,7 @@ class TestSNSProvider:
         assert topic["TopicArn"] == topic1["TopicArn"]
 
     def test_not_found_error_on_get_subscription_attributes(
-        self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn
+        self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn, sns_subscription
     ):
 
         topic_arn = sns_create_topic()["TopicArn"]
@@ -1331,7 +1394,7 @@ class TestSNSProvider:
 
         queue_arn = sqs_queue_arn(queue_url)
 
-        subscription = sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        subscription = sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
         subscription_attributes = sns_client.get_subscription_attributes(
             SubscriptionArn=subscription["SubscriptionArn"]
@@ -1351,7 +1414,13 @@ class TestSNSProvider:
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
 
     def test_message_to_fifo_sqs(
-        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue, sqs_queue_arn
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_subscription,
     ):
         topic_name = f"topic-{short_uid()}.fifo"
         queue_name = f"queue-{short_uid()}.fifo"
@@ -1364,7 +1433,7 @@ class TestSNSProvider:
 
         queue_arn = sqs_queue_arn(queue_url)
 
-        sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
         message = "Test"
         sns_client.publish(TopicArn=topic_arn, Message=message, MessageGroupId=short_uid())
@@ -1378,7 +1447,13 @@ class TestSNSProvider:
         retry(get_message, retries=10, sleep_before=0.15, sleep=1)
 
     def test_validations_for_fifo(
-        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue, sqs_queue_arn
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_subscription,
     ):
         topic_name = f"topic-{short_uid()}"
         fifo_topic_name = f"topic-{short_uid()}.fifo"
@@ -1397,7 +1472,7 @@ class TestSNSProvider:
         fifo_queue_arn = sqs_queue_arn(fifo_queue_url)
 
         with pytest.raises(ClientError) as e:
-            sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=fifo_queue_arn)
+            sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=fifo_queue_arn)
 
         assert e.match("standard SNS topic")
 
@@ -1406,10 +1481,12 @@ class TestSNSProvider:
 
         assert e.match("MessageGroupId")
 
-    def test_empty_sns_message(self, sns_client, sqs_client, sns_topic, sqs_queue, sqs_queue_arn):
+    def test_empty_sns_message(
+        self, sns_client, sqs_client, sns_topic, sqs_queue, sqs_queue_arn, sns_subscription
+    ):
         topic_arn = sns_topic["Attributes"]["TopicArn"]
         queue_arn = sqs_queue_arn(sqs_queue)
-        sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
         with pytest.raises(ClientError) as e:
             sns_client.publish(Message="", TopicArn=topic_arn)
         assert e.match("Empty message")

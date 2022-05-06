@@ -471,12 +471,14 @@ class TestCloudWatchLogs:
         assert basic_filter_name not in filter_names
         assert json_filter_name not in filter_names
 
-    def test_delivery_logs_for_sns(self, logs_client, sns_client, sns_create_topic):
+    def test_delivery_logs_for_sns(
+        self, logs_client, sns_client, sns_create_topic, sns_subscription
+    ):
         topic_name = f"test-logs-{short_uid()}"
         contact = "+10123456789"
 
         topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
-        sns_client.subscribe(TopicArn=topic_arn, Protocol="sms", Endpoint=contact)
+        sns_subscription(TopicArn=topic_arn, Protocol="sms", Endpoint=contact)
 
         message = "Good news everyone!"
         sns_client.publish(Message=message, TopicArn=topic_arn)

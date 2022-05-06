@@ -41,17 +41,19 @@ class TestNotifications(unittest.TestCase):
         topic_info = sns_client.create_topic(Name=TEST_TOPIC_NAME)
 
         # subscribe SQS to SNS, publish message
-        sns_client.subscribe(
+        subscription_arn = sns_client.subscribe(
             TopicArn=topic_info["TopicArn"],
             Protocol="sqs",
             Endpoint=aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_FOR_SNS),
-        )
+        )["SubscriptionArn"]
         test_value = short_uid()
         sns_client.publish(
             TopicArn=topic_info["TopicArn"],
             Message="test message for SQS",
             MessageAttributes={"attr1": {"DataType": "String", "StringValue": test_value}},
         )
+        # cleanup
+        sns_client.unsubscribe(SubscriptionArn=subscription_arn)
 
         def assert_message():
             # receive, assert, and delete message from SQS
@@ -278,7 +280,9 @@ class TestNotifications(unittest.TestCase):
             },
         )
 
-        sns_client.subscribe(TopicArn=topic_info["TopicArn"], Protocol="sqs", Endpoint=queue_arn)
+        subscription_arn = sns_client.subscribe(
+            TopicArn=topic_info["TopicArn"], Protocol="sqs", Endpoint=queue_arn
+        )["SubscriptionArn"]
 
         test_key2 = "testupload/dir1/testfile.txt"
         test_data2 = b'{"test": "bucket_notification2"}'
@@ -305,6 +309,7 @@ class TestNotifications(unittest.TestCase):
 
         retry(verify, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
         self._delete_notification_config()
+        sns_client.unsubscribe(SubscriptionArn=subscription_arn)
 
     def _delete_notification_config(self):
         s3_client = aws_stack.create_external_boto_client("s3")

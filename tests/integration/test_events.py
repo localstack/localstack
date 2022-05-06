@@ -294,7 +294,9 @@ class TestEvents:
 
     # TODO: further unify/parameterize the tests for the different target types below
 
-    def test_put_events_with_target_sns(self, events_client, sns_client, sqs_client):
+    def test_put_events_with_target_sns(
+        self, events_client, sns_client, sqs_client, sns_subscription
+    ):
         queue_name = "test-%s" % short_uid()
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
@@ -306,7 +308,7 @@ class TestEvents:
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
-        sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
         events_client.create_event_bus(Name=bus_name)
         events_client.put_rule(
@@ -479,7 +481,7 @@ class TestEvents:
         self.cleanup(rule_name=rule_name)
 
     def test_scheduled_expression_events(
-        self, stepfunctions_client, sns_client, sqs_client, events_client
+        self, stepfunctions_client, sns_client, sqs_client, events_client, sns_subscription
     ):
         class HttpEndpointListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
@@ -524,7 +526,7 @@ class TestEvents:
         )["stateMachineArn"]
 
         topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
-        sns_client.subscribe(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint)
+        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint)
 
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         fifo_queue_url = sqs_client.create_queue(
