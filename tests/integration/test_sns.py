@@ -996,31 +996,30 @@ class TestSNSProvider:
         # this is only against remnants of other tests
         subscription_list = sns_client.list_subscriptions()
 
-        number_of_subscriptions = 4 + len(subscription_list)
+        number_of_proxies = 4
+        number_of_subscriptions = number_of_proxies + len(
+            subscription_list.get("Subscriptions", [])
+        )
         records = []
         proxies = []
 
-        subs = []
-        for _ in range(number_of_subscriptions):
+        for _ in range(number_of_proxies):
             local_port = get_free_tcp_port()
             proxies.append(
                 start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
             )
             wait_for_port_open(local_port)
             http_endpoint = f"{get_service_protocol()}://localhost:{local_port}"
-            subs.append(
-                sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
-            )
+            sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
+
         # fetch subscription information
         subscription_list = sns_client.list_subscriptions()
         assert subscription_list["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(subscription_list["Subscriptions"]) == number_of_subscriptions
-        assert number_of_subscriptions == len(records)
+        assert len(records) == number_of_proxies
 
         for proxy in proxies:
             proxy.stop()
-        for sub in subs:
-            sns_client.unsubscribe(SubscriptionArn=sub["SubscriptionArn"])
 
     def test_publish_sms_endpoint(self, sns_client, sns_create_topic, sns_subscription):
         list_of_contacts = [
