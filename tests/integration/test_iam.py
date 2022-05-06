@@ -1,20 +1,23 @@
 import json
 import logging
 import os
-import unittest
 
+import pytest
 from botocore.exceptions import ClientError
 
+from localstack.aws.api.iam import Tag
 from localstack.constants import TEST_AWS_ACCOUNT_ID
-from localstack.services.iam.iam_starter import ADDITIONAL_MANAGED_POLICIES
+from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.strings import long_uid
 
 
-class TestIAMIntegrations(unittest.TestCase):
-    def setUp(self):
-        self.iam_client = aws_stack.create_external_boto_client("iam")
+class TestIAMIntegrations:
+    @pytest.fixture
+    def iam_client(self):
+        return aws_stack.create_external_boto_client("iam")
 
     # TODO what does this test do?
     def test_run_kcl_with_iam_assume_role(self):
@@ -39,7 +42,7 @@ class TestIAMIntegrations(unittest.TestCase):
                 wait_until_started=True,
             )
 
-    def test_attach_iam_role_to_new_iam_user(self):
+    def test_attach_iam_role_to_new_iam_user(self, iam_client):
         test_policy_document = {
             "Version": "2012-10-17",
             "Statement": {
@@ -50,35 +53,38 @@ class TestIAMIntegrations(unittest.TestCase):
         }
         test_user_name = "test-user"
 
-        self.iam_client.create_user(UserName=test_user_name)
-        response = self.iam_client.create_policy(
+        iam_client.create_user(UserName=test_user_name)
+        response = iam_client.create_policy(
             PolicyName="test-policy", PolicyDocument=json.dumps(test_policy_document)
         )
         test_policy_arn = response["Policy"]["Arn"]
-        self.assertIn(TEST_AWS_ACCOUNT_ID, test_policy_arn)
+        assert TEST_AWS_ACCOUNT_ID in test_policy_arn
 
-        self.iam_client.attach_user_policy(UserName=test_user_name, PolicyArn=test_policy_arn)
-        attached_user_policies = self.iam_client.list_attached_user_policies(
-            UserName=test_user_name
-        )
+        iam_client.attach_user_policy(UserName=test_user_name, PolicyArn=test_policy_arn)
+        attached_user_policies = iam_client.list_attached_user_policies(UserName=test_user_name)
 
-        self.assertEqual(1, len(attached_user_policies["AttachedPolicies"]))
-        self.assertEqual(
-            test_policy_arn, attached_user_policies["AttachedPolicies"][0]["PolicyArn"]
-        )
+        assert len(attached_user_policies["AttachedPolicies"]) == 1
+        assert attached_user_policies["AttachedPolicies"][0]["PolicyArn"] == test_policy_arn
 
         # clean up
-        self.iam_client.detach_user_policy(UserName=test_user_name, PolicyArn=test_policy_arn)
-        self.iam_client.delete_policy(PolicyArn=test_policy_arn)
-        self.iam_client.delete_user(UserName=test_user_name)
+        iam_client.detach_user_policy(UserName=test_user_name, PolicyArn=test_policy_arn)
+        iam_client.delete_policy(PolicyArn=test_policy_arn)
+        iam_client.delete_user(UserName=test_user_name)
 
-    def test_delete_non_existent_policy_returns_no_such_entity(self):
+        with pytest.raises(ClientError) as ctx:
+            iam_client.get_user(UserName=test_user_name)
+        assert ctx.typename == "NoSuchEntityException"
+        assert ctx.value.response["Error"]["Code"] == "NoSuchEntity"
+
+    def test_delete_non_existent_policy_returns_no_such_entity(self, iam_client):
         non_existent_policy_arn = "arn:aws:iam::000000000000:policy/non-existent-policy"
-        with self.assertRaises(ClientError) as ctx:
-            self.iam_client.delete_policy(PolicyArn=non_existent_policy_arn)
-        self.assertEqual("NoSuchEntity", ctx.exception.response["Error"]["Code"])
 
-    def test_recreate_iam_role(self):
+        with pytest.raises(ClientError) as ctx:
+            iam_client.delete_policy(PolicyArn=non_existent_policy_arn)
+        assert ctx.typename == "NoSuchEntityException"
+        assert ctx.value.response["Error"]["Code"] == "NoSuchEntity"
+
+    def test_recreate_iam_role(self, iam_client):
         role_name = "role-{}".format(short_uid())
 
         assume_policy_document = {
@@ -91,45 +97,119 @@ class TestIAMIntegrations(unittest.TestCase):
             ],
         }
 
-        rs = self.iam_client.create_role(
+        rs = iam_client.create_role(
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(assume_policy_document),
         )
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         try:
             # Create role with same name
-            self.iam_client.create_role(
+            iam_client.create_role(
                 RoleName=role_name,
                 AssumeRolePolicyDocument=json.dumps(assume_policy_document),
             )
-            self.fail("This call should not be successful as the role already exists")
+            pytest.fail("This call should not be successful as the role already exists")
 
         except ClientError as e:
-            self.assertEqual("EntityAlreadyExists", e.response["Error"]["Code"])
+            assert e.response["Error"]["Code"] == "EntityAlreadyExists"
 
         # clean up
-        self.iam_client.delete_role(RoleName=role_name)
+        iam_client.delete_role(RoleName=role_name)
 
-    def test_create_user_with_tags(self):
+    def test_instance_profile_tags(self, iam_client):
+        def gen_tag():
+            return Tag(Key=f"key-{long_uid()}", Value=f"value-{short_uid()}")
+
+        user_name = "user-role-{}".format(short_uid())
+        iam_client.create_instance_profile(InstanceProfileName=user_name)
+
+        tags_v0 = []
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == tags_v0
+
+        tags_v1 = [gen_tag()]
+        #
+        rs = iam_client.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v1)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == tags_v1
+
+        tags_v2_new = [gen_tag() for _ in range(5)]
+        tags_v2 = tags_v1 + tags_v2_new
+        rs = iam_client.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v2)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == tags_v2
+
+        rs = iam_client.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v2)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == tags_v2
+
+        tags_v3_new = [gen_tag()]
+        tags_v3 = tags_v1 + tags_v3_new
+        target_tags_v3 = tags_v2 + tags_v3_new
+        rs = iam_client.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v3)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == target_tags_v3
+
+        tags_v4 = tags_v1
+        target_tags_v4 = target_tags_v3
+        rs = iam_client.tag_instance_profile(InstanceProfileName=user_name, Tags=tags_v4)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == target_tags_v4
+
+        tags_u_v1 = [tag["Key"] for tag in tags_v1]
+        target_tags_u_v1 = tags_v2_new + tags_v3_new
+        iam_client.untag_instance_profile(InstanceProfileName=user_name, TagKeys=tags_u_v1)
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == target_tags_u_v1
+
+        tags_u_v2 = [f"key-{long_uid()}"]
+        target_tags_u_v2 = target_tags_u_v1
+        iam_client.untag_instance_profile(InstanceProfileName=user_name, TagKeys=tags_u_v2)
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == target_tags_u_v2
+
+        tags_u_v3 = [tag["Key"] for tag in target_tags_u_v1]
+        target_tags_u_v3 = []
+        iam_client.untag_instance_profile(InstanceProfileName=user_name, TagKeys=tags_u_v3)
+        #
+        rs = iam_client.list_instance_profile_tags(InstanceProfileName=user_name)
+        assert rs["Tags"] == target_tags_u_v3
+
+        iam_client.delete_instance_profile(InstanceProfileName=user_name)
+
+    def test_create_user_with_tags(self, iam_client):
         user_name = "user-role-{}".format(short_uid())
 
-        rs = self.iam_client.create_user(
+        rs = iam_client.create_user(
             UserName=user_name, Tags=[{"Key": "env", "Value": "production"}]
         )
 
-        self.assertIn("Tags", rs["User"])
-        self.assertEqual("env", rs["User"]["Tags"][0]["Key"])
+        assert "Tags" in rs["User"]
+        assert rs["User"]["Tags"][0]["Key"] == "env"
 
-        rs = self.iam_client.get_user(UserName=user_name)
+        rs = iam_client.get_user(UserName=user_name)
 
-        self.assertIn("Tags", rs["User"])
-        self.assertEqual("production", rs["User"]["Tags"][0]["Value"])
+        assert "Tags" in rs["User"]
+        assert rs["User"]["Tags"][0]["Value"] == "production"
 
         # clean up
-        self.iam_client.delete_user(UserName=user_name)
+        iam_client.delete_user(UserName=user_name)
 
-    def test_attach_detach_role_policy(self):
+    def test_attach_detach_role_policy(self, iam_client):
         role_name = "s3-role-{}".format(short_uid())
         policy_name = "s3-role-policy-{}".format(short_uid())
 
@@ -160,40 +240,40 @@ class TestIAMIntegrations(unittest.TestCase):
             ],
         }
 
-        self.iam_client.create_role(
+        iam_client.create_role(
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(assume_policy_document),
         )
 
-        policy_arn = self.iam_client.create_policy(
+        policy_arn = iam_client.create_policy(
             PolicyName=policy_name, Path="/", PolicyDocument=json.dumps(policy_document)
         )["Policy"]["Arn"]
         policy_arns.append(policy_arn)
 
         # Attach some polices
         for policy_arn in policy_arns:
-            rs = self.iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
-            self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+            rs = iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+            assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         try:
             # Try to delete role
-            self.iam_client.delete_role(RoleName=role_name)
-            self.fail("This call should not be successful as the role has policies attached")
+            iam_client.delete_role(RoleName=role_name)
+            pytest.fail("This call should not be successful as the role has policies attached")
 
         except ClientError as e:
-            self.assertEqual("DeleteConflict", e.response["Error"]["Code"])
+            assert e.response["Error"]["Code"] == "DeleteConflict"
 
         for policy_arn in policy_arns:
-            rs = self.iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
-            self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+            rs = iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+            assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         # clean up
-        rs = self.iam_client.delete_role(RoleName=role_name)
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+        rs = iam_client.delete_role(RoleName=role_name)
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        self.iam_client.delete_policy(PolicyArn=policy_arn)
+        iam_client.delete_policy(PolicyArn=policy_arn)
 
-    def test_simulate_principle_policy(self):
+    def test_simulate_principle_policy(self, iam_client):
         policy_name = "policy-{}".format(short_uid())
         policy_document = {
             "Version": "2012-10-17",
@@ -206,74 +286,73 @@ class TestIAMIntegrations(unittest.TestCase):
             ],
         }
 
-        policy_arn = self.iam_client.create_policy(
+        policy_arn = iam_client.create_policy(
             PolicyName=policy_name, Path="/", PolicyDocument=json.dumps(policy_document)
         )["Policy"]["Arn"]
 
-        rs = self.iam_client.simulate_principal_policy(
+        rs = iam_client.simulate_principal_policy(
             PolicySourceArn=policy_arn,
             ActionNames=["s3:PutObject", "s3:GetObjectVersion"],
             ResourceArns=["arn:aws:s3:::bucket_name"],
         )
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
         evaluation_results = rs["EvaluationResults"]
-        self.assertEqual(2, len(evaluation_results))
+        assert len(evaluation_results) == 2
 
         actions = {evaluation["EvalActionName"]: evaluation for evaluation in evaluation_results}
-        self.assertIn("s3:PutObject", actions)
-        self.assertEqual("explicitDeny", actions["s3:PutObject"]["EvalDecision"])
-        self.assertIn("s3:GetObjectVersion", actions)
-        self.assertEqual("allowed", actions["s3:GetObjectVersion"]["EvalDecision"])
+        assert "s3:PutObject" in actions
+        assert actions["s3:PutObject"]["EvalDecision"] == "explicitDeny"
+        assert "s3:GetObjectVersion" in actions
+        assert actions["s3:GetObjectVersion"]["EvalDecision"] == "allowed"
 
-    def test_create_role_with_assume_role_policy(self):
+    def test_create_role_with_assume_role_policy(self, iam_client):
         role_name_1 = "role-{}".format(short_uid())
         role_name_2 = "role-{}".format(short_uid())
 
-        assume_role_policy_doc = json.dumps(
-            {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Effect": "Allow",
-                        "Principal": {"AWS": ["arn:aws:iam::123412341234:root"]},
-                    }
-                ],
-            }
-        )
+        assume_role_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": ["arn:aws:iam::123412341234:root"]},
+                }
+            ],
+        }
+        str_assume_role_policy_doc = json.dumps(assume_role_policy_doc)
 
-        self.iam_client.create_role(
+        iam_client.create_role(
             Path="/",
             RoleName=role_name_1,
-            AssumeRolePolicyDocument=assume_role_policy_doc,
+            AssumeRolePolicyDocument=str_assume_role_policy_doc,
         )
 
-        roles = self.iam_client.list_roles()["Roles"]
+        roles = iam_client.list_roles()["Roles"]
         for role in roles:
             if role["RoleName"] == role_name_1:
-                self.assertEqual(assume_role_policy_doc, role["AssumeRolePolicyDocument"])
+                assert role["AssumeRolePolicyDocument"] == assume_role_policy_doc
 
-        self.iam_client.create_role(
+        iam_client.create_role(
             Path="/",
             RoleName=role_name_2,
-            AssumeRolePolicyDocument=assume_role_policy_doc,
+            AssumeRolePolicyDocument=str_assume_role_policy_doc,
             Description="string",
         )
 
-        roles = self.iam_client.list_roles()["Roles"]
+        roles = iam_client.list_roles()["Roles"]
         for role in roles:
             if role["RoleName"] in [role_name_1, role_name_2]:
-                self.assertEqual(assume_role_policy_doc, role["AssumeRolePolicyDocument"])
-                self.iam_client.delete_role(RoleName=role["RoleName"])
+                assert role["AssumeRolePolicyDocument"] == assume_role_policy_doc
+                iam_client.delete_role(RoleName=role["RoleName"])
 
-        self.iam_client.create_role(
+        iam_client.create_role(
             Path="myPath",
             RoleName=role_name_2,
-            AssumeRolePolicyDocument=assume_role_policy_doc,
+            AssumeRolePolicyDocument=str_assume_role_policy_doc,
             Description="string",
         )
 
-        roles = self.iam_client.list_roles(PathPrefix="my")
-        self.assertEqual("myPath", roles["Roles"][0]["Path"])
-        self.assertEqual(role_name_2, roles["Roles"][0]["RoleName"])
-        self.assertEqual(1, len(roles["Roles"]))
+        roles = iam_client.list_roles(PathPrefix="my")
+        assert roles["Roles"][0]["Path"] == "myPath"
+        assert roles["Roles"][0]["RoleName"] == role_name_2
+        assert len(roles["Roles"]) == 1

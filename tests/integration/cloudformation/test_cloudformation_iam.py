@@ -2,7 +2,7 @@ import json
 
 import jinja2
 
-from localstack.services.iam.iam_starter import SERVICE_LINKED_ROLE_PATH_PREFIX
+from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw

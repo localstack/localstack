@@ -12,7 +12,7 @@ from localstack.services.cloudformation.deployment_utils import (
     select_parameters,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.services.iam.iam_starter import SERVICE_LINKED_ROLE_PATH_PREFIX
+from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import ensure_list
 
