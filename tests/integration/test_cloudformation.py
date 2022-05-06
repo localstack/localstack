@@ -13,6 +13,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import await_stack_completion, deploy_cf_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import load_file, retry, short_uid, to_str
+from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import create_zip_file, list_all_resources
 from tests.integration.cloudformation.utils import load_template
 
@@ -958,7 +959,6 @@ class TestCloudFormation:
 
         cloudformation = aws_stack.create_external_boto_client("cloudformation")
         iam_client = aws_stack.create_external_boto_client("iam")
-        roles_before = iam_client.list_roles()["Roles"]
 
         with pytest.raises(ClientError) as ctx:
             cloudformation.describe_stacks(StackName=stack_name)
@@ -989,18 +989,26 @@ class TestCloudFormation:
         stack = rs["Stacks"][0]
         assert stack["StackName"] == stack_name
 
-        rs = iam_client.list_roles()
-        # TODO: fix assertions, to make tests parallelizable!
-        assert len(rs["Roles"]) == len(roles_before) + 1
-        assert rs["Roles"][-1]["RoleName"] == role_name
+        def iam_role_exists(_role_name):
+            response = iam_client.list_roles()
+            for role in response.get("Roles", []):
+                if role["RoleName"] == _role_name:
+                    return True
+            return False
+
+        assert poll_condition(
+            lambda: iam_role_exists(role_name), timeout=10
+        ), f"expected role {role_name} to be created"
 
         rs = iam_client.list_role_policies(RoleName=role_name)
         iam_client.delete_role_policy(RoleName=role_name, PolicyName=rs["PolicyNames"][0])
 
         # clean up
         self.cleanup(stack_name, change_set_name)
-        rs = iam_client.list_roles(PathPrefix=role_name)
-        assert len(rs["Roles"]) == 0
+
+        assert poll_condition(
+            lambda: not iam_role_exists(role_name), timeout=10
+        ), f"expected role {role_name} to be removed"
 
     def test_deploy_stack_with_sns_topic(self):
         stack_name = "stack-%s" % short_uid()

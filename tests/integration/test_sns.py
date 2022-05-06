@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+import queue
 import random
 import time
 
@@ -10,6 +11,7 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.http import Request
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.services.install import SQS_BACKEND_IMPL
@@ -984,26 +986,23 @@ class TestSNSProvider:
     def test_multiple_subscriptions_http_endpoint(
         self, sns_client, sns_create_topic, sns_subscription
     ):
-        # self.unsubscribe_all_from_sns()
+        # create a topic
         topic_arn = sns_create_topic()["TopicArn"]
+
+        # build fake http server endpoints
+        _requests = queue.Queue()
 
         # create HTTP endpoint and connect it to SNS topic
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
-                records.append((json.loads(to_str(data)), headers))
+                _requests.put(Request(method, path, headers=headers, body=data))
                 return 429
 
-        # this is only against remnants of other tests
-        subscription_list = sns_client.list_subscriptions()
+        number_of_endpoints = 4
 
-        number_of_proxies = 4
-        number_of_subscriptions = number_of_proxies + len(
-            subscription_list.get("Subscriptions", [])
-        )
-        records = []
         proxies = []
 
-        for _ in range(number_of_proxies):
+        for _ in range(number_of_endpoints):
             local_port = get_free_tcp_port()
             proxies.append(
                 start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
@@ -1013,10 +1012,19 @@ class TestSNSProvider:
             sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
 
         # fetch subscription information
-        subscription_list = sns_client.list_subscriptions()
+        subscription_list = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
         assert subscription_list["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert len(subscription_list["Subscriptions"]) == number_of_subscriptions
-        assert len(records) == number_of_proxies
+        assert (
+            len(subscription_list["Subscriptions"]) == number_of_endpoints
+        ), f"unexpected number of subscriptions {subscription_list}"
+
+        for _ in range(number_of_endpoints):
+            request = _requests.get(timeout=2)
+            assert request.get_json(True)["TopicArn"] == topic_arn
+
+        with pytest.raises(queue.Empty):
+            # make sure only four requests are received
+            _requests.get(timeout=1)
 
         for proxy in proxies:
             proxy.stop()
