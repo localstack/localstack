@@ -401,8 +401,12 @@ class TestSqsProvider:
         response_send = sqs_client.send_message(
             QueueUrl=queue_url, MessageBody=message_body, MessageAttributes=message_attributes
         )
-        response_receive = sqs_client.receive_message(QueueUrl=queue_url)
-        assert response_receive["Messages"][0]["MessageId"] == response_send["MessageId"]
+        response_receive = sqs_client.receive_message(
+            QueueUrl=queue_url, MessageAttributeNames=["All"]
+        )
+        message = response_receive["Messages"][0]
+        assert message["MessageId"] == response_send["MessageId"]
+        assert message["MessageAttributes"] == message_attributes
 
     @pytest.mark.xfail
     def test_batch_send_with_invalid_char_should_succeed(self, sqs_client, sqs_create_queue):
@@ -1631,6 +1635,12 @@ class TestSqsProvider:
 
         assert queue_url.endswith(".fifo")
         response = requests.get(queue_url)
+        assert response.ok
+        assert queue_url in response.text
+
+    def test_request_via_url(self, sqs_create_queue):
+        queue_url = sqs_create_queue()
+        response = requests.get(url=queue_url, params={"Action": "ListQueues"})
         assert response.ok
         assert queue_url in response.text
 

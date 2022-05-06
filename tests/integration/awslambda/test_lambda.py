@@ -1789,6 +1789,7 @@ class TestJavaRuntimes:
         lambda_client,
         s3_client,
         sns_client,
+        sns_subscription,
         simple_java_lambda,
         s3_bucket,
         sns_create_topic,
@@ -1849,7 +1850,7 @@ class TestJavaRuntimes:
         snapshot.skip_key(re.compile(r"Sid"), "<statement-id>")
         snapshot.match("add-permission", add_permission_response)
 
-        sns_client.subscribe(
+        sns_subscription(
             TopicArn=topic_arn,
             Protocol="lambda",
             Endpoint=function_arn,

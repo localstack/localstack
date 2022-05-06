@@ -270,9 +270,12 @@ def ses():
 
 @aws_provider()
 def sns():
-    from localstack.services.sns import sns_listener, sns_starter
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.sns.provider import SnsProvider
 
-    return Service("sns", listener=sns_listener.UPDATE_SNS, start=sns_starter.start_sns)
+    provider = SnsProvider()
+
+    return Service("sns", listener=AwsApiListener("sns", provider), lifecycle_hook=provider)
 
 
 @aws_provider()
