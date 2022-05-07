@@ -87,7 +87,7 @@ from botocore.model import (
     Shape,
     StructureShape,
 )
-from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import BadRequest, NotFound
 
 from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
@@ -555,6 +555,7 @@ class BaseRestRequestParser(RequestParser):
 
     def __init__(self, service: ServiceModel) -> None:
         super().__init__(service)
+        self.ignore_get_body_errors = False
         self._operation_router = RestServiceOperationRouter(service)
 
     def _get_normalized_request_uri_length(self, operation_model: OperationModel) -> int:
@@ -631,7 +632,13 @@ class BaseRestRequestParser(RequestParser):
                 )
         else:
             # The payload covers the whole body. We only parse the body if it hasn't been handled by the payload logic.
-            non_payload_parsed = self._initial_body_parse(request)
+            try:
+                non_payload_parsed = self._initial_body_parse(request)
+            except ProtocolParserError:
+                # GET requests should ignore the body, so we just let them pass
+                if not (request.method in ["GET", "HEAD"] and self.ignore_get_body_errors):
+                    raise
+
         # even if the payload has been parsed, the rest of the shape needs to be processed as well
         # (for members which are located outside of the body, like uri or header)
         non_payload_parsed = self._parse_shape(request, shape, non_payload_parsed, uri_params)
@@ -666,6 +673,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
 
     def __init__(self, service_model: ServiceModel):
         super(RestXMLRequestParser, self).__init__(service_model)
+        self.ignore_get_body_errors = True
         self._namespace_re = re.compile("{.*}")
 
     def _initial_body_parse(self, request: HttpRequest) -> ETree.Element:
@@ -873,7 +881,7 @@ class BaseJSONRequestParser(RequestParser, ABC):
         else:
             try:
                 return request.get_json(force=True)
-            except ValueError as e:
+            except BadRequest as e:
                 raise ProtocolParserError("HTTP body could not be parsed as JSON.") from e
 
     def _parse_boolean(

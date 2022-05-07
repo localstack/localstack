@@ -9,6 +9,7 @@ from localstack.aws.protocol.parser import (
     OperationNotFoundParserError,
     ProtocolParserError,
     QueryRequestParser,
+    RestJSONRequestParser,
     UnknownParserError,
     create_parser,
 )
@@ -982,7 +983,7 @@ def test_s3_list_buckets_with_localhost_and_port():
     assert parsed_operation_model.name == "ListBuckets"
 
 
-def test_parser_error_on_protocol_error():
+def test_query_parser_error_on_protocol_error():
     """Test that the parser raises a ProtocolParserError in case of invalid data to parse."""
     parser = QueryRequestParser(load_service("sqs"))
     request = HttpRequest(
@@ -996,6 +997,18 @@ def test_parser_error_on_protocol_error():
         headers={},
         path="",
     )
+    with pytest.raises(ProtocolParserError):
+        parser.parse(request)
+
+
+def test_restjson_parser_error_on_protocol_error():
+    request = HttpRequest(
+        body="invalid}",
+        method="POST",
+        path="/2021-01-01/opensearch/domain",
+    )
+    parser = RestJSONRequestParser(load_service("opensearch"))
+
     with pytest.raises(ProtocolParserError):
         parser.parse(request)
 
@@ -1024,3 +1037,47 @@ def test_parser_error_on_unknown_error():
     parser._process_member = raise_error
     with pytest.raises(UnknownParserError):
         parser.parse(request)
+
+
+def test_restjson_get_element_from_location():
+    """
+    Some GET requests expect a body. While it is allowed in principle by HTTP, it is discouraged and the server
+    should ignore the body of a GET request: https://stackoverflow.com/a/983458/804840.
+
+    However, as of May 7, 2022, the following AWS GET requests expect a JSON body:
+
+    - quicksight GET ListIAMPolicyAssignments (member=AssignmentStatus)
+    - sesv2 GET ListContacts (member=Filter)
+    - sesv2 GET ListImportJobs (member=ImportDestinationType)
+    """
+
+    _botocore_parser_integration_test(
+        service="sesv2",
+        action="ListContacts",
+        ContactListName="foobar",
+        Filter={
+            "FilteredStatus": "OPT_IN",
+            "TopicFilter": {
+                "TopicName": "atopic",
+                "UseDefaultIfPreferenceUnavailable": False,
+            },
+        },
+    )
+
+
+def test_restjson_raises_error_on_non_json_body():
+    request = HttpRequest("GET", "/2021-01-01/opensearch/domain/mydomain", body="foobar")
+    parser = create_parser(load_service("opensearch"))
+
+    with pytest.raises(ProtocolParserError):
+        parser.parse(request)
+
+
+def test_restxml_ignores_get_body():
+    request = HttpRequest("GET", "/test-bucket/foo", body="foobar")
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "GetObject"
+    assert "Bucket" in parsed_request
+    assert parsed_request["Bucket"] == "test-bucket"
+    assert parsed_request["Key"] == "foo"
