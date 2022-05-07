@@ -481,18 +481,17 @@ class TestDynamoDB:
             Item={"PK": {"S": "hello"}, "SK": {"S": "user"}, "data": {"B": b"test"}},
         )
 
+        items = {
+            "Item": {
+                "PK": {"S": "hello-1"},
+                "SK": {"S": "user-1"},
+                "data": {"B": b"test-1"},
+            }
+        }
         response = dynamodb_client.batch_write_item(
             RequestItems={
                 table_name: [
-                    {
-                        "PutRequest": {
-                            "Item": {
-                                "PK": {"S": "hello-1"},
-                                "SK": {"S": "user-1"},
-                                "data": {"B": b"test-1"},
-                            }
-                        }
-                    },
+                    {"PutRequest": items},
                 ]
             }
         )
