@@ -1279,7 +1279,7 @@ def _get_size_bytes(item) -> int:
     try:
         size_bytes = len(json.dumps(item))
     except TypeError:
-        size_bytes = len(json.dumps(_decode_dict(item)))
+        size_bytes = len(json.dumps(_decode_dict(item.copy())))
     return size_bytes
 
 
