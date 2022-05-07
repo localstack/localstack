@@ -336,7 +336,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
             if config.DEBUG:
                 exception = "".join(
                     traceback.format_exception(
-                        etype=type(exception), value=exception, tb=exception.__traceback__
+                        type(exception), value=exception, tb=exception.__traceback__
                     )
                 )
 
