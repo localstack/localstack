@@ -467,21 +467,32 @@ class TestDynamoDB:
         dynamodb_client.create_table(
             TableName=table_name,
             AttributeDefinitions=[
-                {'AttributeName': 'PK', 'AttributeType': 'S'},
-                {'AttributeName': 'SK', 'AttributeType': 'S'},
+                {"AttributeName": "PK", "AttributeType": "S"},
+                {"AttributeName": "SK", "AttributeType": "S"},
             ],
             KeySchema=[
-                {'AttributeName': 'PK', 'KeyType': 'HASH'},
-                {'AttributeName': 'SK', 'KeyType': 'RANGE'},
+                {"AttributeName": "PK", "KeyType": "HASH"},
+                {"AttributeName": "SK", "KeyType": "RANGE"},
             ],
-            BillingMode='PAY_PER_REQUEST',
+            BillingMode="PAY_PER_REQUEST",
         )
-        dynamodb_client.put_item(TableName=table_name, Item={'PK': {"S": 'hello'}, 'SK': {"S": 'user'}, 'data': {"B": b"test"}})
+        dynamodb_client.put_item(
+            TableName=table_name,
+            Item={"PK": {"S": "hello"}, "SK": {"S": "user"}, "data": {"B": b"test"}},
+        )
 
         response = dynamodb_client.batch_write_item(
             RequestItems={
                 table_name: [
-                    {"PutRequest": {"Item": {'PK': {"S": 'hello-1'}, 'SK': {"S": 'user-1'}, 'data': {"B": b"test-1"}}}},
+                    {
+                        "PutRequest": {
+                            "Item": {
+                                "PK": {"S": "hello-1"},
+                                "SK": {"S": "user-1"},
+                                "data": {"B": b"test-1"},
+                            }
+                        }
+                    },
                 ]
             }
         )
