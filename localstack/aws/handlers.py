@@ -256,7 +256,9 @@ class LocalstackResourceHandler(Handler):
     resources: LocalstackResources
 
     def __init__(self, resources: LocalstackResources = None) -> None:
-        self.resources = resources or LocalstackResources()
+        from localstack.services.internal import get_internal_apis
+
+        self.resources = resources or get_internal_apis()
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         try:
