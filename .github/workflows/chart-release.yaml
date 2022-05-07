@@ -7,8 +7,13 @@ on:
       branches:
         - master
 
+permissions:
+  contents: read
+
 jobs:
   release:
+    permissions:
+      contents: write  # for helm/chart-releaser-action to push chart release and create a release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
