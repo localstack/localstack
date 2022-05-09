@@ -1176,7 +1176,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         )
                         new_record = copy.deepcopy(record)
                         new_record["eventID"] = short_uid()
-                        new_record["dynamodb"]["SizeBytes"] = len(json.dumps(put_request["Item"]))
+                        new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(put_request["Item"])
                         new_record["eventName"] = "INSERT" if not existing_item else "MODIFY"
                         new_record["dynamodb"]["Keys"] = keys
                         new_record["dynamodb"]["NewImage"] = put_request["Item"]
@@ -1199,7 +1199,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         new_record["eventName"] = "REMOVE"
                         new_record["dynamodb"]["Keys"] = keys
                         new_record["dynamodb"]["OldImage"] = existing_items[i]
-                        new_record["dynamodb"]["SizeBytes"] = len(json.dumps(existing_items[i]))
+                        new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_items[i])
                         new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
                         records.append(new_record)
                     if unprocessed_delete_items and len(unprocessed_delete_items) > i:
@@ -1269,6 +1269,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 # ---
 # Misc. util functions
 # ---
+def _get_size_bytes(item) -> int:
+    try:
+        size_bytes = len(json.dumps(item))
+    except TypeError:
+        size_bytes = len(str(item))
+    return size_bytes
 
 
 def get_global_secondary_index(table_name, index_name):
@@ -1368,7 +1374,7 @@ def get_updated_records(table_name: str, existing_items: List) -> List:
             "dynamodb": {
                 "Keys": keys,
                 "NewImage": new_image,
-                "SizeBytes": len(json.dumps(item)),
+                "SizeBytes": _get_size_bytes(item),
             },
         }
         if stream_spec:

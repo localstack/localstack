@@ -462,6 +462,45 @@ class TestDynamoDB:
         response = table.put_item(Item=item2)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    def test_batch_write_binary(self, dynamodb_client):
+        table_name = "table_batch_binary_%s" % short_uid()
+        dynamodb_client.create_table(
+            TableName=table_name,
+            AttributeDefinitions=[
+                {"AttributeName": "PK", "AttributeType": "S"},
+                {"AttributeName": "SK", "AttributeType": "S"},
+            ],
+            KeySchema=[
+                {"AttributeName": "PK", "KeyType": "HASH"},
+                {"AttributeName": "SK", "KeyType": "RANGE"},
+            ],
+            BillingMode="PAY_PER_REQUEST",
+        )
+        dynamodb_client.put_item(
+            TableName=table_name,
+            Item={"PK": {"S": "hello"}, "SK": {"S": "user"}, "data": {"B": b"test"}},
+        )
+
+        item = {
+            "Item": {
+                "PK": {"S": "hello-1"},
+                "SK": {"S": "user-1"},
+                "data": {"B": b"test-1"},
+            }
+        }
+        item_non_decodable = {
+            "Item": {
+                "PK": {"S": "hello-2"},
+                "SK": {"S": "user-2"},
+                "data": {"B": b"test \xc0 \xed"},
+            }
+        }
+        response = dynamodb_client.batch_write_item(
+            RequestItems={table_name: [{"PutRequest": item}, {"PutRequest": item_non_decodable}]}
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        dynamodb_client.delete_table(TableName=table_name)
+
     def test_dynamodb_stream_shard_iterator(self):
         def wait_for_stream_created(table_name):
             stream_name = get_kinesis_stream_name(table_name)
