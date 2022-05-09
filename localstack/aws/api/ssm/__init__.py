@@ -1290,6 +1290,10 @@ class InvalidTarget(ServiceException):
     Message: Optional[String]
 
 
+class InvalidTargetMaps(ServiceException):
+    Message: Optional[String]
+
+
 class InvalidTypeNameException(ServiceException):
     Message: Optional[String]
 
@@ -1556,6 +1560,9 @@ class AssociateOpsItemRelatedItemResponse(TypedDict, total=False):
     AssociationId: Optional[OpsItemRelatedItemAssociationId]
 
 
+TargetMapValueList = List[TargetMapValue]
+TargetMap = Dict[TargetMapKey, TargetMapValueList]
+TargetMaps = List[TargetMap]
 AssociationStatusAggregatedCount = Dict[StatusName, InstanceCount]
 
 
@@ -1589,6 +1596,7 @@ class Association(TypedDict, total=False):
     ScheduleExpression: Optional[ScheduleExpression]
     AssociationName: Optional[AssociationName]
     ScheduleOffset: Optional[ScheduleOffset]
+    TargetMaps: Optional[TargetMaps]
 
 
 Regions = List[Region]
@@ -1653,6 +1661,7 @@ class AssociationDescription(TypedDict, total=False):
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
+    TargetMaps: Optional[TargetMaps]
 
 
 AssociationDescriptionList = List[AssociationDescription]
@@ -1734,6 +1743,7 @@ class AssociationVersionInfo(TypedDict, total=False):
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
+    TargetMaps: Optional[TargetMaps]
 
 
 AssociationVersionList = List[AssociationVersionInfo]
@@ -1766,9 +1776,6 @@ class AttachmentsSource(TypedDict, total=False):
 
 
 AttachmentsSourceList = List[AttachmentsSource]
-TargetMapValueList = List[TargetMapValue]
-TargetMap = Dict[TargetMapKey, TargetMapValueList]
-TargetMaps = List[TargetMap]
 AutomationParameterValueList = List[AutomationParameterValue]
 AutomationParameterMap = Dict[AutomationParameterKey, AutomationParameterValueList]
 
@@ -2203,6 +2210,7 @@ class CreateAssociationBatchRequestEntry(TypedDict, total=False):
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
+    TargetMaps: Optional[TargetMaps]
 
 
 CreateAssociationBatchRequestEntries = List[CreateAssociationBatchRequestEntry]
@@ -2244,6 +2252,7 @@ class CreateAssociationRequest(ServiceRequest):
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
+    TargetMaps: Optional[TargetMaps]
 
 
 class CreateAssociationResult(TypedDict, total=False):
@@ -4845,6 +4854,7 @@ class UpdateAssociationRequest(ServiceRequest):
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
+    TargetMaps: Optional[TargetMaps]
 
 
 class UpdateAssociationResult(TypedDict, total=False):
@@ -5145,6 +5155,7 @@ class SsmApi:
         calendar_names: CalendarNameOrARNList = None,
         target_locations: TargetLocations = None,
         schedule_offset: ScheduleOffset = None,
+        target_maps: TargetMaps = None,
     ) -> CreateAssociationResult:
         raise NotImplementedError
 
@@ -6338,6 +6349,7 @@ class SsmApi:
         calendar_names: CalendarNameOrARNList = None,
         target_locations: TargetLocations = None,
         schedule_offset: ScheduleOffset = None,
+        target_maps: TargetMaps = None,
     ) -> UpdateAssociationResult:
         raise NotImplementedError
 

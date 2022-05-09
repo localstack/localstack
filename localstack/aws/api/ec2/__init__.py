@@ -1547,6 +1547,13 @@ class InstanceType(str):
     c6a_48xlarge = "c6a.48xlarge"
     c6a_metal = "c6a.metal"
     m6a_metal = "m6a.metal"
+    i4i_large = "i4i.large"
+    i4i_xlarge = "i4i.xlarge"
+    i4i_2xlarge = "i4i.2xlarge"
+    i4i_4xlarge = "i4i.4xlarge"
+    i4i_8xlarge = "i4i.8xlarge"
+    i4i_16xlarge = "i4i.16xlarge"
+    i4i_32xlarge = "i4i.32xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -1627,6 +1634,9 @@ class IpamPoolState(str):
     delete_in_progress = "delete-in-progress"
     delete_complete = "delete-complete"
     delete_failed = "delete-failed"
+    isolate_in_progress = "isolate-in-progress"
+    isolate_complete = "isolate-complete"
+    restore_in_progress = "restore-in-progress"
 
 
 class IpamResourceType(str):
@@ -1647,6 +1657,9 @@ class IpamScopeState(str):
     delete_in_progress = "delete-in-progress"
     delete_complete = "delete-complete"
     delete_failed = "delete-failed"
+    isolate_in_progress = "isolate-in-progress"
+    isolate_complete = "isolate-complete"
+    restore_in_progress = "restore-in-progress"
 
 
 class IpamScopeType(str):
@@ -1664,6 +1677,9 @@ class IpamState(str):
     delete_in_progress = "delete-in-progress"
     delete_complete = "delete-complete"
     delete_failed = "delete-failed"
+    isolate_in_progress = "isolate-in-progress"
+    isolate_complete = "isolate-complete"
+    restore_in_progress = "restore-in-progress"
 
 
 class Ipv6SupportValue(str):
@@ -3114,6 +3130,7 @@ class AllocateHostsRequest(ServiceRequest):
     Quantity: Integer
     TagSpecifications: Optional[TagSpecificationList]
     HostRecovery: Optional[HostRecovery]
+    OutpostArn: Optional[String]
 
 
 ResponseHostIdList = List[String]
@@ -8871,6 +8888,7 @@ class Host(TypedDict, total=False):
     OwnerId: Optional[String]
     AvailabilityZoneId: Optional[String]
     MemberOfServiceLinkedResourceGroup: Optional[Boolean]
+    OutpostArn: Optional[String]
 
 
 HostList = List[Host]
@@ -15283,6 +15301,7 @@ class Ec2Api:
         instance_family: String = None,
         tag_specifications: TagSpecificationList = None,
         host_recovery: HostRecovery = None,
+        outpost_arn: String = None,
     ) -> AllocateHostsResult:
         raise NotImplementedError
 

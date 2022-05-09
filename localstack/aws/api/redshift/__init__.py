@@ -1365,6 +1365,7 @@ class CreateClusterMessage(ServiceRequest):
     AvailabilityZoneRelocation: Optional[BooleanOptional]
     AquaConfigurationStatus: Optional[AquaConfigurationStatus]
     DefaultIamRoleArn: Optional[String]
+    LoadSampleData: Optional[String]
 
 
 class CreateClusterParameterGroupMessage(ServiceRequest):
@@ -2927,6 +2928,7 @@ class RedshiftApi:
         availability_zone_relocation: BooleanOptional = None,
         aqua_configuration_status: AquaConfigurationStatus = None,
         default_iam_role_arn: String = None,
+        load_sample_data: String = None,
     ) -> CreateClusterResult:
         raise NotImplementedError
 
