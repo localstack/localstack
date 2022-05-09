@@ -481,19 +481,22 @@ class TestDynamoDB:
             Item={"PK": {"S": "hello"}, "SK": {"S": "user"}, "data": {"B": b"test"}},
         )
 
-        items = {
+        item = {
             "Item": {
                 "PK": {"S": "hello-1"},
                 "SK": {"S": "user-1"},
                 "data": {"B": b"test-1"},
             }
         }
-        response = dynamodb_client.batch_write_item(
-            RequestItems={
-                table_name: [
-                    {"PutRequest": items},
-                ]
+        item_non_decodable = {
+            "Item": {
+                "PK": {"S": "hello-2"},
+                "SK": {"S": "user-2"},
+                "data": {"B": b"test \xc0 \xed"},
             }
+        }
+        response = dynamodb_client.batch_write_item(
+            RequestItems={table_name: [{"PutRequest": item}, {"PutRequest": item_non_decodable}]}
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         dynamodb_client.delete_table(TableName=table_name)

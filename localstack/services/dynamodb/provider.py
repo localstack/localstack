@@ -1270,16 +1270,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 # Misc. util functions
 # ---
 def _get_size_bytes(item) -> int:
-    def _decode_dict(_item):
-        for k, v in _item.items():
-            if isinstance(v, bytes):
-                v = v.decode()
-                _item.update({k: v})
-
     try:
         size_bytes = len(json.dumps(item))
     except TypeError:
-        size_bytes = len(json.dumps(_decode_dict(item.copy())))
+        size_bytes = len(str(item))
     return size_bytes
 
 
