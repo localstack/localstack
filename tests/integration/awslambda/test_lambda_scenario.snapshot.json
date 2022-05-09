@@ -49,5 +49,56 @@
       "Topics": [],
       "MaximumRetryAttempts": -1
     }
+  },
+  "tests/integration/awslambda/test_lambda_scenario.py::TestLambdaSqsEventSource::test_resource_states_pulumi": {
+    "queue-attributes": {
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "lambda-get-function": {
+      "ResponseMetadata": "<response-metadata>",
+      "Configuration": {
+        "FunctionName": "<name>",
+        "FunctionArn": "<arn>",
+        "Runtime": "python3.8",
+        "Role": "<arn>",
+        "Handler": "index.handler",
+        "CodeSize": 204,
+        "Description": "",
+        "Timeout": 3,
+        "MemorySize": 128,
+        "LastModified": "<date>",
+        "CodeSha256": "<sha>",
+        "Version": "$LATEST",
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid>",
+        "State": "Active",
+        "LastUpdateStatus": "Successful",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "Code": {
+        "RepositoryType": "S3",
+        "Location": "<location>"
+      }
+    },
+    "esm-get": {
+      "ResponseMetadata": "<response-metadata>",
+      "UUID": "<uuid>",
+      "BatchSize": 1,
+      "MaximumBatchingWindowInSeconds": 0,
+      "EventSourceArn": "<arn>",
+      "FunctionArn": "<arn>",
+      "LastModified": "<date>",
+      "State": "Enabled",
+      "StateTransitionReason": "USER_INITIATED",
+      "FunctionResponseTypes": []
+    }
   }
 }
