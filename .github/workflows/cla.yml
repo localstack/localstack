@@ -26,4 +26,4 @@ jobs:
           path-to-signatures: "etc/cla-signatures/signatures.json"
           path-to-document: "https://github.com/localstack/localstack/blob/master/.github/CLA.md"
           branch: "cla-signatures"
-          allowlist: "localstack-bot,renovate"
+          allowlist: "localstack-bot,renovate-bot"
