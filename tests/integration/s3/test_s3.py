@@ -180,6 +180,21 @@ class TestS3PresignedUrl:
         response = s3_client.head_object(Bucket=s3_bucket, Key=object_key)
         assert response.get("Metadata", {}).get("foo") == "bar"
 
+    @pytest.mark.aws_validated
+    def test_get_object_ignores_request_body(self, s3_client, s3_bucket):
+        key = "foo-key"
+        body = "foobar"
+
+        s3_client.put_object(Bucket=s3_bucket, Key=key, Body=body)
+
+        url = s3_client.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": key}
+        )
+
+        response = requests.get(url, data=b"get body is ignored by AWS")
+        assert response.status_code == 200
+        assert response.text == body
+
 
 class TestS3DeepArchive:
     """
