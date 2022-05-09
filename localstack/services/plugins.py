@@ -133,6 +133,14 @@ class ServiceLifecycleHook:
         pass
 
 
+class StateLifecycle:
+    def retrieve_state(self):
+        pass
+
+    def inject_state(self, state):
+        pass
+
+
 class Service:
     def __init__(
         self,
@@ -143,6 +151,7 @@ class Service:
         active=False,
         stop=None,
         lifecycle_hook: ServiceLifecycleHook = None,
+        state_lifecycle: StateLifecycle = None,
     ):
         self.plugin_name = name
         self.start_function = start
@@ -151,6 +160,7 @@ class Service:
         self.default_active = active
         self.stop_function = stop
         self.lifecycle_hook = lifecycle_hook or ServiceLifecycleHook()
+        self.state_lifecycle = state_lifecycle
         call_safe(self.lifecycle_hook.on_after_init)
 
     def start(self, asynchronous):
