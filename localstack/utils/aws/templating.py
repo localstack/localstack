@@ -28,7 +28,7 @@ class VelocityUtil:
 class VtlTemplate:
     """Utility class for rendering Velocity templates"""
 
-    def render_vtl(self, template, variables: dict, as_json=False):
+    def render_vtl(self, template, variables: Dict, as_json=False):
         if variables is None:
             variables = {}
 
