@@ -9,6 +9,7 @@ from werkzeug.exceptions import NotFound
 from werkzeug.routing import Map, MapAdapter, PathConverter, Rule
 
 from localstack.http import Request
+from localstack.http.request import get_raw_path
 
 
 class GreedyPathConverter(PathConverter):
@@ -278,7 +279,7 @@ class RestServiceOperationRouter:
         matcher: MapAdapter = self._map.bind(request.host)
 
         # perform the matching
-        rule, args = matcher.match(request.path, method=request.method, return_rule=True)
+        rule, args = matcher.match(get_raw_path(request), method=request.method, return_rule=True)
 
         # if the found rule is a _RequestMatchingRule, the multi rule matching needs to be invoked to perform the
         # fine-grained matching based on the whole request

@@ -956,20 +956,10 @@ def test_restxml_header_date_parsing():
 
 
 def test_s3_virtual_host_addressing():
-    """Test the parsing of an S3 bucket request using the bucket encoded in the domain."""
+    """Test the parsing of a map with the location trait 'headers'."""
     request = HttpRequest(
         method="PUT", headers={"host": s3_utils.get_bucket_hostname("test-bucket")}
     )
-    parser = create_parser(load_service("s3"))
-    parsed_operation_model, parsed_request = parser.parse(request)
-    assert parsed_operation_model.name == "CreateBucket"
-    assert "Bucket" in parsed_request
-    assert parsed_request["Bucket"] == "test-bucket"
-
-
-def test_s3_path_addressing():
-    """Test the parsing of an S3 bucket request using the bucket encoded in the path."""
-    request = HttpRequest(method="PUT", path="/test-bucket")
     parser = create_parser(load_service("s3"))
     parsed_operation_model, parsed_request = parser.parse(request)
     assert parsed_operation_model.name == "CreateBucket"

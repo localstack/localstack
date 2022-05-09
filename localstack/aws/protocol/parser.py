@@ -998,7 +998,7 @@ class S3RequestParser(RestXMLRequestParser):
 
     def _revert_virtual_host_style(self, request: HttpRequest):
         # extract the bucket name from the host part of the request
-        bucket_name, host = request.host.split(".", maxsplit=1)
+        bucket_name = request.host.split(".")[0]
         # split the url and put the bucket name at the front
         parts = urlsplit(request.url)
         path_parts = parts.path.split("/")
@@ -1006,31 +1006,9 @@ class S3RequestParser(RestXMLRequestParser):
         path_parts = [part for part in path_parts if part]
         path = "/" + "/".join(path_parts) or "/"
         # set the path with the bucket name in the front at the request
-
-        # TODO directly modifying the request has become extremely difficult since
-        #  https://github.com/localstack/localstack/pull/5876. werkzeug requests are designed to be, for the most
-        #  part, immutable after entering the app. we need to either have a different approach to parsing virtual
-        #  host-based S3 requests, or add code to make it easy to copy requests with modified attributes.
+        # TODO directly modifying the request can cause issues with our handler chain, instead clone the HTTP request
         request.path = path
-        request.headers["Host"] = host
-
-        try:
-            # delete the werkzeug request property cache that depends on path, but make sure all of them are initialized
-            # first, otherwise `del` will raise a key error
-            request.host = None  # noqa
-            request.url = None  # noqa
-            request.base_url = None  # noqa
-            request.full_path = None  # noqa
-            request.host_url = None  # noqa
-            request.root_url = None  # noqa
-            del request.host  # noqa
-            del request.url  # noqa
-            del request.base_url  # noqa
-            del request.full_path  # noqa
-            del request.host_url  # noqa
-            del request.root_url  # noqa
-        except AttributeError:
-            pass
+        request.raw_path = path
 
 
 def create_parser(service: ServiceModel) -> RequestParser:
