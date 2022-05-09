@@ -1,4 +1,5 @@
 import json
+import re
 
 from localstack.services.apigateway.integration import ApiGatewayVtlTemplate
 from localstack.utils.aws.templating import render_velocity_template
@@ -90,6 +91,49 @@ class TestMessageTransformationBasic:
         result = render_velocity_template(template, {})
         expected = {"foo": "bar"}
         assert json.loads(result) == expected
+
+    def test_quiet_return_function(self):
+        # render .put(..) without quiet function
+        template = """
+        #set($v1 = {})
+        $v1.put('foo', 'bar1')$v1.put('foo', 'bar2')
+        #return($v1)
+        """
+        result = render_velocity_template(template, {})
+        result = re.sub(r"\s+", " ", result).strip()
+        assert result == 'bar1 {"foo": "bar2"}'
+        # render .put(..) with quiet function
+        template = """
+        #set($v1 = {})\n$v1.put('foo', 'bar1')$util.qr($v1.put('foo', 'bar2'))\n#return($v1)
+        """
+        result = render_velocity_template(template, {})
+        result = re.sub(r"\s+", " ", result).strip()
+        assert result == '{"foo": "bar2"}'
+
+    def test_map_put_all(self):
+        template = """
+        #set($v1 = {})
+        $v1.putAll({'foo1': 'bar', 'foo2': 'bar'})
+        result: $v1
+        """
+        result = render_velocity_template(template, {})
+        result = re.sub(r"\s+", " ", result).strip()
+        assert result == "result: {'foo1': 'bar', 'foo2': 'bar'}"
+
+    def test_assign_var_loop_return(self):
+        template = """
+        #foreach($x in [1, 2, 3])
+            #if($x == 1 or $x == 3)
+                #set($context.return__val = "loop$x")
+                #set($context.return__flag = true)
+                #return($context.return__val)
+            #end
+        #end
+        #return('end')
+        """
+        result = render_velocity_template(template, {"context": dict()})
+        result = re.sub(r"\s+", " ", result).strip()
+        assert result == "loop1 loop3 end"
 
 
 class TestMessageTransformationApiGateway:

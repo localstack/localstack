@@ -9,7 +9,7 @@ from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.templating import VtlTemplate
+from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
@@ -42,7 +42,7 @@ class SnsIntegration(BackendIntegration):
         )
 
 
-class VelocityUtil:
+class VelocityUtilApiGateway(VelocityUtil):
     """
     Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
     velocity templates.
@@ -134,9 +134,12 @@ class ApiGatewayVtlTemplate(VtlTemplate):
         input_var = variables.get("input") or {}
         variables = {
             "input": VelocityInput(input_var.get("body"), input_var.get("params")),
-            "util": VelocityUtil(),
+            "util": VelocityUtilApiGateway(),
         }
         namespace.update(variables)
+        stage_var = variables.get("stage_variables") or {}
+        if stage_var:
+            namespace["stageVariables"] = stage_var
         return namespace
 
 
