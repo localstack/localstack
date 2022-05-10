@@ -17,6 +17,11 @@
   "paths": {
     "/test": {
       "get": {
+        "security": [
+          {
+            "myapi-authorizer-0": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "200 response",
@@ -53,6 +58,11 @@
         }
       },
       "options": {
+        "security": [
+          {
+            "myapi-authorizer-0": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "200 response",
@@ -108,6 +118,20 @@
         "title": "Empty Schema",
         "type": "object"
       }
+    }
+  },
+  "securityDefinitions": {
+    "myapi-authorizer-0": {
+      "in": "query",
+      "name": "auth",
+      "type": "apiKey",
+      "x-amazon-apigateway-authorizer": {
+        "authorizerCredentials": "arn:aws:iam::000000000000:role/myapi-authorizer-0-authorizer-role-3bd761a",
+        "authorizerUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:000000000000:function:myapi-authorizer-0-22ad13b/invocations",
+        "identitySource": "method.request.querystring.auth",
+        "type": "request"
+      },
+      "x-amazon-apigateway-authtype": "custom"
     }
   }
 }

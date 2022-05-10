@@ -12,6 +12,7 @@ from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
 from moto.apigateway import models as apigateway_models
+from moto.apigateway.models import Authorizer
 from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
@@ -604,6 +605,38 @@ def import_api_from_openapi_spec(
     # Remove default root, then add paths from API spec
     rest_api.resources = {}
 
+    def create_authorizer(path_payload: dict) -> Authorizer:
+        if "security" not in path_payload:
+            return None
+
+        security_schemes = path_payload.get("security")
+        for security_scheme in security_schemes:
+            for security_scheme_name, _ in security_scheme.items():
+                if security_scheme_name in body.get("securityDefinitions"):
+                    security_config = body.get("securityDefinitions", {}).get(security_scheme_name)
+                    aws_apigateway_authorizer = security_config.get(
+                        "x-amazon-apigateway-authorizer"
+                    )
+                    return rest_api.create_authorizer(
+                        create_resource_id(),
+                        name=security_scheme_name,
+                        authorizer_type=aws_apigateway_authorizer.get("type"),
+                        provider_arns=None,
+                        auth_type=security_config.get("x-amazon-apigateway-authtype"),
+                        authorizer_uri=aws_apigateway_authorizer.get("authorizerUri"),
+                        authorizer_credentials=aws_apigateway_authorizer.get(
+                            "authorizerCredentials"
+                        ),
+                        identity_source=aws_apigateway_authorizer.get("identitySource"),
+                        identiy_validation_expression=aws_apigateway_authorizer.get(
+                            "identityValidationExpression"
+                        ),
+                        authorizer_result_ttl=aws_apigateway_authorizer.get(
+                            "authorizerResultTtlInSeconds"
+                        )
+                        or 300,
+                    )
+
     def get_or_create_path(path):
         parts = path.rstrip("/").replace("//", "/").split("/")
         parent_id = ""
@@ -622,7 +655,7 @@ def import_api_from_openapi_spec(
     def add_path(path, parts, parent_id=""):
         child_id = create_resource_id()
         path = path or "/"
-        child = apigateway_models.Resource(
+        resource = apigateway_models.Resource(
             resource_id=child_id,
             region_name=rest_api.region_name,
             api_id=rest_api.id,
@@ -632,7 +665,9 @@ def import_api_from_openapi_spec(
 
         for method, method_schema in resolved_schema["paths"].get(path, {}).items():
             method = method.upper()
-            method_resource = child.add_method(method, None, None)
+
+            method_resource = create_method_resource(resource, method, method_schema)
+
             method_integration = method_schema.get("x-amazon-apigateway-integration", {})
             responses = method_schema.get("responses", {})
             for status_code in responses:
@@ -666,10 +701,22 @@ def import_api_from_openapi_spec(
                 ),
                 content_handling=None,
             )
-            child.resource_methods[method]["methodIntegration"] = integration
+            resource.resource_methods[method]["methodIntegration"] = integration
 
-        rest_api.resources[child_id] = child
-        return child
+        rest_api.resources[child_id] = resource
+        return resource
+
+    def create_method_resource(child, method, method_schema):
+        return (
+            child.add_method(
+                method,
+                authorization_type=authorizer.get("type"),
+                api_key_required=None,
+                authorizer_id=authorizer.get("id"),
+            )
+            if (authorizer := create_authorizer(method_schema))
+            else child.add_method(method, None, None)
+        )
 
     if definitions := resolved_schema.get("definitions", {}):
         for name, model in definitions.items():

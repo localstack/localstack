@@ -305,7 +305,7 @@ def test_integration_response(apigateway_client):
     response = apigateway_client.get_method(restApiId=api_id, resourceId=root_id, httpMethod="GET")
     assert response["methodIntegration"]["integrationResponses"] == {}
 
-    # adding a new method and perfomring put intergration with contentHandling as CONVERT_TO_BINARY
+    # adding a new method and performing put integration with contentHandling as CONVERT_TO_BINARY
     apigateway_client.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="PUT", authorizationType="none"
     )
