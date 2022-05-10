@@ -453,13 +453,3 @@ def events_handler_put_events(self):
 
 def apply_patches():
     MotoEventsHandler.put_events = events_handler_put_events
-
-    # TODO: evaluate for this migration! this was in the starter but doesn't seem relevant anymore???
-    # Fix events ARN
-    # def rule_model_generate_arn(self, name):
-    #     return "arn:aws:events:{region_name}:{account_id}:rule/{name}".format(
-    #         region_name=self.region_name, account_id=TEST_AWS_ACCOUNT_ID, name=name
-    #     )
-    #
-    #
-    # rule_model._generate_arn = rule_model_generate_arn
