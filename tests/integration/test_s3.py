@@ -38,7 +38,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON36,
 )
 from localstack.services.s3 import s3_listener, s3_utils
-from localstack.utils import persistence, testutil
+from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     get_service_protocol,
@@ -2084,21 +2084,6 @@ class TestS3(unittest.TestCase):
         ),
     ],
 )
-@pytest.mark.skipif(os.environ.get("LOCALSTACK_API_KEY", "") != "", reason="replay skipped in pro")
-def test_replay_s3_call(api_version, bucket_name, payload):
-    s3_client = aws_stack.create_external_boto_client("s3")
-
-    with pytest.raises(ClientError) as error:
-        s3_client.head_bucket(Bucket=bucket_name)
-    assert "Not Found" in str(error)
-
-    resp = persistence.replay_command(payload)
-    assert resp.status_code == 200
-
-    bucket_head = s3_client.head_bucket(Bucket=bucket_name)
-    assert bucket_head["ResponseMetadata"]["HTTPStatusCode"] == 200
-
-
 @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
 def test_cors_with_allowed_origins(s3_client):
     # works with TEST_TARGET=AWS_CLOUD
