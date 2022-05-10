@@ -77,6 +77,9 @@ def pytest_runtestloop(session):
 def pytest_unconfigure(config):
     # last pytest lifecycle hook (before pytest exits)
     _trigger_stop()
+    # wait for localstack to stop. We do not want to exit immediately, otherwise new threads during shutdown will fail
+    if not localstack_stopped.wait(timeout=10):
+        logger.warning("LocalStack did not exit in time!")
 
 
 def _start_monitor():
@@ -105,6 +108,7 @@ def startup_monitor() -> None:
     if is_env_true("TEST_SKIP_LOCALSTACK_START") or os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         logger.info("TEST_SKIP_LOCALSTACK_START is set, not starting localstack")
         localstack_started.set()
+        localstack_stopped.set()
         return
 
     logger.info("running localstack")
