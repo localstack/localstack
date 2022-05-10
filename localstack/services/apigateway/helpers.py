@@ -628,8 +628,13 @@ def import_api_from_openapi_spec(
                             "authorizerCredentials"
                         ),
                         identity_source=aws_apigateway_authorizer.get("identitySource"),
-                        identiy_validation_expression=aws_apigateway_authorizer.get("identityValidationExpression"),
-                        authorizer_result_ttl=300,
+                        identiy_validation_expression=aws_apigateway_authorizer.get(
+                            "identityValidationExpression"
+                        ),
+                        authorizer_result_ttl=aws_apigateway_authorizer.get(
+                            "authorizerResultTtlInSeconds"
+                        )
+                        or 300,
                     )
 
     def get_or_create_path(path):
