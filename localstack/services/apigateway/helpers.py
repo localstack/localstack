@@ -628,7 +628,7 @@ def import_api_from_openapi_spec(
                             "authorizerCredentials"
                         ),
                         identity_source=aws_apigateway_authorizer.get("identitySource"),
-                        identiy_validation_expression=None,
+                        identiy_validation_expression=aws_apigateway_authorizer.get("identityValidationExpression"),
                         authorizer_result_ttl=300,
                     )
 
