@@ -18,7 +18,7 @@ from localstack.services.apigateway.helpers import (
 from localstack.services.apigateway.integration import (
     RequestTemplates,
     ResponseTemplates,
-    VelocityUtil,
+    VelocityUtilApiGateway,
 )
 from localstack.services.apigateway.invocations import (
     ApiInvocationContext,
@@ -197,7 +197,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
 
 
 def test_render_template_values():
-    util = VelocityUtil()
+    util = VelocityUtilApiGateway()
 
     encoded = util.urlEncode("x=a+b")
     assert encoded == "x%3Da%2Bb"

@@ -1,7 +1,7 @@
 import copy
 import json
 import re
-from typing import Dict
+from typing import Any, Dict
 
 import airspeed
 
@@ -9,10 +9,26 @@ from localstack.utils.objects import recurse_object
 from localstack.utils.patch import patch
 
 
-class VtlTemplate:
-    """Utility class for rendering velocity templates"""
+class VelocityUtil:
+    """
+    Simple class to mimic the behavior of variable '$util' in AWS velocity templates.
 
-    def render_vtl(self, template, variables: dict, as_json=False):
+    This class defines basic shared functions, which can be overwritten/extended by
+    subclasses (e.g., for API Gateway, AppSync, etc).
+    """
+
+    def quiet(self, *args, **kwargs):
+        """No-op util function, often used as wrapper around other functions to suppress output"""
+        pass
+
+    def qr(self, *args, **kwargs):
+        self.quiet(*args, **kwargs)
+
+
+class VtlTemplate:
+    """Utility class for rendering Velocity templates"""
+
+    def render_vtl(self, template, variables: Dict, as_json=False):
         if variables is None:
             variables = {}
 
@@ -76,13 +92,11 @@ class VtlTemplate:
             rendered_template = json.loads(rendered_template)
         return rendered_template
 
-    def prepare_namespace(self, variables) -> Dict:
-        context_var = variables.get("context") or {}
-        stage_var = variables.get("stage_variables") or {}
-        namespace = {
-            "context": context_var,
-            "stageVariables": stage_var,
-        }
+    def prepare_namespace(self, variables: Dict[str, Any]) -> Dict:
+        namespace = dict(variables or {})
+        namespace.setdefault("context", {})
+        if not namespace.get("util"):
+            namespace["util"] = VelocityUtil()
         return namespace
 
 
@@ -156,6 +170,20 @@ def parse(self):
             )
         except airspeed.NoMatch:
             break
+
+
+def dict_put(self, key, value):
+    existing = self.get(key)
+    self.update({key: value})
+    return existing
+
+
+def dict_put_all(self, values):
+    self.update(values)
+
+
+airspeed.__additional_methods__[dict]["put"] = dict_put
+airspeed.__additional_methods__[dict]["putAll"] = dict_put_all
 
 
 # END of patches for airspeed
