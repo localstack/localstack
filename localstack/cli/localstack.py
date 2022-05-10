@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import sys
+from multiprocessing import Process
 from typing import Dict, List, Optional
 
 from localstack.utils.analytics.client import AnalyticsClient
@@ -43,7 +44,7 @@ def _setup_cli_debug():
     setup_logging()
 
 
-def log_cmd_as_analytics_event():
+def _publish_cmd_as_analytics_event():
     event = Event(
         name="cli_cmd",
         payload={"raw_cmd": " ".join(sys.argv[1:])},
@@ -61,12 +62,16 @@ def log_cmd_as_analytics_event():
 @click.option("--debug", is_flag=True, help="Enable CLI debugging mode")
 @click.option("--profile", type=str, help="Set the configuration profile")
 def localstack(debug, profile):
-    log_cmd_as_analytics_event()
+    publish_cmd_process = Process(target=_publish_cmd_as_analytics_event)
+    publish_cmd_process.start()
+
     if profile:
         os.environ["CONFIG_PROFILE"] = profile
-
     if debug:
         _setup_cli_debug()
+
+    publish_cmd_process.join(0.5)
+    publish_cmd_process.terminate()
 
 
 @localstack.group(name="config", help="Inspect your LocalStack configuration")
