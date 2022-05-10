@@ -1,7 +1,13 @@
+import datetime
 import json
 import os
 import sys
 from typing import Dict, List, Optional
+
+from localstack.utils.analytics.client import AnalyticsClient
+from localstack.utils.analytics.events import Event, EventMetadata
+from localstack.utils.analytics.metadata import get_session_id
+from localstack.utils.analytics.publisher import AnalyticsClientPublisher
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -37,11 +43,25 @@ def _setup_cli_debug():
     setup_logging()
 
 
+def log_cmd_as_analytics_event():
+    event = Event(
+        name="cli_cmd",
+        payload={"raw_cmd": " ".join(sys.argv[1:])},
+        metadata=EventMetadata(
+            session_id=get_session_id(),
+            client_time=str(datetime.datetime.now()),  # TODO: consider using utcnow()
+        ),
+    )
+    publisher = AnalyticsClientPublisher(AnalyticsClient())
+    publisher.publish([event])
+
+
 @click.group(name="localstack", help="The LocalStack Command Line Interface (CLI)")
 @click.version_option(version=__version__, message="%(version)s")
 @click.option("--debug", is_flag=True, help="Enable CLI debugging mode")
 @click.option("--profile", type=str, help="Set the configuration profile")
 def localstack(debug, profile):
+    log_cmd_as_analytics_event()
     if profile:
         os.environ["CONFIG_PROFILE"] = profile
 
