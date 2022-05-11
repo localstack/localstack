@@ -115,7 +115,7 @@
             <p>
             Stack deployment successfully started - please check the logs in your LocalStack instance. Deployment response:
             </p>
-            <textarea disabled={true} rows={4} style={{width: "500px"}}>{JSON.stringify(deployResult)}</textarea>
+            <pre style={{padding: "5px", border: "1px solid #000"}}>{JSON.stringify(deployResult, null, 4)}</pre>
             <p>
             <b>Note:</b> To interactively browse the state of the locally deployed resources, you may want to check out our Web UI at { }
             <a href="https://app.localstack.cloud">https://app.localstack.cloud</a> !
