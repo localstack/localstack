@@ -1,6 +1,7 @@
 import json
 import re
 from copy import deepcopy
+from typing import Any, Mapping
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.apigateway import (
@@ -10,6 +11,7 @@ from localstack.aws.api.apigateway import (
     Authorizers,
     BasePathMapping,
     BasePathMappings,
+    Blob,
     Boolean,
     ClientCertificate,
     ClientCertificates,
@@ -24,6 +26,7 @@ from localstack.aws.api.apigateway import (
     MapOfStringToString,
     NotFoundException,
     NullableInteger,
+    PutRestApiRequest,
     RequestValidator,
     RequestValidators,
     RestApi,
@@ -32,6 +35,7 @@ from localstack.aws.api.apigateway import (
     VpcLink,
     VpcLinks,
 )
+from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.apigateway import helpers
@@ -638,10 +642,41 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         for key in tag_keys:
             resource_tags.pop(key, None)
 
+    def import_rest_api(
+        self,
+        context: RequestContext,
+        body: Blob,
+        fail_on_warnings: Boolean = None,
+        parameters: MapOfStringToString = None,
+    ) -> RestApi:
+
+        openapi_spec = parse_json_or_yaml(body)
+        response = _call_moto(
+            context,
+            "CreateRestApi",
+            CreateRestApiRequest(name=openapi_spec.get("info").get("title")),
+        )
+
+        return _call_moto(
+            context, "PutRestApi", PutRestApiRequest(restApiId=response.get("id"), body=body)
+        )
+
 
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
+
+
+def _call_moto(context: RequestContext, operation_name: str, parameters: Mapping[str, Any]):
+    local_context = create_aws_request_context(
+        service_name=context.service.service_name,
+        action=operation_name,
+        parameters=parameters,
+        region=context.region,
+    )
+
+    local_context.request.headers.extend(context.request.headers)
+    return call_moto(local_context)
 
 
 def normalize_authorizer(data):
