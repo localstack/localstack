@@ -190,18 +190,19 @@ def test_config_show_dict(runner, monkeypatch):
     assert re.search(r"'DEBUG'[^:]*: [^']*True", result.output)
 
 
-def test_publish_analytics_event_on_command_invocation(runner, monkeypatch):
+@pytest.mark.parametrize("command", ["status", "status --debug --format table", "config", "status with invalid args"])
+def test_publish_analytics_event_on_command_invocation(command, runner, monkeypatch):
+    monkeypatch.setattr(localstack.cli.localstack, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
     request_data = Queue()
-    command = ["localstack", "status"]
+    split_command = ["localstack"] + (command.split(" "))
+    monkeypatch.setattr("sys.argv", split_command)
 
     def handler(request, data):
         request_data.put((request.__dict__, data))
 
     with testutil.http_server(handler) as url:
-        monkeypatch.setattr("sys.argv", command)
         monkeypatch.setenv("ANALYTICS_API", url)
-        monkeypatch.setattr(localstack.cli.localstack, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
-        runner.invoke(cli, command[1:])
+        runner.invoke(cli, split_command[1:])
         _, request_payload = request_data.get(timeout=5)
 
     assert request_data.qsize() == 0
@@ -213,4 +214,4 @@ def test_publish_analytics_event_on_command_invocation(runner, monkeypatch):
     assert "client_time" in metadata
     assert "session_id" in metadata
     assert event["name"] == "cli_cmd"
-    assert event["payload"]["raw_cmd"] == " ".join(command[1:])
+    assert event["payload"]["raw_cmd"] == command
