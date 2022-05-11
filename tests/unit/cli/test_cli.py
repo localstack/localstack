@@ -1,6 +1,5 @@
 import json
 import re
-import sys
 import threading
 from queue import Queue
 
@@ -190,7 +189,9 @@ def test_config_show_dict(runner, monkeypatch):
     assert re.search(r"'DEBUG'[^:]*: [^']*True", result.output)
 
 
-@pytest.mark.parametrize("command", ["status", "status --debug --format table", "config", "status with invalid args"])
+@pytest.mark.parametrize(
+    "command", ["status", "status --debug --format table", "config", "status with invalid args"]
+)
 def test_publish_analytics_event_on_command_invocation(command, runner, monkeypatch):
     monkeypatch.setattr(localstack.cli.localstack, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
     request_data = Queue()
