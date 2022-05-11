@@ -639,7 +639,8 @@ def import_api_from_openapi_spec(
                             ),
                             authorizer_result_ttl=aws_apigateway_authorizer.get(
                                 "authorizerResultTtlInSeconds"
-                            ) or 300,
+                            )
+                            or 300,
                         )
                         if authorizer:
                             authorizers.update({security_scheme_name: authorizer})
