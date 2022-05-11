@@ -51,6 +51,17 @@ def to_valid_python_name(spec_name: str) -> str:
     return sanitized
 
 
+def html_to_rst(html: str):
+    import pypandoc
+
+    doc = pypandoc.convert_text(html, "rst", format="html")
+    doc = doc.replace("\_", "_")  # noqa: W605
+    doc = doc.replace("\|", "|")  # noqa: W605
+    doc = doc.replace("\ ", " ")  # noqa: W605
+    rst = doc.strip()
+    return rst
+
+
 class ShapeNode:
     service: ServiceModel
     shape: Shape
@@ -149,13 +160,10 @@ class ShapeNode:
 
     def print_shape_doc(self, output, shape):
         html = shape.documentation
-        import pypandoc
-
-        doc = pypandoc.convert_text(html, "rst", format="html")
-        rst = doc.strip()
+        rst = html_to_rst(html)
         if rst:
             output.write('    """')
-            output.write(f"{doc.strip()}\n")
+            output.write(f"{rst}\n")
             output.write('    """\n')
 
     def print_declaration(self, output, doc=True, quote_types=False):
@@ -329,19 +337,17 @@ def generate_service_api(output, service: ServiceModel, doc=True):
         # convert html documentation to rst and print it into to the signature
         if doc:
             html = operation.documentation
-            import pypandoc
-
-            doc = pypandoc.convert_text(html, "rst", format="html")
+            rst = html_to_rst(html)
             output.write('        """')
-            output.write(f"{doc.strip()}\n")
+            output.write(f"{rst}\n")
             output.write("\n")
 
             # parameters
             for param_name, shape in param_shapes.items():
                 # FIXME: this doesn't work properly
-                pdoc = pypandoc.convert_text(shape.documentation, "rst", format="html")
-                pdoc = pdoc.strip().split(".")[0] + "."
-                output.write(f":param {param_name}: {pdoc}\n")
+                rst = html_to_rst(shape.documentation)
+                rst = rst.strip().split(".")[0] + "."
+                output.write(f":param {param_name}: {rst}\n")
 
             # return value
             if operation.output_shape:
@@ -408,11 +414,11 @@ def generate_code(service_name: str, doc: bool = False) -> str:
         import isort
         from black import FileMode, format_str
 
-        # try to format with black
-        code = format_str(code, mode=FileMode(line_length=100))
-
         # try to remove unused imports
         code = autoflake.fix_code(code, remove_all_unused_imports=True)
+
+        # try to format with black
+        code = format_str(code, mode=FileMode(line_length=100))
 
         # try to sort imports
         code = isort.code(code, config=isort.Config(profile="black", line_length=100))
