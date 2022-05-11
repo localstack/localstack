@@ -1,14 +1,18 @@
 import json
 import re
+import sys
 import threading
+from queue import Queue
 
 import click
 import pytest
 from click.testing import CliRunner
 
+import localstack.constants
 from localstack import config, constants
 from localstack.cli.localstack import create_with_plugins
 from localstack.cli.localstack import localstack as cli
+from localstack.utils import testutil
 from localstack.utils.common import is_command_available
 
 cli: click.Group
@@ -184,3 +188,29 @@ def test_config_show_dict(runner, monkeypatch):
     assert "'DATA_DIR'" in result.output
     # using regex here, as output string may contain the color/formatting codes like "\x1b[32m"
     assert re.search(r"'DEBUG'[^:]*: [^']*True", result.output)
+
+
+def test_publish_analytics_event_on_command_invocation(runner, monkeypatch):
+    request_data = Queue()
+    command = ["localstack", "status"]
+
+    def handler(request, data):
+        request_data.put((request.__dict__, data))
+
+    with testutil.http_server(handler) as url:
+        monkeypatch.setattr("sys.argv", command)
+        monkeypatch.setenv("ANALYTICS_API", url)
+        monkeypatch.setattr(localstack.cli.localstack, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
+        runner.invoke(cli, command[1:])
+        _, request_payload = request_data.get(timeout=5)
+
+    assert request_data.qsize() == 0
+    payload = json.loads(request_payload)
+    events = payload["events"]
+    assert len(events) == 1
+    event = events[0]
+    metadata = event["metadata"]
+    assert "client_time" in metadata
+    assert "session_id" in metadata
+    assert event["name"] == "cli_cmd"
+    assert event["payload"]["raw_cmd"] == " ".join(command[1:])

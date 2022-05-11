@@ -22,6 +22,8 @@ from localstack import __version__
 from .console import BANNER, console
 from .plugin import LocalstackCli, load_cli_plugins
 
+ANALYTICS_API_RESPONSE_TIMEOUT_SECS = 0.5
+
 
 def create_with_plugins() -> LocalstackCli:
     """
@@ -70,7 +72,7 @@ def localstack(debug, profile):
     if debug:
         _setup_cli_debug()
 
-    publish_cmd_process.join(0.5)
+    publish_cmd_process.join(ANALYTICS_API_RESPONSE_TIMEOUT_SECS)
     publish_cmd_process.terminate()
 
 
