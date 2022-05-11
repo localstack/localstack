@@ -183,7 +183,7 @@ class EventsProvider(EventsApi):
             message = f"{errors_amount} validation {error_plural} detected: {error_description}"
             raise CommonServiceException(message=message, code="ValidationException")
 
-        call_moto(context)
+        return call_moto(context)
 
 
 class EventsBackend(RegionBackend):
