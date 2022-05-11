@@ -190,20 +190,27 @@ def test_config_show_dict(runner, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "command", ["status", "status --debug --format table", "config", "status with invalid args"]
+    "cli_input,expected_cmd",
+    [
+        ("status", "status"),
+        ("--debug status --format table", "status"),
+        ("config", "config"),
+        ("status with invalid args 💣", "status"),
+    ],
 )
-def test_publish_analytics_event_on_command_invocation(command, runner, monkeypatch):
+def test_publish_analytics_event_on_command_invocation(
+    cli_input, expected_cmd, runner, monkeypatch
+):
     monkeypatch.setattr(localstack.cli.localstack, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
     request_data = Queue()
-    split_command = ["localstack"] + (command.split(" "))
-    monkeypatch.setattr("sys.argv", split_command)
+    input = cli_input.split(" ")
 
     def handler(request, data):
         request_data.put((request.__dict__, data))
 
     with testutil.http_server(handler) as url:
         monkeypatch.setenv("ANALYTICS_API", url)
-        runner.invoke(cli, split_command[1:])
+        runner.invoke(cli, input)
         _, request_payload = request_data.get(timeout=5)
 
     assert request_data.qsize() == 0
@@ -215,4 +222,20 @@ def test_publish_analytics_event_on_command_invocation(command, runner, monkeypa
     assert "client_time" in metadata
     assert "session_id" in metadata
     assert event["name"] == "cli_cmd"
-    assert event["payload"]["raw_cmd"] == command
+    assert event["payload"]["cmd"] == expected_cmd
+
+
+def test_disable_publish_analytics_event_on_command_invocation(runner, monkeypatch):
+    monkeypatch.setattr(localstack.cli.localstack, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
+    monkeypatch.setattr(localstack.config, "DISABLE_EVENTS", True)
+    request_data = []
+
+    def handler(request, data):
+        request_data.append(data)
+
+    with testutil.http_server(handler) as url:
+        monkeypatch.setenv("ANALYTICS_API", url)
+        runner.invoke(cli, "status")
+        assert (
+            len(request_data) == 0
+        ), "analytics API should not be invoked when DISABLE_EVENTS is set"
