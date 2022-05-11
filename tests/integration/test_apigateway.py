@@ -1181,7 +1181,7 @@ class TestAPIGateway(unittest.TestCase):
 
         spec_file = load_file(TEST_IMPORT_REST_API_FILE)
         rs = client.import_rest_api(body=spec_file)
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(201, rs["ResponseMetadata"]["HTTPStatusCode"])
 
         rest_api_id = rs["id"]
 
