@@ -210,6 +210,7 @@ def test_publish_analytics_event_on_command_invocation(
 
     with testutil.http_server(handler) as url:
         monkeypatch.setenv("ANALYTICS_API", url)
+        monkeypatch.setattr(localstack.constants, "ANALYTICS_API", url)
         runner.invoke(cli, input)
         _, request_payload = request_data.get(timeout=5)
 
