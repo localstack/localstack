@@ -20,7 +20,6 @@ from requests.models import Response
 from localstack import config
 from localstack.constants import (
     APPLICATION_JSON,
-    HEADER_CONTENT_TYPE,
     HEADER_LOCALSTACK_EDGE_URL,
     LOCALHOST_HOSTNAME,
     PATH_USER_REQUEST,
@@ -285,8 +284,7 @@ def get_gateway_responses(api_id):
 def get_gateway_response(api_id, response_type):
     region_details = APIGatewayRegion.get()
     responses = region_details.gateway_responses.get(api_id, [])
-    result = [r for r in responses if r["responseType"] == response_type]
-    if result:
+    if result := [r for r in responses if r["responseType"] == response_type]:
         return result[0]
     return make_error_response(
         "Gateway response %s for API Gateway %s not found" % (response_type, api_id),
@@ -297,8 +295,7 @@ def get_gateway_response(api_id, response_type):
 def put_gateway_response(api_id, response_type, data):
     region_details = APIGatewayRegion.get()
     responses = region_details.gateway_responses.setdefault(api_id, [])
-    existing = ([r for r in responses if r["responseType"] == response_type] or [None])[0]
-    if existing:
+    if existing := ([r for r in responses if r["responseType"] == response_type] or [None])[0]:
         existing.update(data)
     else:
         data["responseType"] = response_type
@@ -325,8 +322,7 @@ def update_gateway_response(api_id, response_type, data):
             "Gateway response %s for API Gateway %s not found" % (response_type, api_id),
             code=404,
         )
-    result = apply_json_patch_safe(existing, data["patchOperations"])
-    return result
+    return apply_json_patch_safe(existing, data["patchOperations"])
 
 
 def handle_gateway_responses(method, path, data, headers):
@@ -356,8 +352,7 @@ def handle_gateway_responses(method, path, data, headers):
 def find_api_subentity_by_id(api_id, entity_id, map_name):
     region_details = APIGatewayRegion.get()
     auth_list = getattr(region_details, map_name).get(api_id) or []
-    entity = ([a for a in auth_list if a["id"] == entity_id] or [None])[0]
-    return entity
+    return ([a for a in auth_list if a["id"] == entity_id] or [None])[0]
 
 
 def path_based_url(api_id, stage_name, path):
@@ -708,13 +703,12 @@ def import_api_from_openapi_spec(
                     request_templates=method_integration.get("requestTemplates") or {},
                 )
                 integration.create_integration_response(
-                    status_code=method_integration
-                    .get("default", {})
-                    .get("statusCode", 200),
+                    status_code=method_integration.get("default", {}).get("statusCode", 200),
                     selection_pattern=None,
                     response_templates=method_integration.get("default", {}).get(
-                    "responseTemplates", None
-                    ),content_handling=None,
+                        "responseTemplates", None
+                    ),
+                    content_handling=None,
                 )
                 resource.resource_methods[method]["methodIntegration"] = integration
 
@@ -900,8 +894,7 @@ def set_api_id_stage_invocation_path(
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     """Extract API ID 'id123' from URLs like https://id123.execute-api.localhost.localstack.cloud:4566"""
     match = re.match(HOST_REGEX_EXECUTE_API, hostname)
-    api_id = match.group(1)
-    return api_id
+    return match.group(1)
 
 
 class OpenApiExport:
