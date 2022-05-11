@@ -694,7 +694,7 @@ class TestEvents:
                         "HeaderParameters": [
                             {"Key": "key", "Value": "value", "IsValueSecret": False},
                             {
-                                "Key": "overwrited_header",
+                                "Key": "overwritten_header",
                                 "Value": "original",
                                 "IsValueSecret": False,
                             },
@@ -702,7 +702,7 @@ class TestEvents:
                         "QueryStringParameters": [
                             {"Key": "key", "Value": "value", "IsValueSecret": False},
                             {
-                                "Key": "overwrited_query",
+                                "Key": "overwritten_query",
                                 "Value": "original",
                                 "IsValueSecret": False,
                             },
@@ -736,11 +736,11 @@ class TestEvents:
                             "PathParameterValues": ["target_path"],
                             "HeaderParameters": {
                                 "target_header": "target_header_value",
-                                "overwrited_header": "changed",
+                                "overwritten_header": "changed",
                             },
                             "QueryStringParameters": {
                                 "target_query": "t_query",
-                                "overwrited_query": "changed",
+                                "overwritten_query": "changed",
                             },
                         },
                     }
@@ -781,8 +781,8 @@ class TestEvents:
             assert headers_received.get("Target_Header") == "target_header_value"
 
             # overwrite test
-            assert headers_received.get("Overwrited_Header") == "original"
-            assert query_params_received.get("overwrited_query") == "original"
+            assert headers_received.get("Overwritten_Header") == "original"
+            assert query_params_received.get("overwritten_query") == "original"
 
         retry(check, sleep=0.5, retries=5)
 

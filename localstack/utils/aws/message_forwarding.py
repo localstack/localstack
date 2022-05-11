@@ -295,6 +295,7 @@ def add_api_destination_authorization(destination, headers, event):
 def add_target_http_parameters(http_parameters: Dict, endpoint: str, headers: Dict, body):
     endpoint = add_path_parameters_to_url(endpoint, http_parameters.get("PathParameterValues", []))
 
+    # The request should prioritze connection header/query parameters over target params if there is an overlap
     query_params = http_parameters.get("QueryStringParameters", {})
     prev_query_params = extract_query_string_params(endpoint)[1]
     query_params.update(prev_query_params)
