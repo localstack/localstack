@@ -6,6 +6,7 @@ import pytest
 
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
+from tests.integration.util import write_snapshot_samples
 
 LOG = logging.Logger(__name__)
 
@@ -101,6 +102,11 @@ class TestLambdaAsfApi:
             snapshot.match("lambda_create_fn", response)
 
         get_fn_result = lambda_client.get_function(FunctionName=fn_name)
+
+        write_snapshot_samples(
+            lambda: lambda_client.get_function(FunctionName=fn_name), "lambda", "get_function"
+        )
+
         snapshot.match("lambda_get_fn", get_fn_result)
 
         invoke_result = lambda_client.invoke(FunctionName=fn_name, Payload=bytes("{}", "utf-8"))

@@ -1,4 +1,6 @@
+import json
 import os
+from os import path
 
 from localstack.utils.aws import aws_stack
 
@@ -24,3 +26,13 @@ def bucket_exists(client, bucket_name: str) -> bool:
         if bucket["Name"] == bucket_name:
             return True
     return False
+
+
+def write_snapshot_samples(fn, svc, operation):
+    for i in range(1, 3):
+        response = fn()
+        fname = path.join(
+            path.dirname(__file__), "sample-snapshots", f"{svc}.{operation}.response.{i}.json"
+        )
+        with open(fname, "w") as fd:
+            fd.write(json.dumps(response))
