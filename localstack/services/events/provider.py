@@ -154,31 +154,37 @@ class EventsProvider(EventsApi):
             JobScheduler.instance().disable_job(job_id=job_id)
         call_moto(context)
 
-    def create_connection(self, context: RequestContext,
-        name: ConnectionName, authorization_type: ConnectionAuthorizationType, auth_parameters: CreateConnectionAuthRequestParameters,
-        description: ConnectionDescription = None):
+    def create_connection(
+        self,
+        context: RequestContext,
+        name: ConnectionName,
+        authorization_type: ConnectionAuthorizationType,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+        description: ConnectionDescription = None,
+    ):
         errors = []
 
         if not CONNECTION_NAME_PATTERN.match(name):
-            error = F"{name} at 'name' failed to satisfy: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+            error = f"{name} at 'name' failed to satisfy: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
             errors.append(error)
 
         if len(name) > 64:
-            error = F"{name} at 'name' failed to satisfy: Member must have length less than or equal to 64"
+            error = f"{name} at 'name' failed to satisfy: Member must have length less than or equal to 64"
             errors.append(error)
 
         if authorization_type not in ["BASIC", "API_KEY", "OAUTH_CLIENT_CREDENTIALS"]:
-            error = F"{authorization_type} at 'authorizationType' failed to satisfy: Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
+            error = f"{authorization_type} at 'authorizationType' failed to satisfy: Member must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]"
             errors.append(error)
 
         if len(errors) > 0:
             error_description = "; ".join(errors)
             error_plural = "errors" if len(errors) > 1 else "error"
             errors_amount = len(errors)
-            message = F"{errors_amount} validation {error_plural} detected: {error_description}"
-            raise CommonServiceException(message=message, code='ValidationException')
+            message = f"{errors_amount} validation {error_plural} detected: {error_description}"
+            raise CommonServiceException(message=message, code="ValidationException")
 
         call_moto(context)
+
 
 class EventsBackend(RegionBackend):
     # maps rule name to job_id
