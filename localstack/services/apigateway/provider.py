@@ -2,7 +2,7 @@ import json
 import re
 from copy import deepcopy
 
-from localstack.aws.api import RequestContext, handler, ServiceRequest
+from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
     Account,
     ApigatewayApi,
@@ -56,7 +56,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.collections import ensure_list
 from localstack.utils.json import parse_json_or_yaml
-from localstack.utils.strings import short_uid, to_str, str_to_bool
+from localstack.utils.strings import short_uid, str_to_bool, to_str
 from localstack.utils.time import now_utc
 
 
@@ -657,12 +657,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
 
         return _call_moto(
-            context, "PutRestApi", PutRestApiRequest(
+            context,
+            "PutRestApi",
+            PutRestApiRequest(
                 restApiId=response.get("id"),
                 failOnWarnings=str_to_bool(fail_on_warnings) or False,
                 parameters=parameters or {},
-                body=body
-            )
+                body=body,
+            ),
         )
 
 
