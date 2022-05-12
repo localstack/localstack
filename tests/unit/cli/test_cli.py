@@ -234,6 +234,36 @@ def test_publish_analytics_event_on_command_invocation(
     assert event["payload"]["params"] == expected_params
 
 
+@pytest.mark.parametrize(
+    "cli_input",
+    [
+        "invalid",
+        "status invalid",
+        "config show --format invalid",
+    ],
+)
+def test_do_not_publish_analytics_event_on_invalid_command_invocation(
+    cli_input, runner, monkeypatch, caplog
+):
+    # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
+    caplog.set_level(logging.CRITICAL)
+    monkeypatch.setattr(
+        localstack.utils.analytics.decorator, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
+    )
+    request_data = []
+    input = cli_input.split(" ")
+
+    def handler(request, data):
+        request_data.append(data)
+
+    with testutil.http_server(handler) as url:
+        monkeypatch.setenv("ANALYTICS_API", url)
+        runner.invoke(cli, input)
+        assert (
+            len(request_data) == 0
+        ), "analytics API should not be invoked when an invalid command is supplied"
+
+
 def test_disable_publish_analytics_event_on_command_invocation(runner, monkeypatch, caplog):
     # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
     caplog.set_level(logging.CRITICAL)
@@ -252,3 +282,25 @@ def test_disable_publish_analytics_event_on_command_invocation(runner, monkeypat
         assert (
             len(request_data) == 0
         ), "analytics API should not be invoked when DISABLE_EVENTS is set"
+
+
+def test_timeout_publishing_command_invocation(runner, monkeypatch, caplog):
+    # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
+    caplog.set_level(logging.CRITICAL)
+    monkeypatch.setattr(
+        # simulate slow API call by turning timeout way down
+        localstack.utils.analytics.decorator,
+        "ANALYTICS_API_RESPONSE_TIMEOUT_SECS",
+        0.001,
+    )
+    request_data = []
+
+    def handler(request, data):
+        request_data.append(data)
+
+    with testutil.http_server(handler) as url:
+        monkeypatch.setenv("ANALYTICS_API", url)
+        runner.invoke(cli, "status")
+        assert (
+            len(request_data) == 0
+        ), "analytics event publisher process should time out if request is taking too long"
