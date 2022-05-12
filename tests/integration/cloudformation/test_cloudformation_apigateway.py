@@ -3,8 +3,8 @@ import jinja2
 from localstack import constants
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.testing.utils import only_localstack
 from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
-from tests.integration.fixtures import only_localstack
 
 
 def test_cfn_apigateway_aws_integration(

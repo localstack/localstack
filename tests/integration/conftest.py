@@ -31,6 +31,11 @@ startup_monitor_event = mp.Event()  # event that can be triggered to start local
 # collection of functions that should be executed to initialize tests
 test_init_functions = set()
 
+pytest_plugins = [
+    "localstack.utils.testing.fixtures",
+    "localstack.utils.testing.snapshots.pytest_plugin",
+]
+
 
 @pytest.hookimpl()
 def pytest_configure(config):

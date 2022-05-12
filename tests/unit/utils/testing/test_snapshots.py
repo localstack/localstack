@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from localstack.utils.testing.snapshots import SnapshotSession
+from localstack.utils.testing.snapshots.snapshots import SnapshotSession
 
 
 class TestSnapshotManager:

@@ -7,7 +7,7 @@
       "Runtime": "python3.9",
       "Role": "<arn>",
       "Handler": "index.handler",
-      "CodeSize": 277,
+      "CodeSize": 276,
       "Description": "",
       "Timeout": 3,
       "MemorySize": 128,
@@ -22,9 +22,6 @@
       "StateReason": "The function is being created.",
       "StateReasonCode": "Creating",
       "PackageType": "Zip",
-      "Architectures": [
-        "x86_64"
-      ],
       "EphemeralStorage": {
         "Size": 512
       }
@@ -32,7 +29,7 @@
     "lambda_get_fn": {
       "ResponseMetadata": "<response-metadata>",
       "Configuration": {
-        "FunctionName": "<name:1>",
+        "FunctionName": "<name>",
         "FunctionArn": "<arn>",
         "Runtime": "python3.9",
         "Role": "<arn>",
@@ -51,9 +48,6 @@
         "State": "Active",
         "LastUpdateStatus": "Successful",
         "PackageType": "Zip",
-        "Architectures": [
-          "x86_64"
-        ],
         "EphemeralStorage": {
           "Size": 512
         }
@@ -65,7 +59,7 @@
     },
     "lambda_invoke_result": {
       "ResponseMetadata": "<response-metadata>",
-      "StatusCode": 201,
+      "StatusCode": 200,
       "ExecutedVersion": "$LATEST",
       "Payload": "{}"
     }

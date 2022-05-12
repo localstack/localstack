@@ -947,12 +947,6 @@ def acm_request_certificate(acm_client):
             LOG.debug("error cleaning up certificate %s: %s", certificate_arn, e)
 
 
-only_localstack = pytest.mark.skipif(
-    os.environ.get("TEST_TARGET") == "AWS_CLOUD",
-    reason="test only applicable if run against localstack",
-)
-
-
 @pytest.fixture
 def tmp_http_server():
     test_port, invocations, proxy = start_http_server()

@@ -1,5 +1,5 @@
 from localstack.utils.common import short_uid
-from tests.integration.fixtures import only_localstack
+from localstack.utils.testing.utils import only_localstack
 
 TEST_TEMPLATE = """
 Resources:

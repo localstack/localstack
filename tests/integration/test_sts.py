@@ -9,7 +9,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.numbers import is_number
 from localstack.utils.strings import to_str
-from tests.integration.fixtures import only_localstack
+from localstack.utils.testing.utils import only_localstack
 
 TEST_SAML_ASSERTION = """
 <?xml version="1.0"?>
