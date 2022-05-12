@@ -42,7 +42,6 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
-from localstack.utils import bootstrap
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
@@ -72,6 +71,7 @@ from localstack.utils.common import (
     to_str,
     unzip,
 )
+from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.functions import run_safe
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
@@ -2135,13 +2135,13 @@ def validate_lambda_config():
         config.LAMBDA_DOCKER_NETWORK
         and config.is_in_docker
         and config.LAMBDA_DOCKER_NETWORK
-        not in DOCKER_CLIENT.get_networks(bootstrap.get_main_container_name())
+        not in DOCKER_CLIENT.get_networks(get_main_container_name())
     ):
         LOG.warning(
             "Your specified LAMBDA_DOCKER_NETWORK '%s' is not connected to the main LocalStack container '%s'. "
             "Lambda functionality might be severely limited.",
             config.LAMBDA_DOCKER_NETWORK,
-            bootstrap.get_main_container_name(),
+            get_main_container_name(),
         )
 
 

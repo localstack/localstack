@@ -425,12 +425,8 @@ class DockerStatus(TypedDict, total=False):
 def print_docker_status(format):
     from localstack import config
     from localstack.utils import docker_utils
-    from localstack.utils.bootstrap import (
-        get_docker_image_details,
-        get_main_container_ip,
-        get_main_container_name,
-        get_server_version,
-    )
+    from localstack.utils.bootstrap import get_docker_image_details, get_server_version
+    from localstack.utils.container_networking import get_main_container_ip, get_main_container_name
 
     img = get_docker_image_details()
     cont_name = config.MAIN_CONTAINER_NAME

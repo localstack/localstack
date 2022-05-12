@@ -22,13 +22,8 @@ from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_f
 from localstack.utils import analytics, config_listener, persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.request_context import patch_moto_request_handling
-from localstack.utils.bootstrap import (
-    canonicalize_api_names,
-    get_main_container_id,
-    in_ci,
-    log_duration,
-    setup_logging,
-)
+from localstack.utils.bootstrap import canonicalize_api_names, in_ci, log_duration, setup_logging
+from localstack.utils.container_networking import get_main_container_id
 from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import get_free_tcp_port, is_port_open
 from localstack.utils.patch import patch
