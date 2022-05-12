@@ -94,6 +94,11 @@ class ShapeNode:
         return metadata.get("error") or metadata.get("exception")
 
     @property
+    def is_eventstream(self):
+        metadata = self.shape.metadata
+        return metadata.get("eventstream")
+
+    @property
     def is_primitive(self):
         return self.shape.type_name in ["integer", "boolean", "float", "double", "string"]
 
@@ -143,9 +148,15 @@ class ShapeNode:
 
         for k, v in self.shape.members.items():
             if k in self.shape.required_members:
-                output.write(f"    {k}: {q}{to_valid_python_name(v.name)}{q}\n")
+                if v.serialization.get("eventstream"):
+                    output.write(f"    {k}: Iterator[{q}{to_valid_python_name(v.name)}{q}]\n")
+                else:
+                    output.write(f"    {k}: {q}{to_valid_python_name(v.name)}{q}\n")
             else:
-                output.write(f"    {k}: Optional[{q}{to_valid_python_name(v.name)}{q}]\n")
+                if v.serialization.get("eventstream"):
+                    output.write(f"    {k}: Iterator[{q}{to_valid_python_name(v.name)}{q}]\n")
+                else:
+                    output.write(f"    {k}: Optional[{q}{to_valid_python_name(v.name)}{q}]\n")
 
     def _print_as_typed_dict(self, output, doc=True, quote_types=False):
         name = to_valid_python_name(self.shape.name)
@@ -153,9 +164,15 @@ class ShapeNode:
         output.write('%s = TypedDict("%s", {\n' % (name, name))
         for k, v in self.shape.members.items():
             if k in self.shape.required_members:
-                output.write(f'    "{k}": {q}{to_valid_python_name(v.name)}{q},\n')
+                if v.is_eventstream():
+                    output.write(f'    "{k}": Iterator[{q}{to_valid_python_name(v.name)}{q}],\n')
+                else:
+                    output.write(f'    "{k}": {q}{to_valid_python_name(v.name)}{q},\n')
             else:
-                output.write(f'    "{k}": Optional[{q}{to_valid_python_name(v.name)}{q}],\n')
+                if v.is_eventstream():
+                    output.write(f'    "{k}": Iterator[{q}{to_valid_python_name(v.name)}{q}],\n')
+                else:
+                    output.write(f'    "{k}": Optional[{q}{to_valid_python_name(v.name)}{q}],\n')
         output.write("}, total=False)")
 
     def print_shape_doc(self, output, shape):
@@ -234,7 +251,7 @@ class ShapeNode:
 
 def generate_service_types(output, service: ServiceModel, doc=True):
     output.write("import sys\n")
-    output.write("from typing import Dict, List, Optional\n")
+    output.write("from typing import Dict, List, Optional, Iterator\n")
     output.write("from datetime import datetime\n")
     output.write("if sys.version_info >= (3, 8):\n")
     output.write("    from typing import TypedDict\n")

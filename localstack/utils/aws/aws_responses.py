@@ -34,8 +34,6 @@ from localstack.utils.strings import (
 
 REGEX_FLAGS = re.MULTILINE | re.DOTALL
 
-AWS_BINARY_DATA_TYPE_STRING = 7
-
 
 class ErrorResponse(Exception):
     def __init__(self, response):
@@ -404,7 +402,13 @@ def calculate_crc32(content):
     return crc32(to_bytes(content)) & 0xFFFFFFFF
 
 
+# TODO Remove this constant with the function below
+AWS_BINARY_DATA_TYPE_STRING = 7
+
+
 def convert_to_binary_event_payload(result, event_type=None, message_type=None):
+    # TODO This encoding has been migrated to the ASF Serializer.
+    #  Remove this function after S3 and Kinesis have been migrated to ASF.
     # e.g.: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTSelectObjectAppendix.html
     # e.g.: https://docs.aws.amazon.com/transcribe/latest/dg/event-stream.html
 
@@ -425,7 +429,10 @@ def convert_to_binary_event_payload(result, event_type=None, message_type=None):
         headers += header_value
 
     # construct body
-    body = bytes(result, DEFAULT_ENCODING)
+    if isinstance(result, str):
+        body = bytes(result, DEFAULT_ENCODING)
+    else:
+        body = result
 
     # calculate lengths
     headers_length = len(headers)
