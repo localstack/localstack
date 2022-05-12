@@ -605,6 +605,9 @@ def import_api_from_openapi_spec(
     # Remove default root, then add paths from API spec
     rest_api.resources = {}
 
+    # authorizers map to avoid duplication
+    authorizers = {}
+
     def create_authorizer(path_payload: dict) -> Authorizer:
         if "security" not in path_payload:
             return None
@@ -617,25 +620,31 @@ def import_api_from_openapi_spec(
                     aws_apigateway_authorizer = security_config.get(
                         "x-amazon-apigateway-authorizer"
                     )
-                    return rest_api.create_authorizer(
-                        create_resource_id(),
-                        name=security_scheme_name,
-                        authorizer_type=aws_apigateway_authorizer.get("type"),
-                        provider_arns=None,
-                        auth_type=security_config.get("x-amazon-apigateway-authtype"),
-                        authorizer_uri=aws_apigateway_authorizer.get("authorizerUri"),
-                        authorizer_credentials=aws_apigateway_authorizer.get(
-                            "authorizerCredentials"
-                        ),
-                        identity_source=aws_apigateway_authorizer.get("identitySource"),
-                        identiy_validation_expression=aws_apigateway_authorizer.get(
-                            "identityValidationExpression"
-                        ),
-                        authorizer_result_ttl=aws_apigateway_authorizer.get(
-                            "authorizerResultTtlInSeconds"
+                    if authorizers.get(security_scheme_name):
+                        return authorizers.get(security_scheme_name)
+                    else:
+                        authorizer = rest_api.create_authorizer(
+                            create_resource_id(),
+                            name=security_scheme_name,
+                            authorizer_type=aws_apigateway_authorizer.get("type"),
+                            provider_arns=None,
+                            auth_type=security_config.get("x-amazon-apigateway-authtype"),
+                            authorizer_uri=aws_apigateway_authorizer.get("authorizerUri"),
+                            authorizer_credentials=aws_apigateway_authorizer.get(
+                                "authorizerCredentials"
+                            ),
+                            identity_source=aws_apigateway_authorizer.get("identitySource"),
+                            identiy_validation_expression=aws_apigateway_authorizer.get(
+                                "identityValidationExpression"
+                            ),
+                            authorizer_result_ttl=aws_apigateway_authorizer.get(
+                                "authorizerResultTtlInSeconds"
+                            )
+                            or 300,
                         )
-                        or 300,
-                    )
+                        if authorizer:
+                            authorizers.update({security_scheme_name: authorizer})
+                        return authorizer
 
     def get_or_create_path(path):
         parts = path.rstrip("/").replace("//", "/").split("/")

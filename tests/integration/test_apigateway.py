@@ -1783,6 +1783,9 @@ def test_import_swagger_api(apigateway_client):
     # assert imported_api.name == api_spec_dict.get("info").get("title")
     assert imported_api.description == api_spec_dict.get("info").get("description")
 
+    # assert that are no multiple authorizers
+    assert len(imported_api.authorizers) == 1
+
     paths = {v.path_part for k, v in imported_api.resources.items()}
     assert paths == {"/", "pets", "{petId}"}
 
