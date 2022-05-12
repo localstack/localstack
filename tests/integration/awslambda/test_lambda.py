@@ -61,6 +61,7 @@ from localstack.utils.common import (
 )
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.sync import poll_condition
+from localstack.utils.testing.aws.util import get_lambda_logs
 from localstack.utils.testutil import (
     check_expected_lambda_log_events_length,
     create_lambda_archive,
@@ -202,17 +203,6 @@ def check_lambda_logs(logs_client):
             assert line in log_messages
 
     return _check_logs
-
-
-def get_lambda_logs(func_name, logs_client=None):
-    logs_client = logs_client or aws_stack.create_external_boto_client("logs")
-    log_group_name = f"/aws/lambda/{func_name}"
-    streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
-    streams = sorted(streams, key=lambda x: x["creationTime"], reverse=True)
-    log_events = logs_client.get_log_events(
-        logGroupName=log_group_name, logStreamName=streams[0]["logStreamName"]
-    )["events"]
-    return log_events
 
 
 def configure_snapshot_for_context(snapshot, function_name: str):
