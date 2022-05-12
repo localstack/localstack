@@ -11,7 +11,7 @@ LOG = logging.getLogger(__name__)
 
 
 @lru_cache
-def get_main_container_network() -> str:
+def get_main_container_network() -> Optional[str]:
     """
     Gets the main network of the LocalStack container (if we run in one, bridge otherwise)
     If there are multiple networks connected to the LocalStack container, we choose the first as "main" network
