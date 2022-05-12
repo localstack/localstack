@@ -1,9 +1,8 @@
 import json
 import re
 from copy import deepcopy
-from typing import Any, Mapping
 
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import RequestContext, handler, ServiceRequest
 from localstack.aws.api.apigateway import (
     Account,
     ApigatewayApi,
@@ -57,7 +56,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.collections import ensure_list
 from localstack.utils.json import parse_json_or_yaml
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import short_uid, to_str, str_to_bool
 from localstack.utils.time import now_utc
 
 
@@ -650,7 +649,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         parameters: MapOfStringToString = None,
     ) -> RestApi:
 
-        openapi_spec = parse_json_or_yaml(body)
+        openapi_spec = parse_json_or_yaml(to_str(body))
         response = _call_moto(
             context,
             "CreateRestApi",
@@ -658,7 +657,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
 
         return _call_moto(
-            context, "PutRestApi", PutRestApiRequest(restApiId=response.get("id"), body=body)
+            context, "PutRestApi", PutRestApiRequest(
+                restApiId=response.get("id"),
+                failOnWarnings=str_to_bool(fail_on_warnings) or False,
+                parameters=parameters or {},
+                body=body
+            )
         )
 
 
@@ -667,7 +671,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 # ---------------
 
 
-def _call_moto(context: RequestContext, operation_name: str, parameters: Mapping[str, Any]):
+def _call_moto(context: RequestContext, operation_name: str, parameters: ServiceRequest):
+    """
+    Not necessarily the pattern we want to follow in the future, but this makes possible to nest
+    moto call and still be interface compatible.
+
+    Ripped :call_moto_with_request: from moto.py but applicable to any operation (operation_name).
+    """
     local_context = create_aws_request_context(
         service_name=context.service.service_name,
         action=operation_name,

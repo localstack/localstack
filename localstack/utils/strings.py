@@ -106,8 +106,8 @@ def first_char_to_upper(s: str) -> str:
 
 def str_to_bool(value):
     """Return the boolean value of the given string, or the verbatim value if it is not a string"""
-    true_strings = ["true", "True"]
     if isinstance(value, str):
+        true_strings = ["true", "True"]
         return value in true_strings
     return value
 
