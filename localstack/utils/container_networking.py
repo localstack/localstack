@@ -36,12 +36,12 @@ def get_main_container_network() -> str:
 def get_endpoint_for_network(network: Optional[str] = None) -> str:
     """
     Get the LocalStack endpoint (= IP address) on the given network.
-    If a network is given, it will return the IP address of LocalStack on that network
-    If omitted, it will return the IP address of the main container network
+    If a network is given, it will return the IP address/hostname of LocalStack on that network
+    If omitted, it will return the IP address/hostname of the main container network
     This is a cached call, clear cache if networks might have changed
 
     :param network: Network to return the endpoint for
-    :return: IP address of LS on the given network
+    :return: IP address or hostname of LS on the given network
     """
     container_name = get_main_container_name()
     network = network or get_main_container_network()
