@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import re
 from typing import Optional
 
 import pytest
@@ -63,7 +62,7 @@ def fixture_snapshot(request: SubRequest, account_id):
         update=request.config.option.snapshot_update,
         verify=request.config.option.snapshot_verify,
     )
-    sm.register_replacement(re.compile(account_id), "1" * 12)
+    sm.register_account_id(account_id)
 
     yield sm
 

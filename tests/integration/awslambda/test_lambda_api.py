@@ -91,6 +91,7 @@ class TestLambdaAsfApi:
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
         fn_name = f"ls-fn-{short_uid()}"
+        snapshot.replace_jsonpath_value("$..FunctionName", fn_name)
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
             response = create_lambda_function_aws(
                 FunctionName=fn_name,
