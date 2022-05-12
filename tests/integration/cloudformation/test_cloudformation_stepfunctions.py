@@ -5,7 +5,7 @@ import urllib.parse
 from localstack.constants import PATH_USER_REQUEST
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
+from localstack.utils.testing.aws.cloudformation_utils import load_template_raw
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 

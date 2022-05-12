@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 import boto3
 import botocore.config
 import pytest
+from _pytest.config import Config
+from _pytest.nodes import Item
 
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -18,9 +20,9 @@ from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
 from localstack.utils.functions import run_safe
 from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.testing.aws.cloudformation_utils import render_template, template_path
+from localstack.utils.testing.aws.util import get_lambda_logs
 from localstack.utils.testutil import start_http_server
-from tests.integration.cloudformation.utils import render_template, template_path
-from tests.integration.util import get_lambda_logs
 
 if TYPE_CHECKING:
     from mypy_boto3_acm import ACMClient
@@ -1018,3 +1020,23 @@ def cleanups(ec2_client):
             cleanup_callback()
         except Exception as e:
             LOG.warning("Failed to execute cleanup", exc_info=e)
+
+
+@pytest.hookimpl
+def pytest_configure(config: Config):
+    # TODO: migrate towards "whitebox" or similar structure
+    config.addinivalue_line(
+        "markers",
+        "only_localstack: mark the test as incompatible with AWS / can't be run with AWS_CLOUD target",
+    )
+
+
+@pytest.hookimpl
+def pytest_collection_modifyitems(config: Config, items: list[Item]):
+    only_localstack = pytest.mark.skipif(
+        os.environ.get("TEST_TARGET") == "AWS_CLOUD",
+        reason="test only applicable if run against localstack",
+    )
+    for item in items:
+        if "only_localstack" in item.keywords:
+            item.add_marker(only_localstack)

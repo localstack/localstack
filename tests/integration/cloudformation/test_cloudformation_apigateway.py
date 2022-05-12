@@ -1,10 +1,10 @@
 import jinja2
+import pytest
 
 from localstack import constants
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from localstack.utils.testing.utils import only_localstack
-from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
+from localstack.utils.testing.aws.cloudformation_utils import load_template_raw
 
 
 def test_cfn_apigateway_aws_integration(
@@ -78,7 +78,7 @@ def test_cfn_apigateway_aws_integration(
         cleanup_stacks([stack_id])
 
 
-@only_localstack
+@pytest.mark.only_localstack
 def test_url_output(
     cfn_client,
     apigateway_client,

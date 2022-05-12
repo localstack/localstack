@@ -67,7 +67,6 @@ from localstack.utils.testutil import (
     get_lambda_log_events,
 )
 
-from ..fixtures import only_localstack
 from .functions import lambda_integration
 from .lambda_test_util import concurrency_update_done, get_invoke_init_type, update_done
 
@@ -229,7 +228,7 @@ def configure_snapshot_for_context(snapshot, function_name: str):
 
 # API only functions (no lambda execution itself)
 class TestLambdaAPI:
-    @only_localstack
+    @pytest.mark.only_localstack
     def test_create_lambda_function(self, lambda_client):
         """Basic test that creates and deletes a Lambda function"""
         func_name = f"lambda_func-{short_uid()}"

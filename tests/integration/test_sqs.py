@@ -19,7 +19,6 @@ from localstack.utils.common import get_service_protocol, poll_condition, retry,
 
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
-from .fixtures import only_localstack
 
 TEST_QUEUE_NAME = "TestQueue"
 
@@ -55,7 +54,7 @@ TEST_REGION = "us-east-1"
 
 
 class TestSqsProvider:
-    @only_localstack
+    @pytest.mark.only_localstack
     def test_get_queue_url_contains_request_host(self, sqs_client, sqs_create_queue):
         if config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf":
             pytest.xfail("this test only works for the ASF provider")
@@ -421,7 +420,7 @@ class TestSqsProvider:
         result_send = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
         assert len(result_send["Failed"]) == 1
 
-    @only_localstack
+    @pytest.mark.only_localstack
     def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
         external_host = "external-host"
         external_port = "12345"
@@ -444,7 +443,7 @@ class TestSqsProvider:
         receive_result = sqs_client.receive_message(QueueUrl=queue_url)
         assert receive_result["Messages"][0]["Body"] == message_body
 
-    @only_localstack
+    @pytest.mark.only_localstack
     def test_external_hostname_via_host_header(self, sqs_create_queue):
         """test making a request with a different external hostname/port being returned"""
         queue_name = f"queue-{short_uid()}"
@@ -471,7 +470,7 @@ class TestSqsProvider:
         # TODO: currently only asserting that the port matches - potentially should also return the custom hostname?
         assert re.match(rf".*<QueueUrl>\s*http://[^:]+:{port}[^<]+</QueueUrl>.*", content, **kwargs)
 
-    @only_localstack
+    @pytest.mark.only_localstack
     @pytest.mark.xfail
     def test_external_host_via_header_complete_message_lifecycle(self, monkeypatch):
         queue_name = f"queue-{short_uid()}"

@@ -4,10 +4,10 @@ from botocore.exceptions import ClientError
 
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from tests.integration.cloudformation.utils import load_template_raw
-from tests.integration.util import is_aws_cloud
 
 # TODO: create util function for asserting some common stack/change set verification patterns here
+from localstack.utils.testing.aws.cloudformation_utils import load_template_raw
+from localstack.utils.testing.aws.util import is_aws_cloud
 
 
 def test_create_change_set_without_parameters(

@@ -14,8 +14,8 @@ from localstack.utils.aws.aws_stack import await_stack_completion, deploy_cf_sta
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import load_file, retry, short_uid, to_str
 from localstack.utils.sync import poll_condition
+from localstack.utils.testing.aws.cloudformation_utils import load_template
 from localstack.utils.testutil import create_zip_file, list_all_resources
-from tests.integration.cloudformation.utils import load_template
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 LAMBDA_FOLDER = os.path.join(THIS_FOLDER, "awslambda", "functions")

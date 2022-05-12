@@ -3,7 +3,7 @@ import json
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from tests.integration.cloudformation.utils import load_template
+from localstack.utils.testing.aws.cloudformation_utils import load_template
 
 
 def test_events_sqs_sns_lambda(
