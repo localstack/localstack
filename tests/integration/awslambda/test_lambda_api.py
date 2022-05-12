@@ -85,6 +85,7 @@ def create_lambda_function_aws(
 
 @pytest.mark.snapshot
 @pytest.mark.aws_compatible
+@pytest.mark.snapshot_sample
 class TestLambdaAsfApi:
     def test_basic_invoke(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
@@ -106,6 +107,7 @@ class TestLambdaAsfApi:
         write_snapshot_samples(
             lambda: lambda_client.get_function(FunctionName=fn_name), "lambda", "get_function"
         )
+        write_snapshot_samples(lambda: lambda_client.list_functions(), "lambda", "list_functions")
 
         snapshot.match("lambda_get_fn", get_fn_result)
 

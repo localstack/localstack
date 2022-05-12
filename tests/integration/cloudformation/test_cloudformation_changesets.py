@@ -5,9 +5,10 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.testing.aws.cloudformation_utils import load_template_file
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
+from tests.integration.cloudformation.utils import load_template_raw
+from tests.integration.util import is_aws_cloud, write_snapshot_samples
 
 
 # TODO: refactor file and remove this compatibility fn
@@ -66,6 +67,7 @@ def test_create_change_set_without_parameters(
 
 # TODO: implement
 @pytest.mark.xfail(condition=not is_aws_cloud(), reason="Not properly implemented")
+@pytest.mark.snapshot_sample
 def test_create_change_set_update_without_parameters(
     cfn_client,
     sns_client,
@@ -103,7 +105,24 @@ def test_create_change_set_update_without_parameters(
             TemplateBody=template.replace("sns-topic-simple", "sns-topic-simple-2"),
             ChangeSetType="UPDATE",
         )
-        wait_until(is_change_set_created_and_available(update_response["Id"]))
+        assert wait_until(is_change_set_created_and_available(update_response["Id"]))
+
+        write_snapshot_samples(
+            lambda: cfn_client.describe_change_set(ChangeSetName=update_response["Id"]),
+            "cloudformation",
+            "describe_change_set",
+        )
+        write_snapshot_samples(
+            lambda: cfn_client.describe_stacks(StackName=stack_name),
+            "cloudformation",
+            "describe_stacks",
+        )
+        write_snapshot_samples(
+            lambda: cfn_client.list_change_sets(StackName=stack_name),
+            "cloudformation",
+            "list_change_sets",
+        )
+
         describe_response = cfn_client.describe_change_set(ChangeSetName=update_response["Id"])
         changes = describe_response["Changes"]
         assert len(changes) == 1

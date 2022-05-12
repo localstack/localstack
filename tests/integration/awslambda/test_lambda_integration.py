@@ -24,6 +24,7 @@ from localstack.utils.strings import to_bytes
 from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 
+from ..util import write_snapshot_samples
 from .functions import lambda_integration
 from .test_lambda import (
     TEST_LAMBDA_LIBS,
@@ -77,6 +78,7 @@ s3_lambda_permission = {
 
 
 class TestSQSEventSourceMapping:
+    @pytest.mark.snapshot_sample
     def test_event_source_mapping_default_batch_size(
         self,
         create_lambda_function,
@@ -105,6 +107,12 @@ class TestSQSEventSourceMapping:
             rs = lambda_client.create_event_source_mapping(
                 EventSourceArn=queue_arn_1, FunctionName=function_name
             )
+            write_snapshot_samples(
+                lambda: lambda_client.get_event_source_mapping(UUID=rs["UUID"]),
+                "lambda",
+                "get_event_source_mapping",
+            )
+
             uuid = rs["UUID"]
             assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
             _await_event_source_mapping_enabled(lambda_client, uuid)
