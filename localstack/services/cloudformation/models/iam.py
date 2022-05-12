@@ -164,7 +164,9 @@ class IAMRole(GenericBaseModel):
         return self.props.get("RoleName")
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        role_name = self.props.get("RoleName")
+        role_name = self.properties.get("RoleName")
+        if not role_name:
+            return role_name
         if attribute == "Arn":
             return aws_stack.role_arn(role_name)
         return role_name

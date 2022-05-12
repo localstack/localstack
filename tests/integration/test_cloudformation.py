@@ -1714,8 +1714,8 @@ class TestCloudFormation:
         assert len(new_role) == 1
 
         # Generate new names for lambda and IAM Role
-        lambda_role_name_new = f"lambda-role-{short_uid()}"
-        lambda_function_name_new = f"lambda-function-{short_uid()}"
+        lambda_role_name_new = f"lambda-role-new-{short_uid()}"
+        lambda_function_name_new = f"lambda-function-new-{short_uid()}"
 
         template["Resources"]["LambdaExecutionRole"]["Properties"][
             "RoleName"

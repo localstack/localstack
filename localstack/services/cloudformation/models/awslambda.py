@@ -79,8 +79,8 @@ class LambdaFunction(GenericBaseModel):
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        role_name = resource.get("Properties", {}).get("FunctionName")
-        if not role_name:
+        func_name = resource.get("Properties", {}).get("FunctionName")
+        if not func_name:
             resource["Properties"]["FunctionName"] = generate_default_name(
                 stack_name, resource["LogicalResourceId"]
             )
