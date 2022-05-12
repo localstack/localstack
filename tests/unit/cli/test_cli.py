@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import threading
 from queue import Queue
@@ -8,6 +9,7 @@ import pytest
 from click.testing import CliRunner
 
 import localstack.constants
+import localstack.utils.analytics.decorator
 from localstack import config, constants
 from localstack.cli.localstack import create_with_plugins
 from localstack.cli.localstack import localstack as cli
@@ -190,18 +192,23 @@ def test_config_show_dict(runner, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "cli_input,expected_cmd",
+    "cli_input,expected_cmd,expected_params",
     [
-        ("status", "status"),
-        ("--debug status --format table", "status"),
-        ("config", "config"),
-        ("status with invalid args 💣", "status"),
+        ("stop", "localstack stop", {}),
+        ("status docker", "localstack status docker", {"format": "table"}),
+        ("status", "localstack status docker", {"format": "table"}),
+        ("--debug status docker --format json", "localstack status docker", {"format": "json"}),
+        ("config show --format plain", "localstack config show", {"format": "plain"}),
     ],
 )
 def test_publish_analytics_event_on_command_invocation(
-    cli_input, expected_cmd, runner, monkeypatch
+    cli_input, expected_cmd, expected_params, runner, monkeypatch, caplog
 ):
-    monkeypatch.setattr(localstack.cli.localstack, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
+    # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
+    caplog.set_level(logging.CRITICAL)
+    monkeypatch.setattr(
+        localstack.utils.analytics.decorator, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
+    )
     request_data = Queue()
     input = cli_input.split(" ")
 
@@ -224,10 +231,15 @@ def test_publish_analytics_event_on_command_invocation(
     assert "session_id" in metadata
     assert event["name"] == "cli_cmd"
     assert event["payload"]["cmd"] == expected_cmd
+    assert event["payload"]["params"] == expected_params
 
 
-def test_disable_publish_analytics_event_on_command_invocation(runner, monkeypatch):
-    monkeypatch.setattr(localstack.cli.localstack, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
+def test_disable_publish_analytics_event_on_command_invocation(runner, monkeypatch, caplog):
+    # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
+    caplog.set_level(logging.CRITICAL)
+    monkeypatch.setattr(
+        localstack.utils.analytics.decorator, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
+    )
     monkeypatch.setattr(localstack.config, "DISABLE_EVENTS", True)
     request_data = []
 
