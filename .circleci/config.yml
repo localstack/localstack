@@ -86,16 +86,19 @@ jobs:
           name: Pull Lambda runtimes
           command: |
             sudo useradd localstack -s /bin/bash
-            docker pull -q lambci/lambda:20191117-nodejs8.10
-            docker pull -q lambci/lambda:20191117-ruby2.5
-            docker pull -q lambci/lambda:20210129-ruby2.7
-            docker pull -q lambci/lambda:20191117-python3.6
-            docker pull -q lambci/lambda:20191117-dotnetcore2.0
+            docker pull -q lambci/lambda:nodejs12.x
+            docker pull -q localstack/lambda-js:nodejs14.x
+            docker pull -q lambci/lambda:ruby2.7
+            docker pull -q lambci/lambda:python3.6
+            docker pull -q lambci/lambda:python3.7
+            docker pull -q lambci/lambda:python3.8
+            docker pull -q mlupin/docker-lambda:python3.9
             docker pull -q lambci/lambda:dotnetcore3.1
             docker pull -q mlupin/docker-lambda:dotnet6
-            docker pull -q lambci/lambda:20191117-provided
+            docker pull -q lambci/lambda:provided
             docker pull -q lambci/lambda:java8
-            docker pull -q lambci/lambda:python3.8
+            docker pull -q lambci/lambda:java8.al2
+            docker pull -q lambci/lambda:java11
       - run:
           name: Initialize Test Libraries
           command: make init-testlibs

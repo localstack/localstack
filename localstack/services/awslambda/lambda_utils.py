@@ -11,11 +11,14 @@ from typing import Any, Dict, List, Optional, Union
 from flask import Response
 
 from localstack import config
-from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_responses import flask_error_response_json
 from localstack.utils.common import short_uid, to_str
+from localstack.utils.container_networking import (
+    get_endpoint_for_network,
+    get_main_container_network,
+)
 from localstack.utils.docker_utils import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
@@ -191,51 +194,16 @@ def store_lambda_logs(
 
 def get_main_endpoint_from_container() -> str:
     global DOCKER_MAIN_CONTAINER_IP
-    if not config.HOSTNAME_FROM_LAMBDA and DOCKER_MAIN_CONTAINER_IP is None:
-        DOCKER_MAIN_CONTAINER_IP = False
-        container_name = bootstrap.get_main_container_name()
-        try:
-            if config.is_in_docker:
-                DOCKER_MAIN_CONTAINER_IP = DOCKER_CLIENT.get_container_ipv4_for_network(
-                    container_name_or_id=container_name,
-                    container_network=get_container_network_for_lambda(),
-                )
-            else:
-                # default gateway for the network should be the host
-                # (only under Linux - otherwise fall back to DOCKER_HOST_FROM_CONTAINER below)
-                if config.is_in_linux:
-                    DOCKER_MAIN_CONTAINER_IP = DOCKER_CLIENT.inspect_network(
-                        get_container_network_for_lambda()
-                    )["IPAM"]["Config"][0]["Gateway"]
-            LOG.info("Determined main container target IP: %s", DOCKER_MAIN_CONTAINER_IP)
-        except Exception as e:
-            LOG.info(
-                'Unable to get IP address of main Docker container "%s": %s', container_name, e
-            )
-    # return (1) predefined endpoint host, or (2) main container IP, or (3) Docker host (e.g., bridge IP)
-    return (
-        config.HOSTNAME_FROM_LAMBDA or DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
-    )
+    if config.HOSTNAME_FROM_LAMBDA:
+        return config.HOSTNAME_FROM_LAMBDA
+    return get_endpoint_for_network(network=get_container_network_for_lambda())
 
 
 def get_container_network_for_lambda() -> str:
     global LAMBDA_CONTAINER_NETWORK
     if config.LAMBDA_DOCKER_NETWORK:
         return config.LAMBDA_DOCKER_NETWORK
-    if LAMBDA_CONTAINER_NETWORK is None:
-        try:
-            if config.is_in_docker:
-                networks = DOCKER_CLIENT.get_networks(bootstrap.get_main_container_name())
-                LAMBDA_CONTAINER_NETWORK = networks[0]
-            else:
-                LAMBDA_CONTAINER_NETWORK = (
-                    "bridge"  # use the default bridge network in case of host mode
-                )
-            LOG.info("Determined lambda container network: %s", LAMBDA_CONTAINER_NETWORK)
-        except Exception as e:
-            container_name = bootstrap.get_main_container_name()
-            LOG.info('Unable to get network name of main container "%s": %s', container_name, e)
-    return LAMBDA_CONTAINER_NETWORK
+    return get_main_container_network()
 
 
 def rm_docker_container(container_name_or_id, check_existence=False, safe=False):

@@ -13,6 +13,7 @@ from typing import Dict, Iterable, List, Optional, Set
 from localstack import config, constants
 from localstack.config import Directories
 from localstack.runtime import hooks
+from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerException,
     PortMappings,
@@ -104,33 +105,6 @@ def get_docker_image_details(image_name: str = None) -> Dict[str, str]:
         "created": result["Created"].split(".")[0],
     }
     return result
-
-
-def get_main_container_ip():
-    container_name = get_main_container_name()
-    return DOCKER_CLIENT.get_container_ip(container_name)
-
-
-def get_main_container_id():
-    container_name = get_main_container_name()
-    try:
-        return DOCKER_CLIENT.get_container_id(container_name)
-    except ContainerException:
-        return None
-
-
-def get_main_container_name():
-    global MAIN_CONTAINER_NAME_CACHED
-    if MAIN_CONTAINER_NAME_CACHED is None:
-        hostname = os.environ.get("HOSTNAME")
-        if hostname:
-            try:
-                MAIN_CONTAINER_NAME_CACHED = DOCKER_CLIENT.get_container_name(hostname)
-            except ContainerException:
-                MAIN_CONTAINER_NAME_CACHED = config.MAIN_CONTAINER_NAME
-        else:
-            MAIN_CONTAINER_NAME_CACHED = config.MAIN_CONTAINER_NAME
-    return MAIN_CONTAINER_NAME_CACHED
 
 
 def get_image_environment_variable(env_name: str) -> Optional[str]:

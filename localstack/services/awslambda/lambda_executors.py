@@ -33,7 +33,6 @@ from localstack.services.awslambda.lambda_utils import (
     store_lambda_logs,
 )
 from localstack.services.install import GO_LAMBDA_RUNTIME, INSTALL_PATH_LOCALSTACK_FAT_JAR
-from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.dead_letter_queue import (
@@ -66,6 +65,7 @@ from localstack.utils.common import (
     truncate,
     wait_for_port_open,
 )
+from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
     ContainerException,
@@ -1171,7 +1171,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         Returns the prefix of all docker-reuse lambda containers for this LocalStack instance
         :return: Lambda container name prefix
         """
-        return f"{bootstrap.get_main_container_name()}_lambda_"
+        return f"{get_main_container_name()}_lambda_"
 
     def get_container_name(self, func_arn):
         """
