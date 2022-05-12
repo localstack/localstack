@@ -38,6 +38,15 @@ def _get_parent_commands(ctx: click.Context) -> List[str]:
 
 
 def publish_invocation(fn):
+    """
+    Decorator for capturing CLI commands from Click and publishing them to the backend as analytics events.
+    This decorator should only be used on outermost subcommands, e.g. "localstack status docker" not "localstack status"
+    otherwise it may publish multiple events for a single invocation.
+    If DISABLE_EVENTS is set then nothing is collected.
+    For performance reasons, the API call to the backend runs on a separate process and is killed if it takes longer
+    than ANALYTICS_API_RESPONSE_TIMEOUT_SECS.
+    """
+
     @functools.wraps(fn)
     def publisher_wrapper(*args, **kwargs):
         if config.DISABLE_EVENTS:
