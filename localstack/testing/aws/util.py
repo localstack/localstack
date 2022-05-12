@@ -35,4 +35,14 @@ def write_snapshot_samples(fn, svc, operation):
             path.dirname(__file__), "sample-snapshots", f"{svc}.{operation}.response.{i}.json"
         )
         with open(fname, "w") as fd:
-            fd.write(json.dumps(response))
+            fd.write(json.dumps(response, default=str))
+
+
+def write_snapshot_samples_collect_stream(fn, field, svc, operation):
+    for i in range(1, 3):
+        response = fn()
+        fname = path.join(
+            path.dirname(__file__), "sample-snapshots", f"{svc}.{operation}.{field}.response.{i}"
+        )
+        with open(fname, "w+b") as fd:
+            fd.write(response[field].read())
