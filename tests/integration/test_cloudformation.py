@@ -14,7 +14,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import load_file, short_uid, to_str
 from localstack.utils.sync import poll_condition, wait_until
-from localstack.utils.testutil import create_zip_file
+from localstack.utils.testutil import create_zip_file, list_all_resources
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
@@ -1672,92 +1672,86 @@ class TestCloudFormation:
         assert len(response.get("KinesisDataStreamDestinations")) == 1
         assert "StreamArn" in response.get("KinesisDataStreamDestinations")[0]
 
-    # TODO: this test seems a bit convoluted without a clear goal
-    # def test_updating_stack_with_iam_role(self):
-    #     lambda_client = aws_stack.create_external_boto_client("lambda")
-    #     iam = aws_stack.create_external_boto_client("iam")
-    #
-    #     # Initialization
-    #     stack_name = "stack-%s" % short_uid()
-    #     lambda_role_name = "lambda-role-%s" % short_uid()
-    #     lambda_function_name = "lambda-function-%s" % short_uid()
-    #
-    #     template = json.loads(load_file(TEST_TEMPLATE_7))
-    #
-    #     template["Resources"]["LambdaExecutionRole"]["Properties"]["RoleName"] = lambda_role_name
-    #     template["Resources"]["LambdaFunction1"]["Properties"][
-    #         "FunctionName"
-    #     ] = lambda_function_name
-    #
-    #     # Create stack and wait for 'CREATE_COMPLETE' status of the stack
-    #     rs = create_and_await_stack(StackName=stack_name, TemplateBody=json.dumps(template))
-    #
-    #     # Checking required values for Lambda function and IAM Role
-    #     assert "StackId" in rs
-    #     assert stack_name in rs["StackId"]
-    #
-    #     list_functions = list_all_resources(
-    #         lambda kwargs: lambda_client.list_functions(**kwargs),
-    #         last_token_attr_name="nextToken",
-    #         list_attr_name="Functions",
-    #     )
-    #     list_roles = list_all_resources(
-    #         lambda kwargs: iam.list_roles(**kwargs),
-    #         last_token_attr_name="nextToken",
-    #         list_attr_name="Roles",
-    #     )
-    #
-    #     new_function = [
-    #         function
-    #         for function in list_functions
-    #         if function.get("FunctionName") == lambda_function_name
-    #     ]
-    #     new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name]
-    #
-    #     assert len(new_function) == 1
-    #     assert lambda_role_name in new_function[0].get("Role")
-    #
-    #     assert len(new_role) == 1
-    #
-    #     # Generate new names for lambda and IAM Role
-    #     lambda_role_name_new = "lambda-role-%s" % short_uid()
-    #     lambda_function_name_new = "lambda-function-%s" % short_uid()
-    #
-    #     template["Resources"]["LambdaExecutionRole"]["Properties"][
-    #         "RoleName"
-    #     ] = lambda_role_name_new
-    #     template["Resources"]["LambdaFunction1"]["Properties"][
-    #         "FunctionName"
-    #     ] = lambda_function_name_new
-    #
-    #     # Update stack and wait for 'UPDATE_COMPLETE' status of the stack
-    #     rs = update_and_await_stack(stack_name, TemplateBody=json.dumps(template))
-    #
-    #     # Checking new required values for Lambda function and IAM Role
-    #     assert "StackId" in rs
-    #     assert stack_name in rs["StackId"]
-    #
-    #     list_functions = list_all_resources(
-    #         lambda kwargs: lambda_client.list_functions(**kwargs),
-    #         last_token_attr_name="nextToken",
-    #         list_attr_name="Functions",
-    #     )
-    #
-    #     list_roles = list_all_resources(
-    #         lambda kwargs: iam.list_roles(**kwargs),
-    #         last_token_attr_name="nextToken",
-    #         list_attr_name="Roles",
-    #     )
-    #
-    #     new_function = [
-    #         function
-    #         for function in list_functions
-    #         if function.get("FunctionName") == lambda_function_name_new
-    #     ]
-    #     assert len(new_function) == 1
-    #     assert lambda_role_name_new in new_function[0].get("Role")
-    #     new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name_new]
-    #     assert len(new_role) == 1
+    # TODO: evaluate (can we drop this?)
+    def test_updating_stack_with_iam_role(self, deploy_cfn_template, iam_client, lambda_client):
+
+        # Initialization
+        lambda_role_name = f"lambda-role-{short_uid()}"
+        lambda_function_name = f"lambda-function-{short_uid()}"
+
+        template = json.loads(load_file(os.path.join(THIS_FOLDER, "templates/template7.json")))
+
+        template["Resources"]["LambdaExecutionRole"]["Properties"]["RoleName"] = lambda_role_name
+        template["Resources"]["LambdaFunction1"]["Properties"][
+            "FunctionName"
+        ] = lambda_function_name
+
+        # Create stack and wait for 'CREATE_COMPLETE' status of the stack
+        stack = deploy_cfn_template(template=json.dumps(template))
+
+        # Checking required values for Lambda function and IAM Role
+        list_functions = list_all_resources(
+            lambda kwargs: lambda_client.list_functions(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Functions",
+        )
+        list_roles = list_all_resources(
+            lambda kwargs: iam_client.list_roles(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Roles",
+        )
+
+        new_function = [
+            function
+            for function in list_functions
+            if function.get("FunctionName") == lambda_function_name
+        ]
+        new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name]
+
+        assert len(new_function) == 1
+        assert lambda_role_name in new_function[0].get("Role")
+
+        assert len(new_role) == 1
+
+        # Generate new names for lambda and IAM Role
+        lambda_role_name_new = f"lambda-role-{short_uid()}"
+        lambda_function_name_new = f"lambda-function-{short_uid()}"
+
+        template["Resources"]["LambdaExecutionRole"]["Properties"][
+            "RoleName"
+        ] = lambda_role_name_new
+        template["Resources"]["LambdaFunction1"]["Properties"][
+            "FunctionName"
+        ] = lambda_function_name_new
+
+        # Update stack and wait for 'UPDATE_COMPLETE' status of the stack
+        deploy_cfn_template(
+            is_update=True, template=json.dumps(template), stack_name=stack.stack_name
+        )
+
+        # Checking new required values for Lambda function and IAM Role
+
+        list_functions = list_all_resources(
+            lambda kwargs: lambda_client.list_functions(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Functions",
+        )
+
+        list_roles = list_all_resources(
+            lambda kwargs: iam_client.list_roles(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Roles",
+        )
+
+        new_function = [
+            function
+            for function in list_functions
+            if function.get("FunctionName") == lambda_function_name_new
+        ]
+        assert len(new_function) == 1
+        assert lambda_role_name_new in new_function[0].get("Role")
+        new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name_new]
+        assert len(new_role) == 1
 
     def test_cfn_with_multiple_route_tables(self, ec2_client, deploy_cfn_template):
         resp = ec2_client.describe_vpcs()
