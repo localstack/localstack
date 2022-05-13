@@ -221,3 +221,29 @@ def test_event_rule_to_logs(
     finally:
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])
+
+
+def test_event_rule_creation_without_target(
+    cfn_client,
+    events_client,
+    cleanup_stacks,
+    is_stack_created,
+):
+    stack_name = f"stack-{short_uid()}"
+    event_rule_name = f"event-rule-{short_uid()}"
+
+    template_rendered = jinja2.Template(
+        load_template_raw("events_rule_without_targets.yaml")
+    ).render(
+        event_rule_name=event_rule_name,
+    )
+
+    response = cfn_client.create_stack(StackName=stack_name, TemplateBody=template_rendered)
+    stack_id = response["StackId"]
+
+    wait_until(is_stack_created(stack_id))
+    assert (
+        cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["StackStatus"]
+        == "CREATE_COMPLETE"
+    )
+    cleanup_stacks([stack_id])

@@ -1,0 +1,6 @@
+Resources:
+  TestRule99A50909:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: {{ event_rule_name }}
+      ScheduleExpression: 'cron(0 1 * * * *)'
