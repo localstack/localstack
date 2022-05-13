@@ -52,6 +52,7 @@ from localstack.utils.server import http2_server
 from localstack.utils.serving import Server
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.threads import start_thread
+from localstack.utils.urls import path_from_url
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -965,7 +966,9 @@ def start_proxy_server(
 
     def handler(request, data):
         parsed_url = urlparse(request.url)
-        path_with_params = request.full_path.strip("?")
+        # make sure to use the url-encoded path here, the decoding is not reversible and some listeners depend on it
+        # (f.e. for the ProxyListenerEdge's forwarding functionality)
+        path_with_params = path_from_url(request.url)
         method = request.method
         headers = request.headers
         headers[HEADER_LOCALSTACK_REQUEST_URL] = str(request.url)

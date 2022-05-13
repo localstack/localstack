@@ -262,6 +262,7 @@ def do_forward_request_inmem(api, method, path, data, headers, port=None):
 def do_forward_request_network(port, method, path, data, headers, target_url=None):
     # TODO: enable per-service endpoints, to allow deploying in distributed settings
     target_url = target_url or f"{config.get_protocol()}://{LOCALHOST}:{port}"
+    # the path here needs to be already url-encoded, otherwise parts might not be sent (f.e. if it contains a #)
     url = f"{target_url}{path}"
     return requests.request(
         method,
