@@ -322,7 +322,7 @@ class ServiceManager:
             raise ValueError("no such service %s" % name)
 
         if container.state == ServiceState.STARTING:
-            if not poll_condition(lambda: container.state != ServiceState.STARTING, timeout=120):
+            if not poll_condition(lambda: container.state != ServiceState.STARTING, timeout=30):
                 raise TimeoutError("gave up waiting for service %s to start" % name)
 
         if container.state == ServiceState.STOPPING:

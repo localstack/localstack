@@ -64,12 +64,8 @@ def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cf
             )["events"]
             all_events.extend(events)
 
-        assert [
-            e for e in all_events if f"topic-{ref_id}" in e["message"]
-        ]  # ??? where should an enterprise-topic come from here?
-        assert [
-            e for e in all_events if f"queue-{ref_id}" in e["message"]
-        ]  # ??? where should an enterprise-queue come from here?
+        assert [e for e in all_events if f"topic-{ref_id}" in e["message"]]
+        assert [e for e in all_events if f"queue-{ref_id}" in e["message"]]
         return True
 
     assert wait_until(_check_lambda_invocations)
