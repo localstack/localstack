@@ -1863,5 +1863,56 @@ class TestSqsQueryApi:
         assert queue1_url not in response.text
         assert response.status_code == 200
 
+    @pytest.mark.aws_validated
+    def test_get_list_queues_fails_json_format(self, sqs_create_queue, sqs_http_client):
+        queue_url = sqs_create_queue()
+
+        response = sqs_http_client.get(
+            queue_url,
+            headers={"Accept": "application/json"},
+            params={
+                "Action": "ListQueues",
+            },
+        )
+        assert response.status_code == 400
+
+        doc = response.json()
+        assert doc["Error"]["Code"] == "InvalidAction"
+        assert doc["Error"]["Message"] == "The action ListQueues is not valid for this endpoint."
+
+    @pytest.mark.aws_validated
+    def test_get_queue_attributes_json_format(self, sqs_client, sqs_create_queue, sqs_http_client):
+        queue_url = sqs_create_queue()
+        response = sqs_http_client.get(
+            queue_url,
+            headers={"Accept": "application/json"},
+            params={
+                "Action": "GetQueueAttributes",
+                "AttributeName.1": "All",
+            },
+        )
+
+        assert response.ok
+        doc = response.json()
+        assert "GetQueueAttributesResponse" in doc
+        attributes = doc["GetQueueAttributesResponse"]["GetQueueAttributesResult"]["Attributes"]
+
+        for attribute in attributes:
+            if attribute["Name"] == "QueueArn":
+                assert "arn:aws:sqs" in attribute["Value"]
+                assert queue_url.split("/")[-1] in attribute["Value"]
+                return
+
+        pytest.fail(f"no QueueArn attribute in attributes {attributes}")
+
+    @pytest.mark.aws_validated
+    def test_get_without_query_json_format_returns_returns_xml(
+        self, sqs_create_queue, sqs_http_client
+    ):
+        queue_url = sqs_create_queue()
+        response = sqs_http_client.get(queue_url, headers={"Accept": "application/json"})
+        assert "<UnknownOperationException" in response.text
+        assert response.status_code == 404
+
     # TODO: write tests for making POST requests (not clear how signing would work without custom code)
     #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-making-api-requests.html#structure-post-request
