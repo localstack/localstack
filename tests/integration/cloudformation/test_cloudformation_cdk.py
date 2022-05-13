@@ -39,18 +39,18 @@ class TestCdkInit:
 
         change_set_name = "cdk-deploy-change-set-a4b98b18"
         stack_name = "CDKToolkit-a4b98b18"
-
-        headers = aws_stack.mock_aws_request_headers("cloudformation")
-        base_url = config.get_edge_url()
-        for op in operations:
-            url = f"{base_url}{op['path']}"
-            data = op["data"]
-            requests.request(method=op["method"], url=url, headers=headers, data=data)
-            if "Action=ExecuteChangeSet" in data:
-                assert wait_until(
-                    is_change_set_finished(change_set_name), _max_wait=20, strategy="linear"
-                )
-
-        # clean up
-        cleanup_changesets(change_set_name)
-        cleanup_stacks(stack_name)
+        try:
+            headers = aws_stack.mock_aws_request_headers("cloudformation")
+            base_url = config.get_edge_url()
+            for op in operations:
+                url = f"{base_url}{op['path']}"
+                data = op["data"]
+                requests.request(method=op["method"], url=url, headers=headers, data=data)
+                if "Action=ExecuteChangeSet" in data:
+                    assert wait_until(
+                        is_change_set_finished(change_set_name), _max_wait=20, strategy="linear"
+                    )
+        finally:
+            # clean up
+            cleanup_changesets([change_set_name])
+            cleanup_stacks([stack_name])
