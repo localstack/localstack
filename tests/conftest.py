@@ -6,10 +6,6 @@ from _pytest.config.argparsing import Parser
 
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
-pytest_plugins = [
-    "tests.integration.fixtures",
-]
-
 
 @pytest.hookimpl
 def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
@@ -19,8 +15,6 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
         default=False,
         help="test run will not have an internet connection",
     )
-    parser.addoption("--snapshot-update", action="store_true")
-    parser.addoption("--snapshot-verify", action="store_true")
 
 
 def pytest_configure(config):

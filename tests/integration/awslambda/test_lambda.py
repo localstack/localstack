@@ -42,6 +42,7 @@ from localstack.services.install import (
     TEST_LAMBDA_JAVA,
     download_and_extract,
 )
+from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -67,7 +68,6 @@ from localstack.utils.testutil import (
     get_lambda_log_events,
 )
 
-from ..fixtures import only_localstack
 from .functions import lambda_integration
 from .lambda_test_util import concurrency_update_done, get_invoke_init_type, update_done
 
@@ -205,17 +205,6 @@ def check_lambda_logs(logs_client):
     return _check_logs
 
 
-def get_lambda_logs(func_name, logs_client=None):
-    logs_client = logs_client or aws_stack.create_external_boto_client("logs")
-    log_group_name = f"/aws/lambda/{func_name}"
-    streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
-    streams = sorted(streams, key=lambda x: x["creationTime"], reverse=True)
-    log_events = logs_client.get_log_events(
-        logGroupName=log_group_name, logStreamName=streams[0]["logStreamName"]
-    )["events"]
-    return log_events
-
-
 def configure_snapshot_for_context(snapshot, function_name: str):
     """
     Utility function to configure snapshot to ignore a function name and log stream ids in its body.
@@ -229,7 +218,7 @@ def configure_snapshot_for_context(snapshot, function_name: str):
 
 # API only functions (no lambda execution itself)
 class TestLambdaAPI:
-    @only_localstack
+    @pytest.mark.only_localstack
     def test_create_lambda_function(self, lambda_client):
         """Basic test that creates and deletes a Lambda function"""
         func_name = f"lambda_func-{short_uid()}"

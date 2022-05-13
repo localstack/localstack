@@ -1,7 +1,14 @@
+import os
+
+
 def test_vpc_creates_default_sg(deploy_cfn_template, ec2_client):
     """tests GetAtt references to default security groups and network ACLs for VPCs"""
 
-    result = deploy_cfn_template(template_file_name="ec2_vpc_default_sg.yaml")
+    result = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../templates/ec2_vpc_default_sg.yaml"
+        )
+    )
 
     vpc_id = result.outputs.get("VpcId")
     default_sg = result.outputs.get("VpcDefaultSG")

@@ -4,23 +4,25 @@ import logging
 import os
 import re
 import time
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 import boto3
 import botocore.config
 import pytest
+from _pytest.config import Config
+from _pytest.nodes import Item
 
+from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
+from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
-from localstack.utils.common import ensure_list, load_file, poll_condition, retry
+from localstack.utils.common import ensure_list, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
 from localstack.utils.functions import run_safe
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.testutil import start_http_server
-from tests.integration.cloudformation.utils import render_template, template_path
-from tests.integration.util import get_lambda_logs
 
 if TYPE_CHECKING:
     from mypy_boto3_acm import ACMClient
@@ -41,6 +43,7 @@ if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_opensearch import OpenSearchServiceClient
     from mypy_boto3_redshift import RedshiftClient
+    from mypy_boto3_resource_groups import ResourceGroupsClient
     from mypy_boto3_resourcegroupstaggingapi import ResourceGroupsTaggingAPIClient
     from mypy_boto3_route53 import Route53Client
     from mypy_boto3_s3 import S3Client, S3ServiceResource
@@ -228,6 +231,11 @@ def sts_client() -> "STSClient":
 @pytest.fixture(scope="class")
 def ec2_client() -> "EC2Client":
     return _client("ec2")
+
+
+@pytest.fixture(scope="class")
+def rg_client() -> "ResourceGroupsClient":
+    return _client("resource-groups")
 
 
 @pytest.fixture(scope="class")
@@ -628,6 +636,7 @@ def cleanup_changesets(cfn_client):
 # Helpers for Cfn
 
 
+# TODO: exports(!)
 @dataclasses.dataclass(frozen=True)
 class DeployResult:
     change_set_id: str
@@ -635,6 +644,8 @@ class DeployResult:
     stack_name: str
     change_set_name: str
     outputs: Dict[str, str]
+
+    destroy: Callable[[], None]
 
 
 @pytest.fixture
@@ -653,7 +664,7 @@ def deploy_cfn_template(
         is_update: Optional[bool] = False,
         stack_name: Optional[str] = None,
         template: Optional[str] = None,
-        template_file_name: Optional[str] = None,
+        template_path: Optional[str | os.PathLike] = None,
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
     ) -> DeployResult:
@@ -663,8 +674,8 @@ def deploy_cfn_template(
             stack_name = f"stack-{short_uid()}"
         change_set_name = f"change-set-{short_uid()}"
 
-        if template_file_name is not None and os.path.exists(template_path(template_file_name)):
-            template = load_file(template_path(template_file_name))
+        if template_path is not None:
+            template = load_template_file(template_path)
         template_rendered = render_template(template, **(template_mapping or {}))
 
         response = cfn_client.create_change_set(
@@ -683,16 +694,33 @@ def deploy_cfn_template(
         change_set_id = response["Id"]
         stack_id = response["StackId"]
 
-        assert wait_until(is_change_set_created_and_available(change_set_id))
+        assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        assert wait_until(is_change_set_finished(change_set_id))
+        assert wait_until(is_change_set_finished(change_set_id), _max_wait=60)
 
         outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 
         mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
 
         state.append({"stack_id": stack_id, "change_set_id": change_set_id})
-        return DeployResult(change_set_id, stack_id, stack_name, change_set_name, mapped_outputs)
+
+        def _destroy_stack():
+            cfn_client.delete_stack(StackName=stack_id)
+
+            def _await_stack_delete():
+                return (
+                    cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["StackStatus"]
+                    == "DELETE_COMPLETE"
+                )
+
+            assert wait_until(_await_stack_delete, _max_wait=60)
+            time.sleep(
+                2
+            )  # TODO: fix in localstack. stack should only be in DELETE_COMPLETE state after all resources have been deleted
+
+        return DeployResult(
+            change_set_id, stack_id, stack_name, change_set_name, mapped_outputs, _destroy_stack
+        )
 
     yield _deploy
 
@@ -700,8 +728,8 @@ def deploy_cfn_template(
         entry_stack_id = entry.get("stack_id")
         entry_change_set_id = entry.get("change_set_id")
         try:
-            entry_change_set_id and cleanup_changesets(entry_change_set_id)
-            entry_stack_id and cleanup_stacks(entry_stack_id)
+            entry_change_set_id and cleanup_changesets([entry_change_set_id])
+            entry_stack_id and cleanup_stacks([entry_stack_id])
         except Exception as e:
             LOG.debug(
                 f"Failed cleaning up change set {entry_change_set_id=} and stack {entry_stack_id=}: {e}"
@@ -947,12 +975,6 @@ def acm_request_certificate(acm_client):
             LOG.debug("error cleaning up certificate %s: %s", certificate_arn, e)
 
 
-only_localstack = pytest.mark.skipif(
-    os.environ.get("TEST_TARGET") == "AWS_CLOUD",
-    reason="test only applicable if run against localstack",
-)
-
-
 @pytest.fixture
 def tmp_http_server():
     test_port, invocations, proxy = start_http_server()
@@ -1024,3 +1046,23 @@ def cleanups(ec2_client):
             cleanup_callback()
         except Exception as e:
             LOG.warning("Failed to execute cleanup", exc_info=e)
+
+
+@pytest.hookimpl
+def pytest_configure(config: Config):
+    # TODO: migrate towards "whitebox" or similar structure
+    config.addinivalue_line(
+        "markers",
+        "only_localstack: mark the test as incompatible with AWS / can't be run with AWS_CLOUD target",
+    )
+
+
+@pytest.hookimpl
+def pytest_collection_modifyitems(config: Config, items: list[Item]):
+    only_localstack = pytest.mark.skipif(
+        os.environ.get("TEST_TARGET") == "AWS_CLOUD",
+        reason="test only applicable if run against localstack",
+    )
+    for item in items:
+        if "only_localstack" in item.keywords:
+            item.add_marker(only_localstack)

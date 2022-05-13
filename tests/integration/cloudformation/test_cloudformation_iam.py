@@ -1,11 +1,17 @@
 import json
+import os
 
 import jinja2
 
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
+from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
+
+
+# TODO: refactor file and remove this compatibility fn
+def load_template_raw(file_name: str):
+    return load_template_file(os.path.join(os.path.dirname(__file__), "../templates", file_name))
 
 
 def test_delete_role_detaches_role_policy(
@@ -84,7 +90,9 @@ def test_policy_attachments(
 
     linked_role_id = short_uid()
     deploy_cfn_template(
-        template_file_name="iam_policy_attachments.yaml",
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../templates/iam_policy_attachments.yaml"
+        ),
         template_mapping={
             "role_name": role_name,
             "policy_name": policy_name,

@@ -16,3 +16,11 @@ def get_lambda_logs(func_name, logs_client=None):
         logGroupName=log_group_name, logStreamName=streams[0]["logStreamName"]
     )["events"]
     return log_events
+
+
+def bucket_exists(client, bucket_name: str) -> bool:
+    buckets = client.list_buckets()
+    for bucket in buckets["Buckets"]:
+        if bucket["Name"] == bucket_name:
+            return True
+    return False

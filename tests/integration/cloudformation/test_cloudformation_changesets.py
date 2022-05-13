@@ -1,13 +1,18 @@
+import os.path
+
 import jinja2
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.testing.aws.cloudformation_utils import load_template_file
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from tests.integration.cloudformation.utils import load_template_raw
-from tests.integration.util import is_aws_cloud
 
-# TODO: create util function for asserting some common stack/change set verification patterns here
+
+# TODO: refactor file and remove this compatibility fn
+def load_template_raw(file_name: str):
+    return load_template_file(os.path.join(os.path.dirname(__file__), "../templates", file_name))
 
 
 def test_create_change_set_without_parameters(

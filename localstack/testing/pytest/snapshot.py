@@ -5,16 +5,26 @@ import re
 from typing import Optional
 
 import pytest
+from _pytest.config import PytestPluginManager
+from _pytest.config.argparsing import Parser
 from _pytest.fixtures import SubRequest
 from _pytest.nodes import Item
 from _pytest.reports import TestReport
 from _pytest.runner import CallInfo
 from pluggy.callers import _Result
 
-from localstack.utils.testing.snapshots import SnapshotAssertionError, SnapshotSession
-from tests.integration.fixtures import _client
+from localstack.testing.pytest.fixtures import (  # TODO(!) fix. shouldn't import from a plugin module
+    _client,
+)
+from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 
 LOG = logging.getLogger(__name__)
+
+
+@pytest.hookimpl
+def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
+    parser.addoption("--snapshot-update", action="store_true")
+    parser.addoption("--snapshot-verify", action="store_true")
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -39,7 +49,7 @@ def pytest_runtest_call(item: Item) -> None:
 
 @pytest.fixture(name="account_id", scope="session")
 def fixture_account_id():
-    sts_client = _client("sts")
+    sts_client = _client("sts")  # TODO: extract client factory from fixtures plugin
     yield sts_client.get_caller_identity()["Account"]
 
 
