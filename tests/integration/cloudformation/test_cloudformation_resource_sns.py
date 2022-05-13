@@ -1,8 +1,15 @@
+import os
+
 import jinja2
 
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from localstack.utils.testing.aws.cloudformation_utils import load_template_raw
+from localstack.utils.testing.aws.cloudformation_utils import load_template_file
+
+
+# TODO: refactor file and remove this compatibility fn
+def load_template_raw(file_name: str):
+    return load_template_file(os.path.join(os.path.dirname(__file__), "../templates", file_name))
 
 
 def test_sns_topic_fifo_with_deduplication(
