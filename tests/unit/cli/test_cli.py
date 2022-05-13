@@ -194,11 +194,11 @@ def test_config_show_dict(runner, monkeypatch):
 @pytest.mark.parametrize(
     "cli_input,expected_cmd,expected_params",
     [
-        ("stop", "localstack stop", {}),
-        ("status docker", "localstack status docker", {"format": "table"}),
-        ("status", "localstack status docker", {"format": "table"}),
-        ("--debug status docker --format json", "localstack status docker", {"format": "json"}),
-        ("config show --format plain", "localstack config show", {"format": "plain"}),
+        ("stop", "localstack stop", []),
+        ("status docker", "localstack status docker", ["format"]),
+        ("status", "localstack status docker", ["format"]),
+        ("--debug status docker --format json", "localstack status docker", ["format"]),
+        ("config show --format plain", "localstack config show", ["format"]),
     ],
 )
 def test_publish_analytics_event_on_command_invocation(

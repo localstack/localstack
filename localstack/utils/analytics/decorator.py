@@ -15,7 +15,7 @@ from .publisher import AnalyticsClientPublisher
 ANALYTICS_API_RESPONSE_TIMEOUT_SECS = 0.5
 
 
-def _publish_cmd_as_analytics_event(command_name: str, params: dict):
+def _publish_cmd_as_analytics_event(command_name: str, params: List[str]):
     event = Event(
         name="cli_cmd",
         payload={"cmd": command_name, "params": params},
@@ -45,6 +45,8 @@ def publish_invocation(fn):
     If DISABLE_EVENTS is set then nothing is collected.
     For performance reasons, the API call to the backend runs on a separate process and is killed if it takes longer
     than ANALYTICS_API_RESPONSE_TIMEOUT_SECS.
+    The emitted event contains the invoked command, plus any parameter names if their associated values are truthy (but
+    not the values themselves).
     """
 
     @functools.wraps(fn)
@@ -55,7 +57,8 @@ def publish_invocation(fn):
         ctx = click.get_current_context()
         full_command = " ".join(_get_parent_commands(ctx) + [ctx.command.name])
         publish_cmd_process = Process(
-            target=_publish_cmd_as_analytics_event, args=(full_command, ctx.params)
+            target=_publish_cmd_as_analytics_event,
+            args=(full_command, [k for k, v in ctx.params.items() if v]),
         )
         publish_cmd_process.start()
         publish_cmd_process.join(ANALYTICS_API_RESPONSE_TIMEOUT_SECS)
