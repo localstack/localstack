@@ -4,9 +4,9 @@ import os
 import jinja2
 
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
+from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from localstack.utils.testing.aws.cloudformation_utils import load_template_file
 
 
 # TODO: refactor file and remove this compatibility fn

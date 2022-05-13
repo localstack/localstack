@@ -4,10 +4,10 @@ import jinja2
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.testing.aws.cloudformation_utils import load_template_file
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from localstack.utils.testing.aws.cloudformation_utils import load_template_file
-from localstack.utils.testing.aws.util import is_aws_cloud
 
 
 # TODO: refactor file and remove this compatibility fn

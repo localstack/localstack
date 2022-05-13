@@ -13,10 +13,10 @@ from _pytest.reports import TestReport
 from _pytest.runner import CallInfo
 from pluggy.callers import _Result
 
-from localstack.utils.testing.pytest.fixtures_plugin import (  # TODO(!) fix. shouldn't import from a plugin module
+from localstack.testing.pytest.fixtures import (  # TODO(!) fix. shouldn't import from a plugin module
     _client,
 )
-from localstack.utils.testing.snapshots import SnapshotAssertionError, SnapshotSession
+from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 
 LOG = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ def pytest_runtest_call(item: Item) -> None:
 
 @pytest.fixture(name="account_id", scope="session")
 def fixture_account_id():
-    sts_client = _client("sts")  # TODO: fix
+    sts_client = _client("sts")  # TODO: extract client factory from fixtures plugin
     yield sts_client.get_caller_identity()["Account"]
 
 

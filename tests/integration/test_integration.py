@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
+from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -23,7 +24,6 @@ from localstack.utils.common import (
     to_str,
 )
 from localstack.utils.kinesis import kinesis_connector
-from localstack.utils.testing.aws.util import get_lambda_logs
 from localstack.utils.testutil import get_lambda_log_events
 
 from .awslambda.functions import lambda_integration

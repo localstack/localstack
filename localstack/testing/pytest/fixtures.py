@@ -12,6 +12,8 @@ import pytest
 from _pytest.config import Config
 from _pytest.nodes import Item
 
+from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
+from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
@@ -20,8 +22,6 @@ from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
 from localstack.utils.functions import run_safe
 from localstack.utils.generic.wait_utils import wait_until
-from localstack.utils.testing.aws.cloudformation_utils import load_template_file, render_template
-from localstack.utils.testing.aws.util import get_lambda_logs
 from localstack.utils.testutil import start_http_server
 
 if TYPE_CHECKING:

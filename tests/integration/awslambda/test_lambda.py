@@ -42,6 +42,7 @@ from localstack.services.install import (
     TEST_LAMBDA_JAVA,
     download_and_extract,
 )
+from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -61,7 +62,6 @@ from localstack.utils.common import (
 )
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.sync import poll_condition
-from localstack.utils.testing.aws.util import get_lambda_logs
 from localstack.utils.testutil import (
     check_expected_lambda_log_events_length,
     create_lambda_archive,

@@ -9,11 +9,11 @@ from botocore.parsers import ResponseParserError
 
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.testing.aws.util import bucket_exists
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import load_file, short_uid, to_str
 from localstack.utils.sync import poll_condition, wait_until
-from localstack.utils.testing.aws.util import bucket_exists
 from localstack.utils.testutil import create_zip_file
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
