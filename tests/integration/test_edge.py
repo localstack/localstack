@@ -160,6 +160,36 @@ class TestEdgeAPI:
         assert json.loads(to_str(response.content)) == expected
         proxy.stop()
 
+    def test_http2_relay_traffic(self):
+        """Tests if HTTP2 traffic can correctly be forwarded (including url-encoded characters)."""
+
+        port_relay_proxy = get_free_tcp_port()
+
+        # Create a simple HTTP echo server
+        class MyListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                return {"method": method, "path": path, "data": data}
+
+        listener = MyListener()
+        port_http_server = get_free_tcp_port()
+        http_server = start_proxy_server(port_http_server, update_listener=listener, use_ssl=True)
+
+        # Create a relay proxy which forwards request to the HTTP echo server
+        forward_url = f"https://localhost:{port_http_server}/foo/bar%23baz"
+        relay_proxy = start_proxy_server(port_relay_proxy, forward_url=forward_url, use_ssl=True)
+        time.sleep(1)
+
+        # Contact the relay proxy
+        url = f"https://localhost:{port_relay_proxy}/foo/bar%23baz"
+        response = requests.post(url, verify=False)
+
+        # Expect the response from the HTTP echo server
+        expected = {"method": "POST", "path": "/foo/bar%23baz", "data": ""}
+        assert json.loads(to_str(response.content)) == expected
+
+        http_server.stop()
+        relay_proxy.stop()
+
     def test_invoke_sns_sqs_integration_using_edge_port(
         self, sqs_create_queue, sqs_client, sns_client, sns_create_topic, sns_subscription
     ):
