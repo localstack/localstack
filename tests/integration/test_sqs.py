@@ -898,7 +898,7 @@ class TestSqsProvider:
         }
         send_invalid(invalid_attribute)
 
-        too_long_type = f"Number.{'L'*256}"
+        too_long_type = f"Number.{'L' * 256}"
         invalid_attribute = {
             "Attribute_name": {"StringValue": "Valid", "DataType": f"{too_long_type}"}
         }
@@ -1655,3 +1655,213 @@ def get_region():
 class TestSqsLambdaIntegration:
     pass
     # TODO: move tests here
+
+
+@pytest.fixture()
+def sqs_http_client(aws_http_client_factory):
+    yield aws_http_client_factory("sqs")
+
+
+@pytest.mark.skipif(
+    config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf",
+    reason="query API implemented as part of the new ASF provider",
+)
+class TestSqsQueryApi:
+    @pytest.mark.aws_validated
+    def test_get_queue_attributes_all(self, sqs_create_queue, sqs_http_client):
+        queue_url = sqs_create_queue()
+        response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "GetQueueAttributes",
+                "AttributeName.1": "All",
+            },
+        )
+
+        assert response.ok
+        assert "<GetQueueAttributesResponse" in response.text
+        assert "<Attribute><Name>QueueArn</Name><Value>arn:aws:sqs:" in response.text
+        assert "<Attribute><Name>VisibilityTimeout</Name><Value>30" in response.text
+        assert queue_url.split("/")[-1] in response.text
+
+    @pytest.mark.aws_validated
+    def test_get_queue_attributes_with_query_args(self, sqs_create_queue, sqs_http_client):
+        queue_url = sqs_create_queue()
+        response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "GetQueueAttributes",
+                "AttributeName.1": "QueueArn",
+            },
+        )
+
+        assert response.ok
+        assert "<GetQueueAttributesResponse" in response.text
+        assert "<Attribute><Name>QueueArn</Name><Value>arn:aws:sqs:" in response.text
+        assert "<Attribute><Name>VisibilityTimeout</Name>" not in response.text
+        assert queue_url.split("/")[-1] in response.text
+
+    @pytest.mark.aws_validated
+    def test_get_delete_queue(self, sqs_create_queue, sqs_client, sqs_http_client):
+        queue_url = sqs_create_queue()
+
+        response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "DeleteQueue",
+            },
+        )
+        assert response.ok
+        assert "<DeleteQueueResponse " in response.text
+
+        def queue_is_removed():
+            try:
+                result = sqs_client.get_queue_url(QueueName=queue_url.split("/")[-1])
+                return result.get("QueueUrl") != queue_url
+            except ClientError:
+                return True
+
+        assert poll_condition(queue_is_removed, timeout=5)
+
+    @pytest.mark.aws_validated
+    def test_get_send_and_receive_messages(self, sqs_create_queue, sqs_http_client):
+        queue1_url = sqs_create_queue()
+        queue2_url = sqs_create_queue()
+
+        # items in queue 1
+        response = sqs_http_client.get(
+            queue1_url,
+            params={
+                "Action": "SendMessage",
+                "MessageBody": "foobar",
+            },
+        )
+        assert response.ok
+
+        # no items in queue 2
+        response = sqs_http_client.get(
+            queue2_url,
+            params={
+                "Action": "ReceiveMessage",
+            },
+        )
+        assert response.ok
+        assert "foobar" not in response.text
+        assert "<ReceiveMessageResult/>" in response.text.replace(
+            " />", "/>"
+        )  # expect response to be empty
+
+        # get items from queue 1
+        response = sqs_http_client.get(
+            queue1_url,
+            params={
+                "Action": "ReceiveMessage",
+            },
+        )
+
+        assert response.ok
+        assert "<Body>foobar</Body>" in response.text
+        assert "<MD5OfBody>" in response.text
+
+    @pytest.mark.aws_validated
+    def test_get_on_deleted_queue_fails(self, sqs_client, sqs_create_queue, sqs_http_client):
+        queue_url = sqs_create_queue()
+
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        def queue_is_removed():
+            try:
+                result = sqs_client.get_queue_url(QueueName=queue_url.split("/")[-1])
+                return result.get("QueueUrl") != queue_url
+            except ClientError:
+                return True
+
+        assert poll_condition(queue_is_removed, timeout=5)
+
+        response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "GetQueueAttributes",
+                "AttributeName.1": "QueueArn",
+            },
+        )
+
+        assert "<Code>AWS.SimpleQueueService.NonExistentQueue</Code>" in response.text
+        assert "<Message>The specified queue does not exist for this wsdl version" in response.text
+        assert response.status_code == 400
+
+    @pytest.mark.aws_validated
+    def test_get_without_query_returns_unknown_operation(self, sqs_create_queue, sqs_http_client):
+        queue_name = f"test-queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        assert queue_url.endswith(f"/{queue_name}")
+
+        response = sqs_http_client.get(queue_url)
+        assert "<UnknownOperationException" in response.text
+        assert response.status_code == 404
+
+    @pytest.mark.aws_validated
+    def test_get_create_queue_fails(self, sqs_create_queue, sqs_http_client):
+        queue1_url = sqs_create_queue()
+        queue2_name = f"test-queue-{short_uid()}"
+
+        response = sqs_http_client.get(
+            queue1_url,
+            params={
+                "Action": "CreateQueue",
+                "QueueName": queue2_name,
+            },
+        )
+
+        assert "<Code>InvalidAction</Code>" in response.text
+        assert "<Message>The action CreateQueue is not valid for this endpoint" in response.text
+        assert response.status_code == 400
+
+    @pytest.mark.aws_validated
+    def test_get_list_queues_fails(self, sqs_create_queue, sqs_http_client):
+        queue_url = sqs_create_queue()
+
+        response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "ListQueues",
+            },
+        )
+        assert "<Code>InvalidAction</Code>" in response.text
+        assert "<Message>The action ListQueues is not valid for this endpoint" in response.text
+        assert response.status_code == 400
+
+    @pytest.mark.aws_validated
+    def test_get_queue_url_works_for_same_queue(self, sqs_create_queue, sqs_http_client):
+        queue_url = sqs_create_queue()
+
+        response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "GetQueueUrl",
+                "QueueName": queue_url.split("/")[-1],
+            },
+        )
+        assert f"<QueueUrl>{queue_url}</QueueUrl>" in response.text
+        assert response.status_code == 200
+
+    @pytest.mark.aws_validated
+    def test_get_queue_url_work_for_different_queue(self, sqs_create_queue, sqs_http_client):
+        # for some reason this is allowed 🤷
+        queue1_url = sqs_create_queue()
+        queue2_url = sqs_create_queue()
+
+        response = sqs_http_client.get(
+            queue1_url,
+            params={
+                "Action": "GetQueueUrl",
+                "QueueName": queue2_url.split("/")[-1],
+            },
+        )
+        assert f"<QueueUrl>{queue2_url}</QueueUrl>" in response.text
+        assert queue1_url not in response.text
+        assert response.status_code == 200
+
+    # TODO: write tests for making POST requests (not clear how signing would work without custom code)
+    #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-making-api-requests.html#structure-post-request
