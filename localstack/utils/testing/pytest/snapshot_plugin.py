@@ -13,8 +13,10 @@ from _pytest.reports import TestReport
 from _pytest.runner import CallInfo
 from pluggy.callers import _Result
 
-from localstack.utils.testing.pytest.fixtures_plugin import _client  # TODO(!) fix
-from localstack.utils.testing.snapshots.snapshots import SnapshotAssertionError, SnapshotSession
+from localstack.utils.testing.pytest.fixtures_plugin import (  # TODO(!) fix. shouldn't import from a plugin module
+    _client,
+)
+from localstack.utils.testing.snapshots import SnapshotAssertionError, SnapshotSession
 
 LOG = logging.getLogger(__name__)
 
