@@ -1245,13 +1245,6 @@ def get_stack_details(stack_name, region_name=None):
             return stack
 
 
-def deploy_cf_stack(stack_name, template_body):
-    cfn = connect_to_service("cloudformation")
-    cfn.create_stack(StackName=stack_name, TemplateBody=template_body)
-    # wait for deployment to finish
-    return await_stack_completion(stack_name)
-
-
 def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2, region_name=None):
     def check_stack():
         stack = get_stack_details(stack_name, region_name=region_name)

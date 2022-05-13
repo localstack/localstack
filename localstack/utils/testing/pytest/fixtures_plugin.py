@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import time
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 import boto3
 import botocore.config
@@ -15,12 +15,12 @@ from _pytest.nodes import Item
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
-from localstack.utils.common import ensure_list, load_file, poll_condition, retry
+from localstack.utils.common import ensure_list, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
 from localstack.utils.functions import run_safe
 from localstack.utils.generic.wait_utils import wait_until
-from localstack.utils.testing.aws.cloudformation_utils import render_template, template_path
+from localstack.utils.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.utils.testing.aws.util import get_lambda_logs
 from localstack.utils.testutil import start_http_server
 
@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_opensearch import OpenSearchServiceClient
     from mypy_boto3_redshift import RedshiftClient
+    from mypy_boto3_resource_groups import ResourceGroupsClient
     from mypy_boto3_resourcegroupstaggingapi import ResourceGroupsTaggingAPIClient
     from mypy_boto3_route53 import Route53Client
     from mypy_boto3_s3 import S3Client, S3ServiceResource
@@ -230,6 +231,11 @@ def sts_client() -> "STSClient":
 @pytest.fixture(scope="class")
 def ec2_client() -> "EC2Client":
     return _client("ec2")
+
+
+@pytest.fixture(scope="class")
+def rg_client() -> "ResourceGroupsClient":
+    return _client("resourcegroups")
 
 
 @pytest.fixture(scope="class")
@@ -630,6 +636,7 @@ def cleanup_changesets(cfn_client):
 # Helpers for Cfn
 
 
+# TODO: exports(!)
 @dataclasses.dataclass(frozen=True)
 class DeployResult:
     change_set_id: str
@@ -637,6 +644,8 @@ class DeployResult:
     stack_name: str
     change_set_name: str
     outputs: Dict[str, str]
+
+    destroy: Callable[[], None]
 
 
 @pytest.fixture
@@ -655,7 +664,7 @@ def deploy_cfn_template(
         is_update: Optional[bool] = False,
         stack_name: Optional[str] = None,
         template: Optional[str] = None,
-        template_file_name: Optional[str] = None,
+        template_path: Optional[str | os.PathLike] = None,
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
     ) -> DeployResult:
@@ -665,8 +674,8 @@ def deploy_cfn_template(
             stack_name = f"stack-{short_uid()}"
         change_set_name = f"change-set-{short_uid()}"
 
-        if template_file_name is not None and os.path.exists(template_path(template_file_name)):
-            template = load_file(template_path(template_file_name))
+        if template_path is not None:
+            template = load_template_file(template_path)
         template_rendered = render_template(template, **(template_mapping or {}))
 
         response = cfn_client.create_change_set(
@@ -694,7 +703,21 @@ def deploy_cfn_template(
         mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
 
         state.append({"stack_id": stack_id, "change_set_id": change_set_id})
-        return DeployResult(change_set_id, stack_id, stack_name, change_set_name, mapped_outputs)
+
+        def _destroy_stack():
+            cfn_client.delete_stack(StackName=stack_id)
+
+            def _await_stack_delete():
+                return (
+                    cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["StackStatus"]
+                    == "DELETE_COMPLETE"
+                )
+
+            assert wait_until(_await_stack_delete)
+
+        return DeployResult(
+            change_set_id, stack_id, stack_name, change_set_name, mapped_outputs, _destroy_stack
+        )
 
     yield _deploy
 
