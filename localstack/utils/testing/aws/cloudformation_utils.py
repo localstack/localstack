@@ -21,7 +21,7 @@ def load_template_file(file_path: str | os.PathLike, *, path_ctx: str | os.PathL
 
     file_path_obj = pathlib.Path(file_path)
 
-    if file_path_obj.suffix not in ["yaml", "yml", "json"]:
+    if file_path_obj.suffix not in [".yaml", ".yml", ".json"]:
         raise ValueError("Unsupported suffix for template file")
 
     if path_ctx is not None:

@@ -235,7 +235,7 @@ def ec2_client() -> "EC2Client":
 
 @pytest.fixture(scope="class")
 def rg_client() -> "ResourceGroupsClient":
-    return _client("resourcegroups")
+    return _client("resource-groups")
 
 
 @pytest.fixture(scope="class")
@@ -694,9 +694,9 @@ def deploy_cfn_template(
         change_set_id = response["Id"]
         stack_id = response["StackId"]
 
-        assert wait_until(is_change_set_created_and_available(change_set_id))
+        assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        assert wait_until(is_change_set_finished(change_set_id))
+        assert wait_until(is_change_set_finished(change_set_id), _max_wait=60)
 
         outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 
@@ -713,7 +713,10 @@ def deploy_cfn_template(
                     == "DELETE_COMPLETE"
                 )
 
-            assert wait_until(_await_stack_delete)
+            assert wait_until(_await_stack_delete, _max_wait=60)
+            time.sleep(
+                2
+            )  # TODO: fix in localstack. stack should only be in DELETE_COMPLETE state after all resources have been deleted
 
         return DeployResult(
             change_set_id, stack_id, stack_name, change_set_name, mapped_outputs, _destroy_stack
@@ -725,8 +728,8 @@ def deploy_cfn_template(
         entry_stack_id = entry.get("stack_id")
         entry_change_set_id = entry.get("change_set_id")
         try:
-            entry_change_set_id and cleanup_changesets(entry_change_set_id)
-            entry_stack_id and cleanup_stacks(entry_stack_id)
+            entry_change_set_id and cleanup_changesets([entry_change_set_id])
+            entry_stack_id and cleanup_stacks([entry_stack_id])
         except Exception as e:
             LOG.debug(
                 f"Failed cleaning up change set {entry_change_set_id=} and stack {entry_stack_id=}: {e}"
