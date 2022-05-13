@@ -63,7 +63,6 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
     kwargs should consist of following keys related to the email:
     - Body
     - Destinations
-    - HtmlBody
     - RawData
     - Source
     - Subject
@@ -193,14 +192,16 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     ) -> SendEmailResponse:
         response = call_moto(context)
 
+        text_part = message["Body"].get("Text", {}).get("Data")
+        html_part = message["Body"].get("Html", {}).get("Data")
+
         save_for_retrospection(
             response["MessageId"],
             context.region,
             Source=source,
             Destination=destination,
             Subject=message["Subject"].get("Data"),
-            Body=message["Body"].get("Text", {}).get("Data"),
-            HtmlBody=message["Body"].get("Html", {}).get("Data"),
+            Body=dict(text_part=text_part, html_part=html_part),
         )
 
         return response

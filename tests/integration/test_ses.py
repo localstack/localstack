@@ -103,8 +103,7 @@ class TestSES:
 
         assert email == contents["Source"]
         assert "A_SUBJECT" == contents["Subject"]
-        assert "A_MESSAGE" == contents["Body"]
-        assert "A_HTML" == contents["HtmlBody"]
+        assert {"text_part": "A_MESSAGE", "html_part": "A_HTML"} == contents["Body"]
         assert ["success@example.com"] == contents["Destination"]["ToAddresses"]
 
         emails_url = config.get_edge_url() + INTERNAL_RESOURCE_PATH + EMAILS_ENDPOINT
