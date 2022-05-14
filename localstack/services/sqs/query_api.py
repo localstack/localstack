@@ -54,6 +54,19 @@ def handle_request(request: Request, region: str) -> Response:
 
     sqs = aws_stack.connect_to_service("sqs", region_name=region)
 
+    if action in ["ListQueues", "CreateQueue"]:
+        error = CommonServiceException(
+            "InvalidAction",
+            f"The action {action} is not valid for this endpoint.",
+            400,
+            sender_fault=True,
+        )
+        return serializer.serialize_error_to_response(
+            # use a dummy operation to make the serializer work
+            error,
+            service.operation_model(service.operation_names[0]),
+        )
+
     # prepare aws request
     params = {"QueueUrl": request.base_url}
     params.update(request.values)

@@ -1864,6 +1864,27 @@ class TestSqsQueryApi:
         assert response.status_code == 200
 
     @pytest.mark.aws_validated
+    def test_overwrite_queue_url_in_params(self, sqs_create_queue, sqs_http_client):
+        # here, queue1 url simply serves as AWS endpoint but we pass queue2 url in the request arg
+        queue1_url = sqs_create_queue()
+        queue2_url = sqs_create_queue()
+
+        response = sqs_http_client.get(
+            queue1_url,
+            params={
+                "Action": "GetQueueAttributes",
+                "QueueUrl": queue2_url,
+                "AttributeName.1": "QueueArn",
+            },
+        )
+
+        assert response.ok
+        assert "<Attribute><Name>QueueArn</Name><Value>arn:aws:sqs:" in response.text
+        assert queue1_url.split("/")[-1] not in response.text
+        assert queue2_url.split("/")[-1] in response.text
+
+    @pytest.mark.xfail(reason="json serialization not supported yet")
+    @pytest.mark.aws_validated
     def test_get_list_queues_fails_json_format(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
 
@@ -1880,6 +1901,7 @@ class TestSqsQueryApi:
         assert doc["Error"]["Code"] == "InvalidAction"
         assert doc["Error"]["Message"] == "The action ListQueues is not valid for this endpoint."
 
+    @pytest.mark.xfail(reason="json serialization not supported yet")
     @pytest.mark.aws_validated
     def test_get_queue_attributes_json_format(self, sqs_client, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
