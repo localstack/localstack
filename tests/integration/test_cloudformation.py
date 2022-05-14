@@ -738,7 +738,7 @@ class TestCloudFormation:
         assert ctx.value.response["Error"]["Code"] == "NoSuchBucket"
 
         # recreate stack
-        deploy_cfn_template(stack_name=stack.stack_name, template=template_body)
+        deploy_cfn_template(stack_name=stack.stack_name, template=template_body, is_update=True)
 
     def test_cfn_handle_log_group_resource(self, deploy_cfn_template, logs_client):
         log_group_prefix = "/aws/lambda/AWS_DUB_LAM_10000000"
@@ -1714,8 +1714,8 @@ class TestCloudFormation:
         assert len(new_role) == 1
 
         # Generate new names for lambda and IAM Role
-        lambda_role_name_new = f"lambda-role-{short_uid()}"
-        lambda_function_name_new = f"lambda-function-{short_uid()}"
+        lambda_role_name_new = f"lambda-role-new-{short_uid()}"
+        lambda_function_name_new = f"lambda-function-new-{short_uid()}"
 
         template["Resources"]["LambdaExecutionRole"]["Properties"][
             "RoleName"

@@ -663,6 +663,7 @@ def deploy_cfn_template(
         *,
         is_update: Optional[bool] = False,
         stack_name: Optional[str] = None,
+        change_set_name: Optional[str] = None,
         template: Optional[str] = None,
         template_path: Optional[str | os.PathLike] = None,
         template_mapping: Optional[Dict[str, any]] = None,
@@ -670,9 +671,8 @@ def deploy_cfn_template(
     ) -> DeployResult:
         if is_update:
             assert stack_name
-        else:
-            stack_name = f"stack-{short_uid()}"
-        change_set_name = f"change-set-{short_uid()}"
+        stack_name = stack_name or f"stack-{short_uid()}"
+        change_set_name = change_set_name or f"change-set-{short_uid()}"
 
         if template_path is not None:
             template = load_template_file(template_path)

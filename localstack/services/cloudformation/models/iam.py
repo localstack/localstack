@@ -163,9 +163,18 @@ class IAMRole(GenericBaseModel):
     def get_resource_name(self):
         return self.props.get("RoleName")
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        role_name = self.properties.get("RoleName")
+        if not role_name:
+            return role_name
+        if attribute == "Arn":
+            return aws_stack.role_arn(role_name)
+        return role_name
+
     def fetch_state(self, stack_name, resources):
         role_name = self.resolve_refs_recursively(stack_name, self.props.get("RoleName"), resources)
-        return aws_stack.connect_to_service("iam").get_role(RoleName=role_name)["Role"]
+        client = aws_stack.connect_to_service("iam")
+        return client.get_role(RoleName=role_name)["Role"]
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
@@ -173,30 +182,24 @@ class IAMRole(GenericBaseModel):
         _states = new_resource.get("_state_", None)
         client = aws_stack.connect_to_service("iam")
         if _states:
-            if props.get("RoleName") != _states.get("RoleName") or (
-                "AssumeRolePolicyDocument" in props
-                and props.get("AssumeRolePolicyDocument")
-                != _states.get("AssumeRolePolicyDocument", "")
-            ):
+            props_policy = props.get("AssumeRolePolicyDocument")
+            name_changed = props.get("RoleName") != _states.get("RoleName")
+            policy_changed = props_policy and props_policy != _states.get(
+                "AssumeRolePolicyDocument", ""
+            )
+            if name_changed or policy_changed:
+                resource_id = new_resource.get("LogicalResourceId")
                 dummy_resources = {
-                    new_resource.get("LogicalResourceId"): {
-                        "Properties": {
-                            "RoleName": _states.get("RoleName"),
-                        },
-                    }
+                    resource_id: {"Properties": {"RoleName": _states.get("RoleName")}}
                 }
-                self._pre_delete(
-                    new_resource.get("LogicalResourceId"), dummy_resources, None, None, None
-                )
+                self._pre_delete(resource_id, dummy_resources, None, None, None)
                 client.delete_role(RoleName=_states.get("RoleName"))
                 role = client.create_role(
                     RoleName=props.get("RoleName"),
-                    AssumeRolePolicyDocument=str(props.get("AssumeRolePolicyDocument")),
+                    AssumeRolePolicyDocument=str(props_policy),
                 )
-                self._post_create(
-                    new_resource.get("LogicalResourceId"), resources, None, None, None
-                )
-                return role
+                self._post_create(resource_id, resources, None, None, None)
+                return role["Role"]
 
         return client.update_role(
             RoleName=props.get("RoleName"), Description=props.get("Description") or ""
@@ -298,7 +301,6 @@ class IAMRole(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-
         return {
             "create": [
                 {

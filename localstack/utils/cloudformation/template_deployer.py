@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import traceback
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import botocore
 from moto.ec2.utils import generate_route_id
@@ -1064,10 +1064,6 @@ def determine_resource_physical_id(resource_id, stack=None, attribute=None):
         if attribute == "Arn":
             return aws_stack.s3_bucket_arn(resource_props.get("BucketName"))
         return resource_props.get("BucketName")  # Note: "Ref" returns bucket name in AWS
-    elif resource_type == "IAM::Role":
-        if attribute == "Arn":
-            return aws_stack.role_arn(resource_props.get("RoleName"))
-        return resource_props.get("RoleName")
     elif resource_type == "IAM::Policy":
         if attribute == "Arn":
             return aws_stack.policy_arn(resource_props.get("PolicyName"))
@@ -1214,7 +1210,7 @@ class TemplateDeployer:
 
     def apply_change_set(self, change_set):
         action = "CREATE"
-        change_set.stack.set_stack_status("%s_IN_PROGRESS" % action)
+        change_set.stack.set_stack_status(f"{action}_IN_PROGRESS")
         try:
             self.apply_changes(
                 change_set.stack,
@@ -1226,8 +1222,8 @@ class TemplateDeployer:
             LOG.info(
                 "Unable to apply change set %s: %s", change_set.metadata.get("ChangeSetName"), e
             )
-            change_set.metadata["Status"] = "%s_FAILED" % action
-            self.stack.set_stack_status("%s_FAILED" % action)
+            change_set.metadata["Status"] = f"{action}_FAILED"
+            self.stack.set_stack_status(f"{action}_FAILED")
             raise
 
     def update_stack(self, new_stack):
@@ -1437,12 +1433,27 @@ class TemplateDeployer:
 
             parameters[logical_id] = param
 
-        parameters.update({p["ParameterKey"]: p for p in new_stack.metadata["Parameters"]})
+        def _update_params(params_list: List[Dict]):
+            for param in params_list:
+                # make sure we preserve parameter values if UsePreviousValue=true
+                if not param.get("UsePreviousValue"):
+                    parameters.update({param["ParameterKey"]: param})
 
+        _update_params(new_stack.metadata["Parameters"])
         for change_set in new_stack.change_sets:
-            parameters.update({p["ParameterKey"]: p for p in change_set.metadata["Parameters"]})
+            _update_params(change_set.metadata["Parameters"])
 
         # TODO: unclear/undocumented behavior in implicitly updating old_stack parameter here
+        # Note: Indeed it seems that parameters from Change Sets are applied to a stack
+        #   itself, and are preserved even after a change set has been deleted. However,
+        #   a proper implementation would distinguish between (1) Change Sets and (2) Change
+        #   Set Executions - the former are only a template for the changes to be applied,
+        #   whereas the latter actually perform changes (including parameter updates).
+        #   Also, (1) can be deleted, and (2) can only be rolled back (in case of errors).
+        #   Once we have the distinction between (1) and (2) in place, this logic (updating
+        #   the parameters of the stack itself) will become obsolete, then the parameter
+        #   values can be determined by replaying the values of the sequence of (immutable)
+        #   Change Set Executions.
         old_stack.metadata["Parameters"] = [v for v in parameters.values() if v]
 
     # TODO: fix circular import with cloudformation_api.py when importing Stack here
@@ -1527,7 +1538,7 @@ class TemplateDeployer:
         def _run(*args):
             try:
                 self.do_apply_changes_in_loop(changes, stack, stack_name)
-                status = "%s_COMPLETE" % action
+                status = f"{action}_COMPLETE"
             except Exception as e:
                 LOG.debug(
                     'Error applying changes for CloudFormation stack "%s": %s %s',
@@ -1535,16 +1546,14 @@ class TemplateDeployer:
                     e,
                     traceback.format_exc(),
                 )
-                status = "%s_FAILED" % action
+                status = f"{action}_FAILED"
             stack.set_stack_status(status)
             if isinstance(new_stack, StackChangeSet):
                 new_stack.metadata["Status"] = status
-                new_stack.metadata["ExecutionStatus"] = (
-                    "EXECUTE_FAILED" if "FAILED" in status else "EXECUTE_COMPLETE"
-                )
-                new_stack.metadata["StatusReason"] = "Deployment %s" % (
-                    "failed" if "FAILED" in status else "succeeded"
-                )
+                exec_result = "EXECUTE_FAILED" if "FAILED" in status else "EXECUTE_COMPLETE"
+                new_stack.metadata["ExecutionStatus"] = exec_result
+                result = "failed" if "FAILED" in status else "succeeded"
+                new_stack.metadata["StatusReason"] = f"Deployment {result}"
 
         # run deployment in background loop, to avoid client network timeouts
         return start_worker_thread(_run)
