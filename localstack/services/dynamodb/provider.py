@@ -1010,7 +1010,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if not self.table_exists(table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
-        table_def = DynamoDBRegion.get().table_definitions.get(table_name)
+        table_def = DynamoDBRegion.get().table_definitions.get(table_name) or {}
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations") or []
         return DescribeKinesisStreamingDestinationOutput(
