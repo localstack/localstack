@@ -738,7 +738,7 @@ class TestCloudFormation:
         assert ctx.value.response["Error"]["Code"] == "NoSuchBucket"
 
         # recreate stack
-        deploy_cfn_template(stack_name=stack.stack_name, template=template_body)
+        deploy_cfn_template(stack_name=stack.stack_name, template=template_body, is_update=True)
 
     def test_cfn_handle_log_group_resource(self, deploy_cfn_template, logs_client):
         log_group_prefix = "/aws/lambda/AWS_DUB_LAM_10000000"
