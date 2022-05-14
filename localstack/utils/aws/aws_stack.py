@@ -272,6 +272,8 @@ def connect_to_resource(
         env=env,
         region_name=region_name,
         endpoint_url=endpoint_url,
+        *args,
+        **kwargs,
     )
 
 

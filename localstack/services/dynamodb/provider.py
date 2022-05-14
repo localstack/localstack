@@ -283,18 +283,6 @@ class DynamoDBApiListener(AwsApiListener):
         self.provider = provider
         super().__init__("dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url))
 
-    def forward_request(self, method, path, data, headers):
-        action = headers.get("X-Amz-Target", "")
-        action = action.replace(ACTION_PREFIX, "")
-        if self.provider.should_throttle(action):
-            message = (
-                "The level of configured provisioned throughput for the table was exceeded. "
-                + "Consider increasing your provisioning level with the UpdateTable API"
-            )
-            raise ProvisionedThroughputExceededException(message)
-
-        return super().forward_request(method, path, data, headers)
-
     def return_response(self, method, path, data, headers, response):
         if response._content:
             # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
@@ -334,6 +322,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def forward_request(
         self, context: RequestContext, service_request: ServiceRequest = None
     ) -> ServiceResponse:
+        # check rate limiting for this request and raise an error, if provisioned throughput is exceeded
+        self.check_provisioned_throughput(context.operation.name)
+
         # note: modifying headers in-place here before forwarding the request
         self.prepare_request_headers(context.request.headers)
         return self.request_forwarder(context, service_request)
@@ -1019,7 +1010,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if not self.table_exists(table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
-        table_def = DynamoDBRegion.get().table_definitions.get(table_name)
+        table_def = DynamoDBRegion.get().table_definitions.get(table_name) or {}
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations") or []
         return DescribeKinesisStreamingDestinationOutput(
@@ -1244,6 +1235,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             "eventSource": "aws:dynamodb",
         }
 
+    def check_provisioned_throughput(self, action):
+        if self.should_throttle(action):
+            message = (
+                "The level of configured provisioned throughput for the table was exceeded. "
+                + "Consider increasing your provisioning level with the UpdateTable API"
+            )
+            raise ProvisionedThroughputExceededException(message)
+
     def action_should_throttle(self, action, actions):
         throttled = [f"{ACTION_PREFIX}{a}" for a in actions]
         return (action in throttled) or (action in actions)
@@ -1262,8 +1261,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             action, THROTTLED_ACTIONS
         ):
             return True
-        else:
-            return False
+        return False
 
 
 # ---
