@@ -115,7 +115,6 @@ jobs:
           environment:
             LAMBDA_EXECUTOR: "docker"
             USE_SSL: 1
-            TEST_ERROR_INJECTION: 1
             TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py tests/integration/test_apigateway.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
             COVERAGE_ARGS: "-p"
