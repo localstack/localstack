@@ -39,7 +39,7 @@ from localstack.utils.http import safe_requests as requests
 from localstack.utils.net import is_port_open
 from localstack.utils.run import is_root, run
 from localstack.utils.server.http2_server import HTTPErrorResponse
-from localstack.utils.strings import to_bytes, truncate
+from localstack.utils.strings import to_bytes, to_str, truncate
 from localstack.utils.sync import sleep_forever
 from localstack.utils.threads import TMP_THREADS, start_thread
 
@@ -80,7 +80,7 @@ class ProxyListenerEdge(ProxyListener):
             return 503
 
         if config.EDGE_FORWARD_URL:
-            raw_path = get_raw_path(quart_request)
+            raw_path = self.get_full_raw_path(quart_request)
             return do_forward_request_network(
                 0, method, raw_path, data, headers, target_url=config.EDGE_FORWARD_URL
             )
@@ -221,6 +221,13 @@ class ProxyListenerEdge(ProxyListener):
             self.service_manager.require(api)
         except Exception as e:
             raise HTTPErrorResponse("failed to get service for %s: %s" % (api, e), code=500)
+
+    @staticmethod
+    def get_full_raw_path(request) -> str:
+        """Returns the full raw request path (with original URL encoding), including the query string"""
+        query_str = f"?{to_str(request.query_string)}" if request.query_string else ""
+        raw_path = f"{get_raw_path(request)}{query_str}"
+        return raw_path
 
 
 def do_forward_request(api, method, path, data, headers, port=None):

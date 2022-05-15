@@ -11,7 +11,7 @@ from requests.models import Request as RequestsRequest
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL, TEST_AWS_ACCOUNT_ID
-from localstack.http.request import get_raw_path
+from localstack.services.edge import ProxyListenerEdge
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
     ProxyListener,
@@ -303,7 +303,8 @@ class TestEdgeAPI:
     def test_forward_raw_path(self, monkeypatch):
         class MyListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
-                return {"method": method, "path": get_raw_path(quart_request)}
+                _path = ProxyListenerEdge.get_full_raw_path(quart_request)
+                return {"method": method, "path": _path}
 
         # start listener and configure EDGE_FORWARD_URL
         port = get_free_tcp_port()
@@ -314,7 +315,7 @@ class TestEdgeAPI:
 
         # run test request, assert that raw request path is forwarded
         test_arn = "arn:aws:test:resource/test"
-        raw_path = f"/test/{urllib.parse.quote(test_arn)}/bar"
+        raw_path = f"/test/{urllib.parse.quote(test_arn)}/bar?q1=foo&q2=bar"
         url = f"{config.get_edge_url()}{raw_path}"
         response = requests.get(url)
         expected = {"method": "GET", "path": raw_path}
