@@ -6,7 +6,7 @@ import zipfile
 from subprocess import Popen
 from typing import Optional, Union
 
-from .run import run
+from .run import is_command_available, run
 from .strings import truncate
 
 LOG = logging.getLogger(__name__)
@@ -26,13 +26,16 @@ def get_unzipped_size(path: str):
 def unzip(path: str, target_dir: str, overwrite: bool = True) -> Optional[Union[str, Popen]]:
     from localstack.utils.platform import is_debian
 
-    is_in_debian = is_debian()
-    if is_in_debian:
-        # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
-        flags = "-o" if overwrite else ""
-        flags += " -q"
+    use_native_cmd = is_debian() or is_command_available("unzip")
+    if use_native_cmd:
+        # Running the native command can be an order of magnitude faster in the container. Also, `unzip`
+        #  is capable of extracting zip files with incorrect CRC codes (sometimes happens, e.g., with some
+        #  Node.js/Serverless versions), which can fail with Python's `zipfile` (extracting empty files).
+        flags = ["-o"] if overwrite else []
+        flags += ["-q"]
         try:
-            return run("cd %s; unzip %s %s" % (target_dir, flags, path), print_error=False)
+            cmd = ["unzip"] + flags + [path]
+            return run(cmd, cwd=target_dir, print_error=False)
         except Exception as e:
             error_str = truncate(str(e), max_length=200)
             LOG.info(
@@ -48,7 +51,7 @@ def unzip(path: str, target_dir: str, overwrite: bool = True) -> Optional[Union[
     def _unzip_file_entry(zip_ref, file_entry, target_dir):
         """Extracts a Zipfile entry and preserves permissions"""
         out_path = os.path.join(target_dir, file_entry.filename)
-        if is_in_debian and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+        if use_native_cmd and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
             # this can happen under certain circumstances if the native "unzip" command
             # fails with a non-zero exit code, yet manages to extract parts of the zip file
             return

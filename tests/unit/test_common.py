@@ -14,6 +14,7 @@ import yaml
 
 from localstack import config
 from localstack.utils import common
+from localstack.utils.archives import unzip
 from localstack.utils.common import (
     ExternalServicePortsManager,
     PaginatedList,
@@ -510,6 +511,25 @@ class TestCommonFileOperations:
         zip_obj = zipfile.ZipFile(io.BytesIO(content))
         assert len(zip_obj.infolist()) == 1
         assert zip_obj.infolist()[0].filename == "testfile"
+        rm_rf(tmp_dir)
+
+    def test_unzip_bad_crc(self):
+        """Test unzipping of files with incorrect CRC codes - usually works with native `unzip` command,
+        but seems to fail with zipfile module under certain Python versions (extracts 0-bytes files)"""
+
+        # base64-encoded zip file with a single entry with incorrect CRC (created by Node.js 18 / Serverless)
+        zip_base64 = """
+        UEsDBBQAAAAIAAAAIQAAAAAAJwAAAAAAAAAjAAAAbm9kZWpzL25vZGVfbW9kdWxlcy9sb2Rhc2gvaW5k
+        ZXguanPLzU8pzUnVS60oyC8qKVawVShKLSzNLErVUNfTz8lPSSzOUNe0BgBQSwECLQMUAAAACAAAACEA
+        AAAAACcAAAAAAAAAIwAAAAAAAAAAACAApIEAAAAAbm9kZWpzL25vZGVfbW9kdWxlcy9sb2Rhc2gvaW5k
+        ZXguanNQSwUGAAAAAAEAAQBRAAAAaAAAAAAA
+        """
+        tmp_dir = new_tmp_dir()
+        zip_file = os.path.join(tmp_dir, "test.zip")
+        save_file(zip_file, base64.b64decode(zip_base64))
+        unzip(zip_file, tmp_dir)
+        content = load_file(os.path.join(tmp_dir, "nodejs", "node_modules", "lodash", "index.js"))
+        assert content.strip() == "module.exports = require('./lodash');"
         rm_rf(tmp_dir)
 
 

@@ -8,6 +8,7 @@ import sys
 import threading
 from typing import Dict
 
+from quart import request as quart_request
 from requests.models import Response
 
 from localstack import config
@@ -23,6 +24,7 @@ from localstack.constants import (
 from localstack.http import Router
 from localstack.http.adapters import create_request_from_parts
 from localstack.http.dispatcher import Handler, handler_dispatcher
+from localstack.http.request import get_raw_path
 from localstack.http.router import RegexConverter
 from localstack.runtime import events
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
@@ -78,8 +80,9 @@ class ProxyListenerEdge(ProxyListener):
             return 503
 
         if config.EDGE_FORWARD_URL:
+            raw_path = get_raw_path(quart_request)
             return do_forward_request_network(
-                0, method, path, data, headers, target_url=config.EDGE_FORWARD_URL
+                0, method, raw_path, data, headers, target_url=config.EDGE_FORWARD_URL
             )
 
         target = headers.get("x-amz-target", "")
@@ -155,7 +158,7 @@ class ProxyListenerEdge(ProxyListener):
 
         encoding_type = headers.get("Content-Encoding") or ""
         if encoding_type.upper() == GZIP_ENCODING.upper() and api not in SKIP_GZIP_APIS:
-            headers.set("Content-Encoding", IDENTITY_ENCODING)
+            headers["Content-Encoding"] = IDENTITY_ENCODING
             data = gzip.decompress(data)
 
         is_internal_call = is_internal_call_context(headers)
