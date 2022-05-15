@@ -16,7 +16,7 @@ from typing import Dict, List, NamedTuple, Optional, Set
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sqs import (
     ActionNameList,
@@ -274,10 +274,13 @@ class SqsQueue:
         host_url = context.request.host_url
 
         if config.SQS_ENDPOINT_STRATEGY == "domain":
+            # queue.localhost.localstack.cloud:4566/000000000000/my-queue (us-east-1)
+            # or us-east-2.queue.localhost.localstack.cloud:4566/000000000000/my-queue
             region = "" if self.key.region == "us-east-1" else self.key.region + "."
             scheme = context.request.scheme
-            host_url = f"{scheme}://{region}queue.localhost.localstack.cloud:{config.EDGE_PORT}"
+            host_url = f"{scheme}://{region}queue.{constants.LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
         elif config.SQS_ENDPOINT_STRATEGY == "path":
+            # localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
             host_url = f"{context.request.host}/queue/{self.key.region}"
         else:
             if config.SQS_PORT_EXTERNAL:
@@ -427,7 +430,7 @@ class SqsQueue:
 
         for k in attributes.keys():
             if k not in valid:
-                raise InvalidAttributeName(f"Unknown attribute name {k}")
+                raise InvalidAttributeName(f"Unknown Attribute {k}")
 
     def generate_sequence_number(self):
         return None
@@ -539,7 +542,7 @@ class FifoQueue(SqsQueue):
 
         for k in attributes.keys():
             if k not in valid:
-                raise InvalidAttributeName(f"Unknown attribute name {k}")
+                raise InvalidAttributeName(f"Unknown Attribute {k}")
         # Special Cases
         fifo = attributes.get(QueueAttributeName.FifoQueue)
         if fifo and fifo.lower() != "true":
@@ -697,7 +700,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         """
         with self._mutex:
             if key not in self.queues:
-                raise QueueDoesNotExist()
+                raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
             return self.queues[key]
 
@@ -867,7 +870,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             try:
                 getattr(QueueAttributeName, attr)
             except AttributeError:
-                raise InvalidAttributeName(f"Unknown attribute {attr}.")
+                raise InvalidAttributeName(f"Unknown Attribute {attr}.")
 
             if callable(queue.attributes.get(attr)):
                 func = queue.attributes.get(attr)

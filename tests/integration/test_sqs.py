@@ -55,9 +55,10 @@ TEST_REGION = "us-east-1"
 
 class TestSqsProvider:
     @pytest.mark.only_localstack
-    def test_get_queue_url_contains_request_host(self, sqs_client, sqs_create_queue):
+    def test_get_queue_url_contains_request_host(self, sqs_client, sqs_create_queue, monkeypatch):
         if config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf":
             pytest.xfail("this test only works for the ASF provider")
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
         queue_name = "test-queue-" + short_uid()
 
@@ -425,6 +426,7 @@ class TestSqsProvider:
         external_host = "external-host"
         external_port = "12345"
 
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
         monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
         monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
         # TODO: remove once the old provider is discontinued
@@ -444,8 +446,10 @@ class TestSqsProvider:
         assert receive_result["Messages"][0]["Body"] == message_body
 
     @pytest.mark.only_localstack
-    def test_external_hostname_via_host_header(self, sqs_create_queue):
+    def test_external_hostname_via_host_header(self, monkeypatch, sqs_create_queue):
         """test making a request with a different external hostname/port being returned"""
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
+
         queue_name = f"queue-{short_uid()}"
         sqs_create_queue(QueueName=queue_name)
 
@@ -1166,7 +1170,6 @@ class TestSqsProvider:
     def test_fifo_queue_send_multiple_messages_multiple_single_receives(
         self, sqs_client, sqs_create_queue
     ):
-
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(
             QueueName=fifo_queue_name,
@@ -1192,7 +1195,9 @@ class TestSqsProvider:
             assert message["MessageId"] == sent_messages[i]["MessageId"]
             sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail(
+        reason="localstack allows queue names with slashes, but this should be deprecated"
+    )
     def test_disallow_queue_name_with_slashes(self, sqs_client, sqs_create_queue):
         queue_name = f"queue/{short_uid()}/"
         with pytest.raises(Exception) as e:
@@ -1242,47 +1247,19 @@ class TestSqsProvider:
         assert response.status_code == 200
         assert b"<ListQueuesResponse" in response.content
 
-    # FIXME: make this testcase work against the new provider
-    @pytest.mark.xfail
-    def test_get_list_queues_with_auth_in_presigned_url(self):
-        # TODO: does not work when testing against AWS
-        method = "get"
-        protocol = get_service_protocol()
-        port = config.EDGE_PORT_HTTP
-        if protocol == "https":
-            port = config.EDGE_PORT
-        base_url = "{}://{}:{}".format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, port)
+    @pytest.mark.aws_validated
+    def test_get_list_queues_with_query_auth(self, aws_http_client_factory):
+        client = aws_http_client_factory("sqs", region="us-east-1")
 
-        req = AWSRequest(
-            method=method,
-            url=base_url,
-            data={"Action": "ListQueues", "Version": "2012-11-05"},
+        if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+            endpoint_url = "https://queue.amazonaws.com"
+        else:
+            endpoint_url = config.get_edge_url()
+
+        response = client.get(
+            endpoint_url, params={"Action": "ListQueues", "Version": "2012-11-05"}
         )
 
-        # boto doesn't support querystring-style auth, so we have to do some
-        # weird logic to use boto's signing functions, to understand what's
-        # going on here look at the internals of the SigV4Auth.add_auth
-        # method.
-        datetime_now = datetime.datetime.utcnow()
-        req.context["timestamp"] = datetime_now.strftime(SIGV4_TIMESTAMP)
-        signer = SigV4Auth(
-            Credentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY),
-            "sqs",
-            os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION,
-        )
-        canonical_request = signer.canonical_request(req)
-        string_to_sign = signer.string_to_sign(req, canonical_request)
-
-        payload = {
-            "Action": "ListQueues",
-            "Version": "2012-11-05",
-            "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
-            "X-Amz-Credential": signer.scope(req),
-            "X-Amz-SignedHeaders": ";".join(signer.headers_to_sign(req).keys()),
-            "X-Amz-Signature": signer.signature(string_to_sign, req),
-        }
-
-        response = requests.get(base_url, params=payload)
         assert response.status_code == 200
         assert b"<ListQueuesResponse" in response.content
 
@@ -1624,25 +1601,6 @@ class TestSqsProvider:
             assert k in keys
             assert attributes[k] == result_attributes[k]
 
-    @pytest.mark.skipif(
-        config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") == "asf",
-        reason="this behaviour needs to be re-evaluated",
-    )
-    def test_call_fifo_queue_url(self, sqs_client, sqs_create_queue):
-        queue_name = f"queue-{short_uid()}.fifo"
-        queue_url = sqs_create_queue(QueueName=queue_name, Attributes={"FifoQueue": "true"})
-
-        assert queue_url.endswith(".fifo")
-        response = requests.get(queue_url)
-        assert response.ok
-        assert queue_url in response.text
-
-    def test_request_via_url(self, sqs_create_queue):
-        queue_url = sqs_create_queue()
-        response = requests.get(url=queue_url, params={"Action": "ListQueues"})
-        assert response.ok
-        assert queue_url in response.text
-
 
 def get_region():
     return os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
@@ -1667,10 +1625,50 @@ def sqs_http_client(aws_http_client_factory):
     reason="query API implemented as part of the new ASF provider",
 )
 class TestSqsQueryApi:
+    @pytest.mark.xfail(
+        reason="this behaviour is deprecated (see https://github.com/localstack/localstack/pull/5928)",
+    )
+    def test_call_fifo_queue_url(self, sqs_client, sqs_create_queue):
+        # TODO: remove once query API has been documented
+        queue_name = f"queue-{short_uid()}.fifo"
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes={"FifoQueue": "true"})
+
+        assert queue_url.endswith(".fifo")
+        response = requests.get(queue_url)
+        assert response.ok
+        assert queue_url in response.text
+
+    @pytest.mark.xfail(
+        reason="this behaviour is deprecated (see https://github.com/localstack/localstack/pull/5928)",
+    )
+    def test_request_via_url(self, sqs_create_queue):
+        # TODO: remove once query API has been documented
+        queue_url = sqs_create_queue()
+        response = requests.get(url=queue_url, params={"Action": "ListQueues"})
+        assert response.ok
+        assert queue_url in response.text
+
     @pytest.mark.aws_validated
     def test_get_queue_attributes_all(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
         response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "GetQueueAttributes",
+                "AttributeName.1": "All",
+            },
+        )
+
+        assert response.ok
+        assert "<GetQueueAttributesResponse" in response.text
+        assert "<Attribute><Name>QueueArn</Name><Value>arn:aws:sqs:" in response.text
+        assert "<Attribute><Name>VisibilityTimeout</Name><Value>30" in response.text
+        assert queue_url.split("/")[-1] in response.text
+
+    @pytest.mark.only_localstack
+    def test_get_queue_attributes_works_without_authparams(self, sqs_create_queue):
+        queue_url = sqs_create_queue()
+        response = requests.get(
             queue_url,
             params={
                 "Action": "GetQueueAttributes",
@@ -1700,6 +1698,43 @@ class TestSqsQueryApi:
         assert "<Attribute><Name>QueueArn</Name><Value>arn:aws:sqs:" in response.text
         assert "<Attribute><Name>VisibilityTimeout</Name>" not in response.text
         assert queue_url.split("/")[-1] in response.text
+
+    @pytest.mark.aws_validated
+    def test_get_queue_attributes_of_fifo_queue(self, sqs_create_queue, sqs_http_client):
+        queue_name = f"queue-{short_uid()}.fifo"
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes={"FifoQueue": "true"})
+
+        assert ".fifo" in queue_url
+
+        response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "GetQueueAttributes",
+                "AttributeName.1": "All",
+            },
+        )
+
+        assert response.ok
+        assert "<Name>FifoQueue</Name><Value>true</Value>" in response.text
+        assert queue_name in response.text
+
+    @pytest.mark.aws_validated
+    def test_get_queue_attributes_with_invalid_arg_returns_error(
+        self, sqs_create_queue, sqs_http_client
+    ):
+        queue_url = sqs_create_queue()
+        response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "GetQueueAttributes",
+                "AttributeName.1": "Foobar",
+            },
+        )
+
+        assert not response.ok
+        assert "<Type>Sender</Type>" in response.text
+        assert "<Code>InvalidAttributeName</Code>" in response.text
+        assert "<Message>Unknown Attribute Foobar.</Message>" in response.text
 
     @pytest.mark.aws_validated
     def test_get_delete_queue(self, sqs_create_queue, sqs_client, sqs_http_client):
