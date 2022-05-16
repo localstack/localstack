@@ -153,14 +153,6 @@ jobs:
             COVERAGE_ARGS: "-p"
           command: make test-coverage
       - run:
-          name: Test ASF SQS provider
-          environment:
-            PROVIDER_OVERRIDE_SQS: "asf"
-            TEST_PATH: "tests/integration/test_sqs.py"
-            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/sqs_asf.xml -o junit_suite_name='sqs_asf'"
-            COVERAGE_ARGS: "-p"
-          command: make test-coverage
-      - run:
           name: Store coverage results
           command: mv .coverage.* target/coverage/
       - persist_to_workspace:
