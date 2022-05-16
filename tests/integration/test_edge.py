@@ -174,15 +174,21 @@ class TestEdgeAPI:
 
         # Create a relay proxy which forwards request to the HTTP echo server
         port_relay_proxy = get_free_tcp_port()
-        forward_url = f"https://localhost:{port_http_server}/foo/bar%23baz"
+        forward_url = f"https://localhost:{port_http_server}"
         relay_proxy = start_proxy_server(port_relay_proxy, forward_url=forward_url, use_ssl=True)
 
         # Contact the relay proxy
-        url = f"https://localhost:{port_relay_proxy}/foo/bar%23baz"
+        query = "%2B=%3B%2C%2F%3F%3A%40%26%3D%2B%24%21%2A%27%28%29%23"
+        path = f"/foo/bar%3B%2C%2F%3F%3A%40%26%3D%2B%24%21%2A%27%28%29%23baz?{query}"
+        url = f"https://localhost:{port_relay_proxy}{path}"
         response = requests.post(url, verify=False)
 
         # Expect the response from the HTTP echo server
-        expected = {"method": "POST", "path": "/foo/bar%23baz", "data": ""}
+        expected = {
+            "method": "POST",
+            "path": path,
+            "data": "",
+        }
         assert json.loads(to_str(response.content)) == expected
 
         http_server.stop()
