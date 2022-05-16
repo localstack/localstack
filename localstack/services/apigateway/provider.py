@@ -32,11 +32,11 @@ from localstack.aws.api.apigateway import (
     String,
     Tags,
     VpcLink,
-    VpcLinks,
+    VpcLinks, ExportResponse,
 )
 from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.proxy import AwsApiListener
-from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
+from localstack.constants import HEADER_LOCALSTACK_EDGE_URL, APPLICATION_JSON
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
@@ -45,7 +45,7 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_USER_REQUEST,
     APIGatewayRegion,
     apply_json_patch_safe,
-    find_api_subentity_by_id,
+    find_api_subentity_by_id, OpenApiExporter,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.patches import apply_patches
@@ -677,6 +677,26 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         except Exception as e:
             raise NotFoundException("Invalid Resource identifier specified") from e
 
+    def get_export(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        stage_name: String,
+        export_type: String,
+        parameters: MapOfStringToString = None,
+        accepts: String = None,
+    ) -> ExportResponse:
+
+        openapi_exporter = OpenApiExporter()
+        result = openapi_exporter.export_api(api_id=rest_api_id, export_type=export_type, export_format=accepts)
+
+        if accepts == APPLICATION_JSON:
+            result = json.dumps(result)
+
+        return ExportResponse(
+            contentType=accepts,
+            body=result
+        )
 
 # ---------------
 # UTIL FUNCTIONS

@@ -58,10 +58,6 @@ PATH_REGEX_PATH_MAPPINGS = r"/domainnames/([^/]+)/basepathmappings/?(.*)"
 PATH_REGEX_CLIENT_CERTS = r"/clientcertificates/?([^/]+)?$"
 PATH_REGEX_VPC_LINKS = r"/vpclinks/([^/]+)?(.*)"
 PATH_REGEX_TEST_INVOKE_API = r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
-PATH_REGEX_EXPORT_API = (
-    r"^/restapis/(?P<rest_api_id>[^/]+)/stages/(?P<stage>[^/]+)/exports/("
-    r"?P<export_type>oas30|swagger)$"
-)
 
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
@@ -897,25 +893,38 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     return match.group(1)
 
 
-class OpenApiExport:
+class OpenApiExporter:
     def __init__(self):
         self.exporters = {"swagger": self._swagger_export, "oas3": self._oas3_export}
         self.export_formats = {"application/json": "to_dict", "application/yaml": "to_yaml"}
 
-    def export_api(self, api_id, stage, export_type, export_format):
-        return self.exporters.get(export_type)(api_id, stage, export_format)
+    def export_api(self, api_id, export_type, export_format):
+        return self.exporters.get(export_type)(api_id, export_format)
 
-    def _swagger_export(self, api_id, stage, export_format):
+    def _swagger_export(self, api_id, export_format):
         apigateway_client = aws_stack.connect_to_service("apigateway")
+
+        rest_api = apigateway_client.get_rest_api(restApiId=api_id)
+        resources = apigateway_client.get_resources(restApiId=api_id)
+
         spec = APISpec(
-            title="",
-            version="",
+            title=rest_api.get("name"),
+            version=rest_api.get("version"),
             openapi_version="2.0",
         )
-        resources = apigateway_client.get_resources(restApiId=api_id)
+
         for item in resources.get("items"):
             path = item.get("path")
-            spec.path(path=path)
+            for method, method_config in item.get("resourceMethods").items():
+                for status_code, integration in method_config.get("methodIntegration").items():
+                    spec.path(
+                        path=path,
+                        operations=dict(
+                            method=dict(
+                                responses={status_code: {}}
+                            )
+                        )
+                    )
 
         return getattr(spec, self.export_formats.get(export_format))()
 
