@@ -3,7 +3,7 @@ import os
 import sys
 from typing import Dict, List, Optional
 
-from localstack.utils.analytics.decorator import publish_invocation
+from localstack.utils.analytics.cli import publish_invocation
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict

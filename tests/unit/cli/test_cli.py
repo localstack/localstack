@@ -9,7 +9,7 @@ import pytest
 from click.testing import CliRunner
 
 import localstack.constants
-import localstack.utils.analytics.decorator
+import localstack.utils.analytics.cli
 from localstack import config, constants
 from localstack.cli.localstack import create_with_plugins
 from localstack.cli.localstack import localstack as cli
@@ -207,7 +207,7 @@ def test_publish_analytics_event_on_command_invocation(
     # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
     caplog.set_level(logging.CRITICAL)
     monkeypatch.setattr(
-        localstack.utils.analytics.decorator, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
+        localstack.utils.analytics.cli, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
     )
     request_data = Queue()
     input = cli_input.split(" ")
@@ -248,7 +248,7 @@ def test_do_not_publish_analytics_event_on_invalid_command_invocation(
     # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
     caplog.set_level(logging.CRITICAL)
     monkeypatch.setattr(
-        localstack.utils.analytics.decorator, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
+        localstack.utils.analytics.cli, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
     )
     request_data = []
     input = cli_input.split(" ")
@@ -268,7 +268,7 @@ def test_disable_publish_analytics_event_on_command_invocation(runner, monkeypat
     # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
     caplog.set_level(logging.CRITICAL)
     monkeypatch.setattr(
-        localstack.utils.analytics.decorator, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
+        localstack.utils.analytics.cli, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
     )
     monkeypatch.setattr(localstack.config, "DISABLE_EVENTS", True)
     request_data = []
@@ -289,7 +289,7 @@ def test_timeout_publishing_command_invocation(runner, monkeypatch, caplog):
     caplog.set_level(logging.CRITICAL)
     monkeypatch.setattr(
         # simulate slow API call by turning timeout way down
-        localstack.utils.analytics.decorator,
+        localstack.utils.analytics.cli,
         "ANALYTICS_API_RESPONSE_TIMEOUT_SECS",
         0.001,
     )
