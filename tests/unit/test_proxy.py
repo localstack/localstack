@@ -32,7 +32,6 @@ class TestProxyServer:
             backend_port,
             update_listener=None,
             quiet=True,
-            params={"protocol_version": "HTTP/1.0"},
         )
 
         assert server

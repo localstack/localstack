@@ -945,7 +945,6 @@ def start_proxy_server(
     use_ssl=None,
     update_listener: Optional[Union[ProxyListener, List[ProxyListener]]] = None,
     quiet=False,
-    params=None,  # TODO: not being used - should be investigated/removed
     asynchronous=True,
     check_port=True,
     max_content_length: int = None,

@@ -1,15 +1,17 @@
 import io
 import json
 import os
-import time
+import urllib
 
 import pytest
 import requests
 import xmltodict
+from quart import request as quart_request
 from requests.models import Request as RequestsRequest
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL, TEST_AWS_ACCOUNT_ID
+from localstack.services.edge import ProxyListenerEdge
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
     ProxyListener,
@@ -143,18 +145,16 @@ class TestEdgeAPI:
         client.delete_object(Bucket=bucket_name, Key=object_name)
         client.delete_bucket(Bucket=bucket_name)
 
-    def test_http2_traffic(self):
-        port = get_free_tcp_port()
-
+    def test_basic_https_invocation(self):
         class MyListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 return {"method": method, "path": path, "data": data}
 
-        url = "https://localhost:%s/foo/bar" % port
+        port = get_free_tcp_port()
+        url = f"https://localhost:{port}/foo/bar"
 
         listener = MyListener()
         proxy = start_proxy_server(port, update_listener=listener, use_ssl=True)
-        time.sleep(1)
         response = requests.post(url, verify=False)
         expected = {"method": "POST", "path": "/foo/bar", "data": ""}
         assert json.loads(to_str(response.content)) == expected
@@ -299,3 +299,25 @@ class TestEdgeAPI:
                 response = requests.get(f"{url}/2015-03-31/functions", headers=headers)
                 assert response
                 assert "Functions" in json.loads(to_str(response.content))
+
+    def test_forward_raw_path(self, monkeypatch):
+        class MyListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                _path = ProxyListenerEdge.get_full_raw_path(quart_request)
+                return {"method": method, "path": _path}
+
+        # start listener and configure EDGE_FORWARD_URL
+        port = get_free_tcp_port()
+        forward_url = f"http://localhost:{port}"
+        listener = MyListener()
+        proxy = start_proxy_server(port, update_listener=listener, use_ssl=True)
+        monkeypatch.setattr(config, "EDGE_FORWARD_URL", forward_url)
+
+        # run test request, assert that raw request path is forwarded
+        test_arn = "arn:aws:test:resource/test"
+        raw_path = f"/test/{urllib.parse.quote(test_arn)}/bar?q1=foo&q2=bar"
+        url = f"{config.get_edge_url()}{raw_path}"
+        response = requests.get(url)
+        expected = {"method": "GET", "path": raw_path}
+        assert json.loads(to_str(response.content)) == expected
+        proxy.stop()
