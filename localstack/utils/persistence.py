@@ -241,6 +241,7 @@ def save_startup_info():
     except IOError as e:
         LOG.error("could not save startup info: %s", e)
 
+    # Ignore errors when running in docker as non-root
     with suppress(PermissionError):
         chmod_r(file_path, 0o777)
     return info

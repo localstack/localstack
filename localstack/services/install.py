@@ -523,6 +523,7 @@ def install_dynamodb_local():
       </Loggers>
     </Configuration>"""
     log4j2_file = os.path.join(INSTALL_DIR_DDB, "log4j2.xml")
+    # Ignore errors when running in docker as non-root
     with suppress(PermissionError):
         save_file(log4j2_file, log4j2_config)
     run_safe(lambda: run(["zip", "-u", "DynamoDBLocal.jar", "log4j2.xml"], cwd=INSTALL_DIR_DDB))
