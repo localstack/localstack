@@ -7,7 +7,10 @@ import time
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 import boto3
+import botocore.auth
 import botocore.config
+import botocore.credentials
+import botocore.session
 import pytest
 from _pytest.config import Config
 from _pytest.nodes import Item
@@ -17,6 +20,7 @@ from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
+from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.common import ensure_list, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
@@ -86,6 +90,56 @@ def _resource(service):
         else None
     )
     return aws_stack.connect_to_resource_external(service, config=config)
+
+
+@pytest.fixture(scope="class")
+def boto3_session():
+    if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":
+        return boto3.Session()
+
+    return boto3.Session(
+        aws_access_key_id="__test_call__",
+        aws_secret_access_key="__test_key__",
+    )
+
+
+@pytest.fixture(scope="class")
+def aws_http_client_factory(boto3_session):
+    """
+    Returns a factory for creating new ``SigningHttpClient`` instances using a configurable botocore request signer.
+    The default signer is a SigV4QueryAuth. The credentials are extracted from the ``boto3_sessions`` fixture that
+    transparently uses your global profile when TEST_TARGET=AWS_CLOUD, or test credentials when running against
+    LocalStack.
+
+    Example invocations
+
+        client = aws_signing_http_client_factory("sqs")
+        client.get("http://localhost:4566/000000000000/my-queue")
+
+    or
+        client = aws_signing_http_client_factory("dynamodb", signer_factory=SigV4Auth)
+        client.post("...")
+    """
+
+    def factory(
+        service: str,
+        region: str = None,
+        signer_factory: Callable[
+            [botocore.credentials.Credentials, str, str], botocore.auth.BaseSigner
+        ] = None,
+    ):
+        region = region or boto3_session.region_name
+        region = region or "us-east-1"
+
+        if signer_factory is None:
+            signer_factory = botocore.auth.SigV4QueryAuth
+
+        credentials = boto3_session.get_credentials()
+        creds = credentials.get_frozen_credentials()
+
+        return SigningHttpClient(signer_factory(creds, service, region))
+
+    return factory
 
 
 @pytest.fixture(scope="class")

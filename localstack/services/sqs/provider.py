@@ -16,7 +16,7 @@ from typing import Dict, List, NamedTuple, Optional, Set
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sqs import (
     ActionNameList,
@@ -64,6 +64,7 @@ from localstack.aws.api.sqs import (
 )
 from localstack.aws.spec import load_service
 from localstack.config import external_service_url
+from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.common import long_uid, md5, now, start_thread
@@ -267,10 +268,24 @@ class SqsQueue:
         return f"arn:aws:sqs:{self.key.region}:{self.key.account_id}:{self.key.name}"
 
     def url(self, context: RequestContext) -> str:
-        """Return queue URL using either SQS_PORT_EXTERNAL (if configured), or based on the 'Host' request header"""
+        """Return queue URL using either SQS_PORT_EXTERNAL (if configured), the SQS_ENDPOINT_STRATEGY (if configured)
+        or based on the 'Host' request header"""
+
         host_url = context.request.host_url
-        if config.SQS_PORT_EXTERNAL:
-            host_url = external_service_url("sqs")
+
+        if config.SQS_ENDPOINT_STRATEGY == "domain":
+            # queue.localhost.localstack.cloud:4566/000000000000/my-queue (us-east-1)
+            # or us-east-2.queue.localhost.localstack.cloud:4566/000000000000/my-queue
+            region = "" if self.key.region == "us-east-1" else self.key.region + "."
+            scheme = context.request.scheme
+            host_url = f"{scheme}://{region}queue.{constants.LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+        elif config.SQS_ENDPOINT_STRATEGY == "path":
+            # localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
+            host_url = f"{context.request.host}/queue/{self.key.region}"
+        else:
+            if config.SQS_PORT_EXTERNAL:
+                host_url = external_service_url("sqs")
+
         return "{host}/{account_id}/{name}".format(
             host=host_url.rstrip("/"),
             account_id=self.key.account_id,
@@ -415,7 +430,7 @@ class SqsQueue:
 
         for k in attributes.keys():
             if k not in valid:
-                raise InvalidAttributeName(f"Unknown attribute name {k}")
+                raise InvalidAttributeName(f"Unknown Attribute {k}")
 
     def generate_sequence_number(self):
         return None
@@ -527,7 +542,7 @@ class FifoQueue(SqsQueue):
 
         for k in attributes.keys():
             if k not in valid:
-                raise InvalidAttributeName(f"Unknown attribute name {k}")
+                raise InvalidAttributeName(f"Unknown Attribute {k}")
         # Special Cases
         fifo = attributes.get(QueueAttributeName.FifoQueue)
         if fifo and fifo.lower() != "true":
@@ -654,6 +669,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._mutex = threading.RLock()
         self._inflight_worker = InflightUpdateWorker(self.queues)
 
+    def on_after_init(self):
+        from localstack.services.sqs import query_api
+
+        query_api.register(ROUTER)
+
     def start(self):
         self._inflight_worker.start()
 
@@ -680,7 +700,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         """
         with self._mutex:
             if key not in self.queues:
-                raise QueueDoesNotExist()
+                raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
             return self.queues[key]
 
@@ -850,7 +870,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             try:
                 getattr(QueueAttributeName, attr)
             except AttributeError:
-                raise InvalidAttributeName(f"Unknown attribute {attr}.")
+                raise InvalidAttributeName(f"Unknown Attribute {attr}.")
 
             if callable(queue.attributes.get(attr)):
                 func = queue.attributes.get(attr)
