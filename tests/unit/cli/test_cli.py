@@ -206,9 +206,7 @@ def test_publish_analytics_event_on_command_invocation(
 ):
     # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
     caplog.set_level(logging.CRITICAL)
-    monkeypatch.setattr(
-        localstack.utils.analytics.cli, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
-    )
+    monkeypatch.setattr(localstack.utils.analytics.cli, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
     request_data = Queue()
     input = cli_input.split(" ")
 
@@ -247,9 +245,7 @@ def test_do_not_publish_analytics_event_on_invalid_command_invocation(
 ):
     # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
     caplog.set_level(logging.CRITICAL)
-    monkeypatch.setattr(
-        localstack.utils.analytics.cli, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
-    )
+    monkeypatch.setattr(localstack.utils.analytics.cli, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
     request_data = []
     input = cli_input.split(" ")
 
@@ -267,9 +263,7 @@ def test_do_not_publish_analytics_event_on_invalid_command_invocation(
 def test_disable_publish_analytics_event_on_command_invocation(runner, monkeypatch, caplog):
     # must suppress pytest logging due to weird issue with click https://github.com/pytest-dev/pytest/issues/3344
     caplog.set_level(logging.CRITICAL)
-    monkeypatch.setattr(
-        localstack.utils.analytics.cli, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3
-    )
+    monkeypatch.setattr(localstack.utils.analytics.cli, "ANALYTICS_API_RESPONSE_TIMEOUT_SECS", 3)
     monkeypatch.setattr(localstack.config, "DISABLE_EVENTS", True)
     request_data = []
 
