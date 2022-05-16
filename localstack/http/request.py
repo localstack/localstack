@@ -177,3 +177,14 @@ def get_raw_path(request) -> str:
         return request.scope.get("raw_path", request.path).decode("utf-8")
 
     raise ValueError("cannot extract raw path from request object %s" % request)
+
+
+def get_full_raw_path(request) -> str:
+    """
+    Returns the full raw request path (with original URL encoding), including the query string.
+    This is _not_ equal to request.url, since there the path section would be url-encoded while the query part will be
+    (partly) url-decoded.
+    """
+    query_str = f"?{strings.to_str(request.query_string)}" if request.query_string else ""
+    raw_path = f"{get_raw_path(request)}{query_str}"
+    return raw_path

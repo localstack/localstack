@@ -11,7 +11,7 @@ from requests.models import Request as RequestsRequest
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL, TEST_AWS_ACCOUNT_ID
-from localstack.services.edge import ProxyListenerEdge
+from localstack.http.request import get_full_raw_path
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
     ProxyListener,
@@ -160,6 +160,40 @@ class TestEdgeAPI:
         assert json.loads(to_str(response.content)) == expected
         proxy.stop()
 
+    def test_http2_relay_traffic(self):
+        """Tests if HTTP2 traffic can correctly be forwarded (including url-encoded characters)."""
+
+        # Create a simple HTTP echo server
+        class MyListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                return {"method": method, "path": path, "data": data}
+
+        listener = MyListener()
+        port_http_server = get_free_tcp_port()
+        http_server = start_proxy_server(port_http_server, update_listener=listener, use_ssl=True)
+
+        # Create a relay proxy which forwards request to the HTTP echo server
+        port_relay_proxy = get_free_tcp_port()
+        forward_url = f"https://localhost:{port_http_server}"
+        relay_proxy = start_proxy_server(port_relay_proxy, forward_url=forward_url, use_ssl=True)
+
+        # Contact the relay proxy
+        query = "%2B=%3B%2C%2F%3F%3A%40%26%3D%2B%24%21%2A%27%28%29%23"
+        path = f"/foo/bar%3B%2C%2F%3F%3A%40%26%3D%2B%24%21%2A%27%28%29%23baz?{query}"
+        url = f"https://localhost:{port_relay_proxy}{path}"
+        response = requests.post(url, verify=False)
+
+        # Expect the response from the HTTP echo server
+        expected = {
+            "method": "POST",
+            "path": path,
+            "data": "",
+        }
+        assert json.loads(to_str(response.content)) == expected
+
+        http_server.stop()
+        relay_proxy.stop()
+
     def test_invoke_sns_sqs_integration_using_edge_port(
         self, sqs_create_queue, sqs_client, sns_client, sns_create_topic, sns_subscription
     ):
@@ -303,7 +337,7 @@ class TestEdgeAPI:
     def test_forward_raw_path(self, monkeypatch):
         class MyListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
-                _path = ProxyListenerEdge.get_full_raw_path(quart_request)
+                _path = get_full_raw_path(quart_request)
                 return {"method": method, "path": _path}
 
         # start listener and configure EDGE_FORWARD_URL
