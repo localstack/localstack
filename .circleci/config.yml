@@ -147,6 +147,7 @@ jobs:
       - run:
           name: Test ElasticMQ SQS provider
           environment:
+            PROVIDER_OVERRIDE_SQS: "legacy"
             SQS_PROVIDER: "elasticmq"
             TEST_PATH: "tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/elasticmq.xml -o junit_suite_name='elasticmq'"
