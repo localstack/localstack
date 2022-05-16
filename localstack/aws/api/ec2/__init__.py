@@ -229,6 +229,7 @@ SpotInstanceRequestId = str
 SpotPlacementScoresMaxResults = int
 SpotPlacementScoresTargetCapacity = int
 String = str
+StringType = str
 SubnetCidrAssociationId = str
 SubnetCidrReservationId = str
 SubnetId = str
@@ -679,6 +680,13 @@ class DnsNameState(str):
     failed = "failed"
 
 
+class DnsRecordIpType(str):
+    ipv4 = "ipv4"
+    dualstack = "dualstack"
+    ipv6 = "ipv6"
+    service_defined = "service-defined"
+
+
 class DnsSupportValue(str):
     enable = "enable"
     disable = "disable"
@@ -925,6 +933,8 @@ class ImageAttributeName(str):
     blockDeviceMapping = "blockDeviceMapping"
     sriovNetSupport = "sriovNetSupport"
     bootMode = "bootMode"
+    tpmSupport = "tpmSupport"
+    uefiData = "uefiData"
     lastLaunchedTime = "lastLaunchedTime"
 
 
@@ -1571,6 +1581,12 @@ class InterfaceProtocolType(str):
     GRE = "GRE"
 
 
+class IpAddressType(str):
+    ipv4 = "ipv4"
+    dualstack = "dualstack"
+    ipv6 = "ipv6"
+
+
 class IpamAddressHistoryResourceType(str):
     eip = "eip"
     vpc = "vpc"
@@ -2151,6 +2167,11 @@ class SelfServicePortal(str):
     disabled = "disabled"
 
 
+class ServiceConnectivityType(str):
+    ipv4 = "ipv4"
+    ipv6 = "ipv6"
+
+
 class ServiceState(str):
     Pending = "Pending"
     Available = "Available"
@@ -2307,6 +2328,10 @@ class TieringOperationStatus(str):
     permanent_restore_failed = "permanent-restore-failed"
 
 
+class TpmSupportValues(str):
+    v2_0 = "v2.0"
+
+
 class TrafficDirection(str):
     ingress = "ingress"
     egress = "egress"
@@ -2337,6 +2362,7 @@ class TrafficMirrorSessionField(str):
 class TrafficMirrorTargetType(str):
     network_interface = "network-interface"
     network_load_balancer = "network-load-balancer"
+    gateway_load_balancer_endpoint = "gateway-load-balancer-endpoint"
 
 
 class TrafficType(str):
@@ -6454,12 +6480,12 @@ class CreateStoreImageTaskResult(TypedDict, total=False):
 
 
 class CreateSubnetCidrReservationRequest(ServiceRequest):
-    TagSpecifications: Optional[TagSpecificationList]
     SubnetId: SubnetId
     Cidr: String
     ReservationType: SubnetCidrReservationType
     Description: Optional[String]
     DryRun: Optional[Boolean]
+    TagSpecifications: Optional[TagSpecificationList]
 
 
 class SubnetCidrReservation(TypedDict, total=False):
@@ -6610,6 +6636,7 @@ class CreateTrafficMirrorTargetRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
     DryRun: Optional[Boolean]
     ClientToken: Optional[String]
+    GatewayLoadBalancerEndpointId: Optional[VpcEndpointId]
 
 
 class TrafficMirrorTarget(TypedDict, total=False):
@@ -6620,6 +6647,7 @@ class TrafficMirrorTarget(TypedDict, total=False):
     Description: Optional[String]
     OwnerId: Optional[String]
     Tags: Optional[TagList]
+    GatewayLoadBalancerEndpointId: Optional[String]
 
 
 class CreateTrafficMirrorTargetResult(TypedDict, total=False):
@@ -6939,6 +6967,10 @@ class CreateVpcEndpointConnectionNotificationResult(TypedDict, total=False):
     ClientToken: Optional[String]
 
 
+class DnsOptionsSpecification(TypedDict, total=False):
+    DnsRecordIpType: Optional[DnsRecordIpType]
+
+
 VpcEndpointSecurityGroupIdList = List[SecurityGroupId]
 VpcEndpointSubnetIdList = List[SubnetId]
 VpcEndpointRouteTableIdList = List[RouteTableId]
@@ -6953,6 +6985,8 @@ class CreateVpcEndpointRequest(ServiceRequest):
     RouteTableIds: Optional[VpcEndpointRouteTableIdList]
     SubnetIds: Optional[VpcEndpointSubnetIdList]
     SecurityGroupIds: Optional[VpcEndpointSecurityGroupIdList]
+    IpAddressType: Optional[IpAddressType]
+    DnsOptions: Optional[DnsOptionsSpecification]
     ClientToken: Optional[String]
     PrivateDnsEnabled: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
@@ -6969,6 +7003,10 @@ class DnsEntry(TypedDict, total=False):
 
 
 DnsEntrySet = List[DnsEntry]
+
+
+class DnsOptions(TypedDict, total=False):
+    DnsRecordIpType: Optional[DnsRecordIpType]
 
 
 class SecurityGroupIdentifier(TypedDict, total=False):
@@ -6989,6 +7027,8 @@ class VpcEndpoint(TypedDict, total=False):
     RouteTableIds: Optional[ValueStringList]
     SubnetIds: Optional[ValueStringList]
     Groups: Optional[GroupIdentifierSet]
+    IpAddressType: Optional[IpAddressType]
+    DnsOptions: Optional[DnsOptions]
     PrivateDnsEnabled: Optional[Boolean]
     RequesterManaged: Optional[Boolean]
     NetworkInterfaceIds: Optional[ValueStringList]
@@ -7010,6 +7050,7 @@ class CreateVpcEndpointServiceConfigurationRequest(ServiceRequest):
     PrivateDnsName: Optional[String]
     NetworkLoadBalancerArns: Optional[ValueStringList]
     GatewayLoadBalancerArns: Optional[ValueStringList]
+    SupportedIpAddressTypes: Optional[ValueStringList]
     ClientToken: Optional[String]
     TagSpecifications: Optional[TagSpecificationList]
 
@@ -7019,6 +7060,9 @@ class PrivateDnsNameConfiguration(TypedDict, total=False):
     Type: Optional[String]
     Value: Optional[String]
     Name: Optional[String]
+
+
+SupportedIpAddressTypes = List[ServiceConnectivityType]
 
 
 class ServiceTypeDetail(TypedDict, total=False):
@@ -7038,6 +7082,7 @@ class ServiceConfiguration(TypedDict, total=False):
     ManagesVpcEndpoints: Optional[Boolean]
     NetworkLoadBalancerArns: Optional[ValueStringList]
     GatewayLoadBalancerArns: Optional[ValueStringList]
+    SupportedIpAddressTypes: Optional[SupportedIpAddressTypes]
     BaseEndpointDnsNames: Optional[ValueStringList]
     PrivateDnsName: Optional[String]
     PrivateDnsNameConfiguration: Optional[PrivateDnsNameConfiguration]
@@ -8983,6 +9028,7 @@ class Image(TypedDict, total=False):
     Tags: Optional[TagList]
     VirtualizationType: Optional[VirtualizationType]
     BootMode: Optional[BootModeValues]
+    TpmSupport: Optional[TpmSupportValues]
     DeprecationTime: Optional[String]
 
 
@@ -9630,6 +9676,7 @@ class Instance(TypedDict, total=False):
     UsageOperationUpdateTime: Optional[MillisecondDateTime]
     PrivateDnsNameOptions: Optional[PrivateDnsNameOptionsResponse]
     Ipv6Address: Optional[String]
+    TpmSupport: Optional[String]
     MaintenanceOptions: Optional[InstanceMaintenanceOptions]
 
 
@@ -11778,6 +11825,7 @@ class VpcEndpointConnection(TypedDict, total=False):
     DnsEntries: Optional[DnsEntrySet]
     NetworkLoadBalancerArns: Optional[ValueStringList]
     GatewayLoadBalancerArns: Optional[ValueStringList]
+    IpAddressType: Optional[IpAddressType]
 
 
 VpcEndpointConnectionSet = List[VpcEndpointConnection]
@@ -11847,6 +11895,7 @@ class ServiceDetail(TypedDict, total=False):
     PayerResponsibility: Optional[PayerResponsibility]
     Tags: Optional[TagList]
     PrivateDnsNameVerificationState: Optional[DnsNameState]
+    SupportedIpAddressTypes: Optional[SupportedIpAddressTypes]
 
 
 ServiceDetailSet = List[ServiceDetail]
@@ -12686,6 +12735,16 @@ class GetInstanceTypesFromInstanceRequirementsResult(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+class GetInstanceUefiDataRequest(ServiceRequest):
+    InstanceId: InstanceId
+    DryRun: Optional[Boolean]
+
+
+class GetInstanceUefiDataResult(TypedDict, total=False):
+    InstanceId: Optional[InstanceId]
+    UefiData: Optional[String]
+
+
 class GetIpamAddressHistoryRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     Cidr: String
@@ -13144,6 +13203,8 @@ class ImageAttribute(TypedDict, total=False):
     RamdiskId: Optional[AttributeValue]
     SriovNetSupport: Optional[AttributeValue]
     BootMode: Optional[AttributeValue]
+    TpmSupport: Optional[AttributeValue]
+    UefiData: Optional[AttributeValue]
     LastLaunchedTime: Optional[AttributeValue]
 
 
@@ -14126,6 +14187,8 @@ class ModifyVpcEndpointRequest(ServiceRequest):
     RemoveSubnetIds: Optional[VpcEndpointSubnetIdList]
     AddSecurityGroupIds: Optional[VpcEndpointSecurityGroupIdList]
     RemoveSecurityGroupIds: Optional[VpcEndpointSecurityGroupIdList]
+    IpAddressType: Optional[IpAddressType]
+    DnsOptions: Optional[DnsOptionsSpecification]
     PrivateDnsEnabled: Optional[Boolean]
 
 
@@ -14143,6 +14206,8 @@ class ModifyVpcEndpointServiceConfigurationRequest(ServiceRequest):
     RemoveNetworkLoadBalancerArns: Optional[ValueStringList]
     AddGatewayLoadBalancerArns: Optional[ValueStringList]
     RemoveGatewayLoadBalancerArns: Optional[ValueStringList]
+    AddSupportedIpAddressTypes: Optional[ValueStringList]
+    RemoveSupportedIpAddressTypes: Optional[ValueStringList]
 
 
 class ModifyVpcEndpointServiceConfigurationResult(TypedDict, total=False):
@@ -14430,6 +14495,8 @@ class RegisterImageRequest(ServiceRequest):
     SriovNetSupport: Optional[String]
     VirtualizationType: Optional[String]
     BootMode: Optional[BootModeValues]
+    TpmSupport: Optional[TpmSupportValues]
+    UefiData: Optional[StringType]
 
 
 class RegisterImageResult(TypedDict, total=False):
@@ -16342,9 +16409,9 @@ class Ec2Api:
         subnet_id: SubnetId,
         cidr: String,
         reservation_type: SubnetCidrReservationType,
-        tag_specifications: TagSpecificationList = None,
         description: String = None,
         dry_run: Boolean = None,
+        tag_specifications: TagSpecificationList = None,
     ) -> CreateSubnetCidrReservationResult:
         raise NotImplementedError
 
@@ -16415,6 +16482,7 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
         client_token: String = None,
+        gateway_load_balancer_endpoint_id: VpcEndpointId = None,
     ) -> CreateTrafficMirrorTargetResult:
         raise NotImplementedError
 
@@ -16576,6 +16644,8 @@ class Ec2Api:
         route_table_ids: VpcEndpointRouteTableIdList = None,
         subnet_ids: VpcEndpointSubnetIdList = None,
         security_group_ids: VpcEndpointSecurityGroupIdList = None,
+        ip_address_type: IpAddressType = None,
+        dns_options: DnsOptionsSpecification = None,
         client_token: String = None,
         private_dns_enabled: Boolean = None,
         tag_specifications: TagSpecificationList = None,
@@ -16604,6 +16674,7 @@ class Ec2Api:
         private_dns_name: String = None,
         network_load_balancer_arns: ValueStringList = None,
         gateway_load_balancer_arns: ValueStringList = None,
+        supported_ip_address_types: ValueStringList = None,
         client_token: String = None,
         tag_specifications: TagSpecificationList = None,
     ) -> CreateVpcEndpointServiceConfigurationResult:
@@ -19238,6 +19309,12 @@ class Ec2Api:
     ) -> GetInstanceTypesFromInstanceRequirementsResult:
         raise NotImplementedError
 
+    @handler("GetInstanceUefiData")
+    def get_instance_uefi_data(
+        self, context: RequestContext, instance_id: InstanceId, dry_run: Boolean = None
+    ) -> GetInstanceUefiDataResult:
+        raise NotImplementedError
+
     @handler("GetIpamAddressHistory")
     def get_ipam_address_history(
         self,
@@ -20139,6 +20216,8 @@ class Ec2Api:
         remove_subnet_ids: VpcEndpointSubnetIdList = None,
         add_security_group_ids: VpcEndpointSecurityGroupIdList = None,
         remove_security_group_ids: VpcEndpointSecurityGroupIdList = None,
+        ip_address_type: IpAddressType = None,
+        dns_options: DnsOptionsSpecification = None,
         private_dns_enabled: Boolean = None,
     ) -> ModifyVpcEndpointResult:
         raise NotImplementedError
@@ -20167,6 +20246,8 @@ class Ec2Api:
         remove_network_load_balancer_arns: ValueStringList = None,
         add_gateway_load_balancer_arns: ValueStringList = None,
         remove_gateway_load_balancer_arns: ValueStringList = None,
+        add_supported_ip_address_types: ValueStringList = None,
+        remove_supported_ip_address_types: ValueStringList = None,
     ) -> ModifyVpcEndpointServiceConfigurationResult:
         raise NotImplementedError
 
@@ -20376,6 +20457,8 @@ class Ec2Api:
         sriov_net_support: String = None,
         virtualization_type: String = None,
         boot_mode: BootModeValues = None,
+        tpm_support: TpmSupportValues = None,
+        uefi_data: StringType = None,
     ) -> RegisterImageResult:
         raise NotImplementedError
 
