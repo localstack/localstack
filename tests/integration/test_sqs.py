@@ -20,8 +20,6 @@ from localstack.utils.common import get_service_protocol, poll_condition, retry,
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 
-TEST_QUEUE_NAME = "TestQueue"
-
 TEST_POLICY = """
 {
   "Version":"2012-10-17",
@@ -41,15 +39,6 @@ TEST_POLICY = """
 }
 """
 
-TEST_LAMBDA_TAGS = {"tag1": "value1", "tag2": "value2", "tag3": ""}
-
-TEST_MESSAGE_ATTRIBUTES = {
-    "City": {
-        "DataType": "String",
-        "StringValue": "Any City - with special characters: <?`",
-    },
-    "Population": {"DataType": "Number", "StringValue": "1250800"},
-}
 TEST_REGION = "us-east-1"
 
 
@@ -371,8 +360,7 @@ class TestSqsProvider:
     ):
         # issue 3671 - not recreatable
         # TODO: lambda creation does not work when testing against AWS
-        queue_name = f"queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_url = sqs_create_queue()
 
         lambda_name = f"lambda-{short_uid()}"
         create_lambda_function(
@@ -396,8 +384,7 @@ class TestSqsProvider:
 
     def test_invalid_receipt_handle_should_return_error_message(self, sqs_client, sqs_create_queue):
         # issue 3619
-        queue_name = "queue_3619_" + short_uid()
-        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_url = sqs_create_queue()
         with pytest.raises(Exception) as e:
             sqs_client.change_message_visibility(
                 QueueUrl=queue_url, ReceiptHandle="INVALID", VisibilityTimeout=60
@@ -406,9 +393,7 @@ class TestSqsProvider:
 
     def test_message_with_attributes_should_be_enqueued(self, sqs_client, sqs_create_queue):
         # issue 3737
-        queue_name = "queue_3737_" + short_uid()
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        assert queue_url.endswith(queue_name)
+        queue_url = sqs_create_queue()
 
         message_body = "test"
         timestamp_attribute = {"DataType": "Number", "StringValue": "1614717034367"}
@@ -423,18 +408,40 @@ class TestSqsProvider:
         assert message["MessageId"] == response_send["MessageId"]
         assert message["MessageAttributes"] == message_attributes
 
-    @pytest.mark.xfail
+    @pytest.mark.aws_validated
     def test_batch_send_with_invalid_char_should_succeed(self, sqs_client, sqs_create_queue):
         # issue 4135
-        queue_name = "queue_4135_" + short_uid()
-        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_url = sqs_create_queue()
 
         batch = []
         for i in range(0, 9):
             batch.append({"Id": str(i), "MessageBody": str(i)})
         batch.append({"Id": "9", "MessageBody": "\x01"})
+
         result_send = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
+
+        # check the one failed message
         assert len(result_send["Failed"]) == 1
+        failed = result_send["Failed"][0]
+        assert failed["Id"] == "9"
+        assert failed["Code"] == "InvalidMessageContents"
+
+        # check successful message bodies
+        messages = []
+
+        def collect_messages():
+            response = sqs_client.receive_message(
+                QueueUrl=queue_url, MaxNumberOfMessages=10, WaitTimeSeconds=1
+            )
+            messages.extend(response.get("Messages", []))
+            return len(messages)
+
+        assert poll_condition(
+            lambda: collect_messages() >= 9, timeout=10
+        ), f"gave up waiting messages, got {len(messages)} from 9"
+
+        bodies = {message["Body"] for message in messages}
+        assert bodies == {"0", "1", "2", "3", "4", "5", "6", "7", "8"}
 
     @pytest.mark.only_localstack
     def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
@@ -445,8 +452,7 @@ class TestSqsProvider:
         monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
         monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
 
-        queue_name = f"queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_url = sqs_create_queue()
 
         assert f"{external_host}:{external_port}" in queue_url
 
@@ -1267,7 +1273,7 @@ class TestSqsProvider:
         assert response.status_code == 200
         assert b"<ListQueuesResponse" in response.content
 
-    @pytest.mark.xfail
+    @pytest.mark.aws_validated
     def test_system_attributes_have_no_effect_on_attr_md5(self, sqs_create_queue, sqs_client):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1317,7 +1323,7 @@ class TestSqsProvider:
 
         assert result_receive1["Messages"][0]["Body"] == result_receive2["Messages"][0]["Body"]
 
-    @pytest.mark.xfail
+    @pytest.mark.aws_validated
     def test_sequence_number(self, sqs_client, sqs_create_queue):
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         fifo_queue_url = sqs_create_queue(
@@ -1340,8 +1346,7 @@ class TestSqsProvider:
         send_result = sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_content)
         assert "SequenceNumber" not in send_result
 
-    # Tests of diverging behaviour that was discovered during rewrite
-    @pytest.mark.xfail
+    @pytest.mark.aws_validated
     def test_posting_to_fifo_requires_deduplicationid_group_id(self, sqs_client, sqs_create_queue):
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
@@ -1361,11 +1366,11 @@ class TestSqsProvider:
             )
         e.match("MissingParameter")
 
-    # TODO: test approximateNumberOfMessages once delayed Messages are properly counted
     def test_approximate_number_of_messages_delayed(self):
+        # TODO: test approximateNumberOfMessages once delayed Messages are properly counted
         pass
 
-    @pytest.mark.xfail
+    @pytest.mark.aws_validated
     def test_posting_to_queue_via_queue_name(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
         queue_name = f"queue-{short_uid()}"
@@ -1377,7 +1382,7 @@ class TestSqsProvider:
         assert result_send["MD5OfMessageBody"] == "86a83f96652a1bfad3891e7d523750cb"
         assert result_send["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-    @pytest.mark.xfail
+    @pytest.mark.aws_validated
     def test_invalid_string_attributes_cause_invalid_parameter_value_error(
         self, sqs_client, sqs_create_queue
     ):
@@ -1504,6 +1509,82 @@ class TestSqsProvider:
             QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
         )
         assert int(approx_nr_of_messages["Attributes"]["ApproximateNumberOfMessages"]) == 0
+
+    @pytest.mark.localstack_only
+    def test_list_queues_multi_region_without_endpoint_strategy(
+        self, create_boto_client, cleanups, monkeypatch
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
+
+        region1 = "us-east-1"
+        region2 = "eu-central-1"
+        region1_client = create_boto_client("sqs", region_name=region1)
+        region2_client = create_boto_client("sqs", region_name=region2)
+
+        queue1_name = f"queue-region1-{short_uid()}"
+        queue2_name = f"queue-region2-{short_uid()}"
+
+        queue1_url = region1_client.create_queue(QueueName=queue1_name)["QueueUrl"]
+        cleanups.append(lambda: region1_client.delete_queue(QueueUrl=queue1_url))
+        queue2_url = region2_client.create_queue(QueueName=queue2_name)["QueueUrl"]
+        cleanups.append(lambda: region2_client.delete_queue(QueueUrl=queue2_url))
+
+        # region should not be in the queue url with endpoint strategy "off"
+        assert region1 not in queue1_url
+        assert region1 not in queue2_url
+
+        assert queue1_url in region1_client.list_queues().get("QueueUrls", [])
+        assert queue2_url not in region1_client.list_queues().get("QueueUrls", [])
+
+        assert queue1_url not in region2_client.list_queues().get("QueueUrls", [])
+        assert queue2_url in region2_client.list_queues().get("QueueUrls", [])
+
+    @pytest.mark.aws_validated
+    def test_list_queues_multi_region_with_endpoint_strategy_domain(
+        self, create_boto_client, cleanups, monkeypatch
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
+
+        region1 = "us-east-1"
+        region2 = "eu-central-1"
+
+        region1_client = create_boto_client("sqs", region_name=region1)
+        region2_client = create_boto_client("sqs", region_name=region2)
+
+        queue_name = f"queue-{short_uid()}"
+
+        queue1_url = region1_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        cleanups.append(lambda: region1_client.delete_queue(QueueUrl=queue1_url))
+        queue2_url = region2_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        cleanups.append(lambda: region2_client.delete_queue(QueueUrl=queue2_url))
+
+        assert region1 not in queue1_url  # us-east-1 is not included in the default region
+        assert region1 not in queue2_url
+        assert f"{region2}.queue" in queue2_url  # all other regions are part of the endpoint-url
+
+        assert queue1_url in region1_client.list_queues().get("QueueUrls", [])
+        assert queue2_url not in region1_client.list_queues().get("QueueUrls", [])
+
+        assert queue1_url not in region2_client.list_queues().get("QueueUrls", [])
+        assert queue2_url in region2_client.list_queues().get("QueueUrls", [])
+
+    @pytest.mark.aws_validated
+    def test_get_queue_url_multi_region(self, create_boto_client, cleanups, monkeypatch):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "domain")
+
+        region1_client = create_boto_client("sqs", region_name="us-east-1")
+        region2_client = create_boto_client("sqs", region_name="eu-central-1")
+
+        queue_name = f"queue-{short_uid()}"
+
+        queue1_url = region1_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        cleanups.append(lambda: region1_client.delete_queue(QueueUrl=queue1_url))
+        queue2_url = region2_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        cleanups.append(lambda: region2_client.delete_queue(QueueUrl=queue2_url))
+
+        assert queue1_url != queue2_url
+        assert queue1_url == region1_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
+        assert queue2_url == region2_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
 
     @pytest.mark.skip(
         reason="this is an AWS behaviour test that requires 5 minutes to run. Only execute manually"
