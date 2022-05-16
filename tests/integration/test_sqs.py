@@ -284,6 +284,49 @@ class TestSqsProvider:
         response = sqs_client.list_queue_tags(QueueUrl=queue_url)
         assert response["Tags"] == tags
 
+    @pytest.mark.aws_validated
+    def test_create_queue_without_attributes_is_idempotent(self, sqs_client, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}"
+
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        assert sqs_create_queue(QueueName=queue_name) == queue_url
+
+    @pytest.mark.aws_validated
+    def test_create_queue_with_same_attributes_is_idempotent(self, sqs_client, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}"
+        attributes = {
+            "VisibilityTimeout": "69",
+        }
+
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+
+        assert sqs_create_queue(QueueName=queue_name, Attributes=attributes) == queue_url
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5938")
+    def test_create_queue_with_different_attributes_raises_exception(
+        self, sqs_client, sqs_create_queue
+    ):
+        queue_name = f"queue-{short_uid()}"
+
+        sqs_create_queue(QueueName=queue_name)
+
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(
+                QueueName=queue_name,
+                Attributes={
+                    "ReceiveMessageWaitTimeSeconds": "1",
+                },
+            )
+        e.match("QueueAlreadyExists")
+
+        assert (
+            e.value.response["Error"]["Message"]
+            == "A queue already exists with the same name and a different value for attribute "
+            "ReceiveMessageWaitTimeSeconds "
+        )
+
     def test_create_queue_with_attributes(self, sqs_client, sqs_create_queue):
         attributes = {
             "MessageRetentionPeriod": "604800",  # Unsupported by ElasticMq, should be saved in memory

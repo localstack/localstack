@@ -49,7 +49,6 @@ from localstack.aws.api.sqs import (
     QueueAttributeMap,
     QueueAttributeName,
     QueueDoesNotExist,
-    QueueNameExists,
     ReceiptHandleIsInvalid,
     ReceiveMessageResult,
     SendMessageBatchRequestEntryList,
@@ -747,7 +746,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         backend = SqsBackend.get(context.region)
 
         if queue_name in backend.queues:
-            raise QueueNameExists(queue_name)
+            # FIXME #5938: should raise `QueueNameExists` if queue exists with different attributes
+            queue = backend.queues[queue_name]
+            return CreateQueueResult(QueueUrl=queue.url(context))
         if fifo:
             queue = FifoQueue(queue_name, context.region, context.account_id, attributes, tags)
         else:
