@@ -11,10 +11,10 @@ import sys
 import tempfile
 import threading
 import time
+import zipfile
 from contextlib import suppress
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
-import zipfile
 
 import requests
 from plugin import Plugin, PluginManager
@@ -535,11 +535,11 @@ def install_dynamodb_local():
     if not os.path.exists(JAVASSIST_JAR_PATH):
         download(JAVASSIST_JAR_URL, JAVASSIST_JAR_PATH)
     # ensure that javassist.jar is in the manifest classpath
-    with zipfile.ZipFile(os.path.join(INSTALL_DIR_DDB, 'DynamoDBLocal.jar')) as ddbjar:
+    with zipfile.ZipFile(os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")) as ddbjar:
         manifest = ddbjar.read("META-INF/MANIFEST.MF").decode()
         if "javassist.jar" not in manifest:
             manifest = manifest.replace("Class-Path:", "Class-Path: javassist.jar", 1)
-            manifest_file = os.path.join(INSTALL_DIR_DDB, "META-INF", "MANIFEST.MF")            
+            manifest_file = os.path.join(INSTALL_DIR_DDB, "META-INF", "MANIFEST.MF")
             save_file(manifest_file, manifest)
             run(["zip", "-u", "DynamoDBLocal.jar", "META-INF/MANIFEST.MF"], cwd=INSTALL_DIR_DDB)
 
