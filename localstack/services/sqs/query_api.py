@@ -29,7 +29,7 @@ serializer = create_serializer(service)
     '/queue/<regex("[a-z0-9-]+"):region>/<regex("[0-9]{12}"):account_id>/<regex("[a-zA-Z0-9_-]+(.fifo)?"):queue_name>',
     methods=["POST", "GET"],
 )
-def path_strategy_handler(request: Request, region, account_id, queue_name):
+def path_strategy_handler(request: Request, region, account_id: str, queue_name: str):
     return handle_request(request, region)
 
 
@@ -38,7 +38,9 @@ def path_strategy_handler(request: Request, region, account_id, queue_name):
     host="sqs.<regex('([a-z0-9-]+)?'):region>.localstack.cloud<regex('(:[0-9]{2,5})?'):port>",
     methods=["POST", "GET"],
 )
-def domain_strategy_handler(request: Request, account_id, queue_name, region=None, port=None):
+def domain_strategy_handler(
+    request: Request, account_id: str, queue_name: str, region: str = None, port: int = None
+):
     """Uses the endpoint host to extract the region. See:
     https://docs.aws.amazon.com/general/latest/gr/sqs-service.html"""
     return handle_request(request, region)
@@ -48,10 +50,21 @@ def domain_strategy_handler(request: Request, account_id, queue_name, region=Non
     '/<regex("[0-9]{12}"):account_id>/<regex("[a-zA-Z0-9_-]+(.fifo)?"):queue_name>',
     methods=["POST", "GET"],
 )
-def legacy_handler(request: Request, account_id, queue_name) -> Response:
+def legacy_handler(request: Request, account_id: str, queue_name: str) -> Response:
     # previously, Queue URLs were created as http://localhost:4566/000000000000/my-queue-name. Because the region is
     # ambiguous in this request, we fall back to the default region and hope for the best.
     return handle_request(request, config.DEFAULT_REGION)
+
+
+def register(router: Router[Handler]):
+    """
+    Registers the query API handlers into the given router. There are three routes, one for each SQS_ENDPOINT_STRATEGY.
+
+    :param router: the router to add the handlers into.
+    """
+    router.add_route_endpoint(path_strategy_handler)
+    router.add_route_endpoint(domain_strategy_handler)
+    router.add_route_endpoint(legacy_handler)
 
 
 class UnknownOperationException(Exception):
@@ -112,9 +125,10 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
     if action in ["ListQueues", "CreateQueue"]:
         raise InvalidAction(action)
 
-    # prepare aws request
+    # prepare aws request for the SQS query protocol (POST request with action url-encoded in the body)
     params = {"QueueUrl": request.base_url}
-    # if a QueueUrl is already set in the body, it should overwrite the one in the URL
+    # if a QueueUrl is already set in the body, it should overwrite the one in the URL. this behavior is validated
+    # against AWS (see TestSqsQueryApi)
     params.update(request.values)
     body = urlencode(params)
 
@@ -126,17 +140,12 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
         raise InvalidAction(action)
 
     # TODO: permissions encoded in URL as AUTHPARAMS cannot be accounted for in this method, which is not a big
-    #  problem yet since we generally don't enfore permissions.
+    #  problem yet since we generally don't enforce permissions.
     client = aws_stack.connect_to_service("sqs", region_name=region)
     try:
+        # using the layer below boto3.client("sqs").<operation>(...) to make the call
         boto_response = client._make_api_call(operation.name, service_request)
     except ClientError as e:
         raise BotoException(e.response) from e
 
     return boto_response, operation
-
-
-def register(router: Router[Handler]):
-    router.add_route_endpoint(path_strategy_handler)
-    router.add_route_endpoint(domain_strategy_handler)
-    router.add_route_endpoint(legacy_handler)
