@@ -53,6 +53,23 @@ TEST_MESSAGE_ATTRIBUTES = {
 TEST_REGION = "us-east-1"
 
 
+def queue_exists(sqs_client, queue_url: str) -> bool:
+    """
+    Checks whether a queue with the given queue URL exists.
+
+    :param sqs_client: the botocore client
+    :param queue_url: the queue URL
+    :return: true if the queue exists, false otherwise
+    """
+    try:
+        result = sqs_client.get_queue_url(QueueName=queue_url.split("/")[-1])
+        return result.get("QueueUrl") == queue_url
+    except ClientError as e:
+        if "NonExistentQueue" in e.response["Error"]["Code"]:
+            return False
+        raise
+
+
 class TestSqsProvider:
     @pytest.mark.only_localstack
     def test_get_queue_url_contains_request_host(self, sqs_client, sqs_create_queue, monkeypatch):
@@ -1749,14 +1766,7 @@ class TestSqsQueryApi:
         assert response.ok
         assert "<DeleteQueueResponse " in response.text
 
-        def queue_is_removed():
-            try:
-                result = sqs_client.get_queue_url(QueueName=queue_url.split("/")[-1])
-                return result.get("QueueUrl") != queue_url
-            except ClientError:
-                return True
-
-        assert poll_condition(queue_is_removed, timeout=5)
+        assert poll_condition(lambda: not queue_exists(sqs_client, queue_url), timeout=5)
 
     @pytest.mark.aws_validated
     def test_get_send_and_receive_messages(self, sqs_create_queue, sqs_http_client):
@@ -1804,14 +1814,7 @@ class TestSqsQueryApi:
 
         sqs_client.delete_queue(QueueUrl=queue_url)
 
-        def queue_is_removed():
-            try:
-                result = sqs_client.get_queue_url(QueueName=queue_url.split("/")[-1])
-                return result.get("QueueUrl") != queue_url
-            except ClientError:
-                return True
-
-        assert poll_condition(queue_is_removed, timeout=5)
+        assert poll_condition(lambda: not queue_exists(sqs_client, queue_url), timeout=5)
 
         response = sqs_http_client.get(
             queue_url,
