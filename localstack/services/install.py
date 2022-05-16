@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from contextlib import suppress
 import functools
 import glob
 import logging
@@ -522,7 +523,8 @@ def install_dynamodb_local():
       </Loggers>
     </Configuration>"""
     log4j2_file = os.path.join(INSTALL_DIR_DDB, "log4j2.xml")
-    save_file(log4j2_file, log4j2_config)
+    with suppress(PermissionError):
+        save_file(log4j2_file, log4j2_config)
     run_safe(lambda: run(["zip", "-u", "DynamoDBLocal.jar", "log4j2.xml"], cwd=INSTALL_DIR_DDB))
 
     # download agent JAR

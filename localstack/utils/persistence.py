@@ -1,4 +1,5 @@
 import base64
+from contextlib import suppress
 import datetime
 import json
 import logging
@@ -240,7 +241,8 @@ def save_startup_info():
     except IOError as e:
         LOG.error("could not save startup info: %s", e)
 
-    chmod_r(file_path, 0o777)
+    with suppress(PermissionError):
+        chmod_r(file_path, 0o777)
     return info
 
 
