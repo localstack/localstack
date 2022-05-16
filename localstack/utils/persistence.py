@@ -1,5 +1,4 @@
 import base64
-from contextlib import suppress
 import datetime
 import json
 import logging
@@ -7,6 +6,7 @@ import os
 import re
 import traceback
 from abc import ABCMeta, abstractmethod
+from contextlib import suppress
 from typing import NamedTuple
 
 import requests

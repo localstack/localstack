@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from contextlib import suppress
 import functools
 import glob
 import logging
@@ -12,6 +11,7 @@ import sys
 import tempfile
 import threading
 import time
+from contextlib import suppress
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
