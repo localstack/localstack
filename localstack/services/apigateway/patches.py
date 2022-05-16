@@ -1,7 +1,6 @@
 import json
 import logging
 from typing import Dict, Optional, Tuple
-from urllib.parse import parse_qs, urlparse
 
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.exceptions import NoIntegrationDefined, UsagePlanNotFoundException
@@ -478,24 +477,6 @@ def apply_patches():
 
         return resp
 
-    apigateway_response_restapis_orig = APIGatewayResponse.restapis
-
-    # https://github.com/localstack/localstack/issues/171
-    def apigateway_response_restapis(self, request, full_url, headers):
-        parsed_qs = parse_qs(urlparse(full_url).query)
-        modes = parsed_qs.get("mode", [])
-
-        status, _, rest_api = apigateway_response_restapis_orig(self, request, full_url, headers)
-
-        if "import" not in modes:
-            return status, _, rest_api
-
-        function_id = json.loads(rest_api)["id"]
-        body = parse_json_or_yaml(request.data.decode("utf-8"))
-        self.backend.put_rest_api(function_id, body, parsed_qs)
-
-        return 200, {}, rest_api
-
     def individual_deployment(self, request, full_url, headers, *args, **kwargs):
         result = individual_deployment_orig(self, request, full_url, headers, *args, **kwargs)
         if self.method == "PATCH" and len(result) >= 3 and result[2] in ["null", None, str(None)]:
@@ -541,4 +522,3 @@ def apply_patches():
     apigateway_models_Integration_init_orig = apigateway_models.Integration.__init__
     apigateway_models.Integration.__init__ = apigateway_models_Integration_init
     apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict
-    APIGatewayResponse.restapis = apigateway_response_restapis

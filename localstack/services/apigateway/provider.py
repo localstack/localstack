@@ -2,7 +2,7 @@ import json
 import re
 from copy import deepcopy
 
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
     Account,
     ApigatewayApi,
@@ -10,6 +10,7 @@ from localstack.aws.api.apigateway import (
     Authorizers,
     BasePathMapping,
     BasePathMappings,
+    Blob,
     Boolean,
     ClientCertificate,
     ClientCertificates,
@@ -24,6 +25,7 @@ from localstack.aws.api.apigateway import (
     MapOfStringToString,
     NotFoundException,
     NullableInteger,
+    PutRestApiRequest,
     RequestValidator,
     RequestValidators,
     RestApi,
@@ -32,6 +34,7 @@ from localstack.aws.api.apigateway import (
     VpcLink,
     VpcLinks,
 )
+from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.apigateway import helpers
@@ -53,7 +56,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.collections import ensure_list
 from localstack.utils.json import parse_json_or_yaml
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import short_uid, str_to_bool, to_str
 from localstack.utils.time import now_utc
 
 
@@ -638,10 +641,54 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         for key in tag_keys:
             resource_tags.pop(key, None)
 
+    def import_rest_api(
+        self,
+        context: RequestContext,
+        body: Blob,
+        fail_on_warnings: Boolean = None,
+        parameters: MapOfStringToString = None,
+    ) -> RestApi:
+
+        openapi_spec = parse_json_or_yaml(to_str(body))
+        response = _call_moto(
+            context,
+            "CreateRestApi",
+            CreateRestApiRequest(name=openapi_spec.get("info").get("title")),
+        )
+
+        return _call_moto(
+            context,
+            "PutRestApi",
+            PutRestApiRequest(
+                restApiId=response.get("id"),
+                failOnWarnings=str_to_bool(fail_on_warnings) or False,
+                parameters=parameters or {},
+                body=body,
+            ),
+        )
+
 
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
+
+
+def _call_moto(context: RequestContext, operation_name: str, parameters: ServiceRequest):
+    """
+    Not necessarily the pattern we want to follow in the future, but this makes possible to nest
+    moto call and still be interface compatible.
+
+    Ripped :call_moto_with_request: from moto.py but applicable to any operation (operation_name).
+    """
+    local_context = create_aws_request_context(
+        service_name=context.service.service_name,
+        action=operation_name,
+        parameters=parameters,
+        region=context.region,
+    )
+
+    local_context.request.headers.extend(context.request.headers)
+    return call_moto(local_context)
 
 
 def normalize_authorizer(data):
