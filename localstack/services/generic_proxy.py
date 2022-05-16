@@ -37,6 +37,7 @@ from localstack.constants import (
     HEADER_LOCALSTACK_AUTHORIZATION,
     HEADER_LOCALSTACK_REQUEST_URL,
 )
+from localstack.http.request import get_full_raw_path
 from localstack.services.messages import Headers, MessagePayload
 from localstack.services.messages import Request as RoutingRequest
 from localstack.services.messages import Response as RoutingResponse
@@ -964,7 +965,7 @@ def start_proxy_server(
 
     def handler(request, data):
         parsed_url = urlparse(request.url)
-        path_with_params = request.full_path.strip("?")
+        path_with_params = get_full_raw_path(request)
         method = request.method
         headers = request.headers
         headers[HEADER_LOCALSTACK_REQUEST_URL] = str(request.url)
