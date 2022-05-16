@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 from botocore.response import StreamingBody
+from dateutil import parser as dateutil_parser
 from deepdiff import DeepDiff
 from jsonpath_ng.ext import parse
 
 LOG = logging.getLogger(__name__)
-
 
 PATTERN_ARN = re.compile(
     r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?(:[^:\\\"]+)+"
@@ -31,16 +31,22 @@ PATTERN_HASH_256 = re.compile(r"^[A-Fa-f0-9]{64}$")
 
 
 class SnapshotMatchResult:
-    def __init__(self, a: dict, b: dict, jsonpath_replacements: List[Tuple[str, str]] = []):
+    def __init__(
+        self, a: dict, b: dict, jsonpath_replacements: List[Tuple[str, str]] = [], key: str = ""
+    ):
         self.a = a
         self.b = b
-        for (path, replacement) in jsonpath_replacements:
-            pattern = parse(path)
-            if pattern.find(a):
-                pattern.update(a, replacement)
-            if pattern.find(b):
-                pattern.update(b, replacement)
+        # TODO maybe not the best place for replacement? how to know if it worked?
+        # for (path, replacement) in jsonpath_replacements:
+        #     pattern = parse(path)
+        #     if pattern.find(a):
+        #         pattern.update(a, replacement)
+        #         LOG.debug(f"{keyword} replaced jsonpath '{path}' with '{replacement}' in saved state")
+        #     if pattern.find(b):
+        #         pattern.update(b, replacement)
+        #         LOG.debug(f"{keyword} replaced jsonpath '{path}' with '{replacement}' in recorded state")
         self.result = DeepDiff(a, b, verbose_level=2)
+        self.key = key
 
     def __bool__(self) -> bool:
         return not self.result
@@ -50,10 +56,19 @@ class SnapshotMatchResult:
 
 
 class SnapshotAssertionError(AssertionError):
-    def __init__(self, msg: str, result: SnapshotMatchResult):
+    def __init__(self, msg: str, result: List[SnapshotMatchResult]):
         self.msg = msg
         self.result = result
         super(SnapshotAssertionError, self).__init__(msg)
+
+
+def _is_date(value: str):
+    try:
+        # TODO seems like the date can have various formats, use this dateutil lib?
+        dateutil_parser.parse(value)
+        return True
+    except Exception:
+        return False
 
 
 class Transformation:
@@ -73,29 +88,52 @@ class Transformation:
 
     def replace_common_values(self, input: Dict) -> Dict:
         for k, v in input.items():
-            if isinstance(v, dict):
+            if isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):  # TODO
+                for i in range(0, len(v)):
+                    v[i] = self.replace_common_values(v[i])
+            elif isinstance(v, dict):
                 input[k] = self.replace_common_values(v)
-            if isinstance(v, datetime):
+            elif isinstance(v, datetime):
                 input[k] = "<date>"
-            if isinstance(v, str):
+            elif isinstance(v, str):
                 if re.match(PATTERN_ARN, v):
                     input[k] = "<arn>"
-                if "modified" in k.lower() and re.match(PATTERN_ISO8601, v):  # TODO
+                elif (
+                    "modified" in k.lower() or "date" in k.lower() or "time" in k.lower()
+                ) and _is_date(
+                    v
+                ):  # TODO
                     input[k] = "<date>"
-                if k.lower().endswith("id") and re.match(PATTERN_UUID, v):
+                elif k.lower().endswith("id") and re.match(PATTERN_UUID, v):
                     input[k] = "<uuid>"
 
         return input
 
-    def transform(self, input: Dict) -> Dict:
+    def transform(
+        self, input: Dict, custom_jsonpath_replacements: List[Tuple[str, str]] = []
+    ) -> Dict:
         self.clean_response_metadata(input)
-        self.replace_pattern(
-            "$..RequestID.StringValue", replacement="<uuid>", input=input, verify_match=PATTERN_UUID
-        )
-        self.replace_pattern("$..Code.Location", replacement="<location>", input=input)
-        self.replace_pattern(
-            "$..CodeSha256", replacement="<sha-256>", input=input
-        )  # TODO maybe calculate expected hash?
+        replace_pattern = [
+            ("$..Code.Location", "<location>"),
+            ("$..CodeSha256", "<sha-256>"),  # TODO maybe calculate expected has
+            ("$..Owner.DisplayName", "<owner-name>"),
+            ("$..Owner.ID", "<owner-id>"),
+            # TODO *Name
+            ("$..FunctionName", "<function-name>"),
+            ("$..ChangeSetName", "<change-set-name>"),
+            ("$..StackName", "<stack-name>"),
+            ("$..Name", "<name>"),
+            ("$..Contents.ETag", "<etag>"),
+        ]
+        replace_pattern.extend(custom_jsonpath_replacements)
+        for (json_path, replace_string) in replace_pattern:
+            self.replace_pattern(json_path=json_path, replacement=replace_string, input=input)
+
+        # TODO
+        # self.replace_pattern(
+        #     "$..RequestID.StringValue", replacement="<uuid>", input=input, verify_match=PATTERN_UUID
+        # )
+
         self.replace_common_values(input)
 
     def clean_response_metadata(self, input: Dict):
@@ -157,13 +195,21 @@ class SnapshotSession:
     def register_account_id(self, account_id: str):
         self.account_id = account_id
 
+    # add replacement registering -> account_id, location
+    # -> matcher für value?
+
+    # copy before transformation starts:
+    # dict in dict out; de-serializing only once
+    # idempotent -> egal in welcher reihenfolge
+    #
     def replace_jsonpath_value(self, jsonpath: str, replacement: str):
         self.jsonpath_replacement.append((jsonpath, replacement))
 
-    def persist_state(self) -> None:
+    def persist_state(self, key) -> None:
         if self.update:
             Path(self.file_path).touch()
             # replacing sensitive information here: account-id TODO maybe others
+            self.transformer.clean_response_metadata(self.observed_state.get(key))
             tmp = json.dumps(self.observed_state, default=str)
             result = re.sub(re.compile(self.account_id), "1" * 12, tmp)
             self.observed_state = json.loads(result)
@@ -205,21 +251,37 @@ class SnapshotSession:
 
         if self.update:
             self._update(key, obj_state)
+            self.persist_state(key)
             return SnapshotMatchResult({}, {})
 
         sub_state = self.recorded_state.get(key)
         if sub_state is None:
             raise Exception("Please run the test first with --snapshot-update")
 
-        return SnapshotMatchResult(sub_state, obj_state, self.jsonpath_replacement)
+        self.transformer.transform(
+            sub_state, custom_jsonpath_replacements=self.jsonpath_replacement
+        )
+        self.transformer.transform(
+            obj_state, custom_jsonpath_replacements=self.jsonpath_replacement
+        )
+        return SnapshotMatchResult(sub_state, obj_state, key=key)
 
-    def assert_all(self) -> SnapshotMatchResult:
+    def assert_all(self) -> List[SnapshotMatchResult]:
         """use after any assert_match calls to get a combined diff"""
-        result = SnapshotMatchResult(self.recorded_state, self.observed_state)
-        if not result and self.verify:
-            raise SnapshotAssertionError("Parity snapshot failed", result=result)
-        else:
-            return result
+        results = []
+        for key in self.called_keys:
+            a = self.recorded_state[key]
+            b = self.observed_state[key]
+            self.transformer.transform(a, custom_jsonpath_replacements=self.jsonpath_replacement)
+            self.transformer.transform(b, custom_jsonpath_replacements=self.jsonpath_replacement)
+
+            result = SnapshotMatchResult(a, b, key=key)
+
+            results.append(result)
+
+        if any(not result for result in results) and self.verify:
+            raise SnapshotAssertionError("Parity snapshot failed", result=results)
+        return results
 
     def _transform_dict_to_parseable_values(self, original):
         for k, v in original.items():
@@ -237,6 +299,5 @@ class SnapshotSession:
 
     def _transform(self, obj: dict) -> dict:
         """build a persistable state definition that can later be compared against"""
-        self.transformer.transform(obj)
         self._transform_dict_to_parseable_values(obj)
         return obj

@@ -33,7 +33,11 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> Optional[Test
 
     if call.excinfo is not None and isinstance(call.excinfo.value, SnapshotAssertionError):
         err: SnapshotAssertionError = call.excinfo.value
-        report.longrepr = json.dumps(json.loads(err.result.result.to_json()), indent=2)
+        error_report = ""
+        for res in err.result:
+            if not res:
+                error_report = f"{error_report}Match failed for '{res.key}':\n{json.dumps(json.loads(res.result.to_json()), indent=2)}\n\n"
+        report.longrepr = error_report
     return report
 
 
@@ -65,5 +69,3 @@ def fixture_snapshot(request: SubRequest, account_id):
     sm.register_account_id(account_id)
 
     yield sm
-
-    sm.persist_state()

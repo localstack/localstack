@@ -35,7 +35,7 @@ def write_snapshot_samples(fn, svc, operation):
             path.dirname(__file__), "sample-snapshots", f"{svc}.{operation}.response.{i}.json"
         )
         with open(fname, "w") as fd:
-            fd.write(json.dumps(response, default=str))
+            fd.write(json.dumps(response, indent=2, default=str))
 
 
 def write_snapshot_samples_collect_stream(fn, field, svc, operation):
