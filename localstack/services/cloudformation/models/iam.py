@@ -274,21 +274,22 @@ class IAMRole(GenericBaseModel):
         props = resource["Properties"]
         role_name = props["RoleName"]
 
-        # TODO: this should probably only remove the policies that are specified in the stack (verify with AWS)
-        # detach managed policies
-        for policy in iam_client.list_attached_role_policies(RoleName=role_name).get(
-            "AttachedPolicies", []
-        ):
-            iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
-        # delete inline policies
-        for inline_policy_name in iam_client.list_role_policies(RoleName=role_name).get(
-            "PolicyNames", []
-        ):
-            iam_client.delete_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
-
-        # TODO: potentially remove this when stack resource deletion order is fixed (check AWS behavior first)
-        # cleanup instance profile
         try:
+            # TODO: this should probably only remove the policies that are specified in the stack (verify with AWS)
+            # detach managed policies
+            for policy in iam_client.list_attached_role_policies(RoleName=role_name).get(
+                "AttachedPolicies", []
+            ):
+                iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
+
+            # delete inline policies
+            for inline_policy_name in iam_client.list_role_policies(RoleName=role_name).get(
+                "PolicyNames", []
+            ):
+                iam_client.delete_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
+
+            # TODO: potentially remove this when stack resource deletion order is fixed (check AWS behavior first)
+            # cleanup instance profile
             rs = iam_client.list_instance_profiles_for_role(RoleName=role_name)
             for instance_profile in rs["InstanceProfiles"]:
                 ip_name = instance_profile["InstanceProfileName"]
