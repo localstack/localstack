@@ -4,12 +4,12 @@ aws:apigateway:
   
 aws:lambda:
   - localstack/aws/api/awslambda/*.py
-  - - localstack/services/awslambda/*.py
+  - localstack/services/awslambda/*.py
   
 aws:cloudformation:
   - localstack/aws/api/cloudformation/*.py
   - localstack/utils/cloudformation/*.py
-  - - localstack/services/cloudformation/*.py
+  - localstack/services/cloudformation/*.py
   
 aws:cloudwatch:
   - localstack/aws/api/cloudwatch/*.py
@@ -23,7 +23,6 @@ config:
 aws:dynamodb:
   - localstack/aws/api/dynamodb/*.py
   - localstack/aws/api/dynamodbstreams/*.py
-  - localstack/services/apigateway/*.py
   
 aws:ec2:
   - localstack/aws/api/ec2/*.py
@@ -40,6 +39,11 @@ aws:firehose:
 aws:iam:
   - localstack/aws/api/iam/*.py
   - localstack/services/iam/*.py
+
+aws:kinesis:
+  - localstack/services/kinesis/**
+  - localstack/utils/kinesis/**
+  - localstack/services/kinesis/*.py
   
 aws:kms:
   - localstack/aws/api/kms/*.py
@@ -89,11 +93,6 @@ aws:stepfunctions:
 aws:sts:
   - localstack/aws/api/sts/*.py
   - localstack/services/sts/*.py
-  
-aws:kinesis:
-  - localstack/services/kinesis/**
-  - localstack/utils/kinesis/**
-  - localstack/services/kinesis/*.py
   
 cli:
   - localstack/cli/**
