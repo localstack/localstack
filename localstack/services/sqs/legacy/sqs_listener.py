@@ -4,8 +4,6 @@ import re
 from urllib.parse import urlencode
 
 import xmltodict
-
-from localstack.services.generic_proxy import ProxyListener
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 from moto.sqs.utils import parse_message_attributes
 from requests.models import Request
@@ -13,6 +11,7 @@ from requests.models import Request
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.config import SQS_PORT_EXTERNAL
+from localstack.services.generic_proxy import ProxyListener
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import unsubscribe_sqs_queue
 from localstack.services.sqs.utils import is_sqs_queue_url
