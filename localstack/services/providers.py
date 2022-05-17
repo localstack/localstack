@@ -285,18 +285,6 @@ def sns():
 
 @aws_provider()
 def sqs():
-    from localstack.services.sqs import sqs_listener, sqs_starter
-
-    return Service(
-        "sqs",
-        listener=sqs_listener.UPDATE_SQS,
-        start=sqs_starter.start_sqs,
-        check=sqs_starter.check_sqs,
-    )
-
-
-@aws_provider(api="sqs", name="asf")
-def sqs_asf():
     from localstack.aws.proxy import AwsApiListener
     from localstack.services import edge
     from localstack.services.sqs import query_api
@@ -307,6 +295,18 @@ def sqs_asf():
     provider = SqsProvider()
 
     return Service("sqs", listener=AwsApiListener("sqs", provider), lifecycle_hook=provider)
+
+
+@aws_provider(api="sqs", name="legacy")
+def sqs_legacy():
+    from localstack.services.sqs.legacy import sqs_listener, sqs_starter
+
+    return Service(
+        "sqs",
+        listener=sqs_listener.UPDATE_SQS,
+        start=sqs_starter.start_sqs,
+        check=sqs_starter.check_sqs,
+    )
 
 
 @aws_provider()

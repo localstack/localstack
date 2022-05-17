@@ -11,7 +11,7 @@ from moto.sqs.models import Queue
 from localstack import config
 from localstack.services.infra import start_moto_server, start_proxy_for_service
 from localstack.services.install import SQS_BACKEND_IMPL
-from localstack.services.sqs.elasticmq import ElasticMQSerer
+from localstack.services.sqs.legacy.elasticmq import ElasticMQSerer
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_free_tcp_port, to_str
 from localstack.utils.patch import patch

@@ -147,17 +147,10 @@ jobs:
       - run:
           name: Test ElasticMQ SQS provider
           environment:
+            PROVIDER_OVERRIDE_SQS: "legacy"
             SQS_PROVIDER: "elasticmq"
             TEST_PATH: "tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/elasticmq.xml -o junit_suite_name='elasticmq'"
-            COVERAGE_ARGS: "-p"
-          command: make test-coverage
-      - run:
-          name: Test ASF SQS provider
-          environment:
-            PROVIDER_OVERRIDE_SQS: "asf"
-            TEST_PATH: "tests/integration/test_sqs.py"
-            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/sqs_asf.xml -o junit_suite_name='sqs_asf'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
       - run:

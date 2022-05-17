@@ -49,7 +49,6 @@ from localstack.aws.api.sqs import (
     QueueAttributeMap,
     QueueAttributeName,
     QueueDoesNotExist,
-    QueueNameExists,
     ReceiptHandleIsInvalid,
     ReceiveMessageResult,
     SendMessageBatchRequestEntryList,
@@ -64,7 +63,7 @@ from localstack.aws.api.sqs import (
 )
 from localstack.aws.spec import load_service
 from localstack.config import external_service_url
-from localstack.services.edge import ROUTER
+from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.common import long_uid, md5, now, start_thread
@@ -134,12 +133,6 @@ def check_message_content(message_body: str):
         raise InvalidMessageContents(error)
 
 
-class QueueKey(NamedTuple):
-    region: str
-    account_id: str
-    name: str
-
-
 class Permission(NamedTuple):
     # TODO: just a placeholder for real policies
     label: str
@@ -172,8 +165,25 @@ class SqsMessage:
         self.first_received = None
         self.deleted = False
         self.priority = priority
-        self.message_deduplication_id = message_deduplication_id
-        self.message_group_id = message_group_id
+
+        attributes = {}
+        if message_group_id is not None:
+            attributes["MessageGroupId"] = message_group_id
+        if message_deduplication_id is not None:
+            attributes["MessageDeduplicationId"] = message_deduplication_id
+
+        if self.message.get("Attributes"):
+            self.message["Attributes"].update(attributes)
+        else:
+            self.message["Attributes"] = attributes
+
+    @property
+    def message_group_id(self) -> Optional[str]:
+        return self.message["Attributes"].get("MessageGroupId")
+
+    @property
+    def message_deduplication_id(self) -> Optional[str]:
+        return self.message["Attributes"].get("MessageDeduplicationId")
 
     @property
     def is_visible(self):
@@ -204,7 +214,9 @@ class SqsMessage:
 
 
 class SqsQueue:
-    key: QueueKey
+    name: str
+    region: str
+    account_id: str
 
     attributes: QueueAttributeMap
     tags: TagMap
@@ -216,10 +228,12 @@ class SqsQueue:
     inflight: Set[SqsMessage]
     receipts: Dict[str, SqsMessage]
 
-    def __init__(self, key: QueueKey, attributes=None, tags=None) -> None:
-        super().__init__()
-        self._assert_queue_name(key.name)
-        self.key = key
+    def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
+        self.name = name
+        self.region = region
+        self.account_id = account_id
+
+        self._assert_queue_name(name)
         self.tags = tags or {}
 
         self.visible = PriorityQueue()
@@ -236,17 +250,17 @@ class SqsQueue:
 
     def default_attributes(self) -> QueueAttributeMap:
         return {
-            QueueAttributeName.QueueArn: self.arn,
             QueueAttributeName.ApproximateNumberOfMessages: self.visible._qsize,
             QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: len(self.inflight),
             QueueAttributeName.ApproximateNumberOfMessagesDelayed: "0",  # FIXME: this should also be callable
             QueueAttributeName.CreatedTimestamp: str(now()),
+            QueueAttributeName.DelaySeconds: "0",
             QueueAttributeName.LastModifiedTimestamp: str(now()),
-            QueueAttributeName.VisibilityTimeout: "30",
             QueueAttributeName.MaximumMessageSize: "262144",
             QueueAttributeName.MessageRetentionPeriod: "345600",
-            QueueAttributeName.DelaySeconds: "0",
+            QueueAttributeName.QueueArn: self.arn,
             QueueAttributeName.ReceiveMessageWaitTimeSeconds: "0",
+            QueueAttributeName.VisibilityTimeout: "30",
         }
 
     def update_last_modified(self, timestamp: int = None):
@@ -256,16 +270,8 @@ class SqsQueue:
         self.attributes[QueueAttributeName.LastModifiedTimestamp] = str(timestamp)
 
     @property
-    def name(self):
-        return self.key.name
-
-    @property
-    def owner(self):
-        return self.key.account_id
-
-    @property
     def arn(self) -> str:
-        return f"arn:aws:sqs:{self.key.region}:{self.key.account_id}:{self.key.name}"
+        return f"arn:aws:sqs:{self.region}:{self.account_id}:{self.name}"
 
     def url(self, context: RequestContext) -> str:
         """Return queue URL using either SQS_PORT_EXTERNAL (if configured), the SQS_ENDPOINT_STRATEGY (if configured)
@@ -276,20 +282,20 @@ class SqsQueue:
         if config.SQS_ENDPOINT_STRATEGY == "domain":
             # queue.localhost.localstack.cloud:4566/000000000000/my-queue (us-east-1)
             # or us-east-2.queue.localhost.localstack.cloud:4566/000000000000/my-queue
-            region = "" if self.key.region == "us-east-1" else self.key.region + "."
+            region = "" if self.region == "us-east-1" else self.region + "."
             scheme = context.request.scheme
             host_url = f"{scheme}://{region}queue.{constants.LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
         elif config.SQS_ENDPOINT_STRATEGY == "path":
             # localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
-            host_url = f"{context.request.host}/queue/{self.key.region}"
+            host_url = f"{context.request.host}/queue/{self.region}"
         else:
             if config.SQS_PORT_EXTERNAL:
                 host_url = external_service_url("sqs")
 
         return "{host}/{account_id}/{name}".format(
             host=host_url.rstrip("/"),
-            account_id=self.key.account_id,
-            name=self.key.name,
+            account_id=self.account_id,
+            name=self.name,
         )
 
     @property
@@ -332,7 +338,9 @@ class SqsQueue:
             standard_message = self.receipts[receipt_handle]
             standard_message.deleted = True
             LOG.debug(
-                "deleting message %s from queue %s", standard_message.message["MessageId"], self.arn
+                "deleting message %s from queue %s",
+                standard_message.message["MessageId"],
+                self.arn,
             )
 
             # remove all handles
@@ -473,8 +481,8 @@ class FifoQueue(SqsQueue):
     receipts: Dict[str, SqsMessage]
     deduplication: Dict[str, Dict[str, SqsMessage]]
 
-    def __init__(self, key: QueueKey, attributes=None, tags=None) -> None:
-        super().__init__(key, attributes, tags)
+    def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
+        super().__init__(name, region, account_id, attributes, tags)
         self.deduplication = {}
 
     def put(
@@ -563,11 +571,8 @@ class InflightUpdateWorker:
     FIXME: very crude implementation. it would be better to have event-driven communication.
     """
 
-    queues: Dict[QueueKey, SqsQueue]
-
-    def __init__(self, queues: Dict[QueueKey, SqsQueue]) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.queues = queues
         self.running = False
         self.thread: Optional[FuncThread] = None
 
@@ -591,8 +596,10 @@ class InflightUpdateWorker:
     def run(self):
         while self.running:
             time.sleep(1)
-            for queue in self.queues.values():
-                queue.requeue_inflight_messages()
+            for region in SqsBackend.regions().keys():
+                backend = SqsBackend.get(region)
+                for queue in backend.queues.values():
+                    queue.requeue_inflight_messages()
 
 
 def check_attributes(message_attributes: MessageBodyAttributeMap):
@@ -651,6 +658,13 @@ def check_fifo_id(fifo_id):
         )
 
 
+class SqsBackend(RegionBackend):
+    queues: Dict[str, SqsQueue]
+
+    def __init__(self):
+        self.queues = {}
+
+
 class SqsProvider(SqsApi, ServiceLifecycleHook):
     """
     LocalStack SQS Provider.
@@ -661,53 +675,39 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         - The region is not encoded in the queue URL
     """
 
-    queues: Dict[QueueKey, SqsQueue]
+    queues: Dict[str, SqsQueue]
 
     def __init__(self) -> None:
         super().__init__()
-        self.queues = {}
         self._mutex = threading.RLock()
-        self._inflight_worker = InflightUpdateWorker(self.queues)
-
-    def on_after_init(self):
-        from localstack.services.sqs import query_api
-
-        query_api.register(ROUTER)
-
-    def start(self):
-        self._inflight_worker.start()
-
-    def shutdown(self):
-        self._inflight_worker.stop()
+        self._inflight_worker = InflightUpdateWorker()
 
     def on_before_start(self):
-        self.start()
+        self._inflight_worker.start()
 
     def on_before_stop(self):
-        self.shutdown()
+        self._inflight_worker.stop()
 
-    def _add_queue(self, queue: SqsQueue):
-        with self._mutex:
-            self.queues[queue.key] = queue
-
-    def _require_queue(self, key: QueueKey) -> SqsQueue:
+    def _require_queue(self, context: RequestContext, name: str) -> SqsQueue:
         """
-        Returns the queue for the given key, or raises QueueDoesNotExist if it does not exist.
+        Returns the queue for the given name, or raises QueueDoesNotExist if it does not exist.
 
-        :param key: the QueueKey to look for
+        :param: context: the request context
+        :param name: the name to look for
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
+        backend = SqsBackend.get(context.region)
+
         with self._mutex:
-            if key not in self.queues:
+            if name not in backend.queues.keys():
                 raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
-            return self.queues[key]
+            return backend.queues[name]
 
-    def _require_queue_by_arn(self, queue_arn: str) -> SqsQueue:
+    def _require_queue_by_arn(self, context: RequestContext, queue_arn: str) -> SqsQueue:
         arn = parse_arn(queue_arn)
-        key = QueueKey(region=arn["region"], account_id=arn["account"], name=arn["resource"])
-        return self._require_queue(key)
+        return self._require_queue(context, arn["resource"])
 
     def _resolve_queue(
         self,
@@ -716,7 +716,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue_url: Optional[str] = None,
     ) -> SqsQueue:
         """
-        Uses resolve_queue_key to determine the QueueKey from the given input, and returns the respective queue,
+        Determines the name of the queue from available information (request context, queue URL) to return the respective queue,
         or raises QueueDoesNotExist if it does not exist.
 
         :param context: the request context, used for getting region and account_id, and optionally the queue_url
@@ -725,8 +725,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
-        key = resolve_queue_key(context, queue_name, queue_url)
-        return self._require_queue(key)
+        name = resolve_queue_name(context, queue_name, queue_url)
+        return self._require_queue(context, name)
 
     def create_queue(
         self,
@@ -739,34 +739,36 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             attributes.get(QueueAttributeName.FifoQueue, "false").lower() == "true"
         )
 
-        k = QueueKey(context.region, context.account_id, queue_name)
-
         # Special Case TODO: why is an emtpy policy passed at all? same in set_queue_attributes
         if attributes and attributes.get(QueueAttributeName.Policy) == "":
             del attributes[QueueAttributeName.Policy]
 
-        if k in self.queues:
-            raise QueueNameExists(queue_name)
+        backend = SqsBackend.get(context.region)
+
+        if queue_name in backend.queues:
+            # FIXME #5938: should raise `QueueNameExists` if queue exists with different attributes
+            queue = backend.queues[queue_name]
+            return CreateQueueResult(QueueUrl=queue.url(context))
         if fifo:
-            queue = FifoQueue(k, attributes, tags)
+            queue = FifoQueue(queue_name, context.region, context.account_id, attributes, tags)
         else:
-            queue = StandardQueue(k, attributes, tags)
-        LOG.debug("creating queue key=%s attributes=%s tags=%s", k, attributes, tags)
-        self._add_queue(queue)
+            queue = StandardQueue(queue_name, context.region, context.account_id, attributes, tags)
+
+        LOG.debug("creating queue key=%s attributes=%s tags=%s", queue_name, attributes, tags)
+
+        with self._mutex:
+            backend.queues[queue_name] = queue
 
         return CreateQueueResult(QueueUrl=queue.url(context))
 
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
     ) -> GetQueueUrlResult:
-        account_id = queue_owner_aws_account_id or context.account_id
-        key = QueueKey(context.region, account_id, queue_name)
-
-        if key not in self.queues:
+        backend = SqsBackend.get(context.region)
+        if queue_name not in backend.queues.keys():
             raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
-        queue = self.queues[key]
-        self._assert_permission(context, queue)
+        queue = backend.queues[queue_name]
 
         return GetQueueUrlResult(QueueUrl=queue.url(context))
 
@@ -777,17 +779,16 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         next_token: Token = None,
         max_results: BoxedInteger = None,
     ) -> ListQueuesResult:
-        urls = []
+        backend = SqsBackend.get(context.region)
 
-        for queue in self.queues.values():
-            if queue.key.region != context.region:
-                continue
-            if queue.key.account_id != context.account_id:
-                continue
-            if queue_name_prefix:
-                if not queue.name.startswith(queue_name_prefix):
-                    continue
-            urls.append(queue.url(context))
+        if queue_name_prefix:
+            urls = [
+                queue.url(context)
+                for queue in backend.queues.values()
+                if queue.name.startswith(queue_name_prefix)
+            ]
+        else:
+            urls = [queue.url(context) for queue in backend.queues.values()]
 
         if max_results:
             # FIXME: also need to solve pagination with stateful iterators: If the total number of items available is
@@ -806,7 +807,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         visibility_timeout: Integer,
     ) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
         queue.update_visibility_timeout(receipt_handle, visibility_timeout)
 
     def change_message_visibility_batch(
@@ -816,7 +816,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         entries: ChangeMessageVisibilityBatchRequestEntryList,
     ) -> ChangeMessageVisibilityBatchResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
 
         self._assert_batch(entries)
 
@@ -846,16 +845,16 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         )
 
     def delete_queue(self, context: RequestContext, queue_url: String) -> None:
+        backend = SqsBackend.get(context.region)
+
         with self._mutex:
             queue = self._resolve_queue(context, queue_url=queue_url)
-            self._assert_permission(context, queue)
-            del self.queues[queue.key]
+            del backend.queues[queue.name]
 
     def get_queue_attributes(
         self, context: RequestContext, queue_url: String, attribute_names: AttributeNameList = None
     ) -> GetQueueAttributesResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
 
         if not attribute_names:
             return GetQueueAttributesResult(Attributes={})
@@ -892,7 +891,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_group_id: String = None,
     ) -> SendMessageResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
 
         message = self._put_message(
             queue,
@@ -916,7 +914,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self, context: RequestContext, queue_url: String, entries: SendMessageBatchRequestEntryList
     ) -> SendMessageBatchResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
 
         self._assert_batch(entries)
 
@@ -1023,7 +1020,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         receive_request_attempt_id: String = None,
     ) -> ReceiveMessageResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
 
         num = max_number_of_messages or 1
         block = wait_time_seconds is not None
@@ -1076,7 +1072,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         max_receive_count = redrive_policy["maxReceiveCount"]
         if std_m.receive_times > max_receive_count:
             dead_letter_target_arn = redrive_policy["deadLetterTargetArn"]
-            dl_queue = self._require_queue_by_arn(dead_letter_target_arn)
+            dl_queue = self._require_queue_by_arn(context, dead_letter_target_arn)
             # TODO: this needs to be atomic?
             dead_message = std_m.message
             dl_queue.put(message=dead_message)
@@ -1089,7 +1085,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self, context: RequestContext, queue_url: String, receipt_handle: String
     ) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
         queue.remove(receipt_handle)
 
     def delete_message_batch(
@@ -1099,7 +1094,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         entries: DeleteMessageBatchRequestEntryList,
     ) -> DeleteMessageBatchResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
         self._assert_batch(entries)
 
         successful = []
@@ -1127,7 +1121,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def purge_queue(self, context: RequestContext, queue_url: String) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
 
         with self._mutex:
             # FIXME: use queue-specific locks
@@ -1186,7 +1179,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
 
         if not tags:
             return
@@ -1196,12 +1188,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def list_queue_tags(self, context: RequestContext, queue_url: String) -> ListQueueTagsResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
         return ListQueueTagsResult(Tags=queue.tags)
 
     def untag_queue(self, context: RequestContext, queue_url: String, tag_keys: TagKeyList) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
 
         for k in tag_keys:
             if k in queue.tags:
@@ -1216,7 +1206,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         actions: ActionNameList,
     ) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
 
         self._validate_actions(actions)
 
@@ -1226,7 +1215,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def remove_permission(self, context: RequestContext, queue_url: String, label: String) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
-        self._assert_permission(context, queue)
 
         candidates = [p for p in queue.permissions if p.label == label]
         if candidates:
@@ -1268,23 +1256,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     f"Value SQS:{action} for parameter ActionName is invalid. Reason: Please refer to the appropriate "
                     "WSDL for a list of valid actions. "
                 )
-
-    def _assert_permission(self, context: RequestContext, queue: SqsQueue):
-        action = context.operation.name
-        account_id = context.account_id
-
-        if account_id == queue.owner:
-            return
-
-        for permission in queue.permissions:
-            if permission.account_id != account_id:
-                continue
-            if permission.action == "*":
-                return
-            if permission.action == action:
-                return
-
-        raise CommonServiceException("AccessDeniedException", "Not allowed")
 
     def _assert_batch(self, batch: List):
         if not batch:
@@ -1334,16 +1305,16 @@ def get_queue_name_from_url(queue_url: str) -> str:
     return queue_url.rstrip("/").split("/")[-1]
 
 
-def resolve_queue_key(
+def resolve_queue_name(
     context: RequestContext, queue_name: Optional[str] = None, queue_url: Optional[str] = None
-) -> QueueKey:
+) -> str:
     """
-    Resolves a QueueKey from the given information.
+    Resolves a queue name from the given information.
 
     :param context: the request context, used for getting region and account_id, and optionally the queue_url
     :param queue_name: the queue name (if this is set, then this will be used for the key)
     :param queue_url: the queue url (if name is not set, this will be used to determine the queue name)
-    :return: the QueueKey describing the queue being requested
+    :return: the queue name describing the queue being requested
     """
     if not queue_name:
         if queue_url:
@@ -1351,4 +1322,4 @@ def resolve_queue_key(
         else:
             queue_name = get_queue_name_from_url(context.request.base_url)
 
-    return QueueKey(region=context.region, account_id=context.account_id, name=queue_name)
+    return queue_name

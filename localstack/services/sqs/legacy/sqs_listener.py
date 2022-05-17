@@ -12,7 +12,7 @@ from localstack import config, constants
 from localstack.config import SQS_PORT_EXTERNAL
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns import sns_listener
-from localstack.services.sqs.sqs_utils import is_sqs_queue_url
+from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (

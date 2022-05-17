@@ -8,7 +8,7 @@ from localstack.aws.spec import ServiceCatalog
 from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
 from localstack.services.s3.s3_utils import uses_host_addressing
-from localstack.services.sqs.sqs_utils import is_sqs_queue_url
+from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import hostname_from_url
 

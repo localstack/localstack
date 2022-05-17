@@ -497,7 +497,7 @@ SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
 
 # Strategy used when creating SQS queue urls. can be "off", "domain", or "path"
 SQS_ENDPOINT_STRATEGY: Literal["off", "domain", "path"] = (
-    os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "domain"
+    os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
 )
 
 # host under which the LocalStack services are available from Lambda Docker containers

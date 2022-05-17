@@ -898,7 +898,7 @@ class TestSNSProvider:
         assert e.value.response["Error"]["Message"] == "Topic already exists with different tags"
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
-    def test_create_duplicate_topic_check_idempotentness(self, sns_create_topic):
+    def test_create_duplicate_topic_check_idempotency(self, sns_create_topic):
         topic_name = f"test-{short_uid()}"
         tags = [{"Key": "a", "Value": "1"}, {"Key": "b", "Value": "2"}]
         kwargs = [
@@ -914,7 +914,10 @@ class TestSNSProvider:
         for i in range(len(responses)):
             assert "TopicArn" in responses[i]
 
-    def test_create_platform_endpoint_check_idempotentness(self, sns_client):
+    @pytest.mark.skip(
+        reason="Idempotency not supported in Moto backend. See bug https://github.com/spulec/moto/issues/2333"
+    )
+    def test_create_platform_endpoint_check_idempotency(self, sns_client):
         response = sns_client.create_platform_application(
             Name=f"test-{short_uid()}",
             Platform="GCM",
@@ -1171,7 +1174,6 @@ class TestSNSProvider:
                 QueueUrl=queue_url,
                 MessageAttributeNames=["All"],
                 MaxNumberOfMessages=10,
-                VisibilityTimeout=0,
             )
             assert len(response["Messages"]) == 4
             for message in response["Messages"]:
@@ -1209,7 +1211,10 @@ class TestSNSProvider:
         topic_arn = sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})["TopicArn"]
         queue_url = sqs_create_queue(
             QueueName=queue_name,
-            Attributes={"FifoQueue": "true"},
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+            },
         )
 
         sns_subscription(
@@ -1261,7 +1266,6 @@ class TestSNSProvider:
                 MessageAttributeNames=["All"],
                 AttributeNames=["All"],
                 MaxNumberOfMessages=10,
-                VisibilityTimeout=0,
             )
             assert len(response["Messages"]) == 3
             for message in response["Messages"]:
@@ -1435,7 +1439,10 @@ class TestSNSProvider:
         topic_arn = sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})["TopicArn"]
         queue_url = sqs_create_queue(
             QueueName=queue_name,
-            Attributes={"FifoQueue": "true"},
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+            },
         )
 
         queue_arn = sqs_queue_arn(queue_url)
