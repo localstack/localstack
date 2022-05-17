@@ -3,6 +3,8 @@ import os
 import sys
 from typing import Dict, List, Optional
 
+from localstack.utils.analytics.cli import publish_invocation
+
 if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
@@ -44,7 +46,6 @@ def _setup_cli_debug():
 def localstack(debug, profile):
     if profile:
         os.environ["CONFIG_PROFILE"] = profile
-
     if debug:
         _setup_cli_debug()
 
@@ -69,6 +70,7 @@ def localstack_status(ctx):
     name="docker", help="Query information about the LocalStack Docker image and runtime"
 )
 @click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
+@publish_invocation
 def cmd_status_docker(format):
     with console.status("Querying Docker status"):
         print_docker_status(format)
@@ -76,6 +78,7 @@ def cmd_status_docker(format):
 
 @localstack_status.command(name="services", help="Query information about running services")
 @click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
+@publish_invocation
 def cmd_status_services(format):
     import requests
 
@@ -111,6 +114,7 @@ def cmd_status_services(format):
 @click.option(
     "-d", "--detached", is_flag=True, help="Start LocalStack in the background", default=False
 )
+@publish_invocation
 def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
     if docker and host:
         raise click.ClickException("Please specify either --docker or --host")
@@ -145,6 +149,7 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
 
 
 @localstack.command(name="stop", help="Stop the running LocalStack container")
+@publish_invocation
 def cmd_stop():
     from localstack import config
     from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -169,6 +174,7 @@ def cmd_stop():
     help="Block the terminal and follow the log output",
     default=False,
 )
+@publish_invocation
 def cmd_logs(follow: bool):
     from localstack import config
     from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -194,6 +200,7 @@ def cmd_logs(follow: bool):
     help="The amount of time in seconds to wait before raising a timeout error",
     default=None,
 )
+@publish_invocation
 def cmd_wait(timeout: Optional[float] = None):
     from localstack.utils.bootstrap import wait_container_is_ready
 
@@ -209,6 +216,7 @@ def cmd_wait(timeout: Optional[float] = None):
     default="docker-compose.yml",
     type=click.Path(exists=True, file_okay=True, readable=True),
 )
+@publish_invocation
 def cmd_config_validate(file):
     from rich.panel import Panel
 
@@ -229,6 +237,7 @@ def cmd_config_validate(file):
 
 @localstack_config.command(name="show", help="Print the current LocalStack config values")
 @click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
+@publish_invocation
 def cmd_config_show(format):
     # TODO: parse values from potential docker-compose file?
 
@@ -288,6 +297,7 @@ def print_config_table():
 
 
 @localstack.command(name="ssh", help="Obtain a shell in the running LocalStack container")
+@publish_invocation
 def cmd_ssh():
     from localstack import config
     from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -311,12 +321,14 @@ def localstack_update():
 
 @localstack_update.command(name="all", help="Update all LocalStack components")
 @click.pass_context
+@publish_invocation
 def cmd_update_all(ctx):
     ctx.invoke(localstack_update.get_command(ctx, "localstack-cli"))
     ctx.invoke(localstack_update.get_command(ctx, "docker-images"))
 
 
 @localstack_update.command(name="localstack-cli", help="Update LocalStack CLI tools")
+@publish_invocation
 def cmd_update_localstack_cli():
     import subprocess
     from subprocess import CalledProcessError
@@ -335,6 +347,7 @@ def cmd_update_localstack_cli():
 @localstack_update.command(
     name="docker-images", help="Update container images LocalStack depends on"
 )
+@publish_invocation
 def cmd_update_docker_images():
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
@@ -408,6 +421,7 @@ def infra():
 @click.pass_context
 @click.option("--docker", is_flag=True, help="Start LocalStack in a docker container (default)")
 @click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
+@publish_invocation
 def cmd_infra_start(ctx, *args, **kwargs):
     ctx.invoke(cmd_start, *args, **kwargs)
 
