@@ -42,7 +42,7 @@ from localstack.services.messages import Headers, MessagePayload
 from localstack.services.messages import Request as RoutingRequest
 from localstack.services.messages import Response as RoutingResponse
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import LambdaResponse
+from localstack.utils.aws.aws_responses import LambdaResponse, calculate_crc32
 from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.aws.request_context import RequestContextManager, get_proxy_request_for_thread
 from localstack.utils.crypto import generate_ssl_cert
@@ -239,6 +239,9 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
     def forward_request(
         self, method: str, path: str, data: MessagePayload, headers: Headers
     ) -> Optional[RoutingRequest]:
+        # Only handle requests for calls from external clients
+        if is_internal_call_context(headers):
+            return None
         return RoutingRequest(
             method=method,
             path=self._adjust_partition_in_path(path, self.DEFAULT_INBOUND_PARTITION),
@@ -257,11 +260,13 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
         # Only handle responses for calls from external clients
         if is_internal_call_context(headers):
             return None
-        return RoutingResponse(
+        response = RoutingResponse(
             status_code=response.status_code,
             content=self._adjust_partition(response.content),
             headers=self._adjust_partition(response.headers),
         )
+        self._post_process_response_headers(response)
+        return response
 
     def _adjust_partition_in_path(self, path: str, static_partition: str = None):
         """Adjusts the (still url encoded) URL path"""
@@ -325,23 +330,33 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
                 partition = self._get_partition_for_region(AWS_REGION_US_EAST_1)
         return partition
 
-    def _get_partition_for_region(self, region: str) -> str:
+    @staticmethod
+    def _get_partition_for_region(region: Optional[str]) -> str:
         # Region-Partition matching is based on the "regionRegex" definitions in the endpoints.json
         # in the botocore package.
-        if region.startswith("us-gov-"):
+        if region and region.startswith("us-gov-"):
             return "aws-us-gov"
-        elif region.startswith("us-iso-"):
+        elif region and region.startswith("us-iso-"):
             return "aws-iso"
-        elif region.startswith("us-isob-"):
+        elif region and region.startswith("us-isob-"):
             return "aws-iso-b"
-        elif region.startswith("cn-"):
+        elif region and region.startswith("cn-"):
             return "aws-cn"
-        elif re.match(r"^(us|eu|ap|sa|ca|me|af)-\w+-\d+$", region):
+        elif region and re.match(r"^(us|eu|ap|sa|ca|me|af)-\w+-\d+$", region):
             return "aws"
         else:
             raise ArnPartitionRewriteListener.InvalidRegionException(
                 f"Region ({region}) could not be matched to a partition."
             )
+
+    @staticmethod
+    def _post_process_response_headers(response: RoutingResponse) -> None:
+        """Adjust potential content lengths and checksums after modifying the response."""
+        if response.headers and response.content:
+            if "Content-Length" in response.headers:
+                response.headers["Content-Length"] = str(len(to_bytes(response.content)))
+            if "x-amz-crc32" in response.headers:
+                response.headers["x-amz-crc32"] = calculate_crc32(response.content)
 
 
 # -------------------

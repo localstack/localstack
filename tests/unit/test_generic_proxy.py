@@ -125,24 +125,27 @@ def test_arn_partition_rewriting_in_response(encoding):
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_arn_partition_rewriting_in_response_without_region_and_without_default_region(encoding):
-    listener = ArnPartitionRewriteListener()
-    response = Response()
-    response._content = encoding(
-        json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
-    )
-    response._status_code = 200
-    response.headers = {"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"}
+def test_arn_partition_rewriting_in_response_without_region_and_without_default_region(
+    encoding, switch_region
+):
+    with switch_region(None):
+        listener = ArnPartitionRewriteListener()
+        response = Response()
+        response._content = encoding(
+            json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
+        )
+        response._status_code = 200
+        response.headers = {"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"}
 
-    result = listener.return_response(
-        method="POST", path="/", data="ignored", headers={}, response=response
-    )
+        result = listener.return_response(
+            method="POST", path="/", data="ignored", headers={}, response=response
+        )
 
-    assert result.status_code == response.status_code
-    assert result.headers == {"some-header-with-arn": "arn:aws:iam::123456789012:ArnInHeader"}
-    assert result.content == encoding(
-        json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
-    )
+        assert result.status_code == response.status_code
+        assert result.headers == {"some-header-with-arn": "arn:aws:iam::123456789012:ArnInHeader"}
+        assert result.content == encoding(
+            json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
+        )
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
