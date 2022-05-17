@@ -33,6 +33,7 @@ from localstack.utils.aws.aws_responses import requests_error_response_json, req
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.strings import long_uid
+from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
 
@@ -893,15 +894,21 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     return match.group(1)
 
 
+# TODO:
+# - handle extensions
+#
 class OpenApiExporter:
+    SWAGGER_VERSION = "2.0"
+    OPENAPI_VERSION = "3.0.1"
+
     def __init__(self):
         self.exporters = {"swagger": self._swagger_export, "oas3": self._oas3_export}
         self.export_formats = {"application/json": "to_dict", "application/yaml": "to_yaml"}
 
-    def export_api(self, api_id, export_type, export_format):
-        return self.exporters.get(export_type)(api_id, export_format)
+    def export_api(self, api_id, stage, export_type, export_format):
+        return self.exporters.get(export_type)(api_id, stage, export_format)
 
-    def _swagger_export(self, api_id, export_format):
+    def _swagger_export(self, api_id, stage, export_format):
         apigateway_client = aws_stack.connect_to_service("apigateway")
 
         rest_api = apigateway_client.get_rest_api(restApiId=api_id)
@@ -909,24 +916,35 @@ class OpenApiExporter:
 
         spec = APISpec(
             title=rest_api.get("name"),
-            version=rest_api.get("version"),
-            openapi_version="2.0",
+            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
+            info=dict(description=rest_api.get("description")),
+            openapi_version=self.SWAGGER_VERSION,
+            basePath=f"/{stage}"
         )
 
         for item in resources.get("items"):
             path = item.get("path")
             for method, method_config in item.get("resourceMethods").items():
-                for status_code, integration in method_config.get("methodIntegration").items():
-                    spec.path(
-                        path=path,
-                        operations=dict(
-                            method=dict(
-                                responses={status_code: {}}
-                            )
-                        )
-                    )
+                method = method.lower()
+                integration_responses = (
+                    method_config.get("methodIntegration", {})
+                    .get("integrationResponses", {})
+                    .keys()
+                )
+                responses = dict.fromkeys(integration_responses, {})
+                spec.path(path=path, operations={method: {"responses": responses}})
 
         return getattr(spec, self.export_formats.get(export_format))()
 
     def _oas3_export(self, api_id, stage, export_format):
-        pass
+        apigateway_client = aws_stack.connect_to_service("apigateway")
+
+        rest_api = apigateway_client.get_rest_api(restApiId=api_id)
+
+        spec = APISpec(
+            title=rest_api.get("name"),
+            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
+            info=dict(description=rest_api.get("description")),
+            openapi_version=self.OPENAPI_VERSION
+        )
+        return getattr(spec, self.export_formats.get(export_format))()

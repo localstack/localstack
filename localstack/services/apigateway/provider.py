@@ -19,6 +19,7 @@ from localstack.aws.api.apigateway import (
     DocumentationPart,
     DocumentationPartLocation,
     DocumentationParts,
+    ExportResponse,
     GetDocumentationPartsRequest,
     ListOfPatchOperation,
     ListOfString,
@@ -32,11 +33,11 @@ from localstack.aws.api.apigateway import (
     String,
     Tags,
     VpcLink,
-    VpcLinks, ExportResponse,
+    VpcLinks,
 )
 from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.proxy import AwsApiListener
-from localstack.constants import HEADER_LOCALSTACK_EDGE_URL, APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
@@ -44,8 +45,9 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_USER_REQUEST,
     APIGatewayRegion,
+    OpenApiExporter,
     apply_json_patch_safe,
-    find_api_subentity_by_id, OpenApiExporter,
+    find_api_subentity_by_id,
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.patches import apply_patches
@@ -688,15 +690,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> ExportResponse:
 
         openapi_exporter = OpenApiExporter()
-        result = openapi_exporter.export_api(api_id=rest_api_id, export_type=export_type, export_format=accepts)
+        result = openapi_exporter.export_api(
+            api_id=rest_api_id, stage=stage_name, export_type=export_type, export_format=accepts
+        )
 
         if accepts == APPLICATION_JSON:
-            result = json.dumps(result)
+            result = json.dumps(result, indent=2)
 
-        return ExportResponse(
-            contentType=accepts,
-            body=result
-        )
+        return ExportResponse(contentType=accepts, body=result)
+
 
 # ---------------
 # UTIL FUNCTIONS
