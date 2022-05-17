@@ -285,13 +285,14 @@ class DynamoDBApiListener(AwsApiListener):
 
     def return_response(self, method, path, data, headers, response):
         if response._content:
+            response_content = to_str(response._content)
             # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
             content_replaced = re.sub(
-                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:aws:dynamodb:ddblocal:([^"]+)"',
-                rf'\1: "arn:aws:dynamodb:{aws_stack.get_region()}:\2"',
-                to_str(response._content),
+                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:([a-z-]+):dynamodb:ddblocal:([^"]+)"',
+                rf'\1: "arn:\2:dynamodb:{aws_stack.get_region()}:\3"',
+                response_content,
             )
-            if content_replaced != response._content:
+            if content_replaced != response_content:
                 response._content = content_replaced
 
         # set x-amz-crc32 headers required by some client

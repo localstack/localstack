@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from typing import Optional
 
 import pytest
 
@@ -8,7 +9,7 @@ def switch_region():
     """A fixture which allows to easily switch the region in the config within a `with` context."""
 
     @contextmanager
-    def _switch_region(region: str):
+    def _switch_region(region: Optional[str]):
         from localstack import config
 
         previous_region = config.DEFAULT_REGION
