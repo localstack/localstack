@@ -16,6 +16,7 @@ from localstack.aws.api.apigateway import (
     ClientCertificates,
     CreateAuthorizerRequest,
     CreateRestApiRequest,
+    DeleteIntegrationRequest,
     DocumentationPart,
     DocumentationPartLocation,
     DocumentationParts,
@@ -666,6 +667,21 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 body=body,
             ),
         )
+
+    def delete_integration(
+        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+    ) -> None:
+
+        try:
+            return _call_moto(
+                context,
+                "DeleteIntegration",
+                DeleteIntegrationRequest(
+                    restApiId=rest_api_id, resourceId=resource_id, httpMethod=http_method
+                ),
+            )
+        except Exception as e:
+            raise NotFoundException("Invalid Resource identifier specified") from e
 
 
 # ---------------
