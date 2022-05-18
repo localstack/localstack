@@ -71,7 +71,7 @@ class TestSqsProvider:
         queue_url = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
         account_id = constants.TEST_AWS_ACCOUNT_ID
 
-        host = f"http://localhost:{config.EDGE_PORT}"
+        host = config.get_edge_url()
         # our current queue pattern looks like this, but may change going forward, or may be configurable
         assert queue_url == f"{host}/{account_id}/{queue_name}"
 
