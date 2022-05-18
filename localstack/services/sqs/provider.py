@@ -96,7 +96,7 @@ def generate_receipt_handle():
 
 class InvalidParameterValue(CommonServiceException):
     def __init__(self, message):
-        super().__init__("InvalidParameterValues", message, 400, True)
+        super().__init__("InvalidParameterValue", message, 400, True)
 
 
 class InvalidAttributeValue(CommonServiceException):
@@ -638,6 +638,12 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
         if attribute_type == "String":
             try:
                 attribute_value = attribute.get("StringValue")
+
+                if not attribute_value:
+                    raise InvalidParameterValue(
+                        f"Message (user) attribute '{attribute_name}' must contain a non-empty value of type 'String'."
+                    )
+
                 check_message_content(attribute_value)
             except InvalidMessageContents as e:
                 # AWS throws a different exception here

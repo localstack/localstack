@@ -897,7 +897,22 @@ class TestSqsProvider:
         )
         assert receive_result["Messages"][0]["MessageAttributes"] == attributes
 
-    @pytest.mark.xfail
+    @pytest.mark.aws_validated
+    def test_send_message_with_empty_string_attribute(self, sqs_client, sqs_queue):
+        with pytest.raises(ClientError) as e:
+            sqs_client.send_message(
+                QueueUrl=sqs_queue,
+                MessageBody="test",
+                MessageAttributes={"ErrorDetails": {"StringValue": "", "DataType": "String"}},
+            )
+
+        assert e.value.response["Error"] == {
+            "Type": "Sender",
+            "Code": "InvalidParameterValue",
+            "Message": "Message (user) attribute 'ErrorDetails' must contain a non-empty value of type 'String'.",
+        }
+
+    @pytest.mark.aws_validated
     def test_send_message_with_invalid_string_attributes(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
