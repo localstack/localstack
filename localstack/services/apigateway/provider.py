@@ -667,6 +667,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             ),
         )
 
+    def delete_integration(
+        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+    ) -> None:
+        try:
+            call_moto(context)
+        except Exception as e:
+            raise NotFoundException("Invalid Resource identifier specified") from e
+
 
 # ---------------
 # UTIL FUNCTIONS
