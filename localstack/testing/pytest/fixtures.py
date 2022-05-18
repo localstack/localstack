@@ -812,6 +812,22 @@ def is_change_set_created_and_available(cfn_client):
 
 
 @pytest.fixture
+def is_change_set_failed_and_unavailable(cfn_client):
+    def _is_change_set_created_and_available(change_set_id: str):
+        def _inner():
+            change_set = cfn_client.describe_change_set(ChangeSetName=change_set_id)
+            return (
+                # TODO: CREATE_FAILED should also not lead to further retries
+                change_set.get("Status") == "FAILED"
+                and change_set.get("ExecutionStatus") == "UNAVAILABLE"
+            )
+
+        return _inner
+
+    return _is_change_set_created_and_available
+
+
+@pytest.fixture
 def is_stack_created(cfn_client):
     return _has_stack_status(cfn_client, ["CREATE_COMPLETE", "CREATE_FAILED"])
 

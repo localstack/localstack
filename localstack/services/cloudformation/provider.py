@@ -27,10 +27,12 @@ from localstack.aws.api.cloudformation import (
     DescribeStacksOutput,
     DisableRollback,
     ExecuteChangeSetOutput,
+    ExecutionStatus,
     ExportName,
     GetTemplateOutput,
     GetTemplateSummaryInput,
     GetTemplateSummaryOutput,
+    InvalidChangeSetStatusException,
     ListChangeSetsOutput,
     ListExportsOutput,
     ListImportsOutput,
@@ -454,9 +456,7 @@ class StackChangeSet(Stack):
 
     @property
     def resources(self):
-        result = dict(self.stack.resources)
-        result.update(self.resources)
-        return result
+        return dict(self.stack.resources)
 
     @property
     def changes(self):
@@ -889,22 +889,30 @@ class CloudformationProvider(CloudformationApi):
         change_set = StackChangeSet(req_params, template)
         # TODO: refactor the flow here
         deployer = template_deployer.TemplateDeployer(change_set)
-        deployer.construct_changes(
+        changes = deployer.construct_changes(
             stack,
             change_set,
             change_set_id=change_set.change_set_id,
             append_to_changeset=True,
-        )  # TODO: ignores return value (?)
+            filter_unchanged_resources=True,
+        )
         deployer.apply_parameter_changes(
             change_set, change_set
         )  # TODO: bandaid to populate metadata
         stack.change_sets.append(change_set)
-        change_set.metadata[
-            "Status"
-        ] = "CREATE_COMPLETE"  # technically for some time this should first be CREATE_PENDING
-        change_set.metadata[
-            "ExecutionStatus"
-        ] = "AVAILABLE"  # technically for some time this should first be UNAVAILABLE
+        if not changes:
+            change_set.metadata["Status"] = "FAILED"
+            change_set.metadata["ExecutionStatus"] = "UNAVAILABLE"
+            change_set.metadata[
+                "StatusReason"
+            ] = "The submitted information didn't contain changes. Submit different information to create a change set."
+        else:
+            change_set.metadata[
+                "Status"
+            ] = "CREATE_COMPLETE"  # technically for some time this should first be CREATE_PENDING
+            change_set.metadata[
+                "ExecutionStatus"
+            ] = "AVAILABLE"  # technically for some time this should first be UNAVAILABLE
 
         return CreateChangeSetOutput(StackId=change_set.stack_id, Id=change_set.change_set_id)
 
@@ -954,6 +962,11 @@ class CloudformationProvider(CloudformationApi):
         if not change_set:
             return not_found_error(
                 f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
+            )
+        if change_set.metadata.get("ExecutionStatus") != ExecutionStatus.AVAILABLE:
+            LOG.debug("Change set %s not in execution status 'AVAILABLE'", change_set_name)
+            raise InvalidChangeSetStatusException(
+                f"ChangeSet [{change_set.metadata['ChangeSetId']}] cannot be executed in its current status of [{change_set.metadata.get('Status')}]"
             )
         stack_name = change_set.stack.stack_name
         LOG.debug(
