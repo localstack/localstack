@@ -10,7 +10,7 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 LOG = logging.getLogger(__name__)
 
 
-@lru_cache
+@lru_cache()
 def get_main_container_network() -> Optional[str]:
     """
     Gets the main network of the LocalStack container (if we run in one, bridge otherwise)
@@ -32,7 +32,7 @@ def get_main_container_network() -> Optional[str]:
     return main_container_network
 
 
-@lru_cache
+@lru_cache()
 def get_endpoint_for_network(network: Optional[str] = None) -> str:
     """
     Get the LocalStack endpoint (= IP address) on the given network.
@@ -90,7 +90,7 @@ def get_main_container_id():
         return None
 
 
-@lru_cache
+@lru_cache()
 def get_main_container_name():
     """
     Returns the container name of the LocalStack container
