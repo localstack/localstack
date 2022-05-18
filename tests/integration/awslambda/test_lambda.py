@@ -12,7 +12,6 @@ import pytest
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 
-from localstack import config
 from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_api
 from localstack.services.awslambda.lambda_api import (
@@ -279,12 +278,6 @@ class TestLambdaAPI:
         )
 
         # lambda_arn = lambda_create_response["CreateFunctionResponse"]["FunctionArn"]
-
-        snapshot.replace_jsonpath_value("$..FunctionName", function_name)
-        expected_resource = f"arn:aws.lambda:{config.DEFAULT_REGION}:{account_id}:{function_name}"
-        snapshot.replace_jsonpath_value("$..Statement.Resource", expected_resource)
-        snapshot.replace_jsonpath_value("$..Statement.[*].Resource", expected_resource)
-
         snapshot.match("create_lambda", lambda_create_response["CreateFunctionResponse"])
         # create lambda permission
         action = "lambda:InvokeFunction"
@@ -493,7 +486,6 @@ class TestLambdaAPI:
     ):
         """Testing API actions of function event config"""
         function_name = f"lambda_func-{short_uid()}"
-        snapshot.replace_jsonpath_value("$..FunctionName", function_name)
 
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -506,8 +498,6 @@ class TestLambdaAPI:
             "OnSuccess": {"Destination": queue_arn},
             "OnFailure": {"Destination": queue_arn},
         }
-        snapshot.replace_jsonpath_value("$..OnSuccess.Destination", queue_arn)
-        snapshot.replace_jsonpath_value("$..OnFailure.Destination", queue_arn)
 
         # adding event invoke config
         response = lambda_client.put_function_event_invoke_config(

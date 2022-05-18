@@ -1,8 +1,13 @@
 {
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAsfApi::test_basic_invoke": {
     "lambda_create_fn": {
-      "ResponseMetadata": "<response-metadata>",
-      "FunctionName": "<name>",
+      "ResponseMetadata": {
+        "HTTPStatusCode": 201,
+        "HTTPHeaders": {
+          "content-type": "application/json"
+        }
+      },
+      "FunctionName": "<function-name>",
       "FunctionArn": "<arn>",
       "Runtime": "python3.9",
       "Role": "<arn>",
@@ -12,7 +17,7 @@
       "Timeout": 3,
       "MemorySize": 128,
       "LastModified": "<date>",
-      "CodeSha256": "<sha>",
+      "CodeSha256": "<sha-256>",
       "Version": "$LATEST",
       "TracingConfig": {
         "Mode": "PassThrough"
@@ -22,14 +27,22 @@
       "StateReason": "The function is being created.",
       "StateReasonCode": "Creating",
       "PackageType": "Zip",
+      "Architectures": [
+        "x86_64"
+      ],
       "EphemeralStorage": {
         "Size": 512
       }
     },
     "lambda_get_fn": {
-      "ResponseMetadata": "<response-metadata>",
+      "ResponseMetadata": {
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+          "content-type": "application/json"
+        }
+      },
       "Configuration": {
-        "FunctionName": "<name>",
+        "FunctionName": "<function-name>",
         "FunctionArn": "<arn>",
         "Runtime": "python3.9",
         "Role": "<arn>",
@@ -39,7 +52,7 @@
         "Timeout": 3,
         "MemorySize": 128,
         "LastModified": "<date>",
-        "CodeSha256": "<sha>",
+        "CodeSha256": "<sha-256>",
         "Version": "$LATEST",
         "TracingConfig": {
           "Mode": "PassThrough"
@@ -48,6 +61,9 @@
         "State": "Active",
         "LastUpdateStatus": "Successful",
         "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
         "EphemeralStorage": {
           "Size": 512
         }
@@ -58,7 +74,12 @@
       }
     },
     "lambda_invoke_result": {
-      "ResponseMetadata": "<response-metadata>",
+      "ResponseMetadata": {
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+          "content-type": "application/json"
+        }
+      },
       "StatusCode": 200,
       "ExecutedVersion": "$LATEST",
       "Payload": "{}"

@@ -69,3 +69,5 @@ def fixture_snapshot(request: SubRequest, account_id):
     sm.register_account_id(account_id)
 
     yield sm
+
+    sm.persist_state()

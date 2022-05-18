@@ -4,9 +4,9 @@ import os.path
 
 import pytest
 
+from localstack.testing.snapshots.transformer import LambdaTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
-from tests.integration.util import write_snapshot_samples
 
 LOG = logging.Logger(__name__)
 
@@ -91,7 +91,7 @@ class TestLambdaAsfApi:
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
         fn_name = f"ls-fn-{short_uid()}"
-        snapshot.replace_jsonpath_value("$..FunctionName", fn_name)
+        snapshot.add_transformer(LambdaTransformer())
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
             response = create_lambda_function_aws(
                 FunctionName=fn_name,
@@ -105,10 +105,10 @@ class TestLambdaAsfApi:
 
         get_fn_result = lambda_client.get_function(FunctionName=fn_name)
 
-        write_snapshot_samples(
-            lambda: lambda_client.get_function(FunctionName=fn_name), "lambda", "get_function"
-        )
-        write_snapshot_samples(lambda: lambda_client.list_functions(), "lambda", "list_functions")
+        # write_snapshot_samples(
+        #     lambda: lambda_client.get_function(FunctionName=fn_name), "lambda", "get_function"
+        # )
+        # write_snapshot_samples(lambda: lambda_client.list_functions(), "lambda", "list_functions")
 
         snapshot.match("lambda_get_fn", get_fn_result)
 

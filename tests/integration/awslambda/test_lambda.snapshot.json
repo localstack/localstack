@@ -67,7 +67,7 @@
           "content-type": "application/json"
         }
       },
-      "FunctionName": "lambda_func-1261babc",
+      "FunctionName": "<function-name>",
       "FunctionArn": "<arn>",
       "Runtime": "python3.6",
       "Role": "<arn>",
@@ -111,10 +111,10 @@
           "Service": "s3.amazonaws.com"
         },
         "Action": "lambda:InvokeFunction",
-        "Resource": "arn:aws:lambda:us-east-1:111111111111:function:lambda_func-1261babc",
+        "Resource": "<arn>",
         "Condition": {
           "ArnLike": {
-            "AWS:SourceArn": "arn:aws:s3:::test-bucket"
+            "AWS:SourceArn": "<arn>"
           }
         }
       }
@@ -137,10 +137,10 @@
               "Service": "s3.amazonaws.com"
             },
             "Action": "lambda:InvokeFunction",
-            "Resource": "arn:aws:lambda:us-east-1:111111111111:function:lambda_func-1261babc",
+            "Resource": "<arn>",
             "Condition": {
               "ArnLike": {
-                "AWS:SourceArn": "arn:aws:s3:::test-bucket"
+                "AWS:SourceArn": "<arn>"
               }
             }
           }
