@@ -1464,7 +1464,7 @@ class TemplateDeployer:
         initialize=False,
         change_set_id=None,
         append_to_changeset=False,
-        filter_unchanged_resources=True,
+        filter_unchanged_resources=False,
     ):
         from localstack.services.cloudformation.provider import StackChangeSet
 
