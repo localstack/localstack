@@ -1,15 +1,17 @@
 import json
 import logging
 from pathlib import Path
+from re import Pattern
 from typing import Dict, List, Optional, Set, Tuple
 
 from botocore.response import StreamingBody
 from deepdiff import DeepDiff
 
 from localstack.testing.snapshots.transformer import (
-    GenericTransformer,
+    KeyValueBasedDirectTransformer,
     RegexTransformer,
     Transformation,
+    TransformContext,
 )
 
 LOG = logging.getLogger(__name__)
@@ -65,21 +67,12 @@ class SnapshotSession:
         self.scope_key = scope_key
         self.called_keys = set()
         self.results = []
-        self.account_id = ""
 
         self.observed_state = {}
         self.recorded_state = self.load_state()
 
         self.jsonpath_replacement = []
         self.transformer_list = []
-        self.transformer_list.append(GenericTransformer())
-        self.regex_transformer = RegexTransformer()
-
-    def register_account_id(self, account_id: str):
-        self.account_id = account_id
-        self.regex_transformer.add_replace_regex_pattern(account_id, "1" * 12)
-
-    # TODO allow seeting of regex patterns for regex transformer
 
     def add_transformer(self, transformer: Transformation):
         self.transformer_list.append(transformer)
@@ -114,8 +107,6 @@ class SnapshotSession:
         self.observed_state[key] = obj_state
 
     def match(self, key: str, obj: dict) -> SnapshotMatchResult:
-        # TODO
-        # __tracebackhide__ = True
 
         if key in self.called_keys:
             raise Exception(f"Key {key} used multiple times in the same test scope")
@@ -162,13 +153,32 @@ class SnapshotSession:
                     pass
                     # parsing error can be ignored
 
-    def _transform(self, obj: dict) -> dict:
+    def _transform(self, tmp: dict) -> dict:
         """build a persistable state definition that can later be compared against"""
-        self._transform_dict_to_parseable_values(obj)
+        self._transform_dict_to_parseable_values(tmp)
+        ctx = TransformContext()
 
         for transformer in self.transformer_list:
-            obj = transformer.transform(obj)
+            tmp = transformer.transform(tmp, ctx=ctx)
 
-        # TODO
-        obj = self.regex_transformer.transform(obj)
-        return obj
+        tmp = json.dumps(tmp)
+        for sr in ctx.serialized_replacements:
+            tmp = sr(tmp)
+        tmp = json.loads(tmp)
+
+        return tmp
+
+    # LEGACY API
+
+    def register_replacement(self, pattern: Pattern[str], value: str):
+        self.add_transformer(RegexTransformer(pattern, value))
+
+    def skip_key(self, pattern: Pattern[str], value: str):
+        self.add_transformer(
+            KeyValueBasedDirectTransformer(lambda k, _: bool(pattern.match(k)), replacement=value)
+        )
+
+    def replace_value(self, pattern: Pattern[str], value: str):
+        self.add_transformer(
+            KeyValueBasedDirectTransformer(lambda _, v: bool(pattern.match(v)), replacement=value)
+        )

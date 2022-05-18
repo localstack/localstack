@@ -4,7 +4,7 @@ import os.path
 
 import pytest
 
-from localstack.testing.snapshots.transformer import LambdaTransformer
+from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 
@@ -91,7 +91,9 @@ class TestLambdaAsfApi:
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
         fn_name = f"ls-fn-{short_uid()}"
-        snapshot.add_transformer(LambdaTransformer())
+        snapshot.add_transformer(
+            KeyValueBasedTransformer(lambda _, v: v == fn_name, replacement="fn-name")
+        )
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
             response = create_lambda_function_aws(
                 FunctionName=fn_name,

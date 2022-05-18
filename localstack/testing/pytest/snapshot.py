@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from typing import Optional
 
 import pytest
@@ -16,6 +17,12 @@ from localstack.testing.pytest.fixtures import (  # TODO(!) fix. shouldn't impor
     _client,
 )
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
+from localstack.testing.snapshots.transformer import (
+    PATTERN_ISO8601,
+    PATTERN_UUID,
+    KeyValueBasedTransformer,
+    RegexTransformer,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -66,7 +73,26 @@ def fixture_snapshot(request: SubRequest, account_id):
         update=request.config.option.snapshot_update,
         verify=request.config.option.snapshot_verify,
     )
-    sm.register_account_id(account_id)
+    sm.add_transformer(RegexTransformer(account_id, "1" * 12))
+    sm.add_transformer(
+        KeyValueBasedTransformer(
+            lambda k, v: (
+                isinstance(v, str) and k.lower().endswith("id") and re.match(PATTERN_UUID, v)
+            ),
+            "uuid",
+        )
+    )
+
+    # TODO: new transformer api
+    sm.skip_key(re.compile("HTTPHeaders"), "HTTPHeaders")
+    sm.register_replacement(PATTERN_ISO8601, "date")
+    # sm.register_replacement(PATTERN_SQS_URL, "<sqs-url>")
+    # sm.skip_key(re.compile(r"^.*Name$"), "<name>")
+    # sm.skip_key(re.compile(r"^.*Location$"), "<location>")
+    # sm.skip_key(re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE), "<timestamp>")
+    # sm.skip_key(
+    #     re.compile(r"^.*sha.*$", flags=re.IGNORECASE), "<sha>"
+    # )
 
     yield sm
 

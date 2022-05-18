@@ -1,9 +1,7 @@
-import json
 import re
-from datetime import datetime
-from typing import Dict
+from re import Pattern
+from typing import Callable, Protocol, runtime_checkable
 
-from dateutil import parser as dateutil_parser
 from jsonpath_ng.ext import parse
 
 PATTERN_ARN = re.compile(
@@ -23,136 +21,177 @@ PATTERN_SQS_URL = re.compile(
 )  # TODO: differences here between AWS + localstack structure
 PATTERN_HASH_256 = re.compile(r"^[A-Fa-f0-9]{64}$")
 
+GlobalReplacementFn = Callable[[str], str]
 
-class Transformation:
-    def __init__(self) -> None:
-        super().__init__()
-        self.json_path_replacement_list = []
 
-    def transform(self, input: Dict) -> Dict:
-        self._replace_json_path_pattern(input)
-        return input
+class TransformContext:
 
-    def add_jsonpath_replacement(self, jsonpath, replacement):
+    replacements: list[GlobalReplacementFn]
+
+    scoped_tokens: dict[str, int]
+
+    def __init__(self):
+        self.replacements = []
+        self.scoped_tokens = {}
+
+    @property
+    def serialized_replacements(self) -> list[GlobalReplacementFn]:
+        return self.replacements
+
+    def register_serialized_replacement(self, fn: GlobalReplacementFn):
+        self.replacements.append(fn)
+
+    def new_scope(self, scope: str) -> int:
+        current_counter = self.scoped_tokens.setdefault(scope, 1)
+        self.scoped_tokens[scope] += 1
+        return current_counter
+
+
+@runtime_checkable
+class Transformation(Protocol):
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        ...
+
+
+class JsonPathTransformation:
+    def __init__(self, replacements: [(str, str)]) -> None:
+        assert replacements
+        self.json_path_replacement_list = replacements
+
+    def transform(self, input_data: dict) -> dict:
+        self._replace_json_path_pattern(input_data)
+        return input_data
+
+    def _add_jsonpath_replacement(self, jsonpath, replacement):
         self.json_path_replacement_list.append((jsonpath, replacement))
 
     def _replace_pattern(
         self,
         json_path,
         replacement,
-        input,
+        input_data,
         verify_match=None,
     ):
         pattern = parse(json_path)
-        for match in pattern.find(input):
+        for match in pattern.find(input_data):
             if verify_match and re.match(verify_match, match.value):
-                pattern.update(input, replacement)
+                pattern.update(input_data, replacement)
             elif not verify_match:
-                pattern.update(input, replacement)
+                pattern.update(input_data, replacement)
 
-    def _replace_json_path_pattern(self, input: Dict) -> Dict:
+    def _replace_json_path_pattern(self, input_data: dict) -> dict:
         for (json_path, replace_string) in self.json_path_replacement_list:
-            self._replace_pattern(json_path=json_path, replacement=replace_string, input=input)
+            self._replace_pattern(
+                json_path=json_path, replacement=replace_string, input_data=input_data
+            )
+        return input_data
 
 
-class LambdaTransformer(Transformation):
-    def __init__(self) -> None:
-        super().__init__()
+class RegexTransformer:
+    def __init__(self, regex: str | Pattern[str], replacement: str):
+        self.regex = regex
+        self.replacement = replacement
 
-    def transform(self, input: Dict) -> Dict:
-        return super().transform(input)
-
-
-class RegexTransformer(Transformation):
-    def __init__(self) -> None:
-        super().__init__()
-        self.regex_replacements = []
-
-    def add_replace_regex_pattern(self, regex_string: str, replacement_string: str):
-        self.regex_replacements.append((regex_string, replacement_string))
-        # self.account_id, "1" * 12, tmp
-
-    def transform(self, input: Dict) -> Dict:
-        tmp = json.dumps(input, default=str)
-        for regex, replacement in self.regex_replacements:
-            result = re.sub(re.compile(regex), replacement, tmp)
-
-        res = json.loads(result)
-        return super().transform(res)
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        compiled_regex = re.compile(self.regex) if isinstance(self.regex, str) else self.regex
+        ctx.register_serialized_replacement(lambda s: re.sub(compiled_regex, self.replacement, s))
+        return input_data
 
 
-class GenericTransformer(Transformation):
-    def __init__(self) -> None:
-        super().__init__()
+class MoreGenericTransformer:
+    def __init__(self, fn: Callable[[dict], dict]):
+        self.fn = fn
 
-    def replace_common_values(self, input: Dict) -> Dict:
-        for k, v in input.items():
-            if isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):  # TODO
+    def transform(self, input_data: dict) -> dict:
+        return self.fn(input_data)
+
+
+class KeyValueBasedDirectTransformer:
+    def __init__(self, match_fn: Callable[[str, str], bool], replacement: str):
+        self.match_fn = match_fn
+        self.replacement = replacement
+
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        for k, v in input_data.items():
+            if self.match_fn(k, v):
+                input_data[k] = self.replacement
+            elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
                 for i in range(0, len(v)):
-                    v[i] = self.replace_common_values(v[i])
+                    v[i] = self.transform(v[i], ctx=ctx)
             elif isinstance(v, dict):
-                input[k] = self.replace_common_values(v)
-            elif isinstance(v, datetime):
-                input[k] = "<date>"
-            elif isinstance(v, str):
-                if re.match(PATTERN_ARN, v):
-                    input[k] = "<arn>"
-                elif (
-                    "modified" in k.lower() or "date" in k.lower() or "time" in k.lower()
-                ) and self._is_date(
-                    v
-                ):  # TODO
-                    input[k] = "<date>"
-                elif k.lower().endswith("id") and re.match(PATTERN_UUID, v):
-                    input[k] = "<uuid>"
+                input_data[k] = self.transform(v, ctx=ctx)
 
-        return input
+        return input_data
 
-    def _is_date(self, value: str):
-        try:
-            # TODO seems like the date can have various formats, use this dateutil lib?
-            dateutil_parser.parse(value)
-            return True
-        except Exception:
-            return False
 
-    def transform(self, input: Dict) -> Dict:
-        self.clean_response_metadata(input)
-        self.replace_common_values(input)
+class KeyValueBasedTransformer:
+    def __init__(self, match_fn: Callable[[str, str], bool], replacement: str):
+        self.match_fn = match_fn
+        self.replacement = replacement
 
-        # TODO move this somewhere else
-        replace_pattern = [
-            ("$..Code.Location", "<location>"),
-            ("$..CodeSha256", "<sha-256>"),  # TODO maybe calculate expected has
-            ("$..Owner.DisplayName", "<owner-name>"),
-            ("$..Owner.ID", "<owner-id>"),
-            # TODO *Name
-            ("$..FunctionName", "<function-name>"),
-            ("$..ChangeSetName", "<change-set-name>"),
-            ("$..StackName", "<stack-name>"),
-            ("$..Name", "<name>"),
-            ("$..Contents.ETag", "<etag>"),
-        ]
-        replace_pattern.extend(self.json_path_replacement_list)
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        for k, v in input_data.items():
+            if isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
+                for i in range(0, len(v)):
+                    v[i] = self.transform(v[i], ctx=ctx)
+            elif isinstance(v, dict):
+                input_data[k] = self.transform(v, ctx=ctx)
+            elif self.match_fn(k, v):
+                actual_replacement = f"<{self.replacement}:{ctx.new_scope(self.replacement)}>"
+                c = v
+                ctx.register_serialized_replacement(lambda s: s.replace(c, actual_replacement, -1))
+        return input_data
 
-        # TODO
-        # self.replace_pattern(
-        #     "$..RequestID.StringValue", replacement="<uuid>", input=input, verify_match=PATTERN_UUID
-        # )
 
-        return super().transform(input)
+def create_transformer(fn: Callable[[dict], dict]) -> Transformation:
+    return MoreGenericTransformer(fn)
 
-    def clean_response_metadata(self, input: Dict):
-        metadata = input.get("ResponseMetadata")
-        if not metadata:
-            return
-        http_headers = metadata.get("HTTPHeaders")
 
-        simplified_headers = {}
-        simplified_headers["content-type"] = http_headers["content-type"]
-
-        simplified_metadata = {
-            "HTTPStatusCode": metadata.pop("HTTPStatusCode"),
-            "HTTPHeaders": simplified_headers,
-        }
-        input["ResponseMetadata"] = simplified_metadata
+#     def _is_date(self, value: str):
+#         try:
+#             # TODO seems like the date can have various formats, use this dateutil lib?
+#             dateutil_parser.parse(value)
+#             return True
+#         except Exception:
+#             return False
+#
+#     def transform(self, input_data: dict) -> dict:
+#         self.clean_response_metadata(input_data)
+#         self.replace_common_values(input_data)
+#
+#         # TODO move this somewhere else
+#         replace_pattern = [
+#             ("$..Code.Location", "<location>"),
+#             ("$..CodeSha256", "<sha-256>"),  # TODO maybe calculate expected has
+#             ("$..Owner.DisplayName", "<owner-name>"),
+#             ("$..Owner.ID", "<owner-id>"),
+#             # TODO *Name
+#             ("$..FunctionName", "<function-name>"),
+#             ("$..ChangeSetName", "<change-set-name>"),
+#             ("$..StackName", "<stack-name>"),
+#             ("$..Name", "<name>"),
+#             ("$..Contents.ETag", "<etag>"),
+#         ]
+#         replace_pattern.extend(self.json_path_replacement_list)
+#
+#         # TODO
+#         # self.replace_pattern(
+#         #     "$..RequestID.StringValue", replacement="<uuid>", input=input, verify_match=PATTERN_UUID
+#         # )
+#
+#         return super().transform(input)
+#
+#     def clean_response_metadata(self, input_data: dict):
+#         metadata = input_data.get("ResponseMetadata")
+#         if not metadata:
+#             return
+#         http_headers = metadata.get("HTTPHeaders")
+#
+#         simplified_headers = {}
+#         simplified_headers["content-type"] = http_headers["content-type"]
+#
+#         simplified_metadata = {
+#             "HTTPStatusCode": metadata.pop("HTTPStatusCode"),
+#             "HTTPHeaders": simplified_headers,
+#         }
+#         input_data["ResponseMetadata"] = simplified_metadata
