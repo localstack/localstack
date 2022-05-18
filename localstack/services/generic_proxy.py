@@ -239,9 +239,6 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
     def forward_request(
         self, method: str, path: str, data: MessagePayload, headers: Headers
     ) -> Optional[RoutingRequest]:
-        # Only handle requests for calls from external clients
-        if is_internal_call_context(headers):
-            return None
         return RoutingRequest(
             method=method,
             path=self._adjust_partition_in_path(path, self.DEFAULT_INBOUND_PARTITION),

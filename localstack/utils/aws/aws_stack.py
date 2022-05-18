@@ -691,7 +691,7 @@ def lambda_layer_arn(layer_name, version=None, account_id=None):
 def lambda_function_or_layer_arn(
     type, entity_name, version=None, account_id=None, region_name=None
 ):
-    pattern = "arn:aws:lambda:.*:.*:(function|layer):.*"
+    pattern = "arn:([a-z-]+):lambda:.*:.*:(function|layer):.*"
     if re.match(pattern, entity_name):
         return entity_name
     if ":" in entity_name:
@@ -702,16 +702,15 @@ def lambda_function_or_layer_arn(
             version = alias_response["FunctionVersion"]
 
         except Exception as e:
-            msg = "Alias %s of %s not found" % (alias, entity_name)
+            msg = f"Alias {alias} of {entity_name} not found"
             LOG.info(f"{msg}: {e}")
             raise Exception(msg)
 
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
-    pattern = re.sub(r"\([^\|]+\|.+\)", type, pattern)
-    result = pattern.replace(".*", "%s") % (region_name, account_id, entity_name)
+    result = f"arn:aws:lambda:{region_name}:{account_id}:{type}:{entity_name}"
     if version:
-        result = "%s:%s" % (result, version)
+        result = f"{result}:{version}"
     return result
 
 
