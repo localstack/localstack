@@ -411,11 +411,17 @@ class RegionBackend:
 # ---------------------
 
 
-def append_cors_headers(request_headers=None, response=None):
-    # Note: Use "response is not None" here instead of "not response"!
+def append_cors_headers(
+    request_headers: Dict = None, response: Union[Response, LambdaResponse] = None
+):
+    # use this config to disable returning CORS headers entirely (more restrictive security setting)
+    if config.DISABLE_CORS_HEADERS:
+        return
+
+    # Note: Use "response is None" here instead of "not response"
     headers = {} if response is None else response.headers
 
-    # In case we have LambdaResponse copy multivalue headers to regular headers, since
+    # In case we have LambdaResponse, copy multivalue headers to regular headers, since
     # CaseInsensitiveDict does not support "__contains__" and it's easier to deal with
     # a single headers object
     if isinstance(response, LambdaResponse):
