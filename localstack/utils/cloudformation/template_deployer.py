@@ -1501,8 +1501,10 @@ class TemplateDeployer:
         initialize=False,
         action=None,
     ):
+        old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
         action = action or "CREATE"
+        self.init_resource_status(old_resources, action="UPDATE")
 
         # apply parameter changes to existing stack
         self.apply_parameter_changes(existing_stack, new_stack)
@@ -1522,8 +1524,6 @@ class TemplateDeployer:
             resource = new_resources.get(change["ResourceChange"]["LogicalResourceId"])
             if res_action != "Modify" or self.resource_config_differs(resource):
                 contains_changes = True
-            if res_action == "Modify":
-                self.stack.set_resource_status(resource["LogicalResourceId"], "UPDATE_IN_PROGRESS")
             if res_action in ["Modify", "Add"]:
                 self.merge_properties(resource["LogicalResourceId"], existing_stack, new_stack)
         if not contains_changes:
