@@ -708,7 +708,7 @@ def lambda_function_or_layer_arn(
 
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
-    result = f"arn:aws:lambda:{region_name}:{account_id}:function:{entity_name}"
+    result = f"arn:aws:lambda:{region_name}:{account_id}:{type}:{entity_name}"
     if version:
         result = f"{result}:{version}"
     return result
