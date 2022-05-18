@@ -1,6 +1,8 @@
 import functools
 import sys
-from typing import Any, Callable, NamedTuple, Optional, Type, Union
+from typing import Any, Callable, NamedTuple, Optional, Protocol, Type, Union
+
+from localstack.aws.api import RequestContext
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict

@@ -627,7 +627,7 @@ class TestAPIGateway(unittest.TestCase):
             resourceId=api_resource["id"],
             httpMethod="GET",
         )
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(204, rs["ResponseMetadata"]["HTTPStatusCode"])
 
         with self.assertRaises(ClientError) as ctx:
             # This call should not be successful as the integration is deleted
