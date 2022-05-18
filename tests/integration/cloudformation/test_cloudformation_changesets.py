@@ -302,6 +302,7 @@ def test_describe_change_set_nonexisting(cfn_client):
     assert ex.value.response["Error"]["Code"] == "ResourceNotFoundException"
 
 
+@pytest.mark.aws_validated
 def test_execute_change_set(
     cfn_client,
     sns_client,

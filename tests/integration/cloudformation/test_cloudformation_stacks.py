@@ -8,8 +8,10 @@ from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 
-
 # TODO: refactor file and remove this compatibility fn
+from localstack.utils.sync import retry
+
+
 def load_template_raw(file_name: str):
     return load_template_file(os.path.join(os.path.dirname(__file__), "../templates", file_name))
 
@@ -48,8 +50,14 @@ def test_create_stack_with_ssm_parameters(
         # TODO: cleanup parameter
 
 
+@pytest.mark.aws_validated
 def test_list_stack_resources_for_removed_resource(
-    cfn_client, is_stack_created, is_change_set_finished
+    cfn_client,
+    is_stack_created,
+    is_change_set_finished,
+    is_change_set_created_and_available,
+    cleanup_changesets,
+    cleanup_stacks,
 ):
     event_bus_name = f"bus-{short_uid()}"
     template = jinja2.Template(load_template_raw("eventbridge_policy.yaml")).render(
@@ -57,36 +65,47 @@ def test_list_stack_resources_for_removed_resource(
     )
 
     stack_name = f"stack-{short_uid()}"
+    stack_id = None
+    change_set_id = None
+    try:
+        response = cfn_client.create_stack(StackName=stack_name, TemplateBody=template)
+        stack_id = response["StackId"]
+        assert stack_id
+        wait_until(is_stack_created(stack_id))
 
-    response = cfn_client.create_stack(StackName=stack_name, TemplateBody=template)
-    stack_id = response["StackId"]
-    assert stack_id
-    wait_until(is_stack_created(stack_id))
+        # get list of stack resources
+        resources = cfn_client.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+        resources_before = len(resources)
+        assert resources_before == 3
+        statuses = set([res["ResourceStatus"] for res in resources])
+        assert statuses == {"CREATE_COMPLETE"}
 
-    # get list of stack resources
-    resources = cfn_client.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
-    resources_before = len(resources)
-    assert resources_before == 3
-    statuses = set([res["ResourceStatus"] for res in resources])
-    assert statuses == {"CREATE_COMPLETE", "UPDATE_COMPLETE"}
+        # remove one resource from the template, then update stack (via change set)
+        template_dict = yaml.load(template)
+        template_dict["Resources"].pop("eventPolicy2")
+        template2 = yaml.dump(template_dict)
 
-    # remove one resource from the template, then update stack (via change set)
-    template_dict = yaml.load(template)
-    template_dict["Resources"].pop("eventPolicy2")
-    template2 = yaml.dump(template_dict)
+        response = cfn_client.create_change_set(
+            StackName=stack_name, ChangeSetName="cs1", TemplateBody=template2
+        )
+        change_set_id = response["Id"]
+        assert wait_until(is_change_set_created_and_available(change_set_id))
+        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        wait_until(is_change_set_finished(change_set_id))
 
-    response = cfn_client.create_change_set(
-        StackName=stack_name, ChangeSetName="cs1", TemplateBody=template2
-    )
-    change_set_id = response["Id"]
-    cfn_client.execute_change_set(ChangeSetName=change_set_id)
-    wait_until(is_change_set_finished(change_set_id))
+        # get list of stack resources, again - make sure that deleted resource is not contained in result
+        def assert_list():
+            resources = cfn_client.list_stack_resources(StackName=stack_name)[
+                "StackResourceSummaries"
+            ]
+            assert len(resources) == resources_before - 1
+            statuses = set([res["ResourceStatus"] for res in resources])
+            assert statuses == {"CREATE_COMPLETE"}
 
-    # get list of stack resources, again - make sure that deleted resource is not contained in result
-    resources = cfn_client.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
-    assert len(resources) == resources_before - 1
-    statuses = set([res["ResourceStatus"] for res in resources])
-    assert statuses == {"CREATE_COMPLETE", "UPDATE_COMPLETE"}
+        retry(assert_list)
+    finally:
+        cleanup_changesets([change_set_id])
+        cleanup_stacks([stack_id])
 
 
 @pytest.mark.xfail(reason="outputs don't behave well in combination with conditions")
