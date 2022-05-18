@@ -3,7 +3,6 @@ import base64
 import json
 import os
 import re
-import unittest
 from collections import namedtuple
 from typing import Callable, Optional
 from unittest.mock import patch
@@ -135,7 +134,7 @@ class TestAPIGateway:
         "providerARNs": ["arn:aws:cognito-idp:us-east-1:123412341234:userpool/us-east-1_123412341"],
         "authType": "custom",
         "authorizerUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/"
-                         + "arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer/invocations",
+        + "arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer/invocations",
         "authorizerCredentials": "arn:aws:iam::123456789012:role/apigAwsProxyRole",
         "identitySource": "method.request.header.Authorization",
         "identityValidationExpression": ".*",
@@ -470,7 +469,7 @@ class TestAPIGateway:
         result = requests.post(url, data=binary_msg)
         result_content = json.loads(to_str(result.content))
         assert "/yCqIBE=" == result_content["body"]
-        assert True == result_content["isBase64Encoded"]
+        assert ["isBase64Encoded"]
 
     def test_api_gateway_lambda_proxy_integration_any_method(self):
         self._test_api_gateway_lambda_proxy_integration_any_method(
@@ -1274,7 +1273,7 @@ class TestAPIGateway:
                     #set($data = $util.escapeJavaScript($input.json('$')))
                     {"input": $data, "stateMachineArn": "%s"}
                     """
-                                        % sm_arn
+                    % sm_arn
                 }
             }
         )
@@ -1383,7 +1382,10 @@ class TestAPIGateway:
             result = requests.get(url)
             content = json.loads(to_str(result.content))
             assert 200 == result.status_code
-            assert re.search("http://.*localhost.*/person/123", content["headers"].get(HEADER_LOCALSTACK_REQUEST_URL))
+            assert re.search(
+                "http://.*localhost.*/person/123",
+                content["headers"].get(HEADER_LOCALSTACK_REQUEST_URL),
+            )
 
         for use_hostname in [True, False]:
             for use_ssl in [True, False] if use_hostname else [False]:
@@ -1545,7 +1547,7 @@ class TestAPIGateway:
                         {
                             "type": "AWS",
                             "uri": "arn:aws:apigateway:%s:kinesis:action/PutRecords"
-                                   % aws_stack.get_region(),
+                            % aws_stack.get_region(),
                             "requestTemplates": {"application/json": template},
                         }
                     ],
@@ -1558,7 +1560,7 @@ class TestAPIGateway:
                         {
                             "type": "AWS",
                             "uri": "arn:aws:apigateway:%s:kinesis:action/ListStreams"
-                                   % aws_stack.get_region(),
+                            % aws_stack.get_region(),
                             "requestTemplates": {"application/json": "{}"},
                         }
                     ],
@@ -1863,4 +1865,3 @@ def test_apigateway_rust_lambda(
         assert result.text == f"Hello, {first_name}!"
     finally:
         apigateway_client.delete_rest_api(restApiId=rest_api_id)
-
