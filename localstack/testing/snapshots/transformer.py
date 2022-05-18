@@ -1,7 +1,7 @@
 import json
 import re
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict
 
 from dateutil import parser as dateutil_parser
 from jsonpath_ng.ext import parse
@@ -56,16 +56,16 @@ class Transformation:
 
 
 class LambdaTransformer(Transformation):
-    def __init__(self, json_path_replacements: List[Tuple[str, str]] = []) -> None:
-        super().__init__(json_path_replacements)
+    def __init__(self) -> None:
+        super().__init__()
 
     def transform(self, input: Dict) -> Dict:
-        return input
+        return super().transform(input)
 
 
 class RegexTransformer(Transformation):
-    def __init__(self, json_path_replacements: List[Tuple[str, str]] = []) -> None:
-        super().__init__(json_path_replacements)
+    def __init__(self) -> None:
+        super().__init__()
         self.regex_replacements = []
 
     def add_replace_regex_pattern(self, regex_string: str, replacement_string: str):
@@ -77,12 +77,13 @@ class RegexTransformer(Transformation):
         for regex, replacement in self.regex_replacements:
             result = re.sub(re.compile(regex), replacement, tmp)
 
-        return json.loads(result)
+        res = json.loads(result)
+        return super().transform(res)
 
 
 class GenericTransformer(Transformation):
-    def __init__(self, json_path_replacements: List[Tuple[str, str]] = []) -> None:
-        super().__init__(json_path_replacements)
+    def __init__(self) -> None:
+        super().__init__()
 
     def replace_common_values(self, input: Dict) -> Dict:
         for k, v in input.items():
@@ -117,6 +118,9 @@ class GenericTransformer(Transformation):
 
     def transform(self, input: Dict) -> Dict:
         self.clean_response_metadata(input)
+        self.replace_common_values(input)
+
+        # TODO move this somewhere else
         replace_pattern = [
             ("$..Code.Location", "<location>"),
             ("$..CodeSha256", "<sha-256>"),  # TODO maybe calculate expected has
@@ -130,16 +134,13 @@ class GenericTransformer(Transformation):
             ("$..Contents.ETag", "<etag>"),
         ]
         replace_pattern.extend(self.json_path_replacement_list)
-        for (json_path, replace_string) in replace_pattern:
-            self.replace_pattern(json_path=json_path, replacement=replace_string, input=input)
 
         # TODO
         # self.replace_pattern(
         #     "$..RequestID.StringValue", replacement="<uuid>", input=input, verify_match=PATTERN_UUID
         # )
 
-        self.replace_common_values(input)
-        return input
+        return super().transform(input)
 
     def clean_response_metadata(self, input: Dict):
         metadata = input.get("ResponseMetadata")

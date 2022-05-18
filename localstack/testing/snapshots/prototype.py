@@ -79,6 +79,8 @@ class SnapshotSession:
         self.account_id = account_id
         self.regex_transformer.add_replace_regex_pattern(account_id, "1" * 12)
 
+    # TODO allow seeting of regex patterns for regex transformer
+
     def add_transformer(self, transformer: Transformation):
         self.transformer_list.append(transformer)
 
