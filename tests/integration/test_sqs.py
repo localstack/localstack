@@ -730,13 +730,7 @@ class TestSqsProvider:
         result_recv = sqs_client.receive_message(QueueUrl=queue_url)
         assert result_recv["Messages"][0]["MessageId"] == message_id
 
-    def test_fifo_queue_without_fifo_queue_attribute(self, sqs_create_queue):
-        queue_name = f"invalid-{short_uid()}.fifo"
-
-        with pytest.raises(Exception) as e:
-            sqs_create_queue(QueueName=queue_name)
-        e.match("InvalidParameterValue")
-
+    @pytest.mark.aws_validated
     def test_fifo_queue_requires_suffix(self, sqs_create_queue):
         queue_name = f"invalid-{short_uid()}"
         attributes = {"FifoQueue": "true"}
@@ -745,6 +739,7 @@ class TestSqsProvider:
             sqs_create_queue(QueueName=queue_name, Attributes=attributes)
         e.match("InvalidParameterValue")
 
+    @pytest.mark.aws_validated
     def test_standard_queue_cannot_have_fifo_suffix(self, sqs_create_queue):
         queue_name = f"queue-{short_uid()}.fifo"
         with pytest.raises(Exception) as e:
