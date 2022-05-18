@@ -1464,6 +1464,7 @@ class TemplateDeployer:
         initialize=False,
         change_set_id=None,
         append_to_changeset=False,
+        filter_unchanged_resources=False,
     ):
         from localstack.services.cloudformation.provider import StackChangeSet
 
@@ -1477,8 +1478,13 @@ class TemplateDeployer:
         for action, items in (("Remove", deletes), ("Add", adds), ("Modify", modifies)):
             for item in items:
                 item["Properties"] = item.get("Properties", {})
-                change = self.get_change_config(action, item, change_set_id=change_set_id)
-                changes.append(change)
+                if (
+                    not filter_unchanged_resources
+                    or action != "Modify"
+                    or self.resource_config_differs(item)
+                ):
+                    change = self.get_change_config(action, item, change_set_id=change_set_id)
+                    changes.append(change)
 
         # append changes to change set
         if append_to_changeset and isinstance(new_stack, StackChangeSet):
