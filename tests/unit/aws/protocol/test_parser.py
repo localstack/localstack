@@ -272,9 +272,6 @@ def test_query_parser_flattened_list_structure():
     }
 
 
-@pytest.mark.xfail(
-    reason="types are currently not checked in the parser so this will raise an UnknownParserError"
-)
 def test_query_parser_pass_str_as_int_raises_error():
     """Test to make sure that invalid types correctly raise a ProtocolParserError."""
     parser = QueryRequestParser(load_service("sts"))
@@ -286,6 +283,7 @@ def test_query_parser_pass_str_as_int_raises_error():
             "DurationSeconds=abcd"  # illegal argument (should be an int)
         ),
         method="POST",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
 
     with pytest.raises(ProtocolParserError):

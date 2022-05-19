@@ -599,8 +599,13 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         if shape.serialization.get("resultWrapper"):
             name = shape.serialization.get("resultWrapper")
 
-        method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
-        method(xmlnode, params, shape, name)
+        try:
+            method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
+            method(xmlnode, params, shape, name)
+        except (TypeError, ValueError, AttributeError) as e:
+            raise ProtocolSerializerError(
+                f"Invalid type when serializing {shape.name}: '{xmlnode}' cannot be parsed to {shape.type_name}."
+            ) from e
 
     def _serialize_type_structure(
         self, xmlnode: ETree.Element, params: dict, shape: StructureShape, name: str
@@ -1129,8 +1134,13 @@ class JSONResponseSerializer(ResponseSerializer):
 
     def _serialize(self, body: dict, value: Any, shape, key: Optional[str] = None):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
-        method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
-        method(body, value, shape, key)
+        try:
+            method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
+            method(body, value, shape, key)
+        except (TypeError, ValueError, AttributeError) as e:
+            raise ProtocolSerializerError(
+                f"Invalid type when serializing {shape.name}: '{value}' cannot be parsed to {shape.type_name}."
+            ) from e
 
     def _serialize_type_structure(self, body: dict, value: dict, shape: StructureShape, key: str):
         if value is None:

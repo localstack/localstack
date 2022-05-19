@@ -257,7 +257,12 @@ class RequestParser(abc.ABC):
 
         fn_name = "_parse_%s" % shape.type_name
         handler = getattr(self, fn_name, self._noop_parser)
-        return handler(request, shape, payload, uri_params) if payload is not None else None
+        try:
+            return handler(request, shape, payload, uri_params) if payload is not None else None
+        except (TypeError, ValueError, AttributeError) as e:
+            raise ProtocolParserError(
+                f"Invalid type when parsing {shape.name}: '{payload}' cannot be parsed to int."
+            ) from e
 
     # The parsing functions for primitive types, lists, and timestamps are shared among subclasses.
 
