@@ -80,9 +80,11 @@ import functools
 import json
 import logging
 from abc import ABC
+from binascii import crc32
 from datetime import datetime
 from email.utils import formatdate
-from typing import Any, Optional, Tuple, Union
+from struct import pack
+from typing import Any, Iterable, Iterator, Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
 from boto.utils import ISO8601
@@ -164,6 +166,8 @@ class ResponseSerializer(abc.ABC):
     DEFAULT_ENCODING = "utf-8"
     # The default timestamp format is ISO8601, but this can be overwritten by subclasses.
     TIMESTAMP_FORMAT = "iso8601"
+    # Event streaming binary data type mapping for type "string"
+    AWS_BINARY_DATA_TYPE_STRING = 7
 
     @_handle_exceptions
     def serialize_to_response(
@@ -178,6 +182,10 @@ class ResponseSerializer(abc.ABC):
         :return: HttpResponse which can be sent to the calling client
         :raises: ResponseSerializerError (either a ProtocolSerializerError or an UnknownSerializerError)
         """
+        # if the operation has a streaming output, handle the serialization differently
+        if operation_model.has_event_stream_output:
+            return self._serialize_event_stream(response, operation_model)
+
         serialized_response = self._create_default_response(operation_model)
         shape = operation_model.output_shape
         # The shape can also be none (for empty responses), but it still needs to be serialized (to add some metadata)
@@ -204,6 +212,7 @@ class ResponseSerializer(abc.ABC):
         :return: HttpResponse which can be sent to the calling client
         :raises: ResponseSerializerError (either a ProtocolSerializerError or an UnknownSerializerError)
         """
+        # TODO implement streaming error serialization
         serialized_response = self._create_default_response(operation_model)
         if isinstance(error, CommonServiceException):
             # Not all possible exceptions are contained in the service's specification.
@@ -263,7 +272,6 @@ class ResponseSerializer(abc.ABC):
         shape_members: dict,
         operation_model: OperationModel,
     ) -> None:
-        # TODO implement the handling of eventstreams (where "streaming" is True)
         raise NotImplementedError
 
     def _serialize_body_params(
@@ -289,6 +297,142 @@ class ResponseSerializer(abc.ABC):
         operation_model: OperationModel,
     ) -> None:
         raise NotImplementedError
+
+    def _serialize_event_stream(
+        self, response: dict, operation_model: OperationModel
+    ) -> HttpResponse:
+        """
+        Serializes a given response dict (the return payload of a service implementation) to an _event stream_ using the
+        given operation model.
+
+        :param response: dictionary containing the payload for the response
+        :param operation_model: describing the operation the response dict is being returned by
+        :return: HttpResponse which can directly be sent to the client (in chunks)
+        """
+        event_stream_shape = operation_model.get_event_stream_output()
+        event_stream_member_name = operation_model.output_shape.event_stream_name
+
+        # wrap the generator in operation specific serialization
+        def event_stream_serializer() -> Iterable[bytes]:
+            yield self._encode_event_payload("initial-response")
+            # yield convert_to_binary_event_payload("", event_type="initial-response")
+
+            # create a default response
+            serialized_event_response = self._create_default_response(operation_model)
+            # get the members of the event stream shape
+            event_stream_shape_members = (
+                event_stream_shape.members if event_stream_shape is not None else None
+            )
+            # extract the generator from the given response data
+            event_generator = response.get(event_stream_member_name)
+            if not isinstance(event_generator, Iterator):
+                raise ProtocolSerializerError(
+                    "Expected iterator for streaming event serialization."
+                )
+
+            # yield one event per generated event
+            for event in event_generator:
+                # find the actual event payload (the member with event=true)
+                event_member = None
+                for member in event_stream_shape_members.values():
+                    if member.serialization.get("event"):
+                        event_member = member
+                        break
+                if event_member is None:
+                    raise UnknownSerializerError("Couldn't find event shape for serialization.")
+
+                # serialize the part of the response for the event
+                self._serialize_response(
+                    event.get(event_member.name),
+                    serialized_event_response,
+                    event_member,
+                    event_member.members if event_member is not None else None,
+                    operation_model,
+                )
+                # execute additional response traits (might be modifying the response)
+                serialized_event_response = self._prepare_additional_traits_in_response(
+                    serialized_event_response, operation_model
+                )
+                # encode the event and yield it
+                yield self._encode_event_payload(
+                    event_type=event_member.name, content=serialized_event_response.data
+                )
+
+        return HttpResponse(
+            response=event_stream_serializer(),
+            status=operation_model.http.get("responseCode", 200),
+        )
+
+    def _encode_event_payload(
+        self,
+        event_type: str,
+        content: Union[str, bytes] = "",
+        error_code: Optional[str] = None,
+        error_message: Optional[str] = None,
+    ) -> bytes:
+        """
+        Encodes the given event payload according to AWS specific binary event encoding.
+        A specification of the format can be found in the AWS docs:
+        https://docs.aws.amazon.com/AmazonS3/latest/API/RESTSelectObjectAppendix.html
+
+        :param content: string or bytes of the event payload
+        :param event_type: type of the event. Usually the name of the event shape or specific event types like
+                            "initial-response".
+        :param error_code: Optional. Error code if the payload represents an error.
+        :param error_message: Optional. Error message if the payload represents an error.
+        :return: bytes with the AWS-specific encoded event payload
+        """
+
+        # determine the event type (error if an error message or an error code is set)
+        if error_message or error_code:
+            message_type = "error"
+        else:
+            message_type = "event"
+
+        # set the headers
+        headers = {":event-type": event_type, ":message-type": message_type}
+        if error_message:
+            headers[":error-message"] = error_message
+        if error_code:
+            headers[":error-code"] = error_code
+
+        # construct headers
+        header_section = b""
+        for key, value in headers.items():
+            header_name = key.encode(self.DEFAULT_ENCODING)
+            header_value = to_bytes(value)
+            header_section += pack("!B", len(header_name))
+            header_section += header_name
+            header_section += pack("!B", self.AWS_BINARY_DATA_TYPE_STRING)
+            header_section += pack("!H", len(header_value))
+            header_section += header_value
+
+        # construct body
+        if isinstance(content, str):
+            payload = bytes(content, self.DEFAULT_ENCODING)
+        else:
+            payload = content
+
+        # calculate lengths
+        headers_length = len(header_section)
+        payload_length = len(payload)
+
+        # construct message
+        # - prelude
+        result = pack("!I", payload_length + headers_length + 16)
+        result += pack("!I", headers_length)
+        # - prelude crc
+        prelude_crc = crc32(result)
+        result += pack("!I", prelude_crc)
+        # - headers
+        result += header_section
+        # - payload
+        result += payload
+        # - message crc
+        payload_crc = crc32(result)
+        result += pack("!I", payload_crc)
+
+        return result
 
     def _create_default_response(self, operation_model: OperationModel) -> HttpResponse:
         """

@@ -1,11 +1,15 @@
 import copy
+import io
 import re
 from datetime import datetime
-from typing import Optional
+from typing import Iterator, Optional
 
 import pytest
+from botocore.endpoint import convert_to_response_dict
 from botocore.parsers import ResponseParser, create_parser
 from dateutil.tz import tzlocal, tzutc
+from requests.models import Response as RequestsResponse
+from urllib3 import HTTPResponse as UrlLibHttpResponse
 
 from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.protocol.serializer import (
@@ -1051,6 +1055,149 @@ def test_restjson_headers_location():
     assert "headers_key2" in response["ResponseHeaders"]
     assert "headers_value1" == response["ResponseHeaders"]["headers_key1"]
     assert "headers_value2" == response["ResponseHeaders"]["headers_key2"]
+
+
+def _iterable_to_stream(iterable, buffer_size=io.DEFAULT_BUFFER_SIZE):
+    """
+    Concerts a given iterable (generator) to a stream for testing purposes.
+    This wrapper does not "real streaming". The event serializer will wait for the end of the stream / generator.
+    """
+
+    class IterStream(io.RawIOBase):
+        def __init__(self):
+            self.leftover = None
+
+        def readable(self):
+            return True
+
+        def readinto(self, b):
+            try:
+                chunk = next(iterable)
+                b[: len(chunk)] = chunk
+                return len(chunk)
+            except StopIteration:
+                return 0
+
+    return io.BufferedReader(IterStream(), buffer_size=buffer_size)
+
+
+def test_json_event_streaming():
+    # Create test events from Kinesis' SubscribeToShard operation
+    event_1 = {
+        "SubscribeToShardEvent": {
+            "Records": [
+                {
+                    "SequenceNumber": "1",
+                    "Data": b"event_data_1_record_1",
+                    "PartitionKey": "event_1_partition_key_record_1",
+                },
+                {
+                    "SequenceNumber": "2",
+                    "Data": b"event_data_1_record_2",
+                    "PartitionKey": "event_1_partition_key_record_1",
+                },
+            ],
+            "ContinuationSequenceNumber": "1",
+            "MillisBehindLatest": 1337,
+        }
+    }
+    event_2 = {
+        "SubscribeToShardEvent": {
+            "Records": [
+                {
+                    "SequenceNumber": "3",
+                    "Data": b"event_data_2_record_1",
+                    "PartitionKey": "event_2_partition_key_record_1",
+                },
+                {
+                    "SequenceNumber": "4",
+                    "Data": b"event_data_2_record_2",
+                    "PartitionKey": "event_2_partition_key_record_2",
+                },
+            ],
+            "ContinuationSequenceNumber": "2",
+            "MillisBehindLatest": 1338,
+        }
+    }
+
+    # Create the response which contains the generator
+    def event_generator() -> Iterator:
+        yield event_1
+        yield event_2
+
+    response = {"EventStream": event_generator()}
+
+    # Serialize the response
+    service = load_service("kinesis")
+    operation_model = service.operation_model("SubscribeToShard")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_to_response(response, operation_model)
+
+    # Convert the Werkzeug response from our serializer to a response botocore can work with
+    urllib_response = UrlLibHttpResponse(
+        body=_iterable_to_stream(serialized_response.response),
+        headers={
+            entry_tuple[0].lower(): entry_tuple[1] for entry_tuple in serialized_response.headers
+        },
+        status=serialized_response.status_code,
+        decode_content=False,
+        preload_content=False,
+    )
+    requests_response = RequestsResponse()
+    requests_response.headers = urllib_response.headers
+    requests_response.status_code = urllib_response.status
+    requests_response.raw = urllib_response
+    botocore_response = convert_to_response_dict(requests_response, operation_model)
+
+    # parse the response using botocore
+    response_parser: ResponseParser = create_parser(service.protocol)
+    parsed_response = response_parser.parse(
+        botocore_response,
+        operation_model.output_shape,
+    )
+
+    # check that the response contains the event stream
+    assert "EventStream" in parsed_response
+
+    # fetch all events and check their content
+    events = list(parsed_response["EventStream"])
+    assert len(events) == 2
+    assert events[0] == {
+        "SubscribeToShardEvent": {
+            "ContinuationSequenceNumber": "1",
+            "MillisBehindLatest": 1337,
+            "Records": [
+                {
+                    "Data": b"event_data_1_record_1",
+                    "PartitionKey": "event_1_partition_key_record_1",
+                    "SequenceNumber": "1",
+                },
+                {
+                    "Data": b"event_data_1_record_2",
+                    "PartitionKey": "event_1_partition_key_record_1",
+                    "SequenceNumber": "2",
+                },
+            ],
+        }
+    }
+    assert events[1] == {
+        "SubscribeToShardEvent": {
+            "Records": [
+                {
+                    "SequenceNumber": "3",
+                    "Data": b"event_data_2_record_1",
+                    "PartitionKey": "event_2_partition_key_record_1",
+                },
+                {
+                    "SequenceNumber": "4",
+                    "Data": b"event_data_2_record_2",
+                    "PartitionKey": "event_2_partition_key_record_2",
+                },
+            ],
+            "ContinuationSequenceNumber": "2",
+            "MillisBehindLatest": 1338,
+        }
+    }
 
 
 def test_all_non_existing_key():

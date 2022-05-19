@@ -53,6 +53,9 @@ class ProxyListenerAdapter(ProxyListener):
         return self.to_proxy_response(response)
 
     def to_proxy_response(self, response: Response):
+        if response.is_streamed:
+            return response.response, response.headers
+
         resp = _RequestsResponse()
         resp._content = response.get_data()
         resp.status_code = response.status_code
