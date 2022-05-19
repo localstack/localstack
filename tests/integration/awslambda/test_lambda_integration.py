@@ -312,30 +312,34 @@ class TestDynamoDBEventSourceMapping:
     def test_deletion_event_source_mapping_with_dynamodb(
         self, create_lambda_function, lambda_client, dynamodb_client, lambda_su_role
     ):
-        function_name = f"lambda_func-{short_uid()}"
-        ddb_table = f"ddb_table-{short_uid()}"
+        try:
+            function_name = f"lambda_func-{short_uid()}"
+            ddb_table = f"ddb_table-{short_uid()}"
 
-        create_lambda_function(
-            func_name=function_name,
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-            role=lambda_su_role,
-        )
-        latest_stream_arn = aws_stack.create_dynamodb_table(
-            table_name=ddb_table,
-            partition_key="id",
-            client=dynamodb_client,
-            stream_view_type="NEW_IMAGE",
-        )["TableDescription"]["LatestStreamArn"]
-        lambda_client.create_event_source_mapping(
-            FunctionName=function_name,
-            EventSourceArn=latest_stream_arn,
-            StartingPosition="TRIM_HORIZON",
-        )
-        _await_dynamodb_table_active(dynamodb_client, ddb_table)
-        dynamodb_client.delete_table(TableName=ddb_table)
-        result = lambda_client.list_event_source_mappings(EventSourceArn=latest_stream_arn)
-        assert 1 == len(result["EventSourceMappings"])
+            create_lambda_function(
+                func_name=function_name,
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                runtime=LAMBDA_RUNTIME_PYTHON36,
+                role=lambda_su_role,
+            )
+            latest_stream_arn = aws_stack.create_dynamodb_table(
+                table_name=ddb_table,
+                partition_key="id",
+                client=dynamodb_client,
+                stream_view_type="NEW_IMAGE",
+            )["TableDescription"]["LatestStreamArn"]
+            result = lambda_client.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=latest_stream_arn,
+                StartingPosition="TRIM_HORIZON",
+            )
+            event_source_mapping_uuid = result["UUID"]
+            _await_dynamodb_table_active(dynamodb_client, ddb_table)
+            dynamodb_client.delete_table(TableName=ddb_table)
+            result = lambda_client.list_event_source_mappings(EventSourceArn=latest_stream_arn)
+            assert 1 == len(result["EventSourceMappings"])
+        finally:
+            lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
 
     def test_dynamodb_event_source_mapping_with_on_failure_destination_config(
         self,
