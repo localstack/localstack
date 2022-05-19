@@ -73,7 +73,7 @@ import re
 from abc import ABC
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import urlsplit
 from xml.etree import ElementTree as ETree
 
 import cbor2
@@ -354,15 +354,7 @@ class QueryRequestParser(RequestParser):
 
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        body = request.get_data(as_text=True)
-        instance = parse_qs(body, keep_blank_values=True)
-        if not instance:
-            # if the body does not contain any information, fallback to the actual query parameters
-            instance = request.args
-        # The query parsing returns a list for each entry in the dict (this is how HTTP handles lists in query params).
-        # However, the AWS Query format does not have any duplicates.
-        # Therefore we take the first element of each entry in the dict.
-        instance = {k: self._get_first(v) for k, v in instance.items()}
+        instance = request.values
         if "Action" not in instance:
             raise ProtocolParserError(
                 f"Operation detection failed. "
@@ -616,10 +608,8 @@ class BaseRestRequestParser(RequestParser):
                 payload_parsed[payload_member_name] = body
             elif body_shape.type_name == "string":
                 # Only set the value if it's not empty (the request's data is an empty binary by default)
-                if request.data:
-                    body = request.data
-                    if isinstance(body, bytes):
-                        body = body.decode(self.DEFAULT_ENCODING)
+                body = request.get_data(as_text=True)
+                if body:
                     payload_parsed[payload_member_name] = body
             elif body_shape.type_name == "blob":
                 # Only set the value if it's not empty (the request's data is an empty binary by default)
@@ -677,7 +667,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         self._namespace_re = re.compile("{.*}")
 
     def _initial_body_parse(self, request: HttpRequest) -> ETree.Element:
-        body = request.data
+        body = request.get_data(as_text=True)
         if not body:
             return ETree.Element("")
         return self._parse_xml_string_to_dom(body)
@@ -779,9 +769,10 @@ class RestXMLRequestParser(BaseRestRequestParser):
             return serialized_name
         return member_name
 
-    def _parse_xml_string_to_dom(self, xml_string: bytes) -> ETree.Element:
+    @staticmethod
+    def _parse_xml_string_to_dom(xml_string: str) -> ETree.Element:
         try:
-            parser = ETree.XMLParser(target=ETree.TreeBuilder(), encoding=self.DEFAULT_ENCODING)
+            parser = ETree.XMLParser(target=ETree.TreeBuilder())
             parser.feed(xml_string)
             root = parser.close()
         except ETree.ParseError as e:

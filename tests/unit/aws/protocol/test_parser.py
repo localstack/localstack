@@ -30,7 +30,7 @@ def test_query_parser():
             "DelaySeconds=2"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -57,6 +57,7 @@ def test_sqs_parse_tag_map_with_member_name_as_location():
         "Tag.1.Value=local&"
         "Tag.2.Key=returnly%3Acreator&"
         "Tag.2.Value=rma-api-svc",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
 
     operation, params = parser.parse(request)
@@ -78,6 +79,7 @@ def test_sqs_parse_tag_map_with_member_name_as_location():
         "Tags.1.Value=local&"
         "Tags.2.Key=returnly%3Acreator&"
         "Tags.2.Value=rma-api-svc",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
 
     operation, params = parser.parse(request)
@@ -100,7 +102,6 @@ def test_query_parser_uri():
         "MessageBody=%7B%22foo%22%3A+%22bared%22%7D&"
         "DelaySeconds=2",
         method="POST",
-        headers={},
         path="",
     )
     operation, params = parser.parse(request)
@@ -132,7 +133,7 @@ def test_query_parser_flattened_map():
             "Attribute.6.Name=VisibilityTimeout&Attribute.6.Value=60"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -163,7 +164,7 @@ def test_query_parser_non_flattened_map():
             "AUTHPARAMS"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -195,7 +196,7 @@ def test_query_parser_non_flattened_list_structure():
             "X-Amz-Signature=[Signature]"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -228,7 +229,7 @@ def test_query_parser_non_flattened_list_structure_changed_name():
             "AUTHPARAMS"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -260,7 +261,7 @@ def test_query_parser_flattened_list_structure():
             "DeleteMessageBatchRequestEntry.2.ReceiptHandle=foo"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -1060,7 +1061,7 @@ def test_query_parser_error_on_protocol_error():
             "DelaySeconds=2"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     with pytest.raises(ProtocolParserError):
@@ -1091,7 +1092,7 @@ def test_parser_error_on_unknown_error():
             "DelaySeconds=2"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
 
