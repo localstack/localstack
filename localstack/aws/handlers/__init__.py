@@ -1,29 +1,28 @@
 """
 A set of common handlers to build an AWS server application.
+TODO the handler implementations in here should be moved to individual files
 """
 import logging
 import traceback
 from functools import lru_cache
 from typing import Any, Dict, Optional, Union
-from urllib.parse import urlparse
 
 from botocore.model import ServiceModel
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
-from localstack.config import EXTRA_CORS_ALLOWED_ORIGINS
+from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
+from localstack.aws.api.core import ServiceOperation
+from localstack.aws.chain import ExceptionHandler, Handler, HandlerChain, HandlerChainAdapter
+from localstack.aws.handlers.cors_handlers import CorsEnforcer, CorsResponseEnricher
+from localstack.aws.protocol.parser import RequestParser, create_parser
+from localstack.aws.protocol.serializer import create_serializer
+from localstack.aws.protocol.service_router import determine_aws_service_name
+from localstack.aws.skeleton import Skeleton, create_skeleton
+from localstack.aws.spec import load_service
 from localstack.http import Request, Response, Router
 from localstack.services.internal import LocalstackResources
-
-from .api import CommonServiceException, RequestContext, ServiceException
-from .api.core import ServiceOperation
-from .chain import ExceptionHandler, Handler, HandlerChain, HandlerChainAdapter
-from .protocol.parser import RequestParser, create_parser
-from .protocol.serializer import create_serializer
-from .protocol.service_router import determine_aws_service_name
-from .skeleton import Skeleton, create_skeleton
-from .spec import load_service
 
 LOG = logging.getLogger(__name__)
 
@@ -57,75 +56,6 @@ def inject_auth_header_if_missing(chain: HandlerChain, context: RequestContext, 
 
     if not headers.get("Authorization"):
         headers["Authorization"] = aws_stack.mock_aws_request_headers(api)["Authorization"]
-
-
-class CorsEnforcer(Handler):
-    """
-    Enforces Cross-Origin-Resource-Sharing (CORS).
-    """
-
-    # TODO add a second handler to append the cors headers on responses
-
-    def __init__(self):
-        self.allowed_cors_origins = [
-            "https://app.localstack.cloud",
-            "http://app.localstack.cloud",
-            f"https://localhost:{config.EDGE_PORT}",
-            f"http://localhost:{config.EDGE_PORT}",
-            f"https://localhost.localstack.cloud:{config.EDGE_PORT}",
-            f"http://localhost.localstack.cloud:{config.EDGE_PORT}",
-            "https://localhost",
-            "https://localhost.localstack.cloud",
-            # for requests from Electron apps, e.g., DynamoDB NoSQL Workbench
-            "file://",
-        ]
-        if EXTRA_CORS_ALLOWED_ORIGINS:
-            self.allowed_cors_origins += EXTRA_CORS_ALLOWED_ORIGINS.split(",")
-
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
-        if (
-            not config.DISABLE_CORS_CHECKS
-            and self.should_enforce_self_managed_service(context.request)
-            and not self.is_cors_origin_allowed(context.request.headers)
-        ):
-            LOG.info(
-                "Blocked CORS request from forbidden origin %s",
-                context.request.headers.get("origin") or context.request.headers.get("referer"),
-            )
-            response.status_code = 403
-            chain.terminate()
-
-    @staticmethod
-    def should_enforce_self_managed_service(request: Request):
-        if config.DISABLE_CUSTOM_CORS_S3 and config.DISABLE_CUSTOM_CORS_APIGATEWAY:
-            return True
-        # allow only certain api calls without checking origin
-        api = determine_aws_service_name(request)
-        if not config.DISABLE_CUSTOM_CORS_S3 and api == "s3":
-            return False
-        if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and api == "apigateway":
-            return False
-        return True
-
-    def is_cors_origin_allowed(self, headers: Headers):
-        """Returns true if origin is allowed to perform cors requests, false otherwise"""
-        allowed_origins = self.allowed_cors_origins
-        origin = headers.get("origin")
-        referer = headers.get("referer")
-        if origin:
-            return CorsEnforcer._is_in_allowed_origins(allowed_origins, origin)
-        elif referer:
-            referer_uri = "{uri.scheme}://{uri.netloc}".format(uri=urlparse(referer))
-            return CorsEnforcer._is_in_allowed_origins(allowed_origins, referer_uri)
-        # If both headers are not set, let it through (awscli etc. do not send these headers)
-        return True
-
-    @staticmethod
-    def _is_in_allowed_origins(allowed_origins, origin):
-        for allowed_origin in allowed_origins:
-            if allowed_origin == "*" or origin == allowed_origin:
-                return True
-        return False
 
 
 class ServiceNameParser(Handler):
@@ -492,6 +422,7 @@ class EmptyResponseHandler(Handler):
 
 
 enforce_cors = CorsEnforcer()
+add_cors_response_headers = CorsResponseEnricher()
 parse_service_name = ServiceNameParser()
 parse_service_request = ServiceRequestParser()
 process_custom_service_rules = CustomServiceRules()
