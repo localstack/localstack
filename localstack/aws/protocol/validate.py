@@ -1,7 +1,7 @@
 """Slightly extends the ``botocore.validate`` package to provide better integration with our parser/serializer."""
 from typing import Any, Dict, List, NamedTuple
 
-from botocore.model import OperationModel
+from botocore.model import OperationModel, Shape
 from botocore.validate import ParamValidator as BotocoreParamValidator
 from botocore.validate import ValidationErrors as BotocoreValidationErrors
 from botocore.validate import type_check
@@ -88,7 +88,7 @@ class EmptyInput(ParameterValidationError):
 
 
 class ValidationErrors(BotocoreValidationErrors):
-    def __init__(self, shape, params):
+    def __init__(self, shape: Shape, params: Dict[str, Any]):
         super().__init__()
         self.shape = shape
         self.params = params
@@ -133,7 +133,7 @@ class ValidationErrors(BotocoreValidationErrors):
 
 
 class ParamValidator(BotocoreParamValidator):
-    def validate(self, params, shape):
+    def validate(self, params: Dict[str, Any], shape: Shape):
         """Validate parameters against a shape model.
 
         This method will validate the parameters against a provided shape model.
