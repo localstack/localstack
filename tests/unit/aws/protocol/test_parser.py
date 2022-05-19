@@ -42,6 +42,52 @@ def test_query_parser():
     }
 
 
+def test_sqs_parse_tag_map_with_member_name_as_location():
+    # see https://github.com/localstack/localstack/issues/4391
+    parser = create_parser(load_service("sqs"))
+
+    # with "Tag." it works (this is the default request)
+    request = HttpRequest(
+        "POST",
+        "/",
+        body="Action=TagQueue&"
+        "Version=2012-11-05&"
+        "QueueUrl=http://localhost:4566/000000000000/foobar&"
+        "Tag.1.Key=returnly%3Aenv&"
+        "Tag.1.Value=local&"
+        "Tag.2.Key=returnly%3Acreator&"
+        "Tag.2.Value=rma-api-svc",
+    )
+
+    operation, params = parser.parse(request)
+    assert operation.name == "TagQueue"
+    assert params == {
+        "QueueUrl": "http://localhost:4566/000000000000/foobar",
+        "Tags": {"returnly:creator": "rma-api-svc", "returnly:env": "local"},
+    }
+
+    # apparently this is how the Java AWS SDK generates the TagQueue request, see see
+    # https://github.com/localstack/localstack/issues/4391
+    request = HttpRequest(
+        "POST",
+        "/",
+        body="Action=TagQueue&"
+        "Version=2012-11-05&"
+        "QueueUrl=http://localhost:4566/000000000000/foobar&"
+        "Tags.1.Key=returnly%3Aenv&"
+        "Tags.1.Value=local&"
+        "Tags.2.Key=returnly%3Acreator&"
+        "Tags.2.Value=rma-api-svc",
+    )
+
+    operation, params = parser.parse(request)
+    assert operation.name == "TagQueue"
+    assert params == {
+        "QueueUrl": "http://localhost:4566/000000000000/foobar",
+        "Tags": {"returnly:creator": "rma-api-svc", "returnly:env": "local"},
+    }
+
+
 def test_query_parser_uri():
     """
     Basic test for the QueryParser with a simple example (SQS SendMessage request),
