@@ -76,7 +76,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 0.13.0.11
+ 💻 LocalStack CLI 0.14.3
 
 [20:22:20] starting LocalStack in Docker mode 🐳
 [20:22:21] detaching
