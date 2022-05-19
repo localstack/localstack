@@ -14,7 +14,9 @@ import botocore.session
 import pytest
 from _pytest.config import Config
 from _pytest.nodes import Item
+from botocore.regions import EndpointResolver
 
+from localstack import config
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
@@ -131,18 +133,26 @@ def aws_http_client_factory(boto3_session):
         region: str = None,
         signer_factory: Callable[
             [botocore.credentials.Credentials, str, str], botocore.auth.BaseSigner
-        ] = None,
+        ] = botocore.auth.SigV4QueryAuth,
+        endpoint_url: str = None,
     ):
         region = region or boto3_session.region_name
-        region = region or "us-east-1"
-
-        if signer_factory is None:
-            signer_factory = botocore.auth.SigV4QueryAuth
+        region = region or config.DEFAULT_REGION
 
         credentials = boto3_session.get_credentials()
         creds = credentials.get_frozen_credentials()
 
-        return SigningHttpClient(signer_factory(creds, service, region))
+        if not endpoint_url:
+            if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":
+                # FIXME: this is a bit raw. we should probably re-use boto in a better way
+                resolver: EndpointResolver = boto3_session._session.get_component(
+                    "endpoint_resolver"
+                )
+                endpoint_url = "https://" + resolver.construct_endpoint(service, region)["hostname"]
+            else:
+                endpoint_url = config.get_edge_url()
+
+        return SigningHttpClient(signer_factory(creds, service, region), endpoint_url=endpoint_url)
 
     return factory
 

@@ -1830,6 +1830,44 @@ class TestSqsQueryApi:
         assert queue_url.split("/")[-1] in response.text
 
     @pytest.mark.aws_validated
+    def test_invalid_action_raises_exception(self, sqs_create_queue, sqs_http_client):
+        queue_url = sqs_create_queue()
+        response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "FooBar",
+                "Version": "2012-11-05",
+            },
+        )
+
+        assert not response.ok
+        assert "<Code>InvalidAction</Code>" in response.text
+        assert "<Type>Sender</Type>" in response.text
+        assert (
+            "<Message>The action FooBar is not valid for this endpoint.</Message>" in response.text
+        )
+
+    @pytest.mark.aws_validated
+    def test_valid_action_with_missing_parameter_raises_exception(
+        self, sqs_create_queue, sqs_http_client
+    ):
+        queue_url = sqs_create_queue()
+        response = sqs_http_client.get(
+            queue_url,
+            params={
+                "Action": "SendMessage",
+            },
+        )
+
+        assert not response.ok
+        assert "<Code>MissingParameter</Code>" in response.text
+        assert "<Type>Sender</Type>" in response.text
+        assert (
+            "<Message>The request must contain the parameter MessageBody.</Message>"
+            in response.text
+        )
+
+    @pytest.mark.aws_validated
     def test_get_queue_attributes_of_fifo_queue(self, sqs_create_queue, sqs_http_client):
         queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes={"FifoQueue": "true"})

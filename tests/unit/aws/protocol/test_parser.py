@@ -271,6 +271,26 @@ def test_query_parser_flattened_list_structure():
     }
 
 
+@pytest.mark.xfail(
+    reason="types are currently not checked in the parser so this will raise an UnknownParserError"
+)
+def test_query_parser_pass_str_as_int_raises_error():
+    """Test to make sure that invalid types correctly raise a ProtocolParserError."""
+    parser = QueryRequestParser(load_service("sts"))
+    request = HttpRequest(
+        body=to_bytes(
+            "Action=AssumeRole&"
+            "RoleArn=arn:aws:iam::000000000000:role/foobared&"
+            "RoleSessionName=foobared&"
+            "DurationSeconds=abcd"  # illegal argument (should be an int)
+        ),
+        method="POST",
+    )
+
+    with pytest.raises(ProtocolParserError):
+        parser.parse(request)
+
+
 def _botocore_parser_integration_test(
     service: str, action: str, headers: dict = None, expected: dict = None, **kwargs
 ):
