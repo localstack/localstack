@@ -347,6 +347,12 @@ def test_query_serializer_sqs_flattened_list_map_with_botocore():
                 "ReceiptHandle": "AQEBZ14sCjWJuot0T8G2Eg3S8C+sJGg+QRKYCJjfd8iiOsrPfUzbXSjlQquT9NZP1Mxxkcud3HcaxvS7I1gxoM9MSjbpenKgkti8TPCc7nQBUk9y6xXYWlhysjgAi9YjExUIxO2ozYZuwyksOvIxS4NZs2aBctyR74N3XjOO/t8GByAz2u7KR5vYJu418Y9apAuYB1n6ZZ6aE1NrjIK9mjGCKSqE3YxN5SNkKXf1zRwTUjq8cE73F7cK7DBXNFWBTZSYkLLnFg/QuqKh0dfwGgLseeKhHUxw2KiP9qH4kvXBn2UdeI8jkFMbPERiSf2KMrGKyMCtz3jL+YVRYkB4BB0hx15Brrgo/zhePXHbT692VxKF98MIMQc/v+dc6aewQZldjuq6ANrp4RM+LdjlTPg7ow==",
                 "MD5OfBody": "13c0c73bbf11056450c43bf3159b3585",
                 "Body": '{"foo": "bared"}',
+                "Attributes": {"SenderId": "000000000000", "SentTimestamp": "1652963711"},
+                "MD5OfMessageAttributes": "fca026605781cb4126a1e9044df24232",
+                "MessageAttributes": {
+                    "Hello": {"StringValue": "There", "DataType": "String"},
+                    "General": {"StringValue": "Kenobi", "DataType": "String"},
+                },
             }
         ]
     }

@@ -1,0 +1,214 @@
+{
+  "tests/integration/test_sqs.py::TestSqsProvider::test_receive_message_message_attribute_names_filters": {
+    "send_message_response": {
+      "MD5OfMessageBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+      "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
+      "MessageId": "<uuid>",
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "empty_filter": {
+      "Messages": [
+        {
+          "MessageId": "<uuid>",
+          "ReceiptHandle": "",
+          "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+          "Body": "msg"
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "all_name": {
+      "Messages": [
+        {
+          "MessageId": "<uuid>",
+          "ReceiptHandle": "",
+          "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+          "Body": "msg",
+          "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
+          "MessageAttributes": {
+            "General": {
+              "StringValue": "Kenobi",
+              "DataType": "String"
+            },
+            "Hello": {
+              "StringValue": "There",
+              "DataType": "String"
+            },
+            "Help.Me": {
+              "StringValue": "Me",
+              "DataType": "String"
+            }
+          }
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "all_wildcard": {
+      "MessageId": "<uuid>",
+      "ReceiptHandle": "",
+      "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+      "Body": "msg",
+      "MD5OfMessageAttributes": "4c360f3fdafd970e05fae2f149d997f5",
+      "MessageAttributes": {
+        "General": {
+          "StringValue": "Kenobi",
+          "DataType": "String"
+        },
+        "Hello": {
+          "StringValue": "There",
+          "DataType": "String"
+        },
+        "Help.Me": {
+          "StringValue": "Me",
+          "DataType": "String"
+        }
+      }
+    },
+    "only_non_existing_names": {
+      "MessageId": "<uuid>",
+      "ReceiptHandle": "",
+      "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+      "Body": "msg"
+    },
+    "only_existing": {
+      "MessageId": "<uuid>",
+      "ReceiptHandle": "",
+      "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+      "Body": "msg",
+      "MD5OfMessageAttributes": "fca026605781cb4126a1e9044df24232",
+      "MessageAttributes": {
+        "General": {
+          "StringValue": "Kenobi",
+          "DataType": "String"
+        },
+        "Hello": {
+          "StringValue": "There",
+          "DataType": "String"
+        }
+      }
+    },
+    "existing_and_non_existing": {
+      "MessageId": "<uuid>",
+      "ReceiptHandle": "",
+      "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+      "Body": "msg",
+      "MD5OfMessageAttributes": "a311262e065454b75da111d535b8dacd",
+      "MessageAttributes": {
+        "Hello": {
+          "StringValue": "There",
+          "DataType": "String"
+        }
+      }
+    },
+    "prefix_filter": {
+      "MessageId": "<uuid>",
+      "ReceiptHandle": "",
+      "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+      "Body": "msg",
+      "MD5OfMessageAttributes": "83fee93c1bcd8b9a5a923ffacdc636c7",
+      "MessageAttributes": {
+        "Hello": {
+          "StringValue": "There",
+          "DataType": "String"
+        },
+        "Help.Me": {
+          "StringValue": "Me",
+          "DataType": "String"
+        }
+      }
+    },
+    "illegal_name_1": {
+      "Messages": [
+        {
+          "MessageId": "<uuid>",
+          "ReceiptHandle": "",
+          "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+          "Body": "msg"
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "illegal_name_2": {
+      "Messages": [
+        {
+          "MessageId": "<uuid>",
+          "ReceiptHandle": "",
+          "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+          "Body": "msg"
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_receive_message_attribute_names_filters": {
+    "all_attributes": {
+      "Messages": [
+        {
+          "MessageId": "<uuid>",
+          "ReceiptHandle": "",
+          "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+          "Body": "msg",
+          "Attributes": {
+            "SenderId": "",
+            "ApproximateFirstReceiveTimestamp": "<timestamp>",
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "<timestamp>"
+          }
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "all_system_and_message_attributes": {
+      "Messages": [
+        {
+          "MessageId": "<uuid>",
+          "ReceiptHandle": "",
+          "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+          "Body": "msg",
+          "Attributes": {
+            "SenderId": "",
+            "ApproximateFirstReceiveTimestamp": "<timestamp>",
+            "ApproximateReceiveCount": "2",
+            "SentTimestamp": "<timestamp>"
+          },
+          "MD5OfMessageAttributes": "ae7155c6026991b6d54b11589678bf9c",
+          "MessageAttributes": {
+            "Foo": {
+              "StringValue": "Bar",
+              "DataType": "String"
+            }
+          }
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "single_attribute": {
+      "Messages": [
+        {
+          "MessageId": "<uuid>",
+          "ReceiptHandle": "",
+          "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+          "Body": "msg",
+          "Attributes": {
+            "SenderId": ""
+          }
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    },
+    "multiple_attributes": {
+      "Messages": [
+        {
+          "MessageId": "<uuid>",
+          "ReceiptHandle": "",
+          "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+          "Body": "msg",
+          "Attributes": {
+            "SenderId": ""
+          }
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    }
+  }
+}

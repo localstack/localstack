@@ -1328,8 +1328,7 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     def test_system_attributes_have_no_effect_on_attr_md5(self, sqs_create_queue, sqs_client):
-        queue_name = f"queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
+        queue_url = sqs_create_queue()
 
         msg_attrs_provider = {"timestamp": {"StringValue": "1493147359900", "DataType": "Number"}}
         aws_trace_header = {
@@ -1734,6 +1733,104 @@ class TestSqsProvider:
         for k in attributes.keys():
             assert k in keys
             assert attributes[k] == result_attributes[k]
+
+    def test_receive_message_message_attribute_names_filters(
+        self, sqs_client, sqs_create_queue, snapshot
+    ):
+        """
+        Receive message allows a list of filters to be passed with MessageAttributeNames. See:
+        https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message
+        """
+        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "")
+
+        queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
+
+        response = sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="msg",
+            MessageAttributes={
+                "Help.Me": {"DataType": "String", "StringValue": "Me"},
+                "Hello": {"DataType": "String", "StringValue": "There"},
+                "General": {"DataType": "String", "StringValue": "Kenobi"},
+            },
+        )
+        assert snapshot.match("send_message_response", response)
+
+        def receive_message(message_attribute_names):
+            return sqs_client.receive_message(
+                QueueUrl=queue_url,
+                WaitTimeSeconds=5,
+                MessageAttributeNames=message_attribute_names,
+            )
+
+        # test empty filter
+        response = receive_message([])
+        # do the first check with the entire response
+        assert snapshot.match("empty_filter", response)
+
+        # test "All"
+        response = receive_message(["All"])
+        assert snapshot.match("all_name", response)
+
+        # test ".*"
+        response = receive_message([".*"])
+        assert snapshot.match("all_wildcard", response["Messages"][0])
+
+        # test only non-existent names
+        response = receive_message(["Foo", "Help"])
+        assert snapshot.match("only_non_existing_names", response["Messages"][0])
+
+        # test all existing
+        response = receive_message(["Hello", "General"])
+        assert snapshot.match("only_existing", response["Messages"][0])
+
+        # test existing and non-existing
+        response = receive_message(["Foo", "Hello"])
+        assert snapshot.match("existing_and_non_existing", response["Messages"][0])
+
+        # test prefix filters
+        response = receive_message(["Hel.*"])
+        assert snapshot.match("prefix_filter", response["Messages"][0])
+
+        # test illegal names
+        response = receive_message(["AWS."])
+        assert snapshot.match("illegal_name_1", response)
+        response = receive_message(["..foo"])
+        assert snapshot.match("illegal_name_2", response)
+
+    def test_receive_message_attribute_names_filters(self, sqs_client, sqs_create_queue, snapshot):
+        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "")
+        snapshot.skip_key(re.compile(r"^SenderId$"), "")
+
+        queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
+
+        sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="msg",
+            MessageAttributes={
+                "Foo": {"DataType": "String", "StringValue": "Bar"},
+            },
+        )
+
+        def receive_message(attribute_names, message_attribute_names=None):
+            return sqs_client.receive_message(
+                QueueUrl=queue_url,
+                WaitTimeSeconds=5,
+                AttributeNames=attribute_names,
+                MessageAttributeNames=message_attribute_names or [],
+            )
+
+        response = receive_message(["All"])
+        assert snapshot.match("all_attributes", response)
+
+        response = receive_message(["All"], ["All"])
+        assert snapshot.match("all_system_and_message_attributes", response)
+
+        response = receive_message(["SenderId"])
+        assert snapshot.match("single_attribute", response)
+
+        response = receive_message(["SenderId", "SequenceNumber"])
+        assert snapshot.match("multiple_attributes", response)
 
 
 def get_region():

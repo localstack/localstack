@@ -403,10 +403,15 @@ class SqsQueue:
                 else:
                     self.inflight.add(standard_message)
 
-                # prepare message for receiver
-                # TODO: update message attributes (ApproximateFirstReceiveTimestamp, ApproximateReceiveCount)
-                copied_message = copy.deepcopy(standard_message)
-                copied_message.message["ReceiptHandle"] = receipt_handle
+            # prepare message for receiver
+            copied_message = copy.deepcopy(standard_message)
+            copied_message.message["Attributes"][
+                MessageSystemAttributeName.ApproximateReceiveCount
+            ] = str(standard_message.receive_times)
+            copied_message.message["Attributes"][
+                MessageSystemAttributeName.ApproximateFirstReceiveTimestamp
+            ] = standard_message.first_received
+            copied_message.message["ReceiptHandle"] = receipt_handle
 
             return copied_message
 
@@ -978,8 +983,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_deduplication_id: String = None,
         message_group_id: String = None,
     ) -> Message:
-        # TODO: default message attributes (SenderId, ApproximateFirstReceiveTimestamp, ...)
-
         check_message_content(message_body)
         check_attributes(message_attributes)
         check_attributes(message_system_attributes)
@@ -1048,20 +1051,18 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 moved_to_dlq = self._dead_letter_check(queue, standard_message, context)
             if moved_to_dlq:
                 continue
-            # filter attributes
-            if message_attribute_names:
-                if "All" not in message_attribute_names:
-                    msg["MessageAttributes"] = {
-                        k: v
-                        for k, v in msg["MessageAttributes"].items()
-                        if k in message_attribute_names
-                    }
-                # TODO: why is this called even if we receive "All" attributes?
+
+            msg = copy.deepcopy(msg)
+            message_filter_attributes(msg, attribute_names)
+            message_filter_message_attributes(msg, message_attribute_names)
+
+            if msg.get("MessageAttributes"):
                 msg["MD5OfMessageAttributes"] = _create_message_attribute_hash(
                     msg["MessageAttributes"]
                 )
             else:
-                del msg["MessageAttributes"]
+                # delete the value that was computed when creating the message
+                msg.pop("MD5OfMessageAttributes")
 
             # add message to result
             messages.append(msg)
@@ -1180,7 +1181,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 valid_count = False
             if not valid_count:
                 raise InvalidParameterValue(
-                    f"Value {redrive_policy} for parameter RedrivePolicy is invalid. Reason: Invalid value for maxReceiveCount: {max_receive_count}, valid values are from 1 to 1000 both inclusive."
+                    f"Value {redrive_policy} for parameter RedrivePolicy is invalid. Reason: Invalid value for "
+                    f"maxReceiveCount: {max_receive_count}, valid values are from 1 to 1000 both inclusive. "
                 )
 
     def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap) -> None:
@@ -1232,7 +1234,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_system_attributes: MessageBodySystemAttributeMap = None,
     ) -> Dict[MessageSystemAttributeName, str]:
         result: Dict[MessageSystemAttributeName, str] = {
-            MessageSystemAttributeName.SenderId: context.account_id,
+            MessageSystemAttributeName.SenderId: context.account_id,  # not the account ID in AWS
             MessageSystemAttributeName.SentTimestamp: str(now()),
         }
 
@@ -1329,3 +1331,66 @@ def resolve_queue_name(
             queue_name = get_queue_name_from_url(context.request.base_url)
 
     return queue_name
+
+
+def message_filter_attributes(message: Message, names: Optional[AttributeNameList]):
+    """
+    Utility function filter from the given message (in-place) the system attributes from the given list. It will
+    apply all rules according to:
+    https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message.
+
+    :param message: The message to filter (it will be modified)
+    :param names: the attributes names/filters
+    """
+    if "Attributes" not in message:
+        return
+
+    if not names:
+        del message["Attributes"]
+        return
+
+    if "All" in names:
+        return
+
+    for k in list(message["Attributes"].keys()):
+        if k not in names:
+            del message["Attributes"][k]
+
+
+def message_filter_message_attributes(message: Message, names: Optional[MessageAttributeNameList]):
+    """
+    Utility function filter from the given message (in-place) the message attributes from the given list. It will
+    apply all rules according to:
+    https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message.
+
+    :param message: The message to filter (it will be modified)
+    :param names: the attributes names/filters (can be 'All', '.*', or prefix filters like 'Foo.*')
+    """
+    if not message.get("MessageAttributes"):
+        return
+
+    if not names:
+        del message["MessageAttributes"]
+        return
+
+    if "All" in names or ".*" in names:
+        return
+
+    attributes = message["MessageAttributes"]
+    matched = []
+
+    keys = [name for name in names if ".*" not in name]
+    prefixes = [name.split(".*")[0] for name in names if ".*" in name]
+
+    # match prefix filters
+    for k in attributes:
+        if k in keys:
+            matched.append(k)
+            continue
+
+        for prefix in prefixes:
+            if k.startswith(prefix):
+                matched.append(k)
+            break
+
+    message["MessageAttributes"] = {k: attributes[k] for k in matched}
