@@ -384,23 +384,27 @@ class TestS3NotificationsToSQS:
                 ]
             },
         )
-        s3_client.delete_object_tagging(
-            Bucket=bucket_name,
-            Key=dest_key,
-        )
 
-        events = sqs_collect_s3_events(sqs_client, queue_url, 2)
-        assert len(events) == 2, f"unexpected number of events in {events}"
+        events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        assert len(events) == 1, f"unexpected number of events in {events}"
 
         assert events[0]["eventSource"] == "aws:s3"
         assert events[0]["eventName"] == "ObjectTagging:Put"
         assert events[0]["s3"]["bucket"]["name"] == bucket_name
         assert events[0]["s3"]["object"]["key"] == dest_key
 
-        assert events[1]["eventSource"] == "aws:s3"
-        assert events[1]["eventName"] == "ObjectTagging:Delete"
-        assert events[1]["s3"]["bucket"]["name"] == bucket_name
-        assert events[1]["s3"]["object"]["key"] == dest_key
+        s3_client.delete_object_tagging(
+            Bucket=bucket_name,
+            Key=dest_key,
+        )
+
+        events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        assert len(events) == 1, f"unexpected number of events in {events}"
+
+        assert events[0]["eventSource"] == "aws:s3"
+        assert events[0]["eventName"] == "ObjectTagging:Delete"
+        assert events[0]["s3"]["bucket"]["name"] == bucket_name
+        assert events[0]["s3"]["object"]["key"] == dest_key
 
     @pytest.mark.aws_validated
     def test_xray_header(
