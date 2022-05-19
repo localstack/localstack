@@ -730,13 +730,7 @@ class TestSqsProvider:
         result_recv = sqs_client.receive_message(QueueUrl=queue_url)
         assert result_recv["Messages"][0]["MessageId"] == message_id
 
-    def test_fifo_queue_without_fifo_queue_attribute(self, sqs_create_queue):
-        queue_name = f"invalid-{short_uid()}.fifo"
-
-        with pytest.raises(Exception) as e:
-            sqs_create_queue(QueueName=queue_name)
-        e.match("InvalidParameterValue")
-
+    @pytest.mark.aws_validated
     def test_fifo_queue_requires_suffix(self, sqs_create_queue):
         queue_name = f"invalid-{short_uid()}"
         attributes = {"FifoQueue": "true"}
@@ -745,6 +739,7 @@ class TestSqsProvider:
             sqs_create_queue(QueueName=queue_name, Attributes=attributes)
         e.match("InvalidParameterValue")
 
+    @pytest.mark.aws_validated
     def test_standard_queue_cannot_have_fifo_suffix(self, sqs_create_queue):
         queue_name = f"queue-{short_uid()}.fifo"
         with pytest.raises(Exception) as e:
@@ -902,7 +897,22 @@ class TestSqsProvider:
         )
         assert receive_result["Messages"][0]["MessageAttributes"] == attributes
 
-    @pytest.mark.xfail
+    @pytest.mark.aws_validated
+    def test_send_message_with_empty_string_attribute(self, sqs_client, sqs_queue):
+        with pytest.raises(ClientError) as e:
+            sqs_client.send_message(
+                QueueUrl=sqs_queue,
+                MessageBody="test",
+                MessageAttributes={"ErrorDetails": {"StringValue": "", "DataType": "String"}},
+            )
+
+        assert e.value.response["Error"] == {
+            "Type": "Sender",
+            "Code": "InvalidParameterValue",
+            "Message": "Message (user) attribute 'ErrorDetails' must contain a non-empty value of type 'String'.",
+        }
+
+    @pytest.mark.aws_validated
     def test_send_message_with_invalid_string_attributes(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
