@@ -881,7 +881,7 @@ def mock_aws_request_headers(service="dynamodb", region_name=None, access_key=No
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
         ctype = APPLICATION_AMZ_JSON_1_1
-    elif service in ["sns", "sqs"]:
+    elif service in ["sns", "sqs", "sts", "cloudformation"]:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
 
     # TODO: consider adding an internal=False flag, to use INTERNAL_AWS_ACCESS_KEY_ID for internal calls here

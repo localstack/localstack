@@ -135,6 +135,7 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
     body = urlencode(params)
 
     try:
+        request.headers["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
         operation, service_request = parser.parse(
             Request("POST", "/", headers=request.headers, body=body)
         )
