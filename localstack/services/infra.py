@@ -63,7 +63,6 @@ SHUTDOWN_INFRA = threading.Event()
 # Start config update backdoor
 config_listener.start_listener()
 
-
 # ---------------
 # HELPER METHODS
 # ---------------
@@ -391,6 +390,7 @@ def start_infra(asynchronous=False, apis=None):
 
         # run hooks, to allow them to apply patches and changes
         hooks.on_infra_start.run()
+
         # with changes that hooks have made, now start the infrastructure
         thread = do_start_infra(asynchronous, apis, is_in_docker)
 

@@ -193,6 +193,7 @@ MOTO_ACCOUNT_ID = TEST_AWS_ACCOUNT_ID
 
 def patch_moto_account_id():
     # fix moto account ID - note: this needs to be executed before any other moto imports
+    # TODO remove this after all acccount ID refs are replaced with the resolver calls
     try:
         from moto import core as moto_core
         from moto.core import models as moto_core_models
