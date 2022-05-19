@@ -309,8 +309,6 @@ def determine_aws_service_name(
     if legacy_match:
         return legacy_match
 
-    LOG.warning("could not uniquely determine service from request, candidates=%s", candidates)
-
     if signing_name:
         return signing_name
     if candidates:
