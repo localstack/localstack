@@ -94,11 +94,6 @@ class ShapeNode:
         return metadata.get("error") or metadata.get("exception")
 
     @property
-    def is_eventstream(self):
-        metadata = self.shape.metadata
-        return metadata.get("eventstream")
-
-    @property
     def is_primitive(self):
         return self.shape.type_name in ["integer", "boolean", "float", "double", "string"]
 
@@ -164,12 +159,12 @@ class ShapeNode:
         output.write('%s = TypedDict("%s", {\n' % (name, name))
         for k, v in self.shape.members.items():
             if k in self.shape.required_members:
-                if v.is_eventstream():
+                if v.serialization.get("eventstream"):
                     output.write(f'    "{k}": Iterator[{q}{to_valid_python_name(v.name)}{q}],\n')
                 else:
                     output.write(f'    "{k}": {q}{to_valid_python_name(v.name)}{q},\n')
             else:
-                if v.is_eventstream():
+                if v.serialization.get("eventstream"):
                     output.write(f'    "{k}": Iterator[{q}{to_valid_python_name(v.name)}{q}],\n')
                 else:
                     output.write(f'    "{k}": Optional[{q}{to_valid_python_name(v.name)}{q}],\n')
