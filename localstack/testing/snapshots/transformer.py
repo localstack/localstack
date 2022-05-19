@@ -1,6 +1,6 @@
 import re
 from re import Pattern
-from typing import Callable, Protocol, runtime_checkable
+from typing import Callable, Protocol
 
 from jsonpath_ng.ext import parse
 
@@ -21,36 +21,42 @@ PATTERN_SQS_URL = re.compile(
 )  # TODO: differences here between AWS + localstack structure
 PATTERN_HASH_256 = re.compile(r"^[A-Fa-f0-9]{64}$")
 
+# Types
+
 GlobalReplacementFn = Callable[[str], str]
 
 
 class TransformContext:
-
+    _cache: dict
     replacements: list[GlobalReplacementFn]
-
     scoped_tokens: dict[str, int]
 
     def __init__(self):
         self.replacements = []
         self.scoped_tokens = {}
+        self._cache = {}
 
     @property
-    def serialized_replacements(self) -> list[GlobalReplacementFn]:
+    def serialized_replacements(self) -> list[GlobalReplacementFn]:  # TODO: naming
         return self.replacements
 
-    def register_serialized_replacement(self, fn: GlobalReplacementFn):
+    def register_serialized_replacement(self, fn: GlobalReplacementFn):  # TODO: naming
         self.replacements.append(fn)
 
     def new_scope(self, scope: str) -> int:
+        """retrieve new enumeration value for a given scope key (e.g. for tokens such as <fn-name:1>"""
         current_counter = self.scoped_tokens.setdefault(scope, 1)
         self.scoped_tokens[scope] += 1
         return current_counter
 
 
-@runtime_checkable
 class Transformation(Protocol):
     def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
         ...
+
+
+# Transformers
+# TODO: unify naming (Transformers/Transformations)
 
 
 class JsonPathTransformation:
@@ -98,7 +104,7 @@ class RegexTransformer:
         return input_data
 
 
-class MoreGenericTransformer:
+class GenericTransformer:
     def __init__(self, fn: Callable[[dict], dict]):
         self.fn = fn
 
@@ -113,7 +119,9 @@ class KeyValueBasedDirectTransformer:
 
     def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
         for k, v in input_data.items():
-            if self.match_fn(k, v):
+            if self.match_fn(
+                k, v
+            ):  # TODO: track previous replacements? any case where this is necessary?
                 input_data[k] = self.replacement
             elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
                 for i in range(0, len(v)):
@@ -136,15 +144,24 @@ class KeyValueBasedTransformer:
                     v[i] = self.transform(v[i], ctx=ctx)
             elif isinstance(v, dict):
                 input_data[k] = self.transform(v, ctx=ctx)
-            elif self.match_fn(k, v):
-                actual_replacement = f"<{self.replacement}:{ctx.new_scope(self.replacement)}>"
+            elif self.match_fn(
+                k, v
+            ):  # TODO: might want to make this more generic and make it return the actual (sub-) string that should be replaced instead of the value
+                # TODO: this needs to be fixed. Currently when using two separate match functions, the whole value is registered in the cache although only a subset of it is actually replaced. This blocks use-cases where we want to replace multiple substrings in the same value (e.g. for an ARN)
                 c = v
-                ctx.register_serialized_replacement(lambda s: s.replace(c, actual_replacement, -1))
+                cache = ctx._cache.setdefault("regexcache", set())
+                cache_key = (c, self.replacement)
+                if cache_key not in cache:
+                    actual_replacement = f"<{self.replacement}:{ctx.new_scope(self.replacement)}>"
+                    cache.add(cache_key)
+                    ctx.register_serialized_replacement(
+                        lambda s: s.replace(c, actual_replacement, -1)
+                    )
         return input_data
 
 
 def create_transformer(fn: Callable[[dict], dict]) -> Transformation:
-    return MoreGenericTransformer(fn)
+    return GenericTransformer(fn)
 
 
 #     def _is_date(self, value: str):

@@ -1,8 +1,9 @@
 import json
 import logging
+from json import JSONDecodeError
 from pathlib import Path
 from re import Pattern
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional
 
 from botocore.response import StreamingBody
 from deepdiff import DeepDiff
@@ -45,37 +46,35 @@ class SnapshotSession:
     it assumes that a single snapshot file is only being written to sequentially
     """
 
-    results: List[SnapshotMatchResult]
-    recorded_state: Dict[str, dict]
-    observed_state: Dict[str, dict]
+    results: list[SnapshotMatchResult]
+    recorded_state: dict[str, dict]  # previously persisted state
+    observed_state: dict[str, dict]  # current state from match calls
 
-    called_keys: Set[str]
-    jsonpath_replacement: List[Tuple[str, str]]
-    transformer_list: List[Transformation]
+    called_keys: set[str]
+    transformers: list[(Transformation, int)]
 
     def __init__(
         self,
         *,
         file_path: str,
         scope_key: str,
-        update: Optional[bool] = False,
-        verify: Optional[bool] = False,
+        update: Optional[bool] = False,  # TODO: find a way to remove this
+        verify: Optional[bool] = False,  # TODO: find a way to remove this
     ):
         self.verify = verify
         self.update = update
         self.file_path = file_path
         self.scope_key = scope_key
+
         self.called_keys = set()
         self.results = []
+        self.transformers = []
 
         self.observed_state = {}
         self.recorded_state = self.load_state()
 
-        self.jsonpath_replacement = []
-        self.transformer_list = []
-
-    def add_transformer(self, transformer: Transformation):
-        self.transformer_list.append(transformer)
+    def add_transformer(self, transformer: Transformation, *, priority: Optional[int] = 0):
+        self.transformers.append((transformer, priority or 0))
 
     def persist_state(self) -> None:
         if self.update:
@@ -106,33 +105,36 @@ class SnapshotSession:
     def _update(self, key: str, obj_state: dict) -> None:
         self.observed_state[key] = obj_state
 
-    def match(self, key: str, obj: dict) -> SnapshotMatchResult:
-
+    def match(self, key: str, obj: dict) -> None:
         if key in self.called_keys:
-            raise Exception(f"Key {key} used multiple times in the same test scope")
+            raise Exception(
+                f"Key {key} used multiple times in the same test scope"
+            )  # TODO: custom exc.
+
         self.called_keys.add(key)
+        self.observed_state[
+            key
+        ] = obj  # TODO: track them separately since the transformation is now done *just* before asserting
 
-        obj_state = self._transform(obj)
-        self.observed_state[key] = obj_state
-
-        if self.update:
-            self._update(key, obj_state)
-            return SnapshotMatchResult({}, {})
-
-        sub_state = self.recorded_state.get(key)
-        if sub_state is None:
+        if not self.update and not self.recorded_state.get(key):
             raise Exception("Please run the test first with --snapshot-update")
 
-        return SnapshotMatchResult(sub_state, obj_state, key=key)
-
     def assert_all(self) -> List[SnapshotMatchResult]:
-        """use after any assert_match calls to get a combined diff"""
+        """use after all match calls to get a combined diff"""
         results = []
-        for key in self.called_keys:
-            a = self.recorded_state[key]
-            b = self.observed_state[key]
-            result = SnapshotMatchResult(a, b, key=key)
 
+        if self.update:
+            self.observed_state = self._transform(self.observed_state)
+            return []
+
+        # TODO: separate these states
+        self.recorded_state = a_all = self._transform(self.recorded_state)
+        self.observed_state = b_all = self._transform(self.observed_state)
+
+        for key in self.called_keys:
+            a = a_all[key]
+            b = b_all[key]
+            result = SnapshotMatchResult(a, b, key=key)
             results.append(result)
 
         if any(not result for result in results) and self.verify:
@@ -140,25 +142,27 @@ class SnapshotSession:
         return results
 
     def _transform_dict_to_parseable_values(self, original):
+        """recursively goes through dict and tries to resolve values to strings (& parse them as json if possible)"""
         for k, v in original.items():
             if isinstance(v, Dict):
                 self._transform_dict_to_parseable_values(v)
             if isinstance(v, StreamingBody):
-                original[k] = v.read().decode("utf-8")
+                original[k] = v.read().decode(
+                    "utf-8"
+                )  # TODO: patch boto client so this doesn't break any further read() calls
             if isinstance(v, str) and v.startswith("{"):
                 try:
                     json_value = json.loads(v)
                     original[k] = json_value
-                except Exception:
-                    pass
-                    # parsing error can be ignored
+                except JSONDecodeError:
+                    pass  # parsing error can be ignored
 
     def _transform(self, tmp: dict) -> dict:
         """build a persistable state definition that can later be compared against"""
         self._transform_dict_to_parseable_values(tmp)
         ctx = TransformContext()
 
-        for transformer in self.transformer_list:
+        for transformer, _ in sorted(self.transformers, key=lambda p: p[1]):
             tmp = transformer.transform(tmp, ctx=ctx)
 
         tmp = json.dumps(tmp)

@@ -4,7 +4,10 @@ import os.path
 
 import pytest
 
-from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
+from localstack.testing.snapshots.transformer import (
+    KeyValueBasedDirectTransformer,
+    KeyValueBasedTransformer,
+)
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 
@@ -90,10 +93,27 @@ class TestLambdaAsfApi:
     def test_basic_invoke(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
+        # predefined names
         fn_name = f"ls-fn-{short_uid()}"
+        fn_name_2 = f"ls-fn-{short_uid()}"
+
+        # custom transformers
         snapshot.add_transformer(
             KeyValueBasedTransformer(lambda _, v: v == fn_name, replacement="fn-name")
         )
+        snapshot.add_transformer(
+            KeyValueBasedTransformer(lambda _, v: v == fn_name_2, replacement="fn-name")
+        )
+        snapshot.add_transformer(
+            KeyValueBasedDirectTransformer(lambda k, _: k == "Location", replacement="location")
+        )
+        snapshot.add_transformer(
+            KeyValueBasedTransformer(
+                lambda _, v: isinstance(v, str) and lambda_su_role in v, replacement="lambda-role"
+            )
+        )
+
+        # infra setup (& validations)
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
             response = create_lambda_function_aws(
                 FunctionName=fn_name,
@@ -105,14 +125,22 @@ class TestLambdaAsfApi:
             )
             snapshot.match("lambda_create_fn", response)
 
+        with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
+            response = create_lambda_function_aws(
+                FunctionName=fn_name_2,
+                Handler="index.handler",
+                Code={"ZipFile": f.read()},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime="python3.9",
+            )
+            snapshot.match("lambda_create_fn_2", response)
+
         get_fn_result = lambda_client.get_function(FunctionName=fn_name)
-
-        # write_snapshot_samples(
-        #     lambda: lambda_client.get_function(FunctionName=fn_name), "lambda", "get_function"
-        # )
-        # write_snapshot_samples(lambda: lambda_client.list_functions(), "lambda", "list_functions")
-
         snapshot.match("lambda_get_fn", get_fn_result)
+
+        get_fn_result_2 = lambda_client.get_function(FunctionName=fn_name_2)
+        snapshot.match("lambda_get_fn_2", get_fn_result_2)
 
         invoke_result = lambda_client.invoke(FunctionName=fn_name, Payload=bytes("{}", "utf-8"))
         snapshot.match("lambda_invoke_result", invoke_result)

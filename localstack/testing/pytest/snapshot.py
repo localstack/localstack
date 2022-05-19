@@ -73,7 +73,7 @@ def fixture_snapshot(request: SubRequest, account_id):
         update=request.config.option.snapshot_update,
         verify=request.config.option.snapshot_verify,
     )
-    sm.add_transformer(RegexTransformer(account_id, "1" * 12))
+    sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=-1)
     sm.add_transformer(
         KeyValueBasedTransformer(
             lambda k, v: (
