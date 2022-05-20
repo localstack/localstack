@@ -43,6 +43,9 @@ RUN apt-get update && \
         apt-get install -y --no-install-recommends ca-certificates curl && \
         # Setup Node 14 Repo
         curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
+        # Setup Nginx repo
+        curl https://nginx.org/keys/nginx_signing.key | apt-key add - && \
+        echo "deb https://nginx.org/packages/debian/ buster nginx\ndeb-src https://nginx.org/packages/debian/ buster nginx" >> /etc/apt/sources.list && \
         # Install Packages
         apt-get update && \
         apt-get install -y --no-install-recommends \
@@ -50,6 +53,8 @@ RUN apt-get update && \
             git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords \
             # Postgres
             postgresql postgresql-client postgresql-plpython3 \
+            # Nginx
+            nginx \
             # NodeJS
             nodejs && \
         apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -100,6 +105,8 @@ RUN pip install --no-cache-dir --upgrade supervisor virtualenv
 # install supervisor config file and entrypoint script
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
+ADD bin/nginx.conf /etc/nginx/nginx.conf
+RUN mkdir -p /etc/nginx/logs/ && touch /etc/nginx/logs/error.log
 
 # expose default environment
 # Set edge bind host so localstack can be reached by other containers
@@ -110,6 +117,7 @@ ENV USER=localstack
 ENV PYTHONUNBUFFERED=1
 ENV EDGE_BIND_HOST=0.0.0.0
 ENV LOCALSTACK_HOSTNAME=localhost
+ENV USE_SSL=0
 
 RUN mkdir /root/.serverless; chmod -R 777 /root/.serverless
 

@@ -26,7 +26,13 @@ from localstack.http.adapters import create_request_from_parts
 from localstack.http.dispatcher import Handler, handler_dispatcher
 from localstack.http.router import RegexConverter
 from localstack.runtime import events
-from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
+from localstack.services.generic_proxy import (
+    GenericProxy,
+    ProxyListener,
+    install_predefined_cert_if_available,
+    modify_and_forward,
+    start_proxy_server,
+)
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.utils import persistence
@@ -350,12 +356,11 @@ def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
     ]
 
     # get port and start Edge
-    print("Starting edge router (http%s port %s)..." % ("s" if use_ssl else "", port))
-    # use use_ssl=True here because our proxy allows both, HTTP and HTTPS traffic
+    print("Starting edge router (internal) (http%s port %s)..." % ("s" if use_ssl else "", port))
     proxy = start_proxy_server(
         port,
         bind_address=bind_address,
-        use_ssl=True,
+        use_ssl=use_ssl,
         update_listener=listeners,
         check_port=False,
     )
@@ -419,20 +424,37 @@ def start_dns_server(asynchronous=False):
         pass
 
 
-def start_edge(port=None, use_ssl=True, asynchronous=False):
-    if not port:
-        port = config.EDGE_PORT
-    if config.EDGE_PORT_HTTP and config.EDGE_PORT_HTTP != port:
-        do_start_edge(
-            config.EDGE_BIND_HOST,
-            config.EDGE_PORT_HTTP,
-            use_ssl=False,
-            asynchronous=True,
-        )
-    if port > 1024 or is_root():
-        return do_start_edge(config.EDGE_BIND_HOST, port, use_ssl, asynchronous=asynchronous)
+def start_nginx() -> None:
+    install_predefined_cert_if_available()
+    GenericProxy.create_ssl_cert(serial_number=config.EDGE_PORT)
+    LOG.debug("Starting nginx reverse proxy")
+    run(["nginx"], shell=False)
 
-    # process requires privileged port but we're not root -> try running as sudo
+
+def stop_nginx() -> None:
+    LOG.debug("Stopping nginx reverse proxy")
+    run(["nginx", "-s", "stop"], shell=False)
+
+
+def start_edge(port=None, use_ssl=True, asynchronous=False):
+    if not config.is_in_docker:
+        if not port:
+            port = config.EDGE_PORT
+        if config.EDGE_PORT_HTTP and config.EDGE_PORT_HTTP != port:
+            do_start_edge(
+                config.EDGE_BIND_HOST,
+                config.EDGE_PORT_HTTP,
+                use_ssl=False,
+                asynchronous=True,
+            )
+        if port > 1024 or is_root():
+            return do_start_edge(config.EDGE_BIND_HOST, port, use_ssl, asynchronous=asynchronous)
+    else:
+        start_nginx()
+        # start HTTP only edge
+        return do_start_edge("127.0.0.1", 8000, use_ssl=False, asynchronous=asynchronous)
+
+    # process requires privileged port but we're not root and not in docker -> try running as sudo
 
     class Terminator:
         def stop(self, quiet=True):
