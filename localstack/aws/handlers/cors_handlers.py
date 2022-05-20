@@ -3,6 +3,7 @@ A set of handles which handle Cross Origin Resource Sharing (CORS).
 """
 import logging
 import re
+from typing import List
 from urllib.parse import urlparse
 
 from flask_cors.core import (
@@ -90,10 +91,12 @@ LOG = logging.getLogger(__name__)
 
 class CorsEnforcer(Handler):
     """
-    Enforces Cross-Origin-Resource-Sharing (CORS).
+    Handler which enforces Cross-Origin-Resource-Sharing (CORS) rules.
+    This handler needs to be at the top of the handler chain to ensure that these security rules are enforced before any
+    commands are executed.
     """
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response) -> None:
         if (
             not config.DISABLE_CORS_CHECKS
             and self.should_enforce_self_managed_service(context.request)
@@ -107,7 +110,13 @@ class CorsEnforcer(Handler):
             chain.terminate()
 
     @staticmethod
-    def should_enforce_self_managed_service(request: Request):
+    def should_enforce_self_managed_service(request: Request) -> bool:
+        """
+        Some services are handling their CORS checks on their own (depending on config vars).
+
+        :param request: for which to check if the CORS checks should be executed in here or in the targeting service
+        :return: True if the CORS rules should be inforced in here.
+        """
         if config.DISABLE_CUSTOM_CORS_S3 and config.DISABLE_CUSTOM_CORS_APIGATEWAY:
             return True
         # allow only certain api calls without checking origin
@@ -119,21 +128,21 @@ class CorsEnforcer(Handler):
         return True
 
     @staticmethod
-    def is_cors_origin_allowed(headers: Headers):
-        """Returns true if origin is allowed to perform cors requests, false otherwise"""
-        allowed_origins = ALLOWED_CORS_ORIGINS
+    def is_cors_origin_allowed(headers: Headers) -> bool:
+        """Returns true if origin is allowed to perform cors requests, false otherwise."""
         origin = headers.get("origin")
         referer = headers.get("referer")
         if origin:
-            return CorsEnforcer._is_in_allowed_origins(allowed_origins, origin)
+            return CorsEnforcer._is_in_allowed_origins(ALLOWED_CORS_ORIGINS, origin)
         elif referer:
             referer_uri = "{uri.scheme}://{uri.netloc}".format(uri=urlparse(referer))
-            return CorsEnforcer._is_in_allowed_origins(allowed_origins, referer_uri)
+            return CorsEnforcer._is_in_allowed_origins(ALLOWED_CORS_ORIGINS, referer_uri)
         # If both headers are not set, let it through (awscli etc. do not send these headers)
         return True
 
     @staticmethod
-    def _is_in_allowed_origins(allowed_origins, origin):
+    def _is_in_allowed_origins(allowed_origins: List[str], origin: str) -> bool:
+        """Returns true if the `origin` is in the `allowed_origins`."""
         for allowed_origin in allowed_origins:
             if allowed_origin == "*" or origin == allowed_origin:
                 return True
@@ -141,6 +150,10 @@ class CorsEnforcer(Handler):
 
 
 class CorsResponseEnricher(Handler):
+    """
+    ResponseHandler which adds Cross-Origin-Request-Sharing (CORS) headers (Access-Control-*) to the response.
+    """
+
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         # use this config to disable returning CORS headers entirely (more restrictive security setting)
         if config.DISABLE_CORS_HEADERS:
