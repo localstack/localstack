@@ -3,6 +3,7 @@ import re
 from typing import Dict, List
 from urllib.parse import quote
 
+from moto.core import get_account_id
 from moto.iam.models import AWSManagedPolicy, InlinePolicy, Policy
 from moto.iam.models import Role as MotoRole
 from moto.iam.models import aws_managed_policies, filter_items_with_path_prefix
@@ -10,7 +11,7 @@ from moto.iam.models import iam_backend as moto_iam_backend
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.responses import IamResponse
 
-from localstack import config, constants
+from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.iam import (
     ActionNameListType,
@@ -278,7 +279,7 @@ class IamProvider(IamApi):
             max_session_duration=3600,
         )
         role.service_linked_role_arn = "arn:aws:iam::{0}:role/aws-service-role/{1}/{2}".format(
-            constants.TEST_AWS_ACCOUNT_ID, aws_service_name, role.name
+            get_account_id(), aws_service_name, role.name
         )
 
         res_role = self.moto_role_to_role_type(role)

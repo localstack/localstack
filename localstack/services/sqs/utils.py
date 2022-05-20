@@ -1,16 +1,16 @@
 import re
 
+from moto.core import get_account_id
 from moto.sqs.exceptions import MessageAttributesInvalid
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 
-from localstack import constants
 from localstack.utils.common import clone
 from localstack.utils.urls import path_from_url
 
 
 def is_sqs_queue_url(url):
     path = path_from_url(url).partition("?")[0]
-    return re.match(r"^/(queue|%s)/[a-zA-Z0-9_-]+(.fifo)?$" % constants.TEST_AWS_ACCOUNT_ID, path)
+    return re.match(r"^/(queue|%s)/[a-zA-Z0-9_-]+(.fifo)?$" % get_account_id(), path)
 
 
 def parse_message_attributes(

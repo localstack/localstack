@@ -1,7 +1,8 @@
 import base64
 from typing import Dict, List, Optional
 
-from localstack import constants
+from moto.core import get_account_id
+
 from localstack.services.awslambda.event_source_listeners.stream_event_source_listener import (
     StreamEventSourceListener,
 )
@@ -61,7 +62,7 @@ class KinesisEventSourceListener(StreamEventSourceListener):
                     "eventVersion": "1.0",
                     "eventName": "aws:kinesis:record",
                     "invokeIdentityArn": "arn:aws:iam::{0}:role/lambda-role".format(
-                        constants.TEST_AWS_ACCOUNT_ID
+                        get_account_id()
                     ),
                     "awsRegion": aws_stack.get_region(),
                     "kinesis": record_payload,
