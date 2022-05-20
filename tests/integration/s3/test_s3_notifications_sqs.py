@@ -365,7 +365,7 @@ class TestS3NotificationsToSQS:
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
         s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectTagging:Delete"])
-        s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectTagging:Put"])
+        #  s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectTagging:Put"])
 
         dest_key = "key-dest-%s" % short_uid()
 
@@ -374,24 +374,6 @@ class TestS3NotificationsToSQS:
         assert not sqs_collect_s3_events(
             sqs_client, queue_url, 0, timeout=1
         ), "unexpected event triggered for put_object"
-
-        s3_client.put_object_tagging(
-            Bucket=bucket_name,
-            Key=dest_key,
-            Tagging={
-                "TagSet": [
-                    {"Key": "swallow_type", "Value": "african"},
-                ]
-            },
-        )
-
-        events = sqs_collect_s3_events(sqs_client, queue_url, 1)
-        assert len(events) == 1, f"unexpected number of events in {events}"
-
-        assert events[0]["eventSource"] == "aws:s3"
-        assert events[0]["eventName"] == "ObjectTagging:Put"
-        assert events[0]["s3"]["bucket"]["name"] == bucket_name
-        assert events[0]["s3"]["object"]["key"] == dest_key
 
         s3_client.delete_object_tagging(
             Bucket=bucket_name,
