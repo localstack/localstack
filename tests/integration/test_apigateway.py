@@ -11,16 +11,12 @@ import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
 from moto.apigateway.models import APIGatewayBackend
+from moto.core import get_account_id
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
-from localstack.constants import (
-    APPLICATION_JSON,
-    HEADER_LOCALSTACK_REQUEST_URL,
-    LOCALHOST_HOSTNAME,
-    TEST_AWS_ACCOUNT_ID,
-)
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_REQUEST_URL, LOCALHOST_HOSTNAME
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,

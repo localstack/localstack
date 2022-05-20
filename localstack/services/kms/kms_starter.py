@@ -1,8 +1,9 @@
 import logging
 import platform
 
+from moto.core import get_account_id
+
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
 from localstack.services.install import INSTALL_PATH_KMS_BINARY_PATTERN
 from localstack.utils.common import get_arch, get_free_tcp_port, wait_for_port_open
@@ -22,8 +23,8 @@ def start_kms_local(port=None, backend_port=None, asynchronous=None, update_list
         "PORT": str(backend_port),
         "KMS_REGION": config.DEFAULT_REGION,
         "REGION": config.DEFAULT_REGION,
-        "KMS_ACCOUNT_ID": TEST_AWS_ACCOUNT_ID,
-        "ACCOUNT_ID": TEST_AWS_ACCOUNT_ID,
+        "KMS_ACCOUNT_ID": get_account_id(),
+        "ACCOUNT_ID": get_account_id(),
     }
     if config.dirs.data:
         env_vars["KMS_DATA_PATH"] = config.dirs.data

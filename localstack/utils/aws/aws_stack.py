@@ -10,6 +10,8 @@ from functools import lru_cache
 from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
+from moto.core import get_account_id
+
 if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
@@ -30,11 +32,9 @@ from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
     MAX_POOL_CONNECTIONS,
-    MOTO_ACCOUNT_ID,
     REGION_LOCAL,
     S3_VIRTUAL_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_ACCOUNT_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.aws.aws_models import KinesisStream
@@ -458,9 +458,9 @@ def set_default_region_in_headers(headers, service=None, region=None):
 
 def fix_account_id_in_arns(response, colon_delimiter=":", existing=None, replace=None):
     """Fix the account ID in the ARNs returned in the given Flask response or string"""
-    existing = existing or ["123456789", "1234567890", "123456789012", MOTO_ACCOUNT_ID]
+    existing = existing or ["123456789", "1234567890", "123456789012", get_account_id()]
     existing = existing if isinstance(existing, list) else [existing]
-    replace = replace or TEST_AWS_ACCOUNT_ID
+    replace = replace or get_account_id()
     is_str_obj = is_string_or_bytes(response)
     content = to_str(response if is_str_obj else response._content)
 
@@ -587,29 +587,19 @@ def extract_resource_from_arn(arn: str) -> Optional[str]:
         return None
 
 
-def get_account_id(account_id=None, env=None):
-    if account_id:
-        return account_id
-    env = get_environment(env)
-    if is_local_env(env):
-        return os.environ["TEST_AWS_ACCOUNT_ID"]
-    raise Exception("Unable to determine AWS account ID (%s, %s)" % (account_id, env))
-
-
 def role_arn(role_name, account_id=None, env=None):
     if not role_name:
         return role_name
     if role_name.startswith("arn:aws:iam::"):
         return role_name
-    env = get_environment(env)
-    account_id = get_account_id(account_id, env=env)
+    account_id = account_id or get_account_id()
     return "arn:aws:iam::%s:role/%s" % (account_id, role_name)
 
 
 def policy_arn(policy_name, account_id=None):
     if ":policy/" in policy_name:
         return policy_name
-    account_id = account_id or TEST_AWS_ACCOUNT_ID
+    account_id = account_id or get_account_id()
     return "arn:aws:iam::{}:policy/{}".format(account_id, policy_name)
 
 
@@ -654,7 +644,7 @@ def dynamodb_table_arn(table_name, account_id=None, region_name=None):
 
 
 def dynamodb_stream_arn(table_name, latest_stream_label, account_id=None):
-    account_id = get_account_id(account_id)
+    account_id = account_id or get_account_id()
     return "arn:aws:dynamodb:%s:%s:table/%s/stream/%s" % (
         get_region(),
         account_id,
@@ -706,7 +696,7 @@ def lambda_function_or_layer_arn(
             LOG.info(f"{msg}: {e}")
             raise Exception(msg)
 
-    account_id = get_account_id(account_id)
+    account_id = account_id or get_account_id()
     region_name = region_name or get_region()
     result = f"arn:aws:lambda:{region_name}:{account_id}:{type}:{entity_name}"
     if version:
@@ -799,7 +789,7 @@ def s3_bucket_name(bucket_name_or_arn: str) -> str:
 def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: str = None) -> str:
     if ":" in name:
         return name
-    account_id = get_account_id(account_id)
+    account_id = account_id or get_account_id()
     region_name = region_name or get_region()
     if len(pattern.split("%s")) == 3:
         return pattern % (account_id, name)
@@ -837,14 +827,14 @@ def create_sqs_queue(queue_name, env=None):
 
 
 def sqs_queue_arn(queue_name, account_id=None, region_name=None):
-    account_id = get_account_id(account_id)
+    account_id = account_id or get_account_id()
     region_name = region_name or get_region()
     queue_name = queue_name.split("/")[-1]
     return "arn:aws:sqs:%s:%s:%s" % (region_name, account_id, queue_name)
 
 
 def apigateway_restapi_arn(api_id, account_id=None, region_name=None):
-    account_id = get_account_id(account_id)
+    account_id = account_id or get_account_id()
     region_name = region_name or get_region()
     return "arn:aws:apigateway:%s:%s:/restapis/%s" % (region_name, account_id, api_id)
 
@@ -857,7 +847,7 @@ def sqs_queue_name(queue_arn):
 
 
 def sns_topic_arn(topic_name, account_id=None):
-    account_id = get_account_id(account_id)
+    account_id = account_id or get_account_id()
     return "arn:aws:sns:%s:%s:%s" % (get_region(), account_id, topic_name)
 
 

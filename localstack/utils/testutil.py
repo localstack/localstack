@@ -13,14 +13,11 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import boto3
 import requests
+from moto.core import get_account_id
 
 from localstack import config
-from localstack.constants import (
-    LAMBDA_TEST_ROLE,
-    LOCALSTACK_ROOT_FOLDER,
-    LOCALSTACK_VENV_FOLDER,
-    TEST_AWS_ACCOUNT_ID,
-)
+from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
+from localstack.services.awslambda.lambda_api import LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
@@ -513,7 +510,7 @@ def get_sample_arn(service, resource):
     return "arn:aws:%s:%s:%s:%s" % (
         service,
         aws_stack.get_region(),
-        TEST_AWS_ACCOUNT_ID,
+        get_account_id(),
         resource,
     )
 

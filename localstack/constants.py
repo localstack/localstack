@@ -40,7 +40,12 @@ BIND_HOST = "0.0.0.0"
 # AWS user account ID used for tests - TODO move to config.py
 if "TEST_AWS_ACCOUNT_ID" not in os.environ:
     os.environ["TEST_AWS_ACCOUNT_ID"] = "000000000000"
-TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
+_TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
+#
+# WARNING: Do not use the above constant to access the Account ID.
+#          Use `moto.core.models.get_account_id()`.
+#          This returns the correct value based on current thread+request context.
+#
 
 # root code folder
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -97,9 +102,6 @@ TRUE_STRINGS = ("1", "true", "True")
 FALSE_STRINGS = ("0", "false", "False")
 # strings with valid log levels for LS_LOG
 LOG_LEVELS = ("trace-internal", "trace", "debug", "info", "warn", "error", "warning")
-
-# Lambda defaults
-LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % TEST_AWS_ACCOUNT_ID
 
 # the version of elasticsearch that is pre-seeded into the base image (sync with Dockerfile.base)
 ELASTICSEARCH_DEFAULT_VERSION = "Elasticsearch_7.10"
@@ -187,18 +189,14 @@ OS_USER_OPENSEARCH = "localstack"
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = "Ready."
 
-# hardcoded AWS account ID used by moto
-MOTO_ACCOUNT_ID = TEST_AWS_ACCOUNT_ID
-
 
 def patch_moto_account_id():
     # fix moto account ID - note: this needs to be executed before any other moto imports
-    # TODO remove this after all acccount ID refs are replaced with the resolver calls
     try:
         from moto import core as moto_core
         from moto.core import models as moto_core_models
 
-        moto_core.ACCOUNT_ID = moto_core_models.ACCOUNT_ID = MOTO_ACCOUNT_ID
+        moto_core.ACCOUNT_ID = moto_core_models.ACCOUNT_ID = _TEST_AWS_ACCOUNT_ID
     except Exception:
         # ignore import errors
         pass

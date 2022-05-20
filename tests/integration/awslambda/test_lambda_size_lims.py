@@ -3,8 +3,7 @@ from io import BytesIO
 
 import pytest
 
-from localstack.constants import LAMBDA_TEST_ROLE
-from localstack.services.awslambda.lambda_api import LAMBDA_DEFAULT_HANDLER
+from localstack.services.awslambda.lambda_api import LAMBDA_DEFAULT_HANDLER, LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.utils import testutil
 from localstack.utils.common import short_uid

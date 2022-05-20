@@ -28,7 +28,7 @@ def get_region(request: Request) -> str:
 # TODO@viren Remove TEST_AWS_ACCOUNT_ID refs and dangling code
 
 
-def get_account_id(_: Request) -> str:
+def _get_account_id(_: Request) -> str:
     """
     Get the AWS Account ID.
 
@@ -54,7 +54,7 @@ class AwsApiListener(ProxyListenerAdapter):
         context.service = self.service
         context.request = request
         context.region = get_region(request)
-        context.account_id = get_account_id(request)
+        context.account_id = _get_account_id(request)
         return context
 
 

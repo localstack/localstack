@@ -17,9 +17,10 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from flask import Flask, Response, jsonify, request
+from moto.core import get_account_id
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -77,11 +78,12 @@ from localstack.utils.functions import run_safe
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.patch import patch
 
-# logger
 LOG = logging.getLogger(__name__)
 
 # name pattern of IAM policies associated with Lambda functions (name/qualifier)
 LAMBDA_POLICY_NAME_PATTERN = "lambda_policy_{name}_{qualifier}"
+LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % get_account_id()
+
 # constants
 APP_NAME = "lambda_api"
 ARCHIVE_FILE_PATTERN = "%s/lambda.handler.*.jar" % config.dirs.tmp
@@ -991,7 +993,7 @@ def get_lambda_policy(function, qualifier=None):
         if not isinstance(doc["Statement"], list):
             doc["Statement"] = [doc["Statement"]]
         for stmt in doc["Statement"]:
-            stmt["Principal"] = stmt.get("Principal") or {"AWS": TEST_AWS_ACCOUNT_ID}
+            stmt["Principal"] = stmt.get("Principal") or {"AWS": get_account_id()}
         doc["PolicyArn"] = p["Arn"]
         doc["PolicyName"] = p["PolicyName"]
         doc["Id"] = "default"

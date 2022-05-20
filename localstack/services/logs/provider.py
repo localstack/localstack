@@ -5,6 +5,7 @@ import logging
 from gzip import GzipFile
 from typing import Callable, Dict
 
+from moto.core import get_account_id
 from moto.core.utils import unix_time_millis
 from moto.logs import models as logs_models
 from moto.logs.exceptions import InvalidParameterException, ResourceNotFoundException
@@ -181,7 +182,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
 
         data = {
             "messageType": "DATA_MESSAGE",
-            "owner": aws_stack.get_account_id(),
+            "owner": get_account_id(),
             "logGroup": log_group_name,
             "logStream": log_stream_name,
             "subscriptionFilters": [self.filter_name],

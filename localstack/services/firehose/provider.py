@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Dict, List
 
 import requests
+from moto.core import get_account_id
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.firehose import (
@@ -62,7 +63,6 @@ from localstack.aws.api.firehose import (
     UntagDeliveryStreamOutput,
     UpdateDestinationOutput,
 )
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.firehose.mappers import (
     convert_es_config_to_desc,
     convert_es_update_to_desc,
@@ -438,8 +438,7 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_description = region.delivery_streams.get(delivery_stream_name)
         if not delivery_stream_description:
             raise ResourceNotFoundException(
-                f"Firehose {delivery_stream_name} under account {TEST_AWS_ACCOUNT_ID} "
-                f"not found."
+                f"Firehose {delivery_stream_name} under account {get_account_id()} " f"not found."
             )
 
         # preprocess records, add any missing attributes
