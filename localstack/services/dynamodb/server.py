@@ -8,6 +8,7 @@ from localstack.services import install
 from localstack.services.install import DDB_AGENT_JAR_PATH
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
+from localstack.utils.files import rm_rf
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 from localstack.utils.sync import retry
@@ -105,6 +106,15 @@ def create_dynamodb_server(port=None) -> DynamodbServer:
 
     if config.dirs.data:
         ddb_data_dir = "%s/dynamodb" % config.dirs.data
+        mkdir(ddb_data_dir)
+        absolute_path = os.path.abspath(ddb_data_dir)
+        server.db_path = absolute_path
+    else:
+        # if DATA_DIR is not set, we need to dump the db somewhere to retrieve it
+        # together with the state (for Cloud Pods). If a db_path is not set, DynamoDBLocal
+        # keeps the db in memory; we could investigate whether is possible to fetch it on fly.
+        ddb_data_dir = "%s/dynamodb" % config.dirs.tmp
+        rm_rf(ddb_data_dir)
         mkdir(ddb_data_dir)
         absolute_path = os.path.abspath(ddb_data_dir)
         server.db_path = absolute_path
