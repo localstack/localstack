@@ -261,7 +261,7 @@ class RequestParser(abc.ABC):
             return handler(request, shape, payload, uri_params) if payload is not None else None
         except (TypeError, ValueError, AttributeError) as e:
             raise ProtocolParserError(
-                f"Invalid type when parsing {shape.name}: '{payload}' cannot be parsed to int."
+                f"Invalid type when parsing {shape.name}: '{payload}' cannot be parsed to {shape.type_name}."
             ) from e
 
     # The parsing functions for primitive types, lists, and timestamps are shared among subclasses.
@@ -613,8 +613,10 @@ class BaseRestRequestParser(RequestParser):
                 payload_parsed[payload_member_name] = body
             elif body_shape.type_name == "string":
                 # Only set the value if it's not empty (the request's data is an empty binary by default)
-                body = request.get_data(as_text=True)
-                if body:
+                if request.data:
+                    body = request.data
+                    if isinstance(body, bytes):
+                        body = body.decode(self.DEFAULT_ENCODING)
                     payload_parsed[payload_member_name] = body
             elif body_shape.type_name == "blob":
                 # Only set the value if it's not empty (the request's data is an empty binary by default)
@@ -672,7 +674,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         self._namespace_re = re.compile("{.*}")
 
     def _initial_body_parse(self, request: HttpRequest) -> ETree.Element:
-        body = request.get_data(as_text=True)
+        body = request.data
         if not body:
             return ETree.Element("")
         return self._parse_xml_string_to_dom(body)

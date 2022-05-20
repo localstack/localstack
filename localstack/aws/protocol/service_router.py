@@ -187,7 +187,7 @@ def legacy_rules(request: Request) -> Optional[str]:
 
     # S3 delete object requests
     if method == "POST" and "delete" in values:
-        data_bytes = to_bytes(request.get_data())
+        data_bytes = to_bytes(request.data)
         if b"<Delete" in data_bytes and b"<Key>" in data_bytes:
             return "s3"
 
