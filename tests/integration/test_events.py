@@ -5,9 +5,10 @@ import os
 import uuid
 from datetime import datetime
 from typing import Dict, List, Tuple
-
+import time
 import pytest
 
+from botocore.exceptions import ClientError
 from localstack import config
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.events.provider import _get_events_tmp_dir
@@ -57,8 +58,11 @@ class TestEvents:
         for field in expected_fields:
             assert field in event
 
+    def create_rule_name(self):
+        return "rule-{}".format(short_uid())
+
     def test_put_rule(self, events_client):
-        rule_name = "rule-{}".format(short_uid())
+        rule_name = self.create_rule_name()
 
         events_client.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
 
@@ -1235,6 +1239,55 @@ class TestEvents:
 
         # clean up
         self.cleanup(TEST_EVENT_BUS_NAME, rule_name, target_id, queue_url=queue_url)
+
+    @pytest.mark.parametrize("schedule_expression", ["rate(1 minute)", "rate(1 day)", "rate(1 hour)"])
+    @pytest.mark.aws_validated
+    def test_create_rule_with_one_unit_in_singular_should_succeed(self, events_client, schedule_expression):
+        rule_name = self.create_rule_name()
+
+        # rule should be creatable with given expression
+        assert events_client.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
+
+        self.cleanup(rule_name=rule_name, events_client=events_client)
+
+    @pytest.mark.parametrize("schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"])
+    @pytest.mark.xfail
+    def test_create_rule_with_one_unit_in_plural_should_fail(self, events_client, schedule_expression):
+        rule_name = self.create_rule_name()
+
+        # rule should not be creatable with given expression
+        with pytest.raises(ClientError):
+            events_client.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
+
+    @pytest.mark.xfail
+    def test_rule_event_content(self, events_client, logs_client):
+        log_group_name = "/aws/events/testLogGroup"
+        logs_client.create_log_group(logGroupName=log_group_name)
+
+        log_groups = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)
+        assert len(log_groups['logGroups']) == 1
+        log_group = log_groups['logGroups'][0]
+
+        log_group_arn = log_group['arn']
+
+        rule_name = "testRuleName"
+        events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
+
+        events_client.put_targets(Rule=rule_name, Targets=[{"Id": "testId", "Arn": log_group_arn}])
+
+        # wait one minute, as then the rule will trigger and send the event to the log group
+        time.sleep(61)
+
+        log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
+        assert len(log_streams['logStreams']) == 1
+        log_stream_name = log_streams['logStreams'][0]['logStreamName']
+
+        log_content = logs_client.get_log_events(logGroupName=log_group_name, logStreamName=log_stream_name)
+        events = log_content['events']
+        assert len(events) == 1
+        event = events[0]
+
+        self.assert_valid_event(event)
 
     def _get_queue_arn(self, queue_url, sqs_client):
         queue_attrs = sqs_client.get_queue_attributes(
