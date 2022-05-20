@@ -187,7 +187,7 @@ def legacy_rules(request: Request) -> Optional[str]:
 
     # S3 delete object requests
     if method == "POST" and "delete" in values:
-        data_bytes = to_bytes(request.get_data())
+        data_bytes = to_bytes(request.data)
         if b"<Delete" in data_bytes and b"<Key>" in data_bytes:
             return "s3"
 
@@ -308,8 +308,6 @@ def determine_aws_service_name(
     legacy_match = legacy_rules(request)
     if legacy_match:
         return legacy_match
-
-    LOG.warning("could not uniquely determine service from request, candidates=%s", candidates)
 
     if signing_name:
         return signing_name

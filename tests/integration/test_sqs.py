@@ -1306,7 +1306,11 @@ class TestSqsProvider:
             "X-Amz-Signature": signer.signature(string_to_sign, req),
         }
 
-        response = requests.post(url=base_url, data=urlencode(payload))
+        response = requests.post(
+            url=base_url,
+            data=urlencode(payload),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
         assert response.status_code == 200
         assert b"<ListQueuesResponse" in response.content
 

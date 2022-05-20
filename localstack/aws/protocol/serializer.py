@@ -557,7 +557,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestId")
         request_id.text = gen_amzn_requestid_long()
-        response.data = self._encode_payload(self._xml_to_string(root))
+        response.set_response(self._encode_payload(self._xml_to_string(root)))
 
     def _add_error_tags(
         self, code: str, error: ServiceException, error_tag: ETree.Element, sender_fault: bool
@@ -599,8 +599,13 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         if shape.serialization.get("resultWrapper"):
             name = shape.serialization.get("resultWrapper")
 
-        method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
-        method(xmlnode, params, shape, name)
+        try:
+            method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
+            method(xmlnode, params, shape, name)
+        except (TypeError, ValueError, AttributeError) as e:
+            raise ProtocolSerializerError(
+                f"Invalid type when serializing {shape.name}: '{xmlnode}' cannot be parsed to {shape.type_name}."
+            ) from e
 
     def _serialize_type_structure(
         self, xmlnode: ETree.Element, params: dict, shape: StructureShape, name: str
@@ -747,7 +752,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         response.headers["Content-Type"] = "text/xml"
         return response
 
-    def _xml_to_string(self, root: Optional[ETree.ElementTree]) -> Optional[str]:
+    def _xml_to_string(self, root: Optional[ETree.Element]) -> Optional[str]:
         """Generates the string representation of the given XML element."""
         if root is not None:
             return ETree.tostring(
@@ -809,20 +814,24 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
             # If it's streaming, then the body is just the value of the payload.
             body_payload = parameters.get(payload_member, b"")
             body_payload = self._encode_payload(body_payload)
-            response.data = body_payload
+            response.set_response(body_payload)
         elif payload_member is not None:
             # If there's a payload member, we serialized that member to the body.
             body_params = parameters.get(payload_member)
             if body_params is not None:
-                response.data = self._encode_payload(
-                    self._serialize_body_params(
-                        body_params, shape_members[payload_member], operation_model
+                response.set_response(
+                    self._encode_payload(
+                        self._serialize_body_params(
+                            body_params, shape_members[payload_member], operation_model
+                        )
                     )
                 )
         else:
             # Otherwise, we use the "traditional" way of serializing the whole parameters dict recursively.
-            response.data = self._encode_payload(
-                self._serialize_body_params(parameters, shape, operation_model)
+            response.set_response(
+                self._encode_payload(
+                    self._serialize_body_params(parameters, shape, operation_model)
+                )
             )
 
     def _serialize_content_type(self, serialized: HttpResponse, shape: Shape, shape_members: dict):
@@ -950,7 +959,7 @@ class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSeria
             self._add_error_tags(code, error, root, sender_fault)
             request_id = ETree.SubElement(root, "RequestId")
             request_id.text = gen_amzn_requestid_long()
-            response.data = self._encode_payload(self._xml_to_string(root))
+            response.set_response(self._encode_payload(self._xml_to_string(root)))
         else:
             super()._serialize_error(error, code, sender_fault, response, shape, operation_model)
 
@@ -983,8 +992,8 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
         :param operation_model: The specification of the operation of which the response is serialized here
         :return: None - the given `serialized` dict is modified
         """
-        response.data = self._encode_payload(
-            self._serialize_body_params(parameters, shape, operation_model)
+        response.set_response(
+            self._encode_payload(self._serialize_body_params(parameters, shape, operation_model))
         )
 
     def _serialize_body_params_to_xml(
@@ -1057,7 +1066,7 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestID")
         request_id.text = gen_amzn_requestid_long()
-        response.data = self._encode_payload(self._xml_to_string(root))
+        response.set_response(self._encode_payload(self._xml_to_string(root)))
 
     def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
         # The EC2 protocol does not use the root output shape, therefore we need to remove the hierarchy level
@@ -1113,7 +1122,7 @@ class JSONResponseSerializer(ResponseSerializer):
         json_version = operation_model.metadata.get("jsonVersion")
         if json_version is not None:
             response.headers["Content-Type"] = "application/x-amz-json-%s" % json_version
-        response.data = self._serialize_body_params(parameters, shape, operation_model)
+        response.set_response(self._serialize_body_params(parameters, shape, operation_model))
 
     def _serialize_body_params(
         self, params: dict, shape: Shape, operation_model: OperationModel
@@ -1125,8 +1134,13 @@ class JSONResponseSerializer(ResponseSerializer):
 
     def _serialize(self, body: dict, value: Any, shape, key: Optional[str] = None):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
-        method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
-        method(body, value, shape, key)
+        try:
+            method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
+            method(body, value, shape, key)
+        except (TypeError, ValueError, AttributeError) as e:
+            raise ProtocolSerializerError(
+                f"Invalid type when serializing {shape.name}: '{value}' cannot be parsed to {shape.type_name}."
+            ) from e
 
     def _serialize_type_structure(self, body: dict, value: dict, shape: StructureShape, key: str):
         if value is None:

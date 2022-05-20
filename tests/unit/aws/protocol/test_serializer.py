@@ -1315,8 +1315,8 @@ def test_no_mutation_of_parameters():
     assert parameters == expected
 
 
-def test_serializer_error_on_protocol_error():
-    """Test that the serializer raises a ProtocolSerializerError in case of invalid data to serialize."""
+def test_serializer_error_on_protocol_error_invalid_exception():
+    """Test that the serializer raises a ProtocolSerializerError in case of invalid exception to serialize."""
     service = load_service("sqs")
     operation_model = service.operation_model("SendMessage")
     serializer = QueryResponseSerializer()
@@ -1324,6 +1324,17 @@ def test_serializer_error_on_protocol_error():
         # a known protocol error would be if we try to serialize an exception which is not a CommonServiceException and
         # also not a generated exception
         serializer.serialize_error_to_response(NotImplementedError(), operation_model)
+
+
+def test_serializer_error_on_protocol_error_invalid_data():
+    """Test that the serializer raises a ProtocolSerializerError in case of invalid data to serialize."""
+    service = load_service("dynamodbstreams")
+    operation_model = service.operation_model("DescribeStream")
+    serializer = QueryResponseSerializer()
+    with pytest.raises(ProtocolSerializerError):
+        serializer.serialize_to_response(
+            {"StreamDescription": {"CreationRequestDateTime": "invalid_timestamp"}}, operation_model
+        )
 
 
 def test_serializer_error_on_unknown_error():

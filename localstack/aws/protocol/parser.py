@@ -73,7 +73,7 @@ import re
 from abc import ABC
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import urlsplit
 from xml.etree import ElementTree as ETree
 
 import cbor2
@@ -257,7 +257,12 @@ class RequestParser(abc.ABC):
 
         fn_name = "_parse_%s" % shape.type_name
         handler = getattr(self, fn_name, self._noop_parser)
-        return handler(request, shape, payload, uri_params) if payload is not None else None
+        try:
+            return handler(request, shape, payload, uri_params) if payload is not None else None
+        except (TypeError, ValueError, AttributeError) as e:
+            raise ProtocolParserError(
+                f"Invalid type when parsing {shape.name}: '{payload}' cannot be parsed to {shape.type_name}."
+            ) from e
 
     # The parsing functions for primitive types, lists, and timestamps are shared among subclasses.
 
@@ -354,15 +359,7 @@ class QueryRequestParser(RequestParser):
 
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        body = request.get_data(as_text=True)
-        instance = parse_qs(body, keep_blank_values=True)
-        if not instance:
-            # if the body does not contain any information, fallback to the actual query parameters
-            instance = request.args
-        # The query parsing returns a list for each entry in the dict (this is how HTTP handles lists in query params).
-        # However, the AWS Query format does not have any duplicates.
-        # Therefore we take the first element of each entry in the dict.
-        instance = {k: self._get_first(v) for k, v in instance.items()}
+        instance = request.values
         if "Action" not in instance:
             raise ProtocolParserError(
                 f"Operation detection failed. "
@@ -779,9 +776,10 @@ class RestXMLRequestParser(BaseRestRequestParser):
             return serialized_name
         return member_name
 
-    def _parse_xml_string_to_dom(self, xml_string: bytes) -> ETree.Element:
+    @staticmethod
+    def _parse_xml_string_to_dom(xml_string: str) -> ETree.Element:
         try:
-            parser = ETree.XMLParser(target=ETree.TreeBuilder(), encoding=self.DEFAULT_ENCODING)
+            parser = ETree.XMLParser(target=ETree.TreeBuilder())
             parser.feed(xml_string)
             root = parser.close()
         except ETree.ParseError as e:

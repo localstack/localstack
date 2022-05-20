@@ -97,7 +97,7 @@ class TestCSRF:
         assert "<ListTopicsResponse" in to_str(response.content)
 
         monkeypatch.setattr(config, "DISABLE_CORS_HEADERS", True)
-        response = requests.get(url, headers=headers, data=data)
+        response = requests.post(url, headers=headers, data=data)
         assert response.status_code == 200
         assert "<ListTopicsResponse" in to_str(response.content)
         assert not response.headers.get("access-control-allow-headers")

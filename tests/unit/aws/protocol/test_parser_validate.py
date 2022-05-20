@@ -43,6 +43,7 @@ class TestExceptions:
                     "Action=SendMessage&Version=2012-11-05&"
                     "QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue&"
                 ),
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
         )
 
@@ -89,6 +90,7 @@ class TestExceptions:
                         "DurationSeconds": "100",
                     }
                 ),
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
         )
 
@@ -111,6 +113,7 @@ class TestExceptions:
                         "RoleSessionName": "foobared",
                     }
                 ),
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
         )
 

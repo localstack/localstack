@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 from botocore.exceptions import ClientError
 from botocore.model import OperationModel
+from werkzeug.datastructures import Headers
 
 from localstack import config
 from localstack.aws.api import CommonServiceException
@@ -135,9 +136,9 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
     body = urlencode(params)
 
     try:
-        operation, service_request = parser.parse(
-            Request("POST", "/", headers=request.headers, body=body)
-        )
+        headers = Headers(request.headers)
+        headers["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+        operation, service_request = parser.parse(Request("POST", "/", headers=headers, body=body))
         validate_request(operation, service_request).raise_first()
     except OperationNotFoundParserError:
         raise InvalidAction(action)
