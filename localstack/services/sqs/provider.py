@@ -128,7 +128,7 @@ def check_message_content(message_body: str):
         raise InvalidMessageContents(error)
 
 
-def generate_receipt_handle(queue_arn, message: "SqsMessage") -> str:
+def encode_receipt_handle(queue_arn, message: "SqsMessage") -> str:
     # http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/ImportantIdentifiers.html#ImportantIdentifiers-receipt-handles
     # encode the queue arn in the receipt handle, so we can later check if it belongs to the queue
     # but also add some randomness s.t. the generated receipt handles look like the ones from AWS
@@ -422,7 +422,7 @@ class SqsQueue:
                     standard_message.first_received = standard_message.last_received
 
                 # create and manage receipt handle
-                receipt_handle = self.generate_receipt_handle(standard_message)
+                receipt_handle = self.create_receipt_handle(standard_message)
                 standard_message.receipt_handles.add(receipt_handle)
                 self.receipts[receipt_handle] = standard_message
 
@@ -443,8 +443,8 @@ class SqsQueue:
 
             return copied_message
 
-    def generate_receipt_handle(self, message: SqsMessage) -> str:
-        return generate_receipt_handle(self.arn, message)
+    def create_receipt_handle(self, message: SqsMessage) -> str:
+        return encode_receipt_handle(self.arn, message)
 
     def requeue_inflight_messages(self):
         if not self.inflight:

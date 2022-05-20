@@ -1847,7 +1847,7 @@ class TestSqsProvider:
 
         # check that it works as expected
         sqs_client.change_message_visibility(
-            QueueUrl=sqs_queue, ReceiptHandle=handle, VisibilityTimeout=5
+            QueueUrl=sqs_queue, ReceiptHandle=handle, VisibilityTimeout=42
         )
 
         # delete the message, the handle becomes invalid
