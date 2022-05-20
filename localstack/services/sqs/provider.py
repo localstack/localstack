@@ -758,7 +758,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
-        backend = SqsBackend.get(context.region)
+        backend = SqsBackend[context.region]
 
         with self._mutex:
             if name not in backend.queues.keys():
@@ -804,7 +804,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if attributes and attributes.get(QueueAttributeName.Policy) == "":
             del attributes[QueueAttributeName.Policy]
 
-        backend = SqsBackend.get(context.region)
+        backend = SqsBackend[context.region]
 
         with self._mutex:
             if queue_name in backend.queues:
@@ -838,7 +838,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
     ) -> GetQueueUrlResult:
-        backend = SqsBackend.get(context.region)
+        backend = SqsBackend[context.region]
         if queue_name not in backend.queues.keys():
             raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
@@ -853,7 +853,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         next_token: Token = None,
         max_results: BoxedInteger = None,
     ) -> ListQueuesResult:
-        backend = SqsBackend.get(context.region)
+        backend = SqsBackend[context.region]
 
         if queue_name_prefix:
             urls = [
@@ -919,7 +919,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         )
 
     def delete_queue(self, context: RequestContext, queue_url: String) -> None:
-        backend = SqsBackend.get(context.region)
+        backend = SqsBackend[context.region]
 
         with self._mutex:
             queue = self._resolve_queue(context, queue_url=queue_url)

@@ -529,7 +529,7 @@ class OpensearchProvider(OpensearchApi):
     def list_domain_names(
         self, context: RequestContext, engine_type: EngineType = None
     ) -> ListDomainNamesResponse:
-        region = OpenSearchServiceBackend.get(context.region)
+        region = OpenSearchServiceBackend[context.region]
         domain_names = [
             DomainInfo(
                 DomainName=DomainName(domain_name),
@@ -561,7 +561,7 @@ class OpensearchProvider(OpensearchApi):
     ) -> GetCompatibleVersionsResponse:
         version_filter = None
         if domain_name:
-            region = OpenSearchServiceBackend.get(context.region)
+            region = OpenSearchServiceBackend[context.region]
             with _domain_mutex:
                 domain = region.opensearch_domains.get(domain_name)
                 if not domain:
