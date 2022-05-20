@@ -16,7 +16,11 @@ def test_cfn_apigateway_aws_integration(
         template_path=os.path.join(
             os.path.dirname(__file__), "../templates/apigw-awsintegration-request-parameters.yaml"
         ),
-        parameters={"ApiName": api_name, "CustomTagKey": "_custom_id_", "CustomTagValue": custom_id}
+        parameters={
+            "ApiName": api_name,
+            "CustomTagKey": "_custom_id_",
+            "CustomTagValue": custom_id,
+        },
     )
 
     # check resources creation

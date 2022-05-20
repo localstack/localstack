@@ -75,6 +75,9 @@ Resources:
             - - "arn:"
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      Tags:
+      - Key: _custom_id_
+        Value: api
   RestApiAccount7C83CF5A:
     Type: AWS::ApiGateway::Account
     Properties:
@@ -90,6 +93,9 @@ Resources:
       RestApiId:
         Ref: RestApi0C43BF4B
       Description: Automatically created by the RestApi construct
+      Tags:
+      - Key: _custom_id_
+        Value: api
     DependsOn:
       - RestApiGET0F59260B
   RestApiDeploymentStageprod3855DE66:

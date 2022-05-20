@@ -584,7 +584,18 @@ class GatewayDomain(GenericBaseModel):
         return {
             "create": {
                 "function": "create_domain_name",
-                "parameters": lambda_keys_to_lower(),
+                "parameters": {
+                    "certificateArn": lambda_keys_to_lower("CertificateArn"),
+                    "domainName": lambda_keys_to_lower("DomainName"),
+                    "endpointConfiguration": lambda_keys_to_lower("EndpointConfiguration"),
+                    "mutualTlsAuthentication": lambda_keys_to_lower("MutualTlsAuthentication"),
+                    "ownershipVerificationCertificateArn": lambda_keys_to_lower(
+                        "OwnershipVerificationCertificateArn"
+                    ),
+                    "regionalCertificateArn": lambda_keys_to_lower("RegionalCertificateArn"),
+                    "securityPolicy": lambda_keys_to_lower("SecurityPolicy"),
+                    "tags": params_list_to_dict("Tags"),
+                },
             }
         }
 
@@ -629,7 +640,7 @@ class GatewayBasePathMapping(GenericBaseModel):
         return {"create": {"function": _create_base_path_mapping}}
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("id")
+        return self.props.get("restApiId")
 
 
 class GatewayModel(GenericBaseModel):
