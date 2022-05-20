@@ -85,15 +85,6 @@ FIFO_MSG_REGEX = "^[0-9a-zA-z!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-]*$"
 DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
 
 
-def generate_message_id():
-    return long_uid()
-
-
-def generate_receipt_handle():
-    # http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/ImportantIdentifiers.html#ImportantIdentifiers-receipt-handles
-    return "".join(random.choices(string.ascii_letters + string.digits, k=172)) + "="
-
-
 class InvalidParameterValue(CommonServiceException):
     def __init__(self, message):
         super().__init__("InvalidParameterValue", message, 400, True)
@@ -107,6 +98,10 @@ class InvalidAttributeValue(CommonServiceException):
 class MissingParameter(CommonServiceException):
     def __init__(self, message):
         super().__init__("MissingParameter", message, 400, True)
+
+
+def generate_message_id():
+    return long_uid()
 
 
 def assert_queue_name(queue_name: str, fifo: bool = False):
@@ -131,6 +126,27 @@ def check_message_content(message_body: str):
 
     if not re.match(MSG_CONTENT_REGEX, message_body):
         raise InvalidMessageContents(error)
+
+
+def encode_receipt_handle(queue_arn, message: "SqsMessage") -> str:
+    # http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/ImportantIdentifiers.html#ImportantIdentifiers-receipt-handles
+    # encode the queue arn in the receipt handle, so we can later check if it belongs to the queue
+    # but also add some randomness s.t. the generated receipt handles look like the ones from AWS
+    handle = f"{long_uid()} {queue_arn} {message.message.get('MessageId')} {message.last_received}"
+    encoded = base64.b64encode(handle.encode("utf-8"))
+    return encoded.decode("utf-8")
+
+
+def decode_receipt_handle(receipt_handle: str) -> str:
+    try:
+        handle = base64.b64decode(receipt_handle).decode("utf-8")
+        _, queue_arn, message_id, last_received = handle.split(" ")
+        parse_arn(queue_arn)  # raises a ValueError if it is not an arn
+        return queue_arn
+    except (IndexError, ValueError):
+        raise ReceiptHandleIsInvalid(
+            f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
+        )
 
 
 class Permission(NamedTuple):
@@ -302,12 +318,22 @@ class SqsQueue:
     def visibility_timeout(self) -> int:
         return int(self.attributes[QueueAttributeName.VisibilityTimeout])
 
+    def validate_receipt_handle(self, receipt_handle: str):
+        if self.arn != decode_receipt_handle(receipt_handle):
+            raise ReceiptHandleIsInvalid(
+                f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
+            )
+
     def update_visibility_timeout(self, receipt_handle: str, visibility_timeout: int):
         with self.mutex:
+            self.validate_receipt_handle(receipt_handle)
+
             if receipt_handle not in self.receipts:
-                raise ReceiptHandleIsInvalid(
-                    f'The input receipt handle "{receipt_handle}" is not a valid receipt handle.'
+                raise InvalidParameterValue(
+                    f"Value {receipt_handle} for parameter ReceiptHandle is invalid. Reason: Message does not exist "
+                    f"or is not available for visibility timeout change."
                 )
+
             standard_message = self.receipts[receipt_handle]
 
             if standard_message not in self.inflight:
@@ -327,6 +353,8 @@ class SqsQueue:
 
     def remove(self, receipt_handle: str):
         with self.mutex:
+            self.validate_receipt_handle(receipt_handle)
+
             if receipt_handle not in self.receipts:
                 LOG.debug(
                     "no in-flight message found for receipt handle %s in queue %s",
@@ -394,7 +422,7 @@ class SqsQueue:
                     standard_message.first_received = standard_message.last_received
 
                 # create and manage receipt handle
-                receipt_handle = generate_receipt_handle()
+                receipt_handle = self.create_receipt_handle(standard_message)
                 standard_message.receipt_handles.add(receipt_handle)
                 self.receipts[receipt_handle] = standard_message
 
@@ -414,6 +442,9 @@ class SqsQueue:
             copied_message.message["ReceiptHandle"] = receipt_handle
 
             return copied_message
+
+    def create_receipt_handle(self, message: SqsMessage) -> str:
+        return encode_receipt_handle(self.arn, message)
 
     def requeue_inflight_messages(self):
         if not self.inflight:

@@ -1836,6 +1836,56 @@ class TestSqsProvider:
         response = receive_message(["SenderId", "SequenceNumber"])
         assert snapshot.match("multiple_attributes", response)
 
+    @pytest.mark.aws_validated
+    def test_change_visibility_on_deleted_message_raises_invalid_parameter_value(
+        self, sqs_client, sqs_queue
+    ):
+        # prepare the fixture
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foo")
+        response = sqs_client.receive_message(QueueUrl=sqs_queue, WaitTimeSeconds=5)
+        handle = response["Messages"][0]["ReceiptHandle"]
+
+        # check that it works as expected
+        sqs_client.change_message_visibility(
+            QueueUrl=sqs_queue, ReceiptHandle=handle, VisibilityTimeout=42
+        )
+
+        # delete the message, the handle becomes invalid
+        sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=handle)
+
+        with pytest.raises(ClientError) as e:
+            sqs_client.change_message_visibility(
+                QueueUrl=sqs_queue, ReceiptHandle=handle, VisibilityTimeout=42
+            )
+
+        err = e.value.response["Error"]
+        assert err["Code"] == "InvalidParameterValue"
+        assert (
+            err["Message"]
+            == f"Value {handle} for parameter ReceiptHandle is invalid. Reason: Message does not exist or is not "
+            f"available for visibility timeout change."
+        )
+
+    @pytest.mark.aws_validated
+    def test_delete_message_with_illegal_receipt_handle(self, sqs_client, sqs_queue):
+        with pytest.raises(ClientError) as e:
+            sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle="garbage")
+
+        err = e.value.response["Error"]
+        assert err["Code"] == "ReceiptHandleIsInvalid"
+        assert err["Message"] == 'The input receipt handle "garbage" is not a valid receipt handle.'
+
+    @pytest.mark.aws_validated
+    def test_delete_message_with_deleted_receipt_handle(self, sqs_client, sqs_queue):
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foo")
+        response = sqs_client.receive_message(QueueUrl=sqs_queue, WaitTimeSeconds=5)
+        handle = response["Messages"][0]["ReceiptHandle"]
+
+        # does not raise errors even after successive calls
+        sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=handle)
+        sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=handle)
+        sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=handle)
+
 
 def get_region():
     return os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
