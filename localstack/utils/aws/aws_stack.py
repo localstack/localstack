@@ -389,7 +389,7 @@ def create_external_boto_client(
         config,
         verify,
         cache,
-        aws_access_key_id="__test_call__",
+        aws_access_key_id=get_account_id(),
         aws_secret_access_key="__test_key__",
         *args,
         **kwargs,

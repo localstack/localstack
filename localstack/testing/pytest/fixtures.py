@@ -16,6 +16,7 @@ from _pytest.config import Config
 from _pytest.nodes import Item
 from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
+from moto.core import get_account_id
 
 from localstack import config
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
@@ -106,7 +107,8 @@ def boto3_session():
         return boto3.Session()
 
     return boto3.Session(
-        aws_access_key_id="__test_call__",
+        # LocalStack assumes AWS_ACCESS_KEY_ID config contains the AWS_ACCOUNT_ID value.
+        aws_access_key_id=get_account_id(),
         aws_secret_access_key="__test_key__",
     )
 
