@@ -100,11 +100,13 @@ def create_dynamodb_server(port=None) -> DynamodbServer:
     Creates a dynamodb server from the LocalStack configuration.
     """
     port = port or get_free_tcp_port()
+    ddb_data_dir = f"{config.dirs.data}/dynamodb" if config.dirs.data else None
+    return do_create_dynamodb_server(port, ddb_data_dir)
 
+
+def do_create_dynamodb_server(port: int, ddb_data_dir: Optional[str]) -> DynamodbServer:
     server = DynamodbServer(port)
-
-    if config.dirs.data:
-        ddb_data_dir = "%s/dynamodb" % config.dirs.data
+    if ddb_data_dir:
         mkdir(ddb_data_dir)
         absolute_path = os.path.abspath(ddb_data_dir)
         server.db_path = absolute_path
