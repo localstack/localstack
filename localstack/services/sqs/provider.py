@@ -1113,7 +1113,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             dl_queue = self._require_queue_by_arn(context, dead_letter_target_arn)
             # TODO: this needs to be atomic?
             dead_message = std_m.message
-            dl_queue.put(message=dead_message)
+            dl_queue.put(
+                message=dead_message,
+                message_deduplication_id=std_m.message_deduplication_id,
+                message_group_id=std_m.message_group_id,
+            )
             queue.remove(std_m.message["ReceiptHandle"])
             return True
         else:

@@ -59,6 +59,18 @@ def queue_exists(sqs_client, queue_url: str) -> bool:
         raise
 
 
+def get_queue_arn(sqs_client, queue_url: str) -> str:
+    """
+    Returns the given Queue's ARN. Expects the Queue to exist.
+
+    :param sqs_client: the boto3 client
+    :param queue_url: the queue URL
+    :return: the QueueARN
+    """
+    response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
+    return response["Attributes"]["QueueArn"]
+
+
 class TestSqsProvider:
     @pytest.mark.only_localstack
     def test_get_queue_url_contains_request_host(self, sqs_client, sqs_create_queue, monkeypatch):
@@ -750,9 +762,7 @@ class TestSqsProvider:
     def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_client):
         dl_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(QueueName=dl_queue_name)
-        dl_target_arn = sqs_client.get_queue_attributes(
-            QueueUrl=dl_queue_url, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
+        dl_target_arn = get_queue_arn(sqs_client, dl_queue_url)
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         valid_max_receive_count = "42"
@@ -1081,6 +1091,50 @@ class TestSqsProvider:
         )
         result_recv = sqs_client.receive_message(QueueUrl=dl_queue_url, VisibilityTimeout=0)
         assert result_recv["Messages"][0]["Body"] == json.dumps(payload)
+
+    @pytest.mark.aws_validated
+    def test_dead_letter_queue_with_fifo_and_content_based_deduplication(
+        self, sqs_client, sqs_create_queue
+    ):
+        dlq_url = sqs_create_queue(
+            QueueName=f"test-dlq-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+                "MessageRetentionPeriod": "1209600",
+            },
+        )
+        dlq_arn = get_queue_arn(sqs_client, dlq_url)
+
+        queue_url = sqs_create_queue(
+            QueueName=f"test-queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+                "VisibilityTimeout": "60",
+                "RedrivePolicy": json.dumps({"deadLetterTargetArn": dlq_arn, "maxReceiveCount": 2}),
+            },
+        )
+
+        response = sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody="foobar", MessageGroupId="1"
+        )
+        message_id = response["MessageId"]
+
+        # receive the messages twice, which is the maximum allwed
+        sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1, VisibilityTimeout=0)
+        sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1, VisibilityTimeout=0)
+        # after this receive call the message should be in the DLQ
+        sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1, VisibilityTimeout=0)
+
+        # check the DLQ
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        assert (
+            len(response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {response}"
+        message = response["Messages"][0]
+        assert message["MessageId"] == message_id
+        assert message["Body"] == "foobar"
 
     def test_dead_letter_queue_max_receive_count(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
