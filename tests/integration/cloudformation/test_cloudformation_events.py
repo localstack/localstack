@@ -223,14 +223,14 @@ def test_event_rule_to_logs(
         cleanup_stacks([stack_id])
 
 
-def test_event_rule_creation_without_target(
-    cfn_client, cleanup_stacks, is_stack_created, deploy_cfn_template
-):
+def test_event_rule_creation_without_target(cfn_client, deploy_cfn_template):
     event_rule_name = f"event-rule-{short_uid()}"
     deployed = deploy_cfn_template(
-        template_file_name="events_rule_without_targets.yaml",
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../templates/events_rule_without_targets.yaml"
+        ),
         parameters={"EventRuleName": event_rule_name},
-    )  # see now below re: parameters
+    )
     stack_name = deployed.stack_name
 
     assert (
