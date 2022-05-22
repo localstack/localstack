@@ -34,43 +34,8 @@ def check_terraform_version():
     return True, ver_string
 
 
-def install_terraform_async():
-    def _do_install(_):
-        with INIT_LOCK:
-            install_terraform()
-
-    start_worker_thread(_do_install)
-
-
-@pytest.fixture(scope="module")
-def terraform_bin():
-    with INIT_LOCK:
-        install_terraform()
-
-    base_dir = get_base_dir()
-    run(f"cd {base_dir}; {TERRAFORM_BIN} plan -out=tfplan -input=false")
-    return TERRAFORM_BIN
-
-
-@pytest.fixture(scope="module")
-def terraform_plan(terraform_bin):
-    base_dir = get_base_dir()
-
-    if not os.path.exists(os.path.join(base_dir, ".terraform", "plugins")):
-        run(f"cd {base_dir}; {terraform_bin} init -input=false")
-    # remove any cache files from previous runs
-    for tf_file in [
-        "tfplan",
-        "terraform.tfstate",
-        "terraform.tfstate.backup",
-    ]:
-        rm_rf(os.path.join(base_dir, tf_file))
-    # create TF plan
-    run(f"cd {base_dir}; {terraform_bin} plan -out=tfplan -input=false")
-
-
 @pytest.fixture(scope="module", autouse=True)
-def setup_test(terraform_plan):
+def setup_test():
     with INIT_LOCK:
         if config.DEFAULT_REGION != "us-east-1":
             pytest.skip("Currently only support us-east-1")
@@ -90,8 +55,7 @@ def setup_test(terraform_plan):
     yield
 
     # clean up
-    with INIT_LOCK:
-        run("cd %s; %s destroy -auto-approve" % (get_base_dir(), TERRAFORM_BIN))
+    run("cd %s; %s destroy -auto-approve" % (get_base_dir(), TERRAFORM_BIN))
 
 
 def get_base_dir():
@@ -102,6 +66,27 @@ def get_base_dir():
 # TODO: rework this setup for multiple (potentially parallel) terraform tests by providing variables (see .auto.tfvars)
 # TODO: fetch generated ARNs from terraform instead of static/building ARNs
 class TestTerraform:
+    @classmethod
+    def init_async(cls):
+        def _run(*args):
+            with INIT_LOCK:
+                install_terraform()
+
+                base_dir = get_base_dir()
+                if not os.path.exists(os.path.join(base_dir, ".terraform", "plugins")):
+                    run(f"cd {base_dir}; {TERRAFORM_BIN} init -input=false")
+                # remove any cache files from previous runs
+                for tf_file in [
+                    "tfplan",
+                    "terraform.tfstate",
+                    "terraform.tfstate.backup",
+                ]:
+                    rm_rf(os.path.join(base_dir, tf_file))
+                # create TF plan
+                run(f"cd {base_dir}; {TERRAFORM_BIN} plan -out=tfplan -input=false")
+
+        start_worker_thread(_run)
+
     @pytest.mark.skip_offline
     def test_bucket_exists(self, s3_client):
         response = s3_client.head_bucket(Bucket=BUCKET_NAME)
@@ -202,7 +187,7 @@ class TestTerraform:
             if rest_api["name"] == "service_api":
                 service_apis.append(rest_api)
 
-        assert len(service_apis) == 1, f"unexpected number of service_apis in {rest_apis}"
+        assert len(service_apis) == 1
 
     @pytest.mark.skip_offline
     def test_dynamodb(self, dynamodb_client):
