@@ -19,7 +19,7 @@ from localstack.services import infra
 from localstack.utils.common import safe_requests
 from tests.integration.test_es import install_async as es_install_async
 from tests.integration.test_opensearch import install_async as opensearch_install_async
-from tests.integration.test_terraform import TestTerraform
+from tests.integration.test_terraform import TestTerraform, install_terraform_async
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +55,10 @@ def pytest_runtestloop(session):
             test_init_functions.add(es_install_async)
 
     # add init functions for certain tests that download/install things
-    for test_class in test_classes:
+    if TestTerraform in test_classes:
         # set flag that terraform will be used
-        if TestTerraform is test_class:
-            logger.info("will initialize TestTerraform")
-            test_init_functions.add(TestTerraform.init_async)
-            continue
+        logger.info("will initialize TestTerraform")
+        test_init_functions.add(install_terraform_async)
 
     if not session.items:
         return
