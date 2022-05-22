@@ -318,6 +318,10 @@ class SqsQueue:
     def visibility_timeout(self) -> int:
         return int(self.attributes[QueueAttributeName.VisibilityTimeout])
 
+    @property
+    def wait_time_seconds(self) -> int:
+        return int(self.attributes[QueueAttributeName.ReceiveMessageWaitTimeSeconds])
+
     def validate_receipt_handle(self, receipt_handle: str):
         if self.arn != decode_receipt_handle(receipt_handle):
             raise ReceiptHandleIsInvalid(
@@ -1061,8 +1065,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> ReceiveMessageResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
+        if wait_time_seconds is None:
+            wait_time_seconds = queue.wait_time_seconds
+
         num = max_number_of_messages or 1
-        block = wait_time_seconds is not None
+        block = True if wait_time_seconds else False
         # collect messages
         messages = []
 

@@ -351,10 +351,12 @@ class TestSqsProvider:
         took = time.time() - then
         assert took < 2  # should take much less than 5 seconds
 
-        assert len(response["Messages"]) >= 1, f"unexpected number of messages in {response}"
+        assert (
+            len(response.get("Messages", [])) >= 1
+        ), f"unexpected number of messages in {response}"
 
     @pytest.mark.aws_validated
-    def test_wait_time_in_seconds_waits_correctly(self, sqs_client, sqs_queue):
+    def test_wait_time_seconds_waits_correctly(self, sqs_client, sqs_queue):
         def _send_message():
             sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foobared")
 
@@ -362,7 +364,25 @@ class TestSqsProvider:
         response = sqs_client.receive_message(QueueUrl=sqs_queue, WaitTimeSeconds=10)
 
         assert (
-            len(response["Messages"]) == 1
+            len(response.get("Messages", [])) == 1
+        ), f"unexpected number of messages in response {response}"
+
+    @pytest.mark.aws_validated
+    def test_wait_time_seconds_queue_attribute_waits_correctly(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue(
+            Attributes={
+                "ReceiveMessageWaitTimeSeconds": "10",
+            }
+        )
+
+        def _send_message():
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobared")
+
+        Timer(1, _send_message).start()  # send message asynchronously after 1 second
+        response = sqs_client.receive_message(QueueUrl=queue_url)
+
+        assert (
+            len(response.get("Messages", [])) == 1
         ), f"unexpected number of messages in response {response}"
 
     @pytest.mark.aws_validated
