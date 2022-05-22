@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse as urlparse
 
 import pytz
@@ -897,31 +897,27 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
 # TODO:
 # - handle extensions
 #
+
+TypeExporter = Callable[[str, str, str], str]
+
+
 class OpenApiExporter:
     SWAGGER_VERSION = "2.0"
     OPENAPI_VERSION = "3.0.1"
+
+    exporters: Dict[str, TypeExporter]
 
     def __init__(self):
         self.exporters = {"swagger": self._swagger_export, "oas3": self._oas3_export}
         self.export_formats = {"application/json": "to_dict", "application/yaml": "to_yaml"}
 
-    def export_api(self, api_id, stage, export_type, export_format):
+    def export_api(
+        self, api_id: str, stage: str, export_type: str, export_format: str = "application/json"
+    ) -> str:
         return self.exporters.get(export_type)(api_id, stage, export_format)
 
-    def _swagger_export(self, api_id, stage, export_format):
-        apigateway_client = aws_stack.connect_to_service("apigateway")
-
-        rest_api = apigateway_client.get_rest_api(restApiId=api_id)
-        resources = apigateway_client.get_resources(restApiId=api_id)
-
-        spec = APISpec(
-            title=rest_api.get("name"),
-            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
-            info=dict(description=rest_api.get("description")),
-            openapi_version=self.SWAGGER_VERSION,
-            basePath=f"/{stage}"
-        )
-
+    @classmethod
+    def _add_paths(cls, spec, resources):
         for item in resources.get("items"):
             path = item.get("path")
             for method, method_config in item.get("resourceMethods").items():
@@ -934,17 +930,43 @@ class OpenApiExporter:
                 responses = dict.fromkeys(integration_responses, {})
                 spec.path(path=path, operations={method: {"responses": responses}})
 
-        return getattr(spec, self.export_formats.get(export_format))()
-
-    def _oas3_export(self, api_id, stage, export_format):
+    def _swagger_export(self, api_id: str, stage: str, export_format: str) -> str:
+        """
+        https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md
+        """
         apigateway_client = aws_stack.connect_to_service("apigateway")
 
         rest_api = apigateway_client.get_rest_api(restApiId=api_id)
+        resources = apigateway_client.get_resources(restApiId=api_id)
 
         spec = APISpec(
             title=rest_api.get("name"),
             version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
             info=dict(description=rest_api.get("description")),
-            openapi_version=self.OPENAPI_VERSION
+            openapi_version=self.SWAGGER_VERSION,
+            basePath=f"/{stage}",
         )
+
+        self._add_paths(spec, resources)
+
+        return getattr(spec, self.export_formats.get(export_format))()
+
+    def _oas3_export(self, api_id: str, stage: str, export_format: str) -> str:
+        """
+        https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md
+        """
+        apigateway_client = aws_stack.connect_to_service("apigateway")
+
+        rest_api = apigateway_client.get_rest_api(restApiId=api_id)
+        resources = apigateway_client.get_resources(restApiId=api_id)
+
+        spec = APISpec(
+            title=rest_api.get("name"),
+            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
+            info=dict(description=rest_api.get("description")),
+            openapi_version=self.OPENAPI_VERSION,
+        )
+
+        self._add_paths(spec, resources)
+
         return getattr(spec, self.export_formats.get(export_format))()

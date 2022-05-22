@@ -6,7 +6,9 @@ from botocore.exceptions import ClientError
 from moto.core import ACCOUNT_ID
 
 from localstack.services.apigateway.helpers import path_based_url
+from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
+from tests.integration.test_apigateway import TEST_IMPORT_PETSTORE_SWAGGER
 
 
 def test_create_and_get_rest_api(apigateway_client):
@@ -694,3 +696,59 @@ def test_get_model_with_invalid_name(apigateway_client):
         apigateway_client.get_model(restApiId=rest_api_id, modelName="fake")
     assert ex.value.response["Error"]["Message"] == "Invalid Model Name specified"
     assert ex.value.response["Error"]["Code"] == "NotFoundException"
+
+
+def test_export_swagger_openapi(apigateway_client):
+    spec_file = load_file(TEST_IMPORT_PETSTORE_SWAGGER)
+    response = apigateway_client.import_rest_api(failOnWarnings=True, body=spec_file)
+    assert response.get("ResponseMetadata").get("HTTPStatusCode") == 201
+
+    response = apigateway_client.get_export(
+        restApiId=response["id"], stageName="local", exportType="swagger"
+    )
+    spec_object = json.loads(response["body"].read())
+
+    # required keys
+    expected_keys = [
+        "swagger",
+        "info",
+        "paths",
+    ]
+    assert all(k in spec_object.keys() for k in expected_keys)
+    assert spec_object["info"]["title"] == "PetStore"
+    assert spec_object["info"]["version"] is not None
+    assert spec_object["paths"] == {
+        "/": {"get": {"responses": {"200": {}}}},
+        "/pets": {
+            "get": {"responses": {"200": {}}},
+            "post": {"responses": {"200": {}}},
+            "options": {"responses": {"200": {}}},
+        },
+        "/pets/{petId}": {"get": {"responses": {"200": {}}}, "options": {"responses": {"200": {}}}},
+    }
+
+    # optional keys
+    optional_keys = ["basePath"]
+    assert all(k in spec_object.keys() for k in optional_keys)
+
+
+def test_export_oas3_openapi(apigateway_client):
+    spec_file = load_file(TEST_IMPORT_PETSTORE_SWAGGER)
+    response = apigateway_client.import_rest_api(failOnWarnings=True, body=spec_file)
+    assert response.get("ResponseMetadata").get("HTTPStatusCode") == 201
+
+    response = apigateway_client.get_export(
+        restApiId=response["id"], stageName="local", exportType="oas3"
+    )
+    spec_object = json.loads(response["body"].read())
+    # required keys
+    expected_keys = [
+        "openapi",
+        "info",
+    ]
+    assert all(k in spec_object.keys() for k in expected_keys)
+    assert spec_object["info"]["title"] == "PetStore"
+    assert spec_object["info"]["version"] is not None
+    # optional keys
+    optional_keys = ["paths"]
+    assert all(k in spec_object.keys() for k in optional_keys)
