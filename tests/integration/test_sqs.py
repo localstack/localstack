@@ -3,6 +3,7 @@ import json
 import os
 import re
 import time
+from threading import Timer
 from urllib.parse import urlencode
 
 import pytest
@@ -69,6 +70,20 @@ def get_queue_arn(sqs_client, queue_url: str) -> str:
     """
     response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
     return response["Attributes"]["QueueArn"]
+
+
+def get_qsize(sqs_client, queue_url: str) -> int:
+    """
+    Returns the integer value of the ApproximateNumberOfMessages queue attribute.
+
+    :param sqs_client: the boto3 client
+    :param queue_url: the queue URL
+    :return: the ApproximateNumberOfMessages converted to int
+    """
+    response = sqs_client.get_queue_attributes(
+        QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
+    )
+    return int(response["Attributes"]["ApproximateNumberOfMessages"])
 
 
 class TestSqsProvider:
@@ -314,6 +329,61 @@ class TestSqsProvider:
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
 
         assert sqs_create_queue(QueueName=queue_name, Attributes=attributes) == queue_url
+
+    @pytest.mark.aws_validated
+    def test_receive_message_wait_time_seconds_and_max_number_of_messages_does_not_block(
+        self, sqs_client, sqs_queue
+    ):
+        """
+        this test makes sure that `WaitTimeSeconds` does not block when messages are in the queue, even when
+        `MaxNumberOfMessages` is provided.
+        """
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foobar1")
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foobar2")
+
+        # wait for the two messages to be in the queue
+        assert poll_condition(lambda: get_qsize(sqs_client, sqs_queue) == 2)
+
+        then = time.time()
+        response = sqs_client.receive_message(
+            QueueUrl=sqs_queue, MaxNumberOfMessages=3, WaitTimeSeconds=5
+        )
+        took = time.time() - then
+        assert took < 2  # should take much less than 5 seconds
+
+        assert (
+            len(response.get("Messages", [])) >= 1
+        ), f"unexpected number of messages in {response}"
+
+    @pytest.mark.aws_validated
+    def test_wait_time_seconds_waits_correctly(self, sqs_client, sqs_queue):
+        def _send_message():
+            sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foobared")
+
+        Timer(1, _send_message).start()  # send message asynchronously after 1 second
+        response = sqs_client.receive_message(QueueUrl=sqs_queue, WaitTimeSeconds=10)
+
+        assert (
+            len(response.get("Messages", [])) == 1
+        ), f"unexpected number of messages in response {response}"
+
+    @pytest.mark.aws_validated
+    def test_wait_time_seconds_queue_attribute_waits_correctly(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue(
+            Attributes={
+                "ReceiveMessageWaitTimeSeconds": "10",
+            }
+        )
+
+        def _send_message():
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobared")
+
+        Timer(1, _send_message).start()  # send message asynchronously after 1 second
+        response = sqs_client.receive_message(QueueUrl=queue_url)
+
+        assert (
+            len(response.get("Messages", [])) == 1
+        ), f"unexpected number of messages in response {response}"
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5938")
