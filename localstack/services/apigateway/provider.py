@@ -568,7 +568,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             "name": name,
             "restApiId": rest_api_id,
             "validateRequestBody": validate_request_body,
-            "validateRequestPparameters": validate_request_parameters,
+            "validateRequestParameters": validate_request_parameters,
         }
         region_details.validators.setdefault(rest_api_id, []).append(entry)
 
