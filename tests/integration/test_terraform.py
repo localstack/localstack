@@ -6,7 +6,6 @@ import pytest
 
 from localstack import config
 from localstack.services.install import TERRAFORM_BIN, install_terraform
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
 
 #  TODO: remove all of these
@@ -89,9 +88,7 @@ class TestTerraform:
         start_worker_thread(_run)
 
     @pytest.mark.skip_offline
-    def test_bucket_exists(self):
-        s3_client = aws_stack.create_external_boto_client("s3")
-
+    def test_bucket_exists(self, s3_client):
         response = s3_client.head_bucket(Bucket=BUCKET_NAME)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
@@ -110,8 +107,7 @@ class TestTerraform:
         assert response["Status"] == "Enabled"
 
     @pytest.mark.skip_offline
-    def test_sqs(self):
-        sqs_client = aws_stack.create_external_boto_client("sqs")
+    def test_sqs(self, sqs_client):
         queue_url = sqs_client.get_queue_url(QueueName=QUEUE_NAME)["QueueUrl"]
         response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
 
@@ -121,8 +117,7 @@ class TestTerraform:
         assert response["Attributes"]["ReceiveMessageWaitTimeSeconds"] == "10"
 
     @pytest.mark.skip_offline
-    def test_lambda(self):
-        lambda_client = aws_stack.create_external_boto_client("lambda")
+    def test_lambda(self, lambda_client):
         response = lambda_client.get_function(FunctionName=LAMBDA_NAME)
         assert response["Configuration"]["FunctionName"] == LAMBDA_NAME
         assert response["Configuration"]["Handler"] == LAMBDA_HANDLER
@@ -130,8 +125,7 @@ class TestTerraform:
         assert response["Configuration"]["Role"] == LAMBDA_ROLE
 
     @pytest.mark.skip_offline
-    def test_event_source_mapping(self):
-        lambda_client = aws_stack.create_external_boto_client("lambda")
+    def test_event_source_mapping(self, lambda_client):
         all_mappings = lambda_client.list_event_source_mappings(
             EventSourceArn=QUEUE_ARN, FunctionName=LAMBDA_NAME
         )
@@ -140,8 +134,7 @@ class TestTerraform:
         assert function_mapping["EventSourceArn"] == QUEUE_ARN
 
     @pytest.mark.skip_offline
-    def test_apigateway(self):
-        apigateway_client = aws_stack.create_external_boto_client("apigateway")
+    def test_apigateway(self, apigateway_client):
         rest_apis = apigateway_client.get_rest_apis()
 
         rest_id = None
@@ -170,27 +163,22 @@ class TestTerraform:
         assert res2[0]["resourceMethods"]["GET"]["methodIntegration"]["uri"]
 
     @pytest.mark.skip_offline
-    def test_route53(self):
-        route53 = aws_stack.create_external_boto_client("route53")
-
-        response = route53.create_hosted_zone(Name="zone123", CallerReference="ref123")
+    def test_route53(self, route53_client):
+        response = route53_client.create_hosted_zone(Name="zone123", CallerReference="ref123")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
         change_id = response.get("ChangeInfo", {}).get("Id", "change123")
 
-        response = route53.get_change(Id=change_id)
+        response = route53_client.get_change(Id=change_id)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @pytest.mark.skip_offline
-    def test_acm(self):
-        acm = aws_stack.create_external_boto_client("acm")
-
-        certs = acm.list_certificates()["CertificateSummaryList"]
+    def test_acm(self, acm_client):
+        certs = acm_client.list_certificates()["CertificateSummaryList"]
         certs = [c for c in certs if c.get("DomainName") == "example.com"]
         assert len(certs) == 1
 
     @pytest.mark.skip_offline
-    def test_apigateway_escaped_policy(self):
-        apigateway_client = aws_stack.create_external_boto_client("apigateway")
+    def test_apigateway_escaped_policy(self, apigateway_client):
         rest_apis = apigateway_client.get_rest_apis()
 
         service_apis = []
@@ -202,12 +190,11 @@ class TestTerraform:
         assert len(service_apis) == 1
 
     @pytest.mark.skip_offline
-    def test_dynamodb(self):
+    def test_dynamodb(self, dynamodb_client):
         def _table_exists(tablename, dynamotables):
             return any(name for name in dynamotables["TableNames"] if name == tablename)
 
-        dynamo_client = aws_stack.create_external_boto_client("dynamodb")
-        tables = dynamo_client.list_tables()
+        tables = dynamodb_client.list_tables()
         assert _table_exists("tf_dynamotable1", tables)
         assert _table_exists("tf_dynamotable2", tables)
         assert _table_exists("tf_dynamotable3", tables)

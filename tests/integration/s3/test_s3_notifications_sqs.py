@@ -353,6 +353,91 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == key
 
     @pytest.mark.aws_validated
+    def test_object_tagging_put_event(
+        self,
+        s3_client,
+        sqs_client,
+        s3_create_bucket,
+        sqs_create_queue,
+        s3_create_sqs_bucket_notification,
+    ):
+        # setup fixture
+        bucket_name = s3_create_bucket()
+        queue_url = sqs_create_queue()
+        s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectTagging:Put"])
+
+        dest_key = "key-dest-%s" % short_uid()
+
+        s3_client.put_object(Bucket=bucket_name, Key=dest_key, Body="FooBarBlitz")
+
+        assert not sqs_collect_s3_events(
+            sqs_client, queue_url, 0, timeout=1
+        ), "unexpected event triggered for put_object"
+
+        s3_client.put_object_tagging(
+            Bucket=bucket_name,
+            Key=dest_key,
+            Tagging={
+                "TagSet": [
+                    {"Key": "swallow_type", "Value": "african"},
+                ]
+            },
+        )
+
+        events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        assert len(events) == 1, f"unexpected number of events in {events}"
+
+        assert events[0]["eventSource"] == "aws:s3"
+        assert events[0]["eventName"] == "ObjectTagging:Put"
+        assert events[0]["s3"]["bucket"]["name"] == bucket_name
+        assert events[0]["s3"]["object"]["key"] == dest_key
+
+    @pytest.mark.aws_validated
+    def test_object_tagging_delete_event(
+        self,
+        s3_client,
+        sqs_client,
+        s3_create_bucket,
+        sqs_create_queue,
+        s3_create_sqs_bucket_notification,
+    ):
+        # setup fixture
+        bucket_name = s3_create_bucket()
+        queue_url = sqs_create_queue()
+        s3_create_sqs_bucket_notification(bucket_name, queue_url, ["s3:ObjectTagging:Delete"])
+
+        dest_key = "key-dest-%s" % short_uid()
+
+        s3_client.put_object(Bucket=bucket_name, Key=dest_key, Body="FooBarBlitz")
+
+        assert not sqs_collect_s3_events(
+            sqs_client, queue_url, 0, timeout=1
+        ), "unexpected event triggered for put_object"
+
+        s3_client.put_object_tagging(
+            Bucket=bucket_name,
+            Key=dest_key,
+            Tagging={
+                "TagSet": [
+                    {"Key": "swallow_type", "Value": "african"},
+                ]
+            },
+        )
+
+        s3_client.delete_object_tagging(
+            Bucket=bucket_name,
+            Key=dest_key,
+        )
+
+        events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        assert len(events) == 1, f"unexpected number of events in {events}"
+
+        assert events[0]["eventSource"] == "aws:s3"
+        assert events[0]["eventName"] == "ObjectTagging:Delete"
+        assert events[0]["s3"]["bucket"]["name"] == bucket_name
+        assert events[0]["s3"]["object"]["key"] == dest_key
+
+    @pytest.mark.aws_validated
     def test_xray_header(
         self,
         s3_client,
