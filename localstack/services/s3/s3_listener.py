@@ -1412,21 +1412,27 @@ class ProxyListenerS3(PersistingProxyListener):
         parsed = urlparse(path)
         bucket_name_in_host = uses_host_addressing(headers)
 
-        should_send_object_notification = all(
+        is_object_request = all(
             [
-                method in ("PUT", "POST", "DELETE"),
                 "/" in path[1:] or bucket_name_in_host or key,
                 # check if this is an actual put object request, because it could also be
                 # a put bucket request with a path like this: /bucket_name/
                 bucket_name_in_host
                 or key
                 or (len(path[1:].split("/")) > 1 and len(path[1:].split("/")[1]) > 0),
+            ]
+        )
+
+        should_send_object_notification = all(
+            [
+                method in ("PUT", "POST", "DELETE"),
+                is_object_request,
                 self.is_query_allowable(method, parsed.query),
             ]
         )
 
         should_send_tagging_notification = all(
-            ["tagging" in parsed.query, method in ("PUT", "DELETE")]
+            ["tagging" in parsed.query, method in ("PUT", "DELETE"), is_object_request]
         )
 
         # get subscribers and send bucket notifications
