@@ -102,6 +102,7 @@ def handle_request(request: Request, region: str) -> Response:
 
     try:
         response, operation = try_call_sqs(request, region)
+        del response["ResponseMetadata"]
         return serializer.serialize_to_response(response, operation)
     except UnknownOperationException:
         return Response("<UnknownOperationException/>", 404)
