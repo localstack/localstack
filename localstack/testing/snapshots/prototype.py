@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from json import JSONDecodeError
 from pathlib import Path
 from re import Pattern
@@ -11,8 +12,8 @@ from deepdiff import DeepDiff
 from localstack.testing.snapshots.transformer import (
     KeyValueBasedDirectTransformer,
     RegexTransformer,
-    Transformation,
     TransformContext,
+    Transformer,
 )
 
 LOG = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class SnapshotSession:
     observed_state: dict[str, dict]  # current state from match calls
 
     called_keys: set[str]
-    transformers: list[(Transformation, int)]  # (transformer, priority)
+    transformers: list[(Transformer, int)]  # (transformer, priority)
 
     def __init__(
         self,
@@ -73,8 +74,17 @@ class SnapshotSession:
         self.observed_state = {}
         self.recorded_state = self.load_state()
 
-    def add_transformer(self, transformer: Transformation, *, priority: Optional[int] = 0):
-        self.transformers.append((transformer, priority or 0))
+    def add_transformer_list(
+        self, transformer_list: list[Transformer], *, priority: Optional[int] = 0
+    ):
+        for transformer in transformer_list:
+            self.transformers.append((transformer, 0))  # TODO
+
+    def add_transformer(self, transformer: Transformer, *, priority: Optional[int] = 0):
+        if isinstance(transformer, list):
+            self.add_transformer_list(transformer, priority=priority or 0)
+        else:
+            self.transformers.append((transformer, priority or 0))
 
     def persist_state(self) -> None:
         if self.update:
@@ -85,7 +95,7 @@ class SnapshotSession:
                     fd.seek(0)
                     fd.truncate()
                     full_state = json.loads(content or "{}")
-
+                    full_state["recorded-date"] = datetime.now().strftime("%d-%m-%Y, %H:%M:%S")
                     full_state[self.scope_key] = self.observed_state
                     state_to_dump = json.dumps(full_state, indent=2)
                     fd.write(state_to_dump)
@@ -97,7 +107,9 @@ class SnapshotSession:
             with open(self.file_path, "r") as fd:
                 content = fd.read()
                 if content:
-                    return json.loads(content).get(self.scope_key, {})
+                    recorded = json.loads(content).get(self.scope_key, {})
+                    recorded.pop("recorded-date", None)
+                    return recorded
                 else:
                     return {}
         except FileNotFoundError:
@@ -129,7 +141,7 @@ class SnapshotSession:
             return []
 
         # TODO: separate these states
-        self.recorded_state = a_all = self._transform(self.recorded_state)
+        a_all = self.recorded_state
         self.observed_state = b_all = self._transform(self.observed_state)
 
         for key in self.called_keys:
@@ -168,7 +180,7 @@ class SnapshotSession:
         for transformer, _ in sorted(self.transformers, key=lambda p: p[1]):
             tmp = transformer.transform(tmp, ctx=ctx)
 
-        tmp = json.dumps(tmp)
+        tmp = json.dumps(tmp, default=str)
         for sr in ctx.serialized_replacements:
             tmp = sr(tmp)
         tmp = json.loads(tmp)

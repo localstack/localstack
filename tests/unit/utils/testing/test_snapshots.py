@@ -1,19 +1,23 @@
 import pytest
 
 from localstack.testing.snapshots import SnapshotSession
-from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
+from localstack.testing.snapshots.transformer import KeyValueBasedReferenceTransformer
 
 
 class TestSnapshotManager:
     def test_simple_diff_nochange(self):
         sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
         sm.recorded_state = {"key_a": {"a": 3}}
-        assert sm.match("key_a", {"a": 3})
+        sm.match("key_a", {"a": 3})
+        sm.assert_all()
 
     def test_simple_diff_change(self):
         sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
         sm.recorded_state = {"key_a": {"a": 3}}
-        assert not sm.match("key_a", {"a": 5})
+        sm.match("key_a", {"a": 5})
+        with pytest.raises(Exception) as ctx:
+            sm.assert_all()
+        ctx.match("Parity snapshot failed")
 
     def test_multiple_assertmatch_with_same_key_fail(self):
         sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
@@ -25,7 +29,11 @@ class TestSnapshotManager:
 
     def test_context_replacement(self):
         sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
-        sm.add_transformer(KeyValueBasedTransformer(lambda k, v: k == "aaa", replacement="A"))
+        sm.add_transformer(
+            KeyValueBasedReferenceTransformer(
+                lambda k, v: v if k == "aaa" else None, replacement="A"
+            )
+        )
         sm.recorded_state = {"key_a": {"aaa": "<A:1>", "bbb": "<A:1> hello"}}
         sm.match("key_a", {"aaa": "something", "bbb": "something hello"})
         sm.assert_all()

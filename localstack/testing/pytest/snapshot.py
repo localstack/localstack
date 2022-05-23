@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import re
 from typing import Optional
 
 import pytest
@@ -17,12 +16,8 @@ from localstack.testing.pytest.fixtures import (  # TODO(!) fix. shouldn't impor
     _client,
 )
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
-from localstack.testing.snapshots.transformer import (
-    PATTERN_ISO8601,
-    PATTERN_UUID,
-    KeyValueBasedTransformer,
-    RegexTransformer,
-)
+from localstack.testing.snapshots.predefined_transformer import SNAPSHOT_BASIC_TRANSFORMER
+from localstack.testing.snapshots.transformer import RegexTransformer
 
 LOG = logging.getLogger(__name__)
 
@@ -81,20 +76,9 @@ def fixture_snapshot(request: SubRequest, account_id, region):
     )
     sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=-1)
     sm.add_transformer(RegexTransformer(region, "<region>"), priority=-1)
-    sm.add_transformer(
-        KeyValueBasedTransformer(
-            lambda k, v: (
-                v
-                if (isinstance(v, str) and k.lower().endswith("id") and re.match(PATTERN_UUID, v))
-                else None
-            ),
-            "uuid",
-        )
-    )
 
-    # TODO: new transformer api
-    sm.skip_key(re.compile("HTTPHeaders"), "HTTPHeaders")
-    sm.register_replacement(PATTERN_ISO8601, "date")
+    sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER)
+
     # sm.register_replacement(PATTERN_SQS_URL, "<sqs-url>")
     # sm.skip_key(re.compile(r"^.*Name$"), "<name>")
     # sm.skip_key(re.compile(r"^.*Location$"), "<location>")

@@ -7,23 +7,6 @@ from jsonpath_ng.ext import parse
 
 LOG = logging.getLogger(__name__)
 
-PATTERN_ARN = re.compile(
-    r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?(:[^:\\\"]+)+"
-)
-PATTERN_UUID = re.compile(
-    r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
-)
-PATTERN_ISO8601 = re.compile(
-    r"(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-][01]\d:?([0-5]\d)?)"
-)
-PATTERN_S3_URL = re.compile(
-    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}(\+[0-9]{4})?"
-)
-PATTERN_SQS_URL = re.compile(
-    r"https?://[^/]+/\d{12}/[^/\"]+"
-)  # TODO: differences here between AWS + localstack structure
-PATTERN_HASH_256 = re.compile(r"^[A-Fa-f0-9]{64}$")
-
 
 # Types
 
@@ -54,7 +37,7 @@ class TransformContext:
         return current_counter
 
 
-class Transformation(Protocol):
+class Transformer(Protocol):
     def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
         ...
 
@@ -63,7 +46,7 @@ class Transformation(Protocol):
 # TODO: unify naming (Transformers/Transformations)
 
 
-class JsonPathTransformation:
+class JsonPathTransformer:
     def __init__(self, replacements: [(str, str)]) -> None:
         assert replacements
         self.json_path_replacement_list = replacements
@@ -136,7 +119,7 @@ class KeyValueBasedDirectTransformer:
         return input_data
 
 
-class KeyValueBasedTransformer:
+class KeyValueBasedReferenceTransformer:
     def __init__(self, match_fn: Callable[[str, str], Optional[str]], replacement: str):
         self.match_fn = match_fn
         self.replacement = replacement
@@ -172,7 +155,7 @@ class KeyValueBasedTransformer:
         return input_data
 
 
-def create_transformer(fn: Callable[[dict], dict]) -> Transformation:
+def create_transformer(fn: Callable[[dict], dict]) -> Transformer:
     return GenericTransformer(fn)
 
 

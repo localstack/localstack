@@ -1,4 +1,5 @@
 {
+  "recorded-date": "23-05-2022, 18:42:15",
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAsfApi::test_basic_invoke": {
     "lambda_create_fn": {
       "ResponseMetadata": {

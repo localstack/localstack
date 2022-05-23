@@ -4,11 +4,8 @@ import os.path
 
 import pytest
 
-from localstack.testing.snapshots.transformer import (
-    KeyValueBasedDirectTransformer,
-    KeyValueBasedTransformer,
-    RegexTransformer,
-)
+from localstack.testing.snapshots.predefined_transformer import LAMBDA_TRANSFORMER
+from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 
@@ -99,15 +96,7 @@ class TestLambdaAsfApi:
         fn_name_2 = f"ls-fn-{short_uid()}"
 
         # custom transformers
-        snapshot.add_transformer(
-            KeyValueBasedTransformer(
-                lambda k, v: v if k == "FunctionName" else None, replacement="fn-name"
-            )
-        )
-        snapshot.add_transformer(
-            KeyValueBasedDirectTransformer(lambda k, _: k == "Location", replacement="location")
-        )
-
+        snapshot.add_transformer(LAMBDA_TRANSFORMER)
         role_name = lambda_su_role.split("/")[-1]  # TODO
         snapshot.add_transformer(RegexTransformer(role_name, "lambda-role"))
 
