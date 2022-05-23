@@ -1,0 +1,14 @@
+{
+  "tests/integration/cloudformation/test_cloudformation_iam.py::test_iam_username_defaultname": {
+    "get_iam_user": {
+      "User": {
+        "Path": "/",
+        "UserName": "<name>",
+        "UserId": "<user-id>",
+        "Arn": "<arn>",
+        "CreateDate": "<date>"
+      },
+      "ResponseMetadata": "<response-metadata>"
+    }
+  }
+}

@@ -1,7 +1,9 @@
 import json
 import os
+import re
 
 import jinja2
+import pytest
 
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
 from localstack.testing.aws.cloudformation_utils import load_template_file
@@ -125,3 +127,25 @@ def test_policy_attachments(
     policy = matching[0]["AssumeRolePolicyDocument"]
     policy = json.loads(policy) if isinstance(policy, str) else policy
     assert policy["Statement"][0]["Principal"] == {"Service": "elasticbeanstalk.amazonaws.com"}
+
+
+@pytest.mark.aws_validated
+def test_iam_username_defaultname(deploy_cfn_template, iam_client, snapshot):
+    snapshot.skip_key(re.compile("UserId"), "<user-id>")
+
+    template = json.dumps(
+        {
+            "Resources": {
+                "DefaultNameUser": {
+                    "Type": "AWS::IAM::User",
+                }
+            },
+            "Outputs": {"DefaultNameUserOutput": {"Value": {"Ref": "DefaultNameUser"}}},
+        }
+    )
+    stack = deploy_cfn_template(template=template)
+    user_name = stack.outputs["DefaultNameUserOutput"]
+    assert user_name
+
+    get_iam_user = iam_client.get_user(UserName=user_name)
+    snapshot.match("get_iam_user", get_iam_user)
