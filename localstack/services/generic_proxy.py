@@ -41,6 +41,7 @@ from localstack.http.request import get_full_raw_path
 from localstack.services.messages import Headers, MessagePayload
 from localstack.services.messages import Request as RoutingRequest
 from localstack.services.messages import Response as RoutingResponse
+from localstack.utils.asyncio import run_sync
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse, calculate_crc32
 from localstack.utils.aws.aws_stack import is_internal_call_context
@@ -935,7 +936,7 @@ class FakeEndpointProxyServer(Server):
 
 
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
-    is_ssl_socket = DuplexSocket.is_ssl_socket(conn)
+    is_ssl_socket = await run_sync(DuplexSocket.is_ssl_socket, conn)
     if is_ssl_socket is False:
         sslcontext = None
     result = await _accept_connection2_orig(
