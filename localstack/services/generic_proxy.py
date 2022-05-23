@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import functools
 import json
 import logging
@@ -935,7 +936,8 @@ class FakeEndpointProxyServer(Server):
 
 
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
-    is_ssl_socket = DuplexSocket.is_ssl_socket(conn)
+    loop = asyncio.get_event_loop()
+    is_ssl_socket = await loop.run_in_executor(None, DuplexSocket.is_ssl_socket, conn)
     if is_ssl_socket is False:
         sslcontext = None
     result = await _accept_connection2_orig(
