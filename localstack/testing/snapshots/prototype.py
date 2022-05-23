@@ -51,7 +51,7 @@ class SnapshotSession:
     observed_state: dict[str, dict]  # current state from match calls
 
     called_keys: set[str]
-    transformers: list[(Transformation, int)]
+    transformers: list[(Transformation, int)]  # (transformer, priority)
 
     def __init__(
         self,
@@ -87,7 +87,8 @@ class SnapshotSession:
                     full_state = json.loads(content or "{}")
 
                     full_state[self.scope_key] = self.observed_state
-                    fd.write(json.dumps(full_state, indent=2))
+                    state_to_dump = json.dumps(full_state, indent=2)
+                    fd.write(state_to_dump)
                 except Exception as e:
                     LOG.exception(e)
 
@@ -147,9 +148,11 @@ class SnapshotSession:
             if isinstance(v, Dict):
                 self._transform_dict_to_parseable_values(v)
             if isinstance(v, StreamingBody):
-                original[k] = v.read().decode(
+                # update v for json parsing below
+                original[k] = v = v.read().decode(
                     "utf-8"
                 )  # TODO: patch boto client so this doesn't break any further read() calls
+
             if isinstance(v, str) and v.startswith("{"):
                 try:
                     json_value = json.loads(v)
@@ -179,10 +182,14 @@ class SnapshotSession:
 
     def skip_key(self, pattern: Pattern[str], value: str):
         self.add_transformer(
-            KeyValueBasedDirectTransformer(lambda k, _: bool(pattern.match(k)), replacement=value)
+            KeyValueBasedDirectTransformer(
+                lambda k, v: v if bool(pattern.match(k)) else None, replacement=value
+            )
         )
 
     def replace_value(self, pattern: Pattern[str], value: str):
         self.add_transformer(
-            KeyValueBasedDirectTransformer(lambda _, v: bool(pattern.match(v)), replacement=value)
+            KeyValueBasedDirectTransformer(
+                lambda _, v: v if bool(pattern.match(v)) else None, replacement=value
+            )
         )

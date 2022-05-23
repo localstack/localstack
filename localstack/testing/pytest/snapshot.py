@@ -63,8 +63,14 @@ def fixture_account_id():
     yield sts_client.get_caller_identity()["Account"]
 
 
+@pytest.fixture(name="region", scope="session")
+def fixture_region():
+    sts_client = _client("sts")  # TODO: extract client factory from fixtures plugin
+    yield sts_client.meta.region_name
+
+
 @pytest.fixture(name="snapshot", scope="function")
-def fixture_snapshot(request: SubRequest, account_id):
+def fixture_snapshot(request: SubRequest, account_id, region):
     sm = SnapshotSession(
         file_path=os.path.join(
             request.fspath.dirname, f"{request.fspath.purebasename}.snapshot.json"
@@ -74,10 +80,13 @@ def fixture_snapshot(request: SubRequest, account_id):
         verify=request.config.option.snapshot_verify,
     )
     sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=-1)
+    sm.add_transformer(RegexTransformer(region, "<region>"), priority=-1)
     sm.add_transformer(
         KeyValueBasedTransformer(
             lambda k, v: (
-                isinstance(v, str) and k.lower().endswith("id") and re.match(PATTERN_UUID, v)
+                v
+                if (isinstance(v, str) and k.lower().endswith("id") and re.match(PATTERN_UUID, v))
+                else None
             ),
             "uuid",
         )

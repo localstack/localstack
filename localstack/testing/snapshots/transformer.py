@@ -1,8 +1,11 @@
+import logging
 import re
 from re import Pattern
-from typing import Callable, Protocol
+from typing import Callable, Optional, Protocol
 
 from jsonpath_ng.ext import parse
+
+LOG = logging.getLogger(__name__)
 
 PATTERN_ARN = re.compile(
     r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?(:[^:\\\"]+)+"
@@ -20,6 +23,7 @@ PATTERN_SQS_URL = re.compile(
     r"https?://[^/]+/\d{12}/[^/\"]+"
 )  # TODO: differences here between AWS + localstack structure
 PATTERN_HASH_256 = re.compile(r"^[A-Fa-f0-9]{64}$")
+
 
 # Types
 
@@ -133,7 +137,7 @@ class KeyValueBasedDirectTransformer:
 
 
 class KeyValueBasedTransformer:
-    def __init__(self, match_fn: Callable[[str, str], bool], replacement: str):
+    def __init__(self, match_fn: Callable[[str, str], Optional[str]], replacement: str):
         self.match_fn = match_fn
         self.replacement = replacement
 
@@ -144,19 +148,27 @@ class KeyValueBasedTransformer:
                     v[i] = self.transform(v[i], ctx=ctx)
             elif isinstance(v, dict):
                 input_data[k] = self.transform(v, ctx=ctx)
-            elif self.match_fn(
-                k, v
-            ):  # TODO: might want to make this more generic and make it return the actual (sub-) string that should be replaced instead of the value
-                # TODO: this needs to be fixed. Currently when using two separate match functions, the whole value is registered in the cache although only a subset of it is actually replaced. This blocks use-cases where we want to replace multiple substrings in the same value (e.g. for an ARN)
-                c = v
-                cache = ctx._cache.setdefault("regexcache", set())
-                cache_key = (c, self.replacement)
-                if cache_key not in cache:
-                    actual_replacement = f"<{self.replacement}:{ctx.new_scope(self.replacement)}>"
-                    cache.add(cache_key)
-                    ctx.register_serialized_replacement(
-                        lambda s: s.replace(c, actual_replacement, -1)
-                    )
+            else:
+                match_result = self.match_fn(k, v)
+                if match_result:
+                    cache = ctx._cache.setdefault("regexcache", set())
+                    cache_key = (match_result, self.replacement)
+                    if cache_key not in cache:
+                        actual_replacement = (
+                            f"<{self.replacement}:{ctx.new_scope(self.replacement)}>"
+                        )
+                        cache.add(cache_key)
+
+                        def _helper(bound_result):
+                            def replace_val(s):
+                                LOG.debug(
+                                    f"Replacing {bound_result} in snapshot with {actual_replacement}"
+                                )
+                                return s.replace(bound_result, actual_replacement, -1)
+
+                            return replace_val
+
+                        ctx.register_serialized_replacement(_helper(match_result))
         return input_data
 
 
