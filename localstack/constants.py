@@ -161,6 +161,9 @@ TEST_AWS_SECRET_ACCESS_KEY = "test"
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
 INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
 
+# This header is set in calls that originate within LocalStack. Certain services have special behaviour for internal calls.
+INTERNAL_CALL_HEADER = "X-LocalStack-Internal"
+
 # trace log levels (excluding/including internal API calls), configurable via $LS_LOG
 LS_LOG_TRACE = "trace"
 LS_LOG_TRACE_INTERNAL = "trace-internal"

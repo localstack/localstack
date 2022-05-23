@@ -23,18 +23,18 @@ import botocore.config
 from botocore.utils import ArnParser, InvalidArnException
 
 from localstack import config, constants
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID  # TODO@viren remove all refs
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
     APPLICATION_X_WWW_FORM_URLENCODED,
     AWS_REGION_US_EAST_1,
     ENV_DEV,
-    INTERNAL_AWS_ACCESS_KEY_ID,
+    INTERNAL_CALL_HEADER,
     LOCALHOST,
     MAX_POOL_CONNECTIONS,
     REGION_LOCAL,
     S3_VIRTUAL_HOSTNAME,
-    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.aws.aws_models import KinesisStream
@@ -221,12 +221,11 @@ def get_local_region():
 def is_internal_call_context(headers):
     """Return whether we are executing in the context of an internal API call, i.e.,
     the case where one API uses a boto3 client to call another API internally."""
-    auth_header = headers.get("Authorization") or ""
-    return get_internal_credential() in auth_header
+    return INTERNAL_CALL_HEADER in headers.keys()
 
 
 def get_internal_credential():
-    return "Credential=%s/" % INTERNAL_AWS_ACCESS_KEY_ID
+    return "Credential=%s/" % get_account_id()
 
 
 def set_internal_auth(headers):
@@ -245,6 +244,7 @@ def set_internal_auth(headers):
             authorization,
         )
     headers["Authorization"] = authorization
+    headers[INTERNAL_CALL_HEADER] = "1"
     return headers
 
 
@@ -307,6 +307,7 @@ def connect_to_service(
     config: botocore.config.Config = None,
     verify=False,
     cache=True,
+    internal=True,
     *args,
     **kwargs,
 ):
@@ -317,7 +318,7 @@ def connect_to_service(
     region_name = region_name or get_region()
     env = get_environment(env, region_name=region_name)
     region = env.region if env.region != REGION_LOCAL else region_name
-    key_elements = [service_name, client, env, region, endpoint_url, config, kwargs]
+    key_elements = [service_name, client, env, region, endpoint_url, config, internal, kwargs]
     cache_key = "/".join([str(k) for k in key_elements])
 
     # check cache first (most calls will be served from cache)
@@ -362,6 +363,16 @@ def connect_to_service(
             **kwargs,
         )
 
+        # We set a custom header in all internal calls which help LocalStack
+        # identify requests as such
+        if client and internal:
+
+            def _add_internal_header(request, **kwargs):
+                request.headers.add_header(INTERNAL_CALL_HEADER, "1")
+
+            event_system = new_client.meta.events
+            event_system.register_first("before-sign.*.*", _add_internal_header)
+
         if cache:
             BOTO_CLIENTS_CACHE[cache_key] = new_client
 
@@ -389,6 +400,7 @@ def create_external_boto_client(
         config,
         verify,
         cache,
+        internal=False,
         aws_access_key_id=get_account_id(),
         aws_secret_access_key="__test_key__",
         *args,
@@ -867,14 +879,15 @@ def kinesis_stream_name(kinesis_arn):
     return kinesis_arn.split(":stream/")[-1]
 
 
-def mock_aws_request_headers(service="dynamodb", region_name=None, access_key=None):
+def mock_aws_request_headers(
+    service="dynamodb", region_name=None, access_key=None, internal=False
+) -> dict[str, str]:
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
         ctype = APPLICATION_AMZ_JSON_1_1
     elif service in ["sns", "sqs", "sts", "cloudformation"]:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
 
-    # TODO: consider adding an internal=False flag, to use INTERNAL_AWS_ACCESS_KEY_ID for internal calls here
     access_key = access_key or constants.TEST_AWS_ACCESS_KEY_ID
     region_name = region_name or get_region()
     headers = {
@@ -887,6 +900,8 @@ def mock_aws_request_headers(service="dynamodb", region_name=None, access_key=No
             + "SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234"
         ),
     }
+    if internal:
+        headers[INTERNAL_CALL_HEADER] = "1"
     return headers
 
 

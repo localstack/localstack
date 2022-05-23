@@ -309,15 +309,8 @@ def log_startup_message(service):
 
 
 def check_aws_credentials():
-    session = boto3.Session()
-    credentials = None
-    # hardcode credentials here, to allow us to determine internal API calls made via boto3
     os.environ["AWS_ACCESS_KEY_ID"] = constants.INTERNAL_AWS_ACCESS_KEY_ID
     os.environ["AWS_SECRET_ACCESS_KEY"] = constants.INTERNAL_AWS_SECRET_ACCESS_KEY
-    try:
-        credentials = session.get_credentials()
-    except Exception:
-        pass
     session = boto3.Session()
     credentials = session.get_credentials()
     assert credentials
