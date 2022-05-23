@@ -2,13 +2,14 @@
 import base64
 import json
 import os
+import time
 import uuid
 from datetime import datetime
 from typing import Dict, List, Tuple
-import time
-import pytest
 
+import pytest
 from botocore.exceptions import ClientError
+
 from localstack import config
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.events.provider import _get_events_tmp_dir
@@ -1240,9 +1241,13 @@ class TestEvents:
         # clean up
         self.cleanup(TEST_EVENT_BUS_NAME, rule_name, target_id, queue_url=queue_url)
 
-    @pytest.mark.parametrize("schedule_expression", ["rate(1 minute)", "rate(1 day)", "rate(1 hour)"])
+    @pytest.mark.parametrize(
+        "schedule_expression", ["rate(1 minute)", "rate(1 day)", "rate(1 hour)"]
+    )
     @pytest.mark.aws_validated
-    def test_create_rule_with_one_unit_in_singular_should_succeed(self, events_client, schedule_expression):
+    def test_create_rule_with_one_unit_in_singular_should_succeed(
+        self, events_client, schedule_expression
+    ):
         rule_name = self.create_rule_name()
 
         # rule should be creatable with given expression
@@ -1250,9 +1255,13 @@ class TestEvents:
 
         self.cleanup(rule_name=rule_name, events_client=events_client)
 
-    @pytest.mark.parametrize("schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"])
+    @pytest.mark.parametrize(
+        "schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"]
+    )
     @pytest.mark.xfail
-    def test_create_rule_with_one_unit_in_plural_should_fail(self, events_client, schedule_expression):
+    def test_create_rule_with_one_unit_in_plural_should_fail(
+        self, events_client, schedule_expression
+    ):
         rule_name = self.create_rule_name()
 
         # rule should not be creatable with given expression
@@ -1265,10 +1274,10 @@ class TestEvents:
         logs_client.create_log_group(logGroupName=log_group_name)
 
         log_groups = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)
-        assert len(log_groups['logGroups']) == 1
-        log_group = log_groups['logGroups'][0]
+        assert len(log_groups["logGroups"]) == 1
+        log_group = log_groups["logGroups"][0]
 
-        log_group_arn = log_group['arn']
+        log_group_arn = log_group["arn"]
 
         rule_name = self.create_rule_name()
         events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
@@ -1280,17 +1289,25 @@ class TestEvents:
         time.sleep(61)
 
         log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
-        assert len(log_streams['logStreams']) == 1
-        log_stream_name = log_streams['logStreams'][0]['logStreamName']
+        assert len(log_streams["logStreams"]) == 1
+        log_stream_name = log_streams["logStreams"][0]["logStreamName"]
 
-        log_content = logs_client.get_log_events(logGroupName=log_group_name, logStreamName=log_stream_name)
-        events = log_content['events']
+        log_content = logs_client.get_log_events(
+            logGroupName=log_group_name, logStreamName=log_stream_name
+        )
+        events = log_content["events"]
         assert len(events) == 1
         event = events[0]
 
         self.assert_valid_event(event["message"])
 
-        self.cleanup(rule_name=rule_name, target_ids=target_id, events_client=events_client, logs_client=logs_client, log_group_name=log_group_name)
+        self.cleanup(
+            rule_name=rule_name,
+            target_ids=target_id,
+            events_client=events_client,
+            logs_client=logs_client,
+            log_group_name=log_group_name,
+        )
 
     def _get_queue_arn(self, queue_url, sqs_client):
         queue_attrs = sqs_client.get_queue_attributes(
@@ -1324,6 +1341,8 @@ class TestEvents:
         if log_group_name:
             logs_client = logs_client or aws_stack.create_external_boto_client("logs")
             log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
-            for log_stream in log_streams['logStreams']:
-                logs_client.delete_log_stream(logGroupName=log_group_name, logStreamName=log_stream["logStreamName"])
+            for log_stream in log_streams["logStreams"]:
+                logs_client.delete_log_stream(
+                    logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
+                )
             logs_client.delete_log_group(logGroupName=log_group_name)
