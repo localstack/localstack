@@ -1269,7 +1269,7 @@ class TestEvents:
             events_client.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
 
     @pytest.mark.xfail
-    def test_rule_event_content(self, events_client, logs_client):
+    def test_verify_rule_event_content(self, events_client, logs_client):
         log_group_name = "/aws/events/testLogGroup-{}".format(short_uid())
         logs_client.create_log_group(logGroupName=log_group_name)
 
