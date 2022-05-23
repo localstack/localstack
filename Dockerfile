@@ -117,7 +117,6 @@ ENV USER=localstack
 ENV PYTHONUNBUFFERED=1
 ENV EDGE_BIND_HOST=0.0.0.0
 ENV LOCALSTACK_HOSTNAME=localhost
-ENV USE_SSL=0
 
 RUN mkdir /root/.serverless; chmod -R 777 /root/.serverless
 

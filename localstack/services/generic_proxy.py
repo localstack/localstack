@@ -785,8 +785,7 @@ class DuplexSocket(ssl.SSLSocket):
 
 
 # set globally defined SSL socket implementation class
-if not config.is_in_docker:
-    ssl.SSLContext.sslsocket_class = DuplexSocket
+ssl.SSLContext.sslsocket_class = DuplexSocket
 
 
 class GenericProxy:
@@ -936,9 +935,11 @@ class FakeEndpointProxyServer(Server):
 
 
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
-    is_ssl_socket = DuplexSocket.is_ssl_socket(conn)
-    if is_ssl_socket is False:
-        sslcontext = None
+    # no real point checking if it is a ssl socket if sslcontext is missing anyway (due to ssl being disabled)
+    if sslcontext:
+        is_ssl_socket = DuplexSocket.is_ssl_socket(conn)
+        if is_ssl_socket is False:
+            sslcontext = None
     result = await _accept_connection2_orig(
         self, protocol_factory, conn, extra, sslcontext, *args, **kwargs
     )
@@ -946,10 +947,8 @@ async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *
 
 
 # patch asyncio server to accept SSL and non-SSL traffic over same port
-if (
-    not config.is_in_docker
-    and hasattr(BaseSelectorEventLoop, "_accept_connection2")
-    and not hasattr(BaseSelectorEventLoop, "_ls_patched")
+if hasattr(BaseSelectorEventLoop, "_accept_connection2") and not hasattr(
+    BaseSelectorEventLoop, "_ls_patched"
 ):
     _accept_connection2_orig = BaseSelectorEventLoop._accept_connection2
     BaseSelectorEventLoop._accept_connection2 = _accept_connection2

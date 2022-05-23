@@ -437,7 +437,11 @@ def stop_nginx() -> None:
 
 
 def start_edge(port=None, use_ssl=True, asynchronous=False):
-    if not config.is_in_docker:
+    if config.is_in_docker:
+        start_nginx()
+        # start HTTP only edge
+        return do_start_edge("127.0.0.1", 8000, use_ssl=False, asynchronous=asynchronous)
+    else:
         if not port:
             port = config.EDGE_PORT
         if config.EDGE_PORT_HTTP and config.EDGE_PORT_HTTP != port:
@@ -449,10 +453,6 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
             )
         if port > 1024 or is_root():
             return do_start_edge(config.EDGE_BIND_HOST, port, use_ssl, asynchronous=asynchronous)
-    else:
-        start_nginx()
-        # start HTTP only edge
-        return do_start_edge("127.0.0.1", 8000, use_ssl=False, asynchronous=asynchronous)
 
     # process requires privileged port but we're not root and not in docker -> try running as sudo
 
