@@ -144,8 +144,10 @@ class EventsRule(GenericBaseModel):
             rule_name = props["Name"]
             event_bus_name = props.get("EventBusName")
             targets = props.get("Targets") or []
-            if len(targets) > 0:
+            if len(targets) > 0 and event_bus_name:
                 events.put_targets(Rule=rule_name, EventBusName=event_bus_name, Targets=targets)
+            elif len(targets) > 0:
+                events.put_targets(Rule=rule_name, Targets=targets)
 
         return {
             "create": [
