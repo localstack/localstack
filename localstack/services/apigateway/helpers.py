@@ -692,22 +692,22 @@ def import_api_from_openapi_spec(
                     response_model,
                     response_parameters,
                 )
-                integration = apigateway_models.Integration(
-                    http_method=method,
-                    uri=method_integration.get("uri"),
-                    integration_type=method_integration["type"],
-                    passthrough_behavior=method_integration.get("passthroughBehavior"),
-                    request_templates=method_integration.get("requestTemplates") or {},
-                )
-                integration.create_integration_response(
-                    status_code=method_integration.get("default", {}).get("statusCode", 200),
-                    selection_pattern=None,
-                    response_templates=method_integration.get("default", {}).get(
-                        "responseTemplates", None
-                    ),
-                    content_handling=None,
-                )
-                resource.resource_methods[method]["methodIntegration"] = integration
+            integration = apigateway_models.Integration(
+                http_method=method,
+                uri=method_integration.get("uri"),
+                integration_type=method_integration["type"],
+                passthrough_behavior=method_integration.get("passthroughBehavior"),
+                request_templates=method_integration.get("requestTemplates") or {},
+            )
+            integration.create_integration_response(
+                status_code=method_integration.get("default", {}).get("statusCode", 200),
+                selection_pattern=None,
+                response_templates=method_integration.get("default", {}).get(
+                    "responseTemplates", None
+                ),
+                content_handling=None,
+            )
+            resource.resource_methods[method]["methodIntegration"] = integration
 
         rest_api.resources[child_id] = resource
         return resource
