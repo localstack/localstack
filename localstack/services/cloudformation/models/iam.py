@@ -87,6 +87,14 @@ class IAMUser(GenericBaseModel):
         )
 
     @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource["Properties"].get("UserName")
+        if not role_name:
+            resource["Properties"]["UserName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
+    @staticmethod
     def get_deploy_templates():
         def _post_create(resource_id, resources, resource_type, func, stack_name):
             client = aws_stack.connect_to_service("iam")

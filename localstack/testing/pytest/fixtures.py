@@ -751,6 +751,7 @@ def deploy_cfn_template(
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=template_rendered,
+            Capabilities=["CAPABILITY_AUTO_EXPAND", "CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
             ChangeSetType=("UPDATE" if is_update else "CREATE"),
             Parameters=[
                 {
