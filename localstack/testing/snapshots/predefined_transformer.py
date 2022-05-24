@@ -6,6 +6,7 @@ from localstack.testing.snapshots.transformer import (
     KeyValueBasedReferenceTransformer,
     RegexMatchReplaceGroupTransformer,
     RegexTransformer,
+    ResponseMetaDataTransformer,
 )
 
 PATTERN_UUID = re.compile(
@@ -41,12 +42,10 @@ LAMBDA_TRANSFORMER = [
         PATTERN_ARN_RESOURCENAME_GROUP, group=2, replacement="resource"
     ),
     KeyValueBasedDirectTransformer(lambda k, _: k == "LastModified", replacement="<date>"),
-    KeyValueBasedDirectTransformer(
-        lambda k, _: k == "CodeSha256", replacement="<sha256>"
-    ),  # TODO could be improved by calculating expected sha
 ]
 
 SNAPSHOT_BASIC_TRANSFORMER = [
+    ResponseMetaDataTransformer(),
     KeyValueBasedReferenceTransformer(
         lambda k, v: (
             v
@@ -54,10 +53,6 @@ SNAPSHOT_BASIC_TRANSFORMER = [
             else None
         ),
         "uuid",
-    ),
-    KeyValueBasedDirectTransformer(
-        lambda k, v: v if bool(re.compile(r"HTTPHeaders").match(k)) else None,
-        replacement="HTTPHeaders",
     ),
     RegexTransformer(PATTERN_ISO8601, "date"),
 ]

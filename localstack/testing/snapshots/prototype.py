@@ -95,8 +95,11 @@ class SnapshotSession:
                     fd.seek(0)
                     fd.truncate()
                     full_state = json.loads(content or "{}")
-                    full_state["recorded-date"] = datetime.now().strftime("%d-%m-%Y, %H:%M:%S")
-                    full_state[self.scope_key] = self.observed_state
+                    recorded = {
+                        "recorded-date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S"),
+                        "recorded-content": self.observed_state,
+                    }
+                    full_state[self.scope_key] = recorded
                     state_to_dump = json.dumps(full_state, indent=2)
                     fd.write(state_to_dump)
                 except Exception as e:
@@ -108,8 +111,7 @@ class SnapshotSession:
                 content = fd.read()
                 if content:
                     recorded = json.loads(content).get(self.scope_key, {})
-                    recorded.pop("recorded-date", None)
-                    return recorded
+                    return recorded.get("recorded-content", None)
                 else:
                     return {}
         except FileNotFoundError:

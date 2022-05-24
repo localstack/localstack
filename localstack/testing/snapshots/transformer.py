@@ -46,6 +46,25 @@ class Transformer(Protocol):
 # TODO: unify naming (Transformers/Transformations)
 
 
+class ResponseMetaDataTransformer:
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        for k, v in input_data.items():
+            if k == "ResponseMetadata":
+                metadata = v
+                http_headers = metadata.get("HTTPHeaders")
+                simplified_headers = {}
+                simplified_headers["content-type"] = http_headers["content-type"]
+
+                simplified_metadata = {
+                    "HTTPStatusCode": metadata.pop("HTTPStatusCode"),
+                    "HTTPHeaders": simplified_headers,
+                }
+                input_data[k] = simplified_metadata
+            elif isinstance(v, dict):
+                input_data[k] = self.transform(v, ctx=ctx)
+        return input_data
+
+
 class JsonPathTransformer:
     def __init__(self, json_path: str, replacement: str) -> None:
         self.json_path = json_path
@@ -54,8 +73,7 @@ class JsonPathTransformer:
     def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
         pattern = parse(self.json_path)
         LOG.debug(f"Replacing JsonPath {self.json_path} in snapshot with {self.replacement}")
-        for match in pattern.find(input_data):
-            pattern.update(input_data, self.replacement)
+        pattern.update(input_data, self.replacement)
         return input_data
 
     def _add_jsonpath_replacement(self, jsonpath, replacement):

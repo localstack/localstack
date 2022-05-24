@@ -1,153 +1,158 @@
 {
-  "recorded-date": "24-05-2022, 12:20:52",
   "tests/integration/awslambda/test_lambda.py::TestLambdaAPI::test_lambda_asynchronous_invocations": {
-    "put_function_event_invoke_config": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:1>",
-        "HTTPStatusCode": 200,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
-      },
-      "LastModified": "<date>",
-      "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:$LATEST",
-      "MaximumRetryAttempts": 2,
-      "MaximumEventAgeInSeconds": 123,
-      "DestinationConfig": {
-        "OnSuccess": {
-          "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+    "recorded-date": "24-05-2022, 14:45:30",
+    "recorded-content": {
+      "put_function_event_invoke_config": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {
+            "content-type": "application/json"
+          }
         },
-        "OnFailure": {
-          "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+        "LastModified": "<date>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:$LATEST",
+        "MaximumRetryAttempts": 2,
+        "MaximumEventAgeInSeconds": 123,
+        "DestinationConfig": {
+          "OnSuccess": {
+            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          },
+          "OnFailure": {
+            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          }
         }
-      }
-    },
-    "put_function_event_invoke_config_overwritemaxeventage": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:2>",
-        "HTTPStatusCode": 200,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
       },
-      "LastModified": "<date>",
-      "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:$LATEST",
-      "MaximumRetryAttempts": 2,
-      "DestinationConfig": {
-        "OnSuccess": {
-          "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+      "put_function_event_invoke_config_overwritemaxeventage": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {
+            "content-type": "application/json"
+          }
         },
-        "OnFailure": {
-          "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+        "LastModified": "<date>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:$LATEST",
+        "MaximumRetryAttempts": 2,
+        "DestinationConfig": {
+          "OnSuccess": {
+            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          },
+          "OnFailure": {
+            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          }
         }
-      }
-    },
-    "put_function_event_invoke_config_maxattempt1": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:3>",
-        "HTTPStatusCode": 200,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
       },
-      "LastModified": "<date>",
-      "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:$LATEST",
-      "MaximumRetryAttempts": 1,
-      "DestinationConfig": {
-        "OnSuccess": {
-          "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+      "put_function_event_invoke_config_maxattempt1": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {
+            "content-type": "application/json"
+          }
         },
-        "OnFailure": {
-          "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+        "LastModified": "<date>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>:$LATEST",
+        "MaximumRetryAttempts": 1,
+        "DestinationConfig": {
+          "OnSuccess": {
+            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          },
+          "OnFailure": {
+            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          }
         }
       }
     }
   },
   "tests/integration/awslambda/test_lambda.py::TestLambdaAPI::test_add_lambda_permission_aws": {
-    "create_lambda": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:1>",
-        "HTTPStatusCode": 201,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
-      },
-      "FunctionName": "<fn-name:1>",
-      "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
-      "Runtime": "python3.6",
-      "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-      "Handler": "handler.handler",
-      "CodeSize": 264,
-      "Description": "",
-      "Timeout": 30,
-      "MemorySize": 128,
-      "LastModified": "<date>",
-      "CodeSha256": "<sha256>",
-      "Version": "$LATEST",
-      "Environment": {
-        "Variables": {}
-      },
-      "TracingConfig": {
-        "Mode": "PassThrough"
-      },
-      "RevisionId": "<uuid:2>",
-      "State": "Pending",
-      "StateReason": "The function is being created.",
-      "StateReasonCode": "Creating",
-      "PackageType": "Zip",
-      "Architectures": [
-        "x86_64"
-      ],
-      "EphemeralStorage": {
-        "Size": 512
-      }
-    },
-    "add_permission": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:3>",
-        "HTTPStatusCode": 201,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
-      },
-      "Statement": {
-        "Sid": "s3",
-        "Effect": "Allow",
-        "Principal": {
-          "Service": "s3.amazonaws.com"
-        },
-        "Action": "lambda:InvokeFunction",
-        "Resource": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
-        "Condition": {
-          "ArnLike": {
-            "AWS:SourceArn": "arn:aws:s3:::test-bucket"
+    "recorded-date": "24-05-2022, 14:51:32",
+    "recorded-content": {
+      "create_lambda": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 201,
+          "HTTPHeaders": {
+            "content-type": "application/json"
           }
+        },
+        "FunctionName": "<fn-name:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
+        "Runtime": "python3.6",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Handler": "handler.handler",
+        "CodeSize": 264,
+        "Description": "",
+        "Timeout": 30,
+        "MemorySize": 128,
+        "LastModified": "<date>",
+        "CodeSha256": "pMM5YP0YKZEfDqN7aa58BkBjcJ3ZU/NyiJYo5/YQIXc=",
+        "Version": "$LATEST",
+        "Environment": {
+          "Variables": {}
+        },
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid:1>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
         }
-      }
-    },
-    "get_policy": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:4>",
-        "HTTPStatusCode": 200,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
       },
-      "Policy": {
-        "Version": "2012-10-17",
-        "Id": "default",
-        "Statement": [
-          {
-            "Sid": "s3",
-            "Effect": "Allow",
-            "Principal": {
-              "Service": "s3.amazonaws.com"
-            },
-            "Action": "lambda:InvokeFunction",
-            "Resource": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
-            "Condition": {
-              "ArnLike": {
-                "AWS:SourceArn": "arn:aws:s3:::test-bucket"
-              }
+      "add_permission": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 201,
+          "HTTPHeaders": {
+            "content-type": "application/json"
+          }
+        },
+        "Statement": {
+          "Sid": "s3",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "s3.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
+          "Condition": {
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:s3:::test-bucket"
             }
           }
-        ]
+        }
       },
-      "RevisionId": "<uuid:5>"
+      "get_policy": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {
+            "content-type": "application/json"
+          }
+        },
+        "Policy": {
+          "Version": "2012-10-17",
+          "Id": "default",
+          "Statement": [
+            {
+              "Sid": "s3",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com"
+              },
+              "Action": "lambda:InvokeFunction",
+              "Resource": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
+              "Condition": {
+                "ArnLike": {
+                  "AWS:SourceArn": "arn:aws:s3:::test-bucket"
+                }
+              }
+            }
+          ]
+        },
+        "RevisionId": "<uuid:2>"
+      }
     }
   }
 }

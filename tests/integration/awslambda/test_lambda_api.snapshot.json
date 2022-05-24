@@ -1,82 +1,14 @@
 {
-  "recorded-date": "24-05-2022, 12:08:38",
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAsfApi::test_basic_invoke": {
-    "lambda_create_fn": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:1>",
-        "HTTPStatusCode": 201,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
-      },
-      "FunctionName": "<fn-name:1>",
-      "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
-      "Runtime": "python3.9",
-      "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-      "Handler": "index.handler",
-      "CodeSize": 276,
-      "Description": "",
-      "Timeout": 3,
-      "MemorySize": 128,
-      "LastModified": "date",
-      "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
-      "Version": "$LATEST",
-      "TracingConfig": {
-        "Mode": "PassThrough"
-      },
-      "RevisionId": "<uuid:2>",
-      "State": "Pending",
-      "StateReason": "The function is being created.",
-      "StateReasonCode": "Creating",
-      "PackageType": "Zip",
-      "Architectures": [
-        "x86_64"
-      ],
-      "EphemeralStorage": {
-        "Size": 512
-      }
-    },
-    "lambda_create_fn_2": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:3>",
-        "HTTPStatusCode": 201,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
-      },
-      "FunctionName": "<fn-name:2>",
-      "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:2>",
-      "Runtime": "python3.9",
-      "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-      "Handler": "index.handler",
-      "CodeSize": 276,
-      "Description": "",
-      "Timeout": 3,
-      "MemorySize": 128,
-      "LastModified": "date",
-      "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
-      "Version": "$LATEST",
-      "TracingConfig": {
-        "Mode": "PassThrough"
-      },
-      "RevisionId": "<uuid:4>",
-      "State": "Pending",
-      "StateReason": "The function is being created.",
-      "StateReasonCode": "Creating",
-      "PackageType": "Zip",
-      "Architectures": [
-        "x86_64"
-      ],
-      "EphemeralStorage": {
-        "Size": 512
-      }
-    },
-    "lambda_get_fn": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:5>",
-        "HTTPStatusCode": 200,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
-      },
-      "Configuration": {
+    "recorded-date": "24-05-2022, 14:44:31",
+    "recorded-content": {
+      "lambda_create_fn": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 201,
+          "HTTPHeaders": {
+            "content-type": "application/json"
+          }
+        },
         "FunctionName": "<fn-name:1>",
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
         "Runtime": "python3.9",
@@ -86,15 +18,16 @@
         "Description": "",
         "Timeout": 3,
         "MemorySize": 128,
-        "LastModified": "date",
+        "LastModified": "<date>",
         "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
         "Version": "$LATEST",
         "TracingConfig": {
           "Mode": "PassThrough"
         },
-        "RevisionId": "<uuid:6>",
-        "State": "Active",
-        "LastUpdateStatus": "Successful",
+        "RevisionId": "<uuid:1>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
         "PackageType": "Zip",
         "Architectures": [
           "x86_64"
@@ -103,19 +36,13 @@
           "Size": 512
         }
       },
-      "Code": {
-        "RepositoryType": "S3",
-        "Location": "location"
-      }
-    },
-    "lambda_get_fn_2": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:7>",
-        "HTTPStatusCode": 200,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
-      },
-      "Configuration": {
+      "lambda_create_fn_2": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 201,
+          "HTTPHeaders": {
+            "content-type": "application/json"
+          }
+        },
         "FunctionName": "<fn-name:2>",
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:2>",
         "Runtime": "python3.9",
@@ -125,15 +52,16 @@
         "Description": "",
         "Timeout": 3,
         "MemorySize": 128,
-        "LastModified": "date",
+        "LastModified": "<date>",
         "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
         "Version": "$LATEST",
         "TracingConfig": {
           "Mode": "PassThrough"
         },
-        "RevisionId": "<uuid:8>",
-        "State": "Active",
-        "LastUpdateStatus": "Successful",
+        "RevisionId": "<uuid:2>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
         "PackageType": "Zip",
         "Architectures": [
           "x86_64"
@@ -142,21 +70,95 @@
           "Size": 512
         }
       },
-      "Code": {
-        "RepositoryType": "S3",
-        "Location": "location"
-      }
-    },
-    "lambda_invoke_result": {
-      "ResponseMetadata": {
-        "RequestId": "<uuid:9>",
-        "HTTPStatusCode": 200,
-        "HTTPHeaders": "HTTPHeaders",
-        "RetryAttempts": 0
+      "lambda_get_fn": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {
+            "content-type": "application/json"
+          }
+        },
+        "Configuration": {
+          "FunctionName": "<fn-name:1>",
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
+          "Runtime": "python3.9",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Handler": "index.handler",
+          "CodeSize": 276,
+          "Description": "",
+          "Timeout": 3,
+          "MemorySize": 128,
+          "LastModified": "<date>",
+          "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
+          "Version": "$LATEST",
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "RevisionId": "<uuid:3>",
+          "State": "Active",
+          "LastUpdateStatus": "Successful",
+          "PackageType": "Zip",
+          "Architectures": [
+            "x86_64"
+          ],
+          "EphemeralStorage": {
+            "Size": 512
+          }
+        },
+        "Code": {
+          "RepositoryType": "S3",
+          "Location": "<location>"
+        }
       },
-      "StatusCode": 200,
-      "ExecutedVersion": "$LATEST",
-      "Payload": {}
+      "lambda_get_fn_2": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {
+            "content-type": "application/json"
+          }
+        },
+        "Configuration": {
+          "FunctionName": "<fn-name:2>",
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:2>",
+          "Runtime": "python3.9",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Handler": "index.handler",
+          "CodeSize": 276,
+          "Description": "",
+          "Timeout": 3,
+          "MemorySize": 128,
+          "LastModified": "<date>",
+          "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
+          "Version": "$LATEST",
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "RevisionId": "<uuid:4>",
+          "State": "Active",
+          "LastUpdateStatus": "Successful",
+          "PackageType": "Zip",
+          "Architectures": [
+            "x86_64"
+          ],
+          "EphemeralStorage": {
+            "Size": 512
+          }
+        },
+        "Code": {
+          "RepositoryType": "S3",
+          "Location": "<location>"
+        }
+      },
+      "lambda_invoke_result": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {
+            "content-type": "application/json"
+          }
+        },
+        "StatusCode": 200,
+        "ExecutedVersion": "$LATEST",
+        "Payload": {}
+      }
     }
   }
 }
