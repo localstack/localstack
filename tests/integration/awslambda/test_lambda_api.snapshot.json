@@ -1,5 +1,5 @@
 {
-  "recorded-date": "23-05-2022, 18:42:15",
+  "recorded-date": "24-05-2022, 12:08:38",
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAsfApi::test_basic_invoke": {
     "lambda_create_fn": {
       "ResponseMetadata": {
@@ -11,7 +11,7 @@
       "FunctionName": "<fn-name:1>",
       "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
       "Runtime": "python3.9",
-      "Role": "arn:aws:iam::111111111111:role/lambda-role",
+      "Role": "arn:aws:iam::111111111111:role/<resource:1>",
       "Handler": "index.handler",
       "CodeSize": 276,
       "Description": "",
@@ -45,7 +45,7 @@
       "FunctionName": "<fn-name:2>",
       "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:2>",
       "Runtime": "python3.9",
-      "Role": "arn:aws:iam::111111111111:role/lambda-role",
+      "Role": "arn:aws:iam::111111111111:role/<resource:1>",
       "Handler": "index.handler",
       "CodeSize": 276,
       "Description": "",
@@ -80,7 +80,7 @@
         "FunctionName": "<fn-name:1>",
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
         "Runtime": "python3.9",
-        "Role": "arn:aws:iam::111111111111:role/lambda-role",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Handler": "index.handler",
         "CodeSize": 276,
         "Description": "",
@@ -119,7 +119,7 @@
         "FunctionName": "<fn-name:2>",
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:2>",
         "Runtime": "python3.9",
-        "Role": "arn:aws:iam::111111111111:role/lambda-role",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Handler": "index.handler",
         "CodeSize": 276,
         "Description": "",

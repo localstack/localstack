@@ -80,6 +80,33 @@ class JsonPathTransformer:
         return input_data
 
 
+class RegexMatchReplaceGroupTransformer:
+    def __init__(self, regex: str | Pattern[str], group: int, replacement: str):
+        self.regex = regex
+        self.group = group
+        self.replacement = replacement
+
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        compiled_regex = re.compile(self.regex) if isinstance(self.regex, str) else self.regex
+
+        def _replace_all(s):
+            matches = compiled_regex.findall(s)
+            counter = 1
+            replaced = []
+            for m in matches:
+                original_value = m[self.group - 1]
+                if original_value and original_value not in replaced:
+                    repl = f"<{self.replacement}:{counter}>"
+                    s = re.sub(original_value, repl, s)
+                    counter += 1
+                    LOG.debug(f"Replacing {original_value} in snapshot with {repl}")
+                    replaced.append(original_value)
+            return s
+
+        ctx.register_serialized_replacement(_replace_all)
+        return input_data
+
+
 class RegexTransformer:
     def __init__(self, regex: str | Pattern[str], replacement: str):
         self.regex = regex
@@ -88,6 +115,7 @@ class RegexTransformer:
     def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
         compiled_regex = re.compile(self.regex) if isinstance(self.regex, str) else self.regex
         ctx.register_serialized_replacement(lambda s: re.sub(compiled_regex, self.replacement, s))
+        LOG.debug(f"Replacing regex in snapshot with {self.replacement}")
         return input_data
 
 
