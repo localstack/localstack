@@ -47,37 +47,19 @@ class Transformer(Protocol):
 
 
 class JsonPathTransformer:
-    def __init__(self, replacements: [(str, str)]) -> None:
-        assert replacements
-        self.json_path_replacement_list = replacements
+    def __init__(self, json_path: str, replacement: str) -> None:
+        self.json_path = json_path
+        self.replacement = replacement
 
-    def transform(self, input_data: dict) -> dict:
-        self._replace_json_path_pattern(input_data)
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        pattern = parse(self.json_path)
+        LOG.debug(f"Replacing JsonPath {self.json_path} in snapshot with {self.replacement}")
+        for match in pattern.find(input_data):
+            pattern.update(input_data, self.replacement)
         return input_data
 
     def _add_jsonpath_replacement(self, jsonpath, replacement):
         self.json_path_replacement_list.append((jsonpath, replacement))
-
-    def _replace_pattern(
-        self,
-        json_path,
-        replacement,
-        input_data,
-        verify_match=None,
-    ):
-        pattern = parse(json_path)
-        for match in pattern.find(input_data):
-            if verify_match and re.match(verify_match, match.value):
-                pattern.update(input_data, replacement)
-            elif not verify_match:
-                pattern.update(input_data, replacement)
-
-    def _replace_json_path_pattern(self, input_data: dict) -> dict:
-        for (json_path, replace_string) in self.json_path_replacement_list:
-            self._replace_pattern(
-                json_path=json_path, replacement=replace_string, input_data=input_data
-            )
-        return input_data
 
 
 class RegexMatchReplaceGroupTransformer:

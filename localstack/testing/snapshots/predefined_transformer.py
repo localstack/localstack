@@ -1,6 +1,7 @@
 import re
 
 from localstack.testing.snapshots.transformer import (
+    JsonPathTransformer,
     KeyValueBasedDirectTransformer,
     KeyValueBasedReferenceTransformer,
     RegexMatchReplaceGroupTransformer,
@@ -35,7 +36,7 @@ LAMBDA_TRANSFORMER = [
         lambda k, v: v if k == "FunctionName" else None, replacement="fn-name"
     ),
     # replace all "Location" values with the string "location"
-    KeyValueBasedDirectTransformer(lambda k, _: k == "Location", replacement="location"),
+    JsonPathTransformer(json_path="$..Code.Location", replacement="<location>"),
     RegexMatchReplaceGroupTransformer(
         PATTERN_ARN_RESOURCENAME_GROUP, group=2, replacement="resource"
     ),
