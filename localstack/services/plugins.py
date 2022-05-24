@@ -147,11 +147,11 @@ class BackendStateLifecycle(abc.ABC):
     """
 
     @abc.abstractmethod
-    def retrieve_state(self, **args):
+    def retrieve_state(self, **kwargs):
         """Retrieves a backend for an account, region and service"""
 
     @abc.abstractmethod
-    def inject_state(self, **args):
+    def inject_state(self, **kwargs):
         """Injects a backend for an account, region and service"""
 
     @abc.abstractmethod
