@@ -11,7 +11,7 @@ from typing import Dict, List, Union
 import boto3
 from localstack_client.config import get_service_port
 from moto.core import BaseModel
-from moto.core.base_backend import InstanceTrackerMeta
+from moto.core.models import InstanceTrackerMeta, get_account_id
 
 from localstack import config, constants
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
@@ -309,7 +309,8 @@ def log_startup_message(service):
 
 
 def check_aws_credentials():
-    os.environ["AWS_ACCESS_KEY_ID"] = constants.INTERNAL_AWS_ACCESS_KEY_ID
+    # Setup AWS environment vars, these are used by Boto when LocalStack makes internal cross-service calls
+    os.environ["AWS_ACCESS_KEY_ID"] = get_account_id()
     os.environ["AWS_SECRET_ACCESS_KEY"] = constants.INTERNAL_AWS_SECRET_ACCESS_KEY
     session = boto3.Session()
     credentials = session.get_credentials()

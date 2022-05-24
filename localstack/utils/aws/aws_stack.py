@@ -22,7 +22,7 @@ import botocore
 import botocore.config
 from botocore.utils import ArnParser, InvalidArnException
 
-from localstack import config, constants
+from localstack import config
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID  # TODO@viren remove all refs
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
@@ -888,7 +888,7 @@ def mock_aws_request_headers(
     elif service in ["sns", "sqs", "sts", "cloudformation"]:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
 
-    access_key = access_key or constants.TEST_AWS_ACCESS_KEY_ID
+    access_key = access_key or get_account_id()
     region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,
