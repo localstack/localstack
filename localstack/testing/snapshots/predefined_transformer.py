@@ -44,6 +44,29 @@ LAMBDA_TRANSFORMER = [
     KeyValueBasedDirectTransformer(lambda k, _: k == "LastModified", replacement="<date>"),
 ]
 
+CLOUDFORMATION_TRANSFORMER = [
+    KeyValueBasedReferenceTransformer(
+        lambda k, v: v if k == "ChangeSetName" else None, replacement="change-set-name"
+    ),
+    KeyValueBasedReferenceTransformer(
+        lambda k, v: v if k == "StackName" else None, replacement="stack-name"
+    ),
+    KeyValueBasedDirectTransformer(lambda k, v: k == "ChangeSetId", replacement="change-set-id"),
+    KeyValueBasedDirectTransformer(lambda k, v: k == "StackId", replacement="stack-id"),
+    KeyValueBasedDirectTransformer(lambda k, _: k == "CreationTime", replacement="<date>"),
+    KeyValueBasedDirectTransformer(lambda k, _: k == "LastUpdatedTime", replacement="<date>"),
+]
+
+S3_TRANSFORMER = [
+    KeyValueBasedReferenceTransformer(
+        lambda k, v: v if k == "Name" else None, replacement="bucket-name"
+    ),
+    KeyValueBasedDirectTransformer(lambda k, _: k == "LastModified", replacement="<date>"),
+    JsonPathTransformer(json_path="$..Owner.DisplayName", replacement="<display-name>"),
+    JsonPathTransformer(json_path="$..Owner.ID", replacement="<owner-id>"),
+    KeyValueBasedReferenceTransformer(lambda k, v: v if k == "ETag" else None, replacement="etag"),
+]
+
 SNAPSHOT_BASIC_TRANSFORMER = [
     ResponseMetaDataTransformer(),
     KeyValueBasedReferenceTransformer(
