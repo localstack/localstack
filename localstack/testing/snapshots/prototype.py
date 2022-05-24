@@ -74,15 +74,13 @@ class SnapshotSession:
         self.observed_state = {}
         self.recorded_state = self.load_state()
 
-    def add_transformer_list(
-        self, transformer_list: list[Transformer], *, priority: Optional[int] = 0
-    ):
+    def add_transformers_list(self, transformer_list: list[Transformer]):
         for transformer in transformer_list:
             self.transformers.append((transformer, 0))  # TODO
 
     def add_transformer(self, transformer: Transformer, *, priority: Optional[int] = 0):
         if isinstance(transformer, list):
-            self.add_transformer_list(transformer, priority=priority or 0)
+            self.add_transformers_list(transformer)
         else:
             self.transformers.append((transformer, priority or 0))
 
@@ -185,6 +183,8 @@ class SnapshotSession:
         tmp = json.dumps(tmp, default=str)
         for sr in ctx.serialized_replacements:
             tmp = sr(tmp)
+
+        assert tmp
         tmp = json.loads(tmp)
 
         return tmp

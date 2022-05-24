@@ -65,21 +65,46 @@ class ResponseMetaDataTransformer:
         return input_data
 
 
-class JsonPathTransformer:
-    def __init__(self, json_path: str, replacement: str) -> None:
-        self.json_path = json_path
+class JsonpathTransformer:
+    def __init__(self, jsonpath: str, replacement: str, replace_reference: bool = False) -> None:
+        self.jsonpath = jsonpath
         self.replacement = replacement
+        self.replace_references = replace_reference
 
     def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
-        pattern = parse(self.json_path)
-        LOG.debug(f"Replacing JsonPath {self.json_path} in snapshot with {self.replacement}")
-        pattern.update(input_data, self.replacement)
+        pattern = parse(self.jsonpath)
+        LOG.debug(f"Replacing JsonPath {self.jsonpath} in snapshot with {self.replacement}")
+
+        if self.replace_references:
+            res = pattern.find(input_data)
+            for r in res:
+                # TODO refactor!
+                value_to_replace = r.value
+                cache = ctx._cache.setdefault("regexcache", set())
+                cache_key = (value_to_replace, self.replacement)
+                if cache_key not in cache:
+                    actual_replacement = f"<{self.replacement}:{ctx.new_scope(self.replacement)}>"
+                    cache.add(cache_key)
+
+                    def _helper(bound_result):
+                        def replace_val(s):
+                            LOG.debug(
+                                f"Replacing {value_to_replace} in snapshot with {actual_replacement}"
+                            )
+                            return s.replace(bound_result, actual_replacement, -1)
+
+                        return replace_val
+
+                    ctx.register_serialized_replacement(_helper(value_to_replace))
+        else:
+            pattern.update(input_data, self.replacement)
         return input_data
 
     def _add_jsonpath_replacement(self, jsonpath, replacement):
         self.json_path_replacement_list.append((jsonpath, replacement))
 
 
+# TODO - check if we need this - resource-name replacements in ARN could/should be done differently
 class RegexMatchReplaceGroupTransformer:
     def __init__(self, regex: str | Pattern[str], group: int, replacement: str):
         self.regex = regex
@@ -183,55 +208,32 @@ class KeyValueBasedReferenceTransformer:
         return input_data
 
 
+def replace_camel_string_with_hyphen(input_string: str):
+    return "".join(["-" + char.lower() if char.isupper() else char for char in input_string]).strip(
+        "-"
+    )
+
+
 def create_transformer(fn: Callable[[dict], dict]) -> Transformer:
     return GenericTransformer(fn)
 
 
-#     def _is_date(self, value: str):
-#         try:
-#             # TODO seems like the date can have various formats, use this dateutil lib?
-#             dateutil_parser.parse(value)
-#             return True
-#         except Exception:
-#             return False
-#
-#     def transform(self, input_data: dict) -> dict:
-#         self.clean_response_metadata(input_data)
-#         self.replace_common_values(input_data)
-#
-#         # TODO move this somewhere else
-#         replace_pattern = [
-#             ("$..Code.Location", "<location>"),
-#             ("$..CodeSha256", "<sha-256>"),  # TODO maybe calculate expected has
-#             ("$..Owner.DisplayName", "<owner-name>"),
-#             ("$..Owner.ID", "<owner-id>"),
-#             # TODO *Name
-#             ("$..FunctionName", "<function-name>"),
-#             ("$..ChangeSetName", "<change-set-name>"),
-#             ("$..StackName", "<stack-name>"),
-#             ("$..Name", "<name>"),
-#             ("$..Contents.ETag", "<etag>"),
-#         ]
-#         replace_pattern.extend(self.json_path_replacement_list)
-#
-#         # TODO
-#         # self.replace_pattern(
-#         #     "$..RequestID.StringValue", replacement="<uuid>", input=input, verify_match=PATTERN_UUID
-#         # )
-#
-#         return super().transform(input)
-#
-#     def clean_response_metadata(self, input_data: dict):
-#         metadata = input_data.get("ResponseMetadata")
-#         if not metadata:
-#             return
-#         http_headers = metadata.get("HTTPHeaders")
-#
-#         simplified_headers = {}
-#         simplified_headers["content-type"] = http_headers["content-type"]
-#
-#         simplified_metadata = {
-#             "HTTPStatusCode": metadata.pop("HTTPStatusCode"),
-#             "HTTPHeaders": simplified_headers,
-#         }
-#         input_data["ResponseMetadata"] = simplified_metadata
+def key_transformer(key: str, replacement: Optional[str] = None):
+    return KeyValueBasedDirectTransformer(
+        lambda k, _: k == key, replacement=replacement or replace_camel_string_with_hyphen(key)
+    )
+
+
+def key_transformer_with_reference_replacement(key: str, replacement: Optional[str] = None):
+    return KeyValueBasedReferenceTransformer(
+        lambda k, v: v if k == key else None,
+        replacement=replacement or replace_camel_string_with_hyphen(key),
+    )
+
+
+def jsonpath_transformer(jsonpath: str, replacement: str):
+    return JsonpathTransformer(jsonpath=jsonpath, replacement=replacement)
+
+
+def jsonpath_transformer_with_reference_replacement(jsonpath: str, replacement: str):
+    return JsonpathTransformer(jsonpath=jsonpath, replacement=replacement, replace_reference=True)
