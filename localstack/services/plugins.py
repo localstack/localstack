@@ -133,7 +133,15 @@ class ServiceLifecycleHook:
         pass
 
 
-class BaseBackendStateLifecycle(abc.ABC):
+class StateLifecycle:
+    def retrieve_state(self):
+        pass
+
+    def inject_state(self, state):
+        pass
+
+
+class BackendStateLifecycle(abc.ABC):
     """
     Interface that supports the retrieval, injection and restore of the backend for services.
     """
@@ -166,7 +174,7 @@ class Service:
         active=False,
         stop=None,
         lifecycle_hook: ServiceLifecycleHook = None,
-        backend_state_lifecycle: BaseBackendStateLifecycle = None,
+        backend_state_lifecycle: BackendStateLifecycle = None,
     ):
         self.plugin_name = name
         self.start_function = start
