@@ -100,6 +100,9 @@ RUN pip install --no-cache-dir --upgrade supervisor virtualenv
 # install supervisor config file and entrypoint script
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
+# add the shipped hosts file to prevent performance degredation in windows container mode on windows
+# (where hosts file is not mounted) See https://github.com/localstack/localstack/issues/5178
+ADD bin/hosts /etc/hosts
 
 # expose default environment
 # Set edge bind host so localstack can be reached by other containers

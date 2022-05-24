@@ -1,0 +1,3 @@
+# normally overwritten by docker, this hosts file should only be readable in the container in windows container mode
+127.0.0.1	localhost localhost.localdomain
+::1	    	localhost localhost.localdomain
