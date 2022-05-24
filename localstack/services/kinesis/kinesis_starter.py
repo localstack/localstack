@@ -4,6 +4,7 @@ from typing import Optional
 from localstack import config
 from localstack.services.infra import log_startup_message, start_proxy_for_service
 from localstack.services.kinesis import kinesalite_server, kinesis_mock_server
+from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.utils.aws import aws_stack
 from localstack.utils.serving import Server
 
@@ -38,12 +39,16 @@ def start_kinesis(
     _server.start()
     log_startup_message("Kinesis")
     port = port or config.service_port("kinesis")
-    start_proxy_for_service(
-        "kinesis",
-        port,
-        backend_port=_server.port,
-        update_listener=update_listener,
-    )
+
+    # TODO: flip back to "!= kinesis:asf" to be sure we have the old control path when merging
+    if SERVICE_PLUGINS.get("kinesis").name() == "kinesis:legacy":
+        start_proxy_for_service(
+            "kinesis",
+            port,
+            backend_port=_server.port,
+            update_listener=update_listener,
+        )
+
     return _server
 
 
