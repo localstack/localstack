@@ -2328,7 +2328,7 @@ class TestSqsQueryApi:
         assert response.status_code == 200
 
     @pytest.mark.aws_validated
-    @pytest.mark.parametrize("strategy", ["domain"])
+    @pytest.mark.parametrize("strategy", ["domain", "path", "off"])
     def test_endpoint_strategy_with_multi_region(
         self,
         strategy,
