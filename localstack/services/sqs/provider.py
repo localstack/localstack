@@ -85,6 +85,10 @@ FIFO_MSG_REGEX = "^[0-9a-zA-z!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-]*$"
 
 DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
 
+# When you delete a queue, you must wait at least 60 seconds before creating a queue with the same name.
+# see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteQueue.html
+RECENTLY_DELETED_TIMEOUT = 60
+
 
 class InvalidParameterValue(CommonServiceException):
     def __init__(self, message):
@@ -715,6 +719,11 @@ class SqsBackend(RegionBackend):
         self.queues = {}
         self.deleted = {}
 
+    def expire_deleted(self):
+        for k in list(self.deleted.keys()):
+            if self.deleted[k] <= (time.time() - RECENTLY_DELETED_TIMEOUT):
+                del self.deleted[k]
+
 
 class SqsProvider(SqsApi, ServiceLifecycleHook):
     """
@@ -796,31 +805,31 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         backend = SqsBackend.get(context.region)
 
-        if queue_name in backend.queues:
-            # FIXME #5938: should raise `QueueNameExists` if queue exists with different attributes
-            queue = backend.queues[queue_name]
-            return CreateQueueResult(QueueUrl=queue.url(context))
-
-        # When you delete a queue, you must wait at least 60 seconds before creating a queue with the same name.
-        # see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteQueue.html
-        if queue_name in backend.deleted and config.SQS_DELAY_RECENTLY_DELETED:
-            deleted = backend.deleted[queue_name]
-            if deleted > (time.time() - 60):
-                raise QueueDeletedRecently(
-                    "You must wait 60 seconds after deleting a queue before you can create another with the same name."
-                )
-            else:
-                del backend.deleted[queue_name]
-
-        # create the appropriate queue
-        if fifo:
-            queue = FifoQueue(queue_name, context.region, context.account_id, attributes, tags)
-        else:
-            queue = StandardQueue(queue_name, context.region, context.account_id, attributes, tags)
-
-        LOG.debug("creating queue key=%s attributes=%s tags=%s", queue_name, attributes, tags)
-
         with self._mutex:
+            if queue_name in backend.queues:
+                # FIXME #5938: should raise `QueueNameExists` if queue exists with different attributes
+                queue = backend.queues[queue_name]
+                return CreateQueueResult(QueueUrl=queue.url(context))
+
+            if config.SQS_DELAY_RECENTLY_DELETED:
+                deleted = backend.deleted.get(queue_name)
+                if deleted and deleted > (time.time() - RECENTLY_DELETED_TIMEOUT):
+                    raise QueueDeletedRecently(
+                        "You must wait 60 seconds after deleting a queue before you can create "
+                        "another with the same name."
+                    )
+            backend.expire_deleted()
+
+            # create the appropriate queue
+            if fifo:
+                queue = FifoQueue(queue_name, context.region, context.account_id, attributes, tags)
+            else:
+                queue = StandardQueue(
+                    queue_name, context.region, context.account_id, attributes, tags
+                )
+
+            LOG.debug("creating queue key=%s attributes=%s tags=%s", queue_name, attributes, tags)
+
             backend.queues[queue_name] = queue
 
         return CreateQueueResult(QueueUrl=queue.url(context))

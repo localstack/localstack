@@ -174,6 +174,31 @@ class TestSqsProvider:
         )
 
     @pytest.mark.only_localstack
+    def test_create_queue_recently_deleted_cache(self, sqs_client, sqs_create_queue, monkeypatch):
+        # this is a white-box test for the QueueDeletedRecently timeout behavior
+        from localstack.services.sqs import provider
+
+        monkeypatch.setattr(config, "SQS_DELAY_RECENTLY_DELETED", True)
+        monkeypatch.setattr(provider, "RECENTLY_DELETED_TIMEOUT", 1)
+
+        name = f"test-queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=name)
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(QueueName=name)
+
+        e.match("QueueDeletedRecently")
+        e.match(
+            "You must wait 60 seconds after deleting a queue before you can create another with the same name."
+        )
+
+        time.sleep(1.5)
+        assert name in provider.SqsBackend.get().deleted
+        assert queue_url == sqs_create_queue(QueueName=name)
+        assert name not in provider.SqsBackend.get().deleted
+
+    @pytest.mark.only_localstack
     def test_create_queue_recently_deleted_can_be_disabled(
         self, sqs_client, sqs_create_queue, monkeypatch
     ):
