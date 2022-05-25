@@ -202,3 +202,42 @@ def test_apigateway_invoke_localhost_with_path(
     execution_result = stepfunctions_client.describe_execution(executionArn=execution_arn)
     assert execution_result["status"] == "SUCCEEDED"
     assert "hello_with_path from stepfunctions" in execution_result["output"]
+
+
+def test_retry_and_catch(deploy_cfn_template, stepfunctions_client, sqs_client):
+    """
+    Scenario:
+
+    Lambda invoke (incl. 3 retries)
+        => catch (Send SQS message with body "Fail")
+        => next (Send SQS message with body "Success")
+
+    The Lambda function simply raises an Exception, so it will always fail.
+    It should fail all 4 attempts (1x invoke + 3x retries) which should then trigger the catch path
+    and send a "Fail" message to the queue.
+    """
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/sfn_retry_catch.yaml")
+    )
+    queue_url = stack.outputs["queueUrlOutput"]
+    statemachine_arn = stack.outputs["smArnOutput"]
+    assert statemachine_arn
+
+    execution = stepfunctions_client.start_execution(stateMachineArn=statemachine_arn)
+    execution_arn = execution["executionArn"]
+
+    def _sfn_finished_running():
+        return (
+            stepfunctions_client.describe_execution(executionArn=execution_arn)["status"]
+            != "RUNNING"
+        )
+
+    assert wait_until(_sfn_finished_running)
+
+    execution_result = stepfunctions_client.describe_execution(executionArn=execution_arn)
+    assert execution_result["status"] == "SUCCEEDED"
+
+    # fetch the message
+    receive_result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
+    assert receive_result["Messages"][0]["Body"] == "Fail"
