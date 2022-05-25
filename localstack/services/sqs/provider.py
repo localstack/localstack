@@ -161,6 +161,8 @@ class SqsMessage:
     visibility_timeout: int
     receive_times: int
     receipt_handles: Set[str]
+    last_received: Optional[float]
+    first_received: Optional[float]
     deleted: bool
     priority: float
     message_deduplication_id: str
@@ -442,7 +444,7 @@ class SqsQueue:
             ] = str(standard_message.receive_times)
             copied_message.message["Attributes"][
                 MessageSystemAttributeName.ApproximateFirstReceiveTimestamp
-            ] = standard_message.first_received
+            ] = str(int(standard_message.first_received))
             copied_message.message["ReceiptHandle"] = receipt_handle
 
             return copied_message

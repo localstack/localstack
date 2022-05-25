@@ -174,6 +174,21 @@ class TestSqsProvider:
         assert message["MessageId"] == send_result["MessageId"]
         assert message["MD5OfBody"] == send_result["MD5OfMessageBody"]
 
+    @pytest.mark.aws_validated
+    def test_receive_message_attributes_timestamp_types(self, sqs_client, sqs_queue):
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="message")
+
+        r0 = sqs_client.receive_message(
+            QueueUrl=sqs_queue, VisibilityTimeout=0, AttributeNames=["All"]
+        )
+        attrs = r0["Messages"][0]["Attributes"]
+        assert float(attrs["ApproximateFirstReceiveTimestamp"]).is_integer()
+        assert float(attrs["SentTimestamp"]).is_integer()
+
+        assert float(attrs["SentTimestamp"]) == pytest.approx(
+            float(attrs["ApproximateFirstReceiveTimestamp"]), 2
+        )
+
     def test_send_receive_message_multiple_queues(self, sqs_client, sqs_create_queue):
         queue0 = sqs_create_queue()
         queue1 = sqs_create_queue()
