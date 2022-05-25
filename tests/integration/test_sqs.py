@@ -2328,6 +2328,58 @@ class TestSqsQueryApi:
         assert response.status_code == 200
 
     @pytest.mark.aws_validated
+    @pytest.mark.parametrize("strategy", ["domain", "path", "off"])
+    def test_endpoint_strategy_with_multi_region(
+        self,
+        strategy,
+        sqs_http_client,
+        create_boto_client,
+        aws_http_client_factory,
+        monkeypatch,
+        cleanups,
+    ):
+        monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
+
+        queue_name = f"test-queue-{short_uid()}"
+
+        sqs_region1 = create_boto_client("sqs", "us-east-1")
+        sqs_region2 = create_boto_client("sqs", "eu-west-1")
+
+        queue_region1 = sqs_region1.create_queue(QueueName=queue_name)["QueueUrl"]
+        cleanups.append(lambda: sqs_region1.delete_queue(QueueUrl=queue_region1))
+        queue_region2 = sqs_region2.create_queue(QueueName=queue_name)["QueueUrl"]
+        cleanups.append(lambda: sqs_region2.delete_queue(QueueUrl=queue_region2))
+
+        if strategy == "off":
+            assert queue_region1 == queue_region2
+        else:
+            assert queue_region1 != queue_region2
+            assert "eu-west-1" in queue_region2
+            # us-east-1 is the default region, so it's not necessarily part of the queue URL
+
+        client_region1 = aws_http_client_factory("sqs", "us-east-1")
+        client_region2 = aws_http_client_factory("sqs", "eu-west-1")
+
+        response = client_region1.get(
+            queue_region1, params={"Action": "SendMessage", "MessageBody": "foobar"}
+        )
+        assert response.ok
+
+        # shouldn't return anything
+        response = client_region2.get(
+            queue_region2, params={"Action": "ReceiveMessage", "VisibilityTimeout": "0"}
+        )
+        assert response.ok
+        assert "foobar" not in response.text
+
+        # should return the message
+        response = client_region1.get(
+            queue_region1, params={"Action": "ReceiveMessage", "VisibilityTimeout": "0"}
+        )
+        assert response.ok
+        assert "foobar" in response.text
+
+    @pytest.mark.aws_validated
     def test_overwrite_queue_url_in_params(self, sqs_create_queue, sqs_http_client):
         # here, queue1 url simply serves as AWS endpoint but we pass queue2 url in the request arg
         queue1_url = sqs_create_queue()
