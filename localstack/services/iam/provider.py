@@ -5,11 +5,7 @@ from urllib.parse import quote
 
 from moto.iam.models import AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy
 from moto.iam.models import Role as MotoRole
-from moto.iam.models import (
-    aws_managed_policies,
-    aws_managed_policies_data_parsed,
-    filter_items_with_path_prefix,
-)
+from moto.iam.models import aws_managed_policies, filter_items_with_path_prefix
 from moto.iam.models import iam_backend as moto_iam_backend
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.responses import IamResponse
@@ -336,15 +332,6 @@ class IamProvider(IamApi):
     #     return GetUserResponse(User=response_user)
 
 
-class AWSManagedPolicyUSGov(AWSManagedPolicy):
-    # Fix missing regions in managed policies (e.g., aws-us-gov). Note: make sure to keep at global scope here
-    # TODO: possibly find a more efficient way for this - e.g., lazy loading of policies in special regions
-
-    @property
-    def arn(self):
-        return "arn:aws-us-gov:iam::aws:policy{0}{1}".format(self.path, self.name)
-
-
 def apply_patches():
     # support service linked roles
 
@@ -421,10 +408,3 @@ def apply_patches():
         except Exception:
             # Actually role can be deleted before policy being deleted in cloudformation
             pass
-
-    managed_policies = moto_iam_backend.managed_policies
-    if "arn:aws-us-gov:iam::aws:policy/AmazonRDSFullAccess" not in managed_policies:
-        for name, data in aws_managed_policies_data_parsed.items():
-            policy = AWSManagedPolicyUSGov.from_data(name, data)
-            if policy.arn not in moto_iam_backend.managed_policies:
-                moto_iam_backend.managed_policies[policy.arn] = policy
