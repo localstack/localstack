@@ -59,11 +59,8 @@ class TestEvents:
         for field in expected_fields:
             assert field in event
 
-    def create_rule_name(self):
-        return "rule-{}".format(short_uid())
-
     def test_put_rule(self, events_client):
-        rule_name = self.create_rule_name()
+        rule_name = f"rule-{short_uid()}"
 
         events_client.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
 
@@ -1248,7 +1245,7 @@ class TestEvents:
     def test_create_rule_with_one_unit_in_singular_should_succeed(
         self, events_client, schedule_expression
     ):
-        rule_name = self.create_rule_name()
+        rule_name = f"rule-{short_uid()}"
 
         # rule should be creatable with given expression
         events_client.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
@@ -1262,7 +1259,7 @@ class TestEvents:
     def test_create_rule_with_one_unit_in_plural_should_fail(
         self, events_client, schedule_expression
     ):
-        rule_name = self.create_rule_name()
+        rule_name = f"rule-{short_uid()}"
 
         # rule should not be creatable with given expression
         with pytest.raises(ClientError):
@@ -1270,7 +1267,7 @@ class TestEvents:
 
     @pytest.mark.xfail
     def test_verify_rule_event_content(self, events_client, logs_client):
-        log_group_name = "/aws/events/testLogGroup-{}".format(short_uid())
+        log_group_name = f"/aws/events/testLogGroup-{short_uid()}"
         logs_client.create_log_group(logGroupName=log_group_name)
 
         log_groups = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)
@@ -1279,10 +1276,10 @@ class TestEvents:
 
         log_group_arn = log_group["arn"]
 
-        rule_name = self.create_rule_name()
+        rule_name = f"rule-{short_uid()}"
         events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
 
-        target_id = "testRuleId-{}".format(short_uid())
+        target_id = f"testRuleId-{short_uid()}"
         events_client.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": log_group_arn}])
 
         # wait one minute, as then the rule will trigger and send the event to the log group
