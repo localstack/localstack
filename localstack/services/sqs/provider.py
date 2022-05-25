@@ -48,6 +48,7 @@ from localstack.aws.api.sqs import (
     PurgeQueueInProgress,
     QueueAttributeMap,
     QueueAttributeName,
+    QueueDeletedRecently,
     QueueDoesNotExist,
     ReceiptHandleIsInvalid,
     ReceiveMessageResult,
@@ -708,9 +709,11 @@ def check_fifo_id(fifo_id):
 
 class SqsBackend(RegionBackend):
     queues: Dict[str, SqsQueue]
+    deleted: Dict[str, float]
 
     def __init__(self):
         self.queues = {}
+        self.deleted = {}
 
 
 class SqsProvider(SqsApi, ServiceLifecycleHook):
@@ -797,6 +800,19 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             # FIXME #5938: should raise `QueueNameExists` if queue exists with different attributes
             queue = backend.queues[queue_name]
             return CreateQueueResult(QueueUrl=queue.url(context))
+
+        # When you delete a queue, you must wait at least 60 seconds before creating a queue with the same name.
+        # see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteQueue.html
+        if queue_name in backend.deleted and config.SQS_DELAY_RECENTLY_DELETED:
+            deleted = backend.deleted[queue_name]
+            if deleted > (time.time() - 60):
+                raise QueueDeletedRecently(
+                    "You must wait 60 seconds after deleting a queue before you can create another with the same name."
+                )
+            else:
+                del backend.deleted[queue_name]
+
+        # create the appropriate queue
         if fifo:
             queue = FifoQueue(queue_name, context.region, context.account_id, attributes, tags)
         else:
@@ -898,6 +914,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         with self._mutex:
             queue = self._resolve_queue(context, queue_url=queue_url)
             del backend.queues[queue.name]
+            backend.deleted[queue.name] = time.time()
 
     def get_queue_attributes(
         self, context: RequestContext, queue_url: String, attribute_names: AttributeNameList = None
