@@ -13,9 +13,9 @@ from requests.models import Response
 from localstack import config
 from localstack.aws.protocol.service_router import determine_aws_service_name
 from localstack.constants import (
+    HEADER_LOCALSTACK_ACCOUNT_ID,
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
-    INTERNAL_CALL_HEADER,
     LOCALHOST,
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
@@ -333,7 +333,7 @@ def is_trace_logging_enabled(headers) -> bool:
         return False
     if config.LS_LOG == LS_LOG_TRACE_INTERNAL:
         return True
-    return INTERNAL_CALL_HEADER not in headers.keys()
+    return HEADER_LOCALSTACK_ACCOUNT_ID not in headers.keys()
 
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):

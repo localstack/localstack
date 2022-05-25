@@ -25,9 +25,6 @@ def get_region(request: Request) -> str:
     return extract_region_from_headers(request.headers)
 
 
-# TODO@viren Remove TEST_AWS_ACCOUNT_ID refs and dangling code
-
-
 def _get_account_id(_: Request) -> str:
     """
     Get the AWS Account ID.

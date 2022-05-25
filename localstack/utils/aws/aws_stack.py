@@ -23,18 +23,18 @@ import botocore.config
 from botocore.utils import ArnParser, InvalidArnException
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID  # TODO@viren remove all refs
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
     APPLICATION_X_WWW_FORM_URLENCODED,
     AWS_REGION_US_EAST_1,
     ENV_DEV,
-    INTERNAL_CALL_HEADER,
+    HEADER_LOCALSTACK_ACCOUNT_ID,
     LOCALHOST,
     MAX_POOL_CONNECTIONS,
     REGION_LOCAL,
     S3_VIRTUAL_HOSTNAME,
+    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.aws.aws_models import KinesisStream
@@ -221,7 +221,7 @@ def get_local_region():
 def is_internal_call_context(headers):
     """Return whether we are executing in the context of an internal API call, i.e.,
     the case where one API uses a boto3 client to call another API internally."""
-    return INTERNAL_CALL_HEADER in headers.keys()
+    return HEADER_LOCALSTACK_ACCOUNT_ID in headers.keys()
 
 
 def get_internal_credential():
@@ -244,7 +244,7 @@ def set_internal_auth(headers):
             authorization,
         )
     headers["Authorization"] = authorization
-    headers[INTERNAL_CALL_HEADER] = "1"
+    headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_account_id()
     return headers
 
 
@@ -368,7 +368,7 @@ def connect_to_service(
         if client and internal:
 
             def _add_internal_header(request, **kwargs):
-                request.headers.add_header(INTERNAL_CALL_HEADER, "1")
+                request.headers.add_header(HEADER_LOCALSTACK_ACCOUNT_ID, get_account_id())
 
             event_system = new_client.meta.events
             event_system.register_first("before-sign.*.*", _add_internal_header)
@@ -901,7 +901,7 @@ def mock_aws_request_headers(
         ),
     }
     if internal:
-        headers[INTERNAL_CALL_HEADER] = "1"
+        headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_account_id()
     return headers
 
 

@@ -161,8 +161,10 @@ TEST_AWS_SECRET_ACCESS_KEY = "test"
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
 INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
 
-# This header is set in calls that originate within LocalStack. Certain services have special behaviour for internal calls.
-INTERNAL_CALL_HEADER = "X-LocalStack-Internal"
+# This header must be set to the AWS Account ID
+# Presence of this header in an incoming request typically means that the request originated within localstack,
+# i.e. it is an internal cross-service call.
+HEADER_LOCALSTACK_ACCOUNT_ID = "x-localstack-account-id"
 
 # trace log levels (excluding/including internal API calls), configurable via $LS_LOG
 LS_LOG_TRACE = "trace"
