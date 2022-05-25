@@ -43,7 +43,6 @@ from localstack.services.install import (
     download_and_extract,
 )
 from localstack.testing.aws.util import get_lambda_logs
-from localstack.testing.snapshots.predefined_transformer import LAMBDA_TRANSFORMER
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -270,7 +269,7 @@ class TestLambdaAPI:
     def test_add_lambda_permission_aws(
         self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
     ):
-        snapshot.add_transformer(LAMBDA_TRANSFORMER)
+        snapshot.add_transformer(snapshot.transform.lambda_api())
 
         """Testing the add_permission call on lambda, by adding a new resource-based policy to a lambda function"""
         function_name = f"lambda_func-{short_uid()}"
@@ -487,7 +486,7 @@ class TestLambdaAPI:
         lambda_su_role,
         snapshot,
     ):
-        snapshot.add_transformer(LAMBDA_TRANSFORMER)
+        snapshot.add_transformer(snapshot.transform.lambda_api())
 
         """Testing API actions of function event config"""
         function_name = f"lambda_func-{short_uid()}"

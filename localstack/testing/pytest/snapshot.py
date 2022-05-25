@@ -16,8 +16,8 @@ from localstack.testing.pytest.fixtures import (  # TODO(!) fix. shouldn't impor
     _client,
 )
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
-from localstack.testing.snapshots.predefined_transformer import SNAPSHOT_BASIC_TRANSFORMER
 from localstack.testing.snapshots.transformer import RegexTransformer
+from localstack.testing.snapshots.transformer_utility import SNAPSHOT_BASIC_TRANSFORMER
 
 LOG = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ def pytest_runtest_call(item: Item) -> None:
     # TODO: extremely dirty... maybe it would be better to find a way to fail the test itself instead?
     sm = item.funcargs.get("snapshot")
     if sm:
-        sm.assert_all()
+        sm._assert_all()
 
 
 @pytest.fixture(name="account_id", scope="session")
@@ -76,9 +76,7 @@ def fixture_snapshot(request: SubRequest, account_id, region):
     )
     sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=-1)
     sm.add_transformer(RegexTransformer(region, "<region>"), priority=-1)
-
     sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER)
-
     # sm.register_replacement(PATTERN_SQS_URL, "<sqs-url>")
     # sm.skip_key(re.compile(r"^.*Name$"), "<name>")
     # sm.skip_key(re.compile(r"^.*Location$"), "<location>")
@@ -89,4 +87,4 @@ def fixture_snapshot(request: SubRequest, account_id, region):
 
     yield sm
 
-    sm.persist_state()
+    sm._persist_state()

@@ -10,11 +10,12 @@ from botocore.response import StreamingBody
 from deepdiff import DeepDiff
 
 from localstack.testing.snapshots.transformer import (
-    KeyValueBasedDirectTransformer,
+    KeyValueBasedTransformer,
     RegexTransformer,
     TransformContext,
     Transformer,
 )
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 
 LOG = logging.getLogger(__name__)
 
@@ -54,6 +55,8 @@ class SnapshotSession:
     called_keys: set[str]
     transformers: list[(Transformer, int)]  # (transformer, priority)
 
+    transform: TransformerUtility
+
     def __init__(
         self,
         *,
@@ -72,7 +75,9 @@ class SnapshotSession:
         self.transformers = []
 
         self.observed_state = {}
-        self.recorded_state = self.load_state()
+        self.recorded_state = self._load_state()
+
+        self.transform = TransformerUtility
 
     def add_transformers_list(self, transformer_list: list[Transformer]):
         for transformer in transformer_list:
@@ -84,7 +89,7 @@ class SnapshotSession:
         else:
             self.transformers.append((transformer, priority or 0))
 
-    def persist_state(self) -> None:
+    def _persist_state(self) -> None:
         if self.update:
             Path(self.file_path).touch()
             with open(self.file_path, "r+") as fd:
@@ -103,7 +108,7 @@ class SnapshotSession:
                 except Exception as e:
                     LOG.exception(e)
 
-    def load_state(self) -> dict:
+    def _load_state(self) -> dict:
         try:
             with open(self.file_path, "r") as fd:
                 content = fd.read()
@@ -132,7 +137,7 @@ class SnapshotSession:
         if not self.update and not self.recorded_state.get(key):
             raise Exception("Please run the test first with --snapshot-update")
 
-    def assert_all(self) -> List[SnapshotMatchResult]:
+    def _assert_all(self) -> List[SnapshotMatchResult]:
         """use after all match calls to get a combined diff"""
         results = []
 
@@ -196,14 +201,18 @@ class SnapshotSession:
 
     def skip_key(self, pattern: Pattern[str], value: str):
         self.add_transformer(
-            KeyValueBasedDirectTransformer(
-                lambda k, v: v if bool(pattern.match(k)) else None, replacement=value
+            KeyValueBasedTransformer(
+                lambda k, v: v if bool(pattern.match(k)) else None,
+                replacement=value,
+                replace_reference=False,
             )
         )
 
     def replace_value(self, pattern: Pattern[str], value: str):
         self.add_transformer(
-            KeyValueBasedDirectTransformer(
-                lambda _, v: v if bool(pattern.match(v)) else None, replacement=value
+            KeyValueBasedTransformer(
+                lambda _, v: v if bool(pattern.match(v)) else None,
+                replacement=value,
+                replace_reference=False,
             )
         )

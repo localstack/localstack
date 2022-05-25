@@ -4,7 +4,6 @@ import os.path
 
 import pytest
 
-from localstack.testing.snapshots.predefined_transformer import LAMBDA_TRANSFORMER
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
 
@@ -95,10 +94,7 @@ class TestLambdaAsfApi:
         fn_name_2 = f"ls-fn-{short_uid()}"
 
         # custom transformers
-        snapshot.add_transformer(LAMBDA_TRANSFORMER)
-        # role_name = lambda_su_role.split("/")[-1]  # TODO
-        # snapshot.add_transformer(RegexTransformer(role_name, "<lambda-role>"))
-
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         # infra setup (& validations)
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
             response = create_lambda_function_aws(
