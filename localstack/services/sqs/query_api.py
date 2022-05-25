@@ -20,6 +20,7 @@ from localstack.http import Request, Response, Router, route
 from localstack.http.dispatcher import Handler
 from localstack.services.sqs.provider import MissingParameter
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import extract_region_from_headers
 
 LOG = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ def path_strategy_handler(request: Request, region, account_id: str, queue_name:
 
 @route(
     '/<regex("[0-9]{12}"):account_id>/<regex("[a-zA-Z0-9_-]+(.fifo)?"):queue_name>',
-    host="sqs.<regex('([a-z0-9-]+)?'):region>.localstack.cloud<regex('(:[0-9]{2,5})?'):port>",
+    host='<regex("([a-z0-9-]+\\.)?"):region>queue.localhost.localstack.cloud<regex("(:[0-9]{2,5})?"):port>',
     methods=["POST", "GET"],
 )
 def domain_strategy_handler(
@@ -46,6 +47,11 @@ def domain_strategy_handler(
 ):
     """Uses the endpoint host to extract the region. See:
     https://docs.aws.amazon.com/general/latest/gr/sqs-service.html"""
+    if not region:
+        region = config.DEFAULT_REGION
+    else:
+        region = region.rstrip(".")
+
     return handle_request(request, region)
 
 
@@ -55,8 +61,18 @@ def domain_strategy_handler(
 )
 def legacy_handler(request: Request, account_id: str, queue_name: str) -> Response:
     # previously, Queue URLs were created as http://localhost:4566/000000000000/my-queue-name. Because the region is
-    # ambiguous in this request, we fall back to the default region and hope for the best.
-    return handle_request(request, config.DEFAULT_REGION)
+    # ambiguous in this request, we fall back to the region that the request is coming from (this is not how AWS
+    # behaves though).
+    if "X-Amz-Credential" in request.args:
+        region = request.args["X-Amz-Credential"].split("/")[2]
+    else:
+        region = extract_region_from_headers(request.headers)
+
+    LOG.debug(
+        "Region of queue URL %s is ambiguous, got region %s from request", request.url, region
+    )
+
+    return handle_request(request, region)
 
 
 def register(router: Router[Handler]):
