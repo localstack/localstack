@@ -27,6 +27,7 @@ from localstack.utils.common import (
     to_str,
     wait_for_port_open,
 )
+from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
@@ -1248,9 +1249,10 @@ class TestEvents:
         rule_name = f"rule-{short_uid()}"
 
         # rule should be creatable with given expression
-        events_client.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
-
-        self.cleanup(rule_name=rule_name, events_client=events_client)
+        try:
+            events_client.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
+        finally:
+            self.cleanup(rule_name=rule_name, events_client=events_client)
 
     @pytest.mark.parametrize(
         "schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"]
@@ -1282,11 +1284,13 @@ class TestEvents:
         target_id = f"testRuleId-{short_uid()}"
         events_client.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": log_group_arn}])
 
-        # wait one minute, as then the rule will trigger and send the event to the log group
-        time.sleep(61)
+        def ensure_log_stream_exists():
+            streams = logs_client.describe_log_streams(logGroupName=log_group_name)
+            return len(streams["logStreams"]) == 1
+
+        poll_condition(condition=ensure_log_stream_exists, timeout=65, interval=5)
 
         log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
-        assert len(log_streams["logStreams"]) == 1
         log_stream_name = log_streams["logStreams"][0]["logStreamName"]
 
         log_content = logs_client.get_log_events(
