@@ -10,12 +10,17 @@ def test_cfn_apigateway_aws_integration(
     apigateway_client, s3_client, iam_client, deploy_cfn_template
 ):
     api_name = f"rest-api-{short_uid()}"
+    custom_id = short_uid()
 
     deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../templates/apigw-awsintegration-request-parameters.yaml"
         ),
-        template_mapping={"api_name": api_name},
+        parameters={
+            "ApiName": api_name,
+            "CustomTagKey": "_custom_id_",
+            "CustomTagValue": custom_id,
+        },
     )
 
     # check resources creation

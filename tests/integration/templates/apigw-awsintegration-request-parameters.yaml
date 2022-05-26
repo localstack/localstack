@@ -1,3 +1,11 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  ApiName:
+    Type: String
+  CustomTagKey:
+    Type: String
+  CustomTagValue:
+    Type: String
 Resources:
   Bucket83908E77:
     Type: AWS::S3::Bucket
@@ -44,7 +52,13 @@ Resources:
   RestApi0C43BF4B:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: {{ api_name }}
+      Name: 
+        Ref: ApiName
+      Tags:
+      - Key: 
+          Ref: CustomTagKey 
+        Value: 
+          Ref: CustomTagValue
   RestApiCloudWatchRoleE3ED6605:
     Type: AWS::IAM::Role
     Properties:
@@ -61,6 +75,9 @@ Resources:
             - - "arn:"
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      Tags:
+      - Key: _custom_id_
+        Value: api
   RestApiAccount7C83CF5A:
     Type: AWS::ApiGateway::Account
     Properties:
@@ -76,6 +93,9 @@ Resources:
       RestApiId:
         Ref: RestApi0C43BF4B
       Description: Automatically created by the RestApi construct
+      Tags:
+      - Key: _custom_id_
+        Value: api
     DependsOn:
       - RestApiGET0F59260B
   RestApiDeploymentStageprod3855DE66:
@@ -124,6 +144,11 @@ Resources:
         Types:
           - REGIONAL
       RegionalCertificateArn: arn:aws:acm:us-east-1:000000000000:certificate/00000000-0000-0000-0000-000000000000
+      Tags:
+      - Key: 
+          Ref: CustomTagKey 
+        Value: 
+          Ref: CustomTagValue
   RestApiCustomDomainMapMyStackLocalRestApiE67E15D45F8B292A:
     Type: AWS::ApiGateway::BasePathMapping
     Properties:
