@@ -10,6 +10,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.services.generic_proxy import ProxyListener
@@ -605,21 +606,23 @@ class TestEvents:
         stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
     def test_api_destinations(self, events_client):
-
         token = short_uid()
         bearer = "Bearer %s" % token
 
         class HttpEndpointListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 event = json.loads(to_str(data))
-                events.append(event)
-                paths_list.append(path)
-                auth = headers.get("Api") or headers.get("Authorization")
-                if auth not in headers_list:
-                    headers_list.append(auth)
+                data_received.update(event)
 
-                if headers.get("target_header"):
-                    headers_list.append(headers.get("target_header"))
+                request_split = extract_query_string_params(path)
+                paths_list.append(request_split[0])
+                query_params_received.update(request_split[1])
+
+                auth = headers.get("Authorization", "")
+                if "Bearer" in auth and "Authorization" in headers_received:
+                    headers.pop("Authorization")
+                    headers.update({"Oauth_token": auth})
+                headers_received.update(headers)
 
                 if "client_id" in event:
                     oauth_data.update(
@@ -640,9 +643,10 @@ class TestEvents:
                     }
                 )
 
-        events = []
+        data_received = {}
+        query_params_received = {}
         paths_list = []
-        headers_list = []
+        headers_received = {}
         oauth_data = {}
 
         local_port = get_free_tcp_port()
@@ -686,13 +690,23 @@ class TestEvents:
                     auth.get("key"): auth.get("parameters"),
                     "InvocationHttpParameters": {
                         "BodyParameters": [
-                            {"Key": "key", "Value": "value", "IsValueSecret": False}
+                            {"Key": "key", "Value": "value", "IsValueSecret": False},
                         ],
                         "HeaderParameters": [
-                            {"Key": "key", "Value": "value", "IsValueSecret": False}
+                            {"Key": "key", "Value": "value", "IsValueSecret": False},
+                            {
+                                "Key": "overwritten_header",
+                                "Value": "original",
+                                "IsValueSecret": False,
+                            },
                         ],
                         "QueryStringParameters": [
-                            {"Key": "key", "Value": "value", "IsValueSecret": False}
+                            {"Key": "key", "Value": "value", "IsValueSecret": False},
+                            {
+                                "Key": "overwritten_query",
+                                "Value": "original",
+                                "IsValueSecret": False,
+                            },
                         ],
                     },
                 },
@@ -721,8 +735,14 @@ class TestEvents:
                         "Input": '{"target_value":"value"}',
                         "HttpParameters": {
                             "PathParameterValues": ["target_path"],
-                            "HeaderParameters": {"target_header": "target_header_value"},
-                            "QueryStringParameters": {"target_query": "t_query"},
+                            "HeaderParameters": {
+                                "target_header": "target_header_value",
+                                "overwritten_header": "changed",
+                            },
+                            "QueryStringParameters": {
+                                "target_query": "t_query",
+                                "overwritten_query": "changed",
+                            },
                         },
                     }
                 ],
@@ -743,27 +763,27 @@ class TestEvents:
             self.cleanup(rule_name=rule_name, target_ids=target_id)
 
         # assert that all events have been received in the HTTP server listener
+        user_pass = to_str(base64.b64encode(b"user:pass"))
 
         def check():
-            assert len(events) >= len(auth_types)
-            assert "key" in paths_list[0] and "value" in paths_list[0]
-            assert "target_query" in paths_list[0] and "t_query" in paths_list[0]
-            assert "target_path" in paths_list[0]
-            assert events[0].get("key") == "value"
-            assert events[0].get("target_value") == "value"
+            assert data_received.get("key") == "value"
+            assert data_received.get("target_value") == "value"
+            assert "/target_path" in paths_list
 
             assert oauth_data.get("client_id") == "id"
             assert oauth_data.get("client_secret") == "password"
             assert oauth_data.get("header_value") == "value2"
             assert oauth_data.get("body_value") == "value1"
-            assert "oauthquery" in oauth_data.get("path")
-            assert "value3" in oauth_data.get("path")
+            assert "oauthquery=value3" in oauth_data.get("path")
 
-            user_pass = to_str(base64.b64encode(b"user:pass"))
-            assert f"Basic {user_pass}" in headers_list
-            assert "apikey_secret" in headers_list
-            assert bearer in headers_list
-            assert "target_header_value" in headers_list
+            assert headers_received.get("Api") == "apikey_secret"
+            assert headers_received.get("Authorization") == f"Basic {user_pass}"
+            assert headers_received.get("Oauth_token") == bearer
+            assert headers_received.get("Target_Header") == "target_header_value"
+
+            # overwrite test
+            assert headers_received.get("Overwritten_Header") == "original"
+            assert query_params_received.get("overwritten_query") == "original"
 
         retry(check, sleep=0.5, retries=5)
 

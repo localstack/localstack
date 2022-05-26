@@ -7,6 +7,7 @@ from typing import Dict, Optional
 
 from moto.events.models import events_backends as moto_events_backends
 
+from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.services.awslambda.lambda_executors import InvocationException, InvocationResult
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_stack import (
@@ -247,7 +248,7 @@ def send_event_to_api_destination(target_arn, event, http_parameters: Optional[D
 
     endpoint = add_api_destination_authorization(destination, headers, event)
     if http_parameters:
-        endpoint = add_http_parameters(http_parameters, endpoint, headers, event)
+        endpoint = add_target_http_parameters(http_parameters, endpoint, headers, event)
 
     result = requests.request(
         method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
@@ -291,8 +292,18 @@ def add_api_destination_authorization(destination, headers, event):
     return endpoint
 
 
-def add_http_parameters(http_parameters: Dict, endpoint: str, headers: Dict, body):
-    headers.update(http_parameters.get("HeaderParameters", {}))
+def add_target_http_parameters(http_parameters: Dict, endpoint: str, headers: Dict, body):
     endpoint = add_path_parameters_to_url(endpoint, http_parameters.get("PathParameterValues", []))
-    endpoint = add_query_params_to_url(endpoint, http_parameters.get("QueryStringParameters", {}))
+
+    # The request should prioritze connection header/query parameters over target params if there is an overlap
+    query_params = http_parameters.get("QueryStringParameters", {})
+    prev_query_params = extract_query_string_params(endpoint)[1]
+    query_params.update(prev_query_params)
+    endpoint = add_query_params_to_url(endpoint, query_params)
+
+    target_headers = http_parameters.get("HeaderParameters", {})
+    for target_header in target_headers.keys():
+        if target_header not in headers:
+            headers.update({target_header: target_headers.get(target_header)})
+
     return endpoint
