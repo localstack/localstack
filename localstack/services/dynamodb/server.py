@@ -104,6 +104,7 @@ def create_dynamodb_server(
     """
     port = port or get_free_tcp_port()
     server = DynamodbServer(port)
+    db_path = f"{config.dirs.data}/dynamodb" if not db_path and config.dirs.data else db_path
     if db_path:
         if clean_db_path:
             rm_rf(db_path)
