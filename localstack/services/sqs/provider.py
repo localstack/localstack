@@ -161,6 +161,8 @@ class SqsMessage:
     visibility_timeout: int
     receive_times: int
     receipt_handles: Set[str]
+    last_received: Optional[float]
+    first_received: Optional[float]
     deleted: bool
     priority: float
     message_deduplication_id: str
@@ -442,7 +444,7 @@ class SqsQueue:
             ] = str(standard_message.receive_times)
             copied_message.message["Attributes"][
                 MessageSystemAttributeName.ApproximateFirstReceiveTimestamp
-            ] = standard_message.first_received
+            ] = str(int(standard_message.first_received * 1000))
             copied_message.message["ReceiptHandle"] = receipt_handle
 
             return copied_message
@@ -1287,7 +1289,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> Dict[MessageSystemAttributeName, str]:
         result: Dict[MessageSystemAttributeName, str] = {
             MessageSystemAttributeName.SenderId: context.account_id,  # not the account ID in AWS
-            MessageSystemAttributeName.SentTimestamp: str(now()),
+            MessageSystemAttributeName.SentTimestamp: str(now(millis=True)),
         }
 
         if message_system_attributes is not None:

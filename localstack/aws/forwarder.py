@@ -56,7 +56,9 @@ def _wrap_with_fallthrough(
             # implemented, we try to fall back to forwarding the request to the backend
             return handler(context, req)
         except NotImplementedError:
-            return fallthrough_handler(context, req)
+            pass
+
+        return fallthrough_handler(context, req)
 
     return _call
 
