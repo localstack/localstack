@@ -19,6 +19,7 @@ from localstack.aws.api.apigateway import (
     DocumentationPart,
     DocumentationPartLocation,
     DocumentationParts,
+    ExportResponse,
     GetDocumentationPartsRequest,
     ListOfPatchOperation,
     ListOfString,
@@ -36,7 +37,7 @@ from localstack.aws.api.apigateway import (
 )
 from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.proxy import AwsApiListener
-from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
@@ -44,6 +45,7 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_USER_REQUEST,
     APIGatewayRegion,
+    OpenApiExporter,
     apply_json_patch_safe,
     find_api_subentity_by_id,
 )
@@ -74,35 +76,37 @@ class ApigatewayApiListener(AwsApiListener):
                 return result
 
         if helpers.is_test_invoke_method(method, path):
-            # if call is from test_invoke_api then use http_method to find the integration,
-            #   as test_invoke_api makes a POST call to request the test invocation
-            match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
-            invocation_context.method = match[3]
-            data = parse_json_or_yaml(to_str(data or b""))
-            if data:
-                orig_data = data
-                path_with_query_string = orig_data.get("pathWithQueryString", None)
-                if path_with_query_string:
-                    invocation_context.path_with_query_string = path_with_query_string
-                invocation_context.data = data.get("body")
-                invocation_context.headers = orig_data.get("headers", {})
-            result = invoke_rest_api_from_request(invocation_context)
-            result = {
-                "status": result.status_code,
-                "body": to_str(result.content),
-                "headers": dict(result.headers),
-            }
-            return result
-
+            return self._handle_test_invoke_method(invocation_context)
         return super().forward_request(method, path, data, headers)
+
+    def _handle_test_invoke_method(self, invocation_context):
+        # if call is from test_invoke_api then use http_method to find the integration,
+        #   as test_invoke_api makes a POST call to request the test invocation
+        match = re.match(PATH_REGEX_TEST_INVOKE_API, invocation_context.path)
+        invocation_context.method = match[3]
+        if data := parse_json_or_yaml(to_str(invocation_context.data or b"")):
+            orig_data = data
+            if path_with_query_string := orig_data.get("pathWithQueryString", None):
+                invocation_context.path_with_query_string = path_with_query_string
+            invocation_context.data = data.get("body")
+            invocation_context.headers = orig_data.get("headers", {})
+        result = invoke_rest_api_from_request(invocation_context)
+        result = {
+            "status": result.status_code,
+            "body": to_str(result.content),
+            "headers": dict(result.headers),
+        }
+        return result
 
     def return_response(self, method, path, data, headers, response):
         # TODO: clean up logic below!
 
         # fix backend issue (missing support for API documentation)
-        if re.match(r"/restapis/[^/]+/documentation/versions", path):
-            if response.status_code == 404:
-                return requests_response({"position": "1", "items": []})
+        if (
+            re.match(r"/restapis/[^/]+/documentation/versions", path)
+            and response.status_code == 404
+        ):
+            return requests_response({"position": "1", "items": []})
 
         # keep track of API regions for faster lookup later on
         # TODO - to be removed - see comment for API_REGIONS variable
@@ -674,6 +678,26 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             call_moto(context)
         except Exception as e:
             raise NotFoundException("Invalid Resource identifier specified") from e
+
+    def get_export(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        stage_name: String,
+        export_type: String,
+        parameters: MapOfStringToString = None,
+        accepts: String = None,
+    ) -> ExportResponse:
+
+        openapi_exporter = OpenApiExporter()
+        result = openapi_exporter.export_api(
+            api_id=rest_api_id, stage=stage_name, export_type=export_type, export_format=accepts
+        )
+
+        if accepts == APPLICATION_JSON:
+            result = json.dumps(result, indent=2)
+
+        return ExportResponse(contentType=accepts, body=result)
 
 
 # ---------------

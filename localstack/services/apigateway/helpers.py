@@ -4,10 +4,11 @@ import json
 import logging
 import re
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse as urlparse
 
 import pytz
+from apispec import APISpec
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
@@ -32,6 +33,7 @@ from localstack.utils.aws.aws_responses import requests_error_response_json, req
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.strings import long_uid
+from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
 
@@ -279,8 +281,7 @@ def get_gateway_responses(api_id):
 def get_gateway_response(api_id, response_type):
     region_details = APIGatewayRegion.get()
     responses = region_details.gateway_responses.get(api_id, [])
-    result = [r for r in responses if r["responseType"] == response_type]
-    if result:
+    if result := [r for r in responses if r["responseType"] == response_type]:
         return result[0]
     return make_error_response(
         "Gateway response %s for API Gateway %s not found" % (response_type, api_id),
@@ -291,8 +292,7 @@ def get_gateway_response(api_id, response_type):
 def put_gateway_response(api_id, response_type, data):
     region_details = APIGatewayRegion.get()
     responses = region_details.gateway_responses.setdefault(api_id, [])
-    existing = ([r for r in responses if r["responseType"] == response_type] or [None])[0]
-    if existing:
+    if existing := ([r for r in responses if r["responseType"] == response_type] or [None])[0]:
         existing.update(data)
     else:
         data["responseType"] = response_type
@@ -319,8 +319,7 @@ def update_gateway_response(api_id, response_type, data):
             "Gateway response %s for API Gateway %s not found" % (response_type, api_id),
             code=404,
         )
-    result = apply_json_patch_safe(existing, data["patchOperations"])
-    return result
+    return apply_json_patch_safe(existing, data["patchOperations"])
 
 
 def handle_gateway_responses(method, path, data, headers):
@@ -350,8 +349,7 @@ def handle_gateway_responses(method, path, data, headers):
 def find_api_subentity_by_id(api_id, entity_id, map_name):
     region_details = APIGatewayRegion.get()
     auth_list = getattr(region_details, map_name).get(api_id) or []
-    entity = ([a for a in auth_list if a["id"] == entity_id] or [None])[0]
-    return entity
+    return ([a for a in auth_list if a["id"] == entity_id] or [None])[0]
 
 
 def path_based_url(api_id, stage_name, path):
@@ -694,7 +692,6 @@ def import_api_from_openapi_spec(
                     response_model,
                     response_parameters,
                 )
-
             integration = apigateway_models.Integration(
                 http_method=method,
                 uri=method_integration.get("uri"),
@@ -894,5 +891,82 @@ def set_api_id_stage_invocation_path(
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     """Extract API ID 'id123' from URLs like https://id123.execute-api.localhost.localstack.cloud:4566"""
     match = re.match(HOST_REGEX_EXECUTE_API, hostname)
-    api_id = match.group(1)
-    return api_id
+    return match.group(1)
+
+
+# TODO:
+# - handle extensions
+#
+
+TypeExporter = Callable[[str, str, str], str]
+
+
+class OpenApiExporter:
+    SWAGGER_VERSION = "2.0"
+    OPENAPI_VERSION = "3.0.1"
+
+    exporters: Dict[str, TypeExporter]
+
+    def __init__(self):
+        self.exporters = {"swagger": self._swagger_export, "oas3": self._oas3_export}
+        self.export_formats = {"application/json": "to_dict", "application/yaml": "to_yaml"}
+
+    def export_api(
+        self, api_id: str, stage: str, export_type: str, export_format: str = "application/json"
+    ) -> str:
+        return self.exporters.get(export_type)(api_id, stage, export_format)
+
+    @classmethod
+    def _add_paths(cls, spec, resources):
+        for item in resources.get("items"):
+            path = item.get("path")
+            for method, method_config in item.get("resourceMethods").items():
+                method = method.lower()
+                integration_responses = (
+                    method_config.get("methodIntegration", {})
+                    .get("integrationResponses", {})
+                    .keys()
+                )
+                responses = dict.fromkeys(integration_responses, {})
+                spec.path(path=path, operations={method: {"responses": responses}})
+
+    def _swagger_export(self, api_id: str, stage: str, export_format: str) -> str:
+        """
+        https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md
+        """
+        apigateway_client = aws_stack.connect_to_service("apigateway")
+
+        rest_api = apigateway_client.get_rest_api(restApiId=api_id)
+        resources = apigateway_client.get_resources(restApiId=api_id)
+
+        spec = APISpec(
+            title=rest_api.get("name"),
+            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
+            info=dict(description=rest_api.get("description")),
+            openapi_version=self.SWAGGER_VERSION,
+            basePath=f"/{stage}",
+        )
+
+        self._add_paths(spec, resources)
+
+        return getattr(spec, self.export_formats.get(export_format))()
+
+    def _oas3_export(self, api_id: str, stage: str, export_format: str) -> str:
+        """
+        https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md
+        """
+        apigateway_client = aws_stack.connect_to_service("apigateway")
+
+        rest_api = apigateway_client.get_rest_api(restApiId=api_id)
+        resources = apigateway_client.get_resources(restApiId=api_id)
+
+        spec = APISpec(
+            title=rest_api.get("name"),
+            version=timestamp(rest_api.get("createdDate"), format=TIMESTAMP_FORMAT_TZ),
+            info=dict(description=rest_api.get("description")),
+            openapi_version=self.OPENAPI_VERSION,
+        )
+
+        self._add_paths(spec, resources)
+
+        return getattr(spec, self.export_formats.get(export_format))()
