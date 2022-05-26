@@ -68,7 +68,9 @@ class TestSSM:
     # TODO: botocore.exceptions.ClientError: An error occurred (ValidationException) when calling the GetParameter operation: WithDecryption flag must be True for retrieving a Secret Manager secret.
     def test_get_inexistent_secret(self, ssm_client):
         with pytest.raises(ssm_client.exceptions.ParameterNotFound):
-            ssm_client.get_parameter(Name="/aws/reference/secretsmanager/inexistent")
+            ssm_client.get_parameter(
+                Name="/aws/reference/secretsmanager/inexistent", WithDecryption=True
+            )
 
     # TODO: AssertionError: assert '/aws/reference/secretsmanager/9763a545_test_secret_params' in ['inexistent_param', '/aws/reference/secretsmanager/inexistent_secret']
     def test_get_parameters_and_secrets(
