@@ -133,14 +133,6 @@ class ServiceLifecycleHook:
         pass
 
 
-class StateLifecycle:
-    def retrieve_state(self):
-        pass
-
-    def inject_state(self, state):
-        pass
-
-
 class BackendStateLifecycle(abc.ABC):
     """
     Interface that supports the retrieval, injection and restore of the backend for services.
@@ -148,15 +140,15 @@ class BackendStateLifecycle(abc.ABC):
 
     @abc.abstractmethod
     def retrieve_state(self, **kwargs):
-        """Retrieves a backend for an account, region and service"""
+        """Retrieves the backend of a service"""
 
     @abc.abstractmethod
     def inject_state(self, **kwargs):
-        """Injects a backend for an account, region and service"""
+        """Injects a backend for a service"""
 
     @abc.abstractmethod
     def reset_state(self):
-        """Resets a backend for an account, region and service"""
+        """Resets a backend for a service"""
 
     @abc.abstractmethod
     def on_after_reset(self):
