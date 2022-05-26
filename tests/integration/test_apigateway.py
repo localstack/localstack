@@ -1789,7 +1789,7 @@ def test_import_swagger_api(apigateway_client):
         }
     }
 
-    assert resource_methods.get("pets").get("GET").method_responses == {
+    assert resource_methods.get("pets").get("GET")["methodResponses"] == {
         "200": {
             "responseModels": {
                 "application/json": {
