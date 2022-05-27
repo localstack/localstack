@@ -85,6 +85,7 @@ def handler(event, context):
         return {
             "body": body,
             "statusCode": status_code,
+            "isBase64Encoded": is_base_64_encoded,
             "headers": headers,
             "multiValueHeaders": {"set-cookie": ["language=en-US", "theme=blue moon"]},
             **base64_response,

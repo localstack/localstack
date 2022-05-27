@@ -112,6 +112,9 @@ TEST_LAMBDA_FUNCTION_PREFIX = "lambda-function"
 
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
 
+TEST_LAMBDA_JS_APIGW_INTEGRATION = os.path.join(THIS_FOLDER, "functions/apigw_integration.js")
+TEST_LAMBDA_JS_APIGW_502 = os.path.join(THIS_FOLDER, "functions/apigw_502.js")
+
 TEST_LAMBDA_LIBS = [
     "requests",
     "psutil",
