@@ -1257,6 +1257,7 @@ class TestEvents:
     @pytest.mark.parametrize(
         "schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"]
     )
+    @pytest.mark.aws_validated
     @pytest.mark.xfail
     def test_create_rule_with_one_unit_in_plural_should_fail(
         self, events_client, schedule_expression
@@ -1267,6 +1268,7 @@ class TestEvents:
         with pytest.raises(ClientError):
             events_client.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
 
+    @pytest.mark.aws_validated
     @pytest.mark.xfail
     def test_verify_rule_event_content(self, events_client, logs_client):
         log_group_name = f"/aws/events/testLogGroup-{short_uid()}"
