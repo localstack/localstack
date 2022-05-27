@@ -565,7 +565,6 @@ class TestAPIGateway:
         integration_keys = [
             "httpMethod",
             "type",
-            "passthroughBehavior",
             "cacheKeyParameters",
             "uri",
             "cacheNamespace",
@@ -1782,7 +1781,7 @@ def test_import_swagger_api(apigateway_client):
     methods = {kk[0] for k, v in resource_methods.items() for kk in v.items()}
     assert methods == {"POST", "OPTIONS", "GET"}
 
-    assert resource_methods.get("/").get("GET").method_responses == {
+    assert resource_methods.get("/").get("GET")["methodResponses"] == {
         "200": {
             "statusCode": "200",
             "responseModels": None,
@@ -1790,7 +1789,7 @@ def test_import_swagger_api(apigateway_client):
         }
     }
 
-    assert resource_methods.get("pets").get("GET").method_responses == {
+    assert resource_methods.get("pets").get("GET")["methodResponses"] == {
         "200": {
             "responseModels": {
                 "application/json": {
