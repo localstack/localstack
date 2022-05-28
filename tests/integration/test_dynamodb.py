@@ -958,6 +958,7 @@ class TestDynamoDB:
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             Tags=TEST_DDB_TAGS,
         )
+        binary_item = {"B": b"foobar"}
         response = dynamodb.transact_write_items(
             TransactItems=[
                 {
@@ -965,13 +966,16 @@ class TestDynamoDB:
                         "TableName": table_name,
                         "Item": {
                             "id": {"S": "someUser"},
-                            "binaryData": {"B": b"foobar"},
+                            "binaryData": binary_item,
                         },
                     }
                 }
             ]
         )
+        item = dynamodb.get_item(TableName=table_name, Key={"id": {"S": "someUser"}})["Item"]
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert item["binaryData"]
+        assert item["binaryData"] == binary_item
 
         # clean up
         dynamodb.delete_table(TableName=table_name)
