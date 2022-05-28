@@ -100,7 +100,7 @@ class KinesisMockServer(Server):
         LOG.info(line.rstrip())
 
 
-def create_kinesis_mock_server(port=None) -> KinesisMockServer:
+def create_kinesis_mock_server(port=None, persist_path: Optional[str] = None) -> KinesisMockServer:
     """
     Creates a new Kinesis Mock server instance. Installs Kinesis Mock on the host first if necessary.
     Introspects on the host config to determine server configuration:
@@ -113,11 +113,11 @@ def create_kinesis_mock_server(port=None) -> KinesisMockServer:
     is_kinesis_mock_installed, kinesis_mock_bin_path = install.get_is_kinesis_mock_installed()
     if not is_kinesis_mock_installed:
         install.install_kinesis_mock(kinesis_mock_bin_path)
-    if config.dirs.data:
-        kinesis_data_dir = "%s/kinesis" % config.dirs.data
-        mkdir(kinesis_data_dir)
-    else:
-        kinesis_data_dir = None
+    persist_path = (
+        f"{config.dirs.data}/kinesis" if not persist_path and config.dirs.data else persist_path
+    )
+    if persist_path:
+        mkdir(persist_path)
 
     if config.LS_LOG:
         if config.LS_LOG == "warning":
@@ -138,6 +138,6 @@ def create_kinesis_mock_server(port=None) -> KinesisMockServer:
         log_level=log_level,
         latency=latency,
         initialize_streams=initialize_streams,
-        data_dir=kinesis_data_dir,
+        data_dir=persist_path,
     )
     return server
