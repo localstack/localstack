@@ -948,6 +948,38 @@ class TestDynamoDB:
         # clean up
         dynamodb.delete_table(TableName=table_name)
 
+    def test_transaction_write_binary_data(self):
+        table_name = "test-ddb-table-%s" % short_uid()
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            Tags=TEST_DDB_TAGS,
+        )
+        binary_item = {"B": b"foobar"}
+        response = dynamodb.transact_write_items(
+            TransactItems=[
+                {
+                    "Put": {
+                        "TableName": table_name,
+                        "Item": {
+                            "id": {"S": "someUser"},
+                            "binaryData": binary_item,
+                        },
+                    }
+                }
+            ]
+        )
+        item = dynamodb.get_item(TableName=table_name, Key={"id": {"S": "someUser"}})["Item"]
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert item["binaryData"]
+        assert item["binaryData"] == binary_item
+
+        # clean up
+        dynamodb.delete_table(TableName=table_name)
+
     def test_transact_get_items(self, dynamodb_client):
         table_name = "test-ddb-table-%s" % short_uid()
         dynamodb_client.create_table(
