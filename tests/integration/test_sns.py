@@ -3,6 +3,7 @@ import json
 import queue
 import random
 import time
+from functools import partial
 
 import pytest
 import requests
@@ -45,6 +46,18 @@ TEST_TOPIC_NAME_2 = "topic-test-2"
 
 PUBLICATION_TIMEOUT = 0.500
 PUBLICATION_RETRIES = 4
+
+
+def get_queue_arn(sqs_client, queue_url: str) -> str:
+    """
+    Returns the given Queue's ARN. Expects the Queue to exist.
+
+    :param sqs_client: the boto3 client
+    :param queue_url: the queue URL
+    :return: the QueueARN
+    """
+    response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
+    return response["Attributes"]["QueueArn"]
 
 
 class TestSNSSubscription:
@@ -770,6 +783,50 @@ class TestSNSProvider:
         message = json.loads(response["Messages"][0]["Body"])
         assert message["Type"] == "Notification"
         assert json.loads(message["Message"])["message"] == "test_redrive_policy"
+
+    def test_dlq_receives_multiple_messages(
+        self, sqs_client, sns_client, sqs_create_queue, sns_create_topic, sns_subscription
+    ):
+        target_queue_name = f"target-{short_uid()}"
+        dlq_name = f"dlq-{short_uid()}"
+
+        dlq_url = sqs_create_queue(QueueName=dlq_name)
+        dlq_arn = get_queue_arn(sqs_client, dlq_url)
+
+        target_queue_url = sqs_create_queue(QueueName=target_queue_name)
+        target_target_arn = get_queue_arn(sqs_client, target_queue_url)
+
+        sns_topic_arn = sns_create_topic()["TopicArn"]
+        subscription = sns_subscription(
+            TopicArn=sns_topic_arn,
+            Protocol="sqs",
+            Endpoint=target_target_arn,
+        )
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"],
+            AttributeName="RedrivePolicy",
+            AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
+        )
+        sns_client.publish(
+            TopicArn=sns_topic_arn, Message=json.dumps({"message": "target_message"})
+        )
+
+        def receive_message(url, msg):
+            result = sqs_client.receive_message(QueueUrl=url, MessageAttributeNames=["All"])
+            assert len(result["Messages"]) > 0
+            msg_received = json.loads(result["Messages"][0]["Body"])["Message"][0]
+            msg_received = json.loads(msg_received)["message"]
+            assert msg == msg_received
+
+        retry(partial(receive_message, target_queue_url, "target_message"), retries=10, sleep=2)
+
+        sqs_client.delete_queue(QueueUrl=target_queue_url)
+
+        sns_client.publish(TopicArn=sns_topic_arn, Message=json.dumps({"message": "dlq_message_1"}))
+        retry(partial(receive_message, dlq_url, "dlq_message_1"), retries=10, sleep=2)
+        sns_client.publish(TopicArn=sns_topic_arn, Message=json.dumps({"message": "dlq_message_2"}))
+        retry(partial(receive_message, dlq_url, "dlq_message_2"), retries=10, sleep=2)
 
     def test_publish_with_empty_subject(self, sns_client, sns_create_topic):
         topic_arn = sns_create_topic()["TopicArn"]
