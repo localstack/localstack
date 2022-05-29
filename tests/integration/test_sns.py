@@ -787,12 +787,11 @@ class TestSNSProvider:
     def test_dlq_receives_multiple_messages(
         self, sqs_client, sns_client, sqs_create_queue, sns_create_topic, sns_subscription
     ):
-        target_queue_name = f"target-{short_uid()}"
         dlq_name = f"dlq-{short_uid()}"
-
         dlq_url = sqs_create_queue(QueueName=dlq_name)
         dlq_arn = get_queue_arn(sqs_client, dlq_url)
 
+        target_queue_name = f"target-{short_uid()}"
         target_queue_url = sqs_create_queue(QueueName=target_queue_name)
         target_target_arn = get_queue_arn(sqs_client, target_queue_url)
 
@@ -812,10 +811,12 @@ class TestSNSProvider:
             TopicArn=sns_topic_arn, Message=json.dumps({"message": "target_message"})
         )
 
-        def receive_message(url, msg):
+        def receive_message(url, msg, is_msg_list=False):
             result = sqs_client.receive_message(QueueUrl=url, MessageAttributeNames=["All"])
             assert len(result["Messages"]) > 0
-            msg_received = json.loads(result["Messages"][0]["Body"])["Message"][0]
+            msg_received = json.loads(result["Messages"][0]["Body"])["Message"]
+            if is_msg_list:
+                msg_received = msg_received[0]
             msg_received = json.loads(msg_received)["message"]
             assert msg == msg_received
 
@@ -824,9 +825,9 @@ class TestSNSProvider:
         sqs_client.delete_queue(QueueUrl=target_queue_url)
 
         sns_client.publish(TopicArn=sns_topic_arn, Message=json.dumps({"message": "dlq_message_1"}))
-        retry(partial(receive_message, dlq_url, "dlq_message_1"), retries=10, sleep=2)
+        retry(partial(receive_message, dlq_url, "dlq_message_1", True), retries=10, sleep=2)
         sns_client.publish(TopicArn=sns_topic_arn, Message=json.dumps({"message": "dlq_message_2"}))
-        retry(partial(receive_message, dlq_url, "dlq_message_2"), retries=10, sleep=2)
+        retry(partial(receive_message, dlq_url, "dlq_message_2", True), retries=10, sleep=2)
 
     def test_publish_with_empty_subject(self, sns_client, sns_create_topic):
         topic_arn = sns_create_topic()["TopicArn"]

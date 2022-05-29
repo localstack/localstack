@@ -846,7 +846,9 @@ async def message_to_subscriber(
                     queue_url,
                     topic_arn,
                 )
-                subscriptions.remove(subscriber)
+                # TODO: Try and understand why this is done.
+                # But this fixes #5459
+                # subscriptions.remove(subscriber)
         return
 
     elif subscriber["Protocol"] == "lambda":
