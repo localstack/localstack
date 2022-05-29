@@ -1,6 +1,4 @@
 """A version of the API Gateway provider that uses ASF constructs to dispatch user routes."""
-import json
-import re
 from collections import defaultdict
 from typing import Dict, List
 
@@ -17,7 +15,6 @@ from localstack.aws.api.apigateway import (
     TestInvokeMethodResponse,
 )
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
-from localstack.aws.proxy import AwsApiListener
 from localstack.aws.spec import load_service
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
@@ -26,30 +23,9 @@ from localstack.services.apigateway.helpers import API_REGIONS
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.provider import ApigatewayProvider
 from localstack.services.edge import ROUTER
-from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import LambdaResponse, requests_response
+from localstack.utils.aws.aws_responses import LambdaResponse
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import to_str
-
-
-class AsfApigatewayApiListener(AwsApiListener):
-    def return_response(self, method, path, data, headers, response):
-        # TODO: clean up logic below!
-
-        # fix backend issue (missing support for API documentation)
-        if (
-            re.match(r"/restapis/[^/]+/documentation/versions", path)
-            and response.status_code == 404
-        ):
-            return requests_response({"position": "1", "items": []})
-
-        # keep track of API regions for faster lookup later on
-        # TODO - to be removed - see comment for API_REGIONS variable
-        if method == "POST" and path == "/restapis":
-            content = json.loads(to_str(response.content))
-            api_id = content["id"]
-            region = aws_stack.extract_region_from_auth_header(headers)
-            API_REGIONS[api_id] = region
 
 
 def to_invocation_context(request: Request) -> ApiInvocationContext:
@@ -174,7 +150,8 @@ class AsfApigatewayProvider(ApigatewayProvider):
         self.router = router or ApigatewayRouter(router=ROUTER)
 
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
-        result = super().create_rest_api(context, request)
+        result: RestApi = super().create_rest_api(context, request)
+        API_REGIONS[result["id"]] = context.region
         self.router.add_rest_api(result)
         return result
 
