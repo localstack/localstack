@@ -4,7 +4,6 @@ import re
 from collections import defaultdict
 from typing import Dict, List
 
-from requests.structures import CaseInsensitiveDict
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Rule
@@ -63,18 +62,11 @@ def to_invocation_context(request: Request) -> ApiInvocationContext:
     # FIXME: ApiInvocationContext should be refactored to use werkzeug request object correctly
     method = request.method
     path = request.full_path if request.query_string else request.path
+    # not using request.data here is critical to make sure we do not consume form data
     data = request.get_data(cache=True) or b""
     headers = Headers(request.headers)
 
-    if "X-Forwarded-For" in headers:
-        headers["X-Forwarded-For"] = headers["X-Forwarded-For"] + ", " + request.server[0]
-    else:
-        headers["X-Forwarded-For"] = request.remote_addr + ", " + request.server[0]
-
-    # this is for compatibility with the lower layers of apigw and lambda that make assumptions about header casing
-    headers = CaseInsensitiveDict(
-        {k.title(): ", ".join(headers.getlist(k)) for k in set(headers.keys())}
-    )
+    # TODO: here will have to be a compatibility layer for the ASF gateway
 
     return ApiInvocationContext(
         method,
