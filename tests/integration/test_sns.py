@@ -1602,3 +1602,54 @@ class TestSNSProvider:
             response["Messages"][0]["Body"] = received_message
 
             snapshot.match("json_encoded_delivery", response)
+
+    def test_message_attributes_not_missing(
+        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue
+    ):
+        queue_name = f"queue-{short_uid()}"
+        topic_name = f"topic-{short_uid()}"
+
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        topic = sns_create_topic(Name=topic_name)
+
+        queue_arn = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+
+        policy = {
+            "Id": f"policy-{short_uid()}",
+            "Statement": [
+                {
+                    "Action": ["sqs:SendMessage", "sqs:ReceiveMessage"],
+                    "Effect": "Allow",
+                    "Principal": {"Service": "sns.amazonaws.com"},
+                    "Resource": queue_arn,
+                }
+            ],
+            "Version": "2012-10-17",
+        }
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
+        )
+        sub = sns_client.subscribe(
+            TopicArn=topic["TopicArn"],
+            Protocol="sqs",
+            Attributes={"RawMessageDelivery": "true"},
+            Endpoint=queue_arn,
+        )
+        assert sub["SubscriptionArn"]
+        publish_response = sns_client.publish(
+            TopicArn=topic["TopicArn"],
+            Message="text",
+            MessageAttributes={
+                "an-attribute-key": {"DataType": "String", "StringValue": "an-attribute-value"}
+            },
+        )
+        assert publish_response["MessageId"]
+        msg = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            AttributeNames=["All"],
+            MessageAttributeNames=["All"],
+            WaitTimeSeconds=1,
+        )
+        assert "an-attribute-key" in msg["Messages"][0]["MessageAttributes"]
