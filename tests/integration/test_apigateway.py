@@ -5,7 +5,6 @@ import os
 import re
 from collections import namedtuple
 from typing import Callable, Optional
-from unittest.mock import patch
 
 import pytest
 import xmltodict
@@ -269,12 +268,10 @@ class TestAPIGateway:
         assert 1 == len(messages)
         assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
 
-    def test_api_gateway_http_integrations(self):
-        self.run_api_gateway_http_integration("custom")
-        self.run_api_gateway_http_integration("proxy")
+    @pytest.mark.parametrize("int_type", ["custom", "proxy"])
+    def test_api_gateway_http_integrations(self, int_type, monkeypatch):
+        monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_APIGATEWAY", False)
 
-    @patch.object(config, "DISABLE_CUSTOM_CORS_APIGATEWAY", False)
-    def run_api_gateway_http_integration(self, int_type):
         test_port = get_free_tcp_port()
         backend_url = "http://localhost:%s%s" % (test_port, self.API_PATH_HTTP_BACKEND)
 
