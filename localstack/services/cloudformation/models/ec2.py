@@ -117,7 +117,7 @@ class EC2InternetGateway(GenericBaseModel):
         return {
             "create": {
                 "function": "create_internet_gateway",
-                "parameters": get_tags_param("internet-gateway"),
+                "parameters": {"TagSpecifications": get_tags_param("internet-gateway")},
             }
         }
 
