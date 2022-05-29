@@ -205,7 +205,7 @@ class Ec2Provider(Ec2Api, ABC):
         try:
             return call_moto(context)
         except Exception as e:
-            if not isinstance(e, ResponseParserError) and not "InvalidParameterValue" in str(e):
+            if not isinstance(e, ResponseParserError) and "InvalidParameterValue" not in str(e):
                 raise
             # fix setting subnet attributes currently not supported upstream
             backend = ec2_backends[context.region]
