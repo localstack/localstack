@@ -1,7 +1,7 @@
 import pytest
 
 from localstack.testing.snapshots import SnapshotSession
-from localstack.testing.snapshots.transformer import KeyValueBasedReferenceTransformer
+from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 
 
 class TestSnapshotManager:
@@ -9,14 +9,14 @@ class TestSnapshotManager:
         sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
         sm.recorded_state = {"key_a": {"a": 3}}
         sm.match("key_a", {"a": 3})
-        sm.assert_all()
+        sm._assert_all()
 
     def test_simple_diff_change(self):
         sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
         sm.recorded_state = {"key_a": {"a": 3}}
         sm.match("key_a", {"a": 5})
         with pytest.raises(Exception) as ctx:
-            sm.assert_all()
+            sm._assert_all()
         ctx.match("Parity snapshot failed")
 
     def test_multiple_assertmatch_with_same_key_fail(self):
@@ -30,38 +30,8 @@ class TestSnapshotManager:
     def test_context_replacement(self):
         sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
         sm.add_transformer(
-            KeyValueBasedReferenceTransformer(
-                lambda k, v: v if k == "aaa" else None, replacement="A"
-            )
+            KeyValueBasedTransformer(lambda k, v: v if k == "aaa" else None, replacement="A")
         )
         sm.recorded_state = {"key_a": {"aaa": "<A:1>", "bbb": "<A:1> hello"}}
         sm.match("key_a", {"aaa": "something", "bbb": "something hello"})
-        sm.assert_all()
-
-    # def test_custom_replacer(self):
-    #     sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
-    #     sm.replace_jsonpath_value("$..b", "hello world!")
-    #     sm.recorded_state = {"key_a": {"a": "hello world", "b": "<hello-world>"}}
-    #     assert sm.match("key_a", {"a": "hello world", "b": "hello world!"})
-    #
-    # def test_example(self):
-    #     sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
-    #     basepath = "/Users/stefanie/repos/localstack/tests/integration/sample-snapshots/1"
-    #     for subdir, dirs, files in os.walk(basepath):
-    #         for file in files:
-    #             filepath_1 = subdir + os.sep + file
-    #             filepath_2 = subdir.replace("1", "2") + os.sep + file
-    #             # print(f"{filepath_1} - {filepath_2}")
-    #             with open(filepath_1) as file1:
-    #                 with open(filepath_2) as file2:
-    #                     print(f"testing: {file}")
-    #                     if file.endswith(".json"):
-    #                         data1 = json.load(file1)
-    #                         data2 = json.load(file2)
-    #                     else:
-    #                         data1 = {"fileContent": file1.readlines()}
-    #                         data2 = {"fileContent": file2.readlines()}
-    #                     sm.recorded_state = {file: data1}
-    #                     assert sm.match(file, data2)
-    #                     # assert data1 == data2
-    #                     print(f"finished test for {file}")
+        sm._assert_all()
