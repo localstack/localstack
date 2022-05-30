@@ -1,7 +1,7 @@
 import json
 import re
 
-from localstack.constants import AWS_REGION_US_EAST_1, S3_VIRTUAL_HOSTNAME
+from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
     dump_json_params,
@@ -111,10 +111,8 @@ class S3Bucket(GenericBaseModel):
             }
             return result
 
-        def get_bucket_location_config(**kwargs):
+        def get_bucket_location_config():
             region = aws_stack.get_region()
-            if region == AWS_REGION_US_EAST_1:
-                return None
             return {"LocationConstraint": region}
 
         def _pre_delete(resource_id, resources, resource_type, func, stack_name):
@@ -157,18 +155,26 @@ class S3Bucket(GenericBaseModel):
                     },
                 )
 
+        def _create_bucket(resource_id, resources, resource_type, func, stack_name):
+            s3_client = aws_stack.connect_to_service("s3")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            try:
+                s3_client.head_bucket(Bucket=bucket_name)
+            except Exception:
+                # bucket not found; we create one
+                props = resource["Properties"]
+                bucket_name = props.get("BucketName")
+                s3_client.create_bucket(
+                    Bucket=bucket_name,
+                    ACL=convert_acl_cf_to_s3(props.get("AccessControl", "PublicRead")),
+                    CreateBucketConfiguration=get_bucket_location_config(),
+                )
+
         result = {
             "create": [
-                {
-                    "function": "create_bucket",
-                    "parameters": {
-                        "Bucket": ["BucketName", PLACEHOLDER_RESOURCE_NAME],
-                        "ACL": lambda params, **kwargs: convert_acl_cf_to_s3(
-                            params.get("AccessControl", "PublicRead")
-                        ),
-                        "CreateBucketConfiguration": lambda params, **kwargs: get_bucket_location_config(),
-                    },
-                },
+                {"function": _create_bucket},
                 {
                     "function": "put_bucket_notification_configuration",
                     "parameters": s3_bucket_notification_config,
