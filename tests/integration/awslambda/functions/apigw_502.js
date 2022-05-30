@@ -1,4 +1,4 @@
-exports.handler =  async function(event, context) {
-  let body = {"message": "completed"}
+exports.handler = async function (event, context) {
+  let body = { "message": "completed" }
   return body
 }
