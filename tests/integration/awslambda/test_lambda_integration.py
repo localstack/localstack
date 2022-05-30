@@ -3,9 +3,9 @@ import json
 import os
 import time
 from unittest.mock import patch
-import xmltodict
 
 import pytest
+import xmltodict
 from botocore.exceptions import ClientError
 
 from localstack import config
@@ -15,9 +15,9 @@ from localstack.services.awslambda.lambda_api import (
     INVALID_PARAMETER_VALUE_EXCEPTION,
 )
 from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_RUNTIME_NODEJS14X,
     LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_PYTHON37,
-    LAMBDA_RUNTIME_NODEJS14X,
 )
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -29,13 +29,11 @@ from localstack.utils.testutil import check_expected_lambda_log_events_length, g
 from .functions import lambda_integration
 from .test_lambda import (
     TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_NODEJS_APIGW_502,
+    TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
-    TEST_LAMBDA_NODEJS_APIGW_502,
-    TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
-    TEST_LAMBDA_NODEJS,
-    read_streams
 )
 
 TEST_STAGE_NAME = "testing"
@@ -459,17 +457,17 @@ class TestLambdaHttpInvocation:
         assert lambda_resource == content["resource"]
         assert lambda_request_context_path == content["requestContext"]["path"]
         assert lambda_request_context_resource_path == content["requestContext"]["resourcePath"]
-        
+
     def test_response_headers_invocation_with_apigw(self, create_lambda_function, lambda_client):
         lambda_name = f"test_lambda_{short_uid()}"
         lambda_resource = "/api/v1/{proxy+}"
         lambda_path = "/api/v1/hello/world"
-        lambda_request_context_path = "/" + TEST_STAGE_NAME + lambda_path
-        lambda_request_context_resource_path = lambda_resource
 
         create_lambda_function(
             func_name=lambda_name,
-            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS_APIGW_INTEGRATION, get_content=True ),
+            zip_file=testutil.create_zip_file(
+                TEST_LAMBDA_NODEJS_APIGW_INTEGRATION, get_content=True
+            ),
             runtime=LAMBDA_RUNTIME_NODEJS14X,
             handler="apigw_integration.handler",
         )
@@ -487,20 +485,18 @@ class TestLambdaHttpInvocation:
         result = safe_requests.get(url)
 
         assert result.status_code == 300
-        assert result.headers["Content-Type"] == 'application/xml'
+        assert result.headers["Content-Type"] == "application/xml"
         body = xmltodict.parse(result.content)
         assert body.get("message") == "completed"
-    
+
     def test_malformed_response_apigw_invocation(self, create_lambda_function, lambda_client):
         lambda_name = f"test_lambda_{short_uid()}"
         lambda_resource = "/api/v1/{proxy+}"
         lambda_path = "/api/v1/hello/world"
-        lambda_request_context_path = "/" + TEST_STAGE_NAME + lambda_path
-        lambda_request_context_resource_path = lambda_resource
 
         create_lambda_function(
             func_name=lambda_name,
-            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS_APIGW_502, get_content=True ),
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS_APIGW_502, get_content=True),
             runtime=LAMBDA_RUNTIME_NODEJS14X,
             handler="apigw_502.handler",
         )
