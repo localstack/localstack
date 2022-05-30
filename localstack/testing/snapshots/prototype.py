@@ -130,6 +130,7 @@ class SnapshotSession:
             )  # TODO: custom exc.
 
         self.called_keys.add(key)
+
         self.observed_state[
             key
         ] = obj  # TODO: track them separately since the transformation is now done *just* before asserting
@@ -162,13 +163,16 @@ class SnapshotSession:
     def _transform_dict_to_parseable_values(self, original):
         """recursively goes through dict and tries to resolve values to strings (& parse them as json if possible)"""
         for k, v in original.items():
-            if isinstance(v, Dict):
-                self._transform_dict_to_parseable_values(v)
             if isinstance(v, StreamingBody):
                 # update v for json parsing below
                 original[k] = v = v.read().decode(
                     "utf-8"
                 )  # TODO: patch boto client so this doesn't break any further read() calls
+            if isinstance(v, list) and v and isinstance(v[0], dict):
+                for item in v:
+                    self._transform_dict_to_parseable_values(item)
+            if isinstance(v, Dict):
+                self._transform_dict_to_parseable_values(v)
 
             if isinstance(v, str) and v.startswith("{"):
                 try:

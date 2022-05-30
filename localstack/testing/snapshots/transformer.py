@@ -43,6 +43,8 @@ def _register_serialized_reference_replacement(
 ):
     cache = transform_context._cache.setdefault("regexcache", set())
     cache_key = reference_value
+    if '"' in reference_value:
+        reference_value = reference_value.replace('"', '\\"')
     if cache_key not in cache:
         actual_replacement = f"<{replacement}:{transform_context.new_scope(replacement)}>"
         cache.add(cache_key)
@@ -76,7 +78,9 @@ class ResponseMetaDataTransformer:
             if k == "ResponseMetadata":
                 metadata = v
                 http_headers = metadata.get("HTTPHeaders")
-                simplified_headers = {"content-type": http_headers["content-type"]}
+                simplified_headers = {}
+                if http_headers.get("content_type"):
+                    simplified_headers = {"content-type": http_headers["content-type"]}
 
                 simplified_metadata = {
                     "HTTPStatusCode": metadata.pop("HTTPStatusCode"),
