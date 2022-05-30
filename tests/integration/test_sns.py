@@ -2,6 +2,7 @@
 import json
 import queue
 import random
+import re
 import time
 
 import pytest
@@ -1535,6 +1536,7 @@ class TestSNSProvider:
         sqs_queue_arn,
         sns_create_sqs_subscription,
         raw_message_delivery,
+        snapshot,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
@@ -1591,9 +1593,27 @@ class TestSNSProvider:
             len(response["Messages"]) == 1
         ), f"invalid number of messages in DLQ response {response}"
 
+        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "<receipt-handle>")
+
         if raw_message_delivery:
             assert response["Messages"][0]["Body"] == message
+            snapshot.match("raw_message_delivery", response)
         else:
             received_message = json.loads(response["Messages"][0]["Body"])
             assert received_message["Type"] == "Notification"
             assert received_message["Message"] == message
+
+            # Set the decoded JSON Body to be able to skip keys directly
+            response["Messages"][0]["Body"] = received_message
+            # Need to skip the MD5OfBody/Signature, because it contains a timestamp
+            snapshot.skip_key(re.compile(r"^Signature$"), "<signature>")
+            snapshot.skip_key(re.compile(r"^MD5OfBody$"), "<md5-hash>")
+            snapshot.register_replacement(
+                pattern=re.compile(r"(?<=\bSimpleNotificationService-)(.*?)(?=\.)"),
+                value="<signing-cert-file>",
+            )
+            snapshot.register_replacement(
+                pattern=re.compile(r"(?<=://)(.*?)(?=/\?Action=Unsubscribe)"),
+                value="<unsubscribe-domain>",
+            )
+            snapshot.match("json_encoded_delivery", response)
