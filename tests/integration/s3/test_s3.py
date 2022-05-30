@@ -3,8 +3,11 @@ import requests
 from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
+from localstack.testing.aws.util import (
+    write_snapshot_samples,
+    write_snapshot_samples_collect_stream,
+)
 from localstack.utils.strings import short_uid
-from tests.integration.util import write_snapshot_samples, write_snapshot_samples_collect_stream
 
 
 class TestS3:
