@@ -1271,18 +1271,16 @@ class TestEvents:
     @pytest.mark.xfail
     def test_verify_rule_event_content(self, events_client, logs_client):
         log_group_name = f"/aws/events/testLogGroup-{short_uid()}"
-        logs_client.create_log_group(logGroupName=log_group_name)
+        rule_name = f"rule-{short_uid()}"
+        target_id = f"testRuleId-{short_uid()}"
 
+        logs_client.create_log_group(logGroupName=log_group_name)
         log_groups = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)
         assert len(log_groups["logGroups"]) == 1
         log_group = log_groups["logGroups"][0]
-
         log_group_arn = log_group["arn"]
 
-        rule_name = f"rule-{short_uid()}"
         events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
-
-        target_id = f"testRuleId-{short_uid()}"
         events_client.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": log_group_arn}])
 
         def ensure_log_stream_exists():
