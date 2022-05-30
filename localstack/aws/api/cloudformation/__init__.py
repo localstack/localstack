@@ -121,6 +121,7 @@ StackSetARN = str
 StackSetId = str
 StackSetName = str
 StackSetNameOrId = str
+StackSetOperationStatusReason = str
 StackStatusReason = str
 StatusMessage = str
 SupportedMajorVersion = int
@@ -1310,6 +1311,7 @@ class StackSetOperation(TypedDict, total=False):
     EndTimestamp: Optional[Timestamp]
     DeploymentTargets: Optional[DeploymentTargets]
     StackSetDriftDetectionDetails: Optional[StackSetDriftDetectionDetails]
+    StatusReason: Optional[StackSetOperationStatusReason]
 
 
 class DescribeStackSetOperationOutput(TypedDict, total=False):
@@ -1744,6 +1746,7 @@ class StackSetOperationSummary(TypedDict, total=False):
     Status: Optional[StackSetOperationStatus]
     CreationTimestamp: Optional[Timestamp]
     EndTimestamp: Optional[Timestamp]
+    StatusReason: Optional[StackSetOperationStatusReason]
 
 
 StackSetOperationSummaries = List[StackSetOperationSummary]
