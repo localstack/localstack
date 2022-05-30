@@ -14,8 +14,6 @@ from localstack.aws.api.apigateway import (
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
 )
-from localstack.aws.protocol.op_router import RestServiceOperationRouter
-from localstack.aws.spec import load_service
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -42,7 +40,12 @@ def to_invocation_context(request: Request) -> ApiInvocationContext:
     data = request.get_data(cache=True) or b""
     headers = Headers(request.headers)
 
-    # TODO: here will have to be a compatibility layer for the ASF gateway
+    # TODO: here will have to be a compatibility layer for the ASF gateway. with the legacy edge proxy integration,
+    #  the edge proxy sets X-Forwarded-For and other proxy headers, which the gateway does not do by default (and
+    #  shouldn't). moreover, in the legacy integration, the `Request` is constructed from the parameters of
+    #  `ProxyListener.forward_request` by the AwsApiListener. However with the gateway, the Request comes directly
+    #  from the server, and `Request.data` may already have been called (consuming the form data), so we will have to
+    #  restore the original request data.
 
     return ApiInvocationContext(
         method,
@@ -61,7 +64,6 @@ class ApigatewayRouter:
     router: Router[Handler]
 
     def __init__(self, router: Router[Handler]):
-        self.op_router = RestServiceOperationRouter(load_service("apigateway"))
         self.router_rules: Dict[str, List[Rule]] = defaultdict(list)
         self.router = router
 
@@ -177,7 +179,11 @@ class AsfApigatewayProvider(ApigatewayProvider):
 
         result = invoke_rest_api_from_request(invocation_context)
 
-        # FIXME: there are also multi-value-headers, log, and latency
+        # TODO: implement the other TestInvokeMethodResponse parameters
+        #   * multiValueHeaders: Optional[MapOfStringToList]
+        #   * log: Optional[String]
+        #   * latency: Optional[Long]
+
         return TestInvokeMethodResponse(
             status=result.status_code,
             headers=dict(result.headers),
