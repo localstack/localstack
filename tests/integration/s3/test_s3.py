@@ -1,3 +1,5 @@
+import time
+
 import pytest
 import requests
 from boto3.s3.transfer import KB, TransferConfig
@@ -122,6 +124,52 @@ class TestS3PresignedUrl:
 
         response = s3_client.get_object(Bucket=s3_bucket, Key=key)
         assert response["Body"].read() == b"something"
+
+    @pytest.mark.aws_validated
+    def test_post_object_with_files(self, s3_client, s3_bucket):
+        object_key = "test-presigned-post-key"
+
+        body = b"something body"
+
+        presigned_request = s3_client.generate_presigned_post(
+            Bucket=s3_bucket, Key=object_key, ExpiresIn=60
+        )
+        # put object
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": body},
+            verify=False,
+        )
+
+        assert response.status_code == 204
+        # get object and compare results
+        downloaded_object = s3_client.get_object(Bucket=s3_bucket, Key=object_key)
+        assert downloaded_object["Body"].read() == body
+
+    @pytest.mark.aws_validated
+    def test_post_request_expires(self, s3_client, s3_bucket):
+        # presign a post with a short expiry time
+        object_key = "test-presigned-post-key"
+
+        presigned_request = s3_client.generate_presigned_post(
+            Bucket=s3_bucket, Key=object_key, ExpiresIn=2
+        )
+
+        # sleep so it expires
+        time.sleep(3)
+
+        # attempt to use the presigned request
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "file content"},
+            verify=False,
+        )
+
+        # FIXME: localstack returns 400 but aws returns 403
+        assert response.status_code in [400, 403]
+        assert "ExpiredToken" in response.text
 
     @pytest.mark.aws_validated
     def test_delete_has_empty_content_length_header(self, s3_client, s3_bucket):

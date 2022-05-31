@@ -524,53 +524,9 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
-    def test_s3_put_object_on_presigned_url(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-        body = "something body"
-        # get presigned URL
-        object_key = "test-presigned-key"
-        url = client.generate_presigned_url(
-            "put_object", Params={"Bucket": bucket_name, "Key": object_key}
-        )
-        # put object
-        response = requests.put(url, data=body, verify=False)
-        self.assertEqual(200, response.status_code)
-        # get object and compare results
-        downloaded_object = client.get_object(Bucket=bucket_name, Key=object_key)
-        download_object = downloaded_object["Body"].read()
-        self.assertEqual(to_str(body), to_str(download_object))
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
-
-    def test_s3_post_object_on_presigned_post(self):
-        bucket_name = "test-presigned-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-        body = "something body"
-        # get presigned URL
-        object_key = "test-presigned-post-key"
-        presigned_request = client.generate_presigned_post(
-            Bucket=bucket_name, Key=object_key, ExpiresIn=60
-        )
-        # put object
-        files = {"file": body}
-        response = requests.post(
-            presigned_request["url"],
-            data=presigned_request["fields"],
-            files=files,
-            verify=False,
-        )
-        self.assertIn(response.status_code, [200, 204])
-        # get object and compare results
-        downloaded_object = client.get_object(Bucket=bucket_name, Key=object_key)
-        download_object = downloaded_object["Body"].read()
-        self.assertEqual(to_str(body), to_str(download_object))
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
-
     def test_s3_presigned_post_success_action_status_201_response(self):
+        # FIXME: does not work against AWS. it complains: "Invalid according to Policy: Extra input fields:
+        #  success_action_status"
         bucket_name = "test-presigned-%s" % short_uid()
         client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
@@ -608,35 +564,6 @@ class TestS3(unittest.TestCase):
         self.assertEqual(expected_response_content, response.text)
         # clean up
         self._delete_bucket(bucket_name, ["key-my-file"])
-
-    def test_s3_presigned_post_expires(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-
-        # presign a post with a short expiry time
-        object_key = "test-presigned-post-key"
-        presigned_request = client.generate_presigned_post(
-            Bucket=bucket_name, Key=object_key, ExpiresIn=2
-        )
-
-        # sleep so it expires
-        time.sleep(3)
-
-        # attempt to use the presigned request
-        files = {"file": "file content"}
-        response = requests.post(
-            presigned_request["url"],
-            data=presigned_request["fields"],
-            files=files,
-            verify=False,
-        )
-
-        self.assertEqual(400, response.status_code)
-        self.assertTrue("ExpiredToken" in response.text)
-
-        # clean up
-        self._delete_bucket(bucket_name)
 
     def test_delete_object_tagging(self):
         bucket_name = "test-%s" % short_uid()
@@ -1937,7 +1864,7 @@ class TestS3(unittest.TestCase):
         object_key = "key-%s" % short_uid()
         body = "body data"
 
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.create_bucket(Bucket=bucket_name, ACL="public-read")
 
         self.s3_client.put_object(
             Bucket=bucket_name,
