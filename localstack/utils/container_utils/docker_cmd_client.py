@@ -96,7 +96,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
 
     def pause_container(self, container_name: str) -> None:
         cmd = self._docker_cmd()
@@ -110,7 +110,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
 
     def unpause_container(self, container_name: str) -> None:
         cmd = self._docker_cmd()
@@ -124,7 +124,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
 
     def remove_image(self, image: str, force: bool = True) -> None:
         cmd = self._docker_cmd()
@@ -140,7 +140,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
 
     def commit(
         self,
@@ -161,7 +161,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
 
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
         if check_existence and container_name not in self.get_running_container_names():
@@ -179,7 +179,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
 
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
         filter = [filter] if isinstance(filter, str) else filter
@@ -198,7 +198,7 @@ class CmdDockerClient(ContainerClient):
         except subprocess.CalledProcessError as e:
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-            )
+            ) from e
         container_list = []
         if cmd_result:
             container_list = [json.loads(line) for line in cmd_result.splitlines()]
@@ -228,7 +228,7 @@ class CmdDockerClient(ContainerClient):
                 raise NoSuchContainer(container_name)
             raise ContainerException(
                 f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
-            )
+            ) from e
 
     def copy_from_container(
         self, container_name: str, local_path: str, container_path: str
@@ -243,7 +243,7 @@ class CmdDockerClient(ContainerClient):
                 raise NoSuchContainer(container_name)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-            )
+            ) from e
 
     def pull_image(self, docker_image: str) -> None:
         cmd = self._docker_cmd()
@@ -256,7 +256,7 @@ class CmdDockerClient(ContainerClient):
                 raise NoSuchImage(docker_image)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-            )
+            ) from e
 
     def push_image(self, docker_image: str) -> None:
         cmd = self._docker_cmd()
@@ -329,7 +329,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
 
     def stream_container_logs(self, container_name_or_id: str) -> CancellableStream:
         self.inspect_container(container_name_or_id)  # guard to check whether container is there
@@ -354,7 +354,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
         image_data = json.loads(cmd_result.strip())
         return image_data
 
@@ -404,7 +404,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
 
     def disconnect_container_from_network(
         self, network_name: str, container_name_or_id: str
@@ -424,7 +424,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
 
     def get_container_ip(self, container_name_or_id: str) -> str:
         cmd = self._docker_cmd()
@@ -443,7 +443,7 @@ class CmdDockerClient(ContainerClient):
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+                ) from e
 
     def has_docker(self) -> bool:
         try:
@@ -465,7 +465,7 @@ class CmdDockerClient(ContainerClient):
                 raise NoSuchImage(image_name, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-            )
+            ) from e
         finally:
             Util.rm_env_vars_file(env_file)
 
@@ -558,7 +558,7 @@ class CmdDockerClient(ContainerClient):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-            )
+            ) from e
 
     def _build_run_create_cmd(
         self,
