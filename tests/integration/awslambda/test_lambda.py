@@ -1532,6 +1532,7 @@ class TestRubyRuntimes:
 
 
 class TestGolangRuntimes:
+    @pytest.mark.skip_snapshot_verify
     @pytest.mark.skip_offline
     def test_golang_lambda(self, lambda_client, tmp_path, create_lambda_function, snapshot):
         """Test simple golang lambda invocation"""
