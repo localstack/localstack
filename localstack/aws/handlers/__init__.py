@@ -93,7 +93,7 @@ class CustomServiceRules(HandlerChainAdapter):
 
 class ServiceRequestParser(Handler):
     """
-    A Handler that parses the service request operation and the instance from an Request. Requires the service to
+    A Handler that parses the service request operation and the instance from a Request. Requires the service to
     already be resolved in the RequestContext (e.g., through a ServiceNameParser)
     """
 
