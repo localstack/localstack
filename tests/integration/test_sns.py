@@ -48,24 +48,6 @@ PUBLICATION_TIMEOUT = 0.500
 PUBLICATION_RETRIES = 4
 
 
-# copy/pasted from test_sqs.py, utility function
-def queue_exists(sqs_client, queue_url: str) -> bool:
-    """
-    Checks whether a queue with the given queue URL exists.
-
-    :param sqs_client: the botocore client
-    :param queue_url: the queue URL
-    :return: true if the queue exists, false otherwise
-    """
-    try:
-        result = sqs_client.get_queue_url(QueueName=queue_url.split("/")[-1])
-        return result.get("QueueUrl") == queue_url
-    except ClientError as e:
-        if "NonExistentQueue" in e.response["Error"]["Code"]:
-            return False
-        raise
-
-
 class TestSNSSubscription:
     def test_python_lambda_subscribe_sns_topic(
         self,
@@ -1534,6 +1516,7 @@ class TestSNSProvider:
         sns_create_topic,
         sqs_create_queue,
         sqs_queue_arn,
+        sqs_queue_exists,
         sns_create_sqs_subscription,
         raw_message_delivery,
         snapshot,
@@ -1583,7 +1566,7 @@ class TestSNSProvider:
         sqs_client.delete_queue(QueueUrl=queue_url)
 
         # AWS takes some time to delete the queue, which make the test fails as it delivers the message correctly
-        assert poll_condition(lambda: not queue_exists(sqs_client, queue_url), timeout=5)
+        assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
 
         message = "test_dlq_after_sqs_endpoint_deleted"
         sns_client.publish(TopicArn=topic_arn, Message=message)
