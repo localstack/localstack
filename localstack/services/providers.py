@@ -14,7 +14,7 @@ def acm():
     return Service("acm", listener=AwsApiListener("acm", MotoFallbackDispatcher(provider)))
 
 
-@aws_provider(api="apigateway", name="default")
+@aws_provider(api="apigateway", name="legacy")
 def apigateway_legacy():
     from localstack.services.apigateway.provider import ApigatewayApiListener, ApigatewayProvider
 
@@ -24,7 +24,7 @@ def apigateway_legacy():
     return Service("apigateway", listener=listener, lifecycle_hook=provider)
 
 
-@aws_provider(api="apigateway", name="asf")
+@aws_provider(api="apigateway", name="default")
 def apigateway_asf():
     from localstack.services.apigateway.provider_asf import AsfApigatewayProvider
 
