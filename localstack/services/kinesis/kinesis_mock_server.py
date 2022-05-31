@@ -56,7 +56,10 @@ class KinesisMockServer(Server):
         helper method for creating kinesis mock invocation command
         """
         if self._data_dir:
-            kinesis_data_dir_param = "SHOULD_PERSIST_DATA=true PERSIST_PATH=%s" % self._data_dir
+            kinesis_data_dir_param = (
+                f"SHOULD_PERSIST_DATA=true PERSIST_PATH={self._data_dir} "
+                f"PERSIST_INTERVAL={config.KINESIS_MOCK_PERSIST_INTERVAL}"
+            )
         else:
             kinesis_data_dir_param = ""
         log_level_param = "LOG_LEVEL=%s" % self._log_level
