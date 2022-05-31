@@ -1921,7 +1921,7 @@ class TestSqsProvider:
                 "General": {"DataType": "String", "StringValue": "Kenobi"},
             },
         )
-        snapshot.match("send_message_response", response)
+        assert snapshot.match("send_message_response", response)
 
         def receive_message(message_attribute_names):
             return sqs_client.receive_message(
@@ -1933,41 +1933,43 @@ class TestSqsProvider:
         # test empty filter
         response = receive_message([])
         # do the first check with the entire response
-        snapshot.match("empty_filter", response)
+        assert snapshot.match("empty_filter", response)
 
         # test "All"
         response = receive_message(["All"])
-        snapshot.match("all_name", response)
+        assert snapshot.match("all_name", response)
 
         # test ".*"
         response = receive_message([".*"])
-        snapshot.match("all_wildcard", response["Messages"][0])
+        assert snapshot.match("all_wildcard", response["Messages"][0])
 
         # test only non-existent names
         response = receive_message(["Foo", "Help"])
-        snapshot.match("only_non_existing_names", response["Messages"][0])
+        assert snapshot.match("only_non_existing_names", response["Messages"][0])
 
         # test all existing
         response = receive_message(["Hello", "General"])
-        snapshot.match("only_existing", response["Messages"][0])
+        assert snapshot.match("only_existing", response["Messages"][0])
 
         # test existing and non-existing
         response = receive_message(["Foo", "Hello"])
-        snapshot.match("existing_and_non_existing", response["Messages"][0])
+        assert snapshot.match("existing_and_non_existing", response["Messages"][0])
 
         # test prefix filters
         response = receive_message(["Hel.*"])
-        snapshot.match("prefix_filter", response["Messages"][0])
+        assert snapshot.match("prefix_filter", response["Messages"][0])
 
         # test illegal names
         response = receive_message(["AWS."])
-        snapshot.match("illegal_name_1", response)
+        assert snapshot.match("illegal_name_1", response)
         response = receive_message(["..foo"])
-        snapshot.match("illegal_name_2", response)
+        assert snapshot.match("illegal_name_2", response)
 
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SenderId"])
     def test_receive_message_attribute_names_filters(self, sqs_client, sqs_create_queue, snapshot):
-        # TODO -> senderId in LS matches the accountid, which has higher priority
-        snapshot.add_transformer(snapshot.transform.sqs_api(), priority=-2)
+        # TODO -> senderId in LS == account ID, but on AWS it looks quite different: [A-Z]{21}:<email>
+        # account id is replaced with higher priority
+        snapshot.add_transformer(snapshot.transform.sqs_api())
 
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 
@@ -1988,16 +1990,16 @@ class TestSqsProvider:
             )
 
         response = receive_message(["All"])
-        snapshot.match("all_attributes", response)
+        assert snapshot.match("all_attributes", response)
 
         response = receive_message(["All"], ["All"])
-        snapshot.match("all_system_and_message_attributes", response)
+        assert snapshot.match("all_system_and_message_attributes", response)
 
         response = receive_message(["SenderId"])
-        snapshot.match("single_attribute", response)
+        assert snapshot.match("single_attribute", response)
 
         response = receive_message(["SenderId", "SequenceNumber"])
-        snapshot.match("multiple_attributes", response)
+        assert snapshot.match("multiple_attributes", response)
 
     @pytest.mark.aws_validated
     def test_change_visibility_on_deleted_message_raises_invalid_parameter_value(

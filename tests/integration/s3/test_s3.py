@@ -20,7 +20,7 @@ class TestS3:
         assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == "eu-west-1"
 
     @pytest.mark.aws_validated
-    @pytest.mark.snapshot_sample
+    @pytest.mark.skip_snapshot_verify(paths=["$..Marker", "$..Prefix", "$..EncodingType"])
     def test_delete_bucket_with_content(self, s3_client, s3_resource, s3_bucket, snapshot):
 
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -45,7 +45,6 @@ class TestS3:
         assert bucket_name not in [b["Name"] for b in resp["Buckets"]]
 
     @pytest.mark.aws_validated
-    @pytest.mark.snapshot_sample
     def test_put_and_get_object_with_utf8_key(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
@@ -75,7 +74,6 @@ class TestS3:
         response = s3_resource.Object(s3_bucket, "bar").get()
         assert response["Body"].read() == b"barfoo"
 
-    @pytest.mark.snapshot_sample
     @pytest.mark.aws_validated
     def test_metadata_header_character_decoding(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())

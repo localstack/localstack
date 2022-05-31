@@ -77,7 +77,7 @@ s3_lambda_permission = {
 
 
 class TestSQSEventSourceMapping:
-    @pytest.mark.snapshot_sample
+    @pytest.mark.skip_snapshot_verify
     def test_event_source_mapping_default_batch_size(
         self,
         create_lambda_function,

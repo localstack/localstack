@@ -143,6 +143,9 @@ class SnapshotSession:
         if not self.update and not self.recorded_state.get(key):
             raise Exception("Please run the test first with --snapshot-update")
 
+        # TODO: we should return something meaningful here
+        return True
+
     def _assert_all(
         self, verify: bool = True, skip_verification_paths: list[str] = []
     ) -> List[SnapshotMatchResult]:
@@ -247,9 +250,12 @@ class SnapshotSession:
                 helper = tmp
                 if len(full_path) > 1:
                     for p in full_path[:-1]:
-                        helper = helper.get(p, None)
-                        if not helper:
-                            continue
+                        if isinstance(helper, list) and p.lstrip("[").rstrip("]").isnumeric():
+                            helper = helper[int(p.lstrip("[").rstrip("]"))]
+                        elif isinstance(helper, dict):
+                            helper = helper.get(p, None)
+                            if not helper:
+                                continue
                 if (
                     isinstance(helper, dict) and full_path[-1] in helper.keys()
                 ):  # might have been deleted already

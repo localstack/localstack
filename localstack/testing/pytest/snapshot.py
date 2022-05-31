@@ -88,13 +88,6 @@ def fixture_snapshot(request: SubRequest, account_id, region):
     sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=-1)
     sm.add_transformer(RegexTransformer(region, "<region>"), priority=-1)
     sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER)
-    # sm.register_replacement(PATTERN_SQS_URL, "<sqs-url>")
-    # sm.skip_key(re.compile(r"^.*Name$"), "<name>")
-    # sm.skip_key(re.compile(r"^.*Location$"), "<location>")
-    # sm.skip_key(re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE), "<timestamp>")
-    # sm.skip_key(
-    #     re.compile(r"^.*sha.*$", flags=re.IGNORECASE), "<sha>"
-    # )
 
     yield sm
 
