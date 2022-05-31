@@ -1,16 +1,29 @@
+Parameters:
+  IncludeCodeArtifact:
+    Description: Toggles whether to include CodeArtifact in cfn
+    Default: true
+    Type: String
+    AllowedValues:
+      - true
+      - false
+  CADomainName:
+    Description: Name of the CodeArtifact domain
+    Type: String
+    Default: testingDomainName
 Resources:
   TestCodeArtifactDomain:
     Type: AWS::CodeArtifact::Domain
     Properties:
-      DomainName: DemoDomain
+      DomainName: !Ref CADomainName
     Metadata:
-      aws:cdk:path: ParisebUpdateCdkStack/TestCodeArtifactDomain
+      aws:cdk:path: UpdateCdkStack/TestCodeArtifactDomain
+    Condition: DeployCodeArtifact
   TestBucket560B80BC:
     Type: AWS::S3::Bucket
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
     Metadata:
-      aws:cdk:path: ParisebUpdateCdkStack/TestBucket/Resource
+      aws:cdk:path: UpdateCdkStack/TestBucket/Resource
   TestBucketPolicyBA12ED38:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -31,13 +44,13 @@ Resources:
                   - /*
         Version: "2012-10-17"
     Metadata:
-      aws:cdk:path: ParisebUpdateCdkStack/TestBucket/Policy/Resource
+      aws:cdk:path: UpdateCdkStack/TestBucket/Policy/Resource
   HestBucketABE4AE1C:
     Type: AWS::S3::Bucket
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
     Metadata:
-      aws:cdk:path: ParisebUpdateCdkStack/HestBucket/Resource
+      aws:cdk:path: UpdateCdkStack/HestBucket/Resource
   HestBucketPolicy276ECA48:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -58,15 +71,19 @@ Resources:
                   - /*
         Version: "2012-10-17"
     Metadata:
-      aws:cdk:path: ParisebUpdateCdkStack/HestBucket/Policy/Resource
+      aws:cdk:path: UpdateCdkStack/HestBucket/Policy/Resource
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
       Analytics: v2:deflate64:H4sIAAAAAAAA/0XIQQqDMBCF4bO4T6ZaKXRdewDRA5R0jHSqzkAyUiR49yoWunr/+85QXCDP3Cda7AY70hNSqw4Hs9EjoXTeBaXeoULV810mR2xiCek24+DVbPirY2oZCZc/H39dd2l8lDmg37sS7khJeDX1oi/hUwlXKPLsHYlsmFlp8tAc+wUWGrSMpgAAAA==
     Metadata:
-      aws:cdk:path: ParisebUpdateCdkStack/CDKMetadata/Default
+      aws:cdk:path: UpdateCdkStack/CDKMetadata/Default
     Condition: CDKMetadataAvailable
 Conditions:
+  DeployCodeArtifact: 
+    "Fn::Equals":
+    - !Ref IncludeCodeArtifact
+    - true
   CDKMetadataAvailable:
     Fn::Or:
       - Fn::Or:

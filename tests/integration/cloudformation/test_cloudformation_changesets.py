@@ -376,15 +376,18 @@ def test_delete_change_set_nonexisting(cfn_client):
 
 
 @pytest.mark.xfail
+@pytest.mark.aws_validated
 def test_deploy_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_template):
     # first deploy cfn with a CodeArtifact resource that is not actually supported
     stack = deploy_cfn_template(
-        template=load_template_raw("code_artifact_create.yaml")
+        template=load_template_raw("code_artifact_template.yaml"),
+        parameters={"IncludeCodeArtifact": "true", "CADomainName": f"domainname-{short_uid()}"}
     )
 
     # removal of CodeArtifact should succeed
     deploy_cfn_template(
         is_update=True,
-        template=load_template_raw("code_artifact_update_delete.yaml"),
-        stack_name=stack.stack_name
+        template=load_template_raw("code_artifact_template.yaml"),
+        stack_name=stack.stack_name,
+        parameters={"IncludeCodeArtifact": "false"}
     )
