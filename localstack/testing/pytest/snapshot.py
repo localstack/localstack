@@ -4,7 +4,7 @@ import os
 from typing import Optional
 
 import pytest
-from _pytest.config import PytestPluginManager
+from _pytest.config import Config, PytestPluginManager
 from _pytest.config.argparsing import Parser
 from _pytest.fixtures import SubRequest
 from _pytest.nodes import Item
@@ -20,6 +20,11 @@ from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import SNAPSHOT_BASIC_TRANSFORMER
 
 LOG = logging.getLogger(__name__)
+
+
+@pytest.hookimpl
+def pytest_configure(config: Config):
+    config.addinivalue_line("markers", "skip_snapshot_verify")
 
 
 @pytest.hookimpl
