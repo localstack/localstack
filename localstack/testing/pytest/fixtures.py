@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import time
+from functools import partial
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 import boto3
@@ -79,6 +80,14 @@ def _client(service, region_name=None):
         else None
     )
     return aws_stack.create_external_boto_client(service, config=config, region_name=region_name)
+
+
+@pytest.fixture(scope="class")
+def patch_region(monkeypatch, request):
+    region = request.param if hasattr(request, "param") else "us-east-1"
+    monkeypatch.setattr(
+        "localstack.testing.pytest.fixtures._client", partial(_client, region_name=region)
+    )
 
 
 def _resource(service):
