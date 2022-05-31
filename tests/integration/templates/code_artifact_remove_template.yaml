@@ -1,15 +1,4 @@
-Parameters:
-  CADomainName:
-    Description: Name of the CodeArtifact domain
-    Type: String
-    Default: testingDomainName
 Resources:
-  TestCodeArtifactDomain:
-    Type: AWS::CodeArtifact::Domain
-    Properties:
-      DomainName: !Ref CADomainName
-    Metadata:
-      aws:cdk:path: UpdateCdkStack/TestCodeArtifactDomain
   TestBucket560B80BC:
     Type: AWS::S3::Bucket
     UpdateReplacePolicy: Retain

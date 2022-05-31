@@ -381,13 +381,12 @@ def test_deploy_create_and_then_remove_non_supported_resource_change_set(deploy_
     # first deploy cfn with a CodeArtifact resource that is not actually supported
     stack = deploy_cfn_template(
         template=load_template_raw("code_artifact_template.yaml"),
-        parameters={"CodeArtifactAction": "deploy", "CADomainName": f"domainname-{short_uid()}"},
+        parameters={"CADomainName": f"domainname-{short_uid()}"},
     )
 
     # removal of CodeArtifact should succeed
     deploy_cfn_template(
         is_update=True,
-        template=load_template_raw("code_artifact_template.yaml"),
-        stack_name=stack.stack_name,
-        parameters={"CodeArtifactAction": "remove"},
+        template=load_template_raw("code_artifact_remove_template.yaml"),
+        stack_name=stack.stack_name
     )
