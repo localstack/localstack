@@ -1,14 +1,12 @@
 import re
 from datetime import datetime
-from typing import Callable, Optional, Pattern
+from typing import Optional, Pattern
 
 from localstack.testing.snapshots.transformer import (
-    GenericTransformer,
     JsonpathTransformer,
     KeyValueBasedTransformer,
     RegexTransformer,
     ResponseMetaDataTransformer,
-    Transformer,
 )
 
 PATTERN_UUID = re.compile(
@@ -23,19 +21,9 @@ PATTERN_ARN_CHANGESET = re.compile(
 )
 PATTERN_LOGSTREAM_ID: Pattern[str] = re.compile(
     # r"\d{4}/\d{2}/\d{2}/\[((\$LATEST)|\d+)\][0-9a-f]{32}" # TODO - this was originally included
-    # but some responses from LS look like this: 2022/5/30/[$LATEST]20b0964ab88b01c1
+    # but some responses from LS look like this: 2022/5/30/[$LATEST]20b0964ab88b01c1 -> might not be correct on LS?
     r"\d{4}/\d{1,2}/\d{1,2}/\[((\$LATEST)|\d+)\][0-9a-f]{16,32}"
 )
-
-# TODO currently unused
-# PATTERN_S3_URL = re.compile(
-#     r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}(\+[0-9]{4})?"
-# )
-# PATTERN_SQS_URL = re.compile(
-#     r"https?://[^/]+/\d{12}/[^/\"]+"
-# )  # TODO: differences here between AWS + localstack structure
-#
-# PATTERN_HASH_256 = re.compile(r"^[A-Fa-f0-9]{64}$")
 
 
 class TransformerUtility:
@@ -43,6 +31,18 @@ class TransformerUtility:
     def key_value(
         key: str, value_replacement: Optional[str] = None, reference_replacement: bool = True
     ):
+        """Creates a new KeyValueBasedTransformer. If the key matches, the value will be replaced.
+
+        :param key: the name of the key which should be replaced
+        :param value_replacement: the value which will replace the original value.
+        By default it is the key-name in lowercase, separated with hyphen
+        :param reference_replacement: if False, only the original value for this key will be replaced.
+        If True all references of this value will be replaced (using a regex pattern), for the entire test case.
+        In this case, the replaced value will be nummerated as well.
+        Default: True
+
+        :return: KeyValueBasedTransformer
+        """
         return KeyValueBasedTransformer(
             lambda k, v: v if k == key else None,
             replacement=value_replacement or _replace_camel_string_with_hyphen(key),
@@ -51,6 +51,18 @@ class TransformerUtility:
 
     @staticmethod
     def jsonpath(jsonpath: str, value_replacement: str, reference_replacement: bool = True):
+        """Creates a new JsonpathTransformer. If the jsonpath matches, the value will be replaced.
+
+        :param jsonpath: the jsonpath that should be matched
+        :param value_replacement: the value which will replace the original value.
+        By default it is the key-name in lowercase, separated with hyphen
+        :param reference_replacement: if False, only the original value for this key will be replaced.
+        If True all references of this value will be replaced (using a regex pattern), for the entire test case.
+        In this case, the replaced value will be nummerated as well.
+        Default: True
+
+        :return: JsonpathTransformer
+        """
         return JsonpathTransformer(
             jsonpath=jsonpath,
             replacement=value_replacement,
@@ -58,17 +70,23 @@ class TransformerUtility:
         )
 
     @staticmethod
-    def custom(fn: Callable[[dict], dict]) -> Transformer:
-        return GenericTransformer(fn)
-
-    @staticmethod
     def regex(regex: str | Pattern[str], replacement: str):
+        """Creates a new RegexTransformer. All matches in the string-converted dict will be replaced.
+
+        :param regex: the regex that should be matched
+        :param replacement: the value which will replace the original value.
+
+        :return: RegexTransformer
+        """
         return RegexTransformer(regex, replacement)
 
     # TODO add more utility functions? e.g. key_value with function as parameter?
 
     @staticmethod
     def lambda_api():
+        """
+        :return: array with Transformers, for lambda api.
+        """
         return [
             TransformerUtility.key_value("FunctionName"),
             TransformerUtility.jsonpath(
@@ -84,6 +102,9 @@ class TransformerUtility:
 
     @staticmethod
     def cloudformation_api():
+        """
+        :return: array with Transformers, for cloudformation api.
+        """
         return [
             TransformerUtility.key_value("ChangeSetName"),
             TransformerUtility.key_value("StackName"),
@@ -93,10 +114,16 @@ class TransformerUtility:
 
     @staticmethod
     def iam_api():
+        """
+        :return: array with Transformers, for iam api.
+        """
         return [TransformerUtility.key_value("UserName"), TransformerUtility.key_value("UserId")]
 
     @staticmethod
     def s3_api():
+        """
+        :return: array with Transformers, for s3 api.
+        """
         return [
             TransformerUtility.key_value("Name", value_replacement="bucket-name"),
             TransformerUtility.jsonpath(
@@ -112,11 +139,19 @@ class TransformerUtility:
 
     @staticmethod
     def sqs_api():
+        """
+        :return: array with Transformers, for sqs api.
+        """
         return [
             TransformerUtility.key_value("ReceiptHandle"),
             TransformerUtility.key_value("SenderId"),
             TransformerUtility.jsonpath("$..MessageAttributes.RequestID.StringValue", "request-id"),
         ]
+
+    # TODO add example
+    # @staticmethod
+    # def custom(fn: Callable[[dict], dict]) -> Transformer:
+    #     return GenericTransformer(fn)
 
 
 def _replace_camel_string_with_hyphen(input_string: str):
@@ -162,7 +197,8 @@ def _change_set_id_transformer(key: str, val: str) -> str:
     return None
 
 
-# TODO where to move this? added in the snapshot fixture directly, so maybe move there?
+# TODO maybe move to a different place?
+# Basic Transformation - added automatically to each snapshot (in the fixture)
 SNAPSHOT_BASIC_TRANSFORMER = [
     ResponseMetaDataTransformer(),
     KeyValueBasedTransformer(

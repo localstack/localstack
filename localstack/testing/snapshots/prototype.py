@@ -243,6 +243,7 @@ class SnapshotSession:
         )
 
     def _remove_skip_verification_paths(self, tmp: Dict):
+        """Removes all keys from the dict, that match the given json-paths in self.skip_verification_path"""
         for path in self.skip_verification_paths:
             matches = parse(path).find(tmp) or []
             for m in matches:
