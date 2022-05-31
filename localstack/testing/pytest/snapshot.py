@@ -51,10 +51,16 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> Optional[Test
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item: Item) -> None:
     call: CallInfo = yield  # noqa
+
     # TODO: extremely dirty... maybe it would be better to find a way to fail the test itself instead?
     sm = item.funcargs.get("snapshot")
     if sm:
-        sm._assert_all()
+        verify = True
+        paths = []
+        for m in item.iter_markers(name="skip_snapshot_verify"):
+            verify = False
+            paths = m.kwargs.get("paths", [])
+        sm._assert_all(verify, paths)
 
 
 @pytest.fixture(name="account_id", scope="session")

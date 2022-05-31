@@ -178,7 +178,10 @@ SNAPSHOT_BASIC_TRANSFORMER = [
         lambda k, v: (v if isinstance(v, datetime) else None), "datetime", replace_reference=False
     ),
     KeyValueBasedTransformer(
-        lambda k, v: v if re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE).match(k) else None,
+        lambda k, v: v
+        if re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE).match(k)
+        and not PATTERN_ISO8601.match(v)
+        else None,
         "timestamp",
         replace_reference=False,
     ),

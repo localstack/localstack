@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 
 from botocore.response import StreamingBody
 from deepdiff import DeepDiff
+from jsonpath_ng.ext import parse
 
 from localstack.testing.snapshots.transformer import (
     KeyValueBasedTransformer,
@@ -56,6 +57,8 @@ class SnapshotSession:
     transformers: list[(Transformer, int)]  # (transformer, priority)
 
     transform: TransformerUtility
+
+    skip_verification_paths: list[str]
 
     def __init__(
         self,
@@ -140,9 +143,17 @@ class SnapshotSession:
         if not self.update and not self.recorded_state.get(key):
             raise Exception("Please run the test first with --snapshot-update")
 
-    def _assert_all(self) -> List[SnapshotMatchResult]:
+    def _assert_all(
+        self, verify: bool = True, skip_verification_paths: list[str] = []
+    ) -> List[SnapshotMatchResult]:
         """use after all match calls to get a combined diff"""
         results = []
+
+        # TODO future work: verify will be enabled by default, can only be disabled here
+        if self.verify and not verify and not skip_verification_paths:
+            self.verify = verify
+
+        self.skip_verification_paths = skip_verification_paths
 
         if self.update:
             self.observed_state = self._transform(self.observed_state)
@@ -150,6 +161,7 @@ class SnapshotSession:
 
         # TODO: separate these states
         a_all = self.recorded_state
+        self._remove_skip_verification_paths(a_all)
         self.observed_state = b_all = self._transform(self.observed_state)
 
         for key in self.called_keys:
@@ -186,6 +198,10 @@ class SnapshotSession:
     def _transform(self, tmp: dict) -> dict:
         """build a persistable state definition that can later be compared against"""
         self._transform_dict_to_parseable_values(tmp)
+
+        if not self.update:
+            self._remove_skip_verification_paths(tmp)
+
         ctx = TransformContext()
 
         for transformer, _ in sorted(self.transformers, key=lambda p: p[1]):
@@ -222,3 +238,19 @@ class SnapshotSession:
                 replace_reference=False,
             )
         )
+
+    def _remove_skip_verification_paths(self, tmp: Dict):
+        for path in self.skip_verification_paths:
+            matches = parse(path).find(tmp) or []
+            for m in matches:
+                full_path = str(m.full_path).split(".")
+                helper = tmp
+                if len(full_path) > 1:
+                    for p in full_path[:-1]:
+                        helper = helper.get(p, None)
+                        if not helper:
+                            continue
+                if (
+                    isinstance(helper, dict) and full_path[-1] in helper.keys()
+                ):  # might have been deleted already
+                    del helper[full_path[-1]]
