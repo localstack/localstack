@@ -1,11 +1,11 @@
 Parameters:
-  IncludeCodeArtifact:
-    Description: Toggles whether to include CodeArtifact in cfn
-    Default: true
+  CodeArtifactAction:
+    Description: Defines whether to deploy or remove CodeArtifact from cfn
+    Default: deploy
     Type: String
     AllowedValues:
-      - true
-      - false
+      - deploy
+      - remove
   CADomainName:
     Description: Name of the CodeArtifact domain
     Type: String
@@ -81,9 +81,9 @@ Resources:
     Condition: CDKMetadataAvailable
 Conditions:
   DeployCodeArtifact: 
-    "Fn::Equals":
-    - !Ref IncludeCodeArtifact
-    - true
+    Fn::Equals:
+    - !Ref CodeArtifactAction
+    - deploy
   CDKMetadataAvailable:
     Fn::Or:
       - Fn::Or:
