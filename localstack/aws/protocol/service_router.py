@@ -151,6 +151,7 @@ def legacy_rules(request: Request) -> Optional[str]:
     host = hostname_from_url(request.host)
 
     # API Gateway invocation URLs
+    # TODO: deprecated with #6040, where API GW user routes are served through the gateway directly
     if ("/%s/" % PATH_USER_REQUEST) in request.path or (
         host.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host
     ):
