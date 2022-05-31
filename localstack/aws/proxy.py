@@ -4,12 +4,10 @@ Adapters and other utilities to use ASF together with the edge proxy.
 import logging
 import re
 from typing import Any, Mapping, Optional
-from urllib.parse import urlencode
 
 from botocore.model import ServiceModel
 from requests import Response as RequestsResponse
-from werkzeug.datastructures import Headers, MultiDict
-from werkzeug.test import encode_multipart
+from werkzeug.datastructures import Headers
 
 from localstack import constants
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL, HEADER_LOCALSTACK_REQUEST_URL
@@ -20,6 +18,7 @@ from localstack.services.messages import MessagePayload
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.persistence import PersistingProxyListener
 
+from ..http.request import restore_payload
 from .api import RequestContext
 from .chain import Handler, HandlerChain
 from .skeleton import Skeleton
@@ -115,23 +114,8 @@ class GenericProxyHandler(Handler):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         request = context.request
 
-        data = request.data
         # a werkzeug Request consumes form/multipart data from the socket stream, so we need to restore the payload here
-        if not data:
-            if request.method == "POST":
-                if request.files:
-                    boundary = request.content_type.split("=")[1]
-
-                    fields = MultiDict()
-                    fields.update(request.form)
-                    fields.update(request.files)
-
-                    _, data = encode_multipart(fields, boundary)
-                elif request.form:
-                    data = urlencode(list(request.form.items(multi=True))).encode("utf-8")
-                else:
-                    LOG.debug("the request did not contain any data %s", request)
-                    data = b""
+        data = restore_payload(request)
 
         # TODO: rethink whether this proxy handling is necessary
         context.request.headers[HEADER_LOCALSTACK_REQUEST_URL] = context.request.base_url
