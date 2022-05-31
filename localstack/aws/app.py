@@ -43,6 +43,7 @@ class LocalstackAwsGateway(Gateway):
             [
                 handlers.push_quart_context,
                 handlers.enforce_cors,
+                handlers.content_decoder,
                 handlers.serve_localstack_resources,  # try to serve internal resources first
                 serve_default_listeners,
                 serve_custom_routes,

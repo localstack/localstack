@@ -2,6 +2,7 @@
 A set of common handlers to build an AWS server application.
 TODO the handler implementations in here should be moved to individual files
 """
+import gzip
 import logging
 import traceback
 from functools import lru_cache
@@ -56,6 +57,21 @@ def inject_auth_header_if_missing(chain: HandlerChain, context: RequestContext, 
 
     if not headers.get("Authorization"):
         headers["Authorization"] = aws_stack.mock_aws_request_headers(api)["Authorization"]
+
+
+class ContentDecoder(Handler):
+    """
+    A handler which takes care of decoding the content of a request (if the header "Content-Encoding" is set).
+
+    The Content-Encoding representation header lists any encodings that have been applied to the representation
+    (message payload), and in what order.
+    """
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        # Currently, only GZIP is supported. When supporting multiple types, the order needs to be respected
+        if context.request.content_encoding and context.request.content_encoding.lower() == "gzip":
+            # wrap the request's stream with GZip decompression (inspired by flask-inflate)
+            context.request.stream = gzip.GzipFile(fileobj=context.request.stream)
 
 
 class ServiceNameParser(Handler):
@@ -423,6 +439,7 @@ class EmptyResponseHandler(Handler):
 
 enforce_cors = CorsEnforcer()
 add_cors_response_headers = CorsResponseEnricher()
+content_decoder = ContentDecoder()
 parse_service_name = ServiceNameParser()
 parse_service_request = ServiceRequestParser()
 process_custom_service_rules = CustomServiceRules()
