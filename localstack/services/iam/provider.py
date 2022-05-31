@@ -3,7 +3,7 @@ import re
 from typing import Dict, List
 from urllib.parse import quote
 
-from moto.iam.models import AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy
+from moto.iam.models import AWSManagedPolicy, InlinePolicy, Policy
 from moto.iam.models import Role as MotoRole
 from moto.iam.models import aws_managed_policies, filter_items_with_path_prefix
 from moto.iam.models import iam_backend as moto_iam_backend
@@ -25,6 +25,7 @@ from localstack.aws.api.iam import (
     IamApi,
     ListInstanceProfileTagsResponse,
     ListRolesResponse,
+    NoSuchEntityException,
     PolicyEvaluationDecisionType,
     ResourceHandlingOptionType,
     ResourceNameListType,
@@ -124,7 +125,7 @@ class IamProvider(IamApi):
         try:
             policy_statements = json.loads(policy_version.document).get("Statement", [])
         except Exception:
-            raise IAMNotFoundException("Policy not found")
+            raise NoSuchEntityException("Policy not found")
 
         evaluations = [
             self.build_evaluation_result(action_name, resource_arn, policy_statements)
@@ -141,7 +142,7 @@ class IamProvider(IamApi):
         if moto_iam_backend.managed_policies.get(policy_arn):
             moto_iam_backend.managed_policies.pop(policy_arn, None)
         else:
-            raise IAMNotFoundException("Policy {0} was not found.".format(policy_arn))
+            raise NoSuchEntityException("Policy {0} was not found.".format(policy_arn))
 
     def detach_role_policy(
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType
@@ -151,7 +152,7 @@ class IamProvider(IamApi):
             policy = role.managed_policies[policy_arn]
             policy.detach_from(role)
         except KeyError:
-            raise IAMNotFoundException("Policy {0} was not found.".format(policy_arn))
+            raise NoSuchEntityException("Policy {0} was not found.".format(policy_arn))
 
     @staticmethod
     def moto_role_to_role_type(moto_role: MotoRole) -> Role:
