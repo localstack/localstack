@@ -109,3 +109,49 @@ class TestTransformer:
         for sr in ctx.serialized_replacements:
             output = sr(output)
         assert json.loads(output) == expected
+
+    def test_log_stream_name(self):
+        input = {
+            "Payload": {
+                "context": {
+                    "functionVersion": "$LATEST",
+                    "functionName": "my-function",
+                    "memoryLimitInMB": "128",
+                    "logGroupName": "/aws/lambda/my-function",
+                    "logStreamName": "2022/05/31/[$LATEST]ced3cafaaf284d8199e02909ac87e2f5",
+                    "clientContext": {
+                        "custom": {"foo": "bar"},
+                        "client": {"snap": ["crackle", "pop"]},
+                        "env": {"fizz": "buzz"},
+                    },
+                    "invokedFunctionArn": "arn:aws:lambda:us-east-1:111111111111:function:my-function",
+                }
+            }
+        }
+        transformers = TransformerUtility.lambda_api()
+        ctx = TransformContext()
+        for t in transformers:
+            t.transform(input, ctx=ctx)
+
+        output = json.dumps(input)
+        for sr in ctx.serialized_replacements:
+            output = sr(output)
+
+        expected = {
+            "Payload": {
+                "context": {
+                    "functionVersion": "$LATEST",
+                    "functionName": "<resource:1>",
+                    "memoryLimitInMB": "128",
+                    "logGroupName": "/aws/lambda/<resource:1>",
+                    "logStreamName": "<log-stream-name:1>",
+                    "clientContext": {
+                        "custom": {"foo": "bar"},
+                        "client": {"snap": ["crackle", "pop"]},
+                        "env": {"fizz": "buzz"},
+                    },
+                    "invokedFunctionArn": "arn:aws:lambda:us-east-1:111111111111:function:<resource:1>",
+                }
+            }
+        }
+        assert expected == json.loads(output)

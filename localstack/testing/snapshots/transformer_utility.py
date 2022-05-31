@@ -77,7 +77,9 @@ class TransformerUtility:
                 reference_replacement=False,
             ),
             KeyValueBasedTransformer(_resource_name_transformer, "resource"),
-            KeyValueBasedTransformer(_log_stream_name_transformer, "log-stream-name"),
+            KeyValueBasedTransformer(
+                _log_stream_name_transformer, "log-stream-name", replace_reference=True
+            ),
         ]
 
     @staticmethod

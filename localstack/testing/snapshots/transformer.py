@@ -160,7 +160,9 @@ class KeyValueBasedTransformer:
                         ctx, reference_value=match_result, replacement=self.replacement
                     )
                 else:
-                    LOG.debug(f"Replacing value for key '{k}' with '{self.replacement}'")
+                    LOG.debug(
+                        f"Replacing value for key '{k}' with '{self.replacement}'. (Original value: {str(v)})"
+                    )
                     input_data[k] = self.replacement
             elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
                 for i in range(0, len(v)):
