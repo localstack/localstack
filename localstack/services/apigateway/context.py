@@ -123,7 +123,8 @@ class ApiInvocationContext:
             context = self.auth_info.setdefault("context", {})
             if principal := self.auth_info.get("principalId"):
                 context["principalId"] = principal
-            return context
+                return context
+            return self.auth_info
 
     @property
     def auth_identity(self) -> Optional[Dict]:
