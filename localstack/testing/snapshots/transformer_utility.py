@@ -121,7 +121,7 @@ def _replace_camel_string_with_hyphen(input_string: str):
 
 
 def _log_stream_name_transformer(key: str, val: str) -> str:
-    if isinstance(val, str) and key == "log_stream_name":
+    if isinstance(val, str) and (key == "log_stream_name" or key == "logStreamName"):
         match = re.match(PATTERN_LOGSTREAM_ID, val)
         if match:
             return val
