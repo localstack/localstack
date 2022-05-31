@@ -1,16 +1,14 @@
 {
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAsfApi::test_basic_invoke": {
-    "recorded-date": "24-05-2022, 14:44:31",
+    "recorded-date": "31-05-2022, 09:28:23",
     "recorded-content": {
       "lambda_create_fn": {
         "ResponseMetadata": {
           "HTTPStatusCode": 201,
-          "HTTPHeaders": {
-            "content-type": "application/json"
-          }
+          "HTTPHeaders": {}
         },
-        "FunctionName": "<fn-name:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
+        "FunctionName": "<function-name:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
         "Runtime": "python3.9",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Handler": "index.handler",
@@ -18,7 +16,7 @@
         "Description": "",
         "Timeout": 3,
         "MemorySize": 128,
-        "LastModified": "<date>",
+        "LastModified": "date",
         "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
         "Version": "$LATEST",
         "TracingConfig": {
@@ -39,12 +37,10 @@
       "lambda_create_fn_2": {
         "ResponseMetadata": {
           "HTTPStatusCode": 201,
-          "HTTPHeaders": {
-            "content-type": "application/json"
-          }
+          "HTTPHeaders": {}
         },
-        "FunctionName": "<fn-name:2>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:2>",
+        "FunctionName": "<function-name:2>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:2>",
         "Runtime": "python3.9",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Handler": "index.handler",
@@ -52,7 +48,7 @@
         "Description": "",
         "Timeout": 3,
         "MemorySize": 128,
-        "LastModified": "<date>",
+        "LastModified": "date",
         "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
         "Version": "$LATEST",
         "TracingConfig": {
@@ -73,13 +69,11 @@
       "lambda_get_fn": {
         "ResponseMetadata": {
           "HTTPStatusCode": 200,
-          "HTTPHeaders": {
-            "content-type": "application/json"
-          }
+          "HTTPHeaders": {}
         },
         "Configuration": {
-          "FunctionName": "<fn-name:1>",
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:1>",
+          "FunctionName": "<function-name:1>",
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
           "Runtime": "python3.9",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Handler": "index.handler",
@@ -87,7 +81,7 @@
           "Description": "",
           "Timeout": 3,
           "MemorySize": 128,
-          "LastModified": "<date>",
+          "LastModified": "date",
           "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
           "Version": "$LATEST",
           "TracingConfig": {
@@ -112,13 +106,11 @@
       "lambda_get_fn_2": {
         "ResponseMetadata": {
           "HTTPStatusCode": 200,
-          "HTTPHeaders": {
-            "content-type": "application/json"
-          }
+          "HTTPHeaders": {}
         },
         "Configuration": {
-          "FunctionName": "<fn-name:2>",
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<fn-name:2>",
+          "FunctionName": "<function-name:2>",
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:2>",
           "Runtime": "python3.9",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Handler": "index.handler",
@@ -126,7 +118,7 @@
           "Description": "",
           "Timeout": 3,
           "MemorySize": 128,
-          "LastModified": "<date>",
+          "LastModified": "date",
           "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
           "Version": "$LATEST",
           "TracingConfig": {
@@ -151,9 +143,7 @@
       "lambda_invoke_result": {
         "ResponseMetadata": {
           "HTTPStatusCode": 200,
-          "HTTPHeaders": {
-            "content-type": "application/json"
-          }
+          "HTTPHeaders": {}
         },
         "StatusCode": 200,
         "ExecutedVersion": "$LATEST",

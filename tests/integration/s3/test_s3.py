@@ -3,10 +3,6 @@ import requests
 from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
-from localstack.testing.aws.util import (
-    write_snapshot_samples,
-    write_snapshot_samples_collect_stream,
-)
 from localstack.utils.strings import short_uid
 
 
@@ -25,7 +21,9 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.snapshot_sample
-    def test_delete_bucket_with_content(self, s3_client, s3_resource, s3_bucket):
+    def test_delete_bucket_with_content(self, s3_client, s3_resource, s3_bucket, snapshot):
+
+        snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_bucket
 
         for i in range(0, 10, 1):
@@ -33,14 +31,8 @@ class TestS3:
             key = "test-key-" + str(i)
             s3_client.put_object(Bucket=bucket_name, Key=key, Body=body)
 
-        write_snapshot_samples(
-            lambda: s3_client.list_objects(Bucket=bucket_name), "s3", "list_objects"
-        )
-        write_snapshot_samples(
-            lambda: s3_client.list_objects_v2(Bucket=bucket_name), "s3", "list_objects_v2"
-        )
-
         resp = s3_client.list_objects(Bucket=bucket_name, MaxKeys=100)
+        snapshot.match("list-objects", resp)
         assert 10 == len(resp["Contents"])
 
         bucket = s3_resource.Bucket(bucket_name)
@@ -48,21 +40,21 @@ class TestS3:
         bucket.delete()
 
         resp = s3_client.list_buckets()
+        # TODO - this might fail if tests run in parallel
+        snapshot.match("list-buckets", resp)
         assert bucket_name not in [b["Name"] for b in resp["Buckets"]]
 
     @pytest.mark.aws_validated
     @pytest.mark.snapshot_sample
-    def test_put_and_get_object_with_utf8_key(self, s3_client, s3_bucket):
+    def test_put_and_get_object_with_utf8_key(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
         response = s3_client.put_object(Bucket=s3_bucket, Key="Ā0Ä", Body=b"abc123")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        write_snapshot_samples(lambda: s3_client.list_objects(Bucket=s3_bucket), "s3", "get_object")
-        write_snapshot_samples_collect_stream(
-            lambda: s3_client.get_object(Bucket=s3_bucket, Key="Ā0Ä"),
-            "Body",
-            "s3",
-            "get_object_stream",
-        )
+        snapshot.match("put-object", response)
+
         response = s3_client.get_object(Bucket=s3_bucket, Key="Ā0Ä")
+        # snapshot.match("get-object", response)
         assert response["Body"].read() == b"abc123"
 
     @pytest.mark.aws_validated
@@ -85,7 +77,8 @@ class TestS3:
 
     @pytest.mark.snapshot_sample
     @pytest.mark.aws_validated
-    def test_metadata_header_character_decoding(self, s3_client, s3_bucket):
+    def test_metadata_header_character_decoding(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
         # Object metadata keys should accept keys with underscores
         # https://github.com/localstack/localstack/issues/1790
         # put object
@@ -93,10 +86,8 @@ class TestS3:
         metadata = {"TEST_META_1": "foo", "__meta_2": "bar"}
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Metadata=metadata, Body="foo")
         metadata_saved = s3_client.head_object(Bucket=s3_bucket, Key=object_key)["Metadata"]
-        write_snapshot_samples(lambda: s3_client.head_bucket(Bucket=s3_bucket), "s3", "head_bucket")
-        write_snapshot_samples(
-            lambda: s3_client.head_object(Bucket=s3_bucket, Key=object_key), "s3", "head_object"
-        )
+        snapshot.match("head-object", metadata_saved)
+
         # note that casing is removed (since headers are case-insensitive)
         assert metadata_saved == {"test_meta_1": "foo", "__meta_2": "bar"}
 

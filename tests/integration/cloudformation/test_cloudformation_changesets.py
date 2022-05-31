@@ -5,7 +5,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.testing.aws.cloudformation_utils import load_template_file
-from localstack.testing.aws.util import is_aws_cloud, write_snapshot_samples
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 
@@ -74,7 +74,9 @@ def test_create_change_set_update_without_parameters(
     cleanup_changesets,
     is_change_set_created_and_available,
     is_change_set_finished,
+    snapshot,
 ):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
     """after creating a stack via a CREATE change set we send an UPDATE change set changing the SNS topic name"""
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
@@ -86,6 +88,7 @@ def test_create_change_set_update_without_parameters(
         TemplateBody=load_template_raw("sns_topic_simple.yaml"),
         ChangeSetType="CREATE",
     )
+    snapshot.match("create_change_set", response)
     change_set_id = response["Id"]
     stack_id = response["StackId"]
     assert change_set_id
@@ -105,22 +108,11 @@ def test_create_change_set_update_without_parameters(
             ChangeSetType="UPDATE",
         )
         assert wait_until(is_change_set_created_and_available(update_response["Id"]))
-
-        write_snapshot_samples(
-            lambda: cfn_client.describe_change_set(ChangeSetName=update_response["Id"]),
-            "cloudformation",
+        snapshot.match(
             "describe_change_set",
+            cfn_client.describe_change_set(ChangeSetName=update_response["Id"]),
         )
-        write_snapshot_samples(
-            lambda: cfn_client.describe_stacks(StackName=stack_name),
-            "cloudformation",
-            "describe_stacks",
-        )
-        write_snapshot_samples(
-            lambda: cfn_client.list_change_sets(StackName=stack_name),
-            "cloudformation",
-            "list_change_sets",
-        )
+        snapshot.match("list_change_set", cfn_client.list_change_sets(StackName=stack_name))
 
         describe_response = cfn_client.describe_change_set(ChangeSetName=update_response["Id"])
         changes = describe_response["Changes"]
