@@ -1,6 +1,8 @@
 import json
 import re
 
+from botocore.exceptions import ClientError
+
 from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
@@ -111,10 +113,6 @@ class S3Bucket(GenericBaseModel):
             }
             return result
 
-        def get_bucket_location_config():
-            region = aws_stack.get_region()
-            return {"LocationConstraint": region}
-
         def _pre_delete(resource_id, resources, resource_type, func, stack_name):
             s3 = aws_stack.connect_to_service("s3")
             resource = resources[resource_id]
@@ -162,15 +160,14 @@ class S3Bucket(GenericBaseModel):
             bucket_name = props.get("BucketName")
             try:
                 s3_client.head_bucket(Bucket=bucket_name)
-            except Exception:
-                # bucket not found; we create one
-                props = resource["Properties"]
-                bucket_name = props.get("BucketName")
-                s3_client.create_bucket(
-                    Bucket=bucket_name,
-                    ACL=convert_acl_cf_to_s3(props.get("AccessControl", "PublicRead")),
-                    CreateBucketConfiguration=get_bucket_location_config(),
-                )
+            except ClientError as e:
+                if e.response["Error"]["Message"] == "Not Found":
+                    bucket_name = props.get("BucketName")
+                    s3_client.create_bucket(
+                        Bucket=bucket_name,
+                        ACL=convert_acl_cf_to_s3(props.get("AccessControl", "PublicRead")),
+                        CreateBucketConfiguration={"LocationConstraint": aws_stack.get_region()},
+                    )
 
         result = {
             "create": [
