@@ -14,6 +14,7 @@ import botocore.session
 import pytest
 from _pytest.config import Config
 from _pytest.nodes import Item
+from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
 
 from localstack import config
@@ -423,6 +424,25 @@ def sqs_queue_arn(sqs_client):
         ]["QueueArn"]
 
     return _get_arn
+
+
+@pytest.fixture
+def sqs_queue_exists(sqs_client):
+    def _queue_exists(queue_url: str) -> bool:
+        """
+        Checks whether a queue with the given queue URL exists.
+        :param queue_url: the queue URL
+        :return: true if the queue exists, false otherwise
+        """
+        try:
+            result = sqs_client.get_queue_url(QueueName=queue_url.split("/")[-1])
+            return result.get("QueueUrl") == queue_url
+        except ClientError as e:
+            if "NonExistentQueue" in e.response["Error"]["Code"]:
+                return False
+            raise
+
+    yield _queue_exists
 
 
 @pytest.fixture

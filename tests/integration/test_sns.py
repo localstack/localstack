@@ -2,6 +2,7 @@
 import json
 import queue
 import random
+import re
 import time
 
 import pytest
@@ -21,6 +22,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     get_free_tcp_port,
     get_service_protocol,
+    poll_condition,
     retry,
     short_uid,
     to_str,
@@ -677,15 +679,13 @@ class TestSNSProvider:
             Message=json.dumps({"message": "test_redrive_policy"}),
         )
 
-        def receive_dlq():
-            result = sqs_client.receive_message(QueueUrl=dlq_url, MessageAttributeNames=["All"])
-            assert len(result["Messages"]) > 0
-            assert (
-                json.loads(json.loads(result["Messages"][0]["Body"])["Message"][0])["message"]
-                == "test_redrive_policy"
-            )
-
-        retry(receive_dlq, retries=7, sleep=2.5)
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        assert (
+            len(response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {response}"
+        message = json.loads(response["Messages"][0]["Body"])
+        assert message["Type"] == "Notification"
+        assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
     def test_redrive_policy_lambda_subscription(
         self,
@@ -725,15 +725,13 @@ class TestSNSProvider:
             Message=json.dumps({"message": "test_redrive_policy"}),
         )
 
-        def receive_dlq():
-            result = sqs_client.receive_message(QueueUrl=dlq_url, MessageAttributeNames=["All"])
-            assert len(result["Messages"]) > 0
-            assert (
-                json.loads(json.loads(result["Messages"][0]["Body"])["Message"][0])["message"]
-                == "test_redrive_policy"
-            )
-
-        retry(receive_dlq, retries=10, sleep=2)
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        assert (
+            len(response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {response}"
+        message = json.loads(response["Messages"][0]["Body"])
+        assert message["Type"] == "Notification"
+        assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
     def test_redrive_policy_queue_subscription(
         self,
@@ -766,15 +764,13 @@ class TestSNSProvider:
             TopicArn=topic_arn, Message=json.dumps({"message": "test_redrive_policy"})
         )
 
-        def receive_dlq():
-            result = sqs_client.receive_message(QueueUrl=dlq_url, MessageAttributeNames=["All"])
-            assert len(result["Messages"]) > 0
-            assert (
-                json.loads(json.loads(result["Messages"][0]["Body"])["Message"][0])["message"]
-                == "test_redrive_policy"
-            )
-
-        retry(receive_dlq, retries=10, sleep=2)
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        assert (
+            len(response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {response}"
+        message = json.loads(response["Messages"][0]["Body"])
+        assert message["Type"] == "Notification"
+        assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
     def test_publish_with_empty_subject(self, sns_client, sns_create_topic):
         topic_arn = sns_create_topic()["TopicArn"]
@@ -1510,3 +1506,97 @@ class TestSNSProvider:
             )["Attributes"]["ApproximateNumberOfMessages"]
             == "0"
         )
+
+    @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @pytest.mark.aws_validated
+    def test_dead_letter_queue_with_deleted_sqs_queue(
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sqs_queue_exists,
+        sns_create_sqs_subscription,
+        raw_message_delivery,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        dlq_url = sqs_create_queue()
+        dlq_arn = sqs_queue_arn(dlq_url)
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"],
+            AttributeName="RedrivePolicy",
+            AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
+        )
+
+        if raw_message_delivery:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription["SubscriptionArn"],
+                AttributeName="RawMessageDelivery",
+                AttributeValue="true",
+            )
+
+        # allow topic to write to the DLQ sqs queue
+        # taken from localstack.testing.pytest.fixtures.sns_create_sqs_subscription#494
+        sqs_client.set_queue_attributes(
+            QueueUrl=dlq_url,
+            Attributes={
+                "Policy": json.dumps(
+                    {
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Principal": {"Service": "sns.amazonaws.com"},
+                                "Action": "sqs:SendMessage",
+                                "Resource": dlq_arn,
+                                "Condition": {"ArnEquals": {"aws:SourceArn": topic_arn}},
+                            }
+                        ]
+                    }
+                )
+            },
+        )
+
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        # AWS takes some time to delete the queue, which make the test fails as it delivers the message correctly
+        assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
+
+        message = "test_dlq_after_sqs_endpoint_deleted"
+        sns_client.publish(TopicArn=topic_arn, Message=message)
+
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        assert (
+            len(response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {response}"
+
+        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "<receipt-handle>")
+
+        if raw_message_delivery:
+            assert response["Messages"][0]["Body"] == message
+            snapshot.match("raw_message_delivery", response)
+        else:
+            received_message = json.loads(response["Messages"][0]["Body"])
+            assert received_message["Type"] == "Notification"
+            assert received_message["Message"] == message
+
+            # Set the decoded JSON Body to be able to skip keys directly
+            response["Messages"][0]["Body"] = received_message
+            # Need to skip the MD5OfBody/Signature, because it contains a timestamp
+            snapshot.skip_key(re.compile(r"^Signature$"), "<signature>")
+            snapshot.skip_key(re.compile(r"^MD5OfBody$"), "<md5-hash>")
+            snapshot.register_replacement(
+                pattern=re.compile(r"(?<=\bSimpleNotificationService-)(.*?)(?=\.)"),
+                value="<signing-cert-file>",
+            )
+            snapshot.register_replacement(
+                pattern=re.compile(r"(?<=://)(.*?)(?=/\?Action=Unsubscribe)"),
+                value="<unsubscribe-domain>",
+            )
+            snapshot.match("json_encoded_delivery", response)

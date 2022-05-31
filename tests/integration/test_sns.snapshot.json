@@ -1,0 +1,37 @@
+{
+  "tests/integration/test_sns.py::TestSNSProvider::test_dead_letter_queue_with_deleted_sqs_queue[True]": {
+    "raw_message_delivery": {
+      "Messages": [
+        {
+          "MessageId": "<uuid>",
+          "ReceiptHandle": "<receipt-handle>",
+          "MD5OfBody": "2040fa62e6ff90d21d5fe319d5e65443",
+          "Body": "test_dlq_after_sqs_endpoint_deleted"
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_dead_letter_queue_with_deleted_sqs_queue[False]": {
+    "json_encoded_delivery": {
+      "Messages": [
+        {
+          "MessageId": "<uuid>",
+          "ReceiptHandle": "<receipt-handle>",
+          "MD5OfBody": "<md5-hash>",
+          "Body": {
+            "Type": "Notification",
+            "MessageId": "<uuid>",
+            "TopicArn": "<arn>",
+            "Message": "test_dlq_after_sqs_endpoint_deleted",
+            "Timestamp": "<timestamp>",
+            "SignatureVersion": "1",
+            "Signature": "<signature>",
+            "SigningCertURL": "https://<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=<arn>"
+          }
+        }
+      ],
+      "ResponseMetadata": "<response-metadata>"
+    }
+  }
+}

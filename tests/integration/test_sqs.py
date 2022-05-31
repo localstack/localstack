@@ -43,35 +43,6 @@ TEST_POLICY = """
 TEST_REGION = "us-east-1"
 
 
-def queue_exists(sqs_client, queue_url: str) -> bool:
-    """
-    Checks whether a queue with the given queue URL exists.
-
-    :param sqs_client: the botocore client
-    :param queue_url: the queue URL
-    :return: true if the queue exists, false otherwise
-    """
-    try:
-        result = sqs_client.get_queue_url(QueueName=queue_url.split("/")[-1])
-        return result.get("QueueUrl") == queue_url
-    except ClientError as e:
-        if "NonExistentQueue" in e.response["Error"]["Code"]:
-            return False
-        raise
-
-
-def get_queue_arn(sqs_client, queue_url: str) -> str:
-    """
-    Returns the given Queue's ARN. Expects the Queue to exist.
-
-    :param sqs_client: the boto3 client
-    :param queue_url: the queue URL
-    :return: the QueueARN
-    """
-    response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
-    return response["Attributes"]["QueueArn"]
-
-
 def get_qsize(sqs_client, queue_url: str) -> int:
     """
     Returns the integer value of the ApproximateNumberOfMessages queue attribute.
@@ -897,10 +868,10 @@ class TestSqsProvider:
         e.match("InvalidParameterValue")
 
     @pytest.mark.xfail
-    def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_client):
+    def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_client, sqs_queue_arn):
         dl_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(QueueName=dl_queue_name)
-        dl_target_arn = get_queue_arn(sqs_client, dl_queue_url)
+        dl_target_arn = sqs_queue_arn(dl_queue_url)
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         valid_max_receive_count = "42"
@@ -1232,7 +1203,7 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     def test_dead_letter_queue_with_fifo_and_content_based_deduplication(
-        self, sqs_client, sqs_create_queue
+        self, sqs_client, sqs_create_queue, sqs_queue_arn
     ):
         dlq_url = sqs_create_queue(
             QueueName=f"test-dlq-{short_uid()}.fifo",
@@ -1242,7 +1213,7 @@ class TestSqsProvider:
                 "MessageRetentionPeriod": "1209600",
             },
         )
-        dlq_arn = get_queue_arn(sqs_client, dlq_url)
+        dlq_arn = sqs_queue_arn(dlq_url)
 
         queue_url = sqs_create_queue(
             QueueName=f"test-queue-{short_uid()}.fifo",
@@ -2248,7 +2219,9 @@ class TestSqsQueryApi:
         assert "<Message>Unknown Attribute Foobar.</Message>" in response.text
 
     @pytest.mark.aws_validated
-    def test_get_delete_queue(self, sqs_create_queue, sqs_client, sqs_http_client):
+    def test_get_delete_queue(
+        self, sqs_create_queue, sqs_client, sqs_http_client, sqs_queue_exists
+    ):
         queue_url = sqs_create_queue()
 
         response = sqs_http_client.get(
@@ -2260,7 +2233,7 @@ class TestSqsQueryApi:
         assert response.ok
         assert "<DeleteQueueResponse " in response.text
 
-        assert poll_condition(lambda: not queue_exists(sqs_client, queue_url), timeout=5)
+        assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
 
     @pytest.mark.aws_validated
     def test_get_send_and_receive_messages(self, sqs_create_queue, sqs_http_client):
@@ -2303,12 +2276,14 @@ class TestSqsQueryApi:
         assert "<MD5OfBody>" in response.text
 
     @pytest.mark.aws_validated
-    def test_get_on_deleted_queue_fails(self, sqs_client, sqs_create_queue, sqs_http_client):
+    def test_get_on_deleted_queue_fails(
+        self, sqs_client, sqs_create_queue, sqs_http_client, sqs_queue_exists
+    ):
         queue_url = sqs_create_queue()
 
         sqs_client.delete_queue(QueueUrl=queue_url)
 
-        assert poll_condition(lambda: not queue_exists(sqs_client, queue_url), timeout=5)
+        assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
 
         response = sqs_http_client.get(
             queue_url,
