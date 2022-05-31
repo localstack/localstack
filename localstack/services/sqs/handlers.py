@@ -3,7 +3,7 @@ from urllib.parse import urlencode
 from localstack.aws.api import HttpRequest, HttpResponse, RequestContext
 from localstack.aws.chain import Handler, HandlerChain
 
-from .sqs_listener import is_sqs_queue_url
+from .legacy.sqs_listener import is_sqs_queue_url
 
 
 class SqsQueueActionHandler(Handler):
