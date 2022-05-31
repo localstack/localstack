@@ -947,8 +947,8 @@ async def message_to_subscriber(
                 traceback.format_exc(),
             )
             store_delivery_log(subscriber, False, message, message_id)
-            # check AWS format of DLQ message after application delivery failure, maybe format is wrong
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
+            message_body = create_sns_message_body(subscriber, req_data, message_id)
+            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
         return
 
     elif subscriber["Protocol"] in ["email", "email-json"]:
@@ -987,7 +987,7 @@ def get_subscription_by_arn(sub_arn):
                 return sub
 
 
-def create_sns_message_body(subscriber, req_data, message_id=None):
+def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
     message = req_data["Message"][0]
     protocol = subscriber["Protocol"]
     attributes = get_message_attributes(req_data)
@@ -1024,7 +1024,7 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
     }
 
     for key in ["Subject", "SubscribeURL", "Token"]:
-        if key in req_data and req_data[key][0]:
+        if req_data.get(key) and req_data[key][0]:
             data[key] = req_data[key][0]
 
     for key in HTTP_SUBSCRIPTION_ATTRIBUTES:
