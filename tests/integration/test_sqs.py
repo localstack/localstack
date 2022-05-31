@@ -1908,7 +1908,7 @@ class TestSqsProvider:
         Receive message allows a list of filters to be passed with MessageAttributeNames. See:
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message
         """
-        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "")
+        snapshot.add_transformer(snapshot.transform.sqs_api())
 
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 
@@ -1921,7 +1921,7 @@ class TestSqsProvider:
                 "General": {"DataType": "String", "StringValue": "Kenobi"},
             },
         )
-        assert snapshot.match("send_message_response", response)
+        snapshot.match("send_message_response", response)
 
         def receive_message(message_attribute_names):
             return sqs_client.receive_message(
@@ -1933,41 +1933,41 @@ class TestSqsProvider:
         # test empty filter
         response = receive_message([])
         # do the first check with the entire response
-        assert snapshot.match("empty_filter", response)
+        snapshot.match("empty_filter", response)
 
         # test "All"
         response = receive_message(["All"])
-        assert snapshot.match("all_name", response)
+        snapshot.match("all_name", response)
 
         # test ".*"
         response = receive_message([".*"])
-        assert snapshot.match("all_wildcard", response["Messages"][0])
+        snapshot.match("all_wildcard", response["Messages"][0])
 
         # test only non-existent names
         response = receive_message(["Foo", "Help"])
-        assert snapshot.match("only_non_existing_names", response["Messages"][0])
+        snapshot.match("only_non_existing_names", response["Messages"][0])
 
         # test all existing
         response = receive_message(["Hello", "General"])
-        assert snapshot.match("only_existing", response["Messages"][0])
+        snapshot.match("only_existing", response["Messages"][0])
 
         # test existing and non-existing
         response = receive_message(["Foo", "Hello"])
-        assert snapshot.match("existing_and_non_existing", response["Messages"][0])
+        snapshot.match("existing_and_non_existing", response["Messages"][0])
 
         # test prefix filters
         response = receive_message(["Hel.*"])
-        assert snapshot.match("prefix_filter", response["Messages"][0])
+        snapshot.match("prefix_filter", response["Messages"][0])
 
         # test illegal names
         response = receive_message(["AWS."])
-        assert snapshot.match("illegal_name_1", response)
+        snapshot.match("illegal_name_1", response)
         response = receive_message(["..foo"])
-        assert snapshot.match("illegal_name_2", response)
+        snapshot.match("illegal_name_2", response)
 
     def test_receive_message_attribute_names_filters(self, sqs_client, sqs_create_queue, snapshot):
-        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "")
-        snapshot.skip_key(re.compile(r"^SenderId$"), "")
+        # TODO -> senderId in LS matches the accountid, which has higher priority
+        snapshot.add_transformer(snapshot.transform.sqs_api(), priority=-2)
 
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 
@@ -1988,16 +1988,16 @@ class TestSqsProvider:
             )
 
         response = receive_message(["All"])
-        assert snapshot.match("all_attributes", response)
+        snapshot.match("all_attributes", response)
 
         response = receive_message(["All"], ["All"])
-        assert snapshot.match("all_system_and_message_attributes", response)
+        snapshot.match("all_system_and_message_attributes", response)
 
         response = receive_message(["SenderId"])
-        assert snapshot.match("single_attribute", response)
+        snapshot.match("single_attribute", response)
 
         response = receive_message(["SenderId", "SequenceNumber"])
-        assert snapshot.match("multiple_attributes", response)
+        snapshot.match("multiple_attributes", response)
 
     @pytest.mark.aws_validated
     def test_change_visibility_on_deleted_message_raises_invalid_parameter_value(

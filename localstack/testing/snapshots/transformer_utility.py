@@ -92,6 +92,10 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def iam_api():
+        return [TransformerUtility.key_value("UserName"), TransformerUtility.key_value("UserId")]
+
+    @staticmethod
     def s3_api():
         return [
             TransformerUtility.key_value("Name", value_replacement="bucket-name"),
@@ -110,8 +114,7 @@ class TransformerUtility:
     def sqs_api():
         return [
             TransformerUtility.key_value("ReceiptHandle"),
-            TransformerUtility.key_value("MD5OfBody"),
-            TransformerUtility.key_value("MD5OfMessageAttributes"),
+            TransformerUtility.key_value("SenderId"),
             TransformerUtility.jsonpath("$..MessageAttributes.RequestID.StringValue", "request-id"),
         ]
 
@@ -173,5 +176,10 @@ SNAPSHOT_BASIC_TRANSFORMER = [
     RegexTransformer(PATTERN_ISO8601, "date"),
     KeyValueBasedTransformer(
         lambda k, v: (v if isinstance(v, datetime) else None), "datetime", replace_reference=False
+    ),
+    KeyValueBasedTransformer(
+        lambda k, v: v if re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE).match(k) else None,
+        "timestamp",
+        replace_reference=False,
     ),
 ]

@@ -41,10 +41,11 @@ class TransformContext:
 def _register_serialized_reference_replacement(
     transform_context: TransformContext, *, reference_value: str, replacement: str
 ):
-    cache = transform_context._cache.setdefault("regexcache", set())
-    cache_key = reference_value
     if '"' in reference_value:
         reference_value = reference_value.replace('"', '\\"')
+
+    cache = transform_context._cache.setdefault("regexcache", set())
+    cache_key = reference_value
     if cache_key not in cache:
         actual_replacement = f"<{replacement}:{transform_context.new_scope(replacement)}>"
         cache.add(cache_key)
@@ -136,7 +137,7 @@ class RegexTransformer:
         compiled_regex = re.compile(self.regex) if isinstance(self.regex, str) else self.regex
         ctx.register_serialized_replacement(lambda s: re.sub(compiled_regex, self.replacement, s))
         LOG.debug(
-            f"Replacing regex pattern '{compiled_regex.pattern}' in snapshot with '{self.replacement}'"
+            f"Register regex pattern '{compiled_regex.pattern}' in snapshot with '{self.replacement}'"
         )
         return input_data
 

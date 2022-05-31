@@ -528,7 +528,8 @@ class TestLambdaAPI:
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
-        # TODO botocore.errorfactory.InvalidParameterValueException: An error occurred (InvalidParameterValueException) when calling the PutFunctionConcurrency operation: Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [50].
+        # TODO botocore.errorfactory.InvalidParameterValueException:
+        #  An error occurred (InvalidParameterValueException) when calling the PutFunctionConcurrency operation: Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [50].
         response = lambda_client.put_function_concurrency(
             FunctionName=function_name, ReservedConcurrentExecutions=123
         )
@@ -608,7 +609,7 @@ class TestLambdaAPI:
         snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"test-function-{short_uid()}"
 
-        # TODO no zip file/function?
+        # FIXME no zip file/function?
         create_lambda_function(
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON37,
@@ -658,6 +659,9 @@ class TestLambdaBaseFeatures:
         # create DLQ and Lambda function
         snapshot.add_transformer(snapshot.transform.lambda_api())
         snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfMessageAttributes"))
+
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -740,6 +744,9 @@ class TestLambdaBaseFeatures:
     ):
         snapshot.add_transformer(snapshot.transform.lambda_api())
         snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfMessageAttributes"))
+
         """Testing the destination config API and operation (for the OnSuccess case)"""
         # create DLQ and Lambda function
         queue_name = f"test-{short_uid()}"
