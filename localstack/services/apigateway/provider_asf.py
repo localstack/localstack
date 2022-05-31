@@ -1,6 +1,6 @@
 """A version of the API Gateway provider that uses ASF constructs to dispatch user routes."""
 from collections import defaultdict
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
@@ -26,11 +26,14 @@ from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import to_str
 
 
-def to_invocation_context(request: Request) -> ApiInvocationContext:
+def to_invocation_context(
+    request: Request, url_params: Dict[str, Any] = None
+) -> ApiInvocationContext:
     """
     Converts an HTTP Request object into an ApiInvocationContext.
 
     :param request: the original request
+    :param url_params: the parameters extracted from the URL matching rules
     :return: the ApiInvocationContext
     """
     # FIXME: ApiInvocationContext should be refactored to use werkzeug request object correctly
@@ -39,6 +42,9 @@ def to_invocation_context(request: Request) -> ApiInvocationContext:
     # not using request.data here is critical to make sure we do not consume form data
     data = request.get_data(cache=True) or b""
     headers = Headers(request.headers)
+
+    if url_params is None:
+        url_params = {}
 
     # TODO: here will have to be a compatibility layer for the ASF gateway. with the legacy edge proxy integration,
     #  the edge proxy sets X-Forwarded-For and other proxy headers, which the gateway does not do by default (and
@@ -52,6 +58,7 @@ def to_invocation_context(request: Request) -> ApiInvocationContext:
         path,
         data,
         headers,
+        stage=url_params.get("stage"),
     )
 
 
@@ -116,8 +123,8 @@ class ApigatewayRouter:
         for rule in rules:
             self.router.remove_rule(rule)
 
-    def _restapis_handler(self, request: Request, path=None) -> Response:
-        invocation_context = to_invocation_context(request)
+    def _invoke_rest_api(self, request: Request, url_params: Dict[str, Any]) -> Response:
+        invocation_context = to_invocation_context(request, url_params)
 
         result = invoke_rest_api_from_request(invocation_context)
         if result is not None:
@@ -136,11 +143,11 @@ class ApigatewayRouter:
 
         raise NotFound()
 
-    def _restapis_user_request_handler(self, request: Request, stage=None, path=None):
-        return self._restapis_handler(request, path)
+    def _restapis_user_request_handler(self, request: Request, **url_params):
+        return self._invoke_rest_api(request, url_params)
 
-    def _restapis_host_handler(self, request: Request, path=None, server=None) -> Response:
-        return self._restapis_handler(request)
+    def _restapis_host_handler(self, request: Request, **url_params) -> Response:
+        return self._invoke_rest_api(request, url_params)
 
 
 class AsfApigatewayProvider(ApigatewayProvider):
