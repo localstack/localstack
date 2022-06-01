@@ -3,22 +3,24 @@ import re
 import threading
 
 import pytest
+from moto.core import get_account_id
 
 from localstack import config
 from localstack.services.install import TERRAFORM_BIN, install_terraform
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
 
 #  TODO: remove all of these
+
 BUCKET_NAME = "tf-bucket"
 QUEUE_NAME = "tf-queue"
-QUEUE_ARN = "arn:aws:sqs:us-east-1:000000000000:tf-queue"
+QUEUE_ARN = f"arn:aws:sqs:us-east-1:{get_account_id()}:tf-queue"
 
 # lambda Testing Variables
 LAMBDA_NAME = "tf-lambda"
-LAMBDA_ARN = f"arn:aws:lambda:us-east-1:000000000000:function:{LAMBDA_NAME}"
+LAMBDA_ARN = f"arn:aws:lambda:us-east-1:{get_account_id()}:function:{LAMBDA_NAME}"
 LAMBDA_HANDLER = "DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler"
 LAMBDA_RUNTIME = "dotnetcore2.0"
-LAMBDA_ROLE = "arn:aws:iam::000000000000:role/iam_for_lambda"
+LAMBDA_ROLE = f"arn:aws:iam::{get_account_id()}:role/iam_for_lambda"
 
 INIT_LOCK = threading.RLock()
 
