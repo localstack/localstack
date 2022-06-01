@@ -16,14 +16,15 @@ from flask_cors.core import (
 from werkzeug.datastructures import Headers
 
 from localstack import config
-from localstack.aws.api import RequestContext
-from localstack.aws.chain import Handler, HandlerChain
 from localstack.config import (
     EXTRA_CORS_ALLOWED_HEADERS,
     EXTRA_CORS_ALLOWED_ORIGINS,
     EXTRA_CORS_EXPOSE_HEADERS,
 )
 from localstack.http import Response
+
+from ..api import RequestContext
+from ..chain import Handler, HandlerChain
 
 # CORS constants below
 CORS_ALLOWED_HEADERS = [
