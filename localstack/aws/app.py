@@ -42,6 +42,7 @@ class LocalstackAwsGateway(Gateway):
         self.request_handlers.extend(
             [
                 handlers.push_quart_context,
+                handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
                 handlers.enforce_cors,
                 handlers.content_decoder,
                 handlers.serve_localstack_resources,  # try to serve internal resources first
@@ -49,7 +50,6 @@ class LocalstackAwsGateway(Gateway):
                 serve_custom_routes,
                 # start aws handler chain
                 handlers.process_custom_service_rules,  # translate things like GET requests to SQS Queue URLs
-                handlers.parse_service_name,
                 handlers.inject_auth_header_if_missing,
                 handlers.add_region_from_header,
                 handlers.add_default_account_id,

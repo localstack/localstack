@@ -18,13 +18,12 @@ from werkzeug.datastructures import Headers
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import Handler, HandlerChain
-from localstack.aws.protocol.service_router import determine_aws_service_name
 from localstack.config import (
     EXTRA_CORS_ALLOWED_HEADERS,
     EXTRA_CORS_ALLOWED_ORIGINS,
     EXTRA_CORS_EXPOSE_HEADERS,
 )
-from localstack.http import Request, Response
+from localstack.http import Response
 
 # CORS constants below
 CORS_ALLOWED_HEADERS = [
@@ -99,7 +98,7 @@ class CorsEnforcer(Handler):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response) -> None:
         if (
             not config.DISABLE_CORS_CHECKS
-            and self.should_enforce_self_managed_service(context.request)
+            and self.should_enforce_self_managed_service(context)
             and not self.is_cors_origin_allowed(context.request.headers)
         ):
             LOG.info(
@@ -110,21 +109,23 @@ class CorsEnforcer(Handler):
             chain.terminate()
 
     @staticmethod
-    def should_enforce_self_managed_service(request: Request) -> bool:
+    def should_enforce_self_managed_service(context: RequestContext) -> bool:
         """
         Some services are handling their CORS checks on their own (depending on config vars).
 
-        :param request: for which to check if the CORS checks should be executed in here or in the targeting service
-        :return: True if the CORS rules should be inforced in here.
+        :param context: context of the request for which to check if the CORS checks should be executed in here or in
+                        the targeting service
+        :return: True if the CORS rules should be enforced in here.
         """
         if config.DISABLE_CUSTOM_CORS_S3 and config.DISABLE_CUSTOM_CORS_APIGATEWAY:
             return True
         # allow only certain api calls without checking origin
-        api = determine_aws_service_name(request)
-        if not config.DISABLE_CUSTOM_CORS_S3 and api == "s3":
-            return False
-        if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and api == "apigateway":
-            return False
+        if context.service:
+            service_name = context.service.service_name
+            if not config.DISABLE_CUSTOM_CORS_S3 and service_name == "s3":
+                return False
+            if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and service_name == "apigateway":
+                return False
         return True
 
     @staticmethod
