@@ -352,6 +352,9 @@ class TestEdgeAPI:
                 assert response
                 assert "Functions" in json.loads(to_str(response.content))
 
+    @pytest.mark.skipif(
+        condition=not config.LEGACY_EDGE_PROXY, reason="only relevant for old edge proxy"
+    )
     def test_forward_raw_path(self, monkeypatch):
         class MyListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
