@@ -1274,6 +1274,30 @@ class TestDynamoDB:
         )
         assert list(result["Responses"])[0] == table_name
 
+    def test_dynamodb_streams_describe_with_exclusive_start_shard_id(self, dynamodb):
+        table_name = f"test-ddb-table-{short_uid()}"
+        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
+
+        aws_stack.create_dynamodb_table(
+            table_name,
+            partition_key=PARTITION_KEY,
+            stream_view_type="NEW_AND_OLD_IMAGES",
+        )
+        table = dynamodb.Table(table_name)
+
+        response = ddbstreams.describe_stream(StreamArn=table.latest_stream_arn)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert len(response["StreamDescription"]["Shards"]) == 1
+        shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
+
+        response = ddbstreams.describe_stream(
+            StreamArn=table.latest_stream_arn, ExclusiveStartShardId=shard_id
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert len(response["StreamDescription"]["Shards"]) == 0
+
+        delete_table(table_name)
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.create_external_boto_client("dynamodb")

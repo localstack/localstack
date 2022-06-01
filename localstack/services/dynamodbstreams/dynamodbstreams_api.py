@@ -17,9 +17,12 @@ class DynamoDBStreamsBackend(RegionBackend):
     SEQUENCE_NUMBER_COUNTER = 1
     # maps table names to DynamoDB stream details
     ddb_streams: Dict[str, Dict]
+    # map streams' ARN to a map of Kinesis shardId to DynamoDBStreams shardId to allow persistence of Ids
+    ddb_streams_shards: Dict[str, Dict[str, str]]
 
     def __init__(self):
         self.ddb_streams = {}
+        self.ddb_streams_shards = {}
 
 
 def add_dynamodb_stream(
@@ -72,6 +75,7 @@ def delete_streams(table_arn):
     table_name = table_name_from_table_arn(table_arn)
     stream = region.ddb_streams.pop(table_name, None)
     if stream:
+        region.ddb_streams_shards.pop(stream["StreamArn"], None)
         stream_name = get_kinesis_stream_name(table_name)
         try:
             aws_stack.connect_to_service("kinesis").delete_stream(StreamName=stream_name)
@@ -100,12 +104,25 @@ def stream_name_from_stream_arn(stream_arn):
 
 def shard_id(kinesis_shard_id):
     timestamp = str(int(now_utc()))
-    timestamp = "%s00000000" % timestamp[:-5]
-    timestamp = "%s%s" % ("0" * (20 - len(timestamp)), timestamp)
-    suffix = kinesis_shard_id.replace("shardId-", "")[:32]
-    return "shardId-%s-%s" % (timestamp, suffix)
+    timestamp = f"{timestamp[:-5]}00000000".rjust(20, "0")
+    kinesis_shard_params = kinesis_shard_id.split("-")
+    return f"{kinesis_shard_params[0]}-{timestamp}-{kinesis_shard_params[-1][:32]}"
 
 
 def kinesis_shard_id(dynamodbstream_shard_id):
     shard_params = dynamodbstream_shard_id.rsplit("-")
-    return "{0}-{1}".format(shard_params[0], shard_params[-1])
+    return f"{shard_params[0]}-{shard_params[-1]}"
+
+
+def get_shard_id(stream_arn, kinesis_shard_id):
+    region = DynamoDBStreamsBackend.get()
+    stream_shards = region.ddb_streams_shards.get(stream_arn)
+    if stream_shards and (stream_shard_id := stream_shards.get(kinesis_shard_id)):
+        return stream_shard_id
+
+    if not stream_shards:
+        region.ddb_streams_shards[stream_arn] = {}
+
+    stream_shard_id = shard_id(kinesis_shard_id)
+    region.ddb_streams_shards[stream_arn][kinesis_shard_id] = stream_shard_id
+    return stream_shard_id
