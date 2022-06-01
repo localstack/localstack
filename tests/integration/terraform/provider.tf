@@ -4,7 +4,7 @@ variable "region_name" {
 
 provider "aws" {
   region                      = var.region_name
-  access_key                  = "test"
+  access_key                  = "000000000000"
   secret_key                  = "test"
   skip_credentials_validation = true
   skip_requesting_account_id  = true
