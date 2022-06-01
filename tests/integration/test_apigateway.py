@@ -142,6 +142,15 @@ class TestAPIGateway:
     }
     TEST_API_GATEWAY_AUTHORIZER_OPS = [{"op": "replace", "path": "/name", "value": "test1"}]
 
+    @pytest.mark.aws_validated
+    def test_delete_rest_api_with_invalid_id(self, apigateway_client):
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_rest_api(restApiId="foobar")
+
+        assert e.value.response["Error"]["Code"] == "NotFoundException"
+        assert "Invalid API identifier specified" in e.value.response["Error"]["Message"]
+        assert "foobar" in e.value.response["Error"]["Message"]
+
     def test_create_rest_api_with_custom_id(self):
         client = aws_stack.create_external_boto_client("apigateway")
         apigw_name = "gw-%s" % short_uid()
