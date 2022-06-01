@@ -8,7 +8,6 @@ from botocore.exceptions import ClientError
 from localstack.aws.api.iam import Tag
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.strings import long_uid
@@ -363,10 +362,10 @@ class TestIAMIntegrations:
             ("ecr.amazonaws.com", "AWSServiceRoleForECR"),
         ],
     )
-    def test_service_linked_role_name_should_match_aws(self, iam_client, service_name, expected_role):
-        service_linked_role = iam_client.create_service_linked_role(
-            AWSServiceName=service_name
-        )
+    def test_service_linked_role_name_should_match_aws(
+        self, iam_client, service_name, expected_role
+    ):
+        service_linked_role = iam_client.create_service_linked_role(AWSServiceName=service_name)
         role_name = service_linked_role["Role"]["RoleName"]
         assert role_name == expected_role
 
