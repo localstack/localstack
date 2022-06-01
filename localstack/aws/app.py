@@ -15,7 +15,6 @@ from .api import RequestContext
 from .chain import HandlerChain
 from .gateway import Gateway
 from .handlers import EmptyResponseHandler, RouterHandler
-from .plugins import HandlerServiceAdapter, ServiceProvider
 from .proxy import AwsApiListener, DefaultListenerHandler, LegacyPluginHandler
 
 LOG = logging.getLogger(__name__)
@@ -49,7 +48,6 @@ class LocalstackAwsGateway(Gateway):
                 serve_default_listeners,
                 serve_custom_routes,
                 # start aws handler chain
-                handlers.process_custom_service_rules,  # translate things like GET requests to SQS Queue URLs
                 handlers.inject_auth_header_if_missing,
                 handlers.add_region_from_header,
                 handlers.add_default_account_id,
@@ -120,11 +118,7 @@ class LocalstackAwsGateway(Gateway):
 
             service_plugin: Service = self.service_manager.require(service_name)
 
-            if isinstance(service_plugin, ServiceProvider):
-                request_router.add_provider(service_plugin.listener)
-            elif isinstance(service_plugin, HandlerServiceAdapter):
-                request_router.add_handler(service_operation, service_plugin.listener)
-            elif isinstance(service_plugin, Service):
+            if isinstance(service_plugin, Service):
                 if type(service_plugin.listener) == AwsApiListener:
                     request_router.add_skeleton(service_plugin.listener.skeleton)
                 else:

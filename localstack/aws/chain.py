@@ -128,25 +128,3 @@ class HandlerChain:
                     LOG.exception(msg)
                 else:
                     LOG.warning(msg + ": %s", nested)
-
-
-class HandlerChainAdapter(Handler):
-    """
-    Exposes a HandlerChain as a Handler. This provides a mechanism for nesting HandlerChains to create handler trees.
-    """
-
-    chain: HandlerChain
-
-    def __init__(self, chain: HandlerChain = None):
-        self.chain = chain or HandlerChain()
-
-    def __call__(self, _: HandlerChain, context: RequestContext, response: Response):
-        self.chain.handle(context, response)
-
-    def add(self, handler: Handler):
-        """
-        Convenience method to add a handler to the underlying HandlerChain.
-        :param handler: the handler to add
-        :return:
-        """
-        self.chain.request_handlers.append(handler)

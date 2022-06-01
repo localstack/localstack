@@ -15,7 +15,7 @@ from werkzeug.exceptions import NotFound
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.core import ServiceOperation
-from localstack.aws.chain import ExceptionHandler, Handler, HandlerChain, HandlerChainAdapter
+from localstack.aws.chain import ExceptionHandler, Handler, HandlerChain
 from localstack.aws.handlers.cors_handlers import CorsEnforcer, CorsResponseEnricher
 from localstack.aws.protocol.parser import RequestParser, create_parser
 from localstack.aws.protocol.serializer import create_serializer
@@ -100,19 +100,6 @@ class ServiceNameParser(Handler):
     @lru_cache()
     def get_service_model(self, service: str) -> ServiceModel:
         return load_service(service)
-
-
-class CustomServiceRules(HandlerChainAdapter):
-    """
-    HandlerChain that serves as container for custom service rules that can be dynamically added by services,
-    like the SqsQueueActionHandler.
-    """
-
-    def __init__(self):
-        super().__init__()
-        # this makes sure errors are propagated to the outer handler chain, which will the one
-        # built by the AWS gateway.
-        self.chain.raise_on_error = True
 
 
 class ServiceRequestParser(Handler):
@@ -450,7 +437,6 @@ add_cors_response_headers = CorsResponseEnricher()
 content_decoder = ContentDecoder()
 parse_service_name = ServiceNameParser()
 parse_service_request = ServiceRequestParser()
-process_custom_service_rules = CustomServiceRules()
 add_default_account_id = DefaultAccountIdEnricher()
 add_region_from_header = RegionContextEnricher()
 log_exception = ExceptionLogger()
