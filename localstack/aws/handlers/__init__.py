@@ -18,5 +18,5 @@ serve_localstack_resources = internal.LocalstackResourceHandler()
 # legacy compatibility handlers
 serve_edge_router_rules = legacy.EdgeRouterHandler()
 serve_default_listeners = legacy.DefaultListenerHandler()
-pop_quart_context = legacy.pop_quart_context
-push_quart_context = legacy.push_quart_context
+pop_request_context = legacy.pop_request_context
+push_request_context = legacy.push_request_context

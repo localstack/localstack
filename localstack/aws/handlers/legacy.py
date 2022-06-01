@@ -10,9 +10,9 @@ from requests import Response as RequestsResponse
 
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.http import Response
+from localstack.http.request import restore_payload
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward
 
-from ...http.request import restore_payload
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
 from .routes import RouterHandler
@@ -20,18 +20,31 @@ from .routes import RouterHandler
 LOG = logging.getLogger(__name__)
 
 
-def push_quart_context(_chain: HandlerChain, context: RequestContext, _response: Response):
-    # hack for legacy compatibility. this is wrong on so many levels i literally can't even.
+def push_request_context(_chain: HandlerChain, context: RequestContext, _response: Response):
+    # hack for legacy compatibility. various parts of localstack access the global flask/quart/our own request
+    # context. since we're neither in a flask nor a quart context, we're pushing our own context object into their
+    # proxy objects, which is terrible, but works because mostly code just accesses "context.request", so we don't
+    # have to bother pushing a real quart/flask context.
+    import flask.globals
     import quart.globals
+
+    from localstack.utils.aws import request_context
 
     quart.globals._request_ctx_stack.push(context)
+    flask.globals._request_ctx_stack.push(context)
+    request_context.THREAD_LOCAL.request_context = context.request
 
 
-def pop_quart_context(_chain: HandlerChain, _context: RequestContext, _response: Response):
+def pop_request_context(_chain: HandlerChain, _context: RequestContext, _response: Response):
     # hack for legacy compatibility
+    import flask.globals
     import quart.globals
 
+    from localstack.utils.aws import request_context
+
     quart.globals._request_ctx_stack.pop()
+    flask.globals._request_ctx_stack.pop()
+    request_context.THREAD_LOCAL.request_context = None
 
 
 class EdgeRouterHandler(RouterHandler):

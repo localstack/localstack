@@ -24,7 +24,7 @@ class LocalstackAwsGateway(Gateway):
         # the main request handler chain
         self.request_handlers.extend(
             [
-                handlers.push_quart_context,
+                handlers.push_request_context,
                 handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
                 handlers.enforce_cors,
                 handlers.content_decoder,
@@ -57,7 +57,7 @@ class LocalstackAwsGateway(Gateway):
             [
                 handlers.add_cors_response_headers,
                 handlers.log_response,
-                handlers.pop_quart_context,
+                handlers.pop_request_context,
             ]
         )
 
