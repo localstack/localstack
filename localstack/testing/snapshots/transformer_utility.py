@@ -146,12 +146,40 @@ class TransformerUtility:
             TransformerUtility.key_value("ReceiptHandle"),
             TransformerUtility.key_value("SenderId"),
             TransformerUtility.jsonpath("$..MessageAttributes.RequestID.StringValue", "request-id"),
+            KeyValueBasedTransformer(_resource_name_transformer, "resource"),
+            KeyValueBasedTransformer(_signing_cert_url_token_transformer, replacement="token"),
+            KeyValueBasedTransformer(
+                _sns_pem_file_token_transformer, replacement="signing-cert-file"
+            ),
+            # replaces the domain in "UnsubscribeURL"
+            TransformerUtility.regex(
+                re.compile(
+                    r"(?<=UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)"
+                ),
+                replacement="<unsubscribe-domain>",
+            ),
         ]
 
     # TODO add example
     # @staticmethod
     # def custom(fn: Callable[[dict], dict]) -> Transformer:
     #     return GenericTransformer(fn)
+
+
+def _sns_pem_file_token_transformer(key: str, val: str) -> str:
+    if isinstance(val, str) and key == "SigningCertURL":
+        pattern = re.compile(r".*SimpleNotificationService-(.*)?\.pem")
+        match = re.match(pattern, val)
+        if match:
+            return match.groups()[0]
+
+
+def _signing_cert_url_token_transformer(key: str, val: str) -> str:
+    if isinstance(val, str) and key == "UnsubscribeURL":
+        pattern = re.compile(r".*(?<=\?Action=Unsubscribe&SubscriptionArn=).*:(.*)")
+        match = re.match(pattern, val)
+        if match:
+            return match.groups()[0]
 
 
 def _replace_camel_string_with_hyphen(input_string: str):

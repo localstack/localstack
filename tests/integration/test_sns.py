@@ -2,7 +2,6 @@
 import json
 import queue
 import random
-import re
 import time
 
 import pytest
@@ -1521,6 +1520,21 @@ class TestSNSProvider:
         raw_message_delivery,
         snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        # Need to skip the MD5OfBody/Signature, because it contains a timestamp
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$.json_encoded_delivery..Body.Signature",
+                "<signature>",
+                reference_replacement=False,
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$.json_encoded_delivery..MD5OfBody", "<md5-hash>", reference_replacement=False
+            )
+        )
+
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
 
@@ -1576,8 +1590,6 @@ class TestSNSProvider:
             len(response["Messages"]) == 1
         ), f"invalid number of messages in DLQ response {response}"
 
-        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "<receipt-handle>")
-
         if raw_message_delivery:
             assert response["Messages"][0]["Body"] == message
             snapshot.match("raw_message_delivery", response)
@@ -1588,15 +1600,5 @@ class TestSNSProvider:
 
             # Set the decoded JSON Body to be able to skip keys directly
             response["Messages"][0]["Body"] = received_message
-            # Need to skip the MD5OfBody/Signature, because it contains a timestamp
-            snapshot.skip_key(re.compile(r"^Signature$"), "<signature>")
-            snapshot.skip_key(re.compile(r"^MD5OfBody$"), "<md5-hash>")
-            snapshot.register_replacement(
-                pattern=re.compile(r"(?<=\bSimpleNotificationService-)(.*?)(?=\.)"),
-                value="<signing-cert-file>",
-            )
-            snapshot.register_replacement(
-                pattern=re.compile(r"(?<=://)(.*?)(?=/\?Action=Unsubscribe)"),
-                value="<unsubscribe-domain>",
-            )
+
             snapshot.match("json_encoded_delivery", response)

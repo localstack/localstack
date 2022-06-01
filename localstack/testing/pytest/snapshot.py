@@ -85,8 +85,8 @@ def fixture_snapshot(request: SubRequest, account_id, region):
         update=request.config.option.snapshot_update,
         verify=request.config.option.snapshot_verify,
     )
-    sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=-1)
-    sm.add_transformer(RegexTransformer(region, "<region>"), priority=-1)
+    sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=2)
+    sm.add_transformer(RegexTransformer(region, "<region>"), priority=2)
     sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER)
 
     yield sm

@@ -135,9 +135,23 @@ class RegexTransformer:
 
     def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
         compiled_regex = re.compile(self.regex) if isinstance(self.regex, str) else self.regex
-        ctx.register_serialized_replacement(lambda s: re.sub(compiled_regex, self.replacement, s))
+
+        def _regex_replacer_helper(pattern: Pattern[str], repl: str):
+            def replace_val(s):
+                result = re.sub(pattern, repl, s)
+                if result != s:
+                    LOG.debug(f"Replacing regex '{pattern.pattern}' with '{repl}'")
+                else:
+                    LOG.debug(f"No match found for regex '{pattern.pattern}'")
+                return result
+
+            return replace_val
+
+        ctx.register_serialized_replacement(
+            _regex_replacer_helper(compiled_regex, self.replacement)
+        )
         LOG.debug(
-            f"Register regex pattern '{compiled_regex.pattern}' in snapshot with '{self.replacement}'"
+            f"Registering regex pattern '{compiled_regex.pattern}' in snapshot with '{self.replacement}'"
         )
         return input_data
 
