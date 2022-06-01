@@ -465,6 +465,9 @@ KINESIS_SHARD_LIMIT = os.environ.get("KINESIS_SHARD_LIMIT", "").strip() or "100"
 # delay in kinesalite response when making changes to streams
 KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 
+# Delay between data persistence (in seconds)
+KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
+
 # Kinesis provider - either "kinesis-mock" or "kinesalite"
 KINESIS_PROVIDER = os.environ.get("KINESIS_PROVIDER") or "kinesis-mock"
 
@@ -645,6 +648,7 @@ CONFIG_ENV_VARS = [
     "HOSTNAME_FROM_LAMBDA",
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
+    "KINESIS_MOCK_PERSIST_INTERVAL",
     "LAMBDA_CODE_EXTRACT_TIME",
     "LAMBDA_CONTAINER_REGISTRY",
     "LAMBDA_DOCKER_DNS",
