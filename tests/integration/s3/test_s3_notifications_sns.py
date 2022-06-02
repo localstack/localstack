@@ -97,6 +97,7 @@ def sqs_collect_sns_messages(
 
 class TestS3NotificationsToSns:
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
     def test_object_created_put(
         self,
         s3_client,
@@ -106,7 +107,17 @@ class TestS3NotificationsToSns:
         sqs_create_queue,
         sns_create_topic,
         sns_create_sqs_subscription,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..Signature",
+                "signature",
+                reference_replacement=False,
+            ),
+        )
         bucket_name = s3_create_bucket()
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
@@ -124,7 +135,9 @@ class TestS3NotificationsToSns:
 
         # collect messages
         messages = sqs_collect_sns_messages(sqs_client, queue_url, 2)
-
+        # order seems not be guaranteed - sort so we can rely on the order
+        messages.sort(key=lambda x: json.loads(x["Message"])["Records"][0]["s3"]["object"]["size"])
+        snapshot.match("receive_messages", {"messages": messages})
         # asserts
         # first event
         message = messages[0]

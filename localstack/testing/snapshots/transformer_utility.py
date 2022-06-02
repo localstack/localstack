@@ -134,7 +134,27 @@ class TransformerUtility:
             TransformerUtility.jsonpath(
                 jsonpath="$..Owner.ID", value_replacement="<owner-id>", reference_replacement=False
             ),
-            # TransformerUtility.key_value("ETag"), TODO might not required, as the tag is calculated from the file content
+            # for s3 notifications:
+            TransformerUtility.jsonpath(
+                "$..responseElements.x-amz-id-2", "amz-id", reference_replacement=False
+            ),
+            TransformerUtility.jsonpath(
+                "$..responseElements.x-amz-request-id",
+                "amz-request-id",
+                reference_replacement=False,
+            ),
+            TransformerUtility.jsonpath("$..s3.configurationId", "config-id"),
+            TransformerUtility.jsonpath(
+                "$..s3.object.sequencer", "sequencer", reference_replacement=False
+            ),
+            TransformerUtility.jsonpath("$..s3.bucket.ownerIdentity.principalId", "principal-id"),
+            TransformerUtility.jsonpath("$..userIdentity.principalId", "principal-id"),
+            TransformerUtility.jsonpath("$..requestParameters.sourceIPAddress", "ip-address"),
+            TransformerUtility.jsonpath(
+                "$..s3.object.versionId",
+                "version-id",
+                reference_replacement=False,
+            ),
         ]
 
     @staticmethod
