@@ -306,6 +306,9 @@ class ASGIAdapter:
     Adapter to expose a WSGIApplication as an ASGI3Application. This allows you to serve synchronous WSGI applications
     through ASGI servers (e.g., Hypercorn).
 
+    IMPORTANT: The ASGIAdapter needs to use the same event loop as the underlying server. If you pass a new event
+    loop to the server, you need to also pass it to the ASGIAdapter.
+
     https://asgi.readthedocs.io/en/latest/specs/main.html
     """
 
