@@ -12,21 +12,21 @@ jobs:
     - uses: aws-actions/stale-issue-cleanup@v4
       with:
         issue-types: issues
-        ancient-issue-message: Hello 👋! It looks like this issue hasn’t been active in longer 
-          than five months. We encourage you to check if this is still an issue in the latest release. 
-          In the absence of more information, we will be closing this issue soon. 
-          If you find that this is still a problem, please feel free to provide a comment or upvote 
-          with a reaction on the initial post to prevent automatic closure. If the issue is already closed, 
+        ancient-issue-message: Hello 👋! It looks like this issue hasn’t been active in longer
+          than five months. We encourage you to check if this is still an issue in the latest release.
+          In the absence of more information, we will be closing this issue soon.
+          If you find that this is still a problem, please feel free to provide a comment or upvote
+          with a reaction on the initial post to prevent automatic closure. If the issue is already closed,
           please feel free to open a new one.
-        stale-issue-message: Hello 👋! It looks like this issue hasn’t been active in longer than two months. 
-          We encourage you to check if this is still an issue in the latest release. 
-          In the absence of more information, we will be closing this issue soon. 
-          If you find that this is still a problem, please feel free to provide a comment or upvote 
-          with a reaction on the initial post to prevent automatic closure. If the issue is already closed, 
+        stale-issue-message: Hello 👋! It looks like this issue hasn’t been active in longer than two months.
+          We encourage you to check if this is still an issue in the latest release.
+          In the absence of more information, we will be closing this issue soon.
+          If you find that this is still a problem, please feel free to provide a comment or upvote
+          with a reaction on the initial post to prevent automatic closure. If the issue is already closed,
           please feel free to open a new one.
         # These labels are required
         stale-issue-label: closing-soon
-        exempt-issue-labels: needs-triaging
+        exempt-issue-labels: needs-triaging,feature-request-approved,bug-confirmed
         response-requested-label: awaiting-response
 
         # Don't set closed-for-staleness label to skip closing very old issues
