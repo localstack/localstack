@@ -63,6 +63,10 @@ class LocalstackAwsGateway(Gateway):
 
 
 def main():
+    """
+    Serve the LocalstackGateway with the default configuration directly through hypercorn. This is mostly for
+    development purposes and documentation on how to serve the Gateway.
+    """
     from .serving.hypercorn import serve
 
     use_ssl = True

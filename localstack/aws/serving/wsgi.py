@@ -30,9 +30,9 @@ class WsgiGateway:
         self, environ: "WSGIEnvironment", start_response: "StartResponse"
     ) -> Iterable[bytes]:
         # create request from environment
-        LOG.info(
+        LOG.debug(
             "[%s] %s %s%s",
-            threading.currentThread().name,
+            threading.current_thread().name,
             environ["REQUEST_METHOD"],
             environ.get("HTTP_HOST"),
             environ["RAW_URI"],

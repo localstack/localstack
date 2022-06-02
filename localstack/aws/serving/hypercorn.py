@@ -15,7 +15,17 @@ def serve(
     use_reloader: bool = True,
     ssl_creds: Optional[Tuple[Any, Any]] = None,
     **kwargs,
-):
+) -> None:
+    """
+    Serve the given Gateway through a hypercorn server and block until it is completed.
+
+    :param gateway: the Gateway instance to serve
+    :param host: the host to expose the server on
+    :param port: the port to expose the server on
+    :param use_reloader: whether to use the reloader
+    :param ssl_creds: the ssl credentials (tuple of certfile and keyfile)
+    :param kwargs: any oder parameters that can be passed to the hypercorn.Config object
+    """
     config = Config()
     config.bind = f"{host}:{port}"
     config.use_reloader = use_reloader
