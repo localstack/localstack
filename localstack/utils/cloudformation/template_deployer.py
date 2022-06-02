@@ -1232,6 +1232,7 @@ class TemplateDeployer:
         self.stack.set_stack_status("UPDATE_IN_PROGRESS")
         # apply changes
         self.apply_changes(self.stack, new_stack, stack_name=self.stack.stack_name, action="UPDATE")
+        self.stack.set_time_attribute("LastUpdatedTime")
 
     def delete_stack(self):
         if not self.stack:
@@ -1249,6 +1250,7 @@ class TemplateDeployer:
                 self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
         # update status
         self.stack.set_stack_status("DELETE_COMPLETE")
+        self.stack.set_time_attribute("DeletionTime")
 
     # ----------------------------
     # DEPENDENCY RESOLUTION UTILS

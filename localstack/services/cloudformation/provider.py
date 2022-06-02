@@ -169,6 +169,9 @@ class Stack:
         )
         self.add_stack_event(self.stack_name, self.stack_id, status)
 
+    def set_time_attribute(self, attribute, new_time=None):
+        self.metadata[attribute] = new_time or timestamp_millis()
+
     def add_stack_event(self, resource_id: str, physical_res_id: str, status: str):
         event = {
             "EventId": long_uid(),
