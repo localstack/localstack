@@ -47,11 +47,11 @@ def to_invocation_context(
     if url_params is None:
         url_params = {}
 
-    if request.remote_addr:
-        if x_forwarded_for := headers.get("X-Forwarded-For"):
-            headers["X-Forwarded-For"] = x_forwarded_for + ", " + request.remote_addr
-        else:
-            headers["X-Forwarded-For"] = request.remote_addr + ", " + request.host
+    # adjust the X-Forwarded-For header
+    x_forwarded_for = headers.getlist("X-Forwarded-For")
+    x_forwarded_for.append(request.remote_addr)
+    x_forwarded_for.append(request.host)
+    headers["X-Forwarded-For"] = ", ".join(x_forwarded_for)
 
     # this is for compatibility with the lower layers of apigw and lambda that make assumptions about header casing
     headers = CaseInsensitiveDict(
