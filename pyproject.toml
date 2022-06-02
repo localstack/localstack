@@ -39,9 +39,6 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-markers = [
-    "aws_parity: test can be run standalone against AWS and has been validated before",
-]
 log_cli = true
 log_level = "DEBUG"
 log_cli_format = "%(asctime)s.%(msecs)03d:%(levelname)s:%(name)s: %(message)s"

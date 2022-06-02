@@ -85,10 +85,17 @@ def create_lambda_function_aws(
 @pytest.mark.snapshot
 @pytest.mark.aws_compatible
 class TestLambdaAsfApi:
+    @pytest.mark.skip_snapshot_verify
     def test_basic_invoke(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
+        # predefined names
         fn_name = f"ls-fn-{short_uid()}"
+        fn_name_2 = f"ls-fn-{short_uid()}"
+
+        # custom transformers
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        # infra setup (& validations)
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
             response = create_lambda_function_aws(
                 FunctionName=fn_name,
@@ -100,8 +107,22 @@ class TestLambdaAsfApi:
             )
             snapshot.match("lambda_create_fn", response)
 
+        with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
+            response = create_lambda_function_aws(
+                FunctionName=fn_name_2,
+                Handler="index.handler",
+                Code={"ZipFile": f.read()},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime="python3.9",
+            )
+            snapshot.match("lambda_create_fn_2", response)
+
         get_fn_result = lambda_client.get_function(FunctionName=fn_name)
         snapshot.match("lambda_get_fn", get_fn_result)
+
+        get_fn_result_2 = lambda_client.get_function(FunctionName=fn_name_2)
+        snapshot.match("lambda_get_fn_2", get_fn_result_2)
 
         invoke_result = lambda_client.invoke(FunctionName=fn_name, Payload=bytes("{}", "utf-8"))
         snapshot.match("lambda_invoke_result", invoke_result)

@@ -20,7 +20,10 @@ class TestS3:
         assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == "eu-west-1"
 
     @pytest.mark.aws_validated
-    def test_delete_bucket_with_content(self, s3_client, s3_resource, s3_bucket):
+    @pytest.mark.skip_snapshot_verify(paths=["$..Marker", "$..Prefix", "$..EncodingType"])
+    def test_delete_bucket_with_content(self, s3_client, s3_resource, s3_bucket, snapshot):
+
+        snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_bucket
 
         for i in range(0, 10, 1):
@@ -29,6 +32,7 @@ class TestS3:
             s3_client.put_object(Bucket=bucket_name, Key=key, Body=body)
 
         resp = s3_client.list_objects(Bucket=bucket_name, MaxKeys=100)
+        snapshot.match("list-objects", resp)
         assert 10 == len(resp["Contents"])
 
         bucket = s3_resource.Bucket(bucket_name)
@@ -36,13 +40,20 @@ class TestS3:
         bucket.delete()
 
         resp = s3_client.list_buckets()
+        # TODO - this might fail if tests run in parallel
+        snapshot.match("list-buckets", resp)
         assert bucket_name not in [b["Name"] for b in resp["Buckets"]]
 
     @pytest.mark.aws_validated
-    def test_put_and_get_object_with_utf8_key(self, s3_client, s3_bucket):
+    def test_put_and_get_object_with_utf8_key(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
         response = s3_client.put_object(Bucket=s3_bucket, Key="Ā0Ä", Body=b"abc123")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("put-object", response)
+
         response = s3_client.get_object(Bucket=s3_bucket, Key="Ā0Ä")
+        # snapshot.match("get-object", response)
         assert response["Body"].read() == b"abc123"
 
     @pytest.mark.aws_validated
@@ -64,7 +75,8 @@ class TestS3:
         assert response["Body"].read() == b"barfoo"
 
     @pytest.mark.aws_validated
-    def test_metadata_header_character_decoding(self, s3_client, s3_bucket):
+    def test_metadata_header_character_decoding(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
         # Object metadata keys should accept keys with underscores
         # https://github.com/localstack/localstack/issues/1790
         # put object
@@ -72,6 +84,7 @@ class TestS3:
         metadata = {"TEST_META_1": "foo", "__meta_2": "bar"}
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Metadata=metadata, Body="foo")
         metadata_saved = s3_client.head_object(Bucket=s3_bucket, Key=object_key)["Metadata"]
+        snapshot.match("head-object", metadata_saved)
 
         # note that casing is removed (since headers are case-insensitive)
         assert metadata_saved == {"test_meta_1": "foo", "__meta_2": "bar"}
