@@ -131,7 +131,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return result
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
-        call_moto(context)
+        try:
+            call_moto(context)
+        except KeyError as e:
+            # moto raises a key error if we're trying to delete an API that doesn't exist
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            ) from e
+
         event_publisher.fire_event(
             event_publisher.EVENT_APIGW_DELETE_API,
             payload={"a": event_publisher.get_hash(rest_api_id)},
