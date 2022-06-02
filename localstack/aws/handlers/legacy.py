@@ -1,6 +1,4 @@
-"""
-Handlers for compatibility with legacy edge proxy and the quart http framework.
-"""
+""" Handlers for compatibility with legacy edge proxy and the quart http framework."""
 
 import logging
 import re
@@ -54,16 +52,11 @@ class EdgeRouterHandler(RouterHandler):
         super().__init__(ROUTER, respond_not_found)
 
 
-class _NoHandlerCalled(Exception):
-    pass
-
-
-class _DummyProxyListener(ProxyListener):
-    def forward_request(self, method, path, data, headers):
-        raise _NoHandlerCalled
-
-
 class GenericProxyHandler(Handler):
+    """
+    This handler maps HandlerChain requests to the generic proxy ProxyListener interface `forward_request`.
+    """
+
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         request = context.request
 
@@ -141,6 +134,15 @@ class LegacyPluginHandler(GenericProxyHandler):
             headers=headers,
             port=None,
         )
+
+
+class _NoHandlerCalled(Exception):
+    pass
+
+
+class _DummyProxyListener(ProxyListener):
+    def forward_request(self, method, path, data, headers):
+        raise _NoHandlerCalled
 
 
 class DefaultListenerHandler(GenericProxyHandler):

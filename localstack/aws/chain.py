@@ -1,5 +1,5 @@
 """
-
+The core concepts of the HandlerChain.
 """
 import logging
 from typing import Any, Callable, List, Optional
@@ -94,13 +94,23 @@ class HandlerChain:
             self.response.response = payload
         self.stop()
 
-    def stop(self):
+    def stop(self) -> None:
+        """
+        Stop the processing of the request handlers and proceed with response handlers.
+        """
         self.stopped = True
 
-    def terminate(self):
+    def terminate(self) -> None:
+        """
+        Terminate the handler chain, which skips response handlers.
+        """
         self.terminated = True
 
-    def throw(self, error: Exception):
+    def throw(self, error: Exception) -> None:
+        """
+        Raises the given exception after the current request handler is done. This has no effect in response handlers.
+        :param error: the exception to raise
+        """
         self.error = error
 
     def _call_response_handlers(self, response):

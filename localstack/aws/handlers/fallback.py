@@ -1,4 +1,4 @@
-"""Handlers for fallback logic, e.g., populating empty requests."""
+"""Handlers for fallback logic, e.g., populating empty requests or defauling with default exceptions."""
 import logging
 
 from werkzeug.datastructures import Headers

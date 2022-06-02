@@ -1,3 +1,4 @@
+"""Handlers for logging."""
 import logging
 
 from localstack.aws.api import RequestContext

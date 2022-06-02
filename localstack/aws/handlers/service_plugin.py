@@ -1,6 +1,4 @@
-"""
-A set of common handlers to parse and route AWS service requests.
-"""
+"""Handlers extending the base logic of service handlers with lazy-loading and plugin mechanisms."""
 import logging
 import threading
 

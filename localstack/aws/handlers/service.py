@@ -1,6 +1,4 @@
-"""
-A set of common handlers to parse and route AWS service requests.
-"""
+"""A set of common handlers to parse and route AWS service requests."""
 import logging
 import traceback
 from functools import lru_cache
