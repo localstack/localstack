@@ -117,8 +117,8 @@ def kinesis_shard_id(dynamodbstream_shard_id):
 def get_shard_id(stream_arn, kinesis_shard_id):
     region = DynamoDBStreamsBackend.get()
     stream_shards = region.ddb_streams_shards.get(stream_arn)
-    if stream_shards and (stream_shard_id := stream_shards.get(kinesis_shard_id)):
-        return stream_shard_id
+    if stream_shards and kinesis_shard_id in stream_shards:
+        return stream_shards[kinesis_shard_id]
 
     if not stream_shards:
         region.ddb_streams_shards[stream_arn] = {}
