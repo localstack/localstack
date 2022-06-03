@@ -3,7 +3,7 @@ import logging
 import time
 from typing import Dict
 
-from localstack.aws.api.dynamodbstreams import StreamDescription, StreamStatus, StreamViewType
+from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
@@ -17,13 +17,10 @@ LOG = logging.getLogger(__name__)
 class DynamoDBStreamsBackend(RegionBackend):
     SEQUENCE_NUMBER_COUNTER = 1
     # maps table names to DynamoDB stream descriptions
-    ddb_streams: Dict[str, StreamDescription]
-    # map streams' ARN to a map of Kinesis shardId to DynamoDBStreams shardId to allow persistence of Ids
-    ddb_streams_shards: Dict[str, Dict[str, str]]
+    ddb_streams: Dict[str, dict]
 
     def __init__(self):
         self.ddb_streams = {}
-        self.ddb_streams_shards = {}
 
 
 def add_dynamodb_stream(
@@ -35,17 +32,18 @@ def add_dynamodb_stream(
         stream_name = get_kinesis_stream_name(table_name)
         aws_stack.create_kinesis_stream(stream_name)
         latest_stream_label = latest_stream_label or "latest"
-        stream = StreamDescription(
-            StreamArn=aws_stack.dynamodb_stream_arn(
+        stream = {
+            "StreamArn": aws_stack.dynamodb_stream_arn(
                 table_name=table_name, latest_stream_label=latest_stream_label
             ),
-            TableName=table_name,
-            StreamLabel=latest_stream_label,
-            StreamStatus=StreamStatus.ENABLING,
-            KeySchema=[],
-            Shards=[],
-            StreamViewType=view_type,
-        )
+            "TableName": table_name,
+            "StreamLabel": latest_stream_label,
+            "StreamStatus": StreamStatus.ENABLING,
+            "KeySchema": [],
+            "Shards": [],
+            "StreamViewType": view_type,
+            "shards_id_map": {},
+        }
         region.ddb_streams[table_name] = stream
         # record event
         event_publisher.fire_event(
@@ -54,7 +52,7 @@ def add_dynamodb_stream(
         )
 
 
-def get_stream_for_table(table_arn: str) -> StreamDescription:
+def get_stream_for_table(table_arn: str) -> dict:
     region = DynamoDBStreamsBackend.get()
     table_name = table_name_from_stream_arn(table_arn)
     return region.ddb_streams.get(table_name)
@@ -76,7 +74,6 @@ def delete_streams(table_arn: str) -> None:
     table_name = table_name_from_table_arn(table_arn)
     stream = region.ddb_streams.pop(table_name, None)
     if stream:
-        region.ddb_streams_shards.pop(stream["StreamArn"], None)
         stream_name = get_kinesis_stream_name(table_name)
         try:
             aws_stack.connect_to_service("kinesis").delete_stream(StreamName=stream_name)
@@ -115,15 +112,10 @@ def kinesis_shard_id(dynamodbstream_shard_id: str) -> str:
     return f"{shard_params[0]}-{shard_params[-1]}"
 
 
-def get_shard_id(stream_arn: str, kinesis_shard_id: str) -> str:
-    region = DynamoDBStreamsBackend.get()
-    stream_shards = region.ddb_streams_shards.get(stream_arn)
-    if stream_shards and kinesis_shard_id in stream_shards:
-        return stream_shards[kinesis_shard_id]
+def get_shard_id(stream: dict, kinesis_shard_id: str) -> str:
+    ddb_stream_shard_id = stream["shards_id_map"].get(kinesis_shard_id)
+    if not ddb_stream_shard_id:
+        ddb_stream_shard_id = shard_id(kinesis_shard_id)
+        stream["shards_id_map"][kinesis_shard_id] = ddb_stream_shard_id
 
-    if not stream_shards:
-        region.ddb_streams_shards[stream_arn] = {}
-
-    stream_shard_id = shard_id(kinesis_shard_id)
-    region.ddb_streams_shards[stream_arn][kinesis_shard_id] = stream_shard_id
-    return stream_shard_id
+    return ddb_stream_shard_id

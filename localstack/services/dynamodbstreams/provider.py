@@ -16,7 +16,9 @@ from localstack.aws.api.dynamodbstreams import (
     SequenceNumber,
     ShardId,
     ShardIteratorType,
+    Stream,
     StreamArn,
+    StreamDescription,
     StreamStatus,
     TableName,
 )
@@ -30,7 +32,7 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
-from localstack.utils.collections import select_attributes
+from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.common import to_str
 
 LOG = logging.getLogger(__name__)
@@ -56,7 +58,6 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         result = {}
         for stream in region.ddb_streams.values():
             if stream["StreamArn"] == stream_arn:
-                result = {"StreamDescription": stream}
                 # get stream details
                 dynamodb = aws_stack.connect_to_service("dynamodb")
                 table_name = table_name_from_stream_arn(stream["StreamArn"])
@@ -73,7 +74,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
                 stream_shards = copy.deepcopy(stream_details["StreamDescription"]["Shards"])
                 start_index = 0
                 for index, shard in enumerate(stream_shards):
-                    shard["ShardId"] = get_shard_id(stream_arn, shard["ShardId"])
+                    shard["ShardId"] = get_shard_id(stream, shard["ShardId"])
                     shard.pop("HashKeyRange", None)
                     # we want to ignore the shards before exclusive_start_shard_id parameters
                     # we store the index where we encounter then slice the shards
@@ -85,7 +86,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
                     stream_shards = stream_shards[start_index + 1 :]
 
                 stream["Shards"] = stream_shards
-                return DescribeStreamOutput(**result)
+                stream_description = select_from_typed_dict(StreamDescription, stream)
+                return DescribeStreamOutput(StreamDescription=stream_description)
         if not result:
             raise ResourceNotFoundException(f"Stream {stream_arn} was not found.")
 
@@ -137,6 +139,5 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         exclusive_start_stream_arn: StreamArn = None,
     ) -> ListStreamsOutput:
         region = DynamoDBStreamsBackend.get()
-        attributes = ["StreamArn", "TableName", "StreamLabel"]
-        result = [select_attributes(res, attributes) for res in region.ddb_streams.values()]
+        result = [select_from_typed_dict(Stream, res) for res in region.ddb_streams.values()]
         return ListStreamsOutput(Streams=result)
