@@ -84,9 +84,11 @@ class ResponseMetaDataTransformer:
                     simplified_headers = {"content-type": http_headers["content-type"]}
 
                 simplified_metadata = {
-                    "HTTPStatusCode": metadata.pop("HTTPStatusCode"),
                     "HTTPHeaders": simplified_headers,
                 }
+                # HTTPStatusCode might be removed for marker skip_snapshot_verify
+                if status_code := metadata.get("HTTPStatusCode"):
+                    simplified_metadata["HTTPStatusCode"] = status_code
                 input_data[k] = simplified_metadata
             elif isinstance(v, dict):
                 input_data[k] = self.transform(v, ctx=ctx)
