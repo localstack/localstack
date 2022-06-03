@@ -1,14 +1,13 @@
 import re
 
 import pytest
-
-# TODO: add proper cleanup
 from moto.core import get_account_id
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
+# TODO: add proper cleanup
 class TestRoute53:
     def test_create_hosted_zone(self, route53_client):
         response = route53_client.create_hosted_zone(Name="zone123", CallerReference="ref123")
