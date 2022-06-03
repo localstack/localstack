@@ -389,7 +389,7 @@ class TestOpensearchProvider:
     # testing CloudFormation deployment here to make sure OpenSearch is installed
     def test_cloudformation_deployment(self, deploy_cfn_template, opensearch_client):
         domain_name = f"domain-{short_uid()}"
-        stack = deploy_cfn_template(
+        deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__), "templates/opensearch_domain.yaml"
             ),
