@@ -242,9 +242,12 @@ ADD localstack/ localstack/
 #       modify only folders outside of the localstack package folder, and executed in the builder stage.
 RUN make init
 
-# Install the latest version of localstack-ext and generate the plugin entrypoints
-RUN (virtualenv .venv && source .venv/bin/activate && \
-      pip3 install --upgrade localstack-ext plux)
+# Install the latest version of localstack-ext and generate the plugin entrypoints.
+# If this is a pre-release build, also include dev releases of these packages.
+ARG LOCALSTACK_PRE_RELEASE=1
+RUN (PIP_ARGS=$([[ "$LOCALSTACK_PRE_RELEASE" == "1" ]] && echo "--pre" || true); \
+      virtualenv .venv && source .venv/bin/activate && \
+      pip3 install --upgrade ${PIP_ARGS} localstack-ext plux)
 RUN make entrypoints
 
 # Add the build date and git hash at last (changes everytime)
