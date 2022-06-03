@@ -58,7 +58,7 @@ def get_stream_for_table(table_arn: str) -> dict:
     return region.ddb_streams.get(table_name)
 
 
-def forward_events(records: dict) -> None:
+def forward_events(records: Dict) -> None:
     kinesis = aws_stack.connect_to_service("kinesis")
     for record in records:
         table_arn = record.pop("eventSourceARN", "")
@@ -112,8 +112,8 @@ def kinesis_shard_id(dynamodbstream_shard_id: str) -> str:
     return f"{shard_params[0]}-{shard_params[-1]}"
 
 
-def get_shard_id(stream: dict, kinesis_shard_id: str) -> str:
-    ddb_stream_shard_id = stream["shards_id_map"].get(kinesis_shard_id)
+def get_shard_id(stream: Dict, kinesis_shard_id: str) -> str:
+    ddb_stream_shard_id = stream.get("shards_id_map", {}).get(kinesis_shard_id)
     if not ddb_stream_shard_id:
         ddb_stream_shard_id = shard_id(kinesis_shard_id)
         stream["shards_id_map"][kinesis_shard_id] = ddb_stream_shard_id
