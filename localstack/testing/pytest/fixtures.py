@@ -319,7 +319,37 @@ def route53_client() -> "Route53Client":
 
 
 @pytest.fixture
+def dynamodb_create_table_with_parameters(dynamodb_client):
+    tables = []
+
+    def factory(**kwargs):
+        if "TableName" not in kwargs:
+            kwargs["TableName"] = "test-table-%s" % short_uid()
+
+        tables.append(kwargs["TableName"])
+        return dynamodb_client.create_table(**kwargs)
+
+    yield factory
+
+    # cleanup
+    for table in tables:
+        try:
+            # table has to be in ACTIVE state before deletion
+            def wait_for_table_created():
+                return (
+                    dynamodb_client.describe_table(TableName=table)["Table"]["TableStatus"]
+                    == "ACTIVE"
+                )
+
+            poll_condition(wait_for_table_created, timeout=30)
+            dynamodb_client.delete_table(TableName=table)
+        except Exception as e:
+            LOG.debug("error cleaning up table %s: %s", table, e)
+
+
+@pytest.fixture
 def dynamodb_create_table(dynamodb_client):
+    # beware, this swallows exception in create_dynamodb_table utility function
     tables = []
 
     def factory(**kwargs):
