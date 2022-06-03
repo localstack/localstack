@@ -17,6 +17,7 @@ from localstack.aws.api.dynamodbstreams import (
     ShardId,
     ShardIteratorType,
     StreamArn,
+    StreamStatus,
     TableName,
 )
 from localstack.services.dynamodbstreams.dynamodbstreams_api import (
@@ -35,10 +36,10 @@ from localstack.utils.common import to_str
 LOG = logging.getLogger(__name__)
 
 STREAM_STATUS_MAP = {
-    "ACTIVE": "ENABLED",
-    "CREATING": "ENABLING",
-    "DELETING": "DISABLING",
-    "UPDATING": "ENABLING",
+    "ACTIVE": StreamStatus.ENABLED,
+    "CREATING": StreamStatus.ENABLING,
+    "DELETING": StreamStatus.DISABLING,
+    "UPDATING": StreamStatus.ENABLING,
 }
 
 

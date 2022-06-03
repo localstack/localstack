@@ -22,7 +22,6 @@ from localstack.testing.aws.cloudformation_utils import load_template_file, rend
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.common import ensure_list, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
@@ -323,17 +322,11 @@ def dynamodb_create_table(dynamodb_client):
     tables = []
 
     def factory(**kwargs):
-        kwargs["client"] = dynamodb_client
-        if "table_name" not in kwargs:
-            kwargs["table_name"] = "test-table-%s" % short_uid()
-        if "partition_key" not in kwargs:
-            kwargs["partition_key"] = "id"
+        if "TableName" not in kwargs:
+            kwargs["TableName"] = "test-table-%s" % short_uid()
 
-        kwargs["sleep_after"] = 0
-
-        tables.append(kwargs["table_name"])
-
-        return create_dynamodb_table(**kwargs)
+        tables.append(kwargs["TableName"])
+        return dynamodb_client.create_table(**kwargs)
 
     yield factory
 

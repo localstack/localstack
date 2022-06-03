@@ -1095,7 +1095,7 @@ class TestDynamoDB:
 
         dynamodb_client.delete_table(TableName=table_name)
 
-    def test_query_on_deleted_resource(self):
+    def test_query_on_deleted_resource(self, dynamodb_client, dynamodb_create_table):
         table_name = "ddb-table-%s" % short_uid()
         partition_key = "username"
 
@@ -1119,17 +1119,21 @@ class TestDynamoDB:
             )
         assert ctx.match("ResourceNotFoundException")
 
-    def test_dynamodb_stream_to_lambda(self, dynamodb):
+    def test_dynamodb_stream_to_lambda(
+        self, lambda_client, dynamodb_resource, dynamodb_create_table
+    ):
         table_name = "ddb-table-%s" % short_uid()
         function_name = "func-%s" % short_uid()
         partition_key = "SK"
 
-        aws_stack.create_dynamodb_table(
-            table_name=table_name,
-            partition_key=partition_key,
-            stream_view_type="NEW_AND_OLD_IMAGES",
+        dynamodb_create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": partition_key, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": partition_key, "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
-        table = dynamodb.Table(table_name)
+        table = dynamodb_resource.Table(table_name)
         latest_stream_arn = table.latest_stream_arn
 
         testutil.create_lambda_function(
@@ -1138,7 +1142,7 @@ class TestDynamoDB:
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
-        lambda_client = aws_stack.create_external_boto_client("lambda")
+        # lambda_client = aws_stack.create_external_boto_client("lambda")
         mapping_uuid = lambda_client.create_event_source_mapping(
             EventSourceArn=latest_stream_arn,
             FunctionName=function_name,
@@ -1167,23 +1171,22 @@ class TestDynamoDB:
         assert dynamodb_event["NewImage"]["Name"] == {"S": item["Name"]}
         assert "SequenceNumber" in dynamodb_event
 
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
-        dynamodb.delete_table(TableName=table_name)
+        # dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        # dynamodb.delete_table(TableName=table_name)
         lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
 
-    def test_dynamodb_batch_write_item(self):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    def test_dynamodb_batch_write_item(self, dynamodb_client, dynamodb_create_table):
         table_name = "ddb-table-%s" % short_uid()
 
-        dynamodb.create_table(
+        dynamodb_create_table(
             TableName=table_name,
-            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
-            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             Tags=TEST_DDB_TAGS,
         )
 
-        result = dynamodb.batch_write_item(
+        result = dynamodb_client.batch_write_item(
             RequestItems={
                 table_name: [
                     {"PutRequest": {"Item": {PARTITION_KEY: {"S": "Test1"}}}},
@@ -1195,32 +1198,30 @@ class TestDynamoDB:
 
         assert result.get("UnprocessedItems") == {}
 
-    def test_dynamodb_pay_per_request(self):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    def test_dynamodb_pay_per_request(self, dynamodb_create_table):
         table_name = "ddb-table-%s" % short_uid()
 
         with pytest.raises(Exception) as e:
-            dynamodb.create_table(
+            dynamodb_create_table(
                 TableName=table_name,
-                KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
-                AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+                KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+                AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
                 ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
                 BillingMode="PAY_PER_REQUEST",
             )
         assert e.match("ValidationException")
 
-    def test_dynamodb_create_table_with_sse_specification(self):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    def test_dynamodb_create_table_with_sse_specification(self, dynamodb_create_table):
         table_name = "ddb-table-%s" % short_uid()
 
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
         kms_master_key_arn = aws_stack.kms_key_arn(kms_master_key_id)
 
-        result = dynamodb.create_table(
+        result = dynamodb_create_table(
             TableName=table_name,
-            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
-            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             SSESpecification=sse_specification,
             Tags=TEST_DDB_TAGS,
@@ -1230,18 +1231,17 @@ class TestDynamoDB:
         assert result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
         assert result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
 
-        delete_table(table_name)
-
-    def test_dynamodb_create_table_with_partial_sse_specification(self):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    def test_dynamodb_create_table_with_partial_sse_specification(
+        self, dynamodb_create_table, kms_client
+    ):
         table_name = "ddb-table-%s" % short_uid()
 
         sse_specification = {"Enabled": True}
 
-        result = dynamodb.create_table(
+        result = dynamodb_create_table(
             TableName=table_name,
-            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
-            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             SSESpecification=sse_specification,
             Tags=TEST_DDB_TAGS,
@@ -1252,38 +1252,38 @@ class TestDynamoDB:
         assert result["TableDescription"]["SSEDescription"]["SSEType"] == "KMS"
         assert "KMSMasterKeyArn" in result["TableDescription"]["SSEDescription"]
         kms_master_key_arn = result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
-        kms_client = aws_stack.create_external_boto_client("kms")
         result = kms_client.describe_key(KeyId=kms_master_key_arn)
         assert result["KeyMetadata"]["KeyManager"] == "AWS"
 
-        delete_table(table_name)
-
-    def test_dynamodb_get_batch_items(self):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    def test_dynamodb_get_batch_items(self, dynamodb_client, dynamodb_create_table):
         table_name = "ddb-table-%s" % short_uid()
 
-        dynamodb.create_table(
+        dynamodb_create_table(
             TableName=table_name,
             KeySchema=[{"AttributeName": "PK", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "PK", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
         )
 
-        result = dynamodb.batch_get_item(
+        result = dynamodb_client.batch_get_item(
             RequestItems={table_name: {"Keys": [{"PK": {"S": "test-key"}}]}}
         )
         assert list(result["Responses"])[0] == table_name
 
-    def test_dynamodb_streams_describe_with_exclusive_start_shard_id(self, dynamodb):
+    def test_dynamodb_streams_describe_with_exclusive_start_shard_id(
+        self, dynamodb_resource, dynamodb_create_table
+    ):
         table_name = f"test-ddb-table-{short_uid()}"
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
 
-        aws_stack.create_dynamodb_table(
-            table_name,
-            partition_key=PARTITION_KEY,
-            stream_view_type="NEW_AND_OLD_IMAGES",
+        dynamodb_create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
-        table = dynamodb.Table(table_name)
+        table = dynamodb_resource.Table(table_name)
 
         response = ddbstreams.describe_stream(StreamArn=table.latest_stream_arn)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -1295,8 +1295,6 @@ class TestDynamoDB:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(response["StreamDescription"]["Shards"]) == 0
-
-        delete_table(table_name)
 
 
 def delete_table(name):
