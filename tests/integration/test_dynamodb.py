@@ -12,8 +12,6 @@ from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_models import KinesisStream
-from localstack.utils.aws.aws_stack import get_environment
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length
@@ -501,14 +499,7 @@ class TestDynamoDB:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         dynamodb_client.delete_table(TableName=table_name)
 
-    def test_dynamodb_stream_shard_iterator(self):
-        def wait_for_stream_created(table_name):
-            stream_name = get_kinesis_stream_name(table_name)
-            stream = KinesisStream(id=stream_name, num_shards=1)
-            kinesis = aws_stack.create_external_boto_client("kinesis", env=get_environment(None))
-            stream.connect(kinesis)
-            stream.wait_for()
-
+    def test_dynamodb_stream_shard_iterator(self, wait_for_stream_ready):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
 
@@ -523,8 +514,9 @@ class TestDynamoDB:
             },
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
+        stream_name = get_kinesis_stream_name(table_name)
 
-        wait_for_stream_created(table_name)
+        wait_for_stream_ready(stream_name)
 
         stream_arn = table["TableDescription"]["LatestStreamArn"]
         result = ddbstreams.describe_stream(StreamArn=stream_arn)
@@ -999,7 +991,9 @@ class TestDynamoDB:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-    def test_dynamodb_stream_records_with_update_item(self, dynamodb_client, dynamodb_create_table):
+    def test_dynamodb_stream_records_with_update_item(
+        self, dynamodb_client, dynamodb_resource, dynamodb_create_table, wait_for_stream_ready
+    ):
         table_name = f"test-ddb-table-{short_uid()}"
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
 
@@ -1008,7 +1002,10 @@ class TestDynamoDB:
             partition_key=PARTITION_KEY,
             stream_view_type="NEW_AND_OLD_IMAGES",
         )
-        table = dynamodb.Table(table_name)
+        table = dynamodb_resource.Table(table_name)
+        stream_name = get_kinesis_stream_name(table_name)
+
+        wait_for_stream_ready(stream_name)
 
         response = ddbstreams.describe_stream(StreamArn=table.latest_stream_arn)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -1096,7 +1093,7 @@ class TestDynamoDB:
         assert ctx.match("ResourceNotFoundException")
 
     def test_dynamodb_stream_to_lambda(
-        self, lambda_client, dynamodb_resource, dynamodb_create_table
+        self, lambda_client, dynamodb_resource, dynamodb_create_table, wait_for_stream_ready
     ):
         table_name = "ddb-table-%s" % short_uid()
         function_name = "func-%s" % short_uid()
@@ -1109,6 +1106,9 @@ class TestDynamoDB:
         )
         table = dynamodb_resource.Table(table_name)
         latest_stream_arn = table.latest_stream_arn
+        stream_name = get_kinesis_stream_name(table_name)
+
+        wait_for_stream_ready(stream_name)
 
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,

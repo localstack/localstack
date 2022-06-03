@@ -55,7 +55,6 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     ) -> DescribeStreamOutput:
         region = DynamoDBStreamsBackend.get()
         kinesis = aws_stack.connect_to_service("kinesis")
-        result = {}
         for stream in region.ddb_streams.values():
             if stream["StreamArn"] == stream_arn:
                 # get stream details
@@ -88,8 +87,8 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
                 stream["Shards"] = stream_shards
                 stream_description = select_from_typed_dict(StreamDescription, stream)
                 return DescribeStreamOutput(StreamDescription=stream_description)
-        if not result:
-            raise ResourceNotFoundException(f"Stream {stream_arn} was not found.")
+
+        raise ResourceNotFoundException(f"Stream {stream_arn} was not found.")
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
