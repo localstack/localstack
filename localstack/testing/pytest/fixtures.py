@@ -22,6 +22,7 @@ from localstack.testing.aws.cloudformation_utils import load_template_file, rend
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.common import ensure_list, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
@@ -318,7 +319,7 @@ def route53_client() -> "Route53Client":
 
 
 @pytest.fixture
-def dynamodb_create_table(dynamodb_client):
+def dynamodb_create_table_with_parameters(dynamodb_client):
     tables = []
 
     def factory(**kwargs):
@@ -327,6 +328,42 @@ def dynamodb_create_table(dynamodb_client):
 
         tables.append(kwargs["TableName"])
         return dynamodb_client.create_table(**kwargs)
+
+    yield factory
+
+    # cleanup
+    for table in tables:
+        try:
+            # table has to be in ACTIVE state before deletion
+            def wait_for_table_created():
+                return (
+                    dynamodb_client.describe_table(TableName=table)["Table"]["TableStatus"]
+                    == "ACTIVE"
+                )
+
+            poll_condition(wait_for_table_created, timeout=30)
+            dynamodb_client.delete_table(TableName=table)
+        except Exception as e:
+            LOG.debug("error cleaning up table %s: %s", table, e)
+
+
+@pytest.fixture
+def dynamodb_create_table(dynamodb_client):
+    # beware, this swallows exception in create_dynamodb_table utility function
+    tables = []
+
+    def factory(**kwargs):
+        kwargs["client"] = dynamodb_client
+        if "table_name" not in kwargs:
+            kwargs["table_name"] = "test-table-%s" % short_uid()
+        if "partition_key" not in kwargs:
+            kwargs["partition_key"] = "id"
+
+        kwargs["sleep_after"] = 0
+
+        tables.append(kwargs["table_name"])
+
+        return create_dynamodb_table(**kwargs)
 
     yield factory
 
