@@ -1,3 +1,7 @@
+from localstack.aws.api.opensearch import (
+    OpenSearchPartitionInstanceType,
+    OpenSearchWarmPartitionInstanceType,
+)
 from localstack.services.cloudformation.deployment_utils import remove_none_values
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
@@ -55,8 +59,12 @@ class OpenSearchDomain(GenericBaseModel):
             cluster_config = result.get("ClusterConfig")
             if isinstance(cluster_config, dict):
                 # set defaults required for boto3 calls
-                cluster_config.setdefault("DedicatedMasterType", "m3.medium.elasticsearch")
-                cluster_config.setdefault("WarmType", "ultrawarm1.medium.elasticsearch")
+                cluster_config.setdefault(
+                    "DedicatedMasterType", OpenSearchPartitionInstanceType.m3_medium_search
+                )
+                cluster_config.setdefault(
+                    "WarmType", OpenSearchWarmPartitionInstanceType.ultrawarm1_medium_search
+                )
             return result
 
         return {
