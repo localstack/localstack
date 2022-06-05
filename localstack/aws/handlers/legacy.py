@@ -97,7 +97,7 @@ class GenericProxyHandler(Handler):
             if request.method != "HEAD":
                 length = response.calculate_content_length()
                 if length is not None:
-                    response.headers["Content-Length"] = length
+                    response.headers["Content-Length"] = str(length)
             chain.stop()
             return
 

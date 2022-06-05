@@ -4,6 +4,8 @@ from typing import Any, Optional, Tuple
 from hypercorn import Config
 from hypercorn.asyncio import serve as serve_hypercorn
 
+from localstack import constants
+
 from ..gateway import Gateway
 from .asgi import AsgiGateway
 
@@ -11,7 +13,7 @@ from .asgi import AsgiGateway
 def serve(
     gateway: Gateway,
     host: str = "localhost",
-    port: int = 4566,
+    port: int = constants.DEFAULT_PORT_EDGE,
     use_reloader: bool = True,
     ssl_creds: Optional[Tuple[Any, Any]] = None,
     **kwargs,

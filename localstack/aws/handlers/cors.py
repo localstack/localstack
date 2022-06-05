@@ -1,5 +1,5 @@
 """
-A set of handles which handle Cross Origin Resource Sharing (CORS).
+A set of handlers which handle Cross Origin Resource Sharing (CORS).
 """
 import logging
 import re

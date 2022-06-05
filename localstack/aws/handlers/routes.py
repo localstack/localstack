@@ -15,9 +15,10 @@ class RouterHandler(Handler):
     Adapter to serve a Router as a Handler.
     """
 
-    resources: Router
+    router: Router
+    respond_not_found: bool
 
-    def __init__(self, router: Router, respond_not_found=False) -> None:
+    def __init__(self, router: Router, respond_not_found: bool = False) -> None:
         self.router = router
         self.respond_not_found = respond_not_found
 

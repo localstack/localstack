@@ -8,19 +8,20 @@ from ..chain import Handler, HandlerChain
 LOG = logging.getLogger(__name__)
 
 
-def inject_auth_header_if_missing(chain: HandlerChain, context: RequestContext, response: Response):
-    # FIXME: this is needed for allowing access to resources via plain URLs where access is typically restricted (
-    #  e.g., GET requests on S3 URLs or apigateway routes). this should probably be part of a general IAM middleware
-    #  (that allows access to restricted resources by default)
-    if not context.service:
-        return
-    from localstack.utils.aws import aws_stack
+class MissingAuthHeaderInjector(Handler):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        # FIXME: this is needed for allowing access to resources via plain URLs where access is typically restricted (
+        #  e.g., GET requests on S3 URLs or apigateway routes). this should probably be part of a general IAM middleware
+        #  (that allows access to restricted resources by default)
+        if not context.service:
+            return
+        from localstack.utils.aws import aws_stack
 
-    api = context.service.service_name
-    headers = context.request.headers
+        api = context.service.service_name
+        headers = context.request.headers
 
-    if not headers.get("Authorization"):
-        headers["Authorization"] = aws_stack.mock_aws_request_headers(api)["Authorization"]
+        if not headers.get("Authorization"):
+            headers["Authorization"] = aws_stack.mock_aws_request_headers(api)["Authorization"]
 
 
 class DefaultAccountIdEnricher(Handler):

@@ -34,7 +34,7 @@ class ServiceNameParser(Handler):
 
         context.service = self.get_service_model(service)
         headers = context.request.headers
-        headers["x-localstack-tgt-api"] = service
+        headers["x-localstack-tgt-api"] = service  # TODO: probably no longer needed
 
     @lru_cache()
     def get_service_model(self, service: str) -> ServiceModel:
@@ -217,7 +217,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
 
             status_code = 501 if config.FAIL_FAST else 500
 
-            error = CommonServiceException("LocalStackError", msg, status_code=status_code)
+            error = CommonServiceException("InternalError", msg, status_code=status_code)
 
         serializer = create_serializer(context.service)  # TODO: serializer cache
         return serializer.serialize_error_to_response(error, operation)

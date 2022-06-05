@@ -24,11 +24,11 @@ class Gateway:
         self.response_handlers = list()
         self.exception_handlers = list()
 
-    def new_chain(self, request: Request, response: Response) -> HandlerChain:
+    def new_chain(self) -> HandlerChain:
         return HandlerChain(self.request_handlers, self.response_handlers, self.exception_handlers)
 
     def process(self, request: Request, response: Response):
-        chain = self.new_chain(request, response)
+        chain = self.new_chain()
 
         context = RequestContext()
         context.request = request

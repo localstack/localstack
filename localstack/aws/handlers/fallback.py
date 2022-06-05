@@ -23,7 +23,7 @@ class InternalFailureHandler(ExceptionHandler):
         context: RequestContext,
         response: Response,
     ):
-        if response.response:
+        if response.data:
             # response already set
             return
 
