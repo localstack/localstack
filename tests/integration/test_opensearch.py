@@ -275,15 +275,27 @@ class TestOpensearchProvider:
         finally:
             opensearch_client.delete_domain(DomainName=domain_name)
 
+    @pytest.mark.aws_validated
+    def test_create_domain_with_invalid_name(self, opensearch_client):
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            opensearch_client.create_domain(
+                DomainName="123abc"
+            )  # domain needs to start with characters
+        assert e.value.response["Error"]["Code"] == "ValidationException"
+
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            opensearch_client.create_domain(DomainName="abc#")  # no special characters allowed
+        assert e.value.response["Error"]["Code"] == "ValidationException"
+
     def test_create_existing_domain_causes_exception(
         self, opensearch_client, opensearch_wait_for_cluster
     ):
         domain_name = f"opensearch-domain-{short_uid()}"
         try:
             opensearch_client.create_domain(DomainName=domain_name)
-            with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+            with pytest.raises(botocore.exceptions.ClientError) as e:
                 opensearch_client.create_domain(DomainName=domain_name)
-            assert exc_info.type.__name__ == "ResourceAlreadyExistsException"
+            assert e.value.response["Error"]["Code"] == "ResourceAlreadyExistsException"
             opensearch_wait_for_cluster(domain_name=domain_name)
         finally:
             opensearch_client.delete_domain(DomainName=domain_name)

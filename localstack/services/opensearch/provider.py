@@ -1,4 +1,5 @@
 import logging
+import re
 import threading
 from datetime import datetime, timezone
 from random import randint
@@ -382,6 +383,13 @@ def _update_domain_config_request_to_status(request: UpdateDomainConfigRequest) 
     return request
 
 
+_domain_name_pattern = re.compile(r"[a-z][a-z0-9\\-]{3,28}")
+
+
+def is_valid_domain_name(name: str) -> bool:
+    return True if _domain_name_pattern.match(name) else False
+
+
 class OpensearchProvider(OpensearchApi):
     def create_domain(
         self,
@@ -404,6 +412,13 @@ class OpensearchProvider(OpensearchApi):
         auto_tune_options: AutoTuneOptionsInput = None,
     ) -> CreateDomainResponse:
         region = OpenSearchServiceBackend.get()
+
+        if not is_valid_domain_name(domain_name):
+            # TODO: this should use the server-side validation framework at some point.
+            raise ValidationException(
+                "Member must satisfy regular expression pattern: [a-z][a-z0-9\\-]+"
+            )
+
         with _domain_mutex:
             if domain_name in region.opensearch_domains:
                 raise ResourceAlreadyExistsException(
