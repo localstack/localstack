@@ -3,7 +3,6 @@ import json
 import queue
 import random
 import time
-from functools import partial
 
 import pytest
 import requests
@@ -812,7 +811,12 @@ class TestSNSProvider:
         )
 
         def receive_message(url, msg, is_msg_list=False):
-            result = sqs_client.receive_message(QueueUrl=url, MessageAttributeNames=["All"])
+            result = sqs_client.receive_message(
+                QueueUrl=url, MessageAttributeNames=["All"], WaitTimeSeconds=10
+            )
+            from pprint import pprint
+
+            pprint(f"FOOOOO: {result}")
             assert len(result["Messages"]) > 0
             msg_received = json.loads(result["Messages"][0]["Body"])["Message"]
             if is_msg_list:
@@ -820,14 +824,14 @@ class TestSNSProvider:
             msg_received = json.loads(msg_received)["message"]
             assert msg == msg_received
 
-        retry(partial(receive_message, target_queue_url, "target_message"), retries=10, sleep=2)
+        retry(lambda: receive_message(target_queue_url, "target_message"), retries=10, sleep=2)
 
         sqs_client.delete_queue(QueueUrl=target_queue_url)
 
         sns_client.publish(TopicArn=sns_topic_arn, Message=json.dumps({"message": "dlq_message_1"}))
-        retry(partial(receive_message, dlq_url, "dlq_message_1", True), retries=10, sleep=2)
+        retry(lambda: receive_message(dlq_url, "dlq_message_1", True), retries=10, sleep=2)
         sns_client.publish(TopicArn=sns_topic_arn, Message=json.dumps({"message": "dlq_message_2"}))
-        retry(partial(receive_message, dlq_url, "dlq_message_2", True), retries=10, sleep=2)
+        retry(lambda: receive_message(dlq_url, "dlq_message_2", True), retries=10, sleep=2)
 
     def test_publish_with_empty_subject(self, sns_client, sns_create_topic):
         topic_arn = sns_create_topic()["TopicArn"]

@@ -94,7 +94,10 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes, parse_urlencoded_data
-from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
+from localstack.utils.aws.dead_letter_queue import (
+    has_dead_letter_queue,
+    sns_error_to_dead_letter_queue,
+)
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.json import json_safe
 from localstack.utils.objects import not_none_or
@@ -840,15 +843,16 @@ async def message_to_subscriber(
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             store_delivery_log(subscriber, False, message, message_id)
             sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
-            if "NonExistentQueue" in str(exc):
+            if "NonExistentQueue" in str(exc) and not has_dead_letter_queue(
+                subscriber["SubscriptionArn"]
+            ):
+                # do not remove subscription if there is an active dead_letter_queue
                 LOG.info(
                     'Removing non-existent queue "%s" subscribed to topic "%s"',
                     queue_url,
                     topic_arn,
                 )
-                # TODO: Try and understand why this is done.
-                # But this fixes #5459
-                # subscriptions.remove(subscriber)
+                subscriptions.remove(subscriber)
         return
 
     elif subscriber["Protocol"] == "lambda":

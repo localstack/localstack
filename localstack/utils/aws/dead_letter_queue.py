@@ -32,13 +32,24 @@ def sqs_error_to_dead_letter_queue(queue_arn: str, event: Dict, error):
     return _send_to_dead_letter_queue("SQS", queue_arn, target_arn, event, error)
 
 
-def sns_error_to_dead_letter_queue(sns_subscriber_arn: str, event: str, error):
-    # event should be of type str if coming from SNS, as it represents the message body being passed down
+def get_dead_letter_queue_arn(sns_subscriber_arn: str):
     client = aws_stack.connect_to_service("sns")
     attrs = client.get_subscription_attributes(SubscriptionArn=sns_subscriber_arn)
     attrs = attrs.get("Attributes", {})
     policy = json.loads(attrs.get("RedrivePolicy") or "{}")
-    target_arn = policy.get("deadLetterTargetArn")
+    return policy.get("deadLetterTargetArn")
+
+
+def has_dead_letter_queue(sns_subscriber_arn: str):
+    target_arn = get_dead_letter_queue_arn(sns_subscriber_arn)
+    if target_arn:
+        return True
+    return False
+
+
+def sns_error_to_dead_letter_queue(sns_subscriber_arn: str, event: str, error):
+    # event should be of type str if coming from SNS, as it represents the message body being passed down
+    target_arn = get_dead_letter_queue_arn(sns_subscriber_arn)
     if not target_arn:
         return
     return _send_to_dead_letter_queue("SNS", sns_subscriber_arn, target_arn, event, error)
