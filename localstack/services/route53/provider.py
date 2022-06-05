@@ -124,11 +124,13 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
             "Port": health_check.port,
             "RequestInterval": health_check.request_interval,
             "ResourcePath": health_check.resource_path,
-            "Type": health_check.type_
+            "Type": health_check.type_,
         }
         return GetHealthCheckResponse(
             HealthCheck=HealthCheck(
-                Id=health_check.id, CallerReference=health_check.caller_reference, HealthCheckConfig=health_check_config
+                Id=health_check.id,
+                CallerReference=health_check.caller_reference,
+                HealthCheckConfig=health_check_config,
             )
         )
 
