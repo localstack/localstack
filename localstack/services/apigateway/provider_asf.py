@@ -2,6 +2,7 @@
 from collections import defaultdict
 from typing import Any, Dict, List
 
+from requests.structures import CaseInsensitiveDict
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Rule
@@ -16,6 +17,7 @@ from localstack.aws.api.apigateway import (
 )
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
+from localstack.http.request import restore_payload
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import API_REGIONS
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
@@ -39,19 +41,22 @@ def to_invocation_context(
     # FIXME: ApiInvocationContext should be refactored to use werkzeug request object correctly
     method = request.method
     path = request.full_path if request.query_string else request.path
-    # not using request.data here is critical to make sure we do not consume form data
-    data = request.get_data(cache=True) or b""
+    data = restore_payload(request)
     headers = Headers(request.headers)
 
     if url_params is None:
         url_params = {}
 
-    # TODO: here will have to be a compatibility layer for the ASF gateway. with the legacy edge proxy integration,
-    #  the edge proxy sets X-Forwarded-For and other proxy headers, which the gateway does not do by default (and
-    #  shouldn't). moreover, in the legacy integration, the `Request` is constructed from the parameters of
-    #  `ProxyListener.forward_request` by the AwsApiListener. However with the gateway, the Request comes directly
-    #  from the server, and `Request.data` may already have been called (consuming the form data), so we will have to
-    #  restore the original request data.
+    # adjust the X-Forwarded-For header
+    x_forwarded_for = headers.getlist("X-Forwarded-For")
+    x_forwarded_for.append(request.remote_addr)
+    x_forwarded_for.append(request.host)
+    headers["X-Forwarded-For"] = ", ".join(x_forwarded_for)
+
+    # this is for compatibility with the lower layers of apigw and lambda that make assumptions about header casing
+    headers = CaseInsensitiveDict(
+        {k.title(): ", ".join(headers.getlist(k)) for k in headers.keys()}
+    )
 
     return ApiInvocationContext(
         method,

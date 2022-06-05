@@ -826,6 +826,7 @@ class UrlMatchingForwarder(ProxyListener):
         forward_url = self.build_forward_url(host, path)
 
         # update headers
+        headers.pop("Host", None)
         headers["Host"] = forward_url.netloc
 
         # TODO: set proxy headers like x-forwarded-for?
