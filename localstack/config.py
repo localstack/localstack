@@ -313,7 +313,7 @@ WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 USE_SSL = is_env_true("USE_SSL")
 
 # whether to use the legacy edge proxy or the newer Gateway/HandlerChain framework
-LEGACY_EDGE_PROXY = is_env_not_false("LEGACY_EDGE_PROXY")
+LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
