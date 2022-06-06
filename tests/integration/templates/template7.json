@@ -1,6 +1,11 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Template for AWS::AWS::Function.",
+  "Parameters": {
+    "LambdaRoleName": {
+      "Type": "String"
+    }
+  },
   "Resources": {
     "LambdaFunction1": {
       "Type": "AWS::Lambda::Function",
@@ -22,7 +27,9 @@
     "LambdaExecutionRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
-        "RoleName": "",
+        "RoleName": {
+          "Ref": "LambdaRoleName"
+        },
         "AssumeRolePolicyDocument": {
           "Version": "2012-10-17",
           "Statement": [
@@ -34,6 +41,16 @@
             }
           ]
         }
+      }
+    }
+  },
+  "Outputs": {
+    "TestStackFunctionName": {
+      "Value": {
+        "Fn::GetAtt": [
+          "LambdaFunction1",
+          "FunctionName"
+        ]
       }
     }
   }
