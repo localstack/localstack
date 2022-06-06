@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 import time
 from typing import Dict
 
@@ -16,11 +17,21 @@ LOG = logging.getLogger(__name__)
 
 class DynamoDBStreamsBackend(RegionBackend):
     SEQUENCE_NUMBER_COUNTER = 1
+
+    _mutex = threading.RLock()
+
     # maps table names to DynamoDB stream descriptions
     ddb_streams: Dict[str, dict]
 
     def __init__(self):
         self.ddb_streams = {}
+
+    @classmethod
+    def get_and_increment_sequence_number_counter(cls) -> int:
+        with cls._mutex:
+            cnt = cls.SEQUENCE_NUMBER_COUNTER
+            cls.SEQUENCE_NUMBER_COUNTER += 1
+            return cnt
 
 
 def add_dynamodb_stream(
