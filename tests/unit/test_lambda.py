@@ -1005,6 +1005,29 @@ class TestLambdaAPI(unittest.TestCase):
         date_part = "/".join(parts[:3])
         self.assertEqual(date_part, today)
 
+    @mock.patch("localstack.utils.aws.aws_stack.connect_to_service")
+    def test_lambda_sqs_listener_ignore_disabled_source_mapping(self, mock_connect_to_service):
+        sqs_client = mock.Mock()
+        sqs_client.retrieve_message.return_value = {"Messages": []}
+        mock_connect_to_service.return_value = sqs_client
+        region = lambda_api.LambdaRegion.get()
+        with self.app.test_request_context():
+            region.event_source_mappings.append(
+                {
+                    "UUID": self.TEST_UUID,
+                    "EventSourceArn": "://the_arn:sqs:to:test",
+                    "FunctionArn": "the_function",
+                    "State": "Disabled",
+                }
+            )
+            lambda_api.start_lambda_sqs_listener()
+            for i in range(3):
+                if mock_connect_to_service.called:
+                    break
+                else:
+                    time.sleep(0.1)
+        assert not sqs_client.receive_message.called
+
     def _create_function(self, function_name, tags=None):
         if tags is None:
             tags = {}
