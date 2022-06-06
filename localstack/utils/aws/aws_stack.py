@@ -392,6 +392,8 @@ def create_external_boto_client(
     *args,
     **kwargs,
 ):
+    # TODO: We use the Access Key field to specify the AWS account ID.
+    # This is a temporary approach and will change when IAM lookup (Access Key ID -> Account ID) matures
     if aws_access_key_id is None:
         aws_access_key_id = get_aws_account_id()
 
