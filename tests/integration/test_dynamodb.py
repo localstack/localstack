@@ -30,9 +30,9 @@ TEST_DDB_TAGS = [
 ]
 
 
-@pytest.fixture(scope="module")
-def dynamodb():
-    return aws_stack.connect_to_resource("dynamodb")
+@pytest.fixture()
+def dynamodb(dynamodb_resource):
+    return dynamodb_resource
 
 
 class TestDynamoDB:
@@ -1071,7 +1071,7 @@ class TestDynamoDB:
                 int(records["Records"][1]["dynamodb"]["SequenceNumber"]) > starting_sequence_number
             )
 
-        retry(check_expected_records, retries=5, sleep=1)
+        retry(check_expected_records, retries=5, sleep=1, sleep_before=2)
 
     def test_query_on_deleted_resource(self, dynamodb_client, dynamodb_create_table):
         table_name = "ddb-table-%s" % short_uid()
