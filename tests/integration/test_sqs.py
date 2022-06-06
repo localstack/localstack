@@ -15,7 +15,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid, to_str
 

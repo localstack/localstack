@@ -26,8 +26,8 @@ from localstack.constants import (
 )
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.generic_proxy import RegionBackend
-from localstack.services.infra import get_aws_account_id
 from localstack.utils import common
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.aws_stack import parse_arn

@@ -3,7 +3,7 @@ import re
 from moto.sqs.exceptions import MessageAttributesInvalid
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.common import clone
 from localstack.utils.urls import path_from_url
 

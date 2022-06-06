@@ -1,7 +1,7 @@
 import pytest
 from moto.ec2 import utils as ec2_utils
 
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 
 DIGICERT_ROOT_CERT = """

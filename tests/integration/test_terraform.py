@@ -5,8 +5,8 @@ import threading
 import pytest
 
 from localstack import config
-from localstack.services.infra import get_aws_account_id
 from localstack.services.install import TERRAFORM_BIN, install_terraform
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
 
 #  TODO: remove all of these
@@ -125,7 +125,7 @@ class TestTerraform:
         assert response["Configuration"]["FunctionName"] == LAMBDA_NAME
         assert response["Configuration"]["Handler"] == LAMBDA_HANDLER
         assert response["Configuration"]["Runtime"] == LAMBDA_RUNTIME
-        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(account_id)
+        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(account_id=account_id)
 
     @pytest.mark.skip_offline
     def test_event_source_mapping(self, lambda_client):

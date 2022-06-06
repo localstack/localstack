@@ -23,7 +23,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import ensure_list
 from localstack.utils.files import (

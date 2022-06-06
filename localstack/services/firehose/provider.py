@@ -76,7 +76,7 @@ from localstack.services.firehose.mappers import (
     convert_source_config_to_desc,
 )
 from localstack.services.generic_proxy import RegionBackend
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (

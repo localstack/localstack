@@ -48,7 +48,7 @@ from localstack.aws.api.iam import (
     tagKeyListType,
     tagListType,
 )
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
 

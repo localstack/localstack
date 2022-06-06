@@ -13,7 +13,7 @@ from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
     import_api_from_openapi_spec,
 )
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.collections import ensure_list
 from localstack.utils.common import DelSafeDict, short_uid, str_to_bool, to_str
 from localstack.utils.json import parse_json_or_yaml

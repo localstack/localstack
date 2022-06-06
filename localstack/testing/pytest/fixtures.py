@@ -18,10 +18,10 @@ from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
 
 from localstack import config
-from localstack.services.infra import get_aws_account_id
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.aws.client import SigningHttpClient

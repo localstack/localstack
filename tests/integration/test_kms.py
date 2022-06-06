@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack import config
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.crypto import encrypt
 
 

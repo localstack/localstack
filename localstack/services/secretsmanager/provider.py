@@ -59,8 +59,8 @@ from localstack.aws.api.secretsmanager import (
     ValidateResourcePolicyRequest,
     ValidateResourcePolicyResponse,
 )
-from localstack.services.infra import get_aws_account_id
 from localstack.services.moto import call_moto, call_moto_with_request
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid

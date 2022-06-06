@@ -22,7 +22,7 @@ from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
     GenericBaseModel,
 )
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.collections import merge_recursive

@@ -16,7 +16,7 @@ from requests.models import Response as RequestsResponse
 
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.http import replace_response_content
 from localstack.utils.json import json_safe

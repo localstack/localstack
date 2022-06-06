@@ -21,6 +21,7 @@ from localstack.services import generic_proxy, install, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import analytics, config_listener, persistence
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import canonicalize_api_names, in_ci, log_duration, setup_logging
@@ -120,11 +121,6 @@ def get_multiserver_or_free_service_port():
     if config.FORWARD_EDGE_INMEM:
         return multiserver.get_moto_server_port()
     return get_free_tcp_port()
-
-
-def get_aws_account_id() -> str:
-    """Return the AWS account ID."""
-    return get_account_id()
 
 
 def register_signal_handlers():

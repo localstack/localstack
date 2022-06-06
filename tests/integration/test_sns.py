@@ -11,10 +11,10 @@ from werkzeug import Response
 
 from localstack import config
 from localstack.config import external_service_url
-from localstack.services.infra import get_aws_account_id
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import SNSBackend
 from localstack.utils import testutil
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 from localstack.utils.strings import short_uid, to_str

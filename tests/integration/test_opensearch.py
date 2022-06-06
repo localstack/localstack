@@ -8,7 +8,6 @@ import pytest
 
 from localstack import config
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
-from localstack.services.infra import get_aws_account_id
 from localstack.services.install import install_opensearch
 from localstack.services.opensearch.cluster import EdgeProxiedOpensearchCluster
 from localstack.services.opensearch.cluster_manager import (
@@ -19,6 +18,7 @@ from localstack.services.opensearch.cluster_manager import (
     SingletonClusterManager,
     create_cluster_manager,
 )
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.common import call_safe, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread

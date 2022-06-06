@@ -2,7 +2,8 @@ import logging
 
 from localstack import config
 from localstack.services import install
-from localstack.services.infra import do_run, get_aws_account_id, log_startup_message
+from localstack.services.infra import do_run, log_startup_message
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import wait_for_port_open
 from localstack.utils.sync import retry

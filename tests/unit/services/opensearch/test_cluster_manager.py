@@ -2,8 +2,8 @@ import pytest
 
 from localstack import config
 from localstack.aws.api.opensearch import EngineType
-from localstack.services.infra import get_aws_account_id
 from localstack.services.opensearch.cluster_manager import DomainKey, build_cluster_endpoint
+from localstack.utils.accounts import get_aws_account_id
 
 
 class TestBuildClusterEndpoint:

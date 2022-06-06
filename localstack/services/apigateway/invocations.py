@@ -27,10 +27,10 @@ from localstack.services.apigateway.integration import (
     VtlTemplate,
 )
 from localstack.services.awslambda import lambda_api
-from localstack.services.infra import get_aws_account_id
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,

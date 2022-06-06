@@ -41,8 +41,8 @@ from localstack.services.awslambda.lambda_utils import (
     multi_value_dict_for_list,
 )
 from localstack.services.generic_proxy import RegionBackend
-from localstack.services.infra import get_aws_account_id
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction

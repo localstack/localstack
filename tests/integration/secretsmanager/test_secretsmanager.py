@@ -9,8 +9,8 @@ import requests
 from py._code.code import ExceptionInfo
 
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
-from localstack.services.infra import get_aws_account_id
 from localstack.utils import testutil
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
 from localstack.utils.time import today_no_time

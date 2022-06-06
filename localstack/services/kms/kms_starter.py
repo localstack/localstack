@@ -2,13 +2,9 @@ import logging
 import platform
 
 from localstack import config
-from localstack.services.infra import (
-    do_run,
-    get_aws_account_id,
-    log_startup_message,
-    start_proxy_for_service,
-)
+from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
 from localstack.services.install import INSTALL_PATH_KMS_BINARY_PATTERN
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.common import get_arch, get_free_tcp_port, wait_for_port_open
 
 LOG = logging.getLogger(__name__)

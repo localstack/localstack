@@ -10,7 +10,7 @@ from functools import lru_cache
 from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict

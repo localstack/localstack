@@ -5,7 +5,7 @@ from localstack.services.awslambda.event_source_listeners.stream_event_source_li
     StreamEventSourceListener,
 )
 from localstack.services.awslambda.lambda_api import get_event_sources
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import first_char_to_lower, to_str
 from localstack.utils.threads import FuncThread

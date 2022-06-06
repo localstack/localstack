@@ -192,20 +192,3 @@ OS_USER_OPENSEARCH = "localstack"
 
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = "Ready."
-
-
-def patch_moto_account_id():
-    # fix moto account ID - note: this needs to be executed before any other moto imports
-    try:
-        from moto import core as moto_core
-        from moto.core import models as moto_core_models
-
-        moto_core.ACCOUNT_ID = moto_core_models.ACCOUNT_ID = _TEST_AWS_ACCOUNT_ID
-    except Exception:
-        # ignore import errors
-        pass
-
-
-if not os.environ.get("SKIP_PATCH_MOTO_ACCOUNT_ID"):
-    # allow skipping this (importing moto takes a long time, and it's not necessary for the CLI)
-    patch_moto_account_id()

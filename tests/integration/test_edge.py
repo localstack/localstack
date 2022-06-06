@@ -18,8 +18,8 @@ from localstack.services.generic_proxy import (
     start_proxy_server,
     update_path_in_url,
 )
-from localstack.services.infra import get_aws_account_id
 from localstack.services.messages import Request, Response
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.common import get_free_tcp_port, short_uid, to_str

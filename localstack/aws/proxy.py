@@ -4,7 +4,6 @@ Adapters and other utilities to use ASF together with the edge proxy.
 import logging
 from typing import Any, Optional
 
-import moto
 from botocore.model import ServiceModel
 from werkzeug.datastructures import Headers
 
@@ -15,6 +14,7 @@ from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.messages import MessagePayload
+from localstack.utils.accounts import get_default_account_id
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.persistence import PersistingProxyListener
 
@@ -23,16 +23,6 @@ LOG = logging.getLogger(__name__)
 
 def get_region(request: Request) -> str:
     return extract_region_from_headers(request.headers)
-
-
-def _get_account_id(_: Request) -> str:
-    """
-    Get the AWS Account ID.
-
-    :param _: request
-    :return: account ID
-    """
-    return moto.core.get_account_id()
 
 
 class AwsApiListener(ProxyListenerAdapter):
@@ -51,8 +41,11 @@ class AwsApiListener(ProxyListenerAdapter):
         context.service = self.service
         context.request = request
         context.region = get_region(request)
-        context.account_id = _get_account_id(request)
+        context.account_id = self.get_account_id_from_request(request)
         return context
+
+    def get_account_id_from_request(self, _: Request) -> str:
+        return get_default_account_id()
 
 
 def _raise_not_implemented_error(*args, **kwargs):

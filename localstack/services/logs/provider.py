@@ -24,10 +24,10 @@ from localstack.aws.api.logs import (
 )
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
-from localstack.services.infra import get_aws_account_id
 from localstack.services.messages import Request, Response
 from localstack.services.moto import MotoFallbackDispatcher, call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch

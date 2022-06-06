@@ -30,8 +30,9 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON36,
 )
 from localstack.services.generic_proxy import ProxyListener
-from localstack.services.infra import get_aws_account_id, start_proxy
+from localstack.services.infra import start_proxy
 from localstack.utils import testutil
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
 from localstack.utils.common import safe_requests as requests

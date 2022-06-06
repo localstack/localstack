@@ -11,7 +11,7 @@ from localstack.config import TMP_FOLDER
 from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
 from localstack.services.awslambda.lambda_executors import OutputLog
 from localstack.services.awslambda.lambda_utils import API_PATH_ROOT
-from localstack.services.infra import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.common import isoformat_milliseconds, mkdir, new_tmp_dir, save_file
