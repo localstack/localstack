@@ -991,6 +991,7 @@ class TestDynamoDB:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    @pytest.mark.xfail(reason="this test flakes regularly in CI")
     def test_dynamodb_stream_records_with_update_item(
         self,
         dynamodb_client,
