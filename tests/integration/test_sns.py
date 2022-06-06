@@ -634,10 +634,9 @@ class TestSNSProvider:
 
         # create HTTP endpoint and connect it to SNS topic
         with HTTPServer() as server:
-            http_endpoint = server.url_for("/")
-
-            wait_for_port_open(http_endpoint)
-            server.expect_request("/").respond_with_data(b"", 200)
+            server.expect_request("/subscription").respond_with_data(b"", 200)
+            http_endpoint = server.url_for("/subscription")
+            wait_for_port_open(server.port)
 
             subscription = sns_subscription(
                 TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint
@@ -648,7 +647,15 @@ class TestSNSProvider:
                 AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
             )
 
-        wait_for_port_closed(http_endpoint)
+            # wait for subscription notification to arrive at http endpoint
+            poll_condition(lambda: len(server.log) >= 1, timeout=10)
+            request, _ = server.log[0]
+            event = request.get_json(force=True)
+            assert request.path.endswith("/subscription")
+            assert event["Type"] == "SubscriptionConfirmation"
+            assert event["TopicArn"] == topic_arn
+
+        wait_for_port_closed(server.port)
 
         sns_client.publish(
             TopicArn=topic_arn,
