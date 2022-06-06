@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import os
 import re
@@ -7,7 +8,7 @@ import time
 from collections import defaultdict
 from functools import lru_cache
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from flask import Response
 
@@ -300,3 +301,109 @@ def generate_lambda_arn(
         return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}:{qualifier}"
     else:
         return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}"
+
+
+class FilterCriteria(TypedDict):
+    Filters: List[Dict[str, any]]
+
+
+def parse_and_apply_numeric_filter(record_value, numeric_filter: List[Union[str, int]]):
+    if len(numeric_filter) % 2 > 0:
+        LOG.warn("Invalid numeric lambda filter given")
+        return True
+    for idx in range(0, len(numeric_filter), 2):
+        if (
+            numeric_filter[idx] == ">"
+            and isinstance(numeric_filter[idx + 1], int)
+            and record_value > numeric_filter[idx + 1]
+        ):
+            continue
+        if (
+            numeric_filter[idx] == ">="
+            and isinstance(numeric_filter[idx + 1], int)
+            and record_value >= numeric_filter[idx + 1]
+        ):
+            continue
+        if (
+            numeric_filter[idx] == "="
+            and isinstance(numeric_filter[idx + 1], int)
+            and record_value == numeric_filter[idx + 1]
+        ):
+            continue
+        if (
+            numeric_filter[idx] == "<"
+            and isinstance(numeric_filter[idx + 1], int)
+            and record_value < numeric_filter[idx + 1]
+        ):
+            continue
+        if (
+            numeric_filter[idx] == "<="
+            and isinstance(numeric_filter[idx + 1], int)
+            and record_value <= numeric_filter[idx + 1]
+        ):
+            continue
+        return False
+    return True
+
+
+def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]):
+    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
+    filter_results = []
+    for key, filter_value in dict_filter.items():
+        if key.lower() == "anything-but":
+            filter_results.append(record_value not in filter_value)
+        elif key.lower() == "numeric":
+            filter_results.append(parse_and_apply_numeric_filter(record_value, filter_value))
+        elif key.lower() == "exists":
+            filter_results.append(
+                bool(filter_value)
+            )  # exists means that the key exists in the event record
+        elif key.lower() == "prefix":
+            filter_results.append(str(record_value).startswith(filter_value))
+        else:
+            filter_results.append(False)
+    return all(filter_results)
+
+
+def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]):
+    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
+    filter_results = []
+    for key, value in filter_rule.items():
+        # check if rule exists in event
+        record_value = record.get(key.lower(), record.get(key))
+        if record_value is None:
+            # special case 'exists'
+            if isinstance(value, list) and len(value) > 0:
+                if not value[0].get("exists", True):
+                    filter_results.append(True)
+            filter_results.append(False)
+            continue
+
+        # check if filter rule value is a list (leaf of rule tree) or a dict (rescursively call function)
+        if isinstance(value, list):
+            if len(value) > 0:
+                if isinstance(value[0], (str, int)):
+                    filter_results.append(record_value in value)
+                    continue
+                if isinstance(value[0], dict):
+                    filter_results.append(verify_dict_filter(record_value, value[0]))
+                    continue
+            else:
+                LOG.warn(f"Empty lambda filter: {key}")
+        if isinstance(value, dict):
+            filter_results.append(filter_stream_record(value, record_value))
+            continue
+
+        filter_results.append(False)
+    return all(filter_results)
+
+
+def filter_stream_records(records, filters: List[FilterCriteria]):
+    filtered_records = []
+    for record in records:
+        for filter in filters:
+            for rule in filter["Filters"]:
+                if filter_stream_record(json.loads(rule["Pattern"]), record):
+                    filtered_records.append(record)
+                    break
+    return filtered_records
