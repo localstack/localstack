@@ -1,7 +1,7 @@
 import pytest
-from moto.core import get_account_id
 from moto.ec2 import utils as ec2_utils
 
+from localstack.services.infra import get_aws_account_id
 from localstack.utils.aws import aws_stack
 
 DIGICERT_ROOT_CERT = """
@@ -41,7 +41,7 @@ class TestACM:
 
             expected_arn = "arn:aws:acm:{0}:{1}:certificate".format(
                 aws_stack.get_region(),
-                get_account_id(),
+                get_aws_account_id(),
             )
             acm_cert_arn = result["CertificateArn"].split("/")[0]
             assert expected_arn == acm_cert_arn

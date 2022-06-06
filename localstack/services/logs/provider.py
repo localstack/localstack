@@ -5,7 +5,6 @@ import logging
 from gzip import GzipFile
 from typing import Callable, Dict
 
-from moto.core import get_account_id
 from moto.core.utils import unix_time_millis
 from moto.logs import models as logs_models
 from moto.logs.exceptions import InvalidParameterException, ResourceNotFoundException
@@ -25,6 +24,7 @@ from localstack.aws.api.logs import (
 )
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.services.infra import get_aws_account_id
 from localstack.services.messages import Request, Response
 from localstack.services.moto import MotoFallbackDispatcher, call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -182,7 +182,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
 
         data = {
             "messageType": "DATA_MESSAGE",
-            "owner": get_account_id(),
+            "owner": get_aws_account_id(),
             "logGroup": log_group_name,
             "logStream": log_stream_name,
             "subscriptionFilters": [self.filter_name],

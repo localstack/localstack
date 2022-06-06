@@ -10,13 +10,13 @@ from urllib.parse import parse_qs
 
 import xmltodict
 from flask import Response as FlaskResponse
-from moto.core import get_account_id
 from moto.core.exceptions import JsonRESTError
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
+from localstack.services.infra import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.http import replace_response_content
 from localstack.utils.json import json_safe
@@ -471,7 +471,7 @@ class MessageConversion:
 
     @staticmethod
     def fix_account_id(response):
-        return aws_stack.fix_account_id_in_arns(response, replace=get_account_id())
+        return aws_stack.fix_account_id_in_arns(response, replace=get_aws_account_id())
 
     @staticmethod
     def fix_error_codes(method, data, response):

@@ -11,7 +11,6 @@ from typing import Dict, TypeVar
 import pytest
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
-from moto.core import get_account_id
 
 from localstack.services.awslambda import lambda_api
 from localstack.services.awslambda.lambda_api import (
@@ -37,6 +36,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON39,
     LAMBDA_RUNTIME_RUBY27,
 )
+from localstack.services.infra import get_aws_account_id
 from localstack.services.install import (
     GO_RUNTIME_VERSION,
     INSTALL_PATH_LOCALSTACK_FAT_JAR,
@@ -189,9 +189,7 @@ class TestLambdaAPI:
     def test_create_lambda_function(self, lambda_client):
         """Basic test that creates and deletes a Lambda function"""
         func_name = f"lambda_func-{short_uid()}"
-        kms_key_arn = (
-            f"arn:{aws_stack.get_partition()}:kms:{aws_stack.get_region()}:{get_account_id()}:key11"
-        )
+        kms_key_arn = f"arn:{aws_stack.get_partition()}:kms:{aws_stack.get_region()}:{get_aws_account_id()}:key11"
         vpc_config = {
             "SubnetIds": ["subnet-123456789"],
             "SecurityGroupIds": ["sg-123456789"],
@@ -202,7 +200,7 @@ class TestLambdaAPI:
             "FunctionName": func_name,
             "Runtime": LAMBDA_RUNTIME_PYTHON37,
             "Handler": LAMBDA_DEFAULT_HANDLER,
-            "Role": LAMBDA_TEST_ROLE,
+            "Role": LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
             "KMSKeyArn": kms_key_arn,
             "Code": {
                 "ZipFile": create_lambda_archive(

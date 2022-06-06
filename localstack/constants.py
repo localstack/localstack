@@ -40,12 +40,11 @@ BIND_HOST = "0.0.0.0"
 # AWS user account ID used for tests - TODO move to config.py
 if "TEST_AWS_ACCOUNT_ID" not in os.environ:
     os.environ["TEST_AWS_ACCOUNT_ID"] = "000000000000"
+
+# WARNING:
+# Do not use this constant to access the Account ID.
+# Use `localstack.services.infra.get_aws_account_id()` instead.
 _TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
-#
-# WARNING: Do not use the above constant to access the Account ID.
-#          Use `moto.core.models.get_account_id()`.
-#          This returns the correct value based on current thread+request context.
-#
 
 # root code folder
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))

@@ -4,10 +4,10 @@ import os
 
 import pytest
 from botocore.exceptions import ClientError
-from moto.core import get_account_id
 
 from localstack.aws.api.iam import Tag
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
+from localstack.services.infra import get_aws_account_id
 from localstack.utils.common import short_uid
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.strings import long_uid
@@ -54,7 +54,7 @@ class TestIAMIntegrations:
             PolicyName="test-policy", PolicyDocument=json.dumps(test_policy_document)
         )
         test_policy_arn = response["Policy"]["Arn"]
-        assert get_account_id() in test_policy_arn
+        assert get_aws_account_id() in test_policy_arn
 
         iam_client.attach_user_policy(UserName=test_user_name, PolicyArn=test_policy_arn)
         attached_user_policies = iam_client.list_attached_user_policies(UserName=test_user_name)

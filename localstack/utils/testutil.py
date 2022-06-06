@@ -13,7 +13,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import boto3
 import requests
-from moto.core import get_account_id
 
 from localstack import config
 from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
@@ -24,6 +23,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
+from localstack.services.infra import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import ensure_list
 from localstack.utils.files import (
@@ -270,7 +270,7 @@ def create_lambda_function(
         "FunctionName": func_name,
         "Runtime": runtime,
         "Handler": handler,
-        "Role": role or LAMBDA_TEST_ROLE,
+        "Role": role or LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
         "Code": lambda_code,
         "Timeout": timeout or LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),
@@ -510,7 +510,7 @@ def get_sample_arn(service, resource):
     return "arn:aws:%s:%s:%s:%s" % (
         service,
         aws_stack.get_region(),
-        get_account_id(),
+        get_aws_account_id(),
         resource,
     )
 

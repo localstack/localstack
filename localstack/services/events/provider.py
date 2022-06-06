@@ -7,7 +7,6 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
-from moto.core import get_account_id
 from moto.events.responses import EventsHandler as MotoEventsHandler
 
 from localstack import config
@@ -33,6 +32,7 @@ from localstack.aws.api.events import (
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.generic_proxy import RegionBackend
+from localstack.services.infra import get_aws_account_id
 from localstack.services.moto import call_moto
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.message_forwarding import send_event_to_target
@@ -464,7 +464,7 @@ def events_handler_put_events(self):
             "id": event_envelope["uuid"],
             "detail-type": event.get("DetailType"),
             "source": event.get("Source"),
-            "account": get_account_id(),
+            "account": get_aws_account_id(),
             "time": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "region": self.region,
             "resources": event.get("Resources", []),

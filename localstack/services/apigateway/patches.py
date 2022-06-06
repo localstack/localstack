@@ -5,7 +5,6 @@ from typing import Dict, Optional, Tuple
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.exceptions import NoIntegrationDefined, UsagePlanNotFoundException
 from moto.apigateway.responses import APIGatewayResponse
-from moto.core import get_account_id
 from moto.core.utils import camelcase_to_underscores
 
 from localstack.aws.api.apigateway import NotFoundException
@@ -14,6 +13,7 @@ from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
     import_api_from_openapi_spec,
 )
+from localstack.services.infra import get_aws_account_id
 from localstack.utils.collections import ensure_list
 from localstack.utils.common import DelSafeDict, short_uid, str_to_bool, to_str
 from localstack.utils.json import parse_json_or_yaml
@@ -120,7 +120,7 @@ def apply_patches():
             rest_api = self.backend.apis.get(function_id)
             if not rest_api:
                 msg = "Invalid API identifier specified %s:%s" % (
-                    get_account_id(),
+                    get_aws_account_id(),
                     function_id,
                 )
                 raise NotFoundException(msg)

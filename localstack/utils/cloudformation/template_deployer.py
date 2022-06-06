@@ -7,7 +7,6 @@ import traceback
 from typing import Dict, List, Optional
 
 import botocore
-from moto.core import get_account_id
 from moto.ec2.utils import generate_route_id
 
 from localstack import config
@@ -23,6 +22,7 @@ from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
     GenericBaseModel,
 )
+from localstack.services.infra import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.collections import merge_recursive
@@ -426,7 +426,7 @@ def resolve_ref(stack, ref, attribute):
         # TODO return proper stack id!
         return stack_name
     if ref == "AWS::AccountId":
-        return get_account_id()
+        return get_aws_account_id()
     if ref == "AWS::NoValue":
         return PLACEHOLDER_AWS_NO_VALUE
     if ref == "AWS::NotificationARNs":

@@ -1,10 +1,8 @@
 import logging
 
-from moto.core import get_account_id
-
 from localstack import config
 from localstack.services import install
-from localstack.services.infra import do_run, log_startup_message
+from localstack.services.infra import do_run, get_aws_account_id, log_startup_message
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import wait_for_port_open
 from localstack.utils.sync import retry
@@ -30,7 +28,7 @@ def get_command(backend_port):
         install.INSTALL_DIR_STEPFUNCTIONS,
         backend_port,
         MAX_HEAP_SIZE,
-        get_account_id(),
+        get_aws_account_id(),
     )
     if config.STEPFUNCTIONS_LAMBDA_ENDPOINT.lower() != "default":
         lambda_endpoint = config.STEPFUNCTIONS_LAMBDA_ENDPOINT or aws_stack.get_local_service_url(

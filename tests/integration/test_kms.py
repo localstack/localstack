@@ -8,9 +8,9 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
-from moto.core import get_account_id
 
 from localstack import config
+from localstack.services.infra import get_aws_account_id
 from localstack.utils.crypto import encrypt
 
 
@@ -33,7 +33,7 @@ class TestKMS:
         response = kms_client.describe_key(KeyId=key_id)["KeyMetadata"]
         assert response["KeyId"] == key_id
         assert ":%s:" % config.DEFAULT_REGION in response["Arn"]
-        assert ":%s:" % get_account_id() in response["Arn"]
+        assert ":%s:" % get_aws_account_id() in response["Arn"]
 
     def test_create_grant_with_invalid_key(self, kms_client):
         with pytest.raises(botocore.exceptions.ClientError):

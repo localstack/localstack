@@ -8,7 +8,6 @@ from urllib.parse import urljoin
 import requests
 from flask import Response as FlaskResponse
 from jsonschema import ValidationError, validate
-from moto.core.models import get_account_id
 from requests.models import Response
 
 from localstack import config
@@ -28,6 +27,7 @@ from localstack.services.apigateway.integration import (
     VtlTemplate,
 )
 from localstack.services.awslambda import lambda_api
+from localstack.services.infra import get_aws_account_id
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
@@ -564,7 +564,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                     new_request = f"{payload}&QueueUrl={queue_url}"
                 headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
 
-                url = urljoin(config.service_url("sqs"), f"{get_account_id()}/{queue}")
+                url = urljoin(config.service_url("sqs"), f"{get_aws_account_id()}/{queue}")
                 result = common.make_http_request(
                     url, method="POST", headers=headers, data=new_request
                 )

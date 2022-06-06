@@ -15,7 +15,6 @@ from jsonpointer import JsonPointerException
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.models import Authorizer
 from moto.apigateway.utils import create_id as create_resource_id
-from moto.core.models import get_account_id
 from requests.models import Response
 
 from localstack import config
@@ -27,6 +26,7 @@ from localstack.constants import (
 )
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.generic_proxy import RegionBackend
+from localstack.services.infra import get_aws_account_id
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
@@ -519,7 +519,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
                 {
                     "type": "AWS",
                     "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
-                    % (sqs_region, get_account_id(), queue_name),
+                    % (sqs_region, get_aws_account_id(), queue_name),
                     "requestTemplates": {"application/json": template},
                 }
             ],
@@ -791,7 +791,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
-    account_id = account_id or get_account_id()
+    account_id = account_id or get_aws_account_id()
     request_context = {
         "accountId": account_id,
         "apiId": api_id,

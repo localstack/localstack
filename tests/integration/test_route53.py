@@ -1,8 +1,8 @@
 import re
 
 import pytest
-from moto.core import get_account_id
 
+from localstack.services.infra import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
@@ -75,7 +75,7 @@ class TestRoute53:
         expected = {
             "HostedZoneId": f"/hostedzone/{zone_id}",
             "Name": "%s." % name,
-            "Owner": {"OwningAccount": get_account_id()},
+            "Owner": {"OwningAccount": get_aws_account_id()},
         }
         assert expected in result
 

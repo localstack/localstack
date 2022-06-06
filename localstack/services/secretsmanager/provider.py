@@ -7,7 +7,6 @@ import time
 from typing import Dict, Final, Optional, Union
 
 from moto.awslambda.models import LambdaFunction
-from moto.core import get_account_id
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend, secretsmanager_backends
@@ -60,6 +59,7 @@ from localstack.aws.api.secretsmanager import (
     ValidateResourcePolicyRequest,
     ValidateResourcePolicyResponse,
 )
+from localstack.services.infra import get_aws_account_id
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
@@ -561,7 +561,7 @@ def secretsmanager_models_secret_arn(region, secret_id):
     if k not in SECRET_ARN_STORAGE:
         id_string = short_uid()[:6]
         arn = aws_stack.secretsmanager_secret_arn(
-            secret_id, account_id=get_account_id(), region_name=region, random_suffix=id_string
+            secret_id, account_id=get_aws_account_id(), region_name=region, random_suffix=id_string
         )
         SECRET_ARN_STORAGE[k] = arn
     return SECRET_ARN_STORAGE[k]

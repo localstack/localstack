@@ -3,9 +3,9 @@ import re
 import threading
 
 import pytest
-from moto.core import get_account_id
 
 from localstack import config
+from localstack.services.infra import get_aws_account_id
 from localstack.services.install import TERRAFORM_BIN, install_terraform
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
 
@@ -13,14 +13,14 @@ from localstack.utils.common import is_command_available, rm_rf, run, start_work
 
 BUCKET_NAME = "tf-bucket"
 QUEUE_NAME = "tf-queue"
-QUEUE_ARN = f"arn:aws:sqs:us-east-1:{get_account_id()}:tf-queue"
+QUEUE_ARN = "arn:aws:sqs:us-east-1:{account_id}:tf-queue"
 
 # lambda Testing Variables
 LAMBDA_NAME = "tf-lambda"
-LAMBDA_ARN = f"arn:aws:lambda:us-east-1:{get_account_id()}:function:{LAMBDA_NAME}"
+LAMBDA_ARN = "arn:aws:lambda:us-east-1:{account_id}:function:{lambda_name}"
 LAMBDA_HANDLER = "DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler"
 LAMBDA_RUNTIME = "dotnetcore2.0"
-LAMBDA_ROLE = f"arn:aws:iam::{get_account_id()}:role/iam_for_lambda"
+LAMBDA_ROLE = "arn:aws:iam::{account_id}:role/iam_for_lambda"
 
 INIT_LOCK = threading.RLock()
 
@@ -120,20 +120,23 @@ class TestTerraform:
 
     @pytest.mark.skip_offline
     def test_lambda(self, lambda_client):
+        account_id = get_aws_account_id()
         response = lambda_client.get_function(FunctionName=LAMBDA_NAME)
         assert response["Configuration"]["FunctionName"] == LAMBDA_NAME
         assert response["Configuration"]["Handler"] == LAMBDA_HANDLER
         assert response["Configuration"]["Runtime"] == LAMBDA_RUNTIME
-        assert response["Configuration"]["Role"] == LAMBDA_ROLE
+        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(account_id)
 
     @pytest.mark.skip_offline
     def test_event_source_mapping(self, lambda_client):
+        queue_arn = QUEUE_ARN.format(account_id=get_aws_account_id())
+        lambda_arn = LAMBDA_ARN.format(account_id=get_aws_account_id(), lambda_name=LAMBDA_NAME)
         all_mappings = lambda_client.list_event_source_mappings(
-            EventSourceArn=QUEUE_ARN, FunctionName=LAMBDA_NAME
+            EventSourceArn=queue_arn, FunctionName=LAMBDA_NAME
         )
         function_mapping = all_mappings.get("EventSourceMappings")[0]
-        assert function_mapping["FunctionArn"] == LAMBDA_ARN
-        assert function_mapping["EventSourceArn"] == QUEUE_ARN
+        assert function_mapping["FunctionArn"] == lambda_arn
+        assert function_mapping["EventSourceArn"] == queue_arn
 
     @pytest.mark.skip_offline
     def test_apigateway(self, apigateway_client):

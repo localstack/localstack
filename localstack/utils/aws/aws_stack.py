@@ -10,7 +10,7 @@ from functools import lru_cache
 from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
-from moto.core import get_account_id
+from localstack.services.infra import get_aws_account_id
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -225,7 +225,7 @@ def is_internal_call_context(headers):
 
 
 def get_internal_credential():
-    return "Credential=%s/" % get_account_id()
+    return "Credential=%s/" % get_aws_account_id()
 
 
 def set_internal_auth(headers):
@@ -244,7 +244,7 @@ def set_internal_auth(headers):
             authorization,
         )
     headers["Authorization"] = authorization
-    headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_account_id()
+    headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_aws_account_id()
     return headers
 
 
@@ -368,7 +368,7 @@ def connect_to_service(
         if client and internal:
 
             def _add_internal_header(request, **kwargs):
-                request.headers.add_header(HEADER_LOCALSTACK_ACCOUNT_ID, get_account_id())
+                request.headers.add_header(HEADER_LOCALSTACK_ACCOUNT_ID, get_aws_account_id())
 
             event_system = new_client.meta.events
             event_system.register_first("before-sign.*.*", _add_internal_header)
@@ -393,7 +393,7 @@ def create_external_boto_client(
     **kwargs,
 ):
     if aws_access_key_id is None:
-        aws_access_key_id = get_account_id()
+        aws_access_key_id = get_aws_account_id()
 
     return connect_to_service(
         service_name,
@@ -474,9 +474,9 @@ def set_default_region_in_headers(headers, service=None, region=None):
 
 def fix_account_id_in_arns(response, colon_delimiter=":", existing=None, replace=None):
     """Fix the account ID in the ARNs returned in the given Flask response or string"""
-    existing = existing or ["123456789", "1234567890", "123456789012", get_account_id()]
+    existing = existing or ["123456789", "1234567890", "123456789012", get_aws_account_id()]
     existing = existing if isinstance(existing, list) else [existing]
-    replace = replace or get_account_id()
+    replace = replace or get_aws_account_id()
     is_str_obj = is_string_or_bytes(response)
     content = to_str(response if is_str_obj else response._content)
 
@@ -608,14 +608,14 @@ def role_arn(role_name, account_id=None, env=None):
         return role_name
     if role_name.startswith("arn:aws:iam::"):
         return role_name
-    account_id = account_id or get_account_id()
+    account_id = account_id or get_aws_account_id()
     return "arn:aws:iam::%s:role/%s" % (account_id, role_name)
 
 
 def policy_arn(policy_name, account_id=None):
     if ":policy/" in policy_name:
         return policy_name
-    account_id = account_id or get_account_id()
+    account_id = account_id or get_aws_account_id()
     return "arn:aws:iam::{}:policy/{}".format(account_id, policy_name)
 
 
@@ -623,7 +623,7 @@ def iam_resource_arn(resource, role=None, env=None):
     env = get_environment(env)
     if not role:
         role = get_iam_role(resource, env=env)
-    return role_arn(role_name=role, account_id=get_account_id())
+    return role_arn(role_name=role, account_id=get_aws_account_id())
 
 
 def get_iam_role(resource, env=None):
@@ -660,7 +660,7 @@ def dynamodb_table_arn(table_name, account_id=None, region_name=None):
 
 
 def dynamodb_stream_arn(table_name, latest_stream_label, account_id=None):
-    account_id = account_id or get_account_id()
+    account_id = account_id or get_aws_account_id()
     return "arn:aws:dynamodb:%s:%s:table/%s/stream/%s" % (
         get_region(),
         account_id,
@@ -712,7 +712,7 @@ def lambda_function_or_layer_arn(
             LOG.info(f"{msg}: {e}")
             raise Exception(msg)
 
-    account_id = account_id or get_account_id()
+    account_id = account_id or get_aws_account_id()
     region_name = region_name or get_region()
     result = f"arn:aws:lambda:{region_name}:{account_id}:{type}:{entity_name}"
     if version:
@@ -805,7 +805,7 @@ def s3_bucket_name(bucket_name_or_arn: str) -> str:
 def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: str = None) -> str:
     if ":" in name:
         return name
-    account_id = account_id or get_account_id()
+    account_id = account_id or get_aws_account_id()
     region_name = region_name or get_region()
     if len(pattern.split("%s")) == 3:
         return pattern % (account_id, name)
@@ -843,14 +843,14 @@ def create_sqs_queue(queue_name, env=None):
 
 
 def sqs_queue_arn(queue_name, account_id=None, region_name=None):
-    account_id = account_id or get_account_id()
+    account_id = account_id or get_aws_account_id()
     region_name = region_name or get_region()
     queue_name = queue_name.split("/")[-1]
     return "arn:aws:sqs:%s:%s:%s" % (region_name, account_id, queue_name)
 
 
 def apigateway_restapi_arn(api_id, account_id=None, region_name=None):
-    account_id = account_id or get_account_id()
+    account_id = account_id or get_aws_account_id()
     region_name = region_name or get_region()
     return "arn:aws:apigateway:%s:%s:/restapis/%s" % (region_name, account_id, api_id)
 
@@ -863,7 +863,7 @@ def sqs_queue_name(queue_arn):
 
 
 def sns_topic_arn(topic_name, account_id=None):
-    account_id = account_id or get_account_id()
+    account_id = account_id or get_aws_account_id()
     return "arn:aws:sns:%s:%s:%s" % (get_region(), account_id, topic_name)
 
 
@@ -892,7 +892,7 @@ def mock_aws_request_headers(
     elif service in ["sns", "sqs", "sts", "cloudformation"]:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
 
-    access_key = access_key or get_account_id()
+    access_key = access_key or get_aws_account_id()
     region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,
@@ -905,7 +905,7 @@ def mock_aws_request_headers(
         ),
     }
     if internal:
-        headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_account_id()
+        headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_aws_account_id()
     return headers
 
 

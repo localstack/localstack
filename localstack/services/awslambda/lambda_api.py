@@ -17,7 +17,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from flask import Flask, Response, jsonify, request
-from moto.core import get_account_id
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
@@ -42,6 +41,7 @@ from localstack.services.awslambda.lambda_utils import (
     multi_value_dict_for_list,
 )
 from localstack.services.generic_proxy import RegionBackend
+from localstack.services.infra import get_aws_account_id
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
@@ -82,7 +82,7 @@ LOG = logging.getLogger(__name__)
 
 # name pattern of IAM policies associated with Lambda functions (name/qualifier)
 LAMBDA_POLICY_NAME_PATTERN = "lambda_policy_{name}_{qualifier}"
-LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % get_account_id()
+LAMBDA_TEST_ROLE = "arn:aws:iam::{account_id}:role/lambda-test-role"
 
 # constants
 APP_NAME = "lambda_api"
@@ -993,7 +993,7 @@ def get_lambda_policy(function, qualifier=None):
         if not isinstance(doc["Statement"], list):
             doc["Statement"] = [doc["Statement"]]
         for stmt in doc["Statement"]:
-            stmt["Principal"] = stmt.get("Principal") or {"AWS": get_account_id()}
+            stmt["Principal"] = stmt.get("Principal") or {"AWS": get_aws_account_id()}
         doc["PolicyArn"] = p["Arn"]
         doc["PolicyName"] = p["PolicyName"]
         doc["Id"] = "default"
@@ -1588,7 +1588,7 @@ def invoke_function(function):
             Runtime=LAMBDA_RUNTIME_NODEJS14X,
             Handler="index.handler",
             Code={"ZipFile": code},
-            Role=LAMBDA_TEST_ROLE,
+            Role=LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
         )
         not_found = None
 

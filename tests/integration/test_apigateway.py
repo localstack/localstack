@@ -11,7 +11,6 @@ import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
 from moto.apigateway.models import APIGatewayBackend
-from moto.core import get_account_id
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
@@ -31,7 +30,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON36,
 )
 from localstack.services.generic_proxy import ProxyListener
-from localstack.services.infra import start_proxy
+from localstack.services.infra import get_aws_account_id, start_proxy
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
@@ -442,7 +441,7 @@ class TestAPIGateway:
         expected_path = "/" + self.TEST_STAGE_NAME + "/lambda/foo1"
         assert expected_path == request_context["path"]
         assert request_context.get("stageVariables") is None
-        assert TEST_AWS_ACCOUNT_ID == request_context["accountId"]
+        assert get_aws_account_id() == request_context["accountId"]
         assert resource.get("id") == request_context["resourceId"]
         assert self.TEST_STAGE_NAME == request_context["stage"]
         assert "python-requests/testing" == request_context["identity"]["userAgent"]

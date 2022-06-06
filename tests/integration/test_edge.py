@@ -6,7 +6,6 @@ import urllib
 import pytest
 import requests
 import xmltodict
-from moto.core import get_account_id
 from quart import request as quart_request
 from requests.models import Request as RequestsRequest
 
@@ -19,6 +18,7 @@ from localstack.services.generic_proxy import (
     start_proxy_server,
     update_path_in_url,
 )
+from localstack.services.infra import get_aws_account_id
 from localstack.services.messages import Request, Response
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
@@ -329,7 +329,7 @@ class TestEdgeAPI:
             json.loads(content1)
         content1 = xmltodict.parse(content1)
         content1_result = content1["GetCallerIdentityResponse"]["GetCallerIdentityResult"]
-        assert content1_result["Account"] == get_account_id()
+        assert content1_result["Account"] == get_aws_account_id()
 
         # receive response as JSON (via Accept header)
         headers = aws_stack.mock_aws_request_headers("sts")
@@ -338,7 +338,7 @@ class TestEdgeAPI:
         assert response
         content2 = json.loads(to_str(response.content))
         content2_result = content2["GetCallerIdentityResponse"]["GetCallerIdentityResult"]
-        assert content2_result["Account"] == get_account_id()
+        assert content2_result["Account"] == get_aws_account_id()
         content1.get("GetCallerIdentityResponse", {}).pop("ResponseMetadata", None)
         content2.get("GetCallerIdentityResponse", {}).pop("ResponseMetadata", None)
         assert strip_xmlns(content1) == content2
