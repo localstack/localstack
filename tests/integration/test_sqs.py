@@ -490,7 +490,7 @@ class TestSqsProvider:
         assert "Messages" not in result
 
         # visibility timeout should have expired
-        result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=2)
+        result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
         assert "Messages" in result
         message_receipt_1 = result["Messages"][0]
 
@@ -1524,7 +1524,7 @@ class TestSqsProvider:
         )
 
     def test_inflight_message_requeue(self, sqs_client, sqs_create_queue):
-        visibility_timeout = 3 if os.environ.get("TEST_TARGET") == "AWS_CLOUD" else 2
+        visibility_timeout = 3
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(
             QueueName=queue_name
