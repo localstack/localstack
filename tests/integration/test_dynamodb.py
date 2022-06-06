@@ -30,9 +30,9 @@ TEST_DDB_TAGS = [
 ]
 
 
-@pytest.fixture(scope="module")
-def dynamodb():
-    return aws_stack.connect_to_resource("dynamodb")
+@pytest.fixture()
+def dynamodb(dynamodb_resource):
+    return dynamodb_resource
 
 
 class TestDynamoDB:
@@ -991,11 +991,16 @@ class TestDynamoDB:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    @pytest.mark.xfail(reason="this test flakes regularly in CI")
     def test_dynamodb_stream_records_with_update_item(
-        self, dynamodb_client, dynamodb_resource, dynamodb_create_table, wait_for_stream_ready
+        self,
+        dynamodb_client,
+        dynamodbstreams_client,
+        dynamodb_resource,
+        dynamodb_create_table,
+        wait_for_stream_ready,
     ):
         table_name = f"test-ddb-table-{short_uid()}"
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
 
         dynamodb_create_table(
             table_name=table_name,
@@ -1007,7 +1012,7 @@ class TestDynamoDB:
 
         wait_for_stream_ready(stream_name)
 
-        response = ddbstreams.describe_stream(StreamArn=table.latest_stream_arn)
+        response = dynamodbstreams_client.describe_stream(StreamArn=table.latest_stream_arn)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(response["StreamDescription"]["Shards"]) == 1
         shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
@@ -1017,7 +1022,7 @@ class TestDynamoDB:
             .get("StartingSequenceNumber")
         )
 
-        response = ddbstreams.get_shard_iterator(
+        response = dynamodbstreams_client.get_shard_iterator(
             StreamArn=table.latest_stream_arn,
             ShardId=shard_id,
             ShardIteratorType="LATEST",
@@ -1041,7 +1046,7 @@ class TestDynamoDB:
             )
 
         def check_expected_records():
-            records = ddbstreams.get_records(ShardIterator=iterator_id)
+            records = dynamodbstreams_client.get_records(ShardIterator=iterator_id)
             assert records["ResponseMetadata"]["HTTPStatusCode"] == 200
             assert len(records["Records"]) == 2
             assert isinstance(
@@ -1067,7 +1072,7 @@ class TestDynamoDB:
                 int(records["Records"][1]["dynamodb"]["SequenceNumber"]) > starting_sequence_number
             )
 
-        retry(check_expected_records, retries=5, sleep=1)
+        retry(check_expected_records, retries=5, sleep=1, sleep_before=2)
 
     def test_query_on_deleted_resource(self, dynamodb_client, dynamodb_create_table):
         table_name = "ddb-table-%s" % short_uid()
