@@ -422,6 +422,129 @@ class TestDynamoDBEventSourceMapping:
         finally:
             lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
 
+    @pytest.mark.parametrize(
+        "item_to_put1, item_to_put2, filter, calls",
+        [
+            (
+                {"id": {"S": "test123"}},
+                None,
+                None,
+                2,
+            ),  # Test with no filter, and two times same entry (aka MODIFY)
+            (
+                {"id": {"S": "test123"}},
+                None,
+                {"eventName": ["INSERT"]},
+                1,
+            ),  # Test with filter, and two times same entry (aka MODIFY)
+            (
+                {"id": {"S": "test123"}},
+                None,
+                {"eventName": ["INSERT", "MODIFY"]},
+                2,
+            ),  # Test with OR filter, and two times same entry (aka MODIFY)
+            (
+                {"id": {"S": "test123"}},
+                None,
+                {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]},
+                1,
+            ),  # Test with 2 filters (AND), and two times same entry (aka MODIFY)
+            (
+                {"id": {"S": "test123"}},
+                {"id": {"S": "test1234"}, "presentKey": {"S": "test123"}},
+                {"dynamodb": {"NewImage": {"presentKey": [{"exists": False}]}}},
+                1,
+            ),  # Test exists filter
+            # numeric filters
+            (
+                {"id": {"S": "test123"}, "numericFilter": {"N": "123"}},
+                {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
+                {"dynamodb": {"NewImage": {"numericFilter": [{"numeric": [">", 100]}]}}},
+                1,
+            ),
+            (
+                {"id": {"S": "test123"}, "numericFilter": {"N": "100"}},
+                {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
+                {"dynamodb": {"NewImage": {"numericFilter": [{"numeric": [">=", 100, "<", 200]}]}}},
+                1,
+            ),
+            # Prefix
+            (
+                {"id": {"S": "test123"}, "prefix": {"S": "us-1-testtest"}},
+                {"id": {"S": "test1234"}, "prefix": {"S": "testtest"}},
+                {"dynamodb": {"NewImage": {"prefix": [{"prefix": "us-1"}]}}},
+                1,
+            ),
+        ],
+    )
+    def test_dynamo_db_insert_event(
+        self,
+        create_lambda_function,
+        lambda_client,
+        dynamodb_client,
+        dynamodb_create_table,
+        filter,
+        calls,
+        item_to_put1,
+        item_to_put2,
+    ):
+
+        function_name = f"lambda_func-{short_uid()}"
+        table_name = f"test-table-{short_uid()}"
+
+        try:
+            create_lambda_function(
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                func_name=function_name,
+                runtime=LAMBDA_RUNTIME_PYTHON37,
+            )
+            dynamodb_create_table(table_name=table_name, partition_key="id")
+            _await_dynamodb_table_active(dynamodb_client, table_name)
+            stream_arn = dynamodb_client.update_table(
+                TableName=table_name,
+                StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+            )["TableDescription"]["LatestStreamArn"]
+            event_source_uuid = lambda_client.create_event_source_mapping(
+                FunctionName=function_name,
+                BatchSize=1,
+                StartingPosition="LATEST",
+                EventSourceArn=stream_arn,
+                MaximumBatchingWindowInSeconds=1,
+                MaximumRetryAttempts=1,
+                FilterCriteria={
+                    "Filters": [
+                        {"Pattern": json.dumps(filter)},
+                    ]
+                },
+            )["UUID"]
+            _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
+            dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
+
+            def assert_events():
+                events = get_lambda_log_events(function_name)
+                assert len(events) == 1
+
+            retry(assert_events, retries=10)
+
+            # putting the same item a second time is a 'MODIFY' request
+            if item_to_put2:
+                dynamodb_client.put_item(TableName=table_name, Item=item_to_put2)
+            else:
+                dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
+            if calls > 1:
+
+                def assert_events2():
+                    events = get_lambda_log_events(function_name)
+                    assert len(events) == calls
+
+                retry(assert_events2, retries=10)
+            else:
+                retry(assert_events, retries=10)
+
+        finally:
+            if event_source_uuid:
+                lambda_client.delete_event_source_mapping(UUID=event_source_uuid)
+
 
 class TestLambdaHttpInvocation:
     def test_http_invocation_with_apigw_proxy(self, create_lambda_function):

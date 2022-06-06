@@ -307,43 +307,41 @@ class FilterCriteria(TypedDict):
     Filters: List[Dict[str, any]]
 
 
-def parse_and_apply_numeric_filter(record_value, numeric_filter: List[Union[str, int]]):
+def parse_and_apply_numeric_filter(record_value: Dict, numeric_filter: List[Union[str, int]]):
     if len(numeric_filter) % 2 > 0:
         LOG.warn("Invalid numeric lambda filter given")
         return True
+    all_comparisons = []
+    try:
+        # record_value is a dynamo DB entry in following form { datatype : value}
+        record_value = float(record_value.get("N"))
+    except (ValueError, TypeError):
+        LOG.warn(f"Could not convert Record {record_value} to a valid number value for filtering")
+        return True
     for idx in range(0, len(numeric_filter), 2):
-        if (
-            numeric_filter[idx] == ">"
-            and isinstance(numeric_filter[idx + 1], int)
-            and record_value > numeric_filter[idx + 1]
-        ):
-            continue
-        if (
-            numeric_filter[idx] == ">="
-            and isinstance(numeric_filter[idx + 1], int)
-            and record_value >= numeric_filter[idx + 1]
-        ):
-            continue
-        if (
-            numeric_filter[idx] == "="
-            and isinstance(numeric_filter[idx + 1], int)
-            and record_value == numeric_filter[idx + 1]
-        ):
-            continue
-        if (
-            numeric_filter[idx] == "<"
-            and isinstance(numeric_filter[idx + 1], int)
-            and record_value < numeric_filter[idx + 1]
-        ):
-            continue
-        if (
-            numeric_filter[idx] == "<="
-            and isinstance(numeric_filter[idx + 1], int)
-            and record_value <= numeric_filter[idx + 1]
-        ):
-            continue
-        return False
-    return True
+
+        try:
+            if numeric_filter[idx] == ">" and record_value > float(numeric_filter[idx + 1]):
+                all_comparisons.append(True)
+                continue
+            if numeric_filter[idx] == ">=" and record_value >= float(numeric_filter[idx + 1]):
+                all_comparisons.append(True)
+                continue
+            if numeric_filter[idx] == "=" and record_value == float(numeric_filter[idx + 1]):
+                all_comparisons.append(True)
+                continue
+            if numeric_filter[idx] == "<" and record_value < float(numeric_filter[idx + 1]):
+                all_comparisons.append(True)
+                continue
+            if numeric_filter[idx] == "<=" and record_value <= float(numeric_filter[idx + 1]):
+                all_comparisons.append(True)
+                continue
+            all_comparisons.append(False)
+        except ValueError:
+            LOG.warn(
+                f"Could not convert filter value {numeric_filter[idx + 1]} to a valid number value for filtering"
+            )
+    return all(all_comparisons)
 
 
 def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]):
@@ -359,13 +357,15 @@ def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]):
                 bool(filter_value)
             )  # exists means that the key exists in the event record
         elif key.lower() == "prefix":
-            filter_results.append(str(record_value).startswith(filter_value))
+            filter_results.append(str(record_value.get("S")).startswith(str(filter_value)))
         else:
             filter_results.append(False)
     return all(filter_results)
 
 
 def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]):
+    if not filter_rule:
+        return True
     # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
     filter_results = []
     for key, value in filter_rule.items():
@@ -376,6 +376,7 @@ def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]):
             if isinstance(value, list) and len(value) > 0:
                 if not value[0].get("exists", True):
                     filter_results.append(True)
+                    continue
             filter_results.append(False)
             continue
 

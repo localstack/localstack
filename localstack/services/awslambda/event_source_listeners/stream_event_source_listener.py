@@ -179,18 +179,20 @@ class StreamEventSourceListener(EventSourceListener):
         max_num_retries = params["max_num_retries"]
         num_invocation_failures = 0
 
+        region_name = function_arn.split(":")[3]
+        region = LambdaRegion.get(region_name)
+
         while lock_discriminator in self._STREAM_LISTENER_THREADS:
             records_response = stream_client.get_records(
                 ShardIterator=shard_iterator, Limit=batch_size
             )
             records = records_response.get("Records")
-            region_name = function_arn.split(":")[3]
-            region = LambdaRegion.get(region_name)
             event_filter_criterias = [
                 event_source_mapping.get("FilterCriteria")
                 for event_source_mapping in region.event_source_mappings
                 if event_source_mapping.get("FunctionArn") == function_arn
                 and event_source_mapping.get("EventSourceArn") == stream_arn
+                and event_source_mapping.get("FilterCriteria") is not None
             ]
             if len(event_filter_criterias) > 0:
                 records = filter_stream_records(records, event_filter_criterias)
