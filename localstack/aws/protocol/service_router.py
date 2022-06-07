@@ -8,7 +8,7 @@ from localstack.aws.spec import ServiceCatalog
 from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
 from localstack.services.s3.s3_utils import uses_host_addressing
-from localstack.services.sqs.sqs_utils import is_sqs_queue_url
+from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import hostname_from_url
 
@@ -151,6 +151,7 @@ def legacy_rules(request: Request) -> Optional[str]:
     host = hostname_from_url(request.host)
 
     # API Gateway invocation URLs
+    # TODO: deprecated with #6040, where API GW user routes are served through the gateway directly
     if ("/%s/" % PATH_USER_REQUEST) in request.path or (
         host.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host
     ):
@@ -180,14 +181,26 @@ def legacy_rules(request: Request) -> Optional[str]:
     if "aws-cli/" in str(request.user_agent):
         return "s3"
 
-    # detect S3 pre-signed URLs
+    # detect S3 pre-signed URLs (v2 and v4)
     values = request.values
-    if "AWSAccessKeyId" in values or "Signature" in values:
+    if any(
+        value in values
+        for value in [
+            "AWSAccessKeyId",
+            "Signature",
+            "X-Amz-Algorithm",
+            "X-Amz-Credential",
+            "X-Amz-Date",
+            "X-Amz-Expires",
+            "X-Amz-SignedHeaders",
+            "X-Amz-Signature",
+        ]
+    ):
         return "s3"
 
     # S3 delete object requests
     if method == "POST" and "delete" in values:
-        data_bytes = to_bytes(request.get_data())
+        data_bytes = to_bytes(request.data)
         if b"<Delete" in data_bytes and b"<Key>" in data_bytes:
             return "s3"
 
@@ -308,8 +321,6 @@ def determine_aws_service_name(
     legacy_match = legacy_rules(request)
     if legacy_match:
         return legacy_match
-
-    LOG.warning("could not uniquely determine service from request, candidates=%s", candidates)
 
     if signing_name:
         return signing_name

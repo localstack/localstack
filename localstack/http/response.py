@@ -13,12 +13,20 @@ class Response(WerkzeugResponse):
 
     def update_from(self, other: WerkzeugResponse):
         self.status_code = other.status_code
-        self.data = other.data
+        self.response = other.response
         self.headers.update(other.headers)
 
     def set_json(self, doc: Dict):
         self.data = json.dumps(doc, cls=CustomEncoder)
         self.mimetype = "application/json"
+
+    def set_response(self, response):
+        if response is None:
+            self.response = []
+        elif isinstance(response, (str, bytes, bytearray)):
+            self.data = response
+        else:
+            self.response = response
 
     def to_readonly_response_dict(self) -> Dict:
         """

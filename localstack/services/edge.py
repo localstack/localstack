@@ -11,6 +11,7 @@ from typing import Dict
 from requests.models import Response
 
 from localstack import config
+from localstack.aws.protocol.service_router import determine_aws_service_name
 from localstack.constants import (
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
@@ -94,7 +95,6 @@ class ProxyListenerEdge(ProxyListener):
 
         # re-create an HTTP request from the given parts
         request = create_request_from_parts(method, path, data, headers)
-        from localstack.aws.protocol.service_router import determine_aws_service_name
 
         api = determine_aws_service_name(request)
         port = None
@@ -155,7 +155,7 @@ class ProxyListenerEdge(ProxyListener):
 
         encoding_type = headers.get("Content-Encoding") or ""
         if encoding_type.upper() == GZIP_ENCODING.upper() and api not in SKIP_GZIP_APIS:
-            headers.set("Content-Encoding", IDENTITY_ENCODING)
+            headers["Content-Encoding"] = IDENTITY_ENCODING
             data = gzip.decompress(data)
 
         is_internal_call = is_internal_call_context(headers)
@@ -338,10 +338,21 @@ def is_trace_logging_enabled(headers):
 
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
+    start_dns_server(asynchronous=True)
+
+    if config.LEGACY_EDGE_PROXY:
+        serve = do_start_edge_proxy
+    else:
+        from localstack.aws.serving.edge import serve_gateway
+
+        serve = serve_gateway
+
+    return serve(bind_address, port, use_ssl, asynchronous)
+
+
+def do_start_edge_proxy(bind_address, port, use_ssl, asynchronous=False):
     from localstack.http.adapters import RouterListener
     from localstack.services.internal import LocalstackResourceHandler
-
-    start_dns_server(asynchronous=True)
 
     listeners = [
         LocalstackResourceHandler(),  # handle internal resources first

@@ -8,6 +8,7 @@ from localstack.services import install
 from localstack.services.install import DDB_AGENT_JAR_PATH
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
+from localstack.utils.files import rm_rf
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 from localstack.utils.sync import retry
@@ -95,18 +96,20 @@ class DynamodbServer(Server):
         LOG.info(line.rstrip())
 
 
-def create_dynamodb_server(port=None) -> DynamodbServer:
+def create_dynamodb_server(
+    port=None, db_path: Optional[str] = None, clean_db_path: bool = False
+) -> DynamodbServer:
     """
     Creates a dynamodb server from the LocalStack configuration.
     """
     port = port or get_free_tcp_port()
-
     server = DynamodbServer(port)
-
-    if config.dirs.data:
-        ddb_data_dir = "%s/dynamodb" % config.dirs.data
-        mkdir(ddb_data_dir)
-        absolute_path = os.path.abspath(ddb_data_dir)
+    db_path = f"{config.dirs.data}/dynamodb" if not db_path and config.dirs.data else db_path
+    if db_path:
+        if clean_db_path:
+            rm_rf(db_path)
+        mkdir(db_path)
+        absolute_path = os.path.abspath(db_path)
         server.db_path = absolute_path
 
     server.heap_size = config.DYNAMODB_HEAP_SIZE
@@ -114,7 +117,6 @@ def create_dynamodb_server(port=None) -> DynamodbServer:
     server.optimize_db_before_startup = is_env_true("DYNAMODB_OPTIMIZE_DB_BEFORE_STARTUP")
     server.delay_transient_statuses = is_env_true("DYNAMODB_DELAY_TRANSIENT_STATUSES")
     server.cors = os.getenv("DYNAMODB_CORS", None)
-
     return server
 
 
@@ -140,10 +142,10 @@ def check_dynamodb(expect_shutdown=False, print_error=False):
         assert isinstance(out["TableNames"], list)
 
 
-def start_dynamodb(port=None, asynchronous=True, update_listener=None):
+def start_dynamodb(port=None, db_path=None, clean_db_path=False):
     global _server
     if not _server:
-        _server = create_dynamodb_server()
+        _server = create_dynamodb_server(port, db_path, clean_db_path)
 
     _server.start()
 
@@ -152,15 +154,3 @@ def start_dynamodb(port=None, asynchronous=True, update_listener=None):
 
 def get_server():
     return _server
-
-
-def restart_dynamodb():
-    global _server
-    if _server:
-        _server.shutdown()
-        _server.join(timeout=10)
-        _server = None
-
-    LOG.debug("Restarting DynamoDB process ...")
-    start_dynamodb()
-    wait_for_dynamodb()

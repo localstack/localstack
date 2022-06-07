@@ -1,7 +1,6 @@
 import json
 import logging
 from typing import Dict, Optional, Tuple
-from urllib.parse import parse_qs, urlparse
 
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.exceptions import NoIntegrationDefined, UsagePlanNotFoundException
@@ -48,19 +47,6 @@ def apply_patches():
 
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
-
-    def apigateway_models_backend_delete_method(self, function_id, resource_id, method_type):
-        resource = self.get_resource(function_id, resource_id)
-        method = resource.get_method(method_type)
-        if not method:
-            return
-        return resource.resource_methods.pop(method_type)
-
-    def apigateway_models_resource_delete_integration(self, method_type):
-        if method_type in self.resource_methods:
-            return self.resource_methods[method_type].pop("methodIntegration", {})
-
-        return {}
 
     def apigateway_models_Integration_init(
         self,
@@ -311,10 +297,9 @@ def apply_patches():
                     api_stages[i] = {"apiId": api_id, "stage": stage}
 
             return 200, {}, json.dumps(usage_plan)
-        result = apigateway_response_usage_plan_individual_orig(
+        return apigateway_response_usage_plan_individual_orig(
             self, request, full_url, headers, *args, **kwargs
         )
-        return result
 
     def backend_update_deployment(self, function_id, deployment_id, patch_operations):
         rest_api = self.get_rest_api(function_id)
@@ -327,9 +312,10 @@ def apply_patches():
 
     def backend_model_apply_operations(self, patch_operations):
         # run pre-actions
-        if isinstance(self, apigateway_models.Stage):
-            if [op for op in patch_operations if "/accessLogSettings" in op.get("path", "")]:
-                self["accessLogSettings"] = self.get("accessLogSettings") or {}
+        if isinstance(self, apigateway_models.Stage) and [
+            op for op in patch_operations if "/accessLogSettings" in op.get("path", "")
+        ]:
+            self["accessLogSettings"] = self.get("accessLogSettings") or {}
         # apply patches
         apply_json_patch_safe(self, patch_operations, in_place=True)
         # run post-actions
@@ -379,7 +365,7 @@ def apply_patches():
         for param, value in params.items():
             for param_prefix in bool_params_prefixes:
                 if param.startswith(param_prefix) and not isinstance(value, bool):
-                    params[param] = str(value) in ["true", "True"]
+                    params[param] = str(value) in {"true", "True"}
         return result
 
     method_response_apply_operations_orig = apigateway_models.MethodResponse.apply_operations
@@ -438,22 +424,18 @@ def apply_patches():
     apigateway_models.Stage.apply_operations = stage_apply_operations
 
     # patch integration error responses
-
     def apigateway_models_resource_get_integration(self, method_type):
         resource_method = self.resource_methods.get(method_type, {})
         if "methodIntegration" not in resource_method:
             raise NoIntegrationDefined()
         return resource_method["methodIntegration"]
 
-    if not hasattr(apigateway_models.APIGatewayBackend, "put_rest_api"):
-        apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
-        APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
-        apigateway_response_resource_individual_orig = APIGatewayResponse.resource_individual
-        APIGatewayResponse.resource_individual = apigateway_response_resource_individual
-        apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
-
-    if not hasattr(apigateway_models.APIGatewayBackend, "delete_method"):
-        apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
+    # TODO: put_rest_api now available upstream - see if we can leverage some synergies
+    apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
+    APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
+    apigateway_response_resource_individual_orig = APIGatewayResponse.resource_individual
+    APIGatewayResponse.resource_individual = apigateway_response_resource_individual
+    apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
 
     if not hasattr(apigateway_models.APIGatewayBackend, "update_deployment"):
         apigateway_models.APIGatewayBackend.update_deployment = backend_update_deployment
@@ -477,24 +459,6 @@ def apply_patches():
         )
 
         return resp
-
-    apigateway_response_restapis_orig = APIGatewayResponse.restapis
-
-    # https://github.com/localstack/localstack/issues/171
-    def apigateway_response_restapis(self, request, full_url, headers):
-        parsed_qs = parse_qs(urlparse(full_url).query)
-        modes = parsed_qs.get("mode", [])
-
-        status, _, rest_api = apigateway_response_restapis_orig(self, request, full_url, headers)
-
-        if "import" not in modes:
-            return status, _, rest_api
-
-        function_id = json.loads(rest_api)["id"]
-        body = parse_json_or_yaml(request.data.decode("utf-8"))
-        self.backend.put_rest_api(function_id, body, parsed_qs)
-
-        return 200, {}, rest_api
 
     def individual_deployment(self, request, full_url, headers, *args, **kwargs):
         result = individual_deployment_orig(self, request, full_url, headers, *args, **kwargs)
@@ -523,7 +487,6 @@ def apply_patches():
     create_rest_api_orig = apigateway_models.APIGatewayBackend.create_rest_api
     apigateway_models.APIGatewayBackend.create_rest_api = create_rest_api
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
-    apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
     apigateway_response_resource_methods_orig = APIGatewayResponse.resource_methods
     APIGatewayResponse.resource_methods = apigateway_response_resource_methods
     individual_deployment_orig = APIGatewayResponse.individual_deployment
@@ -541,4 +504,3 @@ def apply_patches():
     apigateway_models_Integration_init_orig = apigateway_models.Integration.__init__
     apigateway_models.Integration.__init__ = apigateway_models_Integration_init
     apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict
-    APIGatewayResponse.restapis = apigateway_response_restapis

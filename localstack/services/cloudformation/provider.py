@@ -27,10 +27,12 @@ from localstack.aws.api.cloudformation import (
     DescribeStacksOutput,
     DisableRollback,
     ExecuteChangeSetOutput,
+    ExecutionStatus,
     ExportName,
     GetTemplateOutput,
     GetTemplateSummaryInput,
     GetTemplateSummaryOutput,
+    InvalidChangeSetStatusException,
     ListChangeSetsOutput,
     ListExportsOutput,
     ListImportsOutput,
@@ -61,6 +63,7 @@ from localstack.aws.api.cloudformation import (
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_deployer, template_preparer
+from localstack.utils.cloudformation.template_deployer import NoStackUpdates
 from localstack.utils.cloudformation.template_preparer import (
     get_template_body,
     prepare_template_body,
@@ -117,9 +120,10 @@ class Stack:
                 "LogicalResourceId"
             ] = (resource.get("LogicalResourceId") or resource_id)
         # initialize stack template attributes
-        self.template["StackId"] = self.metadata["StackId"] = self.metadata.get(
-            "StackId"
-        ) or aws_stack.cloudformation_stack_arn(self.stack_name, short_uid())
+        stack_id = self.metadata.get("StackId") or aws_stack.cloudformation_stack_arn(
+            self.stack_name, short_uid()
+        )
+        self.template["StackId"] = self.metadata["StackId"] = stack_id
         self.template["Parameters"] = self.template.get("Parameters") or {}
         self.template["Outputs"] = self.template.get("Outputs") or {}
         self.template["Conditions"] = self.template.get("Conditions") or {}
@@ -236,24 +240,9 @@ class Stack:
         """Return dict of resources, parameters, conditions, and other stack metadata."""
         result = dict(self.template_resources)
 
-        def add_params(defaults=True):
-            # TODO: support UsePreviousValue at some point after cleaning this up
-            for param in self.stack_parameters(defaults=defaults):
-                if param["ParameterKey"] not in result:
-                    resolved_value = param.get("ResolvedValue")
-                    result[param["ParameterKey"]] = {
-                        "Type": "Parameter",
-                        "LogicalResourceId": param["ParameterKey"],
-                        "Properties": {
-                            "Value": (
-                                resolved_value
-                                if resolved_value is not None
-                                else param.get("ParameterValue")
-                            )
-                        },
-                    }
-
-        add_params(defaults=False)
+        # add stack params (without defaults)
+        stack_params = self._resolve_stack_parameters(defaults=False, existing=result)
+        result.update(stack_params)
 
         # TODO: conditions and mappings don't really belong here and should be handled separately
         for name, value in self.conditions.items():
@@ -271,8 +260,29 @@ class Stack:
                     "Properties": {"Value": value},
                 }
 
-        add_params(defaults=True)
+        stack_params = self._resolve_stack_parameters(defaults=True, existing=result)
+        result.update(stack_params)
 
+        return result
+
+    def _resolve_stack_parameters(
+        self, defaults=True, existing: Dict[str, Dict] = None
+    ) -> Dict[str, Dict]:
+        """Resolve the parameter values of this stack, skipping the params already present in `existing`"""
+        existing = existing or {}
+        result = {}
+        for param in self.stack_parameters(defaults=defaults):
+            param_key = param["ParameterKey"]
+            if param_key not in existing:
+                resolved_value = param.get("ResolvedValue")
+                prop_value = (
+                    resolved_value if resolved_value is not None else param.get("ParameterValue")
+                )
+                result[param["ParameterKey"]] = {
+                    "Type": "Parameter",
+                    "LogicalResourceId": param_key,
+                    "Properties": {"Value": prop_value},
+                }
         return result
 
     @property
@@ -352,7 +362,9 @@ class Stack:
         result.update({p["ParameterKey"]: p for p in self.metadata["Parameters"]})
         # add parameters of change sets
         for change_set in self.change_sets:
-            result.update({p["ParameterKey"]: p for p in change_set.metadata["Parameters"]})
+            for param in change_set.metadata["Parameters"]:
+                if not param.get("UsePreviousValue"):
+                    result.update({param["ParameterKey"]: param})
         result = list(result.values())
         return result
 
@@ -444,14 +456,15 @@ class StackChangeSet(Stack):
 
     @property
     def resources(self):
-        result = dict(self.stack.resources)
-        result.update(self.resources)
-        return result
+        return dict(self.stack.resources)
 
     @property
     def changes(self):
         result = self.metadata["Changes"] = self.metadata.get("Changes", [])
         return result
+
+    def stack_parameters(self, defaults=True) -> List[Dict[str, Any]]:
+        return self.stack.stack_parameters(defaults=defaults)
 
 
 class CloudFormationRegion(RegionBackend):
@@ -876,22 +889,30 @@ class CloudformationProvider(CloudformationApi):
         change_set = StackChangeSet(req_params, template)
         # TODO: refactor the flow here
         deployer = template_deployer.TemplateDeployer(change_set)
-        deployer.construct_changes(
+        changes = deployer.construct_changes(
             stack,
             change_set,
             change_set_id=change_set.change_set_id,
             append_to_changeset=True,
-        )  # TODO: ignores return value (?)
+            filter_unchanged_resources=True,
+        )
         deployer.apply_parameter_changes(
             change_set, change_set
         )  # TODO: bandaid to populate metadata
         stack.change_sets.append(change_set)
-        change_set.metadata[
-            "Status"
-        ] = "CREATE_COMPLETE"  # technically for some time this should first be CREATE_PENDING
-        change_set.metadata[
-            "ExecutionStatus"
-        ] = "AVAILABLE"  # technically for some time this should first be UNAVAILABLE
+        if not changes:
+            change_set.metadata["Status"] = "FAILED"
+            change_set.metadata["ExecutionStatus"] = "UNAVAILABLE"
+            change_set.metadata[
+                "StatusReason"
+            ] = "The submitted information didn't contain changes. Submit different information to create a change set."
+        else:
+            change_set.metadata[
+                "Status"
+            ] = "CREATE_COMPLETE"  # technically for some time this should first be CREATE_PENDING
+            change_set.metadata[
+                "ExecutionStatus"
+            ] = "AVAILABLE"  # technically for some time this should first be UNAVAILABLE
 
         return CreateChangeSetOutput(StackId=change_set.stack_id, Id=change_set.change_set_id)
 
@@ -942,6 +963,12 @@ class CloudformationProvider(CloudformationApi):
             return not_found_error(
                 f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
             )
+        if change_set.metadata.get("ExecutionStatus") != ExecutionStatus.AVAILABLE:
+            LOG.debug("Change set %s not in execution status 'AVAILABLE'", change_set_name)
+            raise InvalidChangeSetStatusException(
+                f"ChangeSet [{change_set.metadata['ChangeSetId']}] cannot be executed in its current status of [{change_set.metadata.get('Status')}]"
+            )
+        stack_name = change_set.stack.stack_name
         LOG.debug(
             'Executing change set "%s" for stack "%s" with %s resources ...',
             change_set_name,
@@ -949,8 +976,12 @@ class CloudformationProvider(CloudformationApi):
             len(change_set.template_resources),
         )
         deployer = template_deployer.TemplateDeployer(change_set.stack)
-        deployer.apply_change_set(change_set)
-        change_set.stack.metadata["ChangeSetId"] = change_set.change_set_id
+        try:
+            deployer.apply_change_set(change_set)
+            change_set.stack.metadata["ChangeSetId"] = change_set.change_set_id
+        except NoStackUpdates:
+            # TODO: parity-check if this exception should be re-raised or swallowed
+            raise ValidationError("No updates to be performed for stack change set")
 
         return ExecuteChangeSetOutput()
 

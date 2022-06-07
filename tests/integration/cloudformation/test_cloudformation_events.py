@@ -1,13 +1,19 @@
 import json
 import logging
+import os
 
 import jinja2
 
+from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
 
 LOG = logging.getLogger(__name__)
+
+
+# TODO: refactor file and remove this compatibility fn
+def load_template_raw(file_name: str):
+    return load_template_file(os.path.join(os.path.dirname(__file__), "../templates", file_name))
 
 
 def test_eventbus_policies(
@@ -215,3 +221,19 @@ def test_event_rule_to_logs(
     finally:
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])
+
+
+def test_event_rule_creation_without_target(cfn_client, deploy_cfn_template):
+    event_rule_name = f"event-rule-{short_uid()}"
+    deployed = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../templates/events_rule_without_targets.yaml"
+        ),
+        parameters={"EventRuleName": event_rule_name},
+    )
+    stack_name = deployed.stack_name
+
+    assert (
+        cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]["StackStatus"]
+        == "CREATE_COMPLETE"
+    )

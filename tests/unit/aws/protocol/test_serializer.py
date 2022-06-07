@@ -1,11 +1,15 @@
 import copy
+import io
 import re
 from datetime import datetime
-from typing import Optional
+from typing import Iterator, Optional
 
 import pytest
+from botocore.endpoint import convert_to_response_dict
 from botocore.parsers import ResponseParser, create_parser
 from dateutil.tz import tzlocal, tzutc
+from requests.models import Response as RequestsResponse
+from urllib3 import HTTPResponse as UrlLibHttpResponse
 
 from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.protocol.serializer import (
@@ -343,6 +347,12 @@ def test_query_serializer_sqs_flattened_list_map_with_botocore():
                 "ReceiptHandle": "AQEBZ14sCjWJuot0T8G2Eg3S8C+sJGg+QRKYCJjfd8iiOsrPfUzbXSjlQquT9NZP1Mxxkcud3HcaxvS7I1gxoM9MSjbpenKgkti8TPCc7nQBUk9y6xXYWlhysjgAi9YjExUIxO2ozYZuwyksOvIxS4NZs2aBctyR74N3XjOO/t8GByAz2u7KR5vYJu418Y9apAuYB1n6ZZ6aE1NrjIK9mjGCKSqE3YxN5SNkKXf1zRwTUjq8cE73F7cK7DBXNFWBTZSYkLLnFg/QuqKh0dfwGgLseeKhHUxw2KiP9qH4kvXBn2UdeI8jkFMbPERiSf2KMrGKyMCtz3jL+YVRYkB4BB0hx15Brrgo/zhePXHbT692VxKF98MIMQc/v+dc6aewQZldjuq6ANrp4RM+LdjlTPg7ow==",
                 "MD5OfBody": "13c0c73bbf11056450c43bf3159b3585",
                 "Body": '{"foo": "bared"}',
+                "Attributes": {"SenderId": "000000000000", "SentTimestamp": "1652963711"},
+                "MD5OfMessageAttributes": "fca026605781cb4126a1e9044df24232",
+                "MessageAttributes": {
+                    "Hello": {"StringValue": "There", "DataType": "String"},
+                    "General": {"StringValue": "Kenobi", "DataType": "String"},
+                },
             }
         ]
     }
@@ -1053,6 +1063,149 @@ def test_restjson_headers_location():
     assert "headers_value2" == response["ResponseHeaders"]["headers_key2"]
 
 
+def _iterable_to_stream(iterable, buffer_size=io.DEFAULT_BUFFER_SIZE):
+    """
+    Concerts a given iterable (generator) to a stream for testing purposes.
+    This wrapper does not "real streaming". The event serializer will wait for the end of the stream / generator.
+    """
+
+    class IterStream(io.RawIOBase):
+        def __init__(self):
+            self.leftover = None
+
+        def readable(self):
+            return True
+
+        def readinto(self, b):
+            try:
+                chunk = next(iterable)
+                b[: len(chunk)] = chunk
+                return len(chunk)
+            except StopIteration:
+                return 0
+
+    return io.BufferedReader(IterStream(), buffer_size=buffer_size)
+
+
+def test_json_event_streaming():
+    # Create test events from Kinesis' SubscribeToShard operation
+    event_1 = {
+        "SubscribeToShardEvent": {
+            "Records": [
+                {
+                    "SequenceNumber": "1",
+                    "Data": b"event_data_1_record_1",
+                    "PartitionKey": "event_1_partition_key_record_1",
+                },
+                {
+                    "SequenceNumber": "2",
+                    "Data": b"event_data_1_record_2",
+                    "PartitionKey": "event_1_partition_key_record_1",
+                },
+            ],
+            "ContinuationSequenceNumber": "1",
+            "MillisBehindLatest": 1337,
+        }
+    }
+    event_2 = {
+        "SubscribeToShardEvent": {
+            "Records": [
+                {
+                    "SequenceNumber": "3",
+                    "Data": b"event_data_2_record_1",
+                    "PartitionKey": "event_2_partition_key_record_1",
+                },
+                {
+                    "SequenceNumber": "4",
+                    "Data": b"event_data_2_record_2",
+                    "PartitionKey": "event_2_partition_key_record_2",
+                },
+            ],
+            "ContinuationSequenceNumber": "2",
+            "MillisBehindLatest": 1338,
+        }
+    }
+
+    # Create the response which contains the generator
+    def event_generator() -> Iterator:
+        yield event_1
+        yield event_2
+
+    response = {"EventStream": event_generator()}
+
+    # Serialize the response
+    service = load_service("kinesis")
+    operation_model = service.operation_model("SubscribeToShard")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_to_response(response, operation_model)
+
+    # Convert the Werkzeug response from our serializer to a response botocore can work with
+    urllib_response = UrlLibHttpResponse(
+        body=_iterable_to_stream(serialized_response.response),
+        headers={
+            entry_tuple[0].lower(): entry_tuple[1] for entry_tuple in serialized_response.headers
+        },
+        status=serialized_response.status_code,
+        decode_content=False,
+        preload_content=False,
+    )
+    requests_response = RequestsResponse()
+    requests_response.headers = urllib_response.headers
+    requests_response.status_code = urllib_response.status
+    requests_response.raw = urllib_response
+    botocore_response = convert_to_response_dict(requests_response, operation_model)
+
+    # parse the response using botocore
+    response_parser: ResponseParser = create_parser(service.protocol)
+    parsed_response = response_parser.parse(
+        botocore_response,
+        operation_model.output_shape,
+    )
+
+    # check that the response contains the event stream
+    assert "EventStream" in parsed_response
+
+    # fetch all events and check their content
+    events = list(parsed_response["EventStream"])
+    assert len(events) == 2
+    assert events[0] == {
+        "SubscribeToShardEvent": {
+            "ContinuationSequenceNumber": "1",
+            "MillisBehindLatest": 1337,
+            "Records": [
+                {
+                    "Data": b"event_data_1_record_1",
+                    "PartitionKey": "event_1_partition_key_record_1",
+                    "SequenceNumber": "1",
+                },
+                {
+                    "Data": b"event_data_1_record_2",
+                    "PartitionKey": "event_1_partition_key_record_1",
+                    "SequenceNumber": "2",
+                },
+            ],
+        }
+    }
+    assert events[1] == {
+        "SubscribeToShardEvent": {
+            "Records": [
+                {
+                    "SequenceNumber": "3",
+                    "Data": b"event_data_2_record_1",
+                    "PartitionKey": "event_2_partition_key_record_1",
+                },
+                {
+                    "SequenceNumber": "4",
+                    "Data": b"event_data_2_record_2",
+                    "PartitionKey": "event_2_partition_key_record_2",
+                },
+            ],
+            "ContinuationSequenceNumber": "2",
+            "MillisBehindLatest": 1338,
+        }
+    }
+
+
 def test_all_non_existing_key():
     """Tests the different protocols to allow non-existing keys in strucutres / dicts."""
     # query
@@ -1162,8 +1315,8 @@ def test_no_mutation_of_parameters():
     assert parameters == expected
 
 
-def test_serializer_error_on_protocol_error():
-    """Test that the serializer raises a ProtocolSerializerError in case of invalid data to serialize."""
+def test_serializer_error_on_protocol_error_invalid_exception():
+    """Test that the serializer raises a ProtocolSerializerError in case of invalid exception to serialize."""
     service = load_service("sqs")
     operation_model = service.operation_model("SendMessage")
     serializer = QueryResponseSerializer()
@@ -1171,6 +1324,17 @@ def test_serializer_error_on_protocol_error():
         # a known protocol error would be if we try to serialize an exception which is not a CommonServiceException and
         # also not a generated exception
         serializer.serialize_error_to_response(NotImplementedError(), operation_model)
+
+
+def test_serializer_error_on_protocol_error_invalid_data():
+    """Test that the serializer raises a ProtocolSerializerError in case of invalid data to serialize."""
+    service = load_service("dynamodbstreams")
+    operation_model = service.operation_model("DescribeStream")
+    serializer = QueryResponseSerializer()
+    with pytest.raises(ProtocolSerializerError):
+        serializer.serialize_to_response(
+            {"StreamDescription": {"CreationRequestDateTime": "invalid_timestamp"}}, operation_model
+        )
 
 
 def test_serializer_error_on_unknown_error():

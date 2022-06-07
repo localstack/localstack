@@ -2,7 +2,7 @@ import json
 import logging
 import uuid
 from json import JSONDecodeError
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -32,7 +32,8 @@ def sqs_error_to_dead_letter_queue(queue_arn: str, event: Dict, error):
     return _send_to_dead_letter_queue("SQS", queue_arn, target_arn, event, error)
 
 
-def sns_error_to_dead_letter_queue(sns_subscriber_arn: str, event: Dict, error):
+def sns_error_to_dead_letter_queue(sns_subscriber_arn: str, event: str, error):
+    # event should be of type str if coming from SNS, as it represents the message body being passed down
     client = aws_stack.connect_to_service("sns")
     attrs = client.get_subscription_attributes(SubscriptionArn=sns_subscriber_arn)
     attrs = attrs.get("Attributes", {})
@@ -49,7 +50,9 @@ def lambda_error_to_dead_letter_queue(func_details: LambdaFunction, event: Dict,
     return _send_to_dead_letter_queue("Lambda", source_arn, dlq_arn, event, error)
 
 
-def _send_to_dead_letter_queue(source_type: str, source_arn: str, dlq_arn: str, event: Dict, error):
+def _send_to_dead_letter_queue(
+    source_type: str, source_arn: str, dlq_arn: str, event: Union[Dict, str], error
+):
     if not dlq_arn:
         return
     LOG.info("Sending failed execution %s to dead letter queue %s", source_arn, dlq_arn)
@@ -87,7 +90,7 @@ def _send_to_dead_letter_queue(source_type: str, source_arn: str, dlq_arn: str, 
     return dlq_arn
 
 
-def _prepare_messages_to_dlq(source_arn: str, event: Dict, error) -> List[Dict]:
+def _prepare_messages_to_dlq(source_arn: str, event: Union[Dict, str], error) -> List[Dict]:
     messages = []
     custom_attrs = {
         "RequestID": {"DataType": "String", "StringValue": str(uuid.uuid4())},
@@ -110,7 +113,7 @@ def _prepare_messages_to_dlq(source_arn: str, event: Dict, error) -> List[Dict]:
         messages.append(
             {
                 "Id": str(uuid.uuid4()),
-                "MessageBody": json.dumps(event),
+                "MessageBody": event,
                 "MessageAttributes": custom_attrs,
             }
         )

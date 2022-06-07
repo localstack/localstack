@@ -30,7 +30,7 @@ def test_query_parser():
             "DelaySeconds=2"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -39,6 +39,54 @@ def test_query_parser():
         "QueueUrl": "http://localhost:4566/000000000000/tf-acc-test-queue",
         "MessageBody": '{"foo": "bared"}',
         "DelaySeconds": 2,
+    }
+
+
+def test_sqs_parse_tag_map_with_member_name_as_location():
+    # see https://github.com/localstack/localstack/issues/4391
+    parser = create_parser(load_service("sqs"))
+
+    # with "Tag." it works (this is the default request)
+    request = HttpRequest(
+        "POST",
+        "/",
+        body="Action=TagQueue&"
+        "Version=2012-11-05&"
+        "QueueUrl=http://localhost:4566/000000000000/foobar&"
+        "Tag.1.Key=returnly%3Aenv&"
+        "Tag.1.Value=local&"
+        "Tag.2.Key=returnly%3Acreator&"
+        "Tag.2.Value=rma-api-svc",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    operation, params = parser.parse(request)
+    assert operation.name == "TagQueue"
+    assert params == {
+        "QueueUrl": "http://localhost:4566/000000000000/foobar",
+        "Tags": {"returnly:creator": "rma-api-svc", "returnly:env": "local"},
+    }
+
+    # apparently this is how the Java AWS SDK generates the TagQueue request, see see
+    # https://github.com/localstack/localstack/issues/4391
+    request = HttpRequest(
+        "POST",
+        "/",
+        body="Action=TagQueue&"
+        "Version=2012-11-05&"
+        "QueueUrl=http://localhost:4566/000000000000/foobar&"
+        "Tags.1.Key=returnly%3Aenv&"
+        "Tags.1.Value=local&"
+        "Tags.2.Key=returnly%3Acreator&"
+        "Tags.2.Value=rma-api-svc",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    operation, params = parser.parse(request)
+    assert operation.name == "TagQueue"
+    assert params == {
+        "QueueUrl": "http://localhost:4566/000000000000/foobar",
+        "Tags": {"returnly:creator": "rma-api-svc", "returnly:env": "local"},
     }
 
 
@@ -54,7 +102,6 @@ def test_query_parser_uri():
         "MessageBody=%7B%22foo%22%3A+%22bared%22%7D&"
         "DelaySeconds=2",
         method="POST",
-        headers={},
         path="",
     )
     operation, params = parser.parse(request)
@@ -86,7 +133,7 @@ def test_query_parser_flattened_map():
             "Attribute.6.Name=VisibilityTimeout&Attribute.6.Value=60"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -117,7 +164,7 @@ def test_query_parser_non_flattened_map():
             "AUTHPARAMS"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -149,7 +196,7 @@ def test_query_parser_non_flattened_list_structure():
             "X-Amz-Signature=[Signature]"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -182,7 +229,7 @@ def test_query_parser_non_flattened_list_structure_changed_name():
             "AUTHPARAMS"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -214,7 +261,7 @@ def test_query_parser_flattened_list_structure():
             "DeleteMessageBatchRequestEntry.2.ReceiptHandle=foo"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     operation, params = parser.parse(request)
@@ -223,6 +270,24 @@ def test_query_parser_flattened_list_structure():
         "QueueUrl": "http://localhost:4566/000000000000/tf-acc-test-queue",
         "Entries": [{"Id": "bar", "ReceiptHandle": "foo"}, {"Id": "bar", "ReceiptHandle": "foo"}],
     }
+
+
+def test_query_parser_pass_str_as_int_raises_error():
+    """Test to make sure that invalid types correctly raise a ProtocolParserError."""
+    parser = QueryRequestParser(load_service("sts"))
+    request = HttpRequest(
+        body=to_bytes(
+            "Action=AssumeRole&"
+            "RoleArn=arn:aws:iam::000000000000:role/foobared&"
+            "RoleSessionName=foobared&"
+            "DurationSeconds=abcd"  # illegal argument (should be an int)
+        ),
+        method="POST",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    with pytest.raises(ProtocolParserError):
+        parser.parse(request)
 
 
 def _botocore_parser_integration_test(
@@ -956,10 +1021,20 @@ def test_restxml_header_date_parsing():
 
 
 def test_s3_virtual_host_addressing():
-    """Test the parsing of a map with the location trait 'headers'."""
+    """Test the parsing of an S3 bucket request using the bucket encoded in the domain."""
     request = HttpRequest(
         method="PUT", headers={"host": s3_utils.get_bucket_hostname("test-bucket")}
     )
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "CreateBucket"
+    assert "Bucket" in parsed_request
+    assert parsed_request["Bucket"] == "test-bucket"
+
+
+def test_s3_path_addressing():
+    """Test the parsing of an S3 bucket request using the bucket encoded in the path."""
+    request = HttpRequest(method="PUT", path="/test-bucket")
     parser = create_parser(load_service("s3"))
     parsed_operation_model, parsed_request = parser.parse(request)
     assert parsed_operation_model.name == "CreateBucket"
@@ -994,7 +1069,7 @@ def test_query_parser_error_on_protocol_error():
             "DelaySeconds=2"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
     with pytest.raises(ProtocolParserError):
@@ -1025,7 +1100,7 @@ def test_parser_error_on_unknown_error():
             "DelaySeconds=2"
         ),
         method="POST",
-        headers={},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         path="",
     )
 

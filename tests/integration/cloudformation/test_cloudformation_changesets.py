@@ -1,13 +1,18 @@
+import os.path
+
 import jinja2
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.testing.aws.cloudformation_utils import load_template_file
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from tests.integration.cloudformation.utils import load_template_raw
-from tests.integration.util import is_aws_cloud
 
-# TODO: create util function for asserting some common stack/change set verification patterns here
+
+# TODO: refactor file and remove this compatibility fn
+def load_template_raw(file_name: str):
+    return load_template_file(os.path.join(os.path.dirname(__file__), "../templates", file_name))
 
 
 def test_create_change_set_without_parameters(
@@ -68,7 +73,9 @@ def test_create_change_set_update_without_parameters(
     cleanup_changesets,
     is_change_set_created_and_available,
     is_change_set_finished,
+    snapshot,
 ):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
     """after creating a stack via a CREATE change set we send an UPDATE change set changing the SNS topic name"""
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
@@ -80,6 +87,7 @@ def test_create_change_set_update_without_parameters(
         TemplateBody=load_template_raw("sns_topic_simple.yaml"),
         ChangeSetType="CREATE",
     )
+    snapshot.match("create_change_set", response)
     change_set_id = response["Id"]
     stack_id = response["StackId"]
     assert change_set_id
@@ -98,7 +106,13 @@ def test_create_change_set_update_without_parameters(
             TemplateBody=template.replace("sns-topic-simple", "sns-topic-simple-2"),
             ChangeSetType="UPDATE",
         )
-        wait_until(is_change_set_created_and_available(update_response["Id"]))
+        assert wait_until(is_change_set_created_and_available(update_response["Id"]))
+        snapshot.match(
+            "describe_change_set",
+            cfn_client.describe_change_set(ChangeSetName=update_response["Id"]),
+        )
+        snapshot.match("list_change_set", cfn_client.list_change_sets(StackName=stack_name))
+
         describe_response = cfn_client.describe_change_set(ChangeSetName=update_response["Id"])
         changes = describe_response["Changes"]
         assert len(changes) == 1
@@ -298,7 +312,14 @@ def test_describe_change_set_nonexisting(cfn_client):
 
 
 def test_execute_change_set(
-    cfn_client, sns_client, is_change_set_finished, cleanup_changesets, cleanup_stacks
+    cfn_client,
+    sns_client,
+    is_change_set_finished,
+    is_change_set_created_and_available,
+    is_change_set_failed_and_unavailable,
+    cleanup_changesets,
+    cleanup_stacks,
+    snapshot,
 ):
     """check if executing a change set succeeds in creating/modifying the resources in changed"""
 
@@ -317,12 +338,40 @@ def test_execute_change_set(
     assert stack_id
 
     try:
+        assert wait_until(is_change_set_created_and_available(change_set_id=change_set_id))
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        wait_until(is_change_set_finished(change_set_id))
+        assert wait_until(is_change_set_finished(change_set_id))
         # check if stack resource was created
         topics = sns_client.list_topics()
         topic_arns = list(map(lambda x: x["TopicArn"], topics["Topics"]))
         assert any(("sns-topic-simple" in t) for t in topic_arns)
+
+        # new change set name
+        change_set_name = f"change-set-{short_uid()}"
+        # check if update with identical stack leads to correct behavior
+        response = cfn_client.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            TemplateBody=load_template_raw("sns_topic_simple.yaml"),
+            ChangeSetType="UPDATE",
+        )
+        change_set_id = response["Id"]
+        stack_id = response["StackId"]
+        assert wait_until(is_change_set_failed_and_unavailable(change_set_id=change_set_id))
+        describe_failed_change_set_result = cfn_client.describe_change_set(
+            ChangeSetName=change_set_id
+        )
+        assert describe_failed_change_set_result["ChangeSetName"] == change_set_name
+        assert (
+            describe_failed_change_set_result["StatusReason"]
+            == "The submitted information didn't contain changes. Submit different information to create a change set."
+        )
+        with pytest.raises(ClientError) as e:
+            cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        e.match("InvalidChangeSetStatus")
+        e.match(
+            rf"ChangeSet \[{change_set_id}\] cannot be executed in its current status of \[FAILED\]"
+        )
     finally:
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])

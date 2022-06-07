@@ -6,7 +6,7 @@ import re
 import shutil
 import time
 from io import BytesIO
-from typing import Dict, List, Pattern, TypeVar
+from typing import Dict, List, TypeVar
 
 import pytest
 from botocore.exceptions import ClientError
@@ -42,6 +42,7 @@ from localstack.services.install import (
     TEST_LAMBDA_JAVA,
     download_and_extract,
 )
+from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -67,7 +68,6 @@ from localstack.utils.testutil import (
     get_lambda_log_events,
 )
 
-from ..fixtures import only_localstack
 from .functions import lambda_integration
 from .lambda_test_util import concurrency_update_done, get_invoke_init_type, update_done
 
@@ -168,11 +168,6 @@ PROVIDED_TEST_RUNTIMES = [
     ),
 ]
 
-# Snapshot patterns
-IGNORE_LOGSTREAM_ID: Pattern[str] = re.compile(
-    r"\d{4}/\d{2}/\d{2}/\[((\$LATEST)|\d+)\][0-9a-f]{32}"
-)
-
 T = TypeVar("T")
 
 
@@ -205,31 +200,9 @@ def check_lambda_logs(logs_client):
     return _check_logs
 
 
-def get_lambda_logs(func_name, logs_client=None):
-    logs_client = logs_client or aws_stack.create_external_boto_client("logs")
-    log_group_name = f"/aws/lambda/{func_name}"
-    streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
-    streams = sorted(streams, key=lambda x: x["creationTime"], reverse=True)
-    log_events = logs_client.get_log_events(
-        logGroupName=log_group_name, logStreamName=streams[0]["logStreamName"]
-    )["events"]
-    return log_events
-
-
-def configure_snapshot_for_context(snapshot, function_name: str):
-    """
-    Utility function to configure snapshot to ignore a function name and log stream ids in its body.
-    Helpful if invoke calls return the context object, in which they are present
-    :param snapshot: Snapshot fixture result
-    :param function_name: Function name of the current function
-    """
-    snapshot.register_replacement(IGNORE_LOGSTREAM_ID, "<log_stream_id>")
-    snapshot.register_replacement(re.compile(function_name), "<function_name>")
-
-
 # API only functions (no lambda execution itself)
 class TestLambdaAPI:
-    @only_localstack
+    @pytest.mark.only_localstack
     def test_create_lambda_function(self, lambda_client):
         """Basic test that creates and deletes a Lambda function"""
         func_name = f"lambda_func-{short_uid()}"
@@ -276,11 +249,13 @@ class TestLambdaAPI:
             lambda_client.delete_function(FunctionName=func_name)
         assert "ResourceNotFoundException" in str(exc)
 
-    @pytest.mark.snapshot
+    @pytest.mark.skip_snapshot_verify
     def test_add_lambda_permission_aws(
-        self, lambda_client, iam_client, create_lambda_function, snapshot
+        self, lambda_client, iam_client, create_lambda_function, account_id, snapshot
     ):
         """Testing the add_permission call on lambda, by adding a new resource-based policy to a lambda function"""
+
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"lambda_func-{short_uid()}"
         lambda_create_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -361,8 +336,11 @@ class TestLambdaAPI:
         )
         assert 200 == resp["ResponseMetadata"]["HTTPStatusCode"]
 
+    @pytest.mark.skip_snapshot_verify
     def test_remove_multi_permissions(self, lambda_client, create_lambda_function, snapshot):
         """Tests creation and subsequent removal of multiple permissions, including the changes in the policy"""
+
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -401,6 +379,8 @@ class TestLambdaAPI:
                 FunctionName=function_name,
                 StatementId="non-existent",
             )
+
+        snapshot.match("expect_error_remove_permission", e.value.response)
         assert e.value.response["Error"]["Code"] == "ResourceNotFoundException"
 
         lambda_client.remove_permission(
@@ -421,6 +401,7 @@ class TestLambdaAPI:
         )
         with pytest.raises(ClientError) as ctx:
             lambda_client.get_policy(FunctionName=function_name)
+        snapshot.match("expect_exception_get_policy", ctx.value.response)
         assert ctx.value.response["Error"]["Code"] == "ResourceNotFoundException"
 
     @pytest.mark.skipif(
@@ -484,6 +465,7 @@ class TestLambdaAPI:
         )
         assert 200 == resp["ResponseMetadata"]["HTTPStatusCode"]
 
+    @pytest.mark.skip_snapshot_verify
     @pytest.mark.snapshot
     def test_lambda_asynchronous_invocations(
         self,
@@ -495,14 +477,16 @@ class TestLambdaAPI:
         snapshot,
     ):
         """Testing API actions of function event config"""
+
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"lambda_func-{short_uid()}"
+
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
             role=lambda_su_role,
         )
-
         queue_arn = sqs_queue_arn(sqs_queue)
         destination_config = {
             "OnSuccess": {"Destination": queue_arn},
@@ -538,13 +522,16 @@ class TestLambdaAPI:
 
     def test_function_concurrency(self, lambda_client, create_lambda_function, snapshot):
         """Testing the api of the put function concurrency action"""
+
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
-
+        # TODO botocore.errorfactory.InvalidParameterValueException:
+        #  An error occurred (InvalidParameterValueException) when calling the PutFunctionConcurrency operation: Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [50].
         response = lambda_client.put_function_concurrency(
             FunctionName=function_name, ReservedConcurrentExecutions=123
         )
@@ -555,8 +542,11 @@ class TestLambdaAPI:
         assert "ReservedConcurrentExecutions" in response
         lambda_client.delete_function_concurrency(FunctionName=function_name)
 
+    @pytest.mark.skip_snapshot_verify
     def test_function_code_signing_config(self, lambda_client, create_lambda_function, snapshot):
         """Testing the API of code signing config"""
+
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"lambda_func-{short_uid()}"
 
         create_lambda_function(
@@ -574,7 +564,6 @@ class TestLambdaAPI:
             },
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
         )
-        snapshot.replace_value(re.compile(r"^csc-[0-9a-f]{17}$"), "<csc-id>")
         snapshot.match("create_code_signing_config", response)
 
         assert "Description" in response["CodeSigningConfig"]
@@ -616,12 +605,16 @@ class TestLambdaAPI:
         response = lambda_client.delete_code_signing_config(CodeSigningConfigArn=code_signing_arn)
         assert 204 == response["ResponseMetadata"]["HTTPStatusCode"]
 
+    # TODO not executed
     def create_multiple_lambda_permissions(self, lambda_client, create_lambda_function, snapshot):
         """Test creating multiple lambda permissions and checking the policy"""
+
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"test-function-{short_uid()}"
 
+        # FIXME no zip file/function?
         create_lambda_function(
-            funct_name=function_name,
+            func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON37,
             libs=TEST_LAMBDA_LIBS,
         )
@@ -655,6 +648,7 @@ class TestLambdaAPI:
 
 
 class TestLambdaBaseFeatures:
+    @pytest.mark.skip_snapshot_verify
     def test_dead_letter_queue(
         self,
         lambda_client,
@@ -667,6 +661,9 @@ class TestLambdaBaseFeatures:
     ):
         """Creates a lambda with a defined dead letter queue, and check failed lambda invocation leads to a message"""
         # create DLQ and Lambda function
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -680,8 +677,6 @@ class TestLambdaBaseFeatures:
             role=lambda_su_role,
         )
         snapshot.match("create_lambda_with_dlq", create_lambda_response)
-        snapshot.skip_key(re.compile("ReceiptHandle"), "<receipt-handle>")
-        snapshot.skip_key(re.compile("MD5Of.*"), "<md5-hash>")
 
         # invoke Lambda, triggering an error
         payload = {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}
@@ -737,6 +732,7 @@ class TestLambdaBaseFeatures:
             ("RetriesExhausted", {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}),
         ],
     )
+    @pytest.mark.skip_snapshot_verify
     def test_assess_lambda_destination_invocation(
         self,
         condition,
@@ -749,6 +745,11 @@ class TestLambdaBaseFeatures:
         lambda_su_role,
         snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        # message body contains ARN
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+
         """Testing the destination config API and operation (for the OnSuccess case)"""
         # create DLQ and Lambda function
         queue_name = f"test-{short_uid()}"
@@ -770,15 +771,12 @@ class TestLambdaBaseFeatures:
             },
         )
         snapshot.match("put_function_event_invoke_config", put_event_invoke_config_response)
-        snapshot.skip_key(re.compile("ReceiptHandle"), "<receipt-handle>")
-        snapshot.skip_key(re.compile("MD5Of.*"), "<md5-hash>")
 
         lambda_client.invoke(
             FunctionName=lambda_name,
             Payload=json.dumps(payload),
             InvocationType="Event",
         )
-        configure_snapshot_for_context(snapshot, lambda_name)
 
         def receive_message():
             rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
@@ -790,8 +788,11 @@ class TestLambdaBaseFeatures:
 
         retry(receive_message, retries=120, sleep=3)
 
+    @pytest.mark.skip_snapshot_verify(paths=["$..LogResult"])
     def test_large_payloads(self, caplog, lambda_client, create_lambda_function, snapshot):
         """Testing large payloads sent to lambda functions (~5MB)"""
+
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         caplog.set_level(logging.INFO)
 
@@ -832,15 +833,20 @@ class TestPythonRuntimes:
         )
         return function_name
 
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Payload.context.memory_limit_in_mb", "$..logs.logs"]
+    )
     def test_invocation_type_not_set(self, lambda_client, python_function_name, snapshot):
         """Test invocation of a lambda with no invocation type set, but LogType="Tail""" ""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(
+            snapshot.transform.key_value("LogResult", reference_replacement=False)
+        )
 
         result = lambda_client.invoke(
             FunctionName=python_function_name, Payload=b"{}", LogType="Tail"
         )
         result = read_streams(result)
-        snapshot.skip_key(re.compile("LogResult"), "<log_result>")
-        configure_snapshot_for_context(snapshot, python_function_name)
         snapshot.match("invoke", result)
         result_data = json.loads(result["Payload"])
 
@@ -851,25 +857,33 @@ class TestPythonRuntimes:
         # assert that logs are contained in response
         logs = result.get("LogResult", "")
         logs = to_str(base64.b64decode(to_str(logs)))
-        snapshot.register_replacement(
-            re.compile(r"Duration: \d+(\.\d{2})? ms"), "Duration: <duration> ms"
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                re.compile(r"Duration: \d+(\.\d{2})? ms"), "Duration: <duration> ms"
+            )
         )
-        snapshot.register_replacement(re.compile(r"Used: \d+ MB"), "Used: <memory> MB")
+        snapshot.add_transformer(
+            snapshot.transform.regex(re.compile(r"Used: \d+ MB"), "Used: <memory> MB")
+        )
         snapshot.match("logs", {"logs": logs})
         assert "START" in logs
         assert "Lambda log message" in logs
         assert "END" in logs
         assert "REPORT" in logs
 
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
+    )
     def test_invocation_type_request_response(self, lambda_client, python_function_name, snapshot):
         """Test invocation with InvocationType RequestResponse explicitely set"""
+
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         result = lambda_client.invoke(
             FunctionName=python_function_name,
             Payload=b"{}",
             InvocationType="RequestResponse",
         )
         result = read_streams(result)
-        configure_snapshot_for_context(snapshot, python_function_name)
         snapshot.match("invoke-result", result)
         result_data = result["Payload"]
         result_data = json.loads(result_data)
@@ -877,8 +891,10 @@ class TestPythonRuntimes:
         assert 200 == result["StatusCode"]
         assert isinstance(result_data, dict)
 
+    @pytest.mark.skip_snapshot_verify(paths=["$..LogResult", "$..ExecutedVersion"])
     def test_invocation_type_event(self, lambda_client, python_function_name, snapshot):
         """Check invocation response for type event"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         result = lambda_client.invoke(
             FunctionName=python_function_name, Payload=b"{}", InvocationType="Event"
         )
@@ -887,8 +903,10 @@ class TestPythonRuntimes:
 
         assert 202 == result["StatusCode"]
 
+    @pytest.mark.skip_snapshot_verify(paths=["$..LogResult", "$..ExecutedVersion"])
     def test_invocation_type_dry_run(self, lambda_client, python_function_name, snapshot):
         """Check invocation response for type dryrun"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         result = lambda_client.invoke(
             FunctionName=python_function_name, Payload=b"{}", InvocationType="DryRun"
         )
@@ -898,8 +916,10 @@ class TestPythonRuntimes:
         assert 204 == result["StatusCode"]
 
     @parametrize_python_runtimes
+    @pytest.mark.skip_snapshot_verify
     def test_lambda_environment(self, lambda_client, create_lambda_function, runtime, snapshot):
         """Tests invoking a lambda function with environment variables set on creation"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"env-test-function-{short_uid()}"
         env_vars = {"Hello": "World"}
         creation_result = create_lambda_function(
@@ -925,6 +945,7 @@ class TestPythonRuntimes:
         assert result["Environment"] == {"Variables": env_vars}
 
     @parametrize_python_runtimes
+    @pytest.mark.skip_snapshot_verify
     def test_invocation_with_qualifier(
         self,
         lambda_client,
@@ -937,6 +958,8 @@ class TestPythonRuntimes:
         snapshot,
     ):
         """Tests invocation of python lambda with a given qualifier"""
+
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
 
@@ -958,7 +981,6 @@ class TestPythonRuntimes:
         )
         snapshot.match("creation-response", response)
 
-        configure_snapshot_for_context(snapshot, function_name)
         assert "Version" in response
         qualifier = response["Version"]
 
@@ -996,6 +1018,7 @@ class TestPythonRuntimes:
         lambda_client.delete_function(FunctionName=function_name)
 
     @parametrize_python_runtimes
+    @pytest.mark.skip_snapshot_verify
     def test_upload_lambda_from_s3(
         self,
         lambda_client,
@@ -1007,6 +1030,9 @@ class TestPythonRuntimes:
         snapshot,
     ):
         """Test invocation of a python lambda with its deployment package uploaded to s3"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
 
@@ -1026,7 +1052,6 @@ class TestPythonRuntimes:
             Timeout=10,
         )
         snapshot.match("creation-response", create_response)
-        configure_snapshot_for_context(snapshot, function_name)
 
         wait_until_lambda_ready(function_name=function_name)
 
@@ -1245,10 +1270,12 @@ class TestPythonRuntimes:
         not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
     )
     @parametrize_python_runtimes
+    @pytest.mark.skip_snapshot_verify
     def test_python_runtime_unhandled_errors(
         self, lambda_client, create_lambda_function, runtime, snapshot
     ):
         """Test unhandled errors during python lambda invocation"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"test_python_executor_{short_uid()}"
         creation_response = create_lambda_function(
             func_name=function_name,
@@ -1289,10 +1316,12 @@ class TestNodeJSRuntimes:
         not use_docker(), reason="Test for docker nodejs runtimes not applicable if run locally"
     )
     @parametrize_node_runtimes
+    @pytest.mark.skip_snapshot_verify
     def test_nodejs_lambda_with_context(
         self, lambda_client, create_lambda_function, runtime, check_lambda_logs, snapshot
     ):
         """Test context of nodejs lambda invocation"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"test-function-{short_uid()}"
         creation_response = create_lambda_function(
             func_name=function_name,
@@ -1306,7 +1335,6 @@ class TestNodeJSRuntimes:
             "client": {"snap": ["crackle", "pop"]},
             "env": {"fizz": "buzz"},
         }
-        configure_snapshot_for_context(snapshot, function_name)
 
         result = lambda_client.invoke(
             FunctionName=function_name,
@@ -1333,10 +1361,13 @@ class TestNodeJSRuntimes:
         retry(check_logs, retries=15)
 
     @parametrize_node_runtimes
+    @pytest.mark.skip_snapshot_verify
     def test_invoke_nodejs_lambda(
         self, lambda_client, create_lambda_function, runtime, logs_client, snapshot
     ):
         """Test simple nodejs lambda invocation"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         function_name = f"test-function-{short_uid()}"
         result = create_lambda_function(
             func_name=function_name,
@@ -1365,10 +1396,13 @@ class TestNodeJSRuntimes:
         retry(assert_events, retries=10)
 
     @parametrize_node_runtimes
+    @pytest.mark.skip_snapshot_verify(paths=["$..LogResult"])
     def test_invoke_nodejs_lambda_with_payload_containing_quotes(
         self, lambda_client, create_lambda_function, runtime, logs_client, snapshot
     ):
         """Test nodejs invocation of payload with quotes"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         function_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=function_name,
@@ -1406,10 +1440,13 @@ class TestCustomRuntimes:
         "runtime",
         PROVIDED_TEST_RUNTIMES,
     )
+    @pytest.mark.skip_snapshot_verify
     def test_provided_runtimes(
         self, lambda_client, create_lambda_function, runtime, check_lambda_logs, snapshot
     ):
         """Test simple provided lambda (with curl as RIC) invocation"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         function_name = f"test-function-{short_uid()}"
         result = create_lambda_function(
             func_name=function_name,
@@ -1465,6 +1502,7 @@ class TestDotNetCoreRuntimes:
         ],
         ids=["dotnetcore3.1", "dotnet6"],
     )
+    @pytest.mark.skip_snapshot_verify
     def test_dotnet_lambda(
         self,
         zip_file,
@@ -1476,6 +1514,8 @@ class TestDotNetCoreRuntimes:
         snapshot,
     ):
         """Test simple dotnet lambda invocation"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         function_name = f"test-function-{short_uid()}"
 
         create_result = create_lambda_function(
@@ -1498,8 +1538,11 @@ class TestDotNetCoreRuntimes:
 
 class TestRubyRuntimes:
     @pytest.mark.skipif(not use_docker(), reason="ruby runtimes not supported in local invocation")
+    @pytest.mark.skip_snapshot_verify
     def test_ruby_lambda_running_in_docker(self, lambda_client, create_lambda_function, snapshot):
         """Test simple ruby lambda invocation"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         function_name = f"test-function-{short_uid()}"
         create_result = create_lambda_function(
             func_name=function_name,
@@ -1518,9 +1561,12 @@ class TestRubyRuntimes:
 
 
 class TestGolangRuntimes:
+    @pytest.mark.skip_snapshot_verify
     @pytest.mark.skip_offline
     def test_golang_lambda(self, lambda_client, tmp_path, create_lambda_function, snapshot):
         """Test simple golang lambda invocation"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         # fetch platform-specific example handler
         url = TEST_GOLANG_LAMBDA_URL_TEMPLATE.format(
             version=GO_RUNTIME_VERSION,
@@ -1595,8 +1641,13 @@ class TestJavaRuntimes:
         )
         return function_name
 
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..invoke-result.LogResult", "$..invoke-result.Payload"]
+    )
     def test_java_runtime(self, lambda_client, simple_java_lambda, snapshot):
         """Tests a simple java lambda invocation"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         result = lambda_client.invoke(
             FunctionName=simple_java_lambda,
             Payload=b'{"echo":"echo"}',
@@ -1610,10 +1661,15 @@ class TestJavaRuntimes:
         assert "LinkedHashMap" in to_str(result_data)
         assert result_data is not None
 
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..invoke-result.LogResult", "$..invoke-result.Payload"]
+    )
     def test_java_runtime_with_large_payload(
         self, lambda_client, simple_java_lambda, caplog, snapshot
     ):
         """Tests a invocation against a java lambda with a 5MB payload"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         caplog.set_level(logging.INFO)
 
@@ -1630,8 +1686,11 @@ class TestJavaRuntimes:
         assert "LinkedHashMap" in result_data
         assert result_data is not None
 
+    @pytest.mark.skip_snapshot_verify
     def test_java_runtime_with_lib(self, lambda_client, create_lambda_function, snapshot):
         """Test lambda creation/invocation with different deployment package types (jar, zip, zip-with-gradle)"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
 
         # create ZIP file from JAR file
@@ -1757,9 +1816,12 @@ class TestJavaRuntimes:
         assert "{}" == to_str(result_data).strip()
 
     @parametrize_java_runtimes
+    @pytest.mark.skip_snapshot_verify
     def test_serializable_input_object(
         self, lambda_client, create_lambda_function, test_java_zip, runtime, snapshot
     ):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         # deploy lambda - Java with serializable input object
         function_name = f"test-lambda-{short_uid()}"
         create_result = create_lambda_function(
@@ -1784,6 +1846,7 @@ class TestJavaRuntimes:
             "key": "test_key",
         }
 
+    @pytest.mark.skip_snapshot_verify
     def test_trigger_java_lambda_through_sns(
         self,
         lambda_client,
@@ -1796,6 +1859,10 @@ class TestJavaRuntimes:
         logs_client,
         snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Sid"))
+
         topic_name = f"topic-{short_uid()}"
         key = f"key-{short_uid()}"
         function_name = simple_java_lambda
@@ -1847,7 +1914,7 @@ class TestJavaRuntimes:
             Principal="sns.amazonaws.com",
             SourceArn=topic_arn,
         )
-        snapshot.skip_key(re.compile(r"Sid"), "<statement-id>")
+
         snapshot.match("add-permission", add_permission_response)
 
         sns_subscription(
@@ -1897,6 +1964,7 @@ class TestJavaRuntimes:
         ],
     )
     # this test is only compiled against java 11
+    @pytest.mark.skip_snapshot_verify
     def test_java_custom_handler_method_specification(
         self,
         lambda_client,
@@ -1906,6 +1974,8 @@ class TestJavaRuntimes:
         check_lambda_logs,
         snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         java_handler_multiple_handlers = load_file(TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, mode="rb")
         expected = ['.*"echo": "echo".*']
 
@@ -1998,6 +2068,7 @@ class TestLambdaBehavior:
         snapshot,
     ):
         """tests the local context reuse of packages in AWS lambda"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
 
         func_name = f"test_lambda_{short_uid()}"
         create_result = create_lambda_function(
@@ -2034,6 +2105,7 @@ class TestLambdaBehavior:
         ],
         ids=["python"],
     )
+    @pytest.mark.skip_snapshot_verify
     def test_lambda_no_timeout_logs(
         self,
         lambda_client,
@@ -2044,6 +2116,7 @@ class TestLambdaBehavior:
         snapshot,
     ):
         """tests the local context reuse of packages in AWS lambda"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
 
         func_name = f"test_lambda_{short_uid()}"
         create_result = create_lambda_function(
@@ -2087,6 +2160,7 @@ class TestLambdaBehavior:
         create fn ⇒ publish version ⇒ create alias for version ⇒ put concurrency on alias
         ⇒ new version with change ⇒ change alias to new version ⇒ concurrency moves with alias? same behavior for calls to alias/version?
         """
+        snapshot.add_transformer(snapshot.transform.lambda_api())
 
         func_name = f"test_lambda_{short_uid()}"
         alias_name = f"test_alias_{short_uid()}"

@@ -209,9 +209,8 @@ class EventForwarder:
                 continue
             if "SequenceNumber" not in ddb_record:
                 ddb_record["SequenceNumber"] = str(
-                    dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER
+                    dynamodbstreams_api.DynamoDBStreamsBackend.get_and_increment_sequence_number_counter()
                 )
-                dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER += 1
             # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
             if stream_type == "KEYS_ONLY":
                 ddb_record.pop("OldImage", None)
@@ -283,27 +282,16 @@ class DynamoDBApiListener(AwsApiListener):
         self.provider = provider
         super().__init__("dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url))
 
-    def forward_request(self, method, path, data, headers):
-        action = headers.get("X-Amz-Target", "")
-        action = action.replace(ACTION_PREFIX, "")
-        if self.provider.should_throttle(action):
-            message = (
-                "The level of configured provisioned throughput for the table was exceeded. "
-                + "Consider increasing your provisioning level with the UpdateTable API"
-            )
-            raise ProvisionedThroughputExceededException(message)
-
-        return super().forward_request(method, path, data, headers)
-
     def return_response(self, method, path, data, headers, response):
         if response._content:
+            response_content = to_str(response._content)
             # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
             content_replaced = re.sub(
-                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:aws:dynamodb:ddblocal:([^"]+)"',
-                rf'\1: "arn:aws:dynamodb:{aws_stack.get_region()}:\2"',
-                to_str(response._content),
+                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:([a-z-]+):dynamodb:ddblocal:([^"]+)"',
+                rf'\1: "arn:\2:dynamodb:{aws_stack.get_region()}:\3"',
+                response_content,
             )
-            if content_replaced != response._content:
+            if content_replaced != response_content:
                 response._content = content_replaced
 
         # set x-amz-crc32 headers required by some client
@@ -334,6 +322,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def forward_request(
         self, context: RequestContext, service_request: ServiceRequest = None
     ) -> ServiceResponse:
+        # check rate limiting for this request and raise an error, if provisioned throughput is exceeded
+        self.check_provisioned_throughput(context.operation.name)
+
         # note: modifying headers in-place here before forwarding the request
         self.prepare_request_headers(context.request.headers)
         return self.request_forwarder(context, service_request)
@@ -1019,7 +1010,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if not self.table_exists(table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
-        table_def = DynamoDBRegion.get().table_definitions.get(table_name)
+        table_def = DynamoDBRegion.get().table_definitions.get(table_name) or {}
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations") or []
         return DescribeKinesisStreamingDestinationOutput(
@@ -1099,7 +1090,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 if existing_item:
                     new_record["dynamodb"]["OldImage"] = existing_item
                 new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
-                new_record["dynamodb"]["SizeBytes"] = len(json.dumps(put_request["Item"]))
+                new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(put_request["Item"])
                 records.append(new_record)
                 i += 1
             update_request = request.get("Update")
@@ -1119,7 +1110,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["dynamodb"]["OldImage"] = existing_items[i]
                 new_record["dynamodb"]["NewImage"] = updated_item
                 new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
-                new_record["dynamodb"]["SizeBytes"] = len(json.dumps(updated_item))
+                new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(updated_item)
                 records.append(new_record)
                 i += 1
             delete_request = request.get("Delete")
@@ -1135,7 +1126,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["eventName"] = "REMOVE"
                 new_record["dynamodb"]["Keys"] = keys
                 new_record["dynamodb"]["OldImage"] = existing_item
-                new_record["dynamodb"]["SizeBytes"] = len(json.dumps(existing_item))
+                new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_items)
                 new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
                 records.append(new_record)
                 i += 1
@@ -1244,6 +1235,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             "eventSource": "aws:dynamodb",
         }
 
+    def check_provisioned_throughput(self, action):
+        if self.should_throttle(action):
+            message = (
+                "The level of configured provisioned throughput for the table was exceeded. "
+                + "Consider increasing your provisioning level with the UpdateTable API"
+            )
+            raise ProvisionedThroughputExceededException(message)
+
     def action_should_throttle(self, action, actions):
         throttled = [f"{ACTION_PREFIX}{a}" for a in actions]
         return (action in throttled) or (action in actions)
@@ -1262,8 +1261,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             action, THROTTLED_ACTIONS
         ):
             return True
-        else:
-            return False
+        return False
 
 
 # ---

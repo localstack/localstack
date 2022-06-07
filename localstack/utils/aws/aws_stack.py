@@ -272,6 +272,8 @@ def connect_to_resource(
         env=env,
         region_name=region_name,
         endpoint_url=endpoint_url,
+        *args,
+        **kwargs,
     )
 
 
@@ -689,7 +691,7 @@ def lambda_layer_arn(layer_name, version=None, account_id=None):
 def lambda_function_or_layer_arn(
     type, entity_name, version=None, account_id=None, region_name=None
 ):
-    pattern = "arn:aws:lambda:.*:.*:(function|layer):.*"
+    pattern = "arn:([a-z-]+):lambda:.*:.*:(function|layer):.*"
     if re.match(pattern, entity_name):
         return entity_name
     if ":" in entity_name:
@@ -700,16 +702,15 @@ def lambda_function_or_layer_arn(
             version = alias_response["FunctionVersion"]
 
         except Exception as e:
-            msg = "Alias %s of %s not found" % (alias, entity_name)
+            msg = f"Alias {alias} of {entity_name} not found"
             LOG.info(f"{msg}: {e}")
             raise Exception(msg)
 
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
-    pattern = re.sub(r"\([^\|]+\|.+\)", type, pattern)
-    result = pattern.replace(".*", "%s") % (region_name, account_id, entity_name)
+    result = f"arn:aws:lambda:{region_name}:{account_id}:{type}:{entity_name}"
     if version:
-        result = "%s:%s" % (result, version)
+        result = f"{result}:{version}"
     return result
 
 
@@ -880,7 +881,7 @@ def mock_aws_request_headers(service="dynamodb", region_name=None, access_key=No
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
         ctype = APPLICATION_AMZ_JSON_1_1
-    elif service in ["sns", "sqs"]:
+    elif service in ["sns", "sqs", "sts", "cloudformation"]:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
 
     # TODO: consider adding an internal=False flag, to use INTERNAL_AWS_ACCESS_KEY_ID for internal calls here
@@ -1243,13 +1244,6 @@ def get_stack_details(stack_name, region_name=None):
     for stack in stacks["Stacks"]:
         if stack["StackName"] == stack_name:
             return stack
-
-
-def deploy_cf_stack(stack_name, template_body):
-    cfn = connect_to_service("cloudformation")
-    cfn.create_stack(StackName=stack_name, TemplateBody=template_body)
-    # wait for deployment to finish
-    return await_stack_completion(stack_name)
 
 
 def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2, region_name=None):

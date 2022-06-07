@@ -3,19 +3,14 @@ dicts, list, sets). """
 
 import logging
 import re
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Sized,
-    Tuple,
-    Type,
-    TypedDict,
-    TypeVar,
-    Union,
-)
+import sys
+from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, Type, TypeVar, Union
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
+
 
 LOG = logging.getLogger(__name__)
 

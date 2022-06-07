@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 from localstack import config
 from localstack.services import install
@@ -39,11 +39,12 @@ class KinesisMockServer(Server):
         super().__init__(port, host)
 
     def do_start_thread(self) -> FuncThread:
-        cmd = self._create_shell_command()
-        LOG.debug("starting kinesis process %s", cmd)
+        cmd, env_vars = self._create_shell_command()
+        LOG.debug("starting kinesis process %s with env vars %s", cmd, env_vars)
         t = ShellCommandThread(
             cmd,
             strip_color=True,
+            env_vars=env_vars,
             log_listener=self._log_listener,
             auto_restart=True,
         )
@@ -51,56 +52,48 @@ class KinesisMockServer(Server):
         t.start()
         return t
 
-    def _create_shell_command(self) -> str:
+    def _create_shell_command(self) -> Tuple[List, Dict]:
         """
-        helper method for creating kinesis mock invocation command
+        Helper method for creating kinesis mock invocation command
+        :return: returns a tuple containing the command list and a dictionary with the environment variables
         """
+        env_vars = {"KINESIS_MOCK_PLAIN_PORT": self.port, "SHARD_LIMIT": config.KINESIS_SHARD_LIMIT}
+
+        latency_params = [
+            "CREATE_STREAM_DURATION",
+            "DELETE_STREAM_DURATION",
+            "REGISTER_STREAM_CONSUMER_DURATION",
+            "START_STREAM_ENCRYPTION_DURATION",
+            "STOP_STREAM_ENCRYPTION_DURATION",
+            "DEREGISTER_STREAM_CONSUMER_DURATION",
+            "MERGE_SHARDS_DURATION",
+            "SPLIT_SHARD_DURATION",
+            "UPDATE_SHARD_COUNT_DURATION",
+        ]
+        for param in latency_params:
+            env_vars[param] = self._latency
+
         if self._data_dir:
-            kinesis_data_dir_param = "SHOULD_PERSIST_DATA=true PERSIST_PATH=%s" % self._data_dir
-        else:
-            kinesis_data_dir_param = ""
-        log_level_param = "LOG_LEVEL=%s" % self._log_level
-        latency_param = (
-            "CREATE_STREAM_DURATION={l} DELETE_STREAM_DURATION={l} REGISTER_STREAM_CONSUMER_DURATION={l} "
-            "START_STREAM_ENCRYPTION_DURATION={l} STOP_STREAM_ENCRYPTION_DURATION={l} "
-            "DEREGISTER_STREAM_CONSUMER_DURATION={l} MERGE_SHARDS_DURATION={l} SPLIT_SHARD_DURATION={l} "
-            "UPDATE_SHARD_COUNT_DURATION={l}"
-        ).format(l=self._latency)
-        init_streams_param = (
-            "INITIALIZE_STREAMS=%s" % self._initialize_streams if self._initialize_streams else ""
-        )
+            env_vars["SHOULD_PERSIST_DATA"] = "true"
+            env_vars["PERSIST_PATH"] = self._data_dir
+            env_vars["PERSIST_INTERVAL"] = config.KINESIS_MOCK_PERSIST_INTERVAL
+
+        env_vars["LOG_LEVEL"] = self._log_level
+        if self._initialize_streams:
+            env_vars["INITIALIZE_STREAMS"] = self._initialize_streams
 
         if self._bin_path.endswith(".jar"):
-            cmd = (
-                "KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s java -XX:+UseG1GC -jar %s"
-                % (
-                    self.port,
-                    config.KINESIS_SHARD_LIMIT,
-                    latency_param,
-                    kinesis_data_dir_param,
-                    log_level_param,
-                    init_streams_param,
-                    self._bin_path,
-                )
-            )
+            cmd = ["java", "-XX:+UseG1GC", "-jar", self._bin_path]
         else:
             chmod_r(self._bin_path, 0o777)
-            cmd = "KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s %s --gc=G1" % (
-                self.port,
-                config.KINESIS_SHARD_LIMIT,
-                latency_param,
-                kinesis_data_dir_param,
-                log_level_param,
-                init_streams_param,
-                self._bin_path,
-            )
-        return cmd
+            cmd = [self._bin_path, "--gc=G1"]
+        return cmd, env_vars
 
     def _log_listener(self, line, **_kwargs):
         LOG.info(line.rstrip())
 
 
-def create_kinesis_mock_server(port=None) -> KinesisMockServer:
+def create_kinesis_mock_server(port=None, persist_path: Optional[str] = None) -> KinesisMockServer:
     """
     Creates a new Kinesis Mock server instance. Installs Kinesis Mock on the host first if necessary.
     Introspects on the host config to determine server configuration:
@@ -113,11 +106,11 @@ def create_kinesis_mock_server(port=None) -> KinesisMockServer:
     is_kinesis_mock_installed, kinesis_mock_bin_path = install.get_is_kinesis_mock_installed()
     if not is_kinesis_mock_installed:
         install.install_kinesis_mock(kinesis_mock_bin_path)
-    if config.dirs.data:
-        kinesis_data_dir = "%s/kinesis" % config.dirs.data
-        mkdir(kinesis_data_dir)
-    else:
-        kinesis_data_dir = None
+    persist_path = (
+        f"{config.dirs.data}/kinesis" if not persist_path and config.dirs.data else persist_path
+    )
+    if persist_path:
+        mkdir(persist_path)
 
     if config.LS_LOG:
         if config.LS_LOG == "warning":
@@ -138,6 +131,6 @@ def create_kinesis_mock_server(port=None) -> KinesisMockServer:
         log_level=log_level,
         latency=latency,
         initialize_streams=initialize_streams,
-        data_dir=kinesis_data_dir,
+        data_dir=persist_path,
     )
     return server

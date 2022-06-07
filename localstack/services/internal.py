@@ -16,9 +16,7 @@ from localstack.services.infra import SHUTDOWN_INFRA, terminate_all_processes_in
 from localstack.utils.collections import merge_recursive
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
-from localstack.utils.http import parse_request_data
 from localstack.utils.json import parse_json_or_yaml
-from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -113,15 +111,11 @@ class CloudFormationUi:
     def on_get(self, request):
         from localstack.utils.aws.aws_stack import get_valid_regions
 
-        path = request.path
-        data = request.data
-        headers = request.headers
-
         deploy_html_file = os.path.join(
             constants.MODULE_MAIN_PATH, "services", "cloudformation", "deploy.html"
         )
         deploy_html = load_file(deploy_html_file)
-        req_params = parse_request_data("GET", path, data, headers)
+        req_params = request.values
         params = {
             "stackName": "stack1",
             "templateBody": "{}",
@@ -133,7 +127,7 @@ class CloudFormationUi:
         if download_url:
             try:
                 LOG.debug("Attempting to download CloudFormation template URL: %s", download_url)
-                template_body = to_str(requests.get(download_url).content)
+                template_body = requests.get(download_url).text
                 template_body = parse_json_or_yaml(template_body)
                 params["templateBody"] = json.dumps(template_body)
             except Exception as e:

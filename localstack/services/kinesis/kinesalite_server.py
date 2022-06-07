@@ -57,7 +57,7 @@ class KinesaliteServer(Server):
         LOG.info(line.rstrip())
 
 
-def create_kinesalite_server(port=None) -> KinesaliteServer:
+def create_kinesalite_server(port=None, persist_path: Optional[str] = None) -> KinesaliteServer:
     """
     Creates a new Kinesalite server instance. Installs Kinesalite on the host first if necessary.
     Introspects on the host config to determine server configuration:
@@ -67,10 +67,10 @@ def create_kinesalite_server(port=None) -> KinesaliteServer:
     port = port or get_free_tcp_port()
 
     install.install_kinesalite()
-    if config.dirs.data:
-        kinesis_data_dir = "%s/kinesis" % config.dirs.data
-        mkdir(kinesis_data_dir)
-    else:
-        kinesis_data_dir = None
+    persist_path = (
+        f"{config.dirs.data}/dynamodb" if not persist_path and config.dirs.data else persist_path
+    )
+    if persist_path:
+        mkdir(persist_path)
 
-    return KinesaliteServer(port=port, latency=config.KINESIS_LATENCY, data_dir=kinesis_data_dir)
+    return KinesaliteServer(port=port, latency=config.KINESIS_LATENCY, data_dir=persist_path)

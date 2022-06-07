@@ -73,7 +73,6 @@ import re
 from abc import ABC
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
-from urllib.parse import parse_qs, urlsplit
 from xml.etree import ElementTree as ETree
 
 import cbor2
@@ -257,7 +256,12 @@ class RequestParser(abc.ABC):
 
         fn_name = "_parse_%s" % shape.type_name
         handler = getattr(self, fn_name, self._noop_parser)
-        return handler(request, shape, payload, uri_params) if payload is not None else None
+        try:
+            return handler(request, shape, payload, uri_params) if payload is not None else None
+        except (TypeError, ValueError, AttributeError) as e:
+            raise ProtocolParserError(
+                f"Invalid type when parsing {shape.name}: '{payload}' cannot be parsed to {shape.type_name}."
+            ) from e
 
     # The parsing functions for primitive types, lists, and timestamps are shared among subclasses.
 
@@ -354,15 +358,7 @@ class QueryRequestParser(RequestParser):
 
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        body = request.get_data(as_text=True)
-        instance = parse_qs(body, keep_blank_values=True)
-        if not instance:
-            # if the body does not contain any information, fallback to the actual query parameters
-            instance = request.args
-        # The query parsing returns a list for each entry in the dict (this is how HTTP handles lists in query params).
-        # However, the AWS Query format does not have any duplicates.
-        # Therefore we take the first element of each entry in the dict.
-        instance = {k: self._get_first(v) for k, v in instance.items()}
+        instance = request.values
         if "Action" not in instance:
             raise ProtocolParserError(
                 f"Operation detection failed. "
@@ -417,11 +413,11 @@ class QueryRequestParser(RequestParser):
 
         for member, member_shape in shape.members.items():
             # The key in the node is either the serialization config "name" of the shape, or the name of the member
-            member_name = self._get_serialized_name(member_shape, member)
+            member_name = self._get_serialized_name(member_shape, member, node)
             # BUT, if it's flattened and a list, the name is defined by the list's member's name
             if member_shape.serialization.get("flattened"):
                 if isinstance(member_shape, ListShape):
-                    member_name = self._get_serialized_name(member_shape.member, member)
+                    member_name = self._get_serialized_name(member_shape.member, member, node)
             value = self._process_member(request, member_name, member_shape, node, uri_params)
             if value is not None or member in shape.required_members:
                 # If the member is required, but not existing, we explicitly set None
@@ -463,8 +459,8 @@ class QueryRequestParser(RequestParser):
             i += 1
             # The key and value can be renamed (with their serialization config's "name").
             # By default they are called "key" and "value".
-            key_name = f"{key_prefix}{i}.{self._get_serialized_name(shape.key, 'key')}"
-            value_name = f"{key_prefix}{i}.{self._get_serialized_name(shape.value, 'value')}"
+            key_name = f"{key_prefix}{i}.{self._get_serialized_name(shape.key, 'key', node)}"
+            value_name = f"{key_prefix}{i}.{self._get_serialized_name(shape.value, 'value', node)}"
 
             # We process the key and value individually
             k = self._process_member(request, key_name, shape.key, node)
@@ -500,7 +496,7 @@ class QueryRequestParser(RequestParser):
         ::
         """
         # The keys might be prefixed (f.e. for flattened lists)
-        key_prefix = self._get_list_key_prefix(shape)
+        key_prefix = self._get_list_key_prefix(shape, node)
 
         # We collect the list value as well as the integer indicating the list position so we can
         # later sort the list by the position, in case they attribute values are unordered
@@ -529,20 +525,20 @@ class QueryRequestParser(RequestParser):
         filtered = {k[len(name) + 1 :]: v for k, v in node.items() if k.startswith(name)}
         return filtered if len(filtered) > 0 else None
 
-    def _get_serialized_name(self, shape: Shape, default_name: str) -> str:
+    def _get_serialized_name(self, shape: Shape, default_name: str, node: dict) -> str:
         """
         Returns the serialized name for the shape if it exists.
-        Otherwise it will return the given default_name.
+        Otherwise, it will return the given default_name.
         """
         return shape.serialization.get("name", default_name)
 
-    def _get_list_key_prefix(self, shape: ListShape):
+    def _get_list_key_prefix(self, shape: ListShape, node: dict):
         key_prefix = ""
         # Non-flattened lists have an additional hierarchy level:
         # https://awslabs.github.io/smithy/1.0/spec/core/xml-traits.html#xmlflattened-trait
         # The hierarchy level's name is the serialization name of its member or (by default) "member".
         if not shape.serialization.get("flattened"):
-            key_prefix += f"{self._get_serialized_name(shape.member, 'member')}."
+            key_prefix += f"{self._get_serialized_name(shape.member, 'member', node)}."
         return key_prefix
 
 
@@ -779,9 +775,10 @@ class RestXMLRequestParser(BaseRestRequestParser):
             return serialized_name
         return member_name
 
-    def _parse_xml_string_to_dom(self, xml_string: bytes) -> ETree.Element:
+    @staticmethod
+    def _parse_xml_string_to_dom(xml_string: str) -> ETree.Element:
         try:
-            parser = ETree.XMLParser(target=ETree.TreeBuilder(), encoding=self.DEFAULT_ENCODING)
+            parser = ETree.XMLParser(target=ETree.TreeBuilder())
             parser.feed(xml_string)
             root = parser.close()
         except ETree.ParseError as e:
@@ -965,7 +962,7 @@ class EC2RequestParser(QueryRequestParser):
     When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
-    def _get_serialized_name(self, shape: Shape, default_name: str) -> str:
+    def _get_serialized_name(self, shape: Shape, default_name: str, node: dict) -> str:
         # Returns the serialized name for the shape if it exists.
         # Otherwise it will return the passed in default_name.
         if "queryName" in shape.serialization:
@@ -977,38 +974,117 @@ class EC2RequestParser(QueryRequestParser):
         else:
             return default_name
 
-    def _get_list_key_prefix(self, shape: ListShape):
+    def _get_list_key_prefix(self, shape: ListShape, node: dict):
         # The EC2 protocol does not use a prefix notation for flattened lists
         return ""
 
 
 class S3RequestParser(RestXMLRequestParser):
+    class VirtualHostRewriter:
+        """
+        Context Manager which rewrites the request object parameters such that - within the context - it looks like a
+        normal S3 request.
+        """
+
+        def __init__(self, request: HttpRequest):
+            self.request = request
+            self.old_host = None
+            self.old_path = None
+
+        def __enter__(self):
+            # only modify the request if it uses the virtual host addressing
+            if self._is_vhost_address(self.request):
+                # save the original path and host for restoring on context exit
+                self.old_path = self.request.path
+                self.old_host = self.request.host
+
+                # extract the bucket name from the host part of the request
+                bucket_name, new_host = self.old_host.split(".", maxsplit=1)
+
+                # split the url and put the bucket name at the front
+                path_parts = self.old_path.split("/")
+                path_parts = [bucket_name] + path_parts
+                path_parts = [part for part in path_parts if part]
+                new_path = "/" + "/".join(path_parts) or "/"
+
+                # set the new path and host
+                self._set_request_props(self.request, new_path, new_host)
+            return self.request
+
+        def __exit__(self, exc_type, exc_value, exc_traceback):
+            # reset the original request properties on exit of the context
+            if self.old_host or self.old_path:
+                self._set_request_props(self.request, self.old_path, self.old_host)
+
+        @staticmethod
+        def _set_request_props(request: HttpRequest, path: str, host: str):
+            """Sets the HTTP request's path and host and clears the cache in the request object."""
+            request.path = path
+            request.headers["Host"] = host
+
+            try:
+                # delete the werkzeug request property cache that depends on path, but make sure all of them are
+                # initialized first, otherwise `del` will raise a key error
+                request.host = None  # noqa
+                request.url = None  # noqa
+                request.base_url = None  # noqa
+                request.full_path = None  # noqa
+                request.host_url = None  # noqa
+                request.root_url = None  # noqa
+                del request.host  # noqa
+                del request.url  # noqa
+                del request.base_url  # noqa
+                del request.full_path  # noqa
+                del request.host_url  # noqa
+                del request.root_url  # noqa
+            except AttributeError:
+                pass
+
+        @staticmethod
+        def _is_vhost_address(request: HttpRequest) -> bool:
+            from localstack.services.s3.s3_utils import uses_host_addressing
+
+            return uses_host_addressing(request.headers)
+
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         """Handle virtual-host-addressing for S3."""
-        if self._is_vhost_address(request):
-            self._revert_virtual_host_style(request)
+        with self.VirtualHostRewriter(request):
+            return super().parse(request)
 
-        return super().parse(request)
 
-    def _is_vhost_address(self, request: HttpRequest) -> bool:
-        from localstack.services.s3.s3_utils import uses_host_addressing
+class SQSRequestParser(QueryRequestParser):
+    def _get_serialized_name(self, shape: Shape, default_name: str, node: dict) -> str:
+        """
+        SQS allows using both - the proper serialized name of a map as well as the member name - as name for maps.
+        For example, both works for the TagQueue operation:
+        - Using the proper serialized name "Tag": Tag.1.Key=key&Tag.1.Value=value
+        - Using the member name "Tag" in the parent structure: Tags.1.Key=key&Tags.1.Value=value
+        The Java SDK implements the second variant: https://github.com/aws/aws-sdk-java-v2/issues/2524
+        This has been approved to be a bug and against the spec, but since the client has a lot of users, and AWS SQS
+        supports both, we need to handle it here.
+        """
+        # ask the super implementation for the proper serialized name
+        primary_name = super()._get_serialized_name(shape, default_name, node)
 
-        return uses_host_addressing(request.headers)
+        # determine a potential suffix for the name of the member in the node
+        suffix = ""
+        if shape.type_name == "map":
+            if not shape.serialization.get("flattened"):
+                suffix = ".entry.1.Key"
+            else:
+                suffix = ".1.Key"
+        if shape.type_name == "list":
+            if not shape.serialization.get("flattened"):
+                suffix = ".member.1"
+            else:
+                suffix = ".1"
 
-    def _revert_virtual_host_style(self, request: HttpRequest):
-        # extract the bucket name from the host part of the request
-        bucket_name = request.host.split(".")[0]
-        # split the url and put the bucket name at the front
-        parts = urlsplit(request.url)
-        path_parts = parts.path.split("/")
-        path_parts = [bucket_name] + path_parts
-        path_parts = [part for part in path_parts if part]
-        path = "/" + "/".join(path_parts) or "/"
-        # set the path with the bucket name in the front at the request
-        # TODO directly modifying the request can cause issues with our handler chain, instead clone the HTTP request
-        request.path = path
-        request.raw_path = path
+        # if the primary name is _not_ available in the node, but the default name is, we use the default name
+        if f"{primary_name}{suffix}" not in node and f"{default_name}{suffix}" in node:
+            return default_name
+        # otherwise we use the primary name
+        return primary_name
 
 
 def create_parser(service: ServiceModel) -> RequestParser:
@@ -1029,6 +1105,7 @@ def create_parser(service: ServiceModel) -> RequestParser:
     # informally more specific protocol implementation) has precedence over the more general protocol-specific parsers.
     service_specific_parsers = {
         "s3": S3RequestParser,
+        "sqs": SQSRequestParser,
     }
     protocol_specific_parsers = {
         "query": QueryRequestParser,

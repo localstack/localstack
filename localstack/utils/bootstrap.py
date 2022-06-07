@@ -13,6 +13,7 @@ from typing import Dict, Iterable, List, Optional, Set
 from localstack import config, constants
 from localstack.config import Directories
 from localstack.runtime import hooks
+from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
     ContainerException,
     PortMappings,
@@ -104,33 +105,6 @@ def get_docker_image_details(image_name: str = None) -> Dict[str, str]:
         "created": result["Created"].split(".")[0],
     }
     return result
-
-
-def get_main_container_ip():
-    container_name = get_main_container_name()
-    return DOCKER_CLIENT.get_container_ip(container_name)
-
-
-def get_main_container_id():
-    container_name = get_main_container_name()
-    try:
-        return DOCKER_CLIENT.get_container_id(container_name)
-    except ContainerException:
-        return None
-
-
-def get_main_container_name():
-    global MAIN_CONTAINER_NAME_CACHED
-    if MAIN_CONTAINER_NAME_CACHED is None:
-        hostname = os.environ.get("HOSTNAME")
-        if hostname:
-            try:
-                MAIN_CONTAINER_NAME_CACHED = DOCKER_CLIENT.get_container_name(hostname)
-            except ContainerException:
-                MAIN_CONTAINER_NAME_CACHED = config.MAIN_CONTAINER_NAME
-        else:
-            MAIN_CONTAINER_NAME_CACHED = config.MAIN_CONTAINER_NAME
-    return MAIN_CONTAINER_NAME_CACHED
 
 
 def get_image_environment_variable(env_name: str) -> Optional[str]:
@@ -518,26 +492,35 @@ class LocalstackContainer:
         client = CmdDockerClient()
         client.default_run_outfile = self.logfile
 
-        return client.run_container(
-            image_name=self.image_name,
-            stdin=self.stdin,
-            name=self.name,
-            entrypoint=self.entrypoint or None,
-            remove=self.remove,
-            interactive=self.interactive,
-            tty=self.tty,
-            detach=self.detach,
-            command=self.command or None,
-            mount_volumes=self._get_mount_volumes(),
-            ports=self.ports,
-            env_vars=self.env_vars,
-            user=self.user,
-            cap_add=self.cap_add,
-            network=self.network,
-            dns=self.dns,
-            additional_flags=" ".join(self.additional_flags),
-            workdir=self.workdir,
-        )
+        try:
+            return client.run_container(
+                image_name=self.image_name,
+                stdin=self.stdin,
+                name=self.name,
+                entrypoint=self.entrypoint or None,
+                remove=self.remove,
+                interactive=self.interactive,
+                tty=self.tty,
+                detach=self.detach,
+                command=self.command or None,
+                mount_volumes=self._get_mount_volumes(),
+                ports=self.ports,
+                env_vars=self.env_vars,
+                user=self.user,
+                cap_add=self.cap_add,
+                network=self.network,
+                dns=self.dns,
+                additional_flags=" ".join(self.additional_flags),
+                workdir=self.workdir,
+            )
+        except ContainerException as e:
+            if LOG.isEnabledFor(logging.DEBUG):
+                LOG.exception("Error while starting LocalStack container")
+            else:
+                LOG.error(
+                    "Error while starting LocalStack container: %s\n%s", e.message, to_str(e.stderr)
+                )
+            raise
 
     def truncate_log(self):
         with open(self.logfile, "wb") as fd:

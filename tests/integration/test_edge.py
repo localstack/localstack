@@ -1,15 +1,17 @@
 import io
 import json
 import os
-import time
+import urllib
 
 import pytest
 import requests
 import xmltodict
+from quart import request as quart_request
 from requests.models import Request as RequestsRequest
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL, TEST_AWS_ACCOUNT_ID
+from localstack.http.request import get_full_raw_path
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
     ProxyListener,
@@ -24,22 +26,43 @@ from localstack.utils.xml import strip_xmlns
 
 
 class TestEdgeAPI:
-    def test_invoke_apis_via_edge(self):
+    @pytest.mark.skipif(not is_api_enabled("kinesis"), reason="kinesis not enabled")
+    def test_invoke_kinesis(self):
         edge_url = config.get_edge_url()
+        self._invoke_kinesis_via_edge(edge_url)
 
-        if is_api_enabled("s3"):
-            self._invoke_s3_via_edge(edge_url)
-            self._invoke_s3_via_edge_multipart_form(edge_url)
-        if is_api_enabled("kinesis"):
-            self._invoke_kinesis_via_edge(edge_url)
-        if is_api_enabled("dynamodbstreams"):
-            self._invoke_dynamodb_via_edge_go_sdk(edge_url)
-        if is_api_enabled("dynamodbstreams"):
-            self._invoke_dynamodbstreams_via_edge(edge_url)
-        if is_api_enabled("firehose"):
-            self._invoke_firehose_via_edge(edge_url)
-        if is_api_enabled("stepfunctions"):
-            self._invoke_stepfunctions_via_edge(edge_url)
+    @pytest.mark.skipif(not is_api_enabled("dynamodbstreams"), reason="dynamodbstreams not enabled")
+    def test_invoke_dynamodb(self):
+        edge_url = config.get_edge_url()
+        self._invoke_dynamodb_via_edge_go_sdk(edge_url)
+
+    @pytest.mark.skipif(not is_api_enabled("dynamodbstreams"), reason="dynamodbstreams not enabled")
+    def test_invoke_dynamodbstreams(self):
+        edge_url = config.get_edge_url()
+        self._invoke_dynamodbstreams_via_edge(edge_url)
+
+    @pytest.mark.skipif(not is_api_enabled("firehose"), reason="firehose not enabled")
+    def test_invoke_firehose(self):
+        edge_url = config.get_edge_url()
+        self._invoke_firehose_via_edge(edge_url)
+
+    @pytest.mark.skipif(not is_api_enabled("stepfunctions"), reason="stepfunctions not enabled")
+    def test_invoke_stepfunctions(self):
+        edge_url = config.get_edge_url()
+        self._invoke_stepfunctions_via_edge(edge_url)
+
+    @pytest.mark.skipif(not is_api_enabled("s3"), reason="s3 not enabled")
+    def test_invoke_s3(self):
+        edge_url = config.get_edge_url()
+        self._invoke_s3_via_edge(edge_url)
+
+    @pytest.mark.skipif(not is_api_enabled("s3"), reason="s3 not enabled")
+    @pytest.mark.xfail(
+        condition=not config.LEGACY_EDGE_PROXY, reason="failing with new HTTP gateway (only in CI)"
+    )
+    def test_invoke_s3_multipart_request(self):
+        edge_url = config.get_edge_url()
+        self._invoke_s3_via_edge_multipart_form(edge_url)
 
     def _invoke_kinesis_via_edge(self, edge_url):
         client = aws_stack.create_external_boto_client("kinesis", endpoint_url=edge_url)
@@ -143,22 +166,54 @@ class TestEdgeAPI:
         client.delete_object(Bucket=bucket_name, Key=object_name)
         client.delete_bucket(Bucket=bucket_name)
 
-    def test_http2_traffic(self):
-        port = get_free_tcp_port()
-
+    def test_basic_https_invocation(self):
         class MyListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 return {"method": method, "path": path, "data": data}
 
-        url = "https://localhost:%s/foo/bar" % port
+        port = get_free_tcp_port()
+        url = f"https://localhost:{port}/foo/bar"
 
         listener = MyListener()
         proxy = start_proxy_server(port, update_listener=listener, use_ssl=True)
-        time.sleep(1)
         response = requests.post(url, verify=False)
         expected = {"method": "POST", "path": "/foo/bar", "data": ""}
         assert json.loads(to_str(response.content)) == expected
         proxy.stop()
+
+    def test_http2_relay_traffic(self):
+        """Tests if HTTP2 traffic can correctly be forwarded (including url-encoded characters)."""
+
+        # Create a simple HTTP echo server
+        class MyListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                return {"method": method, "path": path, "data": data}
+
+        listener = MyListener()
+        port_http_server = get_free_tcp_port()
+        http_server = start_proxy_server(port_http_server, update_listener=listener, use_ssl=True)
+
+        # Create a relay proxy which forwards request to the HTTP echo server
+        port_relay_proxy = get_free_tcp_port()
+        forward_url = f"https://localhost:{port_http_server}"
+        relay_proxy = start_proxy_server(port_relay_proxy, forward_url=forward_url, use_ssl=True)
+
+        # Contact the relay proxy
+        query = "%2B=%3B%2C%2F%3F%3A%40%26%3D%2B%24%21%2A%27%28%29%23"
+        path = f"/foo/bar%3B%2C%2F%3F%3A%40%26%3D%2B%24%21%2A%27%28%29%23baz?{query}"
+        url = f"https://localhost:{port_relay_proxy}{path}"
+        response = requests.post(url, verify=False)
+
+        # Expect the response from the HTTP echo server
+        expected = {
+            "method": "POST",
+            "path": path,
+            "data": "",
+        }
+        assert json.loads(to_str(response.content)) == expected
+
+        http_server.stop()
+        relay_proxy.stop()
 
     def test_invoke_sns_sqs_integration_using_edge_port(
         self, sqs_create_queue, sqs_client, sns_client, sns_create_topic, sns_subscription
@@ -295,7 +350,32 @@ class TestEdgeAPI:
         # using a simple for-loop here (instead of pytest parametrization), for simplicity
         for host in ["localhost", "example.com"]:
             for port in ["", ":123", f":{config.EDGE_PORT}"]:
-                headers["Host"] = f"{host}:{port}"
+                headers["Host"] = f"{host}{port}"
                 response = requests.get(f"{url}/2015-03-31/functions", headers=headers)
                 assert response
                 assert "Functions" in json.loads(to_str(response.content))
+
+    @pytest.mark.skipif(
+        condition=not config.LEGACY_EDGE_PROXY, reason="only relevant for old edge proxy"
+    )
+    def test_forward_raw_path(self, monkeypatch):
+        class MyListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                _path = get_full_raw_path(quart_request)
+                return {"method": method, "path": _path}
+
+        # start listener and configure EDGE_FORWARD_URL
+        port = get_free_tcp_port()
+        forward_url = f"http://localhost:{port}"
+        listener = MyListener()
+        proxy = start_proxy_server(port, update_listener=listener, use_ssl=True)
+        monkeypatch.setattr(config, "EDGE_FORWARD_URL", forward_url)
+
+        # run test request, assert that raw request path is forwarded
+        test_arn = "arn:aws:test:resource/test"
+        raw_path = f"/test/{urllib.parse.quote(test_arn)}/bar?q1=foo&q2=bar"
+        url = f"{config.get_edge_url()}{raw_path}"
+        response = requests.get(url)
+        expected = {"method": "GET", "path": raw_path}
+        assert json.loads(to_str(response.content)) == expected
+        proxy.stop()

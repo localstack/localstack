@@ -5,12 +5,18 @@ import logging
 import os
 import re
 import shlex
+import sys
 import tarfile
 import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
-from typing import Dict, List, Optional, Protocol, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
+
+if sys.version_info >= (3, 8):
+    from typing import Protocol
+else:
+    from typing_extensions import Protocol
 
 from localstack import config
 from localstack.utils.collections import HashableList

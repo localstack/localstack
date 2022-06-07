@@ -77,6 +77,7 @@ s3_lambda_permission = {
 
 
 class TestSQSEventSourceMapping:
+    @pytest.mark.skip_snapshot_verify
     def test_event_source_mapping_default_batch_size(
         self,
         create_lambda_function,
@@ -87,7 +88,9 @@ class TestSQSEventSourceMapping:
         dynamodb_client,
         dynamodb_create_table,
         lambda_su_role,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         queue_name_2 = f"queue-{short_uid()}-2"
@@ -105,17 +108,20 @@ class TestSQSEventSourceMapping:
             rs = lambda_client.create_event_source_mapping(
                 EventSourceArn=queue_arn_1, FunctionName=function_name
             )
+            snapshot.match("create-event-source-mapping", rs)
+
             uuid = rs["UUID"]
             assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
             _await_event_source_mapping_enabled(lambda_client, uuid)
 
             with pytest.raises(ClientError) as e:
                 # Update batch size with invalid value
-                lambda_client.update_event_source_mapping(
+                rs = lambda_client.update_event_source_mapping(
                     UUID=uuid,
                     FunctionName=function_name,
                     BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
                 )
+            snapshot.match("invalid-update-event-source-mapping", e.value.response)
             e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
 
             queue_url_2 = sqs_create_queue(QueueName=queue_name_2)
@@ -123,11 +129,12 @@ class TestSQSEventSourceMapping:
 
             with pytest.raises(ClientError) as e:
                 # Create event source mapping with invalid batch size value
-                lambda_client.create_event_source_mapping(
+                rs = lambda_client.create_event_source_mapping(
                     EventSourceArn=queue_arn_2,
                     FunctionName=function_name,
                     BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
                 )
+            snapshot.match("invalid-create-event-source-mapping", e.value.response)
             e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
         finally:
             lambda_client.delete_event_source_mapping(UUID=uuid)
@@ -312,30 +319,34 @@ class TestDynamoDBEventSourceMapping:
     def test_deletion_event_source_mapping_with_dynamodb(
         self, create_lambda_function, lambda_client, dynamodb_client, lambda_su_role
     ):
-        function_name = f"lambda_func-{short_uid()}"
-        ddb_table = f"ddb_table-{short_uid()}"
+        try:
+            function_name = f"lambda_func-{short_uid()}"
+            ddb_table = f"ddb_table-{short_uid()}"
 
-        create_lambda_function(
-            func_name=function_name,
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-            role=lambda_su_role,
-        )
-        latest_stream_arn = aws_stack.create_dynamodb_table(
-            table_name=ddb_table,
-            partition_key="id",
-            client=dynamodb_client,
-            stream_view_type="NEW_IMAGE",
-        )["TableDescription"]["LatestStreamArn"]
-        lambda_client.create_event_source_mapping(
-            FunctionName=function_name,
-            EventSourceArn=latest_stream_arn,
-            StartingPosition="TRIM_HORIZON",
-        )
-        _await_dynamodb_table_active(dynamodb_client, ddb_table)
-        dynamodb_client.delete_table(TableName=ddb_table)
-        result = lambda_client.list_event_source_mappings(EventSourceArn=latest_stream_arn)
-        assert 1 == len(result["EventSourceMappings"])
+            create_lambda_function(
+                func_name=function_name,
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                runtime=LAMBDA_RUNTIME_PYTHON36,
+                role=lambda_su_role,
+            )
+            latest_stream_arn = aws_stack.create_dynamodb_table(
+                table_name=ddb_table,
+                partition_key="id",
+                client=dynamodb_client,
+                stream_view_type="NEW_IMAGE",
+            )["TableDescription"]["LatestStreamArn"]
+            result = lambda_client.create_event_source_mapping(
+                FunctionName=function_name,
+                EventSourceArn=latest_stream_arn,
+                StartingPosition="TRIM_HORIZON",
+            )
+            event_source_mapping_uuid = result["UUID"]
+            _await_dynamodb_table_active(dynamodb_client, ddb_table)
+            dynamodb_client.delete_table(TableName=ddb_table)
+            result = lambda_client.list_event_source_mappings(EventSourceArn=latest_stream_arn)
+            assert 1 == len(result["EventSourceMappings"])
+        finally:
+            lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
 
     def test_dynamodb_event_source_mapping_with_on_failure_destination_config(
         self,

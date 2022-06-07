@@ -37,11 +37,13 @@ from localstack.constants import (
     HEADER_LOCALSTACK_AUTHORIZATION,
     HEADER_LOCALSTACK_REQUEST_URL,
 )
+from localstack.http.request import get_full_raw_path
 from localstack.services.messages import Headers, MessagePayload
 from localstack.services.messages import Request as RoutingRequest
 from localstack.services.messages import Response as RoutingResponse
+from localstack.utils.asyncio import run_sync
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import LambdaResponse
+from localstack.utils.aws.aws_responses import LambdaResponse, calculate_crc32
 from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.aws.request_context import RequestContextManager, get_proxy_request_for_thread
 from localstack.utils.crypto import generate_ssl_cert
@@ -256,11 +258,13 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
         # Only handle responses for calls from external clients
         if is_internal_call_context(headers):
             return None
-        return RoutingResponse(
+        response = RoutingResponse(
             status_code=response.status_code,
             content=self._adjust_partition(response.content),
             headers=self._adjust_partition(response.headers),
         )
+        self._post_process_response_headers(response)
+        return response
 
     def _adjust_partition_in_path(self, path: str, static_partition: str = None):
         """Adjusts the (still url encoded) URL path"""
@@ -324,23 +328,33 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
                 partition = self._get_partition_for_region(AWS_REGION_US_EAST_1)
         return partition
 
-    def _get_partition_for_region(self, region: str) -> str:
+    @staticmethod
+    def _get_partition_for_region(region: Optional[str]) -> str:
         # Region-Partition matching is based on the "regionRegex" definitions in the endpoints.json
         # in the botocore package.
-        if region.startswith("us-gov-"):
+        if region and region.startswith("us-gov-"):
             return "aws-us-gov"
-        elif region.startswith("us-iso-"):
+        elif region and region.startswith("us-iso-"):
             return "aws-iso"
-        elif region.startswith("us-isob-"):
+        elif region and region.startswith("us-isob-"):
             return "aws-iso-b"
-        elif region.startswith("cn-"):
+        elif region and region.startswith("cn-"):
             return "aws-cn"
-        elif re.match(r"^(us|eu|ap|sa|ca|me|af)-\w+-\d+$", region):
+        elif region and re.match(r"^(us|eu|ap|sa|ca|me|af)-\w+-\d+$", region):
             return "aws"
         else:
             raise ArnPartitionRewriteListener.InvalidRegionException(
                 f"Region ({region}) could not be matched to a partition."
             )
+
+    @staticmethod
+    def _post_process_response_headers(response: RoutingResponse) -> None:
+        """Adjust potential content lengths and checksums after modifying the response."""
+        if response.headers and response.content:
+            if "Content-Length" in response.headers:
+                response.headers["Content-Length"] = str(len(to_bytes(response.content)))
+            if "x-amz-crc32" in response.headers:
+                response.headers["x-amz-crc32"] = calculate_crc32(response.content)
 
 
 # -------------------
@@ -395,11 +409,17 @@ class RegionBackend:
 # ---------------------
 
 
-def append_cors_headers(request_headers=None, response=None):
-    # Note: Use "response is not None" here instead of "not response"!
+def append_cors_headers(
+    request_headers: Dict = None, response: Union[Response, LambdaResponse] = None
+):
+    # use this config to disable returning CORS headers entirely (more restrictive security setting)
+    if config.DISABLE_CORS_HEADERS:
+        return
+
+    # Note: Use "response is None" here instead of "not response"
     headers = {} if response is None else response.headers
 
-    # In case we have LambdaResponse copy multivalue headers to regular headers, since
+    # In case we have LambdaResponse, copy multivalue headers to regular headers, since
     # CaseInsensitiveDict does not support "__contains__" and it's easier to deal with
     # a single headers object
     if isinstance(response, LambdaResponse):
@@ -806,6 +826,7 @@ class UrlMatchingForwarder(ProxyListener):
         forward_url = self.build_forward_url(host, path)
 
         # update headers
+        headers.pop("Host", None)
         headers["Host"] = forward_url.netloc
 
         # TODO: set proxy headers like x-forwarded-for?
@@ -916,7 +937,7 @@ class FakeEndpointProxyServer(Server):
 
 
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
-    is_ssl_socket = DuplexSocket.is_ssl_socket(conn)
+    is_ssl_socket = await run_sync(DuplexSocket.is_ssl_socket, conn)
     if is_ssl_socket is False:
         sslcontext = None
     result = await _accept_connection2_orig(
@@ -945,7 +966,6 @@ def start_proxy_server(
     use_ssl=None,
     update_listener: Optional[Union[ProxyListener, List[ProxyListener]]] = None,
     quiet=False,
-    params=None,  # TODO: not being used - should be investigated/removed
     asynchronous=True,
     check_port=True,
     max_content_length: int = None,
@@ -965,7 +985,7 @@ def start_proxy_server(
 
     def handler(request, data):
         parsed_url = urlparse(request.url)
-        path_with_params = request.full_path.strip("?")
+        path_with_params = get_full_raw_path(request)
         method = request.method
         headers = request.headers
         headers[HEADER_LOCALSTACK_REQUEST_URL] = str(request.url)

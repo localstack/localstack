@@ -357,10 +357,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
             if invocation_context.authorizer_type:
-                authorizer_context = {
-                    invocation_context.authorizer_type: invocation_context.auth_context
-                }
-                invocation_context.context["authorizer"] = authorizer_context
+                invocation_context.context["authorizer"] = invocation_context.auth_context
 
             request_templates = RequestTemplates()
             payload = request_templates.render(invocation_context)

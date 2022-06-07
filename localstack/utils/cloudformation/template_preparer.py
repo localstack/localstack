@@ -9,6 +9,7 @@ import boto3
 import moto.cloudformation.utils
 import yaml
 from requests.structures import CaseInsensitiveDict
+from samtranslator.translator.managed_policy_translator import ManagedPolicyLoader
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack import config, constants
@@ -28,28 +29,30 @@ NoDatesSafeLoader.yaml_implicit_resolvers = {
     for k, v in NoDatesSafeLoader.yaml_implicit_resolvers.items()
 }
 
+policy_loader = None
+
+
+def _create_loader():
+    global policy_loader
+    if not policy_loader:
+        iam_client = aws_stack.connect_to_service("iam")
+        policy_loader = ManagedPolicyLoader(iam_client=iam_client)
+    return policy_loader
+
 
 def transform_template(req_data) -> Optional[str]:
     """only returns string when parsing SAM template, otherwise None"""
     template_body = get_template_body(req_data)
     parsed = parse_template(template_body)
     if parsed.get("Transform") == "AWS::Serverless-2016-10-31":
-        policy_map = {
-            # SAM Transformer expects this map to be non-empty, but apparently the content doesn't matter (?)
-            "dummy": "entry"
-            # 'AWSLambdaBasicExecutionRole': 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
-        }
-
-        class MockPolicyLoader:
-            def load(self):
-                return policy_map
 
         # Note: we need to fix boto3 region, otherwise AWS SAM transformer fails
         region_before = os.environ.get("AWS_DEFAULT_REGION")
         if boto3.session.Session().region_name is None:
             os.environ["AWS_DEFAULT_REGION"] = aws_stack.get_region()
+        loader = _create_loader()
         try:
-            transformed = transform_sam(parsed, {}, MockPolicyLoader())
+            transformed = transform_sam(parsed, {}, loader)
             return json.dumps(transformed)
         finally:
             os.environ.pop("AWS_DEFAULT_REGION", None)

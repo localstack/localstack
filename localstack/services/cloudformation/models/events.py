@@ -1,7 +1,6 @@
 import json
 
 from localstack.services.cloudformation.deployment_utils import (
-    PLACEHOLDER_RESOURCE_NAME,
     generate_default_name,
     select_parameters,
 )
@@ -138,17 +137,22 @@ class EventsRule(GenericBaseModel):
                 events.remove_targets(Rule=rule_name, Ids=target_ids, Force=True)
             events.delete_rule(Name=rule_name)
 
+        def _put_targets(resource_id, resources, *args, **kwargs):
+            events = aws_stack.connect_to_service("events")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            rule_name = props["Name"]
+            event_bus_name = props.get("EventBusName")
+            targets = props.get("Targets") or []
+            if len(targets) > 0 and event_bus_name:
+                events.put_targets(Rule=rule_name, EventBusName=event_bus_name, Targets=targets)
+            elif len(targets) > 0:
+                events.put_targets(Rule=rule_name, Targets=targets)
+
         return {
             "create": [
                 {"function": "put_rule", "parameters": events_put_rule_params},
-                {
-                    "function": "put_targets",
-                    "parameters": {
-                        "Rule": PLACEHOLDER_RESOURCE_NAME,
-                        "EventBusName": "EventBusName",
-                        "Targets": "Targets",
-                    },
-                },
+                {"function": _put_targets},
             ],
             "delete": {"function": _delete_rule},
         }

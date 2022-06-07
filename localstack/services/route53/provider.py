@@ -112,9 +112,25 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
             raise NoSuchHealthCheck(
                 f"No health check exists with the specified ID {health_check_id}"
             )
+        health_check_config = {
+            "Disabled": health_check.disabled,
+            "EnableSNI": health_check.enable_sni,
+            "FailureThreshold": health_check.failure_threshold,
+            "FullyQualifiedDomainName": health_check.fqdn,
+            "HealthThreshold": health_check.health_threshold,
+            "Inverted": health_check.inverted,
+            "IPAddress": health_check.ip_address,
+            "MeasureLatency": health_check.measure_latency,
+            "Port": health_check.port,
+            "RequestInterval": health_check.request_interval,
+            "ResourcePath": health_check.resource_path,
+            "Type": health_check.type_,
+        }
         return GetHealthCheckResponse(
             HealthCheck=HealthCheck(
-                Id=health_check.id, CallerReference=health_check.caller_reference
+                Id=health_check.id,
+                CallerReference=health_check.caller_reference,
+                HealthCheckConfig=health_check_config,
             )
         )
 

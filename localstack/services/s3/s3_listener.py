@@ -212,14 +212,10 @@ def get_event_message(
     }
 
 
-def send_notifications(method, bucket_name, object_path, version_id, headers):
+def send_notifications(method, bucket_name, object_path, version_id, headers, method_map):
     for bucket, notifs in S3_NOTIFICATIONS.items():
         if normalize_bucket_name(bucket) == normalize_bucket_name(bucket_name):
-            action = {
-                "PUT": "ObjectCreated",
-                "POST": "ObjectCreated",
-                "DELETE": "ObjectRemoved",
-            }[method]
+            action = method_map[method]
             # TODO: support more detailed methods, e.g., DeleteMarkerCreated
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
             if action == "ObjectCreated" and method == "PUT" and "x-amz-copy-source" in headers:
@@ -1415,21 +1411,32 @@ class ProxyListenerS3(PersistingProxyListener):
 
         parsed = urlparse(path)
         bucket_name_in_host = uses_host_addressing(headers)
-        should_send_notifications = all(
+
+        is_object_request = all(
             [
-                method in ("PUT", "POST", "DELETE"),
                 "/" in path[1:] or bucket_name_in_host or key,
                 # check if this is an actual put object request, because it could also be
                 # a put bucket request with a path like this: /bucket_name/
                 bucket_name_in_host
                 or key
                 or (len(path[1:].split("/")) > 1 and len(path[1:].split("/")[1]) > 0),
+            ]
+        )
+
+        should_send_object_notification = all(
+            [
+                method in ("PUT", "POST", "DELETE"),
+                is_object_request,
                 self.is_query_allowable(method, parsed.query),
             ]
         )
 
+        should_send_tagging_notification = all(
+            ["tagging" in parsed.query, method in ("PUT", "DELETE"), is_object_request]
+        )
+
         # get subscribers and send bucket notifications
-        if should_send_notifications:
+        if should_send_object_notification or should_send_tagging_notification:
             # if we already have a good key, use it, otherwise examine the path
             if key:
                 object_path = "/" + key
@@ -1440,7 +1447,19 @@ class ProxyListenerS3(PersistingProxyListener):
                 object_path = parts[1] if parts[1][0] == "/" else "/%s" % parts[1]
             version_id = response.headers.get("x-amz-version-id", None)
 
-            send_notifications(method, bucket_name, object_path, version_id, headers)
+            if should_send_object_notification:
+                method_map = {
+                    "PUT": "ObjectCreated",
+                    "POST": "ObjectCreated",
+                    "DELETE": "ObjectRemoved",
+                }
+            if should_send_tagging_notification:
+                method_map = {
+                    "PUT": "ObjectTagging",
+                    "DELETE": "ObjectTagging",
+                }
+
+            send_notifications(method, bucket_name, object_path, version_id, headers, method_map)
 
         # publish event for creation/deletion of buckets:
         if method in ("PUT", "DELETE") and (

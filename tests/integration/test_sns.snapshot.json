@@ -1,0 +1,50 @@
+{
+  "tests/integration/test_sns.py::TestSNSProvider::test_dead_letter_queue_with_deleted_sqs_queue[True]": {
+    "recorded-date": "01-06-2022, 14:07:57",
+    "recorded-content": {
+      "raw_message_delivery": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>",
+            "MD5OfBody": "2040fa62e6ff90d21d5fe319d5e65443",
+            "Body": "test_dlq_after_sqs_endpoint_deleted"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_dead_letter_queue_with_deleted_sqs_queue[False]": {
+    "recorded-date": "01-06-2022, 14:08:00",
+    "recorded-content": {
+      "json_encoded_delivery": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>",
+            "MD5OfBody": "<md5-hash>",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "test_dlq_after_sqs_endpoint_deleted",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<token:1>"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        }
+      }
+    }
+  }
+}

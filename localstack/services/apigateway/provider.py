@@ -2,7 +2,7 @@ import json
 import re
 from copy import deepcopy
 
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
     Account,
     ApigatewayApi,
@@ -10,6 +10,7 @@ from localstack.aws.api.apigateway import (
     Authorizers,
     BasePathMapping,
     BasePathMappings,
+    Blob,
     Boolean,
     ClientCertificate,
     ClientCertificates,
@@ -18,12 +19,14 @@ from localstack.aws.api.apigateway import (
     DocumentationPart,
     DocumentationPartLocation,
     DocumentationParts,
+    ExportResponse,
     GetDocumentationPartsRequest,
     ListOfPatchOperation,
     ListOfString,
     MapOfStringToString,
     NotFoundException,
     NullableInteger,
+    PutRestApiRequest,
     RequestValidator,
     RequestValidators,
     RestApi,
@@ -32,8 +35,9 @@ from localstack.aws.api.apigateway import (
     VpcLink,
     VpcLinks,
 )
+from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.proxy import AwsApiListener
-from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
@@ -41,6 +45,7 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_USER_REQUEST,
     APIGatewayRegion,
+    OpenApiExporter,
     apply_json_patch_safe,
     find_api_subentity_by_id,
 )
@@ -53,7 +58,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.collections import ensure_list
 from localstack.utils.json import parse_json_or_yaml
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import short_uid, str_to_bool, to_str
 from localstack.utils.time import now_utc
 
 
@@ -71,35 +76,37 @@ class ApigatewayApiListener(AwsApiListener):
                 return result
 
         if helpers.is_test_invoke_method(method, path):
-            # if call is from test_invoke_api then use http_method to find the integration,
-            #   as test_invoke_api makes a POST call to request the test invocation
-            match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
-            invocation_context.method = match[3]
-            data = parse_json_or_yaml(to_str(data or b""))
-            if data:
-                orig_data = data
-                path_with_query_string = orig_data.get("pathWithQueryString", None)
-                if path_with_query_string:
-                    invocation_context.path_with_query_string = path_with_query_string
-                invocation_context.data = data.get("body")
-                invocation_context.headers = orig_data.get("headers", {})
-            result = invoke_rest_api_from_request(invocation_context)
-            result = {
-                "status": result.status_code,
-                "body": to_str(result.content),
-                "headers": dict(result.headers),
-            }
-            return result
-
+            return self._handle_test_invoke_method(invocation_context)
         return super().forward_request(method, path, data, headers)
+
+    def _handle_test_invoke_method(self, invocation_context):
+        # if call is from test_invoke_api then use http_method to find the integration,
+        #   as test_invoke_api makes a POST call to request the test invocation
+        match = re.match(PATH_REGEX_TEST_INVOKE_API, invocation_context.path)
+        invocation_context.method = match[3]
+        if data := parse_json_or_yaml(to_str(invocation_context.data or b"")):
+            orig_data = data
+            if path_with_query_string := orig_data.get("pathWithQueryString", None):
+                invocation_context.path_with_query_string = path_with_query_string
+            invocation_context.data = data.get("body")
+            invocation_context.headers = orig_data.get("headers", {})
+        result = invoke_rest_api_from_request(invocation_context)
+        result = {
+            "status": result.status_code,
+            "body": to_str(result.content),
+            "headers": dict(result.headers),
+        }
+        return result
 
     def return_response(self, method, path, data, headers, response):
         # TODO: clean up logic below!
 
         # fix backend issue (missing support for API documentation)
-        if re.match(r"/restapis/[^/]+/documentation/versions", path):
-            if response.status_code == 404:
-                return requests_response({"position": "1", "items": []})
+        if (
+            re.match(r"/restapis/[^/]+/documentation/versions", path)
+            and response.status_code == 404
+        ):
+            return requests_response({"position": "1", "items": []})
 
         # keep track of API regions for faster lookup later on
         # TODO - to be removed - see comment for API_REGIONS variable
@@ -124,7 +131,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return result
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
-        call_moto(context)
+        try:
+            call_moto(context)
+        except KeyError as e:
+            # moto raises a key error if we're trying to delete an API that doesn't exist
+            raise NotFoundException(
+                f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+            ) from e
+
         event_publisher.fire_event(
             event_publisher.EVENT_APIGW_DELETE_API,
             payload={"a": event_publisher.get_hash(rest_api_id)},
@@ -565,7 +579,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             "name": name,
             "restApiId": rest_api_id,
             "validateRequestBody": validate_request_body,
-            "validateRequestPparameters": validate_request_parameters,
+            "validateRequestParameters": validate_request_parameters,
         }
         region_details.validators.setdefault(rest_api_id, []).append(entry)
 
@@ -638,10 +652,82 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         for key in tag_keys:
             resource_tags.pop(key, None)
 
+    def import_rest_api(
+        self,
+        context: RequestContext,
+        body: Blob,
+        fail_on_warnings: Boolean = None,
+        parameters: MapOfStringToString = None,
+    ) -> RestApi:
+
+        openapi_spec = parse_json_or_yaml(to_str(body))
+        response = _call_moto(
+            context,
+            "CreateRestApi",
+            CreateRestApiRequest(name=openapi_spec.get("info").get("title")),
+        )
+
+        return _call_moto(
+            context,
+            "PutRestApi",
+            PutRestApiRequest(
+                restApiId=response.get("id"),
+                failOnWarnings=str_to_bool(fail_on_warnings) or False,
+                parameters=parameters or {},
+                body=body,
+            ),
+        )
+
+    def delete_integration(
+        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+    ) -> None:
+        try:
+            call_moto(context)
+        except Exception as e:
+            raise NotFoundException("Invalid Resource identifier specified") from e
+
+    def get_export(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        stage_name: String,
+        export_type: String,
+        parameters: MapOfStringToString = None,
+        accepts: String = None,
+    ) -> ExportResponse:
+
+        openapi_exporter = OpenApiExporter()
+        result = openapi_exporter.export_api(
+            api_id=rest_api_id, stage=stage_name, export_type=export_type, export_format=accepts
+        )
+
+        if accepts == APPLICATION_JSON:
+            result = json.dumps(result, indent=2)
+
+        return ExportResponse(contentType=accepts, body=result)
+
 
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
+
+
+def _call_moto(context: RequestContext, operation_name: str, parameters: ServiceRequest):
+    """
+    Not necessarily the pattern we want to follow in the future, but this makes possible to nest
+    moto call and still be interface compatible.
+
+    Ripped :call_moto_with_request: from moto.py but applicable to any operation (operation_name).
+    """
+    local_context = create_aws_request_context(
+        service_name=context.service.service_name,
+        action=operation_name,
+        parameters=parameters,
+        region=context.region,
+    )
+
+    local_context.request.headers.extend(context.request.headers)
+    return call_moto(local_context)
 
 
 def normalize_authorizer(data):

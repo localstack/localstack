@@ -80,9 +80,11 @@ import functools
 import json
 import logging
 from abc import ABC
+from binascii import crc32
 from datetime import datetime
 from email.utils import formatdate
-from typing import Any, Optional, Tuple, Union
+from struct import pack
+from typing import Any, Iterable, Iterator, Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
 from boto.utils import ISO8601
@@ -164,6 +166,8 @@ class ResponseSerializer(abc.ABC):
     DEFAULT_ENCODING = "utf-8"
     # The default timestamp format is ISO8601, but this can be overwritten by subclasses.
     TIMESTAMP_FORMAT = "iso8601"
+    # Event streaming binary data type mapping for type "string"
+    AWS_BINARY_DATA_TYPE_STRING = 7
 
     @_handle_exceptions
     def serialize_to_response(
@@ -178,6 +182,10 @@ class ResponseSerializer(abc.ABC):
         :return: HttpResponse which can be sent to the calling client
         :raises: ResponseSerializerError (either a ProtocolSerializerError or an UnknownSerializerError)
         """
+        # if the operation has a streaming output, handle the serialization differently
+        if operation_model.has_event_stream_output:
+            return self._serialize_event_stream(response, operation_model)
+
         serialized_response = self._create_default_response(operation_model)
         shape = operation_model.output_shape
         # The shape can also be none (for empty responses), but it still needs to be serialized (to add some metadata)
@@ -204,6 +212,7 @@ class ResponseSerializer(abc.ABC):
         :return: HttpResponse which can be sent to the calling client
         :raises: ResponseSerializerError (either a ProtocolSerializerError or an UnknownSerializerError)
         """
+        # TODO implement streaming error serialization
         serialized_response = self._create_default_response(operation_model)
         if isinstance(error, CommonServiceException):
             # Not all possible exceptions are contained in the service's specification.
@@ -263,7 +272,6 @@ class ResponseSerializer(abc.ABC):
         shape_members: dict,
         operation_model: OperationModel,
     ) -> None:
-        # TODO implement the handling of eventstreams (where "streaming" is True)
         raise NotImplementedError
 
     def _serialize_body_params(
@@ -289,6 +297,142 @@ class ResponseSerializer(abc.ABC):
         operation_model: OperationModel,
     ) -> None:
         raise NotImplementedError
+
+    def _serialize_event_stream(
+        self, response: dict, operation_model: OperationModel
+    ) -> HttpResponse:
+        """
+        Serializes a given response dict (the return payload of a service implementation) to an _event stream_ using the
+        given operation model.
+
+        :param response: dictionary containing the payload for the response
+        :param operation_model: describing the operation the response dict is being returned by
+        :return: HttpResponse which can directly be sent to the client (in chunks)
+        """
+        event_stream_shape = operation_model.get_event_stream_output()
+        event_stream_member_name = operation_model.output_shape.event_stream_name
+
+        # wrap the generator in operation specific serialization
+        def event_stream_serializer() -> Iterable[bytes]:
+            yield self._encode_event_payload("initial-response")
+            # yield convert_to_binary_event_payload("", event_type="initial-response")
+
+            # create a default response
+            serialized_event_response = self._create_default_response(operation_model)
+            # get the members of the event stream shape
+            event_stream_shape_members = (
+                event_stream_shape.members if event_stream_shape is not None else None
+            )
+            # extract the generator from the given response data
+            event_generator = response.get(event_stream_member_name)
+            if not isinstance(event_generator, Iterator):
+                raise ProtocolSerializerError(
+                    "Expected iterator for streaming event serialization."
+                )
+
+            # yield one event per generated event
+            for event in event_generator:
+                # find the actual event payload (the member with event=true)
+                event_member = None
+                for member in event_stream_shape_members.values():
+                    if member.serialization.get("event"):
+                        event_member = member
+                        break
+                if event_member is None:
+                    raise UnknownSerializerError("Couldn't find event shape for serialization.")
+
+                # serialize the part of the response for the event
+                self._serialize_response(
+                    event.get(event_member.name),
+                    serialized_event_response,
+                    event_member,
+                    event_member.members if event_member is not None else None,
+                    operation_model,
+                )
+                # execute additional response traits (might be modifying the response)
+                serialized_event_response = self._prepare_additional_traits_in_response(
+                    serialized_event_response, operation_model
+                )
+                # encode the event and yield it
+                yield self._encode_event_payload(
+                    event_type=event_member.name, content=serialized_event_response.data
+                )
+
+        return HttpResponse(
+            response=event_stream_serializer(),
+            status=operation_model.http.get("responseCode", 200),
+        )
+
+    def _encode_event_payload(
+        self,
+        event_type: str,
+        content: Union[str, bytes] = "",
+        error_code: Optional[str] = None,
+        error_message: Optional[str] = None,
+    ) -> bytes:
+        """
+        Encodes the given event payload according to AWS specific binary event encoding.
+        A specification of the format can be found in the AWS docs:
+        https://docs.aws.amazon.com/AmazonS3/latest/API/RESTSelectObjectAppendix.html
+
+        :param content: string or bytes of the event payload
+        :param event_type: type of the event. Usually the name of the event shape or specific event types like
+                            "initial-response".
+        :param error_code: Optional. Error code if the payload represents an error.
+        :param error_message: Optional. Error message if the payload represents an error.
+        :return: bytes with the AWS-specific encoded event payload
+        """
+
+        # determine the event type (error if an error message or an error code is set)
+        if error_message or error_code:
+            message_type = "error"
+        else:
+            message_type = "event"
+
+        # set the headers
+        headers = {":event-type": event_type, ":message-type": message_type}
+        if error_message:
+            headers[":error-message"] = error_message
+        if error_code:
+            headers[":error-code"] = error_code
+
+        # construct headers
+        header_section = b""
+        for key, value in headers.items():
+            header_name = key.encode(self.DEFAULT_ENCODING)
+            header_value = to_bytes(value)
+            header_section += pack("!B", len(header_name))
+            header_section += header_name
+            header_section += pack("!B", self.AWS_BINARY_DATA_TYPE_STRING)
+            header_section += pack("!H", len(header_value))
+            header_section += header_value
+
+        # construct body
+        if isinstance(content, str):
+            payload = bytes(content, self.DEFAULT_ENCODING)
+        else:
+            payload = content
+
+        # calculate lengths
+        headers_length = len(header_section)
+        payload_length = len(payload)
+
+        # construct message
+        # - prelude
+        result = pack("!I", payload_length + headers_length + 16)
+        result += pack("!I", headers_length)
+        # - prelude crc
+        prelude_crc = crc32(result)
+        result += pack("!I", prelude_crc)
+        # - headers
+        result += header_section
+        # - payload
+        result += payload
+        # - message crc
+        payload_crc = crc32(result)
+        result += pack("!I", payload_crc)
+
+        return result
 
     def _create_default_response(self, operation_model: OperationModel) -> HttpResponse:
         """
@@ -413,7 +557,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestId")
         request_id.text = gen_amzn_requestid_long()
-        response.data = self._encode_payload(self._xml_to_string(root))
+        response.set_response(self._encode_payload(self._xml_to_string(root)))
 
     def _add_error_tags(
         self, code: str, error: ServiceException, error_tag: ETree.Element, sender_fault: bool
@@ -455,8 +599,13 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         if shape.serialization.get("resultWrapper"):
             name = shape.serialization.get("resultWrapper")
 
-        method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
-        method(xmlnode, params, shape, name)
+        try:
+            method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
+            method(xmlnode, params, shape, name)
+        except (TypeError, ValueError, AttributeError) as e:
+            raise ProtocolSerializerError(
+                f"Invalid type when serializing {shape.name}: '{xmlnode}' cannot be parsed to {shape.type_name}."
+            ) from e
 
     def _serialize_type_structure(
         self, xmlnode: ETree.Element, params: dict, shape: StructureShape, name: str
@@ -603,7 +752,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         response.headers["Content-Type"] = "text/xml"
         return response
 
-    def _xml_to_string(self, root: Optional[ETree.ElementTree]) -> Optional[str]:
+    def _xml_to_string(self, root: Optional[ETree.Element]) -> Optional[str]:
         """Generates the string representation of the given XML element."""
         if root is not None:
             return ETree.tostring(
@@ -665,20 +814,24 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
             # If it's streaming, then the body is just the value of the payload.
             body_payload = parameters.get(payload_member, b"")
             body_payload = self._encode_payload(body_payload)
-            response.data = body_payload
+            response.set_response(body_payload)
         elif payload_member is not None:
             # If there's a payload member, we serialized that member to the body.
             body_params = parameters.get(payload_member)
             if body_params is not None:
-                response.data = self._encode_payload(
-                    self._serialize_body_params(
-                        body_params, shape_members[payload_member], operation_model
+                response.set_response(
+                    self._encode_payload(
+                        self._serialize_body_params(
+                            body_params, shape_members[payload_member], operation_model
+                        )
                     )
                 )
         else:
             # Otherwise, we use the "traditional" way of serializing the whole parameters dict recursively.
-            response.data = self._encode_payload(
-                self._serialize_body_params(parameters, shape, operation_model)
+            response.set_response(
+                self._encode_payload(
+                    self._serialize_body_params(parameters, shape, operation_model)
+                )
             )
 
     def _serialize_content_type(self, serialized: HttpResponse, shape: Shape, shape_members: dict):
@@ -806,7 +959,7 @@ class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSeria
             self._add_error_tags(code, error, root, sender_fault)
             request_id = ETree.SubElement(root, "RequestId")
             request_id.text = gen_amzn_requestid_long()
-            response.data = self._encode_payload(self._xml_to_string(root))
+            response.set_response(self._encode_payload(self._xml_to_string(root)))
         else:
             super()._serialize_error(error, code, sender_fault, response, shape, operation_model)
 
@@ -839,8 +992,8 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
         :param operation_model: The specification of the operation of which the response is serialized here
         :return: None - the given `serialized` dict is modified
         """
-        response.data = self._encode_payload(
-            self._serialize_body_params(parameters, shape, operation_model)
+        response.set_response(
+            self._encode_payload(self._serialize_body_params(parameters, shape, operation_model))
         )
 
     def _serialize_body_params_to_xml(
@@ -913,7 +1066,7 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestID")
         request_id.text = gen_amzn_requestid_long()
-        response.data = self._encode_payload(self._xml_to_string(root))
+        response.set_response(self._encode_payload(self._xml_to_string(root)))
 
     def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
         # The EC2 protocol does not use the root output shape, therefore we need to remove the hierarchy level
@@ -969,7 +1122,7 @@ class JSONResponseSerializer(ResponseSerializer):
         json_version = operation_model.metadata.get("jsonVersion")
         if json_version is not None:
             response.headers["Content-Type"] = "application/x-amz-json-%s" % json_version
-        response.data = self._serialize_body_params(parameters, shape, operation_model)
+        response.set_response(self._serialize_body_params(parameters, shape, operation_model))
 
     def _serialize_body_params(
         self, params: dict, shape: Shape, operation_model: OperationModel
@@ -981,8 +1134,13 @@ class JSONResponseSerializer(ResponseSerializer):
 
     def _serialize(self, body: dict, value: Any, shape, key: Optional[str] = None):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
-        method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
-        method(body, value, shape, key)
+        try:
+            method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
+            method(body, value, shape, key)
+        except (TypeError, ValueError, AttributeError) as e:
+            raise ProtocolSerializerError(
+                f"Invalid type when serializing {shape.name}: '{value}' cannot be parsed to {shape.type_name}."
+            ) from e
 
     def _serialize_type_structure(self, body: dict, value: dict, shape: StructureShape, key: str):
         if value is None:

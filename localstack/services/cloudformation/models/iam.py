@@ -15,6 +15,7 @@ from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import ensure_list
+from localstack.utils.functions import call_safe
 
 LOG = logging.getLogger(__name__)
 
@@ -84,6 +85,14 @@ class IAMUser(GenericBaseModel):
             NewPath=props.get("NewPath") or "",
             NewUserName=props.get("NewUserName") or "",
         )
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource["Properties"].get("UserName")
+        if not role_name:
+            resource["Properties"]["UserName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():
@@ -163,9 +172,18 @@ class IAMRole(GenericBaseModel):
     def get_resource_name(self):
         return self.props.get("RoleName")
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        role_name = self.properties.get("RoleName")
+        if not role_name:
+            return role_name
+        if attribute == "Arn":
+            return aws_stack.role_arn(role_name)
+        return role_name
+
     def fetch_state(self, stack_name, resources):
         role_name = self.resolve_refs_recursively(stack_name, self.props.get("RoleName"), resources)
-        return aws_stack.connect_to_service("iam").get_role(RoleName=role_name)["Role"]
+        client = aws_stack.connect_to_service("iam")
+        return client.get_role(RoleName=role_name)["Role"]
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
@@ -173,30 +191,24 @@ class IAMRole(GenericBaseModel):
         _states = new_resource.get("_state_", None)
         client = aws_stack.connect_to_service("iam")
         if _states:
-            if props.get("RoleName") != _states.get("RoleName") or (
-                "AssumeRolePolicyDocument" in props
-                and props.get("AssumeRolePolicyDocument")
-                != _states.get("AssumeRolePolicyDocument", "")
-            ):
+            props_policy = props.get("AssumeRolePolicyDocument")
+            name_changed = props.get("RoleName") != _states.get("RoleName")
+            policy_changed = props_policy and props_policy != _states.get(
+                "AssumeRolePolicyDocument", ""
+            )
+            if name_changed or policy_changed:
+                resource_id = new_resource.get("LogicalResourceId")
                 dummy_resources = {
-                    new_resource.get("LogicalResourceId"): {
-                        "Properties": {
-                            "RoleName": _states.get("RoleName"),
-                        },
-                    }
+                    resource_id: {"Properties": {"RoleName": _states.get("RoleName")}}
                 }
-                self._pre_delete(
-                    new_resource.get("LogicalResourceId"), dummy_resources, None, None, None
-                )
+                self._pre_delete(resource_id, dummy_resources, None, None, None)
                 client.delete_role(RoleName=_states.get("RoleName"))
                 role = client.create_role(
                     RoleName=props.get("RoleName"),
-                    AssumeRolePolicyDocument=str(props.get("AssumeRolePolicyDocument")),
+                    AssumeRolePolicyDocument=str(props_policy),
                 )
-                self._post_create(
-                    new_resource.get("LogicalResourceId"), resources, None, None, None
-                )
-                return role
+                self._post_create(resource_id, resources, None, None, None)
+                return role["Role"]
 
         return client.update_role(
             RoleName=props.get("RoleName"), Description=props.get("Description") or ""
@@ -271,26 +283,34 @@ class IAMRole(GenericBaseModel):
         props = resource["Properties"]
         role_name = props["RoleName"]
 
-        # TODO: this should probably only remove the policies that are specified in the stack (verify with AWS)
-        # detach managed policies
-        for policy in iam_client.list_attached_role_policies(RoleName=role_name).get(
-            "AttachedPolicies", []
-        ):
-            iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
-        # delete inline policies
-        for inline_policy_name in iam_client.list_role_policies(RoleName=role_name).get(
-            "PolicyNames", []
-        ):
-            iam_client.delete_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
-
-        # TODO: potentially remove this when stack resource deletion order is fixed (check AWS behavior first)
-        # cleanup instance profile
         try:
+            # TODO: this should probably only remove the policies that are specified in the stack (verify with AWS)
+            # detach managed policies
+            for policy in iam_client.list_attached_role_policies(RoleName=role_name).get(
+                "AttachedPolicies", []
+            ):
+                call_safe(
+                    iam_client.detach_role_policy,
+                    kwargs={"RoleName": role_name, "PolicyArn": policy["PolicyArn"]},
+                )
+
+            # delete inline policies
+            for inline_policy_name in iam_client.list_role_policies(RoleName=role_name).get(
+                "PolicyNames", []
+            ):
+                call_safe(
+                    iam_client.delete_role_policy,
+                    kwargs={"RoleName": role_name, "PolicyName": inline_policy_name},
+                )
+
+            # TODO: potentially remove this when stack resource deletion order is fixed (check AWS behavior first)
+            # cleanup instance profile
             rs = iam_client.list_instance_profiles_for_role(RoleName=role_name)
             for instance_profile in rs["InstanceProfiles"]:
                 ip_name = instance_profile["InstanceProfileName"]
-                iam_client.remove_role_from_instance_profile(
-                    InstanceProfileName=ip_name, RoleName=role_name
+                call_safe(
+                    iam_client.remove_role_from_instance_profile,
+                    kwargs={"InstanceProfileName": ip_name, "RoleName": role_name},
                 )
         except Exception as e:
             if "NoSuchEntity" not in str(e):
@@ -298,7 +318,6 @@ class IAMRole(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-
         return {
             "create": [
                 {

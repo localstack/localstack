@@ -1,8 +1,12 @@
+import json
+from typing import Callable
+
 from moto.ec2.utils import generate_route_id
 
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
+from localstack.utils.strings import str_to_bool
 
 
 class EC2RouteTable(GenericBaseModel):
@@ -34,9 +38,7 @@ class EC2RouteTable(GenericBaseModel):
                 "function": "create_route_table",
                 "parameters": {
                     "VpcId": "VpcId",
-                    "TagSpecifications": lambda params, **kwargs: [
-                        {"ResourceType": "route-table", "Tags": params.get("Tags")}
-                    ],
+                    "TagSpecifications": get_tags_param("route-table"),
                 },
             },
             "delete": {
@@ -86,19 +88,11 @@ class EC2Route(GenericBaseModel):
         return {
             "create": {
                 "function": "create_route",
-                "parameters": {
-                    "DestinationCidrBlock": "DestinationCidrBlock",
-                    "DestinationIpv6CidrBlock": "DestinationIpv6CidrBlock",
-                    "RouteTableId": "RouteTableId",
-                },
+                "parameters": ["DestinationCidrBlock", "DestinationIpv6CidrBlock", "RouteTableId"],
             },
             "delete": {
                 "function": "delete_route",
-                "parameters": {
-                    "DestinationCidrBlock": "DestinationCidrBlock",
-                    "DestinationIpv6CidrBlock": "DestinationIpv6CidrBlock",
-                    "RouteTableId": "RouteTableId",
-                },
+                "parameters": ["DestinationCidrBlock", "DestinationIpv6CidrBlock", "RouteTableId"],
             },
         }
 
@@ -120,17 +114,10 @@ class EC2InternetGateway(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def _create_params(params, **kwargs):
-            return {
-                "TagSpecifications": [
-                    {"ResourceType": "internet-gateway", "Tags": params.get("Tags", [])}
-                ]
-            }
-
         return {
             "create": {
                 "function": "create_internet_gateway",
-                "parameters": _create_params,
+                "parameters": {"TagSpecifications": get_tags_param("internet-gateway")},
             }
         }
 
@@ -293,20 +280,59 @@ class EC2Subnet(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("SubnetId")
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
+        def _post_create(resource_id, resources, resource_type, func, stack_name):
+            client = aws_stack.connect_to_service("ec2")
+            resource = cls(resources[resource_id])
+            props = resource.props
+
+            bool_attrs = [
+                "AssignIpv6AddressOnCreation",
+                "EnableDns64",
+                "MapPublicIpOnLaunch",
+            ]
+            custom_attrs = bool_attrs + ["PrivateDnsNameOptionsOnLaunch"]
+            if not any(attr in props for attr in custom_attrs):
+                return
+
+            state = resource.fetch_state(stack_name, resources)
+            subnet_id = state.get("SubnetId")
+
+            # update boolean attributes
+            for attr in bool_attrs:
+                if attr in props:
+                    kwargs = {attr: {"Value": str_to_bool(props[attr])}}
+                    client.modify_subnet_attribute(SubnetId=subnet_id, **kwargs)
+
+            # determine DNS hostname type on launch
+            dns_options = props.get("PrivateDnsNameOptionsOnLaunch")
+            if dns_options:
+                if isinstance(dns_options, str):
+                    dns_options = json.loads(dns_options)
+                if dns_options.get("HostnameType"):
+                    client.modify_subnet_attribute(
+                        SubnetId=subnet_id,
+                        PrivateDnsHostnameTypeOnLaunch=dns_options.get("HostnameType"),
+                    )
+
         return {
-            "create": {
-                "function": "create_subnet",
-                "parameters": {
-                    "VpcId": "VpcId",
-                    "CidrBlock": "CidrBlock",
-                    "OutpostArn": "OutpostArn",
-                    "Ipv6CidrBlock": "Ipv6CidrBlock",
-                    "AvailabilityZone": "AvailabilityZone"
-                    # TODO: add TagSpecifications
+            "create": [
+                {
+                    "function": "create_subnet",
+                    "parameters": [
+                        "AvailabilityZone",
+                        "AvailabilityZoneId",
+                        "CidrBlock",
+                        "Ipv6CidrBlock",
+                        "Ipv6Native",
+                        "OutpostArn",
+                        {"TagSpecifications": get_tags_param("subnet")},
+                        "VpcId",
+                    ],
                 },
-            },
+                {"function": _post_create},
+            ],
             "delete": {
                 "function": "delete_subnet",
                 "parameters": {"SubnetId": "PhysicalResourceId"},
@@ -355,7 +381,7 @@ class EC2VPC(GenericBaseModel):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        def _pre_delete(resource_id, resources, *args, **kwargs):
             res = cls(resources[resource_id])
             vpc_id = res.state.get("VpcId")
             if vpc_id:
@@ -381,8 +407,8 @@ class EC2VPC(GenericBaseModel):
                 "function": "create_vpc",
                 "parameters": {
                     "CidrBlock": "CidrBlock",
-                    "InstanceTenancy": "InstanceTenancy"
-                    # TODO: add TagSpecifications
+                    "InstanceTenancy": "InstanceTenancy",
+                    "TagSpecifications": get_tags_param("vpc"),
                 },
             },
             "delete": [
@@ -426,8 +452,8 @@ class EC2NatGateway(GenericBaseModel):
                 "function": "create_nat_gateway",
                 "parameters": {
                     "SubnetId": "SubnetId",
-                    "AllocationId": "AllocationId"
-                    # TODO: add TagSpecifications
+                    "AllocationId": "AllocationId",
+                    "TagSpecifications": get_tags_param("natgateway"),
                 },
             },
             "delete": {
@@ -514,3 +540,16 @@ class EC2Instance(GenericBaseModel):
                 },
             },
         }
+
+
+def get_tags_param(resource_type: str) -> Callable:
+    """Return a tag parameters creation function for the given resource type"""
+
+    def _param(params, **kwargs):
+        tags = params.get("Tags")
+        if not tags:
+            return None
+
+        return [{"ResourceType": resource_type, "Tags": tags}]
+
+    return _param

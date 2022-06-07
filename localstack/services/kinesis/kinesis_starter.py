@@ -3,7 +3,7 @@ from typing import Optional
 
 from localstack import config
 from localstack.services.infra import log_startup_message, start_proxy_for_service
-from localstack.services.kinesis import kinesalite_server, kinesis_listener, kinesis_mock_server
+from localstack.services.kinesis import kinesalite_server, kinesis_mock_server
 from localstack.utils.aws import aws_stack
 from localstack.utils.serving import Server
 
@@ -11,11 +11,14 @@ LOG = logging.getLogger(__name__)
 _server: Optional[Server] = None  # server singleton
 
 
-def start_kinesis(port=None, update_listener=None, asynchronous=None) -> Server:
+def start_kinesis(
+    port=None, update_listener=None, asynchronous=None, persist_path: Optional[str] = None
+) -> Server:
     """
     Creates a singleton of a Kinesis server and starts it on a new thread. Uses either Kinesis Mock or Kinesalite
     based on value of config.KINESIS_PROVIDER
 
+    :param persist_path: path to persist data to
     :param port: port to run server on. Selects an arbitrary available port if None.
     :param update_listener: an update listener instance for server proxy
     :param asynchronous: currently unused but required by localstack.services.plugins.Service.start().
@@ -26,9 +29,9 @@ def start_kinesis(port=None, update_listener=None, asynchronous=None) -> Server:
     global _server
     if not _server:
         if config.KINESIS_PROVIDER == "kinesis-mock":
-            _server = kinesis_mock_server.create_kinesis_mock_server()
+            _server = kinesis_mock_server.create_kinesis_mock_server(persist_path=persist_path)
         elif config.KINESIS_PROVIDER == "kinesalite":
-            _server = kinesalite_server.create_kinesalite_server()
+            _server = kinesalite_server.create_kinesalite_server(persist_path=persist_path)
         else:
             raise ValueError('Unsupported Kinesis provider "%s"' % config.KINESIS_PROVIDER)
 
@@ -63,25 +66,13 @@ def check_kinesis(expect_shutdown=False, print_error=False):
         assert out is not None and isinstance(out.get("StreamNames"), list)
 
 
-def kinesis_running() -> bool:
+def is_kinesis_running() -> bool:
     """
     Checks if there is a currently running Kinesis server instance.
-    Currently used by localstack_ext/utils/cloud_pods.py
+    Currently, used by localstack_ext/utils/cloud_pods.py
     :returns: True is there is a running Kinesis server instance, False otherwise
-    TODO: rename this function to is_kinesis_running() for clarity
     """
     global _server
     if _server is None:
         return False
     return _server.is_running()
-
-
-def restart_kinesis():
-    global _server
-    if _server:
-        _server.shutdown()
-        _server.join(timeout=10)
-        _server = None
-
-    LOG.debug("Restarting Kinesis process ...")
-    start_kinesis(update_listener=kinesis_listener.UPDATE_KINESIS)

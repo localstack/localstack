@@ -1,0 +1,11 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  EventRuleName:
+    Type: String
+Resources:
+  TestRule99A50909:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: 
+        Ref: EventRuleName
+      ScheduleExpression: 'cron(0 1 * * * *)'

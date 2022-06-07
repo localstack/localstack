@@ -37,26 +37,6 @@ class TestMultiRegion(unittest.TestCase):
         self.assertEqual(len(result2), len_2 + 1)
         self.assertIn(REGION2, result2[0]["TopicArn"])
 
-    def test_multi_region_sqs(self):
-        sqs_1 = aws_stack.create_external_boto_client("sqs", region_name=REGION1)
-        sqs_2 = aws_stack.create_external_boto_client("sqs", region_name=REGION2)
-        len_1 = len(sqs_1.list_queues().get("QueueUrls", []))
-        len_2 = len(sqs_2.list_queues().get("QueueUrls", []))
-
-        queue_name1 = "q-%s" % short_uid()
-        sqs_1.create_queue(QueueName=queue_name1)
-        result1 = sqs_1.list_queues().get("QueueUrls", [])
-        self.assertEqual(len(result1), len_1 + 1)
-        self.assertEqual(len(sqs_2.list_queues().get("QueueUrls", [])), len_2)
-        self.assertNotIn(REGION1, result1[0])
-
-        queue_name2 = "q-%s" % short_uid()
-        sqs_2.create_queue(QueueName=queue_name2)
-        result2 = sqs_2.list_queues().get("QueueUrls", [])
-        self.assertEqual(len(result2), len_2 + 1)
-        self.assertEqual(len(sqs_1.list_queues().get("QueueUrls", [])), len_1 + 1)
-        self.assertNotIn(REGION2, result2[0])
-
     def test_multi_region_api_gateway(self):
         gw_1 = aws_stack.create_external_boto_client("apigateway", region_name=REGION1)
         gw_2 = aws_stack.create_external_boto_client("apigateway", region_name=REGION2)

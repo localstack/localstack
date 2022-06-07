@@ -1,7 +1,7 @@
 ARG IMAGE_TYPE=full
 
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM python:3.10.4-slim-buster@sha256:1678c209d02e5c0b29a2bf14cbc9d676264540a5caa4ef00f47174e71131239f as java-builder
+FROM python:3.10.4-slim-buster@sha256:b59fd1a008ab77d90dca9dffeab9fdcc55475ee78ffa5de3a0097d33936583da as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -34,7 +34,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java, maven,...)
-FROM python:3.10.4-slim-buster@sha256:1678c209d02e5c0b29a2bf14cbc9d676264540a5caa4ef00f47174e71131239f as base
+FROM python:3.10.4-slim-buster@sha256:b59fd1a008ab77d90dca9dffeab9fdcc55475ee78ffa5de3a0097d33936583da as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -92,7 +92,7 @@ WORKDIR /opt/code/localstack/
 
 # install npm dependencies
 ADD localstack/package.json localstack/package.json
-RUN cd localstack && npm install && rm -rf /root/.npm;
+RUN cd localstack && npm install -g npm && npm install && rm -rf /root/.npm;
 
 # install basic (global) tools to final image
 RUN pip install --no-cache-dir --upgrade supervisor virtualenv
@@ -100,6 +100,9 @@ RUN pip install --no-cache-dir --upgrade supervisor virtualenv
 # install supervisor config file and entrypoint script
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
+# add the shipped hosts file to prevent performance degredation in windows container mode on windows
+# (where hosts file is not mounted) See https://github.com/localstack/localstack/issues/5178
+ADD bin/hosts /etc/hosts
 
 # expose default environment
 # Set edge bind host so localstack can be reached by other containers
@@ -239,9 +242,12 @@ ADD localstack/ localstack/
 #       modify only folders outside of the localstack package folder, and executed in the builder stage.
 RUN make init
 
-# Install the latest version of localstack-ext and generate the plugin entrypoints
-RUN (virtualenv .venv && source .venv/bin/activate && \
-      pip3 install --upgrade localstack-ext plux)
+# Install the latest version of localstack-ext and generate the plugin entrypoints.
+# If this is a pre-release build, also include dev releases of these packages.
+ARG LOCALSTACK_PRE_RELEASE=1
+RUN (PIP_ARGS=$([[ "$LOCALSTACK_PRE_RELEASE" == "1" ]] && echo "--pre" || true); \
+      virtualenv .venv && source .venv/bin/activate && \
+      pip3 install --upgrade ${PIP_ARGS} localstack-ext plux)
 RUN make entrypoints
 
 # Add the build date and git hash at last (changes everytime)

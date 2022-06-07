@@ -11,7 +11,7 @@ from typing import Dict, List, Union
 import boto3
 from localstack_client.config import get_service_port
 from moto.core import BaseModel
-from moto.core.models import InstanceTrackerMeta
+from moto.core.base_backend import InstanceTrackerMeta
 
 from localstack import config, constants
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
@@ -22,13 +22,8 @@ from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_f
 from localstack.utils import analytics, config_listener, persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.request_context import patch_moto_request_handling
-from localstack.utils.bootstrap import (
-    canonicalize_api_names,
-    get_main_container_id,
-    in_ci,
-    log_duration,
-    setup_logging,
-)
+from localstack.utils.bootstrap import canonicalize_api_names, in_ci, log_duration, setup_logging
+from localstack.utils.container_networking import get_main_container_id
 from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import get_free_tcp_port, is_port_open
 from localstack.utils.patch import patch
@@ -180,10 +175,12 @@ class MotoServerProperties:
 
 
 def start_proxy_for_service(
-    service_name, port, backend_port, update_listener, quiet=False, params=None
+    service_name,
+    port,
+    backend_port,
+    update_listener,
+    quiet=False,
 ):
-    if params is None:
-        params = {}
     # TODO: remove special switch for Elasticsearch (see also note in service_port(...) in config.py)
     if config.FORWARD_EDGE_INMEM and service_name != "elasticsearch":
         if backend_port:
@@ -201,7 +198,6 @@ def start_proxy_for_service(
         backend_url=backend_url,
         update_listener=update_listener,
         quiet=quiet,
-        params=params,
     )
 
 
@@ -210,18 +206,15 @@ def start_proxy(
     backend_url: str = None,
     update_listener=None,
     quiet: bool = False,
-    params: Dict = None,
     use_ssl: bool = None,
 ):
     use_ssl = config.USE_SSL if use_ssl is None else use_ssl
-    params = {} if params is None else params
     proxy_thread = start_proxy_server(
         port=port,
         forward_url=backend_url,
         use_ssl=use_ssl,
         update_listener=update_listener,
         quiet=quiet,
-        params=params,
         check_port=False,
     )
     return proxy_thread
