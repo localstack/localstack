@@ -1,4 +1,5 @@
 from localstack.aws.api.opensearch import (
+    CreateDomainRequest,
     OpenSearchPartitionInstanceType,
     OpenSearchWarmPartitionInstanceType,
 )
@@ -40,19 +41,11 @@ class OpenSearchDomain(GenericBaseModel):
     @staticmethod
     def get_deploy_templates():
         def _create_params(params, **kwargs):
+            # Tags handled outside of creation
             attributes = [
-                "AccessPolicies",
-                "AdvancedOptions",
-                "CognitoOptions",
-                "DomainName",
-                "EBSOptions",
-                "ClusterConfig",
-                "EngineVersion",
-                "EncryptionAtRestOptions",
-                "LogPublishingOptions",
-                "NodeToNodeEncryptionOptions",
-                "SnapshotOptions",
-                "VPCOptions",
+                attribute
+                for attribute in CreateDomainRequest.__annotations__.keys()
+                if "Tag" not in attribute
             ]
             result = select_attributes(params, attributes)
             result = remove_none_values(result)
