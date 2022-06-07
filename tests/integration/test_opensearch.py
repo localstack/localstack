@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import threading
 
 import botocore.exceptions
@@ -396,6 +397,20 @@ class TestOpensearchProvider:
         assert int(parts[1]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )
+
+    # testing CloudFormation deployment here to make sure OpenSearch is installed
+    def test_cloudformation_deployment(self, deploy_cfn_template, opensearch_client):
+        domain_name = f"domain-{short_uid()}"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "templates/opensearch_domain.yaml"
+            ),
+            parameters={"OpenSearchDomainName": domain_name},
+        )
+
+        response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+        domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+        assert domain_name in domain_names
 
 
 @pytest.mark.skip_offline
