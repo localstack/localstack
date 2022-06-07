@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import unquote, urlencode, urlsplit
 
 import pytest
 from botocore.awsrequest import prepare_request_dict
@@ -317,7 +317,7 @@ def _botocore_parser_integration_test(
     parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method") or "GET",
-            path=path,
+            path=unquote(path),
             query_string=to_str(query_string),
             headers=headers,
             body=body,
@@ -881,6 +881,15 @@ def test_rest_url_parameter_with_dashes():
         service="apigatewayv2",
         action="GetTags",
         ResourceArn="arn:aws:apigatewayv2:us-east-1:000000000000:foobar",
+    )
+
+
+def test_rest_url_parameter_with_slashes():
+    """Test if the parsing works for requests with (encoded) slashes in a parameter."""
+    _botocore_parser_integration_test(
+        service="backup",
+        action="ListRecoveryPointsByResource",
+        ResourceArn="arn:aws:dynamodb:us-east-1:000000000000:table/table-104f455b",
     )
 
 

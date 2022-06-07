@@ -9,6 +9,7 @@ from werkzeug.exceptions import MethodNotAllowed, NotFound
 from werkzeug.routing import Map, MapAdapter, PathConverter, Rule
 
 from localstack.http import Request
+from localstack.http.request import get_raw_path
 
 
 class GreedyPathConverter(PathConverter):
@@ -283,7 +284,7 @@ class RestServiceOperationRouter:
             # specified. the specs do _not_ contain any operations on OPTIONS methods at all.
             # avoid matching issues for preflight requests by matching against a similar GET request instead.
             method = request.method if request.method != "OPTIONS" else "GET"
-            rule, args = matcher.match(request.path, method=method, return_rule=True)
+            rule, args = matcher.match(get_raw_path(request), method=method, return_rule=True)
         except MethodNotAllowed as e:
             # MethodNotAllowed (405) exception is raised if a path is matching, but the method does not.
             # Our router handles this as a 404.
