@@ -6,7 +6,7 @@ import socket
 import subprocess
 import tempfile
 import time
-from typing import Any, Dict, List, Literal, Mapping, Tuple
+from typing import Any, Dict, List, Mapping, Tuple
 
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
@@ -509,9 +509,7 @@ SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
 
 # Strategy used when creating SQS queue urls. can be "off", "domain", or "path"
-SQS_ENDPOINT_STRATEGY: Literal["off", "domain", "path"] = (
-    os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
-)
+SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
 
 # host under which the LocalStack services are available from Lambda Docker containers
 HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
