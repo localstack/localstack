@@ -141,21 +141,24 @@ def test_parameter_usepreviousvalue_behavior(cfn_client, cleanups):
     assert len(stack_describe_response["Outputs"]) == 2
 
 
+@pytest.mark.aws_validated
 def test_stack_time_attributes(cfn_client, deploy_cfn_template):
-    bucket_name = "test"
+    api_name = f"test_{short_uid()}"
+    template_path = os.path.join(os.path.dirname(__file__), "../templates/simple_api.yaml")
+
     deployed = deploy_cfn_template(
-        template_path=os.path.join(os.path.dirname(__file__), "../templates/template5.yaml"),
-        parameters={"LocalParam": bucket_name},
+        template_path=template_path,
+        parameters={"ApiName": api_name},
     )
     stack_name = deployed.stack_name
-    stack_id = deployed.stack_id
-
     assert "CreationTime" in cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]
 
+    api_name = f"test_{short_uid()}"
+    stack_id = deployed.stack_id
     cfn_client.update_stack(
         StackName=stack_name,
-        TemplateBody=load_template_raw("template5.yaml"),
-        Parameters=[{"ParameterKey": "CustomTag", "ParameterValue": bucket_name}],
+        TemplateBody=load_template_file(template_path),
+        Parameters=[{"ParameterKey": "ApiName", "ParameterValue": api_name}],
     )
 
     def wait_stack_done():
