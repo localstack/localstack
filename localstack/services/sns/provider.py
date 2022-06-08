@@ -466,10 +466,13 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 external_url = external_service_url("sns")
                 token = short_uid()
                 message_id = long_uid()
-                subscription_url = "%s/?Action=ConfirmSubscription&SubscriptionArn=%s&Token=%s" % (
-                    external_url,
-                    target_subscription_arn,
-                    token,
+                # subscription_url = "%s/?Action=ConfirmSubscription&SubscriptionArn=%s&Token=%s" % (
+                #     external_url,
+                #     target_subscription_arn,
+                #     token,
+                # )
+                subscription_url = create_subscribe_url(
+                    external_url, target_subscription_arn, token
                 )
                 message = {
                     "Type": ["UnsubscribeConfirmation"],
@@ -629,21 +632,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if protocol in ["http", "https"]:
             token = short_uid()
             external_url = external_service_url("sns")
-            subscription["UnsubscribeURL"] = "%s/?Action=Unsubscribe&SubscriptionArn=%s" % (
-                external_url,
-                subscription_arn,
-            )
+            subscription["UnsubscribeURL"] = create_unsubscribe_url(external_url, subscription_arn)
             confirmation = {
                 "Type": ["SubscriptionConfirmation"],
                 "Token": [token],
                 "Message": [
-                    ("You have chosen to subscribe to the topic %s.\n" % topic_arn)
+                    f"You have chosen to subscribe to the topic {topic_arn}.\n"
                     + "To confirm the subscription, visit the SubscribeURL included in this message."
                 ],
-                "SubscribeURL": [
-                    "%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s"
-                    % (external_url, topic_arn, token)
-                ],
+                "SubscribeURL": [create_subscribe_url(external_url, topic_arn, token)],
             }
             publish_message(topic_arn, confirmation, {}, subscription_arn, skip_checks=True)
         elif protocol == "sqs":
@@ -852,10 +849,7 @@ async def message_to_subscriber(
     elif subscriber["Protocol"] == "lambda":
         try:
             external_url = external_service_url("sns")
-            unsubscribe_url = "%s/?Action=Unsubscribe&SubscriptionArn=%s" % (
-                external_url,
-                subscriber["SubscriptionArn"],
-            )
+            unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
             response = lambda_api.process_sns_notification(
                 subscriber["Endpoint"],
                 topic_arn,
@@ -1005,9 +999,7 @@ def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
         return message
 
     external_url = external_service_url("sns")
-    unsubscribe_url = (
-        f"{external_url}/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}"
-    )
+    unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
 
     data = {
         "Type": req_data.get("Type", ["Notification"])[0],
@@ -1089,6 +1081,14 @@ def prepare_message_attributes(message_attributes):
             else attr["Value"]["BinaryValue"],
         }
     return attributes
+
+
+def create_subscribe_url(external_url, topic_arn, token):
+    return f"{external_url}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}&Version={SnsApi.version}"
+
+
+def create_unsubscribe_url(external_url, subscription_arn):
+    return f"{external_url}/?Action=Unsubscribe&SubscriptionArn={subscription_arn}&Version={SnsApi.version}"
 
 
 def is_number(x):

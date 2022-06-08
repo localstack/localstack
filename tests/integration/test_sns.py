@@ -13,7 +13,7 @@ from localstack import config
 from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.install import SQS_BACKEND_IMPL
-from localstack.services.sns.provider import SNSBackend
+from localstack.services.sns.provider import SNSBackend, SnsProvider
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
@@ -141,7 +141,8 @@ class TestSNSProvider:
         token = payload["Token"]
         subscribe_url = payload["SubscribeURL"]
         assert subscribe_url == (
-            f"{external_service_url('sns')}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
+            f"{external_service_url('sns')}/?"
+            f"Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}&Version={SnsProvider.version}"
         )
 
         confirm_subscribe_request = requests.get(subscribe_url)
