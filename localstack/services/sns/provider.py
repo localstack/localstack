@@ -466,11 +466,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 external_url = external_service_url("sns")
                 token = short_uid()
                 message_id = long_uid()
-                # subscription_url = "%s/?Action=ConfirmSubscription&SubscriptionArn=%s&Token=%s" % (
-                #     external_url,
-                #     target_subscription_arn,
-                #     token,
-                # )
                 subscription_url = create_subscribe_url(
                     external_url, target_subscription_arn, token
                 )
