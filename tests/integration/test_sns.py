@@ -144,6 +144,9 @@ class TestSNSProvider:
             f"{external_service_url('sns')}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
         )
 
+        confirm_subscribe_request = requests.get(subscribe_url)
+        assert "<ConfirmSubscriptionResult />" in confirm_subscribe_request.text
+
     def test_subscribe_with_invalid_protocol(self, sns_client, sns_create_topic, sns_subscription):
         topic_arn = sns_create_topic()["TopicArn"]
 
