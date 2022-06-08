@@ -691,10 +691,18 @@ class TestEvents:
                     auth.get("key"): auth.get("parameters"),
                     "InvocationHttpParameters": {
                         "BodyParameters": [
-                            {"Key": "key", "Value": "value", "IsValueSecret": False},
+                            {
+                                "Key": "connection_body_param",
+                                "Value": "value",
+                                "IsValueSecret": False,
+                            },
                         ],
                         "HeaderParameters": [
-                            {"Key": "key", "Value": "value", "IsValueSecret": False},
+                            {
+                                "Key": "connection_header_param",
+                                "Value": "value",
+                                "IsValueSecret": False,
+                            },
                             {
                                 "Key": "overwritten_header",
                                 "Value": "original",
@@ -702,7 +710,11 @@ class TestEvents:
                             },
                         ],
                         "QueryStringParameters": [
-                            {"Key": "key", "Value": "value", "IsValueSecret": False},
+                            {
+                                "Key": "connection_query_param",
+                                "Value": "value",
+                                "IsValueSecret": False,
+                            },
                             {
                                 "Key": "overwritten_query",
                                 "Value": "original",
@@ -767,22 +779,30 @@ class TestEvents:
         user_pass = to_str(base64.b64encode(b"user:pass"))
 
         def check():
-            assert data_received.get("key") == "value"
-            assert data_received.get("target_value") == "value"
-            assert "/target_path" in paths_list
+            # Connection data validation
+            assert data_received.get("connection_body_param") == "value"
+            assert headers_received.get("Connection_Header_Param") == "value"
+            assert query_params_received.get("connection_query_param") == "value"
 
+            # Auth validation
+            assert headers_received.get("Api") == "apikey_secret"
+            assert headers_received.get("Authorization") == f"Basic {user_pass}"
+            assert headers_received.get("Oauth_token") == bearer
+
+            # Oauth login validation
             assert oauth_data.get("client_id") == "id"
             assert oauth_data.get("client_secret") == "password"
             assert oauth_data.get("header_value") == "value2"
             assert oauth_data.get("body_value") == "value1"
             assert "oauthquery=value3" in oauth_data.get("path")
 
-            assert headers_received.get("Api") == "apikey_secret"
-            assert headers_received.get("Authorization") == f"Basic {user_pass}"
-            assert headers_received.get("Oauth_token") == bearer
+            # Target parameters validation
+            assert "/target_path" in paths_list
+            assert data_received.get("target_value") == "value"
             assert headers_received.get("Target_Header") == "target_header_value"
+            assert query_params_received.get("target_query") == "t_query"
 
-            # overwrite test
+            # connection/target overwrite test
             assert headers_received.get("Overwritten_Header") == "original"
             assert query_params_received.get("overwritten_query") == "original"
 
