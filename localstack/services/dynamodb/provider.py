@@ -209,9 +209,8 @@ class EventForwarder:
                 continue
             if "SequenceNumber" not in ddb_record:
                 ddb_record["SequenceNumber"] = str(
-                    dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER
+                    dynamodbstreams_api.DynamoDBStreamsBackend.get_and_increment_sequence_number_counter()
                 )
-                dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER += 1
             # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
             if stream_type == "KEYS_ONLY":
                 ddb_record.pop("OldImage", None)

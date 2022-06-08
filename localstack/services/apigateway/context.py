@@ -58,6 +58,9 @@ class ApiInvocationContext:
 
     stage_variables: Dict
 
+    # websockets route selection
+    ws_route: str
+
     def __init__(
         self,
         method,

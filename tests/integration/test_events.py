@@ -27,6 +27,7 @@ from localstack.utils.common import (
     to_str,
     wait_for_port_open,
 )
+from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
@@ -60,7 +61,7 @@ class TestEvents:
             assert field in event
 
     def test_put_rule(self, events_client):
-        rule_name = "rule-{}".format(short_uid())
+        rule_name = f"rule-{short_uid()}"
 
         events_client.put_rule(Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN))
 
@@ -1276,6 +1277,77 @@ class TestEvents:
         # clean up
         self.cleanup(TEST_EVENT_BUS_NAME, rule_name, target_id, queue_url=queue_url)
 
+    @pytest.mark.parametrize(
+        "schedule_expression", ["rate(1 minute)", "rate(1 day)", "rate(1 hour)"]
+    )
+    @pytest.mark.aws_validated
+    def test_create_rule_with_one_unit_in_singular_should_succeed(
+        self, events_client, schedule_expression
+    ):
+        rule_name = f"rule-{short_uid()}"
+
+        # rule should be creatable with given expression
+        try:
+            events_client.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
+        finally:
+            self.cleanup(rule_name=rule_name, events_client=events_client)
+
+    @pytest.mark.parametrize(
+        "schedule_expression", ["rate(1 minutes)", "rate(1 days)", "rate(1 hours)"]
+    )
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail
+    def test_create_rule_with_one_unit_in_plural_should_fail(
+        self, events_client, schedule_expression
+    ):
+        rule_name = f"rule-{short_uid()}"
+
+        # rule should not be creatable with given expression
+        with pytest.raises(ClientError):
+            events_client.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail
+    def test_verify_rule_event_content(self, events_client, logs_client):
+        log_group_name = f"/aws/events/testLogGroup-{short_uid()}"
+        rule_name = f"rule-{short_uid()}"
+        target_id = f"testRuleId-{short_uid()}"
+
+        logs_client.create_log_group(logGroupName=log_group_name)
+        log_groups = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)
+        assert len(log_groups["logGroups"]) == 1
+        log_group = log_groups["logGroups"][0]
+        log_group_arn = log_group["arn"]
+
+        events_client.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
+        events_client.put_targets(Rule=rule_name, Targets=[{"Id": target_id, "Arn": log_group_arn}])
+
+        def ensure_log_stream_exists():
+            streams = logs_client.describe_log_streams(logGroupName=log_group_name)
+            return len(streams["logStreams"]) == 1
+
+        poll_condition(condition=ensure_log_stream_exists, timeout=65, interval=5)
+
+        log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
+        log_stream_name = log_streams["logStreams"][0]["logStreamName"]
+
+        log_content = logs_client.get_log_events(
+            logGroupName=log_group_name, logStreamName=log_stream_name
+        )
+        events = log_content["events"]
+        assert len(events) == 1
+        event = events[0]
+
+        self.assert_valid_event(event["message"])
+
+        self.cleanup(
+            rule_name=rule_name,
+            target_ids=target_id,
+            events_client=events_client,
+            logs_client=logs_client,
+            log_group_name=log_group_name,
+        )
+
     def _get_queue_arn(self, queue_url, sqs_client):
         queue_attrs = sqs_client.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
@@ -1290,6 +1362,8 @@ class TestEvents:
         queue_url=None,
         events_client=None,
         sqs_client=None,
+        log_group_name=None,
+        logs_client=None,
     ):
         events_client = events_client or aws_stack.create_external_boto_client("events")
         kwargs = {"EventBusName": bus_name} if bus_name else {}
@@ -1303,3 +1377,11 @@ class TestEvents:
         if queue_url:
             sqs_client = sqs_client or aws_stack.create_external_boto_client("sqs")
             sqs_client.delete_queue(QueueUrl=queue_url)
+        if log_group_name:
+            logs_client = logs_client or aws_stack.create_external_boto_client("logs")
+            log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)
+            for log_stream in log_streams["logStreams"]:
+                logs_client.delete_log_stream(
+                    logGroupName=log_group_name, logStreamName=log_stream["logStreamName"]
+                )
+            logs_client.delete_log_group(logGroupName=log_group_name)

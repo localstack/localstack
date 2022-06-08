@@ -1,6 +1,5 @@
 import json
 import os
-import re
 
 import jinja2
 import pytest
@@ -130,8 +129,10 @@ def test_policy_attachments(
 
 
 @pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(paths=["$..User.Tags"])
 def test_iam_username_defaultname(deploy_cfn_template, iam_client, snapshot):
-    snapshot.skip_key(re.compile("UserId"), "<user-id>")
+    snapshot.add_transformer(snapshot.transform.iam_api())
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
     template = json.dumps(
         {

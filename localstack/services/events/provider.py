@@ -67,6 +67,7 @@ class EventsProvider(EventsApi):
                 )
             for target in targets:
                 arn = target.get("Arn")
+                # TODO generate event matching aws in case no Input has been specified
                 event_str = target.get("Input") or "{}"
                 event = json.loads(event_str)
                 attr = aws_stack.get_events_target_attributes(target)
@@ -90,6 +91,7 @@ class EventsProvider(EventsApi):
         if re.match(rate_regex, schedule):
             rate = re.sub(rate_regex, r"\1", schedule)
             value, unit = re.split(r"\s+", rate.strip())
+            # TODO: when 1 is given as value, unit has to be singular, e.g., 1 minute/hour/day - aws throws 'Parameter ScheduleExpression is not valid' otherwise
             if "minute" in unit:
                 return "*/%s * * * *" % value
             if "hour" in unit:

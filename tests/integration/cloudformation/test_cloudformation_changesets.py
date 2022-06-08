@@ -73,7 +73,9 @@ def test_create_change_set_update_without_parameters(
     cleanup_changesets,
     is_change_set_created_and_available,
     is_change_set_finished,
+    snapshot,
 ):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
     """after creating a stack via a CREATE change set we send an UPDATE change set changing the SNS topic name"""
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
@@ -85,6 +87,7 @@ def test_create_change_set_update_without_parameters(
         TemplateBody=load_template_raw("sns_topic_simple.yaml"),
         ChangeSetType="CREATE",
     )
+    snapshot.match("create_change_set", response)
     change_set_id = response["Id"]
     stack_id = response["StackId"]
     assert change_set_id
@@ -103,7 +106,13 @@ def test_create_change_set_update_without_parameters(
             TemplateBody=template.replace("sns-topic-simple", "sns-topic-simple-2"),
             ChangeSetType="UPDATE",
         )
-        wait_until(is_change_set_created_and_available(update_response["Id"]))
+        assert wait_until(is_change_set_created_and_available(update_response["Id"]))
+        snapshot.match(
+            "describe_change_set",
+            cfn_client.describe_change_set(ChangeSetName=update_response["Id"]),
+        )
+        snapshot.match("list_change_set", cfn_client.list_change_sets(StackName=stack_name))
+
         describe_response = cfn_client.describe_change_set(ChangeSetName=update_response["Id"])
         changes = describe_response["Changes"]
         assert len(changes) == 1

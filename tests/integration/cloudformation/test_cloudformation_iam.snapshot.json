@@ -1,14 +1,20 @@
 {
   "tests/integration/cloudformation/test_cloudformation_iam.py::test_iam_username_defaultname": {
-    "get_iam_user": {
-      "User": {
-        "Path": "/",
-        "UserName": "<name>",
-        "UserId": "<user-id>",
-        "Arn": "<arn>",
-        "CreateDate": "<date>"
-      },
-      "ResponseMetadata": "<response-metadata>"
+    "recorded-date": "31-05-2022, 11:29:45",
+    "recorded-content": {
+      "get_iam_user": {
+        "User": {
+          "Path": "/",
+          "UserName": "<user-name:1>",
+          "UserId": "<user-id:1>",
+          "Arn": "arn:aws:iam::111111111111:user/<user-name:1>",
+          "CreateDate": "datetime"
+        },
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        }
+      }
     }
   }
 }

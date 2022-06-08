@@ -1,7 +1,7 @@
 ARG IMAGE_TYPE=full
 
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM python:3.10.4-slim-buster@sha256:7e650ceb3f81bf42a01cf1fadaee58692d8ee32ff54ad67bb09fbbbe31913e74 as java-builder
+FROM python:3.10.4-slim-buster@sha256:b59fd1a008ab77d90dca9dffeab9fdcc55475ee78ffa5de3a0097d33936583da as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -34,7 +34,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java, maven,...)
-FROM python:3.10.4-slim-buster@sha256:7e650ceb3f81bf42a01cf1fadaee58692d8ee32ff54ad67bb09fbbbe31913e74 as base
+FROM python:3.10.4-slim-buster@sha256:b59fd1a008ab77d90dca9dffeab9fdcc55475ee78ffa5de3a0097d33936583da as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -242,9 +242,12 @@ ADD localstack/ localstack/
 #       modify only folders outside of the localstack package folder, and executed in the builder stage.
 RUN make init
 
-# Install the latest version of localstack-ext and generate the plugin entrypoints
-RUN (virtualenv .venv && source .venv/bin/activate && \
-      pip3 install --upgrade localstack-ext plux)
+# Install the latest version of localstack-ext and generate the plugin entrypoints.
+# If this is a pre-release build, also include dev releases of these packages.
+ARG LOCALSTACK_PRE_RELEASE=1
+RUN (PIP_ARGS=$([[ "$LOCALSTACK_PRE_RELEASE" == "1" ]] && echo "--pre" || true); \
+      virtualenv .venv && source .venv/bin/activate && \
+      pip3 install --upgrade ${PIP_ARGS} localstack-ext plux)
 RUN make entrypoints
 
 # Add the build date and git hash at last (changes everytime)

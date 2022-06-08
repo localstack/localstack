@@ -8,6 +8,7 @@ __all__ = [
     "ec2",
     "ecr",
     "elasticsearch",
+    "opensearch",
     "events",
     "iam",
     "kinesis",

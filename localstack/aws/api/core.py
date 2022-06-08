@@ -1,11 +1,11 @@
 import functools
 import sys
-from typing import Any, Callable, NamedTuple, Optional, Type, Union
+from typing import Any, NamedTuple, Optional, Type, Union
 
 if sys.version_info >= (3, 8):
-    from typing import TypedDict
+    from typing import Protocol, TypedDict
 else:
-    from typing_extensions import TypedDict
+    from typing_extensions import Protocol, TypedDict
 
 from botocore.model import OperationModel, ServiceModel
 
@@ -58,12 +58,12 @@ class ServiceOperation(NamedTuple):
 
 
 class RequestContext:
-    service: ServiceModel
-    operation: OperationModel
-    region: str
-    account_id: str
-    request: HttpRequest
-    service_request: ServiceRequest
+    request: Optional[Request]
+    service: Optional[ServiceModel]
+    operation: Optional[OperationModel]
+    region: Optional[str]
+    account_id: Optional[str]
+    service_request: Optional[ServiceRequest]
 
     def __init__(self) -> None:
         super().__init__()
@@ -75,13 +75,17 @@ class RequestContext:
         self.service_request = None
 
     @property
-    def service_operation(self) -> ServiceOperation:
+    def service_operation(self) -> Optional[ServiceOperation]:
+        if not self.service or not self.operation:
+            return None
         return ServiceOperation(self.service.service_name, self.operation.name)
 
 
-ServiceRequestHandler = Callable[
-    [RequestContext, ServiceRequest], Optional[Union[ServiceResponse, HttpResponse]]
-]
+class ServiceRequestHandler(Protocol):
+    def __call__(
+        self, context: RequestContext, request: ServiceRequest
+    ) -> Optional[Union[ServiceResponse, Response]]:
+        raise NotImplementedError
 
 
 def handler(operation: str = None, context: bool = True, expand: bool = True):

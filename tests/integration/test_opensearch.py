@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import threading
 
 import botocore.exceptions
@@ -275,15 +276,27 @@ class TestOpensearchProvider:
         finally:
             opensearch_client.delete_domain(DomainName=domain_name)
 
+    @pytest.mark.aws_validated
+    def test_create_domain_with_invalid_name(self, opensearch_client):
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            opensearch_client.create_domain(
+                DomainName="123abc"
+            )  # domain needs to start with characters
+        assert e.value.response["Error"]["Code"] == "ValidationException"
+
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            opensearch_client.create_domain(DomainName="abc#")  # no special characters allowed
+        assert e.value.response["Error"]["Code"] == "ValidationException"
+
     def test_create_existing_domain_causes_exception(
         self, opensearch_client, opensearch_wait_for_cluster
     ):
         domain_name = f"opensearch-domain-{short_uid()}"
         try:
             opensearch_client.create_domain(DomainName=domain_name)
-            with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+            with pytest.raises(botocore.exceptions.ClientError) as e:
                 opensearch_client.create_domain(DomainName=domain_name)
-            assert exc_info.type.__name__ == "ResourceAlreadyExistsException"
+            assert e.value.response["Error"]["Code"] == "ResourceAlreadyExistsException"
             opensearch_wait_for_cluster(domain_name=domain_name)
         finally:
             opensearch_client.delete_domain(DomainName=domain_name)
@@ -384,6 +397,20 @@ class TestOpensearchProvider:
         assert int(parts[1]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )
+
+    # testing CloudFormation deployment here to make sure OpenSearch is installed
+    def test_cloudformation_deployment(self, deploy_cfn_template, opensearch_client):
+        domain_name = f"domain-{short_uid()}"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "templates/opensearch_domain.yaml"
+            ),
+            parameters={"OpenSearchDomainName": domain_name},
+        )
+
+        response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+        domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+        assert domain_name in domain_names
 
 
 @pytest.mark.skip_offline

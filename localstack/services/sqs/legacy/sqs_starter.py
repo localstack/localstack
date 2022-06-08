@@ -25,7 +25,6 @@ PORT_SQS_BACKEND = None
 # max heap size allocated for the Java process
 MAX_HEAP_SIZE = "256m"
 
-
 # server singleton
 _server: Optional[Server] = None
 

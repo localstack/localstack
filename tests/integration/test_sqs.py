@@ -490,7 +490,7 @@ class TestSqsProvider:
         assert "Messages" not in result
 
         # visibility timeout should have expired
-        result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=2)
+        result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
         assert "Messages" in result
         message_receipt_1 = result["Messages"][0]
 
@@ -1524,7 +1524,7 @@ class TestSqsProvider:
         )
 
     def test_inflight_message_requeue(self, sqs_client, sqs_create_queue):
-        visibility_timeout = 3 if os.environ.get("TEST_TARGET") == "AWS_CLOUD" else 2
+        visibility_timeout = 3
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(
             QueueName=queue_name
@@ -1908,7 +1908,7 @@ class TestSqsProvider:
         Receive message allows a list of filters to be passed with MessageAttributeNames. See:
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message
         """
-        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "")
+        snapshot.add_transformer(snapshot.transform.sqs_api())
 
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 
@@ -1965,9 +1965,11 @@ class TestSqsProvider:
         response = receive_message(["..foo"])
         assert snapshot.match("illegal_name_2", response)
 
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SenderId"])
     def test_receive_message_attribute_names_filters(self, sqs_client, sqs_create_queue, snapshot):
-        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "")
-        snapshot.skip_key(re.compile(r"^SenderId$"), "")
+        # TODO -> senderId in LS == account ID, but on AWS it looks quite different: [A-Z]{21}:<email>
+        # account id is replaced with higher priority
+        snapshot.add_transformer(snapshot.transform.sqs_api())
 
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 

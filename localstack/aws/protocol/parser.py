@@ -73,7 +73,6 @@ import re
 from abc import ABC
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
-from urllib.parse import urlsplit
 from xml.etree import ElementTree as ETree
 
 import cbor2
@@ -981,32 +980,77 @@ class EC2RequestParser(QueryRequestParser):
 
 
 class S3RequestParser(RestXMLRequestParser):
+    class VirtualHostRewriter:
+        """
+        Context Manager which rewrites the request object parameters such that - within the context - it looks like a
+        normal S3 request.
+        """
+
+        def __init__(self, request: HttpRequest):
+            self.request = request
+            self.old_host = None
+            self.old_path = None
+
+        def __enter__(self):
+            # only modify the request if it uses the virtual host addressing
+            if self._is_vhost_address(self.request):
+                # save the original path and host for restoring on context exit
+                self.old_path = self.request.path
+                self.old_host = self.request.host
+
+                # extract the bucket name from the host part of the request
+                bucket_name, new_host = self.old_host.split(".", maxsplit=1)
+
+                # split the url and put the bucket name at the front
+                path_parts = self.old_path.split("/")
+                path_parts = [bucket_name] + path_parts
+                path_parts = [part for part in path_parts if part]
+                new_path = "/" + "/".join(path_parts) or "/"
+
+                # set the new path and host
+                self._set_request_props(self.request, new_path, new_host)
+            return self.request
+
+        def __exit__(self, exc_type, exc_value, exc_traceback):
+            # reset the original request properties on exit of the context
+            if self.old_host or self.old_path:
+                self._set_request_props(self.request, self.old_path, self.old_host)
+
+        @staticmethod
+        def _set_request_props(request: HttpRequest, path: str, host: str):
+            """Sets the HTTP request's path and host and clears the cache in the request object."""
+            request.path = path
+            request.headers["Host"] = host
+
+            try:
+                # delete the werkzeug request property cache that depends on path, but make sure all of them are
+                # initialized first, otherwise `del` will raise a key error
+                request.host = None  # noqa
+                request.url = None  # noqa
+                request.base_url = None  # noqa
+                request.full_path = None  # noqa
+                request.host_url = None  # noqa
+                request.root_url = None  # noqa
+                del request.host  # noqa
+                del request.url  # noqa
+                del request.base_url  # noqa
+                del request.full_path  # noqa
+                del request.host_url  # noqa
+                del request.root_url  # noqa
+            except AttributeError:
+                pass
+
+        @staticmethod
+        def _is_vhost_address(request: HttpRequest) -> bool:
+            from localstack.services.s3.s3_utils import uses_host_addressing
+
+            return uses_host_addressing(request.headers)
+
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         """Handle virtual-host-addressing for S3."""
-        if self._is_vhost_address(request):
-            self._revert_virtual_host_style(request)
-
-        return super().parse(request)
-
-    def _is_vhost_address(self, request: HttpRequest) -> bool:
-        from localstack.services.s3.s3_utils import uses_host_addressing
-
-        return uses_host_addressing(request.headers)
-
-    def _revert_virtual_host_style(self, request: HttpRequest):
-        # extract the bucket name from the host part of the request
-        bucket_name = request.host.split(".")[0]
-        # split the url and put the bucket name at the front
-        parts = urlsplit(request.url)
-        path_parts = parts.path.split("/")
-        path_parts = [bucket_name] + path_parts
-        path_parts = [part for part in path_parts if part]
-        path = "/" + "/".join(path_parts) or "/"
-        # set the path with the bucket name in the front at the request
-        # TODO directly modifying the request can cause issues with our handler chain, instead clone the HTTP request
-        request.path = path
-        request.raw_path = path
+        with self.VirtualHostRewriter(request):
+            return super().parse(request)
 
 
 class SQSRequestParser(QueryRequestParser):
