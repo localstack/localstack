@@ -17,7 +17,6 @@ InvocationPayload = Union[Dict, str, bytes]
 class ApiGatewayVersion(Enum):
     V1 = "v1"
     V2 = "v2"
-    WS = "ws"
 
 
 class ApiInvocationContext:
