@@ -215,7 +215,11 @@ class SnapshotSession:
             tmp = sr(tmp)
 
         assert tmp
-        tmp = json.loads(tmp)
+        try:
+            tmp = json.loads(tmp)
+        except JSONDecodeError:
+            LOG.error(f"could not decode json-string:\n{tmp}")
+            return {}
 
         return tmp
 
