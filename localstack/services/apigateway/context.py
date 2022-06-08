@@ -89,6 +89,7 @@ class ApiInvocationContext:
         self.response_templates = {}
         self.stage_variables = {}
         self.path_params = {}
+        self.ws_route = None
 
     @property
     def resource_id(self) -> Optional[str]:
