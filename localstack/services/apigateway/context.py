@@ -17,6 +17,7 @@ InvocationPayload = Union[Dict, str, bytes]
 class ApiGatewayVersion(Enum):
     V1 = "v1"
     V2 = "v2"
+    WS = "ws"
 
 
 class ApiInvocationContext:
@@ -57,6 +58,9 @@ class ApiInvocationContext:
     response: Response
 
     stage_variables: Dict
+
+    # websockets route selection
+    ws_route: str
 
     def __init__(
         self,
