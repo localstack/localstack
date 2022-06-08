@@ -5,7 +5,7 @@ import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 from readerwriterlock import rwlock
@@ -153,6 +153,11 @@ class BackendStateLifecycle(abc.ABC):
     @abc.abstractmethod
     def on_after_reset(self):
         """Performed after the reset of a service"""
+        pass
+
+    @abc.abstractmethod
+    def get_backends(self) -> Dict[str, Any]:
+        """Returns the backends of a service"""
         pass
 
 
