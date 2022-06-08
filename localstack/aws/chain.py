@@ -138,3 +138,21 @@ class HandlerChain:
                     LOG.exception(msg)
                 else:
                     LOG.warning(msg + ": %s", nested)
+
+
+class CompositeHandler(Handler):
+    """
+    A handler that sequentially invokes a list of Handlers, forming a stripped-down version of a handler chain.
+    """
+
+    handlers: List[Handler]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.handlers = list()
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        for handler in self.handlers:
+            handler(chain, context, response)
+            if chain.stopped or chain.terminated:
+                return

@@ -36,6 +36,7 @@ class LocalstackAwsGateway(Gateway):
                 handlers.add_region_from_header,
                 handlers.add_default_account_id,
                 handlers.parse_service_request,
+                handlers.serve_custom_service_request_handlers,
                 load_service,  # once we have the service request we can make sure we load the service
                 self.service_request_router,  # once we know the service is loaded we can route the request
                 # if the chain is still running, set an empty response
