@@ -188,6 +188,7 @@ class TestCloudWatchLogs:
                     else None
                 ),
                 replacement="event_id",
+                replace_reference=False,
             ),
         )
 
