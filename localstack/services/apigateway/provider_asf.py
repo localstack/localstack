@@ -1,17 +1,15 @@
 """A version of the API Gateway provider that uses ASF constructs to dispatch user routes."""
-from collections import defaultdict
-from typing import Any, Dict, List
+import logging
+from typing import Any, Dict
 
 from requests.structures import CaseInsensitiveDict
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
-from werkzeug.routing import Rule
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.apigateway import (
     CreateRestApiRequest,
     RestApi,
-    String,
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
 )
@@ -27,6 +25,8 @@ from localstack.utils.aws.aws_responses import LambdaResponse
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import to_str
 
+LOG = logging.getLogger(__name__)
+
 
 def to_invocation_context(
     request: Request, url_params: Dict[str, Any] = None
@@ -38,14 +38,10 @@ def to_invocation_context(
     :param url_params: the parameters extracted from the URL matching rules
     :return: the ApiInvocationContext
     """
-    # FIXME: ApiInvocationContext should be refactored to use werkzeug request object correctly
     method = request.method
     path = request.full_path if request.query_string else request.path
     data = restore_payload(request)
     headers = Headers(request.headers)
-
-    if url_params is None:
-        url_params = {}
 
     # adjust the X-Forwarded-For header
     x_forwarded_for = headers.getlist("X-Forwarded-For")
@@ -58,120 +54,30 @@ def to_invocation_context(
         {k.title(): ", ".join(headers.getlist(k)) for k in headers.keys()}
     )
 
-    return ApiInvocationContext(
-        method,
-        path,
-        data,
-        headers,
-        stage=url_params.get("stage"),
-    )
-
-
-class ApigatewayRouter:
-    """
-    Simple implementation around a Router to manage dynamic restapi routes (routes added by a user through the
-    apigateway API).
-    """
-
-    router: Router[Handler]
-
-    def __init__(self, router: Router[Handler]):
-        self.router_rules: Dict[str, List[Rule]] = defaultdict(list)
-        self.router = router
-
-    def add_rest_api(self, rest_api: RestApi) -> None:
-        """
-        Adds a route for the given RestApi.
-        :param rest_api: the RestApi to add
-        """
-        # TODO: probably it is better to have a parameterized handler and only one rule, rather than creating a new
-        #  rule for every rest API. the more rules there are, the slower the routing will be. on the other hand,
-        #  regex matching could be just as slow. need to check!
-        api_id = rest_api["id"]
-
-        # add the canonical execute-api handler
-        self.router_rules[api_id].append(
-            self.router.add(
-                "/",
-                host=f"{api_id}.execute-api.<regex('.*'):server>",
-                endpoint=self._restapis_host_handler,
-            )
-        )
-        self.router_rules[api_id].append(
-            self.router.add(
-                "/<path:path>",
-                host=f"{api_id}.execute-api.<regex('.*'):server>",
-                endpoint=self._restapis_host_handler,
-            )
-        )
-
-        # add the localstack-specific _user_request_ handler
-        self.router_rules[api_id].append(
-            self.router.add(
-                f"/restapis/{api_id}/<stage>/_user_request_",
-                endpoint=self._restapis_user_request_handler,
-            )
-        )
-        self.router_rules[api_id].append(
-            self.router.add(
-                f"/restapis/{api_id}/<stage>/_user_request_/<path:path>",
-                endpoint=self._restapis_user_request_handler,
-            )
-        )
-
-    def remove_rest_api(self, rest_api_id: str) -> None:
-        """
-        Removes the given rest api.
-        :param rest_api_id: the rest api to remove
-        """
-        rules = self.router_rules.pop(rest_api_id, [])
-        for rule in rules:
-            self.router.remove_rule(rule)
-
-    def _invoke_rest_api(self, request: Request, url_params: Dict[str, Any]) -> Response:
-        invocation_context = to_invocation_context(request, url_params)
-
-        result = invoke_rest_api_from_request(invocation_context)
-        if result is not None:
-            if isinstance(result, LambdaResponse):
-                headers = Headers(dict(result.headers))
-                for k, values in result.multi_value_headers.items():
-                    for value in values:
-                        headers.add(k, value)
-            else:
-                headers = dict(result.headers)
-            return Response(
-                response=result.content,
-                status=result.status_code,
-                headers=headers,
-            )
-
-        raise NotFound()
-
-    def _restapis_user_request_handler(self, request: Request, **url_params):
-        return self._invoke_rest_api(request, url_params)
-
-    def _restapis_host_handler(self, request: Request, **url_params) -> Response:
-        return self._invoke_rest_api(request, url_params)
+    # FIXME: Use the already parsed url params instead of parsing them into the ApiInvocationContext part-by-part.
+    #   We already would have all params at hand to avoid _all_ the parsing, but the parsing
+    #   has side-effects (f.e. setting the region in a thread local)!
+    #   It would be best to use a small (immutable) context for the already parsed params and the Request object
+    #   and use it everywhere.
+    return ApiInvocationContext(method, path, data, headers, stage=url_params.get("stage"))
 
 
 class AsfApigatewayProvider(ApigatewayProvider):
-    """Modern ASF provider that uses an ApigatewayRouter to dispatch requests to user routes."""
+    """Modern ASF provider that uses the router handler to dispatch requests to user routes."""
 
-    router: ApigatewayRouter
+    router: Router[Handler]
 
-    def __init__(self, router: ApigatewayRouter = None):
-        self.router = router or ApigatewayRouter(router=ROUTER)
+    def __init__(self, router: Router[Handler] = None):
+        self.router = router or ROUTER
+
+    def on_after_init(self):
+        super(AsfApigatewayProvider, self).on_after_init()
+        self.register_routes()
 
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
         result: RestApi = super().create_rest_api(context, request)
         API_REGIONS[result["id"]] = context.region
-        self.router.add_rest_api(result)
         return result
-
-    def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
-        super().delete_rest_api(context, rest_api_id)
-        self.router.remove_rest_api(rest_api_id)
 
     @handler("TestInvokeMethod", expand=False)
     def test_invoke_method(
@@ -200,3 +106,57 @@ class AsfApigatewayProvider(ApigatewayProvider):
             headers=dict(result.headers),
             body=to_str(result.content),
         )
+
+    def register_routes(self) -> None:
+        """Registers all API Gateway user invocation routes as parameterized routes."""
+        # add the canonical execute-api handler
+        self.router.add(
+            "/",
+            host="<api_id>.execute-api.<regex('.*'):server>",
+            endpoint=self.invoke_rest_api,
+            defaults={"path": "", "stage": None},
+        )
+        self.router.add(
+            "/<stage>/",
+            host="<api_id>.execute-api.<regex('.*'):server>",
+            endpoint=self.invoke_rest_api,
+            defaults={"path": ""},
+        )
+        self.router.add(
+            "/<stage>/<path:path>",
+            host="<api_id>.execute-api.<regex('.*'):server>",
+            endpoint=self.invoke_rest_api,
+        )
+
+        # add the localstack-specific _user_request_ routes
+        self.router.add(
+            "/restapis/<api_id>/<stage>/_user_request_",
+            endpoint=self.invoke_rest_api,
+            defaults={"path": ""},
+        )
+        self.router.add(
+            "/restapis/<api_id>/<stage>/_user_request_/<path:path>",
+            endpoint=self.invoke_rest_api,
+        )
+
+    @staticmethod
+    def invoke_rest_api(request: Request, **url_params: Dict[str, Any]) -> Response:
+        if not url_params["api_id"] in API_REGIONS:
+            return Response(status=404)
+        invocation_context = to_invocation_context(request, url_params)
+        result = invoke_rest_api_from_request(invocation_context)
+        if result is not None:
+            if isinstance(result, LambdaResponse):
+                headers = Headers(dict(result.headers))
+                for k, values in result.multi_value_headers.items():
+                    for value in values:
+                        headers.add(k, value)
+            else:
+                headers = dict(result.headers)
+            return Response(
+                response=result.content,
+                status=result.status_code,
+                headers=headers,
+            )
+
+        raise NotFound()
