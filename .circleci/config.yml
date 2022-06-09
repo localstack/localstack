@@ -138,32 +138,6 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-sqs-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Test ElasticMQ SQS provider
-          environment:
-            PROVIDER_OVERRIDE_SQS: "legacy"
-            SQS_PROVIDER: "elasticmq"
-            TEST_PATH: "tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation"
-            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/elasticmq.xml -o junit_suite_name='elasticmq'"
-            COVERAGE_ARGS: "-p"
-          command: make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   itest-lambda-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -392,9 +366,6 @@ workflows:
       - itest-lambda-docker:
           requires:
             - preflight
-      - itest-sqs-provider:
-          requires:
-            - preflight
       - itest-lambda-provider:
           requires:
             - preflight
@@ -437,7 +408,6 @@ workflows:
       - report:
           requires:
             - itest-lambda-docker
-            - itest-sqs-provider
             - itest-lambda-provider
             - itest-bootstrap
             - docker-test-amd64
@@ -449,7 +419,6 @@ workflows:
               only: master
           requires:
             - itest-lambda-docker
-            - itest-sqs-provider
             - itest-lambda-provider
             - itest-bootstrap
             - docker-test-amd64
