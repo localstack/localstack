@@ -246,6 +246,8 @@ jobs:
             make docker-run-tests
       - store_test_results:
           path: target/reports/
+      - store_artifacts:
+          path: target/metric_reports
       - persist_to_workspace:
           root:
             /tmp/workspace

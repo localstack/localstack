@@ -183,6 +183,7 @@ jobs:
           AWS_DEFAULT_REGION: "us-east-1"
           HOST_TMP_FOLDER: /tmp/localstack
           PYTEST_LOGLEVEL: debug
+          LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
         run: |
           source .venv/bin/activate
           python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
@@ -193,6 +194,7 @@ jobs:
           LAMBDA_EXECUTOR: "docker"
           LOCALSTACK_API_KEY: "test"
           HOST_TMP_FOLDER: /tmp/localstack
+          LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
         run: |
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker' \
@@ -206,6 +208,7 @@ jobs:
           LAMBDA_EXECUTOR: "docker-reuse"
           LOCALSTACK_API_KEY: "test"
           HOST_TMP_FOLDER: /tmp/localstack
+          LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
         run: |
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse' \
@@ -218,3 +221,8 @@ jobs:
         with:
           files: localstack-ext/target/reports/*.xml
           check_name: LocalStack integration with Pro
+      - name: Archive metric-collection results
+        uses: actions/upload-artifact@v3
+        with:
+          name: metric-collection-report
+          path: ../localstack/target/metric_reports/*
