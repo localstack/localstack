@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import functools
 import json
 import logging
@@ -382,23 +383,45 @@ class RegionBackend:
 
             def __init__(self):
                 self.order = {}  # `order` must be initialised
+
+    Limitations
+    ===========
+    - Do not add staticmethods to subclasses as it causes issues with deepcopy
     """
 
+    # Map of AWS account IDs to copies of this class
+    _ACCOUNTS_CLS: Dict[str, Type[T]]
+
     # Map of AWS account IDs to (Map of region names to backend instances)
-    ACCOUNTS_REGIONS: DefaultDict[str, Dict[str, T]]
+    _ACCOUNTS_REGIONS: DefaultDict[str, Dict[str, T]]
 
     name: str  # name of the region for the backend instance
     account_id: str  # AWS account ID of the backend instance
 
     @classmethod
     def get(cls: Type[T], region: str = None, account_id: str = None) -> T:
+        cls.initialise()
+
         region = region or cls.get_current_request_region()
         account_id = account_id or cls.get_current_request_account_id()
 
+        # Class attributes in RegionBackend need two types of data isolation:
+        # - Class attributes like `_ACCOUNTS_REGIONS` must refer to the same mutable object across ALL instances.
+        # - Class attributes defined in subclasses represent data common across regions but same account IDs
+        # To enable this, we keep copies of this class in `_ACCOUNT_CLS` by account IDs and instantiate that
+        # copy of the class for different regions and same account ID
+        if account_id not in cls._ACCOUNTS_CLS:
+            cls_dict = copy.deepcopy(dict(cls.__dict__))
+            cls_dict["_ACCOUNTS_CLS"] = cls._ACCOUNTS_CLS
+            cls_dict["_ACCOUNTS_REGIONS"] = cls._ACCOUNTS_REGIONS
+
+            cls._ACCOUNTS_CLS[account_id] = type(cls.__name__, cls.__bases__, cls_dict)
+
         regions = cls.regions()
         backend = regions.get(region)
+
         if not backend:
-            backend = cls()
+            backend = cls._ACCOUNTS_CLS[account_id]()
             backend.name = region
             backend.account_id = account_id
             regions[region] = backend
@@ -407,15 +430,18 @@ class RegionBackend:
 
     @classmethod
     def initialise(cls):
-        if not hasattr(cls, "ACCOUNTS_REGIONS"):
-            cls.ACCOUNTS_REGIONS = defaultdict(lambda: dict())
+        if not hasattr(cls, "_ACCOUNTS_REGIONS"):
+            cls._ACCOUNTS_REGIONS = defaultdict(lambda: dict())
+
+        if not hasattr(cls, "_ACCOUNTS_CLS"):
+            cls._ACCOUNTS_CLS = dict()
 
     @classmethod
     def regions(cls: Type[T]) -> Dict[str, T]:
         """Return a map of all regions and backend instances."""
         cls.initialise()
         account_id = cls.get_current_request_account_id()
-        return cls.ACCOUNTS_REGIONS[account_id]
+        return cls._ACCOUNTS_REGIONS[account_id]
 
     @classmethod
     def get_current_request_region(cls) -> str:
@@ -430,7 +456,7 @@ class RegionBackend:
         """Reset the (in-memory) state of this service region backend."""
         cls.initialise()
         account_id = cls.get_current_request_account_id()
-        cls.ACCOUNTS_REGIONS[account_id] = {}
+        cls._ACCOUNTS_REGIONS[account_id] = {}
 
 
 # ---------------------
