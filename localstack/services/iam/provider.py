@@ -16,6 +16,7 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.iam import (
     ActionNameListType,
     ActionNameType,
+    AttachedPermissionsBoundary,
     ContextEntryListType,
     CreateServiceLinkedRoleResponse,
     DeleteServiceLinkedRoleResponse,
@@ -23,10 +24,12 @@ from localstack.aws.api.iam import (
     DeletionTaskStatusType,
     EvaluationResult,
     GetServiceLinkedRoleDeletionStatusResponse,
+    GetUserResponse,
     IamApi,
     ListInstanceProfileTagsResponse,
     ListRolesResponse,
     NoSuchEntityException,
+    PermissionsBoundaryAttachmentType,
     PolicyEvaluationDecisionType,
     ResourceHandlingOptionType,
     ResourceNameListType,
@@ -37,6 +40,7 @@ from localstack.aws.api.iam import (
     Tag,
     arnType,
     customSuffixType,
+    existingUserNameType,
     groupNameType,
     instanceProfileNameType,
     markerType,
@@ -48,7 +52,9 @@ from localstack.aws.api.iam import (
     roleNameType,
     tagKeyListType,
     tagListType,
+    userNameType,
 )
+from localstack.services.moto import call_moto
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
 
@@ -297,6 +303,36 @@ class IamProvider(IamApi):
     ) -> GetServiceLinkedRoleDeletionStatusResponse:
         # TODO: test
         return GetServiceLinkedRoleDeletionStatusResponse(Status=DeletionTaskStatusType.SUCCEEDED)
+
+    def put_user_permissions_boundary(
+        self, context: RequestContext, user_name: userNameType, permissions_boundary: arnType
+    ) -> None:
+        if user := moto_iam_backend.users.get(user_name):
+            user.permissions_boundary = permissions_boundary
+        else:
+            raise NoSuchEntityException()
+
+    def delete_user_permissions_boundary(
+        self, context: RequestContext, user_name: userNameType
+    ) -> None:
+        if user := moto_iam_backend.users.get(user_name):
+            if hasattr(user, "permissions_boundary"):
+                delattr(user, "permissions_boundary")
+        else:
+            raise NoSuchEntityException()
+
+    def get_user(
+        self, context: RequestContext, user_name: existingUserNameType = None
+    ) -> GetUserResponse:
+        response = call_moto(context=context)
+        moto_user = moto_iam_backend.get_user(user_name)
+        if hasattr(moto_user, "permissions_boundary") and moto_user.permissions_boundary:
+            response["User"]["PermissionsBoundary"] = AttachedPermissionsBoundary(
+                PermissionsBoundaryArn=moto_user.permissions_boundary,
+                PermissionsBoundaryType=PermissionsBoundaryAttachmentType.PermissionsBoundaryPolicy,
+            )
+
+        return response
 
     # def get_user(
     #     self, context: RequestContext, user_name: existingUserNameType = None
