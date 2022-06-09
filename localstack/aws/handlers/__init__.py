@@ -1,5 +1,6 @@
 """ A set of common handlers to build an AWS server application."""
 
+from .. import chain
 from . import auth, codec, cors, fallback, internal, legacy, logging, region, service
 
 enforce_cors = cors.CorsEnforcer()
@@ -14,6 +15,7 @@ log_exception = logging.ExceptionLogger()
 log_response = logging.ResponseLogger()
 handle_service_exception = service.ServiceExceptionSerializer()
 handle_internal_failure = fallback.InternalFailureHandler()
+serve_custom_service_request_handlers = chain.CompositeHandler()
 serve_localstack_resources = internal.LocalstackResourceHandler()
 # legacy compatibility handlers
 serve_edge_router_rules = legacy.EdgeRouterHandler()
