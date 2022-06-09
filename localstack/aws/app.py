@@ -1,5 +1,7 @@
 import logging
+from typing import Dict
 
+from localstack import config
 from localstack.aws import handlers
 from localstack.aws.handlers.service_plugin import ServiceLoader
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceManager, ServicePluginManager
@@ -11,7 +13,35 @@ from .handlers.service import ServiceRequestRouter
 LOG = logging.getLogger(__name__)
 
 
+def _init_service_metric_counter() -> Dict:
+
+    if not config.is_local_test_mode():
+        return {}
+
+    metric_recorder = {}
+    from localstack.aws.spec import load_service
+
+    for s in SERVICE_PLUGINS.list_available():
+        try:
+            service = load_service(s)
+            ops = {}
+            for op in service.operation_names:
+                params = {}
+                if hasattr(service.operation_model(op).input_shape, "members"):
+                    for n in service.operation_model(op).input_shape.members:
+                        params[n] = 0
+                ops[op] = params
+
+            metric_recorder[s] = ops
+        except Exception:
+            logging.debug(f"cannot load service {service}")
+
+    return metric_recorder
+
+
 class LocalstackAwsGateway(Gateway):
+    metric_recorder = _init_service_metric_counter()
+
     def __init__(self, service_manager: ServiceManager = None) -> None:
         super().__init__()
 
@@ -62,6 +92,24 @@ class LocalstackAwsGateway(Gateway):
                 handlers.pop_request_context,
             ]
         )
+
+    def post_process(self, context, response):
+        if config.is_local_test_mode():
+            if context.service_operation:
+                ops = LocalstackAwsGateway.metric_recorder[context.service_operation.service][
+                    context.service_operation.operation
+                ]
+                if not context.service_request:
+                    ops["none"] = ops.get("none", 0) + 1
+                else:
+                    for p in context.service_request:
+                        # TODO some params seem to be set implicitly but have None value
+                        if context.service_request[p]:
+                            ops[p] += 1
+
+            if not str(response.status_code).startswith("2"):
+                # TODO collect exceptions
+                pass
 
 
 def main():

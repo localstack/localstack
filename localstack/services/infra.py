@@ -440,6 +440,9 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         # register signal handlers
         if not config.is_local_test_mode():
             register_signal_handlers()
+        else:
+            # TODO
+            config.LEGACY_EDGE_PROXY = False
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
         patch_moto_request_handling()

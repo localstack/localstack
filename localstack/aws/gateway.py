@@ -34,3 +34,7 @@ class Gateway:
         context.request = request
 
         chain.handle(context, response)
+        self.post_process(context, response)
+
+    def post_process(self, context, response):
+        pass

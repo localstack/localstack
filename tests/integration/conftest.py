@@ -4,6 +4,7 @@ See: https://docs.pytest.org/en/6.2.x/fixture.html#conftest-py-sharing-fixtures-
 
 It is thread/process safe to run with pytest-parallel, however not for pytest-xdist.
 """
+import json
 import logging
 import multiprocessing as mp
 import os
@@ -71,6 +72,18 @@ def pytest_runtestloop(session):
     # trigger localstack startup in startup_monitor and wait until it becomes ready
     startup_monitor_event.set()
     localstack_started.wait()
+
+
+@pytest.hookimpl()
+def pytest_sessionfinish(
+    session,
+    exitstatus,
+) -> None:
+    from localstack.aws.app import LocalstackAwsGateway
+
+    fname = os.path.join(os.path.dirname(__file__), "reports", "metric-report.json")
+    with open(fname, "w") as fd:
+        fd.write(json.dumps(LocalstackAwsGateway.metric_recorder, indent=2))
 
 
 @pytest.hookimpl()
