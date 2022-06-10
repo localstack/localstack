@@ -15,11 +15,11 @@ import pytest
 from _pytest.nodes import Item
 
 from localstack import config
-from localstack.aws.app import LocalstackAwsGateway
 from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.runtime import events
 from localstack.services import infra
+from localstack.testing.pytest.metric_collector import MetricRecorder
 from localstack.utils.common import safe_requests
 from tests.integration.test_es import install_async as es_install_async
 from tests.integration.test_opensearch import install_async as opensearch_install_async
@@ -86,15 +86,15 @@ def pytest_sessionfinish(
         fname = os.path.join(
             os.path.dirname(__file__),
             "reports",
-            f"metric-report-{datetime.datetime.utcnow().timestamp()}.json",
+            f"metric-report-{datetime.datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%s')}.json",
         )
         with open(fname, "w") as fd:
-            fd.write(json.dumps(LocalstackAwsGateway.metric_recorder, indent=2))
+            fd.write(json.dumps(MetricRecorder.metric_recorder, indent=2))
 
 
 @pytest.hookimpl()
 def pytest_runtest_call(item: "Item") -> None:
-    LocalstackAwsGateway.node_id = item.nodeid
+    MetricRecorder.node_id = item.nodeid
     # TODO only works if tests run sequentially
 
 

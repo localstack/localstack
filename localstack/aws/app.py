@@ -1,7 +1,5 @@
 import logging
-from typing import Dict
 
-from localstack import config
 from localstack.aws import handlers
 from localstack.aws.handlers.service_plugin import ServiceLoader
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceManager, ServicePluginManager
@@ -12,70 +10,8 @@ from .handlers.service import ServiceRequestRouter
 
 LOG = logging.getLogger(__name__)
 
-# TODO cleanup -> move everything metric-collection related into utility class
-
-
-def _patch_skeleton_on_service_exception():
-    def patch_on_service_exception(target, self, context, exception):
-        if context.service_operation:
-            ops = LocalstackAwsGateway.metric_recorder[context.service_operation.service][
-                context.service_operation.operation
-            ]
-            errors = ops.setdefault("errors", {})
-            if exception.code not in errors:
-                # some errors are not explicitly in the shape, but are wrapped in a "CommonServiceException"
-                errors = ops.setdefault("errors_not_in_shape", {})
-            errors[exception.code] = ops.get(exception.code, 0) + 1
-        return target(self, context, exception)
-
-    from localstack.aws.skeleton import Skeleton
-    from localstack.utils.patch import Patch
-
-    patch = Patch.function(
-        Skeleton.on_service_exception,
-        patch_on_service_exception,
-        pass_target=True,
-    )
-    patch.apply()
-
-
-def _init_service_metric_counter() -> Dict:
-
-    if not config.is_collect_metrics_mode():
-        return {}
-
-    metric_recorder = {}
-    from localstack.aws.spec import load_service
-
-    for s in SERVICE_PLUGINS.list_available():
-        try:
-            service = load_service(s)
-            ops = {}
-            for op in service.operation_names:
-                params = {}
-                if hasattr(service.operation_model(op).input_shape, "members"):
-                    for n in service.operation_model(op).input_shape.members:
-                        params[n] = 0
-                if hasattr(service.operation_model(op), "error_shapes"):
-                    exceptions = {}
-                    for e in service.operation_model(op).error_shapes:
-                        exceptions[e.name] = 0
-                    params["errors"] = exceptions
-                ops[op] = params
-
-            metric_recorder[s] = ops
-        except Exception:
-            LOG.debug(f"cannot load service '{s}'")
-
-    # apply a patch so that we can count the service exceptions
-    _patch_skeleton_on_service_exception()
-    return metric_recorder
-
 
 class LocalstackAwsGateway(Gateway):
-    metric_recorder = _init_service_metric_counter()
-    node_id = None
-
     def __init__(self, service_manager: ServiceManager = None) -> None:
         super().__init__()
 
@@ -126,26 +62,6 @@ class LocalstackAwsGateway(Gateway):
                 handlers.pop_request_context,
             ]
         )
-
-    def post_process(self, context, response):
-        if config.is_local_test_mode():
-            if context.service_operation:
-                ops = LocalstackAwsGateway.metric_recorder[context.service_operation.service][
-                    context.service_operation.operation
-                ]
-                if not context.service_request:
-                    ops["none"] = ops.get("none", 0) + 1
-                else:
-                    for p in context.service_request:
-                        # some params seem to be set implicitly but have 'None' value
-                        if context.service_request[p] is not None:
-                            ops[p] += 1
-
-                test_list = ops.setdefault("tests", [])
-                if LocalstackAwsGateway.node_id not in test_list:
-                    test_list.append(LocalstackAwsGateway.node_id)
-
-            # TODO collect error responses here? Already collect service exceptions
 
 
 def main():
