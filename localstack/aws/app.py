@@ -12,6 +12,8 @@ from .handlers.service import ServiceRequestRouter
 
 LOG = logging.getLogger(__name__)
 
+# TODO cleanup -> move everything metric-collection related into utility class
+
 
 def _patch_skeleton_on_service_exception():
     def patch_on_service_exception(target, self, context, exception):
@@ -39,7 +41,7 @@ def _patch_skeleton_on_service_exception():
 
 def _init_service_metric_counter() -> Dict:
 
-    if not config.is_local_test_mode():
+    if not config.is_collect_metrics_mode():
         return {}
 
     metric_recorder = {}

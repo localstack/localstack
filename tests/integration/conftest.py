@@ -4,6 +4,7 @@ See: https://docs.pytest.org/en/6.2.x/fixture.html#conftest-py-sharing-fixtures-
 
 It is thread/process safe to run with pytest-parallel, however not for pytest-xdist.
 """
+import datetime
 import json
 import logging
 import multiprocessing as mp
@@ -81,9 +82,14 @@ def pytest_sessionfinish(
     session,
     exitstatus,
 ) -> None:
-    fname = os.path.join(os.path.dirname(__file__), "reports", "metric-report.json")
-    with open(fname, "w") as fd:
-        fd.write(json.dumps(LocalstackAwsGateway.metric_recorder, indent=2))
+    if config.is_collect_metrics_mode():
+        fname = os.path.join(
+            os.path.dirname(__file__),
+            "reports",
+            f"metric-report-{datetime.datetime.utcnow().timestamp()}.json",
+        )
+        with open(fname, "w") as fd:
+            fd.write(json.dumps(LocalstackAwsGateway.metric_recorder, indent=2))
 
 
 @pytest.hookimpl()
