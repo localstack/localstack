@@ -167,7 +167,7 @@ jobs:
           files: localstack-ext/target/reports/*.xml
           check_name: LocalStack integration with Pro
       - name: Archive metric-collection results
-          uses: actions/upload-artifact@v3
-          with:
-            name: metric-collection-report
-            path: ../localstack/tests/integration/reports/*.json
+        uses: actions/upload-artifact@v3
+        with:
+          name: metric-collection-report
+          path: ../localstack/tests/integration/reports/*.json
