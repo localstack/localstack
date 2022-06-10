@@ -1175,12 +1175,9 @@ def evaluate_filter_policy_conditions(conditions, attribute, message_attributes,
     if type(conditions) is not list:
         conditions = [conditions]
 
-    if attribute is None:
-        return False
-
-    tpe = attribute.get("DataType") or attribute.get("Type")
-    val = attribute.get("StringValue") or attribute.get("Value")
-    if tpe == "String.Array":
+    tpe = attribute.get("DataType") or attribute.get("Type") if attribute else None
+    val = attribute.get("StringValue") or attribute.get("Value") if attribute else None
+    if attribute is not None and tpe == "String.Array":
         values = ast.literal_eval(val)
         for value in values:
             for condition in conditions:
@@ -1239,3 +1236,29 @@ def extract_tags(topic_arn, tags, is_create_topic_request, sns_backend):
             if is_create_topic_request and existing_tags is not None and tag not in existing_tags:
                 return False
     return True
+
+
+def unsubscribe_sqs_queue(queue_url):
+    """Called upon deletion of an SQS queue, to remove the queue from subscriptions"""
+    sns_backend = SNSBackend.get()
+    for topic_arn, subscriptions in sns_backend.sns_subscriptions.items():
+        subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
+        for subscriber in list(subscriptions):
+            sub_url = subscriber.get("sqs_queue_url") or subscriber["Endpoint"]
+            if queue_url == sub_url:
+                subscriptions.remove(subscriber)
+
+
+def get_subscribe_attributes(req_data):
+    attributes = {}
+    for key in req_data.keys():
+        if ".key" in key:
+            attributes[req_data[key][0]] = req_data[key.replace("key", "value")][0]
+    defaults = {
+        # TODO: this is required to get TF "aws_sns_topic_subscription" working, but this should
+        # be revisited (e.g., cross-account subscriptions should not be confirmed automatically)
+        "PendingConfirmation": "false"
+    }
+    for key, value in defaults.items():
+        attributes[key] = attributes.get(key, value)
+    return attributes
