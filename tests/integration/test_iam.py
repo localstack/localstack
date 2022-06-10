@@ -8,16 +8,12 @@ from botocore.exceptions import ClientError
 from localstack.aws.api.iam import Tag
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.strings import long_uid
 
 
 class TestIAMIntegrations:
-    @pytest.fixture
-    def iam_client(self):
-        return aws_stack.create_external_boto_client("iam")
 
     # TODO what does this test do?
     def test_run_kcl_with_iam_assume_role(self):

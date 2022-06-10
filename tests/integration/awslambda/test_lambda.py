@@ -6,7 +6,7 @@ import re
 import shutil
 import time
 from io import BytesIO
-from typing import Dict, List, TypeVar
+from typing import Dict, TypeVar
 
 import pytest
 from botocore.exceptions import ClientError
@@ -42,7 +42,6 @@ from localstack.services.install import (
     TEST_LAMBDA_JAVA,
     download_and_extract,
 )
-from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -181,23 +180,6 @@ def read_streams(payload: T) -> T:
         else:
             new_payload[k] = v
     return new_payload
-
-
-@pytest.fixture
-def check_lambda_logs(logs_client):
-    def _check_logs(func_name: str, expected_lines: List[str] = None):
-        if not expected_lines:
-            expected_lines = []
-        log_events = get_lambda_logs(func_name, logs_client=logs_client)
-        log_messages = [e["message"] for e in log_events]
-        for line in expected_lines:
-            if ".*" in line:
-                found = [re.match(line, m, flags=re.DOTALL) for m in log_messages]
-                if any(found):
-                    continue
-            assert line in log_messages
-
-    return _check_logs
 
 
 # API only functions (no lambda execution itself)
