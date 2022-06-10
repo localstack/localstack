@@ -11,8 +11,10 @@ import os
 import threading
 
 import pytest
+from _pytest.nodes import Item
 
 from localstack import config
+from localstack.aws.app import LocalstackAwsGateway
 from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.runtime import events
@@ -79,11 +81,15 @@ def pytest_sessionfinish(
     session,
     exitstatus,
 ) -> None:
-    from localstack.aws.app import LocalstackAwsGateway
-
     fname = os.path.join(os.path.dirname(__file__), "reports", "metric-report.json")
     with open(fname, "w") as fd:
         fd.write(json.dumps(LocalstackAwsGateway.metric_recorder, indent=2))
+
+
+@pytest.hookimpl()
+def pytest_runtest_call(item: "Item") -> None:
+    LocalstackAwsGateway.node_id = item.nodeid
+    # TODO only works if tests run sequentially
 
 
 @pytest.hookimpl()
