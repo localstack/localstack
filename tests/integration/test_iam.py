@@ -359,14 +359,15 @@ class TestIAMIntegrations:
         "service_name, expected_role",
         [
             ("ecs.amazonaws.com", "AWSServiceRoleForECS"),
-            ("ecr.amazonaws.com", "AWSServiceRoleForECR"),
+            ("eks.amazonaws.com", "AWSServiceRoleForAmazonEKS"),
         ],
     )
     def test_service_linked_role_name_should_match_aws(
         self, iam_client, service_name, expected_role
     ):
-        service_linked_role = iam_client.create_service_linked_role(AWSServiceName=service_name)
-        role_name = service_linked_role["Role"]["RoleName"]
-        assert role_name == expected_role
-
-        iam_client.delete_service_linked_role(RoleName=role_name)
+        try:
+            service_linked_role = iam_client.create_service_linked_role(AWSServiceName=service_name)
+            role_name = service_linked_role["Role"]["RoleName"]
+            assert role_name == expected_role
+        finally:
+            iam_client.delete_service_linked_role(RoleName=role_name)
