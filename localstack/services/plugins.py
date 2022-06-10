@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 from readerwriterlock import rwlock
-from requests.models import Request
+from werkzeug import Request
 
 from localstack import config
 from localstack.config import ServiceProviderConfig
