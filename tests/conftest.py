@@ -10,6 +10,7 @@ pytest_plugins = [
     "localstack.testing.pytest.fixtures",
     "localstack.testing.pytest.snapshot",
     "localstack.testing.pytest.filters",
+    "localstack.testing.pytest.fixture_conflicts",
 ]
 
 
