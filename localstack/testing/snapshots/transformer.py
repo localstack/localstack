@@ -79,10 +79,13 @@ class ResponseMetaDataTransformer:
             if k == "ResponseMetadata":
                 metadata = v
                 http_headers = metadata.get("HTTPHeaders")
+                # TODO "x-amz-bucket-region"
+                # TestS3.test_region_header_exists -> verifies bucket-region
+                headers_to_collect = ["content_type"]
                 simplified_headers = {}
-                if http_headers.get("content_type"):
-                    simplified_headers = {"content-type": http_headers["content-type"]}
-
+                for h in headers_to_collect:
+                    if http_headers.get(h):
+                        simplified_headers[h] = http_headers[h]
                 simplified_metadata = {
                     "HTTPHeaders": simplified_headers,
                 }
