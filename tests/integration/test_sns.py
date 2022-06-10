@@ -136,7 +136,8 @@ class TestSNSProvider:
         endpoint_url = httpserver.url_for("/")
         wait_for_port_open(endpoint_url)
 
-        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint_url)
+        subscription = sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint_url)
+        subscription_arn = subscription["SubscriptionArn"]
 
         assert poll_condition(lambda: len(httpserver.log) >= 1)
 
@@ -157,6 +158,11 @@ class TestSNSProvider:
 
         confirm_subscribe_request = requests.get(subscribe_url)
         assert "<ConfirmSubscriptionResult />" in confirm_subscribe_request.text
+
+        subscription_attributes = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription_arn
+        )
+        assert subscription_attributes["Attributes"]["PendingConfirmation"] == "false"
 
     def test_subscribe_with_invalid_protocol(self, sns_client, sns_create_topic, sns_subscription):
         topic_arn = sns_create_topic()["TopicArn"]

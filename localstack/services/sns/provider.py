@@ -877,7 +877,7 @@ async def message_to_subscriber(
             )
             store_delivery_log(subscriber, False, message, message_id)
             message_body = create_sns_message_body(subscriber, req_data, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
         return
 
     elif subscriber["Protocol"] in ["http", "https"]:
@@ -921,7 +921,7 @@ async def message_to_subscriber(
                 "Received error on sending SNS message, putting to DLQ (if configured): %s", exc
             )
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
         return
 
     elif subscriber["Protocol"] == "application":
@@ -937,7 +937,7 @@ async def message_to_subscriber(
             )
             store_delivery_log(subscriber, False, message, message_id)
             message_body = create_sns_message_body(subscriber, req_data, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
         return
 
     elif subscriber["Protocol"] in ["email", "email-json"]:
