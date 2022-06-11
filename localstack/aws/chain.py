@@ -147,12 +147,28 @@ class CompositeHandler(Handler):
 
     handlers: List[Handler]
 
-    def __init__(self) -> None:
+    def __init__(self, return_on_stop=True) -> None:
+        """
+        Creates a new composite handler with an empty handler list.
+
+        TODO: build a proper chain nesting mechanism.
+
+        :param return_on_stop: whether to respect chain.stopped
+        """
         super().__init__()
-        self.handlers = list()
+        self.handlers = []
+        self.return_on_stop = return_on_stop
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         for handler in self.handlers:
             handler(chain, context, response)
-            if chain.stopped or chain.terminated:
+
+            if chain.terminated:
                 return
+            if chain.stopped and self.return_on_stop:
+                return
+
+
+class CompositeResponseHandler(CompositeHandler):
+    def __init__(self) -> None:
+        super().__init__(return_on_stop=False)

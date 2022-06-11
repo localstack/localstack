@@ -56,6 +56,7 @@ class LocalstackAwsGateway(Gateway):
         # response post-processing
         self.response_handlers.extend(
             [
+                handlers.run_custom_response_handlers,
                 handlers.add_cors_response_headers,
                 handlers.log_response,
                 handlers.pop_request_context,
