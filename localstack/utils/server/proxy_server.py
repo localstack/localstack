@@ -138,8 +138,21 @@ def _save_cert_keys(client_cert_key: Tuple[str, str]) -> Tuple[str, str]:
 
 
 def _do_start_ssl_proxy(
-    port: int, target: PortOrUrl, target_ssl=False, client_cert_key: Tuple[str, str] = None
+    port: int,
+    target: PortOrUrl,
+    target_ssl=False,
+    client_cert_key: Tuple[str, str] = None,
+    bind_address: str = "0.0.0.0",
 ):
+    """
+    Starts a tcp proxy (with tls) on the specified port
+
+    :param port: Port the proxy should bind to
+    :param target: Target of the proxy. If a port, it will connect to localhost:
+    :param target_ssl: Specify if the proxy should connect to the target using SSL/TLS
+    :param client_cert_key: Client certificate for the target connection. Only set if target_ssl=True
+    :param bind_address: Bind address of the proxy server
+    """
     import pproxy
 
     from localstack.services.generic_proxy import GenericProxy
@@ -149,12 +162,12 @@ def _do_start_ssl_proxy(
     LOG.debug("Starting SSL proxy server %s -> %s", port, target)
 
     # create server and remote connection
-    server = pproxy.Server(f"secure+tunnel://0.0.0.0:{port}")
+    server = pproxy.Server(f"secure+tunnel://{bind_address}:{port}")
     target_proto = "ssl+tunnel" if target_ssl else "tunnel"
     remote = pproxy.Connection(f"{target_proto}://{target}")
     if client_cert_key:
         # TODO verify client certs server side?
-        LOG.debug("Configuring client certs...")
+        LOG.debug("Configuring ssl proxy to use client certs")
         cert_file, key_file = _save_cert_keys(client_cert_key=client_cert_key)
         remote.sslclient.load_cert_chain(certfile=cert_file, keyfile=key_file)
     args = dict(rserver=[remote])
