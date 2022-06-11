@@ -94,7 +94,7 @@ def start_ssl_proxy(
 ):
     """Start a proxy server that accepts SSL requests and forwards requests to a backend (either SSL or non-SSL)"""
 
-    if client_cert_key or fix_encoding:
+    if fix_encoding:
         # use a custom proxy listener, in case the user provides client certificates for authentication
         if client_cert_key:
             server = _do_start_ssl_proxy_with_client_auth(
@@ -107,7 +107,9 @@ def start_ssl_proxy(
         return server
 
     def _run(*args):
-        return _do_start_ssl_proxy(port, target, target_ssl=target_ssl)
+        return _do_start_ssl_proxy(
+            port, target, target_ssl=target_ssl, client_cert_key=client_cert_key
+        )
 
     if not asynchronous:
         return _run()
@@ -117,19 +119,57 @@ def start_ssl_proxy(
     return proxy
 
 
-def _do_start_ssl_proxy(port: int, target: PortOrUrl, target_ssl=False):
+def _save_cert_keys(client_cert_key: Tuple[str, str]) -> Tuple[str, str]:
+    """
+    Save the given cert / key into files and returns their filename
+
+    :param client_cert_key: tuple with (client_cert, client_key)
+    :return: tuple of paths to files containing (client_cert, client_key)
+    """
+    cert_file = client_cert_key[0]
+    if not os.path.exists(cert_file):
+        cert_file = new_tmp_file()
+        save_file(cert_file, client_cert_key[0])
+    key_file = client_cert_key[1]
+    if not os.path.exists(key_file):
+        key_file = new_tmp_file()
+        save_file(key_file, client_cert_key[1])
+    return cert_file, key_file
+
+
+def _do_start_ssl_proxy(
+    port: int,
+    target: PortOrUrl,
+    target_ssl=False,
+    client_cert_key: Tuple[str, str] = None,
+    bind_address: str = "0.0.0.0",
+):
+    """
+    Starts a tcp proxy (with tls) on the specified port
+
+    :param port: Port the proxy should bind to
+    :param target: Target of the proxy. If a port, it will connect to localhost:
+    :param target_ssl: Specify if the proxy should connect to the target using SSL/TLS
+    :param client_cert_key: Client certificate for the target connection. Only set if target_ssl=True
+    :param bind_address: Bind address of the proxy server
+    """
     import pproxy
 
     from localstack.services.generic_proxy import GenericProxy
 
     if ":" not in str(target):
-        target = "127.0.0.1:%s" % target
+        target = f"127.0.0.1:{target}"
     LOG.debug("Starting SSL proxy server %s -> %s", port, target)
 
     # create server and remote connection
-    server = pproxy.Server("secure+tunnel://0.0.0.0:%s" % port)
+    server = pproxy.Server(f"secure+tunnel://{bind_address}:{port}")
     target_proto = "ssl+tunnel" if target_ssl else "tunnel"
-    remote = pproxy.Connection("%s://%s" % (target_proto, target))
+    remote = pproxy.Connection(f"{target_proto}://{target}")
+    if client_cert_key:
+        # TODO verify client certs server side?
+        LOG.debug("Configuring ssl proxy to use client certs")
+        cert_file, key_file = _save_cert_keys(client_cert_key=client_cert_key)
+        remote.sslclient.load_cert_chain(certfile=cert_file, keyfile=key_file)
     args = dict(rserver=[remote])
 
     # set SSL contexts
@@ -154,16 +194,7 @@ def _do_start_ssl_proxy_with_client_auth(
     port: int, target: PortOrUrl, client_cert_key: Tuple[str, str]
 ):
     # prepare cert files (TODO: check whether/how we can pass cert strings to requests.request(..) directly)
-    cert_file = client_cert_key[0]
-    if not os.path.exists(cert_file):
-        cert_file = new_tmp_file()
-        save_file(cert_file, client_cert_key[0])
-    key_file = client_cert_key[1]
-    if not os.path.exists(key_file):
-        key_file = new_tmp_file()
-        save_file(key_file, client_cert_key[1])
-    cert_params = (cert_file, key_file)
-
+    cert_params = _save_cert_keys(client_cert_key)
     # start proxy
     requests_kwargs = {"cert": cert_params}
     result = _do_start_ssl_proxy_with_listener(port, target, requests_kwargs=requests_kwargs)
