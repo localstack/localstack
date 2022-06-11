@@ -148,6 +148,14 @@ If you are interested in contributing to LocalStack:
 
 We are thankful for all the contributions and feedback we receive.
 
+## Get in touch
+
+To get in touch with LocalStack team for bugs/feature requests, support questions or general discussions, please use:
+
+- [LocalStack Slack Community](https://localstack.cloud/contact/)
+- [LocalStack Discussion Page](https://discuss.localstack.cloud/)
+- [LocalStack GitHub Issue tracker](https://github.com/localstack/localstack/issues)
+
 ### Contributors
 
 We are thankful to all the people who have contributed to this project.
