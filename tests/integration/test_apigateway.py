@@ -1165,6 +1165,10 @@ class TestAPIGateway:
 
         resource = [res for res in rs["items"] if res["path"] == "/test"][0]
         assert "GET" in resource["resourceMethods"]
+        assert "requestParameters" in resource["resourceMethods"]["GET"]
+        assert {"integration.request.header.X-Amz-Invocation-Type": "'Event'"} == resource[
+            "resourceMethods"
+        ]["GET"]["requestParameters"]
 
         url = path_based_url(api_id=rest_api_id, stage_name="dev", path="/test")
         response = requests.get(url)
