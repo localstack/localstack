@@ -368,7 +368,7 @@ def process_apigateway_invocation(
             method or "GET",
             path,
         )
-        asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
+        asynchronous = headers.get("X-Amz-Invocation-Type") == "'Event'"
         inv_result = run_lambda(
             func_arn=func_arn,
             event=event,
