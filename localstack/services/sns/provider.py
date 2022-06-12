@@ -93,6 +93,7 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils import server
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes, parse_urlencoded_data
@@ -119,6 +120,8 @@ SNS_PROTOCOLS = [
 # set up logger
 LOG = logging.getLogger(__name__)
 
+GCM_URL = 'https://fcm.googleapis.com/fcm/send'
+
 
 class SNSBackend(RegionBackend):
     # maps topic ARN to list of subscriptions
@@ -129,6 +132,9 @@ class SNSBackend(RegionBackend):
     sns_tags: Dict[str, List[Dict]]
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
     platform_endpoint_messages: Dict[str, List[Dict]]
+    # cache of target ARN to platform endpoint responses (used primarily for testing)
+    platform_endpoint_responses: Dict[str, List[Dict]]
+
     # list of sent SMS messages - TODO: expose via internal API
     sms_messages: List[Dict]
 
@@ -137,6 +143,7 @@ class SNSBackend(RegionBackend):
         self.subscription_status = {}
         self.sns_tags = {}
         self.platform_endpoint_messages = {}
+        self.platform_endpoint_responses = {}
         self.sms_messages = []
 
 
@@ -736,13 +743,36 @@ def message_to_endpoint(
     if structure == 'json':
         message = json.loads(message)
 
+    response = None
     if platform == 'GCM':
-        send_message_to_GCM(app['Attributes'], endpoint_attributes, message['GCM'])
+        response = send_message_to_GCM(app['Attributes'], endpoint_attributes, message['GCM'])
+    # TODO: Add support for other platforms
 
+    if response:
+        sns_backend = SNSBackend.get()
+        prev_responses = sns_backend.platform_endpoint_responses.get(target_arn, [])
+        prev_responses.append(response)
+        sns_backend.platform_endpoint_responses.update({target_arn: prev_responses})
     
 
+
 def send_message_to_GCM(app_attributes, endpoint_attributes, message):
-    pass
+    server_key = app_attributes.get('PlatformCredential', '')
+    token = endpoint_attributes.get('Token', '')
+    data = json.loads(message)
+
+    data['to'] = token
+    headers = {
+        'Authorization': f"key={server_key}",
+        'Content-type':'application/json'
+    }
+
+    return requests.post(
+            GCM_URL,
+            headers=headers,
+            data=json.dumps(data),
+    )
+
 
 def message_to_subscribers(
     message_id,
