@@ -186,7 +186,7 @@ def apply_patches():
     # patch _key_response_get(..)
     # https://github.com/localstack/localstack/issues/2724
     class InvalidObjectState(S3ClientError):
-        code = 400
+        code = 403
 
         def __init__(self, *args, **kwargs):
             super(InvalidObjectState, self).__init__(
