@@ -50,9 +50,7 @@ def to_invocation_context(
     headers["X-Forwarded-For"] = ", ".join(x_forwarded_for)
 
     # this is for compatibility with the lower layers of apigw and lambda that make assumptions about header casing
-    headers = CaseInsensitiveDict(
-        {k.title(): ", ".join(headers.getlist(k)) for k in headers.keys()}
-    )
+    headers = CaseInsensitiveDict({k: ", ".join(headers.getlist(k)) for k in headers.keys()})
 
     # FIXME: Use the already parsed url params instead of parsing them into the ApiInvocationContext part-by-part.
     #   We already would have all params at hand to avoid _all_ the parsing, but the parsing
@@ -139,8 +137,7 @@ class AsfApigatewayProvider(ApigatewayProvider):
             endpoint=self.invoke_rest_api,
         )
 
-    @staticmethod
-    def invoke_rest_api(request: Request, **url_params: Dict[str, Any]) -> Response:
+    def invoke_rest_api(self, request: Request, **url_params: Dict[str, Any]) -> Response:
         if not url_params["api_id"] in API_REGIONS:
             return Response(status=404)
         invocation_context = to_invocation_context(request, url_params)
