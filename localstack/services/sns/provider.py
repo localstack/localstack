@@ -7,7 +7,6 @@ import logging
 import time
 import traceback
 import uuid
-from platform import platform
 from typing import Dict, List
 
 import requests as requests
@@ -93,7 +92,6 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils import server
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes, parse_urlencoded_data
@@ -194,7 +192,7 @@ def message_to_endpoint(
     sns_client = aws_stack.connect_to_service("sns")
     endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=target_arn)["Attributes"]
     app_name = target_arn.split("/")[-2]
-    platform = target_arn.split("/")[-3]
+    platform_name = target_arn.split("/")[-3]
     platform_apps = sns_client.list_platform_applications()["PlatformApplications"]
     app = [x for x in platform_apps if app_name in x["PlatformApplicationArn"]][0]
 
@@ -202,7 +200,7 @@ def message_to_endpoint(
         message = json.loads(message)
 
     response = None
-    if platform == "GCM":
+    if platform_name == "GCM":
         response = send_message_to_GCM(app["Attributes"], endpoint_attributes, message["GCM"])
     # TODO: Add support for other platforms
 
