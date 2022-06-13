@@ -1207,6 +1207,13 @@ class ClusterDbRevisionsMessage(TypedDict, total=False):
     ClusterDbRevisions: Optional[ClusterDbRevisionsList]
 
 
+class ClusterExtendedCredentials(TypedDict, total=False):
+    DbUser: Optional[String]
+    DbPassword: Optional[SensitiveString]
+    Expiration: Optional[TStamp]
+    NextRefreshTime: Optional[TStamp]
+
+
 ClusterList = List[Cluster]
 
 
@@ -2204,6 +2211,12 @@ class GetClusterCredentialsMessage(ServiceRequest):
     DurationSeconds: Optional[IntegerOptional]
     AutoCreate: Optional[BooleanOptional]
     DbGroups: Optional[DbGroupList]
+
+
+class GetClusterCredentialsWithIAMMessage(ServiceRequest):
+    DbName: Optional[String]
+    ClusterIdentifier: String
+    DurationSeconds: Optional[IntegerOptional]
 
 
 class GetReservedNodeExchangeConfigurationOptionsInputMessage(ServiceRequest):
@@ -3658,6 +3671,16 @@ class RedshiftApi:
         auto_create: BooleanOptional = None,
         db_groups: DbGroupList = None,
     ) -> ClusterCredentials:
+        raise NotImplementedError
+
+    @handler("GetClusterCredentialsWithIAM")
+    def get_cluster_credentials_with_iam(
+        self,
+        context: RequestContext,
+        cluster_identifier: String,
+        db_name: String = None,
+        duration_seconds: IntegerOptional = None,
+    ) -> ClusterExtendedCredentials:
         raise NotImplementedError
 
     @handler("GetReservedNodeExchangeConfigurationOptions")
