@@ -1180,11 +1180,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         backend = SqsBackend.get(context.region)
         dead_letter_queue = self._resolve_queue(context, queue_url=queue_url)
         for queue in backend.queues.values():
-
-            if queue.region != context.region:
-                continue
-            if queue.account_id != context.account_id:
-                continue
             policy = queue.attributes.get(QueueAttributeName.RedrivePolicy)
             if policy:
                 policy = json.loads(policy)
