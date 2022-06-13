@@ -702,18 +702,40 @@ def wait_for_stream_ready(kinesis_client):
     return _wait_for_stream_ready
 
 
+@pytest.fixture()
+def kms_create_key(kms_client):
+    key_ids = []
+
+    def _create_key(**kwargs):
+        if "Policy" not in kwargs:
+            kwargs["Policy"] = f"policy-{short_uid()}"
+        if "Description" not in kwargs:
+            kwargs["Description"] = f"test description - {short_uid()}"
+        if "KeyUsage" not in kwargs:
+            kwargs["KeyUsage"] = "ENCRYPT_DECRYPT"
+        key_metadata = kms_client.create_key(**kwargs)["KeyMetadata"]
+        key_ids.append(key_metadata["KeyId"])
+        return key_metadata
+
+    yield _create_key
+
+    for key_id in key_ids:
+        try:
+            kms_client.schedule_key_deletion(KeyId=key_id)
+        except Exception as e:
+            LOG.debug("error cleaning up KMS key %s: %s", key_id, e)
+
+
 @pytest.fixture
-def kms_key(kms_client):
-    return kms_client.create_key(
-        Policy="policy1", Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
-    )
+def kms_key(kms_create_key):
+    return kms_create_key()
 
 
 @pytest.fixture
 def kms_grant_and_key(kms_client, kms_key):
     return [
         kms_client.create_grant(
-            KeyId=kms_key["KeyMetadata"]["KeyId"],
+            KeyId=kms_key["KeyId"],
             GranteePrincipal="arn:aws:iam::000000000000:role/test",
             Operations=["Decrypt", "Encrypt"],
         ),
