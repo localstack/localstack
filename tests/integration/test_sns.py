@@ -1795,3 +1795,34 @@ class TestSNSProvider:
         assert e.value.response["Error"]["Code"] == "InvalidParameter"
         assert e.value.response["Error"]["Message"] == "Message too long"
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
+    def test_publish_to_gcm(self, sns_client):
+        sns_backend = SNSBackend.get()
+        # TODO: use real keys in the future
+        key = "mock_server_key"
+        token = "mock_token"
+
+        platform_app_arn = sns_client.create_platform_application(
+            Name="firebase", Platform="GCM", Attributes={"PlatformCredential": key}
+        )["PlatformApplicationArn"]
+
+        endpoint_arn = sns_client.create_platform_endpoint(
+            PlatformApplicationArn=platform_app_arn,
+            Token=token,
+        )["EndpointArn"]
+
+        message = {
+            "GCM": '{ "notification": {"title": "Title of notification", "body": "It works" } }'
+        }
+        sns_client.publish(
+            TargetArn=endpoint_arn, MessageStructure="json", Message=json.dumps(message)
+        )
+
+        def check_responses():
+            responses = sns_backend.platform_endpoint_responses[endpoint_arn]
+            assert responses[0].status_code == "200"
+
+        # retry(check_responses, sleep=1)
+        print(sns_backend.platform_endpoint_responses.keys())
+        sns_client.delete_endpoint(EndpointArn=endpoint_arn)
+        sns_client.delete_platform_application(PlatformApplicationArn=platform_app_arn)

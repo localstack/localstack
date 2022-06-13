@@ -4,10 +4,10 @@ import base64
 import datetime
 import json
 import logging
-from platform import platform
 import time
 import traceback
 import uuid
+from platform import platform
 from typing import Dict, List
 
 import requests as requests
@@ -120,7 +120,7 @@ SNS_PROTOCOLS = [
 # set up logger
 LOG = logging.getLogger(__name__)
 
-GCM_URL = 'https://fcm.googleapis.com/fcm/send'
+GCM_URL = "https://fcm.googleapis.com/fcm/send"
 
 
 class SNSBackend(RegionBackend):
@@ -163,7 +163,7 @@ def publish_message(
         # TODO: check this in the old provider
         cache.append(req_data)
 
-        message_structure = req_data.get('MessageStructure',[None])[0]
+        message_structure = req_data.get("MessageStructure", [None])[0]
         LOG.debug("Publishing message to Endpoint: %s | Message: %s", target_arn, message)
         message_to_endpoint(target_arn, message, message_structure)
         return message_id
@@ -181,9 +181,51 @@ def publish_message(
             skip_checks,
             message_attributes,
         )
-    )        
+    )
 
     return message_id
+
+
+def message_to_endpoint(
+    target_arn,
+    message,
+    structure,
+):
+    sns_client = aws_stack.connect_to_service("sns")
+    endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=target_arn)["Attributes"]
+    app_name = target_arn.split("/")[-2]
+    platform = target_arn.split("/")[-3]
+    platform_apps = sns_client.list_platform_applications()["PlatformApplications"]
+    app = [x for x in platform_apps if app_name in x["PlatformApplicationArn"]][0]
+
+    if structure == "json":
+        message = json.loads(message)
+
+    response = None
+    if platform == "GCM":
+        response = send_message_to_GCM(app["Attributes"], endpoint_attributes, message["GCM"])
+    # TODO: Add support for other platforms
+
+    if response:
+        sns_backend = SNSBackend.get()
+        prev_responses = sns_backend.platform_endpoint_responses.get(target_arn, [])
+        prev_responses.append({"status_code": response.status_code, "body": response.content})
+        sns_backend.platform_endpoint_responses[target_arn] = prev_responses
+
+
+def send_message_to_GCM(app_attributes, endpoint_attributes, message):
+    server_key = app_attributes.get("PlatformCredential", "")
+    token = endpoint_attributes.get("Token", "")
+    data = json.loads(message)
+
+    data["to"] = token
+    headers = {"Authorization": f"key={server_key}", "Content-type": "application/json"}
+
+    return requests.post(
+        GCM_URL,
+        headers=headers,
+        data=json.dumps(data),
+    )
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
@@ -724,52 +766,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             payload={"t": event_publisher.get_hash(topic_arn)},
         )
         return CreateTopicResponse(TopicArn=topic_arn)
-
-
-def message_to_endpoint(
-    target_arn,
-    message,
-    structure,
-):  
-    sns_client = aws_stack.connect_to_service("sns")
-    endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=target_arn)['Attributes']
-    app_name = target_arn.split('/')[-2]
-    platform = target_arn.split("/")[-3]
-    platform_apps = sns_client.list_platform_applications()['PlatformApplications']
-    
-    app = [x for x in platform_apps if app_name in x['PlatformApplicationArn']][0]
-
-    if structure == 'json':
-        message = json.loads(message)
-
-    response = None
-    if platform == 'GCM':
-        response = send_message_to_GCM(app['Attributes'], endpoint_attributes, message['GCM'])
-    # TODO: Add support for other platforms
-
-    if response:
-        sns_backend = SNSBackend.get()
-        prev_responses = sns_backend.platform_endpoint_responses.get(target_arn, [])
-        prev_responses.append(response)
-        sns_backend.platform_endpoint_responses.update({target_arn: prev_responses})
-
-
-def send_message_to_GCM(app_attributes, endpoint_attributes, message):
-    server_key = app_attributes.get('PlatformCredential', '')
-    token = endpoint_attributes.get('Token', '')
-    data = json.loads(message)
-
-    data['to'] = token
-    headers = {
-        'Authorization': f"key={server_key}",
-        'Content-type':'application/json'
-    }
-
-    return requests.post(
-            GCM_URL,
-            headers=headers,
-            data=json.dumps(data),
-    )
 
 
 def message_to_subscribers(
