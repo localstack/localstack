@@ -165,9 +165,7 @@ def publish_message(
 
         message_structure = req_data.get('MessageStructure',[None])[0]
         LOG.debug("Publishing message to Endpoint: %s | Message: %s", target_arn, message)
-        start_thread(
-            lambda _: message_to_endpoint(target_arn, message, message_structure)
-        )
+        message_to_endpoint(target_arn, message, message_structure)
         return message_id
 
     LOG.debug("Publishing message to TopicArn: %s | Message: %s", topic_arn, message)
@@ -738,6 +736,7 @@ def message_to_endpoint(
     app_name = target_arn.split('/')[-2]
     platform = target_arn.split("/")[-3]
     platform_apps = sns_client.list_platform_applications()['PlatformApplications']
+    
     app = [x for x in platform_apps if app_name in x['PlatformApplicationArn']][0]
 
     if structure == 'json':
@@ -753,7 +752,6 @@ def message_to_endpoint(
         prev_responses = sns_backend.platform_endpoint_responses.get(target_arn, [])
         prev_responses.append(response)
         sns_backend.platform_endpoint_responses.update({target_arn: prev_responses})
-    
 
 
 def send_message_to_GCM(app_attributes, endpoint_attributes, message):
