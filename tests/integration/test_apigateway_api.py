@@ -698,6 +698,67 @@ def test_get_model_with_invalid_name(apigateway_client):
     assert ex.value.response["Error"]["Code"] == "NotFoundException"
 
 
+@pytest.mark.aws_validated
+def test_get_api_keys(apigateway_client):
+    api_key_name = f"test-key-{short_uid()}"
+    api_key_name_2 = f"test-key-{short_uid()}"
+    list_response = apigateway_client.get_api_keys()
+    api_keys_before = len(list_response["items"])
+    try:
+        creation_response = apigateway_client.create_api_key(name=api_key_name)
+        api_key_id = creation_response["id"]
+        api_keys = apigateway_client.get_api_keys()["items"]
+        assert len(api_keys) == api_keys_before + 1
+        assert api_key_id in [api_key["id"] for api_key in api_keys]
+        # test not created api key
+        api_keys_filtered = apigateway_client.get_api_keys(nameQuery=api_key_name_2)["items"]
+        assert len(api_keys_filtered) == 0
+        # test prefix
+        api_keys_prefix_filtered = apigateway_client.get_api_keys(nameQuery=api_key_name[:8])[
+            "items"
+        ]
+        assert len(api_keys_prefix_filtered) == 1
+        assert api_key_id in [api_key["id"] for api_key in api_keys]
+        # test postfix
+        api_keys_prefix_filtered = apigateway_client.get_api_keys(nameQuery=api_key_name[2:])[
+            "items"
+        ]
+        assert len(api_keys_prefix_filtered) == 0
+        # test infix
+        api_keys_prefix_filtered = apigateway_client.get_api_keys(nameQuery=api_key_name[2:8])[
+            "items"
+        ]
+        assert len(api_keys_prefix_filtered) == 0
+        creation_response = apigateway_client.create_api_key(name=api_key_name_2)
+        api_key_id_2 = creation_response["id"]
+        api_keys = apigateway_client.get_api_keys()["items"]
+        assert len(api_keys) == api_keys_before + 2
+        assert api_key_id in [api_key["id"] for api_key in api_keys]
+        assert api_key_id_2 in [api_key["id"] for api_key in api_keys]
+        api_keys_filtered = apigateway_client.get_api_keys(nameQuery=api_key_name_2)["items"]
+        assert len(api_keys_filtered) == 1
+        assert api_key_id_2 in [api_key["id"] for api_key in api_keys]
+        api_keys_filtered = apigateway_client.get_api_keys(nameQuery=api_key_name)["items"]
+        assert len(api_keys_filtered) == 1
+        assert api_key_id in [api_key["id"] for api_key in api_keys]
+        # test prefix
+        api_keys_filtered = apigateway_client.get_api_keys(nameQuery=api_key_name[:8])["items"]
+        assert len(api_keys_filtered) == 2
+        assert api_key_id in [api_key["id"] for api_key in api_keys]
+        assert api_key_id_2 in [api_key["id"] for api_key in api_keys]
+        # some minor paging testing
+        api_keys_page = apigateway_client.get_api_keys(limit=1)
+        assert len(api_keys_page["items"]) == 1
+        api_keys_page_2 = apigateway_client.get_api_keys(
+            limit=1, position=api_keys_page["position"]
+        )
+        assert len(api_keys_page_2["items"]) == 1
+        assert api_keys_page["items"][0]["id"] != api_keys_page_2["items"][0]["id"]
+    finally:
+        apigateway_client.delete_api_key(apiKey=api_key_id)
+        apigateway_client.delete_api_key(apiKey=api_key_id_2)
+
+
 def test_export_swagger_openapi(apigateway_client):
     spec_file = load_file(TEST_IMPORT_PETSTORE_SWAGGER)
     response = apigateway_client.import_rest_api(failOnWarnings=True, body=spec_file)

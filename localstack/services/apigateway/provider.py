@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from copy import deepcopy
 
@@ -6,6 +7,7 @@ from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
     Account,
     ApigatewayApi,
+    ApiKeys,
     Authorizer,
     Authorizers,
     BasePathMapping,
@@ -25,6 +27,7 @@ from localstack.aws.api.apigateway import (
     ListOfString,
     MapOfStringToString,
     NotFoundException,
+    NullableBoolean,
     NullableInteger,
     PutRestApiRequest,
     RequestValidator,
@@ -56,10 +59,12 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
-from localstack.utils.collections import ensure_list
+from localstack.utils.collections import PaginatedList, ensure_list
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import short_uid, str_to_bool, to_str
 from localstack.utils.time import now_utc
+
+LOG = logging.getLogger(__name__)
 
 
 class ApigatewayApiListener(AwsApiListener):
@@ -705,6 +710,35 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             result = json.dumps(result, indent=2)
 
         return ExportResponse(contentType=accepts, body=result)
+
+    def get_api_keys(
+        self,
+        context: RequestContext,
+        position: String = None,
+        limit: NullableInteger = None,
+        name_query: String = None,
+        customer_id: String = None,
+        include_values: NullableBoolean = None,
+    ) -> ApiKeys:
+        moto_response: ApiKeys = call_moto(context=context)
+        item_list = PaginatedList(moto_response["items"])
+
+        def token_generator(item):
+            return item["id"]
+
+        def filter_function(item):
+            return item["name"].startswith(name_query)
+
+        paginated_list, next_token = item_list.get_page(
+            token_generator=token_generator,
+            next_token=position,
+            page_size=limit,
+            filter_function=filter_function if name_query else None,
+        )
+
+        return ApiKeys(
+            items=paginated_list, warnings=moto_response.get("warnings"), position=next_token
+        )
 
 
 # ---------------
