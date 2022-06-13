@@ -1,7 +1,7 @@
 name: 🐞 Bug
 description: File a bug/issue
 title: "bug: <title>"
-labels: [bug, needs-triaging]
+labels: ["type: bug", "status: needs triage"]
 body:
 - type: markdown
   attributes:
@@ -42,11 +42,11 @@ body:
     description: Steps to reproduce the behavior.
     value: |
       #### How are you starting localstack (e.g., `bin/localstack` command, arguments, or `docker-compose.yml`)
-      
+
           docker run localstack/localstack
-      
+
       #### Client commands (e.g., AWS SDK code snippet, or sequence of "awslocal" commands)
-      
+
           awslocal s3 mb s3://mybucket
 
   validations:
@@ -59,8 +59,8 @@ body:
         - **OS**: Ubuntu 20.04
         - **LocalStack**: latest
     value: |
-        - OS: 
-        - LocalStack: 
+        - OS:
+        - LocalStack:
     render: markdown
   validations:
     required: false
@@ -69,7 +69,7 @@ body:
     label: Anything else?
     description: |
       Links? References? Anything that will give us more context about the issue you are encountering!
-      
+
       Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
   validations:
     required: false
