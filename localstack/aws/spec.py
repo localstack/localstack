@@ -8,6 +8,7 @@ from botocore.model import ServiceModel
 loader = create_loader()
 
 ServiceName = str
+ServiceProtocol = str
 
 
 def list_services(model_type="service-2") -> List[ServiceModel]:
@@ -51,13 +52,14 @@ class ServiceCatalog:
         return dict(result)
 
     @cached_property
-    def operations_index(self) -> Dict[str, List[ServiceName]]:
-        result = defaultdict(list)
+    def protocol_and_operations_index(self) -> Dict[ServiceProtocol, Dict[str, List[ServiceName]]]:
+        result = defaultdict(lambda: defaultdict(list))
         for service in self.services.values():
+            protocol = service.protocol
             operations = service.operation_names
             if operations:
                 for operation in operations:
-                    result[operation].append(service.service_name)
+                    result[protocol][operation].append(service.service_name)
         return dict(result)
 
     @cached_property
@@ -73,5 +75,11 @@ class ServiceCatalog:
     def by_signing_name(self, signing_name: str) -> List[ServiceName]:
         return self.signing_name_index.get(signing_name, [])
 
-    def by_operation(self, operation_name: str) -> List[ServiceName]:
-        return self.operations_index.get(operation_name, [])
+    def by_protocol_and_operation(
+        self, protocols: List[str], operation_name: str
+    ) -> List[ServiceName]:
+        services_names = []
+        for protocol in protocols:
+            operation_index = self.protocol_and_operations_index.get(protocol)
+            services_names.extend(operation_index.get(operation_name, []))
+        return services_names

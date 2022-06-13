@@ -402,6 +402,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             for i in v:
                 if i["TopicArn"] == topic_arn:
                     i["PendingConfirmation"] = "false"
+
         return ConfirmSubscriptionResponse(SubscriptionArn=sub_arn)
 
     def untag_resource(
@@ -464,15 +465,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
             if current_subscription["Protocol"] in ["http", "https"]:
                 external_url = external_service_url("sns")
-                token = short_uid()
+                subscription_token = short_uid()
                 message_id = long_uid()
                 subscription_url = create_subscribe_url(
-                    external_url, target_subscription_arn, token
+                    external_url, current_subscription["TopicArn"], subscription_token
                 )
                 message = {
                     "Type": ["UnsubscribeConfirmation"],
                     "MessageId": [message_id],
-                    "Token": [token],
+                    "Token": [subscription_token],
                     "TopicArn": [current_subscription["TopicArn"]],
                     "Message": [
                         "You have chosen to deactivate subscription %s.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message."
@@ -584,6 +585,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException(
                 f"Invalid parameter: Amazon SNS does not support this protocol string: {protocol}"
             )
+        elif protocol in ["http", "https"] and not endpoint.startswith(f"{protocol}://"):
+            raise InvalidParameterException(
+                "Invalid parameter: Endpoint must match the specified protocol"
+            )
         if ".fifo" in endpoint and ".fifo" not in topic_arn:
             raise InvalidParameterException(
                 "FIFO SQS Queues can not be subscribed to standard SNS topics"
@@ -619,29 +624,28 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if subscription_arn not in sns_backend.subscription_status:
             sns_backend.subscription_status[subscription_arn] = {}
 
-        token = short_uid()
+        subscription_token = short_uid()
         sns_backend.subscription_status[subscription_arn].update(
-            {"TopicArn": topic_arn, "Token": token, "Status": "Not Subscribed"}
+            {"TopicArn": topic_arn, "Token": subscription_token, "Status": "Not Subscribed"}
         )
         # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
         if protocol in ["http", "https"]:
-            token = short_uid()
             external_url = external_service_url("sns")
             subscription["UnsubscribeURL"] = create_unsubscribe_url(external_url, subscription_arn)
             confirmation = {
                 "Type": ["SubscriptionConfirmation"],
-                "Token": [token],
+                "Token": [subscription_token],
                 "Message": [
                     f"You have chosen to subscribe to the topic {topic_arn}.\n"
                     + "To confirm the subscription, visit the SubscribeURL included in this message."
                 ],
-                "SubscribeURL": [create_subscribe_url(external_url, topic_arn, token)],
+                "SubscribeURL": [create_subscribe_url(external_url, topic_arn, subscription_token)],
             }
             publish_message(topic_arn, confirmation, {}, subscription_arn, skip_checks=True)
         elif protocol in ["sqs", "lambda"]:
             # Auto-confirm sqs and lambda subscriptions for now
             # TODO: revisit for multi-account
-            self.confirm_subscription(context, topic_arn, token)
+            self.confirm_subscription(context, topic_arn, subscription_token)
         return SubscribeResponse(SubscriptionArn=subscription_arn)
 
     def tag_resource(
@@ -899,7 +903,7 @@ async def message_to_subscriber(
             # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
             # indicating that the message has been published without JSON formatting.
             # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-            if is_raw_message_delivery(subscriber):
+            if msg_type == "Notification" and is_raw_message_delivery(subscriber):
                 headers["x-amz-sns-rawdelivery"] = "true"
 
             response = requests.post(
@@ -978,6 +982,7 @@ def get_subscription_by_arn(sub_arn):
 
 def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
     message = req_data["Message"][0]
+    message_type = req_data.get("Type", ["Notification"])[0]
     protocol = subscriber["Protocol"]
     attributes = get_message_attributes(req_data)
 
@@ -988,7 +993,7 @@ def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
         except KeyError:
             raise Exception("Unable to find 'default' key in message payload")
 
-    if is_raw_message_delivery(subscriber):
+    if message_type == "Notification" and is_raw_message_delivery(subscriber):
         if attributes:
             message["MessageAttributes"] = attributes
         return message
@@ -997,7 +1002,7 @@ def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
     unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
 
     data = {
-        "Type": req_data.get("Type", ["Notification"])[0],
+        "Type": message_type,
         "MessageId": message_id,
         "TopicArn": subscriber["TopicArn"],
         "Message": message,
@@ -1017,6 +1022,9 @@ def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
     for key in HTTP_SUBSCRIPTION_ATTRIBUTES:
         if key in subscriber:
             data[key] = subscriber[key]
+
+    if data["Type"] == "UnsubscribeConfirmation":
+        data.pop("UnsubscribeURL")
 
     if attributes:
         data["MessageAttributes"] = attributes
@@ -1078,12 +1086,12 @@ def prepare_message_attributes(message_attributes):
     return attributes
 
 
-def create_subscribe_url(external_url, topic_arn, token):
-    return f"{external_url}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}&Version={SnsApi.version}"
+def create_subscribe_url(external_url, topic_arn, subscription_token):
+    return f"{external_url}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={subscription_token}"
 
 
 def create_unsubscribe_url(external_url, subscription_arn):
-    return f"{external_url}/?Action=Unsubscribe&SubscriptionArn={subscription_arn}&Version={SnsApi.version}"
+    return f"{external_url}/?Action=Unsubscribe&SubscriptionArn={subscription_arn}"
 
 
 def is_number(x):
