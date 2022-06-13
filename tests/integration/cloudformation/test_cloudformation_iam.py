@@ -121,7 +121,7 @@ def test_policy_attachments(
 
     # check service linked roles
     roles = iam_client.list_roles(PathPrefix=SERVICE_LINKED_ROLE_PATH_PREFIX)["Roles"]
-    matching = [r for r in roles if r["Description"] == f"service linked role {linked_role_id}"]
+    matching = [r for r in roles if r.get("Description") == f"service linked role {linked_role_id}"]
     assert matching
     policy = matching[0]["AssumeRolePolicyDocument"]
     policy = json.loads(policy) if isinstance(policy, str) else policy

@@ -352,3 +352,22 @@ class TestIAMIntegrations:
         assert roles["Roles"][0]["Path"] == "myPath"
         assert roles["Roles"][0]["RoleName"] == role_name_2
         assert len(roles["Roles"]) == 1
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail
+    @pytest.mark.parametrize(
+        "service_name, expected_role",
+        [
+            ("ecs.amazonaws.com", "AWSServiceRoleForECS"),
+            ("eks.amazonaws.com", "AWSServiceRoleForAmazonEKS"),
+        ],
+    )
+    def test_service_linked_role_name_should_match_aws(
+        self, iam_client, service_name, expected_role
+    ):
+        try:
+            service_linked_role = iam_client.create_service_linked_role(AWSServiceName=service_name)
+            role_name = service_linked_role["Role"]["RoleName"]
+            assert role_name == expected_role
+        finally:
+            iam_client.delete_service_linked_role(RoleName=role_name)
