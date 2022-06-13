@@ -6,14 +6,9 @@ from moto.route53.models import route53_backend
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.route53 import (
-    VPC,
-    AssociateVPCComment,
-    AssociateVPCWithHostedZoneResponse,
     ChangeInfo,
     ChangeStatus,
     DeleteHealthCheckResponse,
-    DisassociateVPCComment,
-    DisassociateVPCFromHostedZoneResponse,
     GetChangeResponse,
     GetHealthCheckResponse,
     HealthCheck,
@@ -21,13 +16,9 @@ from localstack.aws.api.route53 import (
     NoSuchHealthCheck,
     ResourceId,
     Route53Api,
-    VPCAssociationNotFound,
 )
 from localstack.aws.api.route53resolver import Route53ResolverApi
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.route53.models import HostedZoneAssociation, Route53Backend
-from localstack.utils.aws import aws_stack
-from localstack.utils.strings import short_uid
 
 
 class Route53ResolverProvider(Route53ResolverApi):
