@@ -1613,6 +1613,13 @@ class TemplateDeployer:
                         if not self.all_resource_dependencies_satisfied(resource):
                             j += 1
                             continue
+                    elif action == "Remove":
+                        should_remove = self.prepare_should_deploy_change(
+                            resource_id, change, stack, new_resources
+                        )
+                        if not should_remove:
+                            del changes[j]
+                            continue
                     self.apply_change(change, stack=stack)
                     changes_done.append(change)
                     del changes[j]
@@ -1666,6 +1673,9 @@ class TemplateDeployer:
                     resource.get("Type"),
                 )
                 return False
+        elif action == "Remove":
+            should_remove = self.is_deployable_resource(resource)
+            return should_remove
         return True
 
     def apply_change(self, change, stack):

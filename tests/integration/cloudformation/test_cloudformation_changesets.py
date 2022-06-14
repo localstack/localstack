@@ -375,7 +375,6 @@ def test_delete_change_set_nonexisting(cfn_client):
     assert ex.value.response["Error"]["Code"] == "ResourceNotFoundException"
 
 
-@pytest.mark.xfail
 @pytest.mark.aws_validated
 def test_deploy_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_template):
     # first deploy cfn with a CodeArtifact resource that is not actually supported
@@ -388,5 +387,5 @@ def test_deploy_create_and_then_remove_non_supported_resource_change_set(deploy_
     deploy_cfn_template(
         is_update=True,
         template=load_template_raw("code_artifact_remove_template.yaml"),
-        stack_name=stack.stack_name
+        stack_name=stack.stack_name,
     )
