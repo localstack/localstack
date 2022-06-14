@@ -239,7 +239,7 @@ ADD localstack/ localstack/
 # Download some more dependencies (make init needs the LocalStack code)
 # FIXME the init python code should be independent (i.e. not depend on the localstack code), idempotent/reproducible,
 #       modify only folders outside of the localstack package folder, and executed in the builder stage.
-RUN make init
+RUN make init && chmod -R 775 /usr/lib/localstack
 
 # Install the latest version of localstack-ext and generate the plugin entrypoints.
 # If this is a pre-release build, also include dev releases of these packages.
