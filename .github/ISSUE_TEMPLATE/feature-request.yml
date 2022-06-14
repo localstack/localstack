@@ -1,7 +1,7 @@
 name: 💡 Feature request
 description: Request a new feature
 title: "feature request: <title>"
-labels: ["type: feature"]
+labels: ["type: feature", "status: triage needed"]
 body:
 - type: markdown
   attributes:
