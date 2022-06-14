@@ -156,6 +156,10 @@ except Exception:
 TEST_AWS_ACCESS_KEY_ID = "test"
 TEST_AWS_SECRET_ACCESS_KEY = "test"
 
+# credentials being used for internal calls
+INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
+INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
+
 # This header must be set to the AWS Account ID
 # Presence of this header in an incoming request typically means that the request originated within localstack,
 # i.e. it is an internal cross-service call.
