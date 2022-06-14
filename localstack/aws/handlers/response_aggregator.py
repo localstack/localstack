@@ -17,8 +17,7 @@ FLUSH_INTERVAL_SECS = 10
 
 
 @dataclasses.dataclass
-class Trace:
-    # TODO consider naming this something different
+class ResponseInfo:
     service: str
     operation: str
     status_code: int
@@ -40,13 +39,13 @@ class ResponseAggregator:
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if response is None:
             return
-        t = Trace(
+        response_info = ResponseInfo(
             context.service.service_name, context.operation.name, response.status_code
         ).to_string()
-        if t in self.response_counts:
-            self.response_counts[t] = self.response_counts[t] + 1
+        if response_info in self.response_counts:
+            self.response_counts[response_info] = self.response_counts[response_info] + 1
         else:
-            self.response_counts[t] = 1
+            self.response_counts[response_info] = 1
 
     def _get_analytics_payload(self) -> Dict[str, Any]:
         return {
@@ -60,7 +59,6 @@ class ResponseAggregator:
     def flush(self):
         if len(self.response_counts) > 0:
             analytics_payload = self._get_analytics_payload()
-            LOG.warning(analytics_payload)
             analytics.log.event("http_response_agg", analytics_payload)
             self.response_counts = {}
         self.period_start_time = datetime.datetime.utcnow()
