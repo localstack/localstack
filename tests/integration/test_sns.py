@@ -67,11 +67,21 @@ class TestSNSSubscription:
             SourceArn=topic_arn,
         )
 
-        sns_subscription(
+        subscription = sns_subscription(
             TopicArn=topic_arn,
             Protocol="lambda",
             Endpoint=lambda_arn,
         )
+
+        def check_subscription():
+            subscription_arn = subscription["SubscriptionArn"]
+            subscription_attrs = sns_client.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            assert subscription_attrs["Attributes"]["PendingConfirmation"] == "false"
+
+        retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+
         sns_client.publish(TopicArn=topic_arn, Subject=subject, Message=message)
 
         events = retry(
