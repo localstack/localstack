@@ -1,8 +1,8 @@
 Resources:
   TestBucket560B80BC:
     Type: AWS::S3::Bucket
-    UpdateReplacePolicy: Retain
-    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
     Metadata:
       aws:cdk:path: UpdateCdkStack/TestBucket/Resource
   TestBucketPolicyBA12ED38:
@@ -28,8 +28,8 @@ Resources:
       aws:cdk:path: UpdateCdkStack/TestBucket/Policy/Resource
   HestBucketABE4AE1C:
     Type: AWS::S3::Bucket
-    UpdateReplacePolicy: Retain
-    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
     Metadata:
       aws:cdk:path: UpdateCdkStack/HestBucket/Resource
   HestBucketPolicy276ECA48:
