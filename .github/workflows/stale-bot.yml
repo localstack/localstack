@@ -25,13 +25,13 @@ jobs:
           with a reaction on the initial post to prevent automatic closure. If the issue is already closed,
           please feel free to open a new one.
         # These labels are required
-        stale-issue-label: closing-soon
-        exempt-issue-labels: needs-triaging,feature-request-approved,bug-confirmed
-        response-requested-label: awaiting-response
+        stale-issue-label: "status: stale"
+        exempt-issue-labels: "status: needs triage","status: confirmed","status: accepted"
+        response-requested-label: "status: awaiting response"
 
         # Don't set closed-for-staleness label to skip closing very old issues
         # regardless of label
-        closed-for-staleness-label: closed-for-staleness
+        closed-for-staleness-label: "status: resolved/stale"
 
         # Issue timing
         days-before-stale: 60
