@@ -673,9 +673,9 @@ def import_api_from_openapi_spec(
         for method, method_schema in resolved_schema["paths"].get(path, {}).items():
             method = method.upper()
 
-            method_resource = create_method_resource(resource, method, method_schema)
-
             method_integration = method_schema.get("x-amazon-apigateway-integration", {})
+            method_resource = create_method_resource(resource, method, method_schema)
+            method_resource["requestParameters"] = method_integration.get("requestParameters")
             responses = method_schema.get("responses", {})
             for status_code in responses:
                 response_model = None

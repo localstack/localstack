@@ -5,7 +5,7 @@ from urllib.parse import parse_qs, unquote
 
 from botocore.model import OperationModel, ServiceModel, StructureShape
 from werkzeug.datastructures import Headers, MultiDict
-from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import MethodNotAllowed, NotFound
 from werkzeug.routing import Map, MapAdapter, PathConverter, Rule
 
 from localstack.http import Request
@@ -279,7 +279,16 @@ class RestServiceOperationRouter:
         matcher: MapAdapter = self._map.bind(request.host)
 
         # perform the matching
-        rule, args = matcher.match(get_raw_path(request), method=request.method, return_rule=True)
+        try:
+            # some services (at least S3) allow OPTIONS request (f.e. for CORS preflight requests) without them being
+            # specified. the specs do _not_ contain any operations on OPTIONS methods at all.
+            # avoid matching issues for preflight requests by matching against a similar GET request instead.
+            method = request.method if request.method != "OPTIONS" else "GET"
+            rule, args = matcher.match(get_raw_path(request), method=method, return_rule=True)
+        except MethodNotAllowed as e:
+            # MethodNotAllowed (405) exception is raised if a path is matching, but the method does not.
+            # Our router handles this as a 404.
+            raise NotFound() from e
 
         # if the found rule is a _RequestMatchingRule, the multi rule matching needs to be invoked to perform the
         # fine-grained matching based on the whole request

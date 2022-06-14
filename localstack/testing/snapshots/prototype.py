@@ -1,38 +1,32 @@
 import json
 import logging
-import re
 from datetime import datetime
+from json import JSONDecodeError
 from pathlib import Path
-from typing import Dict, List, Optional, Pattern, Set, Tuple
+from re import Pattern
+from typing import Dict, List, Optional
 
 from botocore.response import StreamingBody
 from deepdiff import DeepDiff
+from jsonpath_ng.ext import parse
+
+from localstack.testing.snapshots.transformer import (
+    KeyValueBasedTransformer,
+    RegexTransformer,
+    TransformContext,
+    Transformer,
+)
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 
 LOG = logging.getLogger(__name__)
 
 
-PATTERN_ARN = re.compile(
-    r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?(:[^:\\\"]+)+"
-)
-PATTERN_UUID = re.compile(
-    r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
-)
-PATTERN_ISO8601 = re.compile(
-    r"(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-][01]\d:?([0-5]\d)?)"
-)
-PATTERN_S3_URL = re.compile(
-    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}(\+[0-9]{4})?"
-)
-PATTERN_SQS_URL = re.compile(
-    r"https?://[^/]+/\d{12}/[^/\"]+"
-)  # TODO: differences here between AWS + localstack structure
-
-
 class SnapshotMatchResult:
-    def __init__(self, a: dict, b: dict):
+    def __init__(self, a: dict, b: dict, key: str = ""):
         self.a = a
         self.b = b
         self.result = DeepDiff(a, b, verbose_level=2)
+        self.key = key
 
     def __bool__(self) -> bool:
         return not self.result
@@ -42,7 +36,7 @@ class SnapshotMatchResult:
 
 
 class SnapshotAssertionError(AssertionError):
-    def __init__(self, msg: str, result: SnapshotMatchResult):
+    def __init__(self, msg: str, result: List[SnapshotMatchResult]):
         self.msg = msg
         self.result = result
         super(SnapshotAssertionError, self).__init__(msg)
@@ -55,62 +49,52 @@ class SnapshotSession:
     it assumes that a single snapshot file is only being written to sequentially
     """
 
-    results: List[SnapshotMatchResult]
-    recorded_state: Dict[str, dict]
-    observed_state: Dict[str, dict]
+    results: list[SnapshotMatchResult]
+    recorded_state: dict[str, dict]  # previously persisted state
+    observed_state: dict[str, dict]  # current state from match calls
 
-    called_keys: Set[str]
+    called_keys: set[str]
+    transformers: list[(Transformer, int)]  # (transformer, priority)
 
-    replacers: List[Tuple[Pattern[str], str]]
-    skip_keys: List[Tuple[Pattern[str], str]]
-    replace_values: List[Tuple[Pattern[str], str]]
+    transform: TransformerUtility
+
+    skip_verification_paths: list[str]
 
     def __init__(
         self,
         *,
         file_path: str,
         scope_key: str,
-        update: Optional[bool] = False,
-        verify: Optional[bool] = False,
+        update: Optional[bool] = False,  # TODO: find a way to remove this
+        verify: Optional[bool] = False,  # TODO: find a way to remove this
     ):
         self.verify = verify
         self.update = update
         self.file_path = file_path
         self.scope_key = scope_key
+
         self.called_keys = set()
-        self.replacers = []
-        self.skip_keys = []
-        self.replace_values = []
         self.results = []
+        self.transformers = []
 
         self.observed_state = {}
-        self.recorded_state = self.load_state()
+        self.recorded_state = self._load_state()
 
-        # registering some defaults
-        self.register_replacement(PATTERN_ARN, "<arn>")
-        self.register_replacement(PATTERN_UUID, "<uuid>")
-        self.register_replacement(PATTERN_ISO8601, "<date>")
-        # self.register_replacement(PATTERN_S3_URL, "<s3-url>")
-        self.register_replacement(PATTERN_SQS_URL, "<sqs-url>")
+        self.transform = TransformerUtility
 
-        self.skip_key(re.compile(r"^.*Name$"), "<name>")
-        self.skip_key(re.compile(r"^.*ResponseMetadata$"), "<response-metadata>")
-        self.skip_key(re.compile(r"^.*Location$"), "<location>")
-        self.skip_key(re.compile(r"^.*timestamp.*$", flags=re.IGNORECASE), "<timestamp>")
-        self.skip_key(
-            re.compile(r"^.*sha.*$", flags=re.IGNORECASE), "<sha>"
-        )  # TODO: instead of skipping, make zip building reproducible
+    def add_transformers_list(
+        self, transformer_list: list[Transformer], priority: Optional[int] = 0
+    ):
+        for transformer in transformer_list:
+            self.transformers.append((transformer, priority))  # TODO
 
-    def register_replacement(self, pattern: Pattern[str], value: str):
-        self.replacers.append((pattern, value))
+    def add_transformer(self, transformer: Transformer, *, priority: Optional[int] = 0):
+        if isinstance(transformer, list):
+            self.add_transformers_list(transformer, priority)
+        else:
+            self.transformers.append((transformer, priority or 0))
 
-    def skip_key(self, pattern: Pattern[str], value: str):
-        self.skip_keys.append((pattern, value))
-
-    def replace_value(self, pattern: Pattern[str], value: str):
-        self.replace_values.append((pattern, value))
-
-    def persist_state(self) -> None:
+    def _persist_state(self) -> None:
         if self.update:
             Path(self.file_path).touch()
             with open(self.file_path, "r+") as fd:
@@ -119,17 +103,23 @@ class SnapshotSession:
                     fd.seek(0)
                     fd.truncate()
                     full_state = json.loads(content or "{}")
-                    full_state[self.scope_key] = self.observed_state
-                    fd.write(json.dumps(full_state, indent=2))
+                    recorded = {
+                        "recorded-date": datetime.now().strftime("%d-%m-%Y, %H:%M:%S"),
+                        "recorded-content": self.observed_state,
+                    }
+                    full_state[self.scope_key] = recorded
+                    state_to_dump = json.dumps(full_state, indent=2)
+                    fd.write(state_to_dump)
                 except Exception as e:
                     LOG.exception(e)
 
-    def load_state(self) -> dict:
+    def _load_state(self) -> dict:
         try:
             with open(self.file_path, "r") as fd:
                 content = fd.read()
                 if content:
-                    return json.loads(content).get(self.scope_key, {})
+                    recorded = json.loads(content).get(self.scope_key, {})
+                    return recorded.get("recorded-content", None)
                 else:
                     return {}
         except FileNotFoundError:
@@ -138,76 +128,140 @@ class SnapshotSession:
     def _update(self, key: str, obj_state: dict) -> None:
         self.observed_state[key] = obj_state
 
-    def match(self, key: str, obj: dict) -> SnapshotMatchResult:
-        __tracebackhide__ = True
-
+    def match(self, key: str, obj: dict) -> None:
         if key in self.called_keys:
-            raise Exception(f"Key {key} used multiple times in the same test scope")
+            raise Exception(
+                f"Key {key} used multiple times in the same test scope"
+            )  # TODO: custom exc.
+
         self.called_keys.add(key)
 
-        obj_state = self._transform(obj)
-        self.observed_state[key] = obj_state
+        self.observed_state[
+            key
+        ] = obj  # TODO: track them separately since the transformation is now done *just* before asserting
 
-        if self.update:
-            self._update(key, obj_state)
-            return SnapshotMatchResult({}, {})
-
-        sub_state = self.recorded_state.get(key)
-        if sub_state is None:
+        if not self.update and not self.recorded_state.get(key):
             raise Exception("Please run the test first with --snapshot-update")
 
-        return SnapshotMatchResult(sub_state, obj_state)
+        # TODO: we should return something meaningful here
+        return True
 
-    def assert_all(self) -> SnapshotMatchResult:
-        """use after any assert_match calls to get a combined diff"""
-        result = SnapshotMatchResult(self.recorded_state, self.observed_state)
-        if not result and self.verify:
-            raise SnapshotAssertionError("Parity snapshot failed", result=result)
-        else:
-            return result
+    def _assert_all(
+        self, verify: bool = True, skip_verification_paths: list[str] = []
+    ) -> List[SnapshotMatchResult]:
+        """use after all match calls to get a combined diff"""
+        results = []
 
-    def _transform(self, old: dict) -> dict:
+        # TODO future work: verify will be enabled by default, can only be disabled here
+        if self.verify and not verify and not skip_verification_paths:
+            self.verify = verify
+
+        self.skip_verification_paths = skip_verification_paths
+
+        if self.update:
+            self.observed_state = self._transform(self.observed_state)
+            return []
+
+        # TODO: separate these states
+        a_all = self.recorded_state
+        self._remove_skip_verification_paths(a_all)
+        self.observed_state = b_all = self._transform(self.observed_state)
+
+        for key in self.called_keys:
+            a = a_all[key]
+            b = b_all[key]
+            result = SnapshotMatchResult(a, b, key=key)
+            results.append(result)
+
+        if any(not result for result in results) and self.verify:
+            raise SnapshotAssertionError("Parity snapshot failed", result=results)
+        return results
+
+    def _transform_dict_to_parseable_values(self, original):
+        """recursively goes through dict and tries to resolve values to strings (& parse them as json if possible)"""
+        for k, v in original.items():
+            if isinstance(v, StreamingBody):
+                # update v for json parsing below
+                original[k] = v = v.read().decode(
+                    "utf-8"
+                )  # TODO: patch boto client so this doesn't break any further read() calls
+            if isinstance(v, list) and v and isinstance(v[0], dict):
+                for item in v:
+                    self._transform_dict_to_parseable_values(item)
+            if isinstance(v, Dict):
+                self._transform_dict_to_parseable_values(v)
+
+            if isinstance(v, str) and v.startswith("{"):
+                try:
+                    json_value = json.loads(v)
+                    original[k] = json_value
+                except JSONDecodeError:
+                    pass  # parsing error can be ignored
+
+    def _transform(self, tmp: dict) -> dict:
         """build a persistable state definition that can later be compared against"""
+        self._transform_dict_to_parseable_values(tmp)
 
-        new_dict = {}
-        for k, v in old.items():
+        if not self.update:
+            self._remove_skip_verification_paths(tmp)
 
-            for (pattern, repl) in self.skip_keys:
-                if pattern.match(k):
-                    new_dict[k] = repl
-                    break
-            else:
-                if isinstance(v, dict):
-                    new_dict[k] = self._transform(v)
-                elif isinstance(v, list):
-                    # assumption: no nested lists in API calls
-                    new_list = []
-                    for i in v:
-                        if isinstance(i, dict):
-                            new_list.append(self._transform(i))
-                        elif isinstance(i, str):
-                            new_list.append(i)
-                        else:  # assumption: has to be an int or boolean
-                            new_list.append(v)
-                    new_dict[k] = new_list
-                elif isinstance(v, str):
-                    for (pattern, repl) in self.replace_values:
-                        if pattern.match(v):
-                            new_dict[k] = repl
-                            break
-                    else:
-                        new_dict[k] = v
-                elif isinstance(v, StreamingBody):
-                    new_dict[k] = v.read().decode("utf-8")
-                elif isinstance(
-                    v, datetime
-                ):  # TODO: remove when structural matching is implemented
-                    new_dict[k] = "<date>"
-                else:
-                    new_dict[k] = v
+        ctx = TransformContext()
 
-        tmp_str = json.dumps(new_dict)
-        for (pattern, repl) in self.replacers:
-            tmp_str = re.sub(pattern, repl, tmp_str)
+        for transformer, _ in sorted(self.transformers, key=lambda p: p[1]):
+            tmp = transformer.transform(tmp, ctx=ctx)
 
-        return json.loads(tmp_str)
+        tmp = json.dumps(tmp, default=str)
+        for sr in ctx.serialized_replacements:
+            tmp = sr(tmp)
+
+        assert tmp
+        try:
+            tmp = json.loads(tmp)
+        except JSONDecodeError:
+            LOG.error(f"could not decode json-string:\n{tmp}")
+            return {}
+
+        return tmp
+
+    # LEGACY API
+
+    def register_replacement(self, pattern: Pattern[str], value: str):
+        self.add_transformer(RegexTransformer(pattern, value))
+
+    def skip_key(self, pattern: Pattern[str], value: str):
+        self.add_transformer(
+            KeyValueBasedTransformer(
+                lambda k, v: v if bool(pattern.match(k)) else None,
+                replacement=value,
+                replace_reference=False,
+            )
+        )
+
+    def replace_value(self, pattern: Pattern[str], value: str):
+        self.add_transformer(
+            KeyValueBasedTransformer(
+                lambda _, v: v if bool(pattern.match(v)) else None,
+                replacement=value,
+                replace_reference=False,
+            )
+        )
+
+    def _remove_skip_verification_paths(self, tmp: Dict):
+        """Removes all keys from the dict, that match the given json-paths in self.skip_verification_path"""
+        for path in self.skip_verification_paths:
+            matches = parse(path).find(tmp) or []
+            for m in matches:
+                full_path = str(m.full_path).split(".")
+                helper = tmp
+                if len(full_path) > 1:
+                    for p in full_path[:-1]:
+                        if isinstance(helper, list) and p.lstrip("[").rstrip("]").isnumeric():
+                            helper = helper[int(p.lstrip("[").rstrip("]"))]
+                        elif isinstance(helper, dict):
+                            helper = helper.get(p, None)
+                            if not helper:
+                                continue
+                if (
+                    isinstance(helper, dict) and full_path[-1] in helper.keys()
+                ):  # might have been deleted already
+                    del helper[full_path[-1]]

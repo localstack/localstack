@@ -1,0 +1,52 @@
+{
+  "tests/integration/awslambda/test_snapshots.py::TestSnapshot::test_create_rest_api_with_custom_id": {
+    "apigw_create_rest_api": {
+      "ResponseMetadata": "<response-metadata>",
+      "id": "<id>",
+      "name": "gw-test",
+      "createdDate": "<date>",
+      "apiKeySource": "HEADER",
+      "endpointConfiguration": {
+        "types": [
+          "EDGE"
+        ]
+      },
+      "tags": {
+        "_custom_id_": "testId123"
+      },
+      "disableExecuteApiEndpoint": false
+    },
+    "apigw_get_rest_api": {
+      "ResponseMetadata": "<response-metadata>",
+      "id": "<id>",
+      "name": "gw-test",
+      "createdDate": "<date>",
+      "apiKeySource": "HEADER",
+      "endpointConfiguration": {
+        "types": [
+          "EDGE"
+        ]
+      },
+      "tags": {
+        "_custom_id_": "testId123"
+      },
+      "disableExecuteApiEndpoint": false
+    }
+  },
+  "tests/integration/awslambda/test_snapshots.py::TestSnapshot::test_create_model": {
+    "apigw_create_rest_api": {
+      "ResponseMetadata": "<response-metadata>",
+      "id": "<id>",
+      "name": "my_api",
+      "description": "this is my api",
+      "createdDate": "<date>",
+      "apiKeySource": "HEADER",
+      "endpointConfiguration": {
+        "types": [
+          "EDGE"
+        ]
+      },
+      "disableExecuteApiEndpoint": false
+    }
+  }
+}

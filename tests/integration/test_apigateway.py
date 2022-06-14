@@ -5,7 +5,6 @@ import os
 import re
 from collections import namedtuple
 from typing import Callable, Optional
-from unittest.mock import patch
 
 import pytest
 import xmltodict
@@ -143,6 +142,15 @@ class TestAPIGateway:
     }
     TEST_API_GATEWAY_AUTHORIZER_OPS = [{"op": "replace", "path": "/name", "value": "test1"}]
 
+    @pytest.mark.aws_validated
+    def test_delete_rest_api_with_invalid_id(self, apigateway_client):
+        with pytest.raises(ClientError) as e:
+            apigateway_client.delete_rest_api(restApiId="foobar")
+
+        assert e.value.response["Error"]["Code"] == "NotFoundException"
+        assert "Invalid API identifier specified" in e.value.response["Error"]["Message"]
+        assert "foobar" in e.value.response["Error"]["Message"]
+
     def test_create_rest_api_with_custom_id(self):
         client = aws_stack.create_external_boto_client("apigateway")
         apigw_name = "gw-%s" % short_uid()
@@ -269,12 +277,10 @@ class TestAPIGateway:
         assert 1 == len(messages)
         assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
 
-    def test_api_gateway_http_integrations(self):
-        self.run_api_gateway_http_integration("custom")
-        self.run_api_gateway_http_integration("proxy")
+    @pytest.mark.parametrize("int_type", ["custom", "proxy"])
+    def test_api_gateway_http_integrations(self, int_type, monkeypatch):
+        monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_APIGATEWAY", False)
 
-    @patch.object(config, "DISABLE_CUSTOM_CORS_APIGATEWAY", False)
-    def run_api_gateway_http_integration(self, int_type):
         test_port = get_free_tcp_port()
         backend_url = "http://localhost:%s%s" % (test_port, self.API_PATH_HTTP_BACKEND)
 
@@ -565,7 +571,6 @@ class TestAPIGateway:
         integration_keys = [
             "httpMethod",
             "type",
-            "passthroughBehavior",
             "cacheKeyParameters",
             "uri",
             "cacheNamespace",
@@ -1160,6 +1165,10 @@ class TestAPIGateway:
 
         resource = [res for res in rs["items"] if res["path"] == "/test"][0]
         assert "GET" in resource["resourceMethods"]
+        assert "requestParameters" in resource["resourceMethods"]["GET"]
+        assert {"integration.request.header.X-Amz-Invocation-Type": "'Event'"} == resource[
+            "resourceMethods"
+        ]["GET"]["requestParameters"]
 
         url = path_based_url(api_id=rest_api_id, stage_name="dev", path="/test")
         response = requests.get(url)
@@ -1782,7 +1791,7 @@ def test_import_swagger_api(apigateway_client):
     methods = {kk[0] for k, v in resource_methods.items() for kk in v.items()}
     assert methods == {"POST", "OPTIONS", "GET"}
 
-    assert resource_methods.get("/").get("GET").method_responses == {
+    assert resource_methods.get("/").get("GET")["methodResponses"] == {
         "200": {
             "statusCode": "200",
             "responseModels": None,
@@ -1790,7 +1799,7 @@ def test_import_swagger_api(apigateway_client):
         }
     }
 
-    assert resource_methods.get("pets").get("GET").method_responses == {
+    assert resource_methods.get("pets").get("GET")["methodResponses"] == {
         "200": {
             "responseModels": {
                 "application/json": {

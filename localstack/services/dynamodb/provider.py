@@ -209,9 +209,8 @@ class EventForwarder:
                 continue
             if "SequenceNumber" not in ddb_record:
                 ddb_record["SequenceNumber"] = str(
-                    dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER
+                    dynamodbstreams_api.DynamoDBStreamsBackend.get_and_increment_sequence_number_counter()
                 )
-                dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER += 1
             # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
             if stream_type == "KEYS_ONLY":
                 ddb_record.pop("OldImage", None)
@@ -1091,7 +1090,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 if existing_item:
                     new_record["dynamodb"]["OldImage"] = existing_item
                 new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
-                new_record["dynamodb"]["SizeBytes"] = len(json.dumps(put_request["Item"]))
+                new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(put_request["Item"])
                 records.append(new_record)
                 i += 1
             update_request = request.get("Update")
@@ -1111,7 +1110,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["dynamodb"]["OldImage"] = existing_items[i]
                 new_record["dynamodb"]["NewImage"] = updated_item
                 new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
-                new_record["dynamodb"]["SizeBytes"] = len(json.dumps(updated_item))
+                new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(updated_item)
                 records.append(new_record)
                 i += 1
             delete_request = request.get("Delete")
@@ -1127,7 +1126,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["eventName"] = "REMOVE"
                 new_record["dynamodb"]["Keys"] = keys
                 new_record["dynamodb"]["OldImage"] = existing_item
-                new_record["dynamodb"]["SizeBytes"] = len(json.dumps(existing_item))
+                new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_items)
                 new_record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
                 records.append(new_record)
                 i += 1

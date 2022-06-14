@@ -7,6 +7,7 @@ from typing import Callable
 
 from botocore.parsers import create_parser
 from moto.backends import get_backend as get_moto_backend
+from moto.core.exceptions import RESTError
 from moto.core.utils import BackendDict
 from moto.moto_server.utilities import RegexConverter
 from werkzeug.routing import Map, Rule
@@ -134,7 +135,10 @@ def dispatch_to_moto(context: RequestContext) -> MotoResponse:
     # this is where we skip the HTTP roundtrip between the moto server and the boto client
     dispatch = get_dispatcher(service.service_name, request.path)
 
-    return dispatch(request, request.url, request.headers)
+    try:
+        return dispatch(request, request.url, request.headers)
+    except RESTError as e:
+        raise CommonServiceException(e.error_type, e.message, status_code=e.code) from e
 
 
 def get_dispatcher(service: str, path: str) -> MotoDispatcher:

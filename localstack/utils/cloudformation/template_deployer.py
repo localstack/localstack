@@ -123,6 +123,8 @@ def get_service_name(resource):
         return "cognito-idp"
     if parts[-2] == "Elasticsearch":
         return "es"
+    if parts[-2] == "OpenSearchService":
+        return "opensearch"
     if parts[-2] == "KinesisFirehose":
         return "firehose"
     if parts[-2] == "ResourceGroups":

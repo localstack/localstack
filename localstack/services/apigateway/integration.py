@@ -131,8 +131,7 @@ class ApiGatewayVtlTemplate(VtlTemplate):
 
     def prepare_namespace(self, variables) -> Dict[str, Any]:
         namespace = super().prepare_namespace(variables)
-        stage_var = variables.get("stage_variables") or {}
-        if stage_var:
+        if stage_var := variables.get("stage_variables") or {}:
             namespace["stageVariables"] = stage_var
         input_var = variables.get("input") or {}
         variables = {

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import unquote, urlencode, urlsplit
 
 import pytest
 from botocore.awsrequest import prepare_request_dict
@@ -317,7 +317,7 @@ def _botocore_parser_integration_test(
     parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method") or "GET",
-            path=path,
+            path=unquote(path),
             query_string=to_str(query_string),
             headers=headers,
             body=body,
@@ -884,6 +884,15 @@ def test_rest_url_parameter_with_dashes():
     )
 
 
+def test_rest_url_parameter_with_slashes():
+    """Test if the parsing works for requests with (encoded) slashes in a parameter."""
+    _botocore_parser_integration_test(
+        service="backup",
+        action="ListRecoveryPointsByResource",
+        ResourceArn="arn:aws:dynamodb:us-east-1:000000000000:table/table-104f455b",
+    )
+
+
 def test_restxml_operation_detection_with_query_suffix_without_value_in_requesturi():
     """
     Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
@@ -1021,10 +1030,20 @@ def test_restxml_header_date_parsing():
 
 
 def test_s3_virtual_host_addressing():
-    """Test the parsing of a map with the location trait 'headers'."""
+    """Test the parsing of an S3 bucket request using the bucket encoded in the domain."""
     request = HttpRequest(
         method="PUT", headers={"host": s3_utils.get_bucket_hostname("test-bucket")}
     )
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "CreateBucket"
+    assert "Bucket" in parsed_request
+    assert parsed_request["Bucket"] == "test-bucket"
+
+
+def test_s3_path_addressing():
+    """Test the parsing of an S3 bucket request using the bucket encoded in the path."""
+    request = HttpRequest(method="PUT", path="/test-bucket")
     parser = create_parser(load_service("s3"))
     parsed_operation_model, parsed_request = parser.parse(request)
     assert parsed_operation_model.name == "CreateBucket"

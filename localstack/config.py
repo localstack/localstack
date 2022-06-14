@@ -6,7 +6,7 @@ import socket
 import subprocess
 import tempfile
 import time
-from typing import Any, Dict, List, Literal, Mapping, Tuple
+from typing import Any, Dict, List, Mapping, Tuple
 
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
@@ -312,6 +312,12 @@ WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 # TODO: this is deprecated and should be removed (edge port supports HTTP/HTTPS multiplexing)
 USE_SSL = is_env_true("USE_SSL")
 
+# whether to use the legacy edge proxy or the newer Gateway/HandlerChain framework
+LEGACY_EDGE_PROXY = is_env_not_false("LEGACY_EDGE_PROXY")
+
+# Whether to report internal failures as 500 or 501 errors.
+FAIL_FAST = is_env_true("FAIL_FAST")
+
 # whether to use the legacy single-region mode, defined via DEFAULT_REGION
 USE_SINGLE_REGION = is_env_true("USE_SINGLE_REGION")
 
@@ -465,6 +471,9 @@ KINESIS_SHARD_LIMIT = os.environ.get("KINESIS_SHARD_LIMIT", "").strip() or "100"
 # delay in kinesalite response when making changes to streams
 KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 
+# Delay between data persistence (in seconds)
+KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
+
 # Kinesis provider - either "kinesis-mock" or "kinesalite"
 KINESIS_PROVIDER = os.environ.get("KINESIS_PROVIDER") or "kinesis-mock"
 
@@ -493,13 +502,14 @@ DYNAMODB_HEAP_SIZE = os.environ.get("DYNAMODB_HEAP_SIZE", "").strip() or "256m"
 # single DB instance across multiple credentials are regions
 DYNAMODB_SHARE_DB = int(os.environ.get("DYNAMODB_SHARE_DB") or 0)
 
+# Used to toggle QueueDeletedRecently errors when re-creating a queue within 60 seconds of deleting it
+SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
+
 # expose SQS on a specific port externally
 SQS_PORT_EXTERNAL = int(os.environ.get("SQS_PORT_EXTERNAL") or 0)
 
 # Strategy used when creating SQS queue urls. can be "off", "domain", or "path"
-SQS_ENDPOINT_STRATEGY: Literal["off", "domain", "path"] = (
-    os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
-)
+SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "off"
 
 # host under which the LocalStack services are available from Lambda Docker containers
 HOSTNAME_FROM_LAMBDA = os.environ.get("HOSTNAME_FROM_LAMBDA", "").strip()
@@ -642,6 +652,7 @@ CONFIG_ENV_VARS = [
     "HOSTNAME_FROM_LAMBDA",
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
+    "KINESIS_MOCK_PERSIST_INTERVAL",
     "LAMBDA_CODE_EXTRACT_TIME",
     "LAMBDA_CONTAINER_REGISTRY",
     "LAMBDA_DOCKER_DNS",
@@ -656,6 +667,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_STAY_OPEN_MODE",
     "LAMBDA_TRUNCATE_STDOUT",
     "LEGACY_DOCKER_CLIENT",
+    "LEGACY_EDGE_PROXY",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_HOSTNAME",
     "LOG_LICENSE_ISSUES",
@@ -670,6 +682,7 @@ CONFIG_ENV_VARS = [
     "SERVICES",
     "SKIP_INFRA_DOWNLOADS",
     "SKIP_SSL_CERT_DOWNLOAD",
+    "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENDPOINT_STRATEGY",
     "SQS_PORT_EXTERNAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",

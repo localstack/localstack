@@ -1,26 +1,34 @@
+import time
+
 import pytest
 import requests
 from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.utils.strings import short_uid
 
 
 class TestS3:
     @pytest.mark.aws_validated
-    def test_region_header_exists(self, s3_client, s3_create_bucket):
+    @pytest.mark.skip_snapshot_verify(paths=["$..EncodingType"])
+    def test_region_header_exists(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_create_bucket(
             CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
         )
-
         response = s3_client.head_bucket(Bucket=bucket_name)
         assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == "eu-west-1"
-
+        snapshot.match("head_bucket", response)
         response = s3_client.list_objects_v2(Bucket=bucket_name)
         assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == "eu-west-1"
+        snapshot.match("list_objects_v2", response)
 
     @pytest.mark.aws_validated
-    def test_delete_bucket_with_content(self, s3_client, s3_resource, s3_bucket):
+    @pytest.mark.skip_snapshot_verify(paths=["$..Marker", "$..Prefix", "$..EncodingType"])
+    def test_delete_bucket_with_content(self, s3_client, s3_resource, s3_bucket, snapshot):
+
+        snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_bucket
 
         for i in range(0, 10, 1):
@@ -29,6 +37,7 @@ class TestS3:
             s3_client.put_object(Bucket=bucket_name, Key=key, Body=body)
 
         resp = s3_client.list_objects(Bucket=bucket_name, MaxKeys=100)
+        snapshot.match("list-objects", resp)
         assert 10 == len(resp["Contents"])
 
         bucket = s3_resource.Bucket(bucket_name)
@@ -36,13 +45,21 @@ class TestS3:
         bucket.delete()
 
         resp = s3_client.list_buckets()
+        # TODO - this might fail if tests run in parallel
+        snapshot.match("list-buckets", resp)
         assert bucket_name not in [b["Name"] for b in resp["Buckets"]]
 
     @pytest.mark.aws_validated
-    def test_put_and_get_object_with_utf8_key(self, s3_client, s3_bucket):
+    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage"])
+    def test_put_and_get_object_with_utf8_key(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
         response = s3_client.put_object(Bucket=s3_bucket, Key="Ā0Ä", Body=b"abc123")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("put-object", response)
+
         response = s3_client.get_object(Bucket=s3_bucket, Key="Ā0Ä")
+        snapshot.match("get-object", response)
         assert response["Body"].read() == b"abc123"
 
     @pytest.mark.aws_validated
@@ -64,7 +81,8 @@ class TestS3:
         assert response["Body"].read() == b"barfoo"
 
     @pytest.mark.aws_validated
-    def test_metadata_header_character_decoding(self, s3_client, s3_bucket):
+    def test_metadata_header_character_decoding(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
         # Object metadata keys should accept keys with underscores
         # https://github.com/localstack/localstack/issues/1790
         # put object
@@ -72,12 +90,15 @@ class TestS3:
         metadata = {"TEST_META_1": "foo", "__meta_2": "bar"}
         s3_client.put_object(Bucket=s3_bucket, Key=object_key, Metadata=metadata, Body="foo")
         metadata_saved = s3_client.head_object(Bucket=s3_bucket, Key=object_key)["Metadata"]
+        snapshot.match("head-object", metadata_saved)
 
         # note that casing is removed (since headers are case-insensitive)
         assert metadata_saved == {"test_meta_1": "foo", "__meta_2": "bar"}
 
     @pytest.mark.aws_validated
-    def test_upload_file_multipart(self, s3_client, s3_bucket, tmpdir):
+    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage"])
+    def test_upload_file_multipart(self, s3_client, s3_bucket, tmpdir, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
         key = "my-key"
         # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3.html#multipart-transfers
         config = TransferConfig(multipart_threshold=5 * KB, multipart_chunksize=1 * KB)
@@ -91,6 +112,7 @@ class TestS3:
 
         obj = s3_client.get_object(Bucket=s3_bucket, Key=key)
         assert obj["Body"].read() == data, f"body did not contain expected data {obj}"
+        snapshot.match("get_object", obj)
 
 
 class TestS3PresignedUrl:
@@ -99,7 +121,10 @@ class TestS3PresignedUrl:
     """
 
     @pytest.mark.aws_validated
-    def test_put_object(self, s3_client, s3_bucket):
+    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage", "$..Expires"])
+    def test_put_object(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
         key = "my-key"
 
         url = s3_client.generate_presigned_url(
@@ -109,6 +134,56 @@ class TestS3PresignedUrl:
 
         response = s3_client.get_object(Bucket=s3_bucket, Key=key)
         assert response["Body"].read() == b"something"
+        snapshot.match("get_object", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        condition=not config.LEGACY_EDGE_PROXY, reason="failing with new HTTP gateway (only in CI)"
+    )
+    def test_post_object_with_files(self, s3_client, s3_bucket):
+        object_key = "test-presigned-post-key"
+
+        body = b"something body"
+
+        presigned_request = s3_client.generate_presigned_post(
+            Bucket=s3_bucket, Key=object_key, ExpiresIn=60
+        )
+        # put object
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": body},
+            verify=False,
+        )
+
+        assert response.status_code == 204
+        # get object and compare results
+        downloaded_object = s3_client.get_object(Bucket=s3_bucket, Key=object_key)
+        assert downloaded_object["Body"].read() == body
+
+    @pytest.mark.aws_validated
+    def test_post_request_expires(self, s3_client, s3_bucket):
+        # presign a post with a short expiry time
+        object_key = "test-presigned-post-key"
+
+        presigned_request = s3_client.generate_presigned_post(
+            Bucket=s3_bucket, Key=object_key, ExpiresIn=2
+        )
+
+        # sleep so it expires
+        time.sleep(3)
+
+        # attempt to use the presigned request
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "file content"},
+            verify=False,
+        )
+
+        # FIXME: localstack returns 400 but aws returns 403
+        assert response.status_code in [400, 403]
+        assert "ExpiredToken" in response.text
 
     @pytest.mark.aws_validated
     def test_delete_has_empty_content_length_header(self, s3_client, s3_bucket):
@@ -130,7 +205,6 @@ class TestS3PresignedUrl:
             if encoding:
                 headers["Accept-Encoding"] = encoding
             response = requests.delete(url, headers=headers, verify=False)
-
             assert response.status_code == 204
             assert not response.text
             # AWS does not send a content-length header at all, legacy localstack sends a 0 length header
@@ -158,7 +232,9 @@ class TestS3PresignedUrl:
         assert response.headers.get("content-length") == str(len(body))
 
     @pytest.mark.aws_validated
-    def test_put_url_metadata(self, s3_client, s3_bucket):
+    @pytest.mark.skip_snapshot_verify(paths=["$..Expires", "$..AcceptRanges"])
+    def test_put_url_metadata(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
         # Object metadata should be passed as query params via presigned URL
         # https://github.com/localstack/localstack/issues/544
         metadata = {"foo": "bar"}
@@ -179,6 +255,7 @@ class TestS3PresignedUrl:
         # assert metadata is present
         response = s3_client.head_object(Bucket=s3_bucket, Key=object_key)
         assert response.get("Metadata", {}).get("foo") == "bar"
+        snapshot.match("head_object", response)
 
     @pytest.mark.aws_validated
     def test_get_object_ignores_request_body(self, s3_client, s3_bucket):

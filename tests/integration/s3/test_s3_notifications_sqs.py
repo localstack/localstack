@@ -146,6 +146,7 @@ def sqs_collect_s3_events(
 
 class TestS3NotificationsToSQS:
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag"])
     def test_object_created_put(
         self,
         s3_client,
@@ -153,7 +154,11 @@ class TestS3NotificationsToSQS:
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
         # setup fixture
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
@@ -170,7 +175,9 @@ class TestS3NotificationsToSQS:
         events = sqs_collect_s3_events(sqs_client, queue_url, min_events=2)
 
         assert len(events) == 2, f"unexpected number of events in {events}"
-
+        # order seems not be guaranteed - sort so we can rely on the order
+        events.sort(key=lambda x: x["s3"]["object"]["size"])
+        snapshot.match("receive_messages", {"messages": events})
         # assert
         assert events[0]["eventSource"] == "aws:s3"
         assert events[0]["eventName"] == "ObjectCreated:Put"
@@ -189,6 +196,7 @@ class TestS3NotificationsToSQS:
         assert obj1["VersionId"] == events[1]["s3"]["object"]["versionId"]
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
     def test_object_created_copy(
         self,
         s3_client,
@@ -196,7 +204,12 @@ class TestS3NotificationsToSQS:
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..s3.object.key", "object-key"))
+
         # setup fixture
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
@@ -219,13 +232,16 @@ class TestS3NotificationsToSQS:
 
         events = sqs_collect_s3_events(sqs_client, queue_url, 1)
         assert len(events) == 1, f"unexpected number of events in {events}"
-
+        snapshot.match("receive_messages", {"messages": events})
         assert events[0]["eventSource"] == "aws:s3"
         assert events[0]["eventName"] == "ObjectCreated:Copy"
         assert events[0]["s3"]["bucket"]["name"] == bucket_name
         assert events[0]["s3"]["object"]["key"] == dest_key
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..s3.object.eTag", "$..s3.object.versionId", "$..s3.object.size"]
+    )
     def test_object_created_and_object_removed(
         self,
         s3_client,
@@ -233,7 +249,12 @@ class TestS3NotificationsToSQS:
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..s3.object.key", "object-key"))
+
         # setup fixture
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
@@ -259,19 +280,25 @@ class TestS3NotificationsToSQS:
         events = sqs_collect_s3_events(sqs_client, queue_url, 3)
         assert len(events) == 3, f"unexpected number of events in {events}"
 
-        assert events[0]["eventName"] == "ObjectCreated:Put"
-        assert events[0]["s3"]["bucket"]["name"] == bucket_name
-        assert events[0]["s3"]["object"]["key"] == src_key
+        # order seems not be guaranteed - sort so we can rely on the order
+        events.sort(key=lambda x: x["eventName"])
 
-        assert events[1]["eventName"] == "ObjectCreated:Copy"
+        snapshot.match("receive_messages", {"messages": events})
+
+        assert events[1]["eventName"] == "ObjectCreated:Put"
         assert events[1]["s3"]["bucket"]["name"] == bucket_name
-        assert events[1]["s3"]["object"]["key"] == dest_key
+        assert events[1]["s3"]["object"]["key"] == src_key
+
+        assert events[0]["eventName"] == "ObjectCreated:Copy"
+        assert events[0]["s3"]["bucket"]["name"] == bucket_name
+        assert events[0]["s3"]["object"]["key"] == dest_key
 
         assert events[2]["eventName"] == "ObjectRemoved:Delete"
         assert events[2]["s3"]["bucket"]["name"] == bucket_name
         assert events[2]["s3"]["object"]["key"] == src_key
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
     def test_object_created_complete_multipart_upload(
         self,
         s3_client,
@@ -280,7 +307,11 @@ class TestS3NotificationsToSQS:
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         tmpdir,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
         # setup fixture
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
@@ -299,6 +330,7 @@ class TestS3NotificationsToSQS:
         )
 
         events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        snapshot.match("receive_messages", {"messages": events})
 
         assert events[0]["eventName"] == "ObjectCreated:CompleteMultipartUpload"
         assert events[0]["s3"]["bucket"]["name"] == bucket_name
@@ -306,6 +338,7 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["size"] == file.size()
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
     def test_key_encoding(
         self,
         s3_client,
@@ -313,7 +346,11 @@ class TestS3NotificationsToSQS:
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
         # test for https://github.com/localstack/localstack/issues/2741
 
         bucket_name = s3_create_bucket()
@@ -325,11 +362,13 @@ class TestS3NotificationsToSQS:
         s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
 
         events = sqs_collect_s3_events(sqs_client, queue_url, min_events=1)
+        snapshot.match("receive_messages", {"messages": events})
 
         assert events[0]["eventName"] == "ObjectCreated:Put"
         assert events[0]["s3"]["object"]["key"] == key_encoded
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
     def test_object_created_put_with_presigned_url_upload(
         self,
         s3_client,
@@ -337,7 +376,11 @@ class TestS3NotificationsToSQS:
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
         key = "key-by-hostname"
@@ -349,10 +392,21 @@ class TestS3NotificationsToSQS:
         requests.put(url, data="something", verify=False)
 
         events = sqs_collect_s3_events(sqs_client, queue_url, 1)
+        snapshot.match("receive_messages", {"messages": events})
+
         assert events[0]["eventName"] == "ObjectCreated:Put"
         assert events[0]["s3"]["object"]["key"] == key
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..s3.object.eTag",
+            "$..s3.object.versionId",
+            "$..s3.object.size",
+            "$..s3.object.sequencer",
+            "$..eventVersion",
+        ]
+    )
     def test_object_tagging_put_event(
         self,
         s3_client,
@@ -360,7 +414,12 @@ class TestS3NotificationsToSQS:
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..s3.object.key", "object-key"))
+
         # setup fixture
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
@@ -386,6 +445,7 @@ class TestS3NotificationsToSQS:
 
         events = sqs_collect_s3_events(sqs_client, queue_url, 1)
         assert len(events) == 1, f"unexpected number of events in {events}"
+        snapshot.match("receive_messages", {"messages": events})
 
         assert events[0]["eventSource"] == "aws:s3"
         assert events[0]["eventName"] == "ObjectTagging:Put"
@@ -393,6 +453,15 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == dest_key
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..s3.object.eTag",
+            "$..s3.object.versionId",
+            "$..s3.object.size",
+            "$..s3.object.sequencer",
+            "$..eventVersion",
+        ]
+    )
     def test_object_tagging_delete_event(
         self,
         s3_client,
@@ -400,7 +469,12 @@ class TestS3NotificationsToSQS:
         s3_create_bucket,
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..s3.object.key", "object-key"))
+
         # setup fixture
         bucket_name = s3_create_bucket()
         queue_url = sqs_create_queue()
@@ -431,6 +505,7 @@ class TestS3NotificationsToSQS:
 
         events = sqs_collect_s3_events(sqs_client, queue_url, 1)
         assert len(events) == 1, f"unexpected number of events in {events}"
+        snapshot.match("receive_messages", {"messages": events})
 
         assert events[0]["eventSource"] == "aws:s3"
         assert events[0]["eventName"] == "ObjectTagging:Delete"
@@ -438,6 +513,7 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == dest_key
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..s3.object.eTag", "$..s3.object.versionId"])
     def test_xray_header(
         self,
         s3_client,
@@ -446,8 +522,15 @@ class TestS3NotificationsToSQS:
         sqs_create_queue,
         s3_create_sqs_bucket_notification,
         cleanups,
+        snapshot,
     ):
         # test for https://github.com/localstack/localstack/issues/3686
+
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            snapshot.transform.key_value("MD5OfBody", reference_replacement=False)
+        )
 
         # add boto hook
         def add_xray_header(request, **kwargs):
@@ -493,3 +576,4 @@ class TestS3NotificationsToSQS:
             messages[0]["Attributes"]["AWSTraceHeader"]
             == "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
         )
+        snapshot.match("receive_messages", {"messages": messages})

@@ -8,15 +8,16 @@ from botocore.model import ServiceModel
 from werkzeug.datastructures import Headers
 
 from localstack import constants
-from localstack.aws.api import RequestContext
-from localstack.aws.skeleton import Skeleton
-from localstack.aws.spec import load_service
 from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.messages import MessagePayload
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.persistence import PersistingProxyListener
+
+from .api import RequestContext
+from .skeleton import Skeleton
+from .spec import load_service
 
 LOG = logging.getLogger(__name__)
 

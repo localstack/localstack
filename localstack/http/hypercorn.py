@@ -16,15 +16,17 @@ class HypercornServer(Server):
 
     def __init__(self, app: ASGI3Framework, config: Config, loop: AbstractEventLoop = None):
         """
-        Create a new Hypercorn server instance.
+        Create a new Hypercorn server instance. Note that, if you pass an event loop to the constructor,
+        you are yielding control of that event loop to the server, as it will invoke `run_until_complete` and
+        shutdown the loop.
 
         :param app: the ASGI3 app
         :param config: the hypercorn config
-        :param loop: optionally the event loop, otherwise ``asyncio.get_event_loop`` will be called
+        :param loop: optionally the event loop, otherwise ``asyncio.new_event_loop`` will be called
         """
         self.app = app
         self.config = config
-        self.loop = loop or asyncio.get_event_loop()
+        self.loop = loop or asyncio.new_event_loop()
 
         self._close = asyncio.Event()
         self._closed = threading.Event()
@@ -52,6 +54,8 @@ class HypercornServer(Server):
     def do_shutdown(self):
         asyncio.run_coroutine_threadsafe(self._set_closed(), self.loop)
         self._closed.wait(timeout=10)
+        self.loop.shutdown_asyncgens()
+        self.loop.close()
 
     async def _set_closed(self):
         self._close.set()

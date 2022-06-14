@@ -1,8 +1,11 @@
 from abc import ABC
 from datetime import datetime, timezone
 
+from botocore.parsers import ResponseParserError
+from moto.core.utils import camelcase_to_underscores, underscores_to_camelcase
 from moto.ec2 import ec2_backends
 from moto.ec2.exceptions import InvalidVpcEndPointIdError
+from moto.ec2.models import SubnetBackend
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
@@ -15,8 +18,11 @@ from localstack.aws.api.ec2 import (
     DescribeReservedInstancesOfferingsResult,
     DescribeReservedInstancesRequest,
     DescribeReservedInstancesResult,
+    DescribeSubnetsRequest,
+    DescribeSubnetsResult,
     Ec2Api,
     InstanceType,
+    ModifySubnetAttributeRequest,
     ModifyVpcEndpointResult,
     OfferingClassType,
     OfferingTypeValues,
@@ -40,7 +46,11 @@ from localstack.aws.api.ec2 import (
     scope,
 )
 from localstack.services.moto import call_moto
-from localstack.utils.strings import long_uid
+from localstack.utils.patch import patch
+from localstack.utils.strings import first_char_to_upper, long_uid
+
+# additional subnet attributes not yet supported upstream
+ADDITIONAL_SUBNET_ATTRS = ("private_dns_name_options_on_launch", "enable_dns64")
 
 
 class Ec2Provider(Ec2Api, ABC):
@@ -188,6 +198,28 @@ class Ec2Provider(Ec2Api, ABC):
 
         return ModifyVpcEndpointResult(Return=True)
 
+    @handler("ModifySubnetAttribute", expand=False)
+    def modify_subnet_attribute(
+        self, context: RequestContext, request: ModifySubnetAttributeRequest
+    ) -> None:
+        try:
+            return call_moto(context)
+        except Exception as e:
+            if not isinstance(e, ResponseParserError) and "InvalidParameterValue" not in str(e):
+                raise
+            # fix setting subnet attributes currently not supported upstream
+            backend = ec2_backends[context.region]
+            subnet_id = request["SubnetId"]
+            host_type = request.get("PrivateDnsHostnameTypeOnLaunch")
+            if host_type:
+                attr_name = camelcase_to_underscores("PrivateDnsNameOptionsOnLaunch")
+                value = {"HostnameType": host_type}
+                backend.modify_subnet_attribute(subnet_id, attr_name, value)
+            enable_dns64 = request.get("EnableDns64")
+            if enable_dns64:
+                attr_name = camelcase_to_underscores("EnableDns64")
+                backend.modify_subnet_attribute(subnet_id, attr_name, enable_dns64)
+
     @handler("RevokeSecurityGroupEgress", expand=False)
     def revoke_security_group_egress(
         self,
@@ -204,3 +236,30 @@ class Ec2Provider(Ec2Api, ABC):
                 if group and not group.egress_rules:
                     return RevokeSecurityGroupEgressResult(Return=True)
             raise
+
+    @handler("DescribeSubnets", expand=False)
+    def describe_subnets(
+        self,
+        context: RequestContext,
+        request: DescribeSubnetsRequest,
+    ) -> DescribeSubnetsResult:
+        result = call_moto(context)
+        backend = ec2_backends[context.region]
+        # add additional/missing attributes in subnet responses
+        for subnet in result.get("Subnets", []):
+            subnet_obj = backend.subnets[subnet["AvailabilityZone"]][subnet["SubnetId"]]
+            for attr in ADDITIONAL_SUBNET_ATTRS:
+                if hasattr(subnet_obj, attr):
+                    attr_name = first_char_to_upper(underscores_to_camelcase(attr))
+                    if attr_name not in subnet:
+                        subnet[attr_name] = getattr(subnet_obj, attr)
+        return result
+
+
+@patch(SubnetBackend.modify_subnet_attribute)
+def modify_subnet_attribute(fn, self, subnet_id, attr_name, attr_value):
+    subnet = self.get_subnet(subnet_id)
+    if attr_name in ADDITIONAL_SUBNET_ATTRS:
+        setattr(subnet, attr_name, attr_value)
+        return
+    return fn(self, subnet_id, attr_name, attr_value)

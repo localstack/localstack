@@ -1,11 +1,12 @@
 from io import BytesIO
 from typing import TYPE_CHECKING, Dict, Mapping, Optional, Tuple, Union
-from urllib.parse import quote, unquote
+from urllib.parse import quote, unquote, urlencode
 
 if TYPE_CHECKING:
     from _typeshed.wsgi import WSGIEnvironment
 
-from werkzeug.datastructures import Headers
+from werkzeug.datastructures import Headers, MultiDict
+from werkzeug.test import encode_multipart
 from werkzeug.wrappers.request import Request as WerkzeugRequest
 
 from localstack.utils import strings
@@ -188,3 +189,37 @@ def get_full_raw_path(request) -> str:
     query_str = f"?{strings.to_str(request.query_string)}" if request.query_string else ""
     raw_path = f"{get_raw_path(request)}{query_str}"
     return raw_path
+
+
+def restore_payload(request: Request) -> bytes:
+    """
+    This method takes a request and restores the original payload from it even after it has been consumed. A werkzeug
+    request consumes form/multipart data from the stream, and here we are serializing it back to a request a client
+    could make . This is a useful method to have when we are proxying requests, i.e., create outgoing requests from
+    incoming requests that were subject to previous parsing.
+
+    TODO: this construct is not great and will definitely be a source of trouble. but something like this will
+      inevitably become the the basis of proxying werkzeug requests. The alternative is to build our own request object
+      that memoizes the original payload before parsing.
+    """
+    data = request.data
+
+    if request.method != "POST":
+        return data
+
+    # TODO: check how request that encode both files and form are really serialized (not sure this works this way)
+
+    if request.form:
+        data += urlencode(list(request.form.items(multi=True))).encode("utf-8")
+
+    if request.files:
+        boundary = request.content_type.split("=")[1]
+
+        fields = MultiDict()
+        fields.update(request.form)
+        fields.update(request.files)
+
+        _, data_files = encode_multipart(fields, boundary)
+        data += data_files
+
+    return data

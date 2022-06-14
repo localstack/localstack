@@ -1,0 +1,46 @@
+{
+  "tests/integration/awslambda/test_lambda_integration.py::TestSQSEventSourceMapping::test_event_source_mapping_default_batch_size": {
+    "recorded-date": "31-05-2022, 09:33:58",
+    "recorded-content": {
+      "create-event-source-mapping": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 202,
+          "HTTPHeaders": {}
+        },
+        "UUID": "<uuid:1>",
+        "BatchSize": 10,
+        "MaximumBatchingWindowInSeconds": 0,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "LastModified": "datetime",
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "FunctionResponseTypes": []
+      },
+      "invalid-update-event-source-mapping": {
+        "Error": {
+          "Message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+          "Code": "InvalidParameterValueException"
+        },
+        "ResponseMetadata": {
+          "HTTPStatusCode": 400,
+          "HTTPHeaders": {}
+        },
+        "Type": "User",
+        "message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10"
+      },
+      "invalid-create-event-source-mapping": {
+        "Error": {
+          "Message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+          "Code": "InvalidParameterValueException"
+        },
+        "ResponseMetadata": {
+          "HTTPStatusCode": 400,
+          "HTTPHeaders": {}
+        },
+        "Type": "User",
+        "message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10"
+      }
+    }
+  }
+}

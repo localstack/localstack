@@ -11,7 +11,7 @@ from requests.models import Request
 from localstack import config, constants
 from localstack.config import SQS_PORT_EXTERNAL
 from localstack.services.install import SQS_BACKEND_IMPL
-from localstack.services.sns import sns_listener
+from localstack.services.sns.provider import unsubscribe_sqs_queue
 from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
@@ -312,7 +312,7 @@ class ProxyListenerSQS(PersistingProxyListener):
             elif action == "DeleteQueue":
                 queue_url = _queue_url(path, req_data, headers)
                 QUEUE_ATTRIBUTES.pop(queue_url, None)
-                sns_listener.unsubscribe_sqs_queue(queue_url)
+                unsubscribe_sqs_queue(queue_url)
 
             elif action == "ListDeadLetterSourceQueues":
                 # TODO remove this function if we stop using ElasticMQ entirely

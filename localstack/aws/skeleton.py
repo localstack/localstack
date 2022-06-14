@@ -195,7 +195,7 @@ class Skeleton:
 
         action_name = operation.name
         service_name = operation.service_model.service_name
-        message = f"API action '{action_name}' for service '{service_name}' " f"not yet implemented"
+        message = f"API action '{action_name}' for service '{service_name}' not yet implemented"
         LOG.info(message)
         error = CommonServiceException("InternalFailure", message, status_code=501)
         # record event

@@ -13,7 +13,7 @@ class Response(WerkzeugResponse):
 
     def update_from(self, other: WerkzeugResponse):
         self.status_code = other.status_code
-        self.data = other.data
+        self.response = other.response
         self.headers.update(other.headers)
 
     def set_json(self, doc: Dict):

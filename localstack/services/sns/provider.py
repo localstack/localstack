@@ -804,7 +804,7 @@ async def message_to_subscriber(
 
     elif subscriber["Protocol"] == "sqs":
         queue_url = None
-
+        message_body = create_sns_message_body(subscriber, req_data, message_id)
         try:
             endpoint = subscriber["Endpoint"]
 
@@ -813,8 +813,7 @@ async def message_to_subscriber(
             elif "://" in endpoint:
                 queue_url = endpoint
             else:
-                queue_name = endpoint.split(":")[5]
-                queue_url = aws_stack.get_sqs_queue_url(queue_name)
+                queue_url = aws_stack.get_sqs_queue_url(endpoint)
                 subscriber["sqs_queue_url"] = queue_url
 
             message_group_id = req_data.get("MessageGroupId", [""])[0]
@@ -831,7 +830,7 @@ async def message_to_subscriber(
 
             sqs_client.send_message(
                 QueueUrl=queue_url,
-                MessageBody=create_sns_message_body(subscriber, req_data, message_id),
+                MessageBody=message_body,
                 MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes),
                 MessageSystemAttributes=create_sqs_system_attributes(headers),
                 **kwargs,
@@ -840,7 +839,7 @@ async def message_to_subscriber(
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
+            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
             if "NonExistentQueue" in str(exc):
                 LOG.info(
                     'Removing non-existent queue "%s" subscribed to topic "%s"',
@@ -888,7 +887,8 @@ async def message_to_subscriber(
                 "Unable to run Lambda function on SNS message: %s %s", exc, traceback.format_exc()
             )
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
+            message_body = create_sns_message_body(subscriber, req_data, message_id)
+            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
         return
 
     elif subscriber["Protocol"] in ["http", "https"]:
@@ -898,17 +898,24 @@ async def message_to_subscriber(
         except Exception:
             return
         try:
+            headers = {
+                "Content-Type": "text/plain",
+                # AWS headers according to
+                # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
+                "x-amz-sns-message-type": msg_type,
+                "x-amz-sns-topic-arn": subscriber["TopicArn"],
+                "x-amz-sns-subscription-arn": subscriber["SubscriptionArn"],
+                "User-Agent": "Amazon Simple Notification Service Agent",
+            }
+            # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
+            # indicating that the message has been published without JSON formatting.
+            # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
+            if is_raw_message_delivery(subscriber):
+                headers["x-amz-sns-rawdelivery"] = "true"
+
             response = requests.post(
                 subscriber["Endpoint"],
-                headers={
-                    "Content-Type": "text/plain",
-                    # AWS headers according to
-                    # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
-                    "x-amz-sns-message-type": msg_type,
-                    "x-amz-sns-topic-arn": subscriber["TopicArn"],
-                    "x-amz-sns-subscription-arn": subscriber["SubscriptionArn"],
-                    "User-Agent": "Amazon Simple Notification Service Agent",
-                },
+                headers=headers,
                 data=message_body,
                 verify=False,
             )
@@ -925,7 +932,7 @@ async def message_to_subscriber(
                 "Received error on sending SNS message, putting to DLQ (if configured): %s", exc
             )
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
+            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
         return
 
     elif subscriber["Protocol"] == "application":
@@ -940,7 +947,8 @@ async def message_to_subscriber(
                 traceback.format_exc(),
             )
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
+            message_body = create_sns_message_body(subscriber, req_data, message_id)
+            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
         return
 
     elif subscriber["Protocol"] in ["email", "email-json"]:
@@ -979,7 +987,7 @@ def get_subscription_by_arn(sub_arn):
                 return sub
 
 
-def create_sns_message_body(subscriber, req_data, message_id=None):
+def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
     message = req_data["Message"][0]
     protocol = subscriber["Protocol"]
     attributes = get_message_attributes(req_data)
@@ -996,6 +1004,11 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
             message["MessageAttributes"] = attributes
         return message
 
+    external_url = external_service_url("sns")
+    unsubscribe_url = (
+        f"{external_url}/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}"
+    )
+
     data = {
         "Type": req_data.get("Type", ["Notification"])[0],
         "MessageId": message_id,
@@ -1007,10 +1020,11 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
         # Hardcoded
         "Signature": "EXAMPLEpH+..",
         "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+        "UnsubscribeURL": unsubscribe_url,
     }
 
     for key in ["Subject", "SubscribeURL", "Token"]:
-        if req_data.get(key):
+        if req_data.get(key) and req_data[key][0]:
             data[key] = req_data[key][0]
 
     for key in HTTP_SUBSCRIPTION_ATTRIBUTES:
@@ -1161,12 +1175,9 @@ def evaluate_filter_policy_conditions(conditions, attribute, message_attributes,
     if type(conditions) is not list:
         conditions = [conditions]
 
-    if attribute is None:
-        return False
-
-    tpe = attribute.get("DataType") or attribute.get("Type")
-    val = attribute.get("StringValue") or attribute.get("Value")
-    if tpe == "String.Array":
+    tpe = attribute.get("DataType") or attribute.get("Type") if attribute else None
+    val = attribute.get("StringValue") or attribute.get("Value") if attribute else None
+    if attribute is not None and tpe == "String.Array":
         values = ast.literal_eval(val)
         for value in values:
             for condition in conditions:
@@ -1225,3 +1236,29 @@ def extract_tags(topic_arn, tags, is_create_topic_request, sns_backend):
             if is_create_topic_request and existing_tags is not None and tag not in existing_tags:
                 return False
     return True
+
+
+def unsubscribe_sqs_queue(queue_url):
+    """Called upon deletion of an SQS queue, to remove the queue from subscriptions"""
+    sns_backend = SNSBackend.get()
+    for topic_arn, subscriptions in sns_backend.sns_subscriptions.items():
+        subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
+        for subscriber in list(subscriptions):
+            sub_url = subscriber.get("sqs_queue_url") or subscriber["Endpoint"]
+            if queue_url == sub_url:
+                subscriptions.remove(subscriber)
+
+
+def get_subscribe_attributes(req_data):
+    attributes = {}
+    for key in req_data.keys():
+        if ".key" in key:
+            attributes[req_data[key][0]] = req_data[key.replace("key", "value")][0]
+    defaults = {
+        # TODO: this is required to get TF "aws_sns_topic_subscription" working, but this should
+        # be revisited (e.g., cross-account subscriptions should not be confirmed automatically)
+        "PendingConfirmation": "false"
+    }
+    for key, value in defaults.items():
+        attributes[key] = attributes.get(key, value)
+    return attributes

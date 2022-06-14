@@ -7,9 +7,25 @@ LABEL authors="LocalStack Contributors"
 LABEL maintainer="LocalStack Team (info@localstack.cloud)"
 LABEL description="LocalStack Docker image"
 
-RUN dnf install -y cyrus-sasl-devel gcc gcc-c++ git iputils make npm openssl-devel procps python38-devel zip \
+RUN dnf install -y cyrus-sasl-devel gcc gcc-c++ git iputils make npm openssl-devel procps zip \
   && dnf clean all \
   && rm -rf /var/cache/yum
+
+RUN dnf install -y bzip2-devel sqlite-devel libffi-devel \
+  && curl https://www.python.org/ftp/python/3.10.4/Python-3.10.4.tgz -o Python-3.10.4.tgz \
+  && tar xzf Python-3.10.4.tgz \
+  && cd Python-3.10.4 \
+  && ./configure \
+  && make -j $(nproc) \
+  && make install \
+  && cd .. \
+  && rm -rf Python-3.10.4 \
+  && rm Python-3.10.4.tgz \
+  && dnf remove -y bzip2-devel sqlite-devel libffi-devel \
+  && dnf clean all \
+  && rm -rf /var/cache/yum
+
+RUN python3 -m pip install -U setuptools pip wheel
 
 # Create a localstack user
 RUN useradd -ms /bin/bash localstack

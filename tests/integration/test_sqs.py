@@ -43,35 +43,6 @@ TEST_POLICY = """
 TEST_REGION = "us-east-1"
 
 
-def queue_exists(sqs_client, queue_url: str) -> bool:
-    """
-    Checks whether a queue with the given queue URL exists.
-
-    :param sqs_client: the botocore client
-    :param queue_url: the queue URL
-    :return: true if the queue exists, false otherwise
-    """
-    try:
-        result = sqs_client.get_queue_url(QueueName=queue_url.split("/")[-1])
-        return result.get("QueueUrl") == queue_url
-    except ClientError as e:
-        if "NonExistentQueue" in e.response["Error"]["Code"]:
-            return False
-        raise
-
-
-def get_queue_arn(sqs_client, queue_url: str) -> str:
-    """
-    Returns the given Queue's ARN. Expects the Queue to exist.
-
-    :param sqs_client: the boto3 client
-    :param queue_url: the queue URL
-    :return: the QueueARN
-    """
-    response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
-    return response["Attributes"]["QueueArn"]
-
-
 def get_qsize(sqs_client, queue_url: str) -> int:
     """
     Returns the integer value of the ApproximateNumberOfMessages queue attribute.
@@ -156,6 +127,59 @@ class TestSqsProvider:
         assert "test-queue-" in attrs["QueueArn"]
         assert int(float(attrs["CreatedTimestamp"])) == pytest.approx(int(time.time()), 30)
         assert int(attrs["VisibilityTimeout"]) == 30, "visibility timeout is not the default value"
+
+    @pytest.mark.aws_validated
+    def test_create_queue_recently_deleted(self, sqs_client, sqs_create_queue, monkeypatch):
+        monkeypatch.setattr(config, "SQS_DELAY_RECENTLY_DELETED", True)
+
+        name = f"test-queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=name)
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(QueueName=name)
+
+        e.match("QueueDeletedRecently")
+        e.match(
+            "You must wait 60 seconds after deleting a queue before you can create another with the same name."
+        )
+
+    @pytest.mark.only_localstack
+    def test_create_queue_recently_deleted_cache(self, sqs_client, sqs_create_queue, monkeypatch):
+        # this is a white-box test for the QueueDeletedRecently timeout behavior
+        from localstack.services.sqs import provider
+
+        monkeypatch.setattr(config, "SQS_DELAY_RECENTLY_DELETED", True)
+        monkeypatch.setattr(provider, "RECENTLY_DELETED_TIMEOUT", 1)
+
+        name = f"test-queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=name)
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(QueueName=name)
+
+        e.match("QueueDeletedRecently")
+        e.match(
+            "You must wait 60 seconds after deleting a queue before you can create another with the same name."
+        )
+
+        time.sleep(1.5)
+        assert name in provider.SqsBackend.get().deleted
+        assert queue_url == sqs_create_queue(QueueName=name)
+        assert name not in provider.SqsBackend.get().deleted
+
+    @pytest.mark.only_localstack
+    def test_create_queue_recently_deleted_can_be_disabled(
+        self, sqs_client, sqs_create_queue, monkeypatch
+    ):
+        monkeypatch.setattr(config, "SQS_DELAY_RECENTLY_DELETED", False)
+
+        name = f"test-queue-{short_uid()}"
+
+        queue_url = sqs_create_queue(QueueName=name)
+        sqs_client.delete_queue(QueueUrl=queue_url)
+        assert queue_url == sqs_create_queue(QueueName=name)
 
     def test_send_receive_message(self, sqs_client, sqs_queue):
         send_result = sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="message")
@@ -466,7 +490,7 @@ class TestSqsProvider:
         assert "Messages" not in result
 
         # visibility timeout should have expired
-        result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=2)
+        result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
         assert "Messages" in result
         message_receipt_1 = result["Messages"][0]
 
@@ -844,10 +868,10 @@ class TestSqsProvider:
         e.match("InvalidParameterValue")
 
     @pytest.mark.xfail
-    def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_client):
+    def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_client, sqs_queue_arn):
         dl_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(QueueName=dl_queue_name)
-        dl_target_arn = get_queue_arn(sqs_client, dl_queue_url)
+        dl_target_arn = sqs_queue_arn(dl_queue_url)
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         valid_max_receive_count = "42"
@@ -1127,6 +1151,28 @@ class TestSqsProvider:
 
         assert queue_url
 
+    def test_dead_letter_queue_list_sources(self, sqs_client, sqs_create_queue):
+        dl_queue_url = sqs_create_queue()
+        url_parts = dl_queue_url.split("/")
+        region = get_region()
+        dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
+        )
+
+        conf = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 50}
+        attributes = {"RedrivePolicy": json.dumps(conf)}
+
+        queue_url_1 = sqs_create_queue(Attributes=attributes)
+        queue_url_2 = sqs_create_queue(Attributes=attributes)
+
+        assert queue_url_1
+        assert queue_url_2
+
+        source_urls = sqs_client.list_dead_letter_source_queues(QueueUrl=dl_queue_url)
+        assert len(source_urls) == 2
+        assert queue_url_1 in source_urls["queueUrls"]
+        assert queue_url_2 in source_urls["queueUrls"]
+
     def test_dead_letter_queue_execution(
         self, sqs_client, sqs_create_queue, lambda_client, create_lambda_function
     ):
@@ -1179,7 +1225,7 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     def test_dead_letter_queue_with_fifo_and_content_based_deduplication(
-        self, sqs_client, sqs_create_queue
+        self, sqs_client, sqs_create_queue, sqs_queue_arn
     ):
         dlq_url = sqs_create_queue(
             QueueName=f"test-dlq-{short_uid()}.fifo",
@@ -1189,7 +1235,7 @@ class TestSqsProvider:
                 "MessageRetentionPeriod": "1209600",
             },
         )
-        dlq_arn = get_queue_arn(sqs_client, dlq_url)
+        dlq_arn = sqs_queue_arn(dlq_url)
 
         queue_url = sqs_create_queue(
             QueueName=f"test-queue-{short_uid()}.fifo",
@@ -1500,7 +1546,7 @@ class TestSqsProvider:
         )
 
     def test_inflight_message_requeue(self, sqs_client, sqs_create_queue):
-        visibility_timeout = 3 if os.environ.get("TEST_TARGET") == "AWS_CLOUD" else 2
+        visibility_timeout = 3
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(
             QueueName=queue_name
@@ -1884,7 +1930,7 @@ class TestSqsProvider:
         Receive message allows a list of filters to be passed with MessageAttributeNames. See:
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message
         """
-        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "")
+        snapshot.add_transformer(snapshot.transform.sqs_api())
 
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 
@@ -1941,9 +1987,11 @@ class TestSqsProvider:
         response = receive_message(["..foo"])
         assert snapshot.match("illegal_name_2", response)
 
+    @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SenderId"])
     def test_receive_message_attribute_names_filters(self, sqs_client, sqs_create_queue, snapshot):
-        snapshot.skip_key(re.compile(r"^ReceiptHandle$"), "")
-        snapshot.skip_key(re.compile(r"^SenderId$"), "")
+        # TODO -> senderId in LS == account ID, but on AWS it looks quite different: [A-Z]{21}:<email>
+        # account id is replaced with higher priority
+        snapshot.add_transformer(snapshot.transform.sqs_api())
 
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 
@@ -2195,7 +2243,9 @@ class TestSqsQueryApi:
         assert "<Message>Unknown Attribute Foobar.</Message>" in response.text
 
     @pytest.mark.aws_validated
-    def test_get_delete_queue(self, sqs_create_queue, sqs_client, sqs_http_client):
+    def test_get_delete_queue(
+        self, sqs_create_queue, sqs_client, sqs_http_client, sqs_queue_exists
+    ):
         queue_url = sqs_create_queue()
 
         response = sqs_http_client.get(
@@ -2207,7 +2257,7 @@ class TestSqsQueryApi:
         assert response.ok
         assert "<DeleteQueueResponse " in response.text
 
-        assert poll_condition(lambda: not queue_exists(sqs_client, queue_url), timeout=5)
+        assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
 
     @pytest.mark.aws_validated
     def test_get_send_and_receive_messages(self, sqs_create_queue, sqs_http_client):
@@ -2250,12 +2300,14 @@ class TestSqsQueryApi:
         assert "<MD5OfBody>" in response.text
 
     @pytest.mark.aws_validated
-    def test_get_on_deleted_queue_fails(self, sqs_client, sqs_create_queue, sqs_http_client):
+    def test_get_on_deleted_queue_fails(
+        self, sqs_client, sqs_create_queue, sqs_http_client, sqs_queue_exists
+    ):
         queue_url = sqs_create_queue()
 
         sqs_client.delete_queue(QueueUrl=queue_url)
 
-        assert poll_condition(lambda: not queue_exists(sqs_client, queue_url), timeout=5)
+        assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
 
         response = sqs_http_client.get(
             queue_url,

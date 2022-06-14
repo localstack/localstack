@@ -1,46 +1,33 @@
 import base64
 import json
 import re
-import unittest
 import uuid
 
 import dateutil.parser
+import pytest
 
-from localstack.services.sns import sns_listener
-from localstack.services.sns.sns_listener import SNSBackend
+from localstack.services.sns.provider import (
+    check_filter_policy,
+    create_sns_message_body,
+    create_sqs_message_attributes,
+    get_message_attributes,
+    get_subscribe_attributes,
+    is_raw_message_delivery,
+)
 
 
-class SNSTests(unittest.TestCase):
-    def setUp(self):
-        self.subscriber = {
-            "Protocol": "sqs",
-            "RawMessageDelivery": "false",
-            "TopicArn": "arn",
-        }
+@pytest.fixture
+def subscriber():
+    return {
+        "SubscriptionArn": "arn",
+        "Protocol": "sqs",
+        "RawMessageDelivery": "false",
+        "TopicArn": "arn",
+    }
 
-    def test_unsubscribe_without_arn_should_error(self):
-        sns = sns_listener.ProxyListenerSNS()
-        error = sns.forward_request("POST", "/", "Action=Unsubscribe", "")
-        self.assertTrue(error is not None)
-        self.assertEqual(400, error.status_code)
 
-    def test_unsubscribe_should_remove_listener(self):
-        sub_arn = (
-            "arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72"
-        )
-        topic_arn = "arn:aws:sns:us-east-1:000000000000:test-topic"
-
-        sns_listener.do_subscribe(
-            topic_arn,
-            "arn:aws:sqs:us-east-1:000000000000:test-queue",
-            "sqs",
-            sub_arn,
-            {},
-        )
-        self.assertTrue(sns_listener.get_subscription_by_arn(sub_arn))
-        sns_listener.do_unsubscribe(sub_arn)
-        self.assertFalse(sns_listener.get_subscription_by_arn(sub_arn))
-
+@pytest.mark.usefixtures("subscriber")
+class TestSns:
     def test_get_subscribe_attributes(self):
         req_data = {
             "Attribute.entry.1.key": ["RawMessageDelivery"],
@@ -48,26 +35,24 @@ class SNSTests(unittest.TestCase):
             "Attribute.entry.2.key": ["FilterPolicy"],
             "Attribute.entry.2.value": ['{"type": ["foo", "bar"]}'],
         }
-        attributes = sns_listener.get_subscribe_attributes(req_data)
+        attributes = get_subscribe_attributes(req_data)
         expected = {
             "RawMessageDelivery": "true",
             "PendingConfirmation": "false",
             "FilterPolicy": '{"type": ["foo", "bar"]}',
         }
-        self.assertDictEqual(attributes, expected)
+        assert attributes == expected
 
-    def test_create_sns_message_body_raw_message_delivery(self):
-        self.subscriber["RawMessageDelivery"] = "true"
+    def test_create_sns_message_body_raw_message_delivery(self, subscriber):
+        subscriber["RawMessageDelivery"] = "true"
         action = {"Message": ["msg"]}
-        result = sns_listener.create_sns_message_body(self.subscriber, action)
-        self.assertEqual("msg", result)
+        result = create_sns_message_body(subscriber, action)
+        assert "msg" == result
 
-    def test_create_sns_message_body(self):
+    def test_create_sns_message_body(self, subscriber):
         action = {"Message": ["msg"]}
 
-        result_str = sns_listener.create_sns_message_body(
-            self.subscriber, action, str(uuid.uuid4())
-        )
+        result_str = create_sns_message_body(subscriber, action, str(uuid.uuid4()))
         result = json.loads(result_str)
         try:
             uuid.UUID(result.pop("MessageId"))
@@ -90,8 +75,9 @@ class SNSTests(unittest.TestCase):
             "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
             "TopicArn": "arn",
             "Type": "Notification",
+            "UnsubscribeURL": "http://localhost:4566/?Action=Unsubscribe&SubscriptionArn=arn",
         }
-        self.assertEqual(expected_sns_body, result)
+        assert expected_sns_body == result
 
         # Now add a subject
         action = {
@@ -106,7 +92,7 @@ class SNSTests(unittest.TestCase):
             "MessageAttributes.entry.2.Value.StringValue": ["value2"],
             "MessageAttributes.entry.2.Value.BinaryValue": ["value2"],
         }
-        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
+        result_str = create_sns_message_body(subscriber, action)
         result = json.loads(result_str)
         del result["MessageId"]
         del result["Timestamp"]
@@ -118,6 +104,7 @@ class SNSTests(unittest.TestCase):
             "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
             "TopicArn": "arn",
             "Type": "Notification",
+            "UnsubscribeURL": "http://localhost:4566/?Action=Unsubscribe&SubscriptionArn=arn",
             "MessageAttributes": {
                 "attr1": {
                     "Type": "String",
@@ -129,58 +116,58 @@ class SNSTests(unittest.TestCase):
                 },
             },
         }
-        self.assertEqual(msg, result)
+        assert msg == result
 
-    def test_create_sns_message_body_json_structure(self):
+    def test_create_sns_message_body_json_structure(self, subscriber):
         action = {
             "Message": ['{"default": {"message": "abc"}}'],
             "MessageStructure": ["json"],
         }
-        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
+        result_str = create_sns_message_body(subscriber, action)
         result = json.loads(result_str)
 
-        self.assertEqual({"message": "abc"}, result["Message"])
+        assert {"message": "abc"} == result["Message"]
 
-    def test_create_sns_message_body_json_structure_raw_delivery(self):
-        self.subscriber["RawMessageDelivery"] = "true"
+    def test_create_sns_message_body_json_structure_raw_delivery(self, subscriber):
+        subscriber["RawMessageDelivery"] = "true"
         action = {
             "Message": ['{"default": {"message": "abc"}}'],
             "MessageStructure": ["json"],
         }
-        result = sns_listener.create_sns_message_body(self.subscriber, action)
+        result = create_sns_message_body(subscriber, action)
 
-        self.assertEqual({"message": "abc"}, result)
+        assert {"message": "abc"} == result
 
-    def test_create_sns_message_body_json_structure_without_default_key(self):
+    def test_create_sns_message_body_json_structure_without_default_key(self, subscriber):
         action = {"Message": ['{"message": "abc"}'], "MessageStructure": ["json"]}
-        with self.assertRaises(Exception) as exc:
-            sns_listener.create_sns_message_body(self.subscriber, action)
-        self.assertEqual("Unable to find 'default' key in message payload", str(exc.exception))
+        with pytest.raises(Exception) as exc:
+            create_sns_message_body(subscriber, action)
+        assert "Unable to find 'default' key in message payload" == str(exc.value)
 
-    def test_create_sns_message_body_json_structure_sqs_protocol(self):
+    def test_create_sns_message_body_json_structure_sqs_protocol(self, subscriber):
         action = {
             "Message": ['{"default": "default message", "sqs": "sqs message"}'],
             "MessageStructure": ["json"],
         }
-        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
+        result_str = create_sns_message_body(subscriber, action)
         result = json.loads(result_str)
 
-        self.assertEqual("sqs message", result["Message"])
+        assert "sqs message" == result["Message"]
 
-    def test_create_sns_message_body_json_structure_raw_delivery_sqs_protocol(self):
-        self.subscriber["RawMessageDelivery"] = "true"
+    def test_create_sns_message_body_json_structure_raw_delivery_sqs_protocol(self, subscriber):
+        subscriber["RawMessageDelivery"] = "true"
         action = {
             "Message": [
                 '{"default": {"message": "default version"}, "sqs": {"message": "sqs version"}}'
             ],
             "MessageStructure": ["json"],
         }
-        result = sns_listener.create_sns_message_body(self.subscriber, action)
+        result = create_sns_message_body(subscriber, action)
 
-        self.assertEqual({"message": "sqs version"}, result)
+        assert {"message": "sqs version"} == result
 
-    def test_create_sqs_message_attributes(self):
-        self.subscriber["RawMessageDelivery"] = "true"
+    def test_create_sqs_message_attributes(self, subscriber):
+        subscriber["RawMessageDelivery"] = "true"
         action = {
             "Message": ["msg"],
             "Subject": ["subject"],
@@ -198,41 +185,25 @@ class SNSTests(unittest.TestCase):
             "MessageAttributes.entry.3.Value.StringValue": ["3"],
         }
 
-        attributes = sns_listener.get_message_attributes(action)
-        result = sns_listener.create_sqs_message_attributes(self.subscriber, attributes)
+        attributes = get_message_attributes(action)
+        result = create_sqs_message_attributes(subscriber, attributes)
 
-        self.assertEqual("String", result["attr1"]["DataType"])
-        self.assertEqual("value1", result["attr1"]["StringValue"])
-        self.assertEqual("Binary", result["attr2"]["DataType"])
-        self.assertEqual("value2".encode("utf-8"), result["attr2"]["BinaryValue"])
-        self.assertEqual("Number", result["attr3"]["DataType"])
-        self.assertEqual("3", result["attr3"]["StringValue"])
+        assert "String" == result["attr1"]["DataType"]
+        assert "value1" == result["attr1"]["StringValue"]
+        assert "Binary" == result["attr2"]["DataType"]
+        assert "value2".encode("utf-8") == result["attr2"]["BinaryValue"]
+        assert "Number" == result["attr3"]["DataType"]
+        assert "3" == result["attr3"]["StringValue"]
 
-    def test_create_sns_message_timestamp_millis(self):
+    def test_create_sns_message_timestamp_millis(self, subscriber):
         action = {"Message": ["msg"]}
-        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
+        result_str = create_sns_message_body(subscriber, action)
         result = json.loads(result_str)
         timestamp = result.pop("Timestamp")
         end = timestamp[-5:]
         matcher = re.compile(r"\.[0-9]{3}Z")
         match = matcher.match(end)
-        self.assertIsNotNone(match)
-
-    def test_only_one_subscription_per_topic_per_endpoint(self):
-        sub_arn = (
-            "arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72"
-        )
-        topic_arn = "arn:aws:sns:us-east-1:000000000000:test-topic"
-        sns_backend = SNSBackend().get()
-        for i in [1, 2]:
-            sns_listener.do_subscribe(
-                topic_arn,
-                "arn:aws:sqs:us-east-1:000000000000:test-queue-1",
-                "sqs",
-                sub_arn,
-                {},
-            )
-            self.assertEqual(1, len(sns_backend.sns_subscriptions[topic_arn]))
+        assert match
 
     def test_filter_policy(self):
         test_data = [
@@ -565,29 +536,24 @@ class SNSTests(unittest.TestCase):
         ]
 
         for test in test_data:
-            test_name = test[0]
             filter_policy = test[1]
             attributes = test[2]
             expected = test[3]
-            self.assertEqual(
-                expected,
-                sns_listener.check_filter_policy(filter_policy, attributes),
-                test_name,
-            )
+            assert expected == check_filter_policy(filter_policy, attributes)
 
-    def test_is_raw_message_delivery(self):
+    def test_is_raw_message_delivery(self, subscriber):
         valid_true_values = ["true", "True", True]
 
         for true_value in valid_true_values:
-            self.subscriber["RawMessageDelivery"] = true_value
-            self.assertTrue(sns_listener.is_raw_message_delivery(self.subscriber))
+            subscriber["RawMessageDelivery"] = true_value
+            assert is_raw_message_delivery(subscriber)
 
-    def test_is_not_raw_message_delivery(self):
+    def test_is_not_raw_message_delivery(self, subscriber):
         invalid_values = ["false", "False", False, "somevalue", ""]
 
         for invalid_values in invalid_values:
-            self.subscriber["RawMessageDelivery"] = invalid_values
-            self.assertFalse(sns_listener.is_raw_message_delivery(self.subscriber))
+            subscriber["RawMessageDelivery"] = invalid_values
+            assert not is_raw_message_delivery(subscriber)
 
-        del self.subscriber["RawMessageDelivery"]
-        self.assertFalse(sns_listener.is_raw_message_delivery(self.subscriber))
+        del subscriber["RawMessageDelivery"]
+        assert not is_raw_message_delivery(subscriber)

@@ -2,30 +2,23 @@
 import json
 import queue
 import random
-import time
 
 import pytest
 import requests
 from botocore.exceptions import ClientError
+from pytest_httpserver import HTTPServer
+from werkzeug import Response
 
 from localstack import config
 from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID
-from localstack.http import Request
-from localstack.services.generic_proxy import ProxyListener
-from localstack.services.infra import start_proxy
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import SNSBackend
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import (
-    get_free_tcp_port,
-    get_service_protocol,
-    retry,
-    short_uid,
-    to_str,
-    wait_for_port_open,
-)
+from localstack.utils.net import wait_for_port_closed, wait_for_port_open
+from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.functions import lambda_integration
@@ -36,11 +29,6 @@ from .awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
 )
-
-TEST_TOPIC_NAME = "TestTopic_snsTest"
-TEST_QUEUE_NAME = "TestQueue_snsTest"
-TEST_QUEUE_DLQ_NAME = "TestQueue_DLQ_snsTest"
-TEST_TOPIC_NAME_2 = "topic-test-2"
 
 PUBLICATION_TIMEOUT = 0.500
 PUBLICATION_RETRIES = 4
@@ -128,41 +116,36 @@ class TestSNSProvider:
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-    def test_subscribe_http_endpoint(self, sns_client, sns_create_topic, sns_subscription):
+    def test_subscribe_http_endpoint(
+        self, sns_client, sns_create_topic, sns_subscription, httpserver: HTTPServer
+    ):
         topic_arn = sns_create_topic()["TopicArn"]
 
         # create HTTP endpoint and connect it to SNS topic
-        class MyUpdateListener(ProxyListener):
-            def forward_request(self, method, path, data, headers):
-                records.append((json.loads(to_str(data)), headers))
-                return 200
+        httpserver.expect_request("/").respond_with_data(status=200)
+        endpoint_url = httpserver.url_for("/")
+        wait_for_port_open(endpoint_url)
 
-        records = []
-        local_port = get_free_tcp_port()
-        proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
-        wait_for_port_open(local_port)
-        queue_arn = "%s://localhost:%s" % (get_service_protocol(), local_port)
-        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=queue_arn)
+        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint_url)
 
-        def received():
-            assert records[0][0]["Type"] == "SubscriptionConfirmation"
-            assert records[0][1]["x-amz-sns-message-type"] == "SubscriptionConfirmation"
+        assert poll_condition(lambda: len(httpserver.log) >= 1)
 
-            token = records[0][0]["Token"]
-            subscribe_url = records[0][0]["SubscribeURL"]
+        request, response = httpserver.log[0]
+        payload = request.get_json(True)
 
-            assert subscribe_url == (
-                f"{external_service_url('sns')}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
-            )
+        assert payload["Type"] == "SubscriptionConfirmation"
+        assert request.headers["x-amz-sns-message-type"] == "SubscriptionConfirmation"
+        assert "Signature" in payload
+        assert "SigningCertURL" in payload
 
-            assert "Signature" in records[0][0]
-            assert "SigningCertURL" in records[0][0]
-
-        retry(received, retries=5, sleep=1)
-        proxy.stop()
+        token = payload["Token"]
+        subscribe_url = payload["SubscribeURL"]
+        assert subscribe_url == (
+            f"{external_service_url('sns')}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
+        )
 
     def test_subscribe_with_invalid_protocol(self, sns_client, sns_create_topic, sns_subscription):
-        topic_arn = sns_create_topic(Name=TEST_TOPIC_NAME_2)["TopicArn"]
+        topic_arn = sns_create_topic()["TopicArn"]
 
         with pytest.raises(ClientError) as e:
             sns_subscription(
@@ -357,7 +340,7 @@ class TestSNSProvider:
         retry(check_message2, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
         # test with exist operator set to false.
-        queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME)
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
         filter_policy = {"store": [{"exists": False}]}
         do_subscribe(filter_policy, queue_arn)
         # get number of messages
@@ -650,42 +633,42 @@ class TestSNSProvider:
         topic_arn = sns_create_topic()["TopicArn"]
 
         # create HTTP endpoint and connect it to SNS topic
-        class MyUpdateListener(ProxyListener):
-            def forward_request(self, method, path, data, headers):
-                records.append((json.loads(to_str(data)), headers))
-                return 200
+        with HTTPServer() as server:
+            server.expect_request("/subscription").respond_with_data(b"", 200)
+            http_endpoint = server.url_for("/subscription")
+            wait_for_port_open(server.port)
 
-        records = []
-        local_port = get_free_tcp_port()
-        proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
-        wait_for_port_open(local_port)
-        http_endpoint = f"{get_service_protocol()}://localhost:{local_port}"
+            subscription = sns_subscription(
+                TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint
+            )
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription["SubscriptionArn"],
+                AttributeName="RedrivePolicy",
+                AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
+            )
 
-        subscription = sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
-        sns_client.set_subscription_attributes(
-            SubscriptionArn=subscription["SubscriptionArn"],
-            AttributeName="RedrivePolicy",
-            AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
-        )
+            # wait for subscription notification to arrive at http endpoint
+            poll_condition(lambda: len(server.log) >= 1, timeout=10)
+            request, _ = server.log[0]
+            event = request.get_json(force=True)
+            assert request.path.endswith("/subscription")
+            assert event["Type"] == "SubscriptionConfirmation"
+            assert event["TopicArn"] == topic_arn
 
-        proxy.stop()
-        # for some reason, it takes a long time to stop the proxy thread -> TODO investigate
-        time.sleep(5)
+        wait_for_port_closed(server.port)
 
         sns_client.publish(
             TopicArn=topic_arn,
             Message=json.dumps({"message": "test_redrive_policy"}),
         )
 
-        def receive_dlq():
-            result = sqs_client.receive_message(QueueUrl=dlq_url, MessageAttributeNames=["All"])
-            assert len(result["Messages"]) > 0
-            assert (
-                json.loads(json.loads(result["Messages"][0]["Body"])["Message"][0])["message"]
-                == "test_redrive_policy"
-            )
-
-        retry(receive_dlq, retries=7, sleep=2.5)
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        assert (
+            len(response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {response}"
+        message = json.loads(response["Messages"][0]["Body"])
+        assert message["Type"] == "Notification"
+        assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
     def test_redrive_policy_lambda_subscription(
         self,
@@ -725,15 +708,13 @@ class TestSNSProvider:
             Message=json.dumps({"message": "test_redrive_policy"}),
         )
 
-        def receive_dlq():
-            result = sqs_client.receive_message(QueueUrl=dlq_url, MessageAttributeNames=["All"])
-            assert len(result["Messages"]) > 0
-            assert (
-                json.loads(json.loads(result["Messages"][0]["Body"])["Message"][0])["message"]
-                == "test_redrive_policy"
-            )
-
-        retry(receive_dlq, retries=10, sleep=2)
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        assert (
+            len(response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {response}"
+        message = json.loads(response["Messages"][0]["Body"])
+        assert message["Type"] == "Notification"
+        assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
     def test_redrive_policy_queue_subscription(
         self,
@@ -766,15 +747,13 @@ class TestSNSProvider:
             TopicArn=topic_arn, Message=json.dumps({"message": "test_redrive_policy"})
         )
 
-        def receive_dlq():
-            result = sqs_client.receive_message(QueueUrl=dlq_url, MessageAttributeNames=["All"])
-            assert len(result["Messages"]) > 0
-            assert (
-                json.loads(json.loads(result["Messages"][0]["Body"])["Message"][0])["message"]
-                == "test_redrive_policy"
-            )
-
-        retry(receive_dlq, retries=10, sleep=2)
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        assert (
+            len(response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {response}"
+        message = json.loads(response["Messages"][0]["Body"])
+        assert message["Type"] == "Notification"
+        assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
     def test_publish_with_empty_subject(self, sns_client, sns_create_topic):
         topic_arn = sns_create_topic()["TopicArn"]
@@ -958,9 +937,7 @@ class TestSNSProvider:
         message = f"test message {short_uid()}"
         topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
 
-        base_url = (
-            f"{get_service_protocol()}://{config.LOCALSTACK_HOSTNAME}:{config.service_port('sns')}"
-        )
+        base_url = config.get_edge_url()
         path = "Action=Publish&Version=2010-03-31&TopicArn={}&Message={}".format(topic_arn, message)
 
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -996,22 +973,22 @@ class TestSNSProvider:
         _requests = queue.Queue()
 
         # create HTTP endpoint and connect it to SNS topic
-        class MyUpdateListener(ProxyListener):
-            def forward_request(self, method, path, data, headers):
-                _requests.put(Request(method, path, headers=headers, body=data))
-                return 429
+        def handler(request):
+            _requests.put(request)
+            return Response(status=429)
 
         number_of_endpoints = 4
 
-        proxies = []
+        servers = []
 
         for _ in range(number_of_endpoints):
-            local_port = get_free_tcp_port()
-            proxies.append(
-                start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
-            )
-            wait_for_port_open(local_port)
-            http_endpoint = f"{get_service_protocol()}://localhost:{local_port}"
+            server = HTTPServer()
+            server.start()
+            servers.append(server)
+            server.expect_request("/").respond_with_handler(handler)
+            http_endpoint = server.url_for("/")
+            wait_for_port_open(http_endpoint)
+
             sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=http_endpoint)
 
         # fetch subscription information
@@ -1029,8 +1006,8 @@ class TestSNSProvider:
             # make sure only four requests are received
             _requests.get(timeout=1)
 
-        for proxy in proxies:
-            proxy.stop()
+        for server in servers:
+            server.stop()
 
     def test_publish_sms_endpoint(self, sns_client, sns_create_topic, sns_subscription):
         list_of_contacts = [
@@ -1510,3 +1487,151 @@ class TestSNSProvider:
             )["Attributes"]["ApproximateNumberOfMessages"]
             == "0"
         )
+
+    @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @pytest.mark.aws_validated
+    def test_dead_letter_queue_with_deleted_sqs_queue(
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sqs_queue_exists,
+        sns_create_sqs_subscription,
+        raw_message_delivery,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+        # Need to skip the MD5OfBody/Signature, because it contains a timestamp
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$.json_encoded_delivery..Body.Signature",
+                "<signature>",
+                reference_replacement=False,
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$.json_encoded_delivery..MD5OfBody", "<md5-hash>", reference_replacement=False
+            )
+        )
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        dlq_url = sqs_create_queue()
+        dlq_arn = sqs_queue_arn(dlq_url)
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"],
+            AttributeName="RedrivePolicy",
+            AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
+        )
+
+        if raw_message_delivery:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription["SubscriptionArn"],
+                AttributeName="RawMessageDelivery",
+                AttributeValue="true",
+            )
+
+        # allow topic to write to the DLQ sqs queue
+        # taken from localstack.testing.pytest.fixtures.sns_create_sqs_subscription#494
+        sqs_client.set_queue_attributes(
+            QueueUrl=dlq_url,
+            Attributes={
+                "Policy": json.dumps(
+                    {
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Principal": {"Service": "sns.amazonaws.com"},
+                                "Action": "sqs:SendMessage",
+                                "Resource": dlq_arn,
+                                "Condition": {"ArnEquals": {"aws:SourceArn": topic_arn}},
+                            }
+                        ]
+                    }
+                )
+            },
+        )
+
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        # AWS takes some time to delete the queue, which make the test fails as it delivers the message correctly
+        assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
+
+        message = "test_dlq_after_sqs_endpoint_deleted"
+        sns_client.publish(TopicArn=topic_arn, Message=message)
+
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        assert (
+            len(response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {response}"
+
+        if raw_message_delivery:
+            assert response["Messages"][0]["Body"] == message
+            snapshot.match("raw_message_delivery", response)
+        else:
+            received_message = json.loads(response["Messages"][0]["Body"])
+            assert received_message["Type"] == "Notification"
+            assert received_message["Message"] == message
+
+            # Set the decoded JSON Body to be able to skip keys directly
+            response["Messages"][0]["Body"] = received_message
+
+            snapshot.match("json_encoded_delivery", response)
+
+    def test_message_attributes_not_missing(
+        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue
+    ):
+        queue_name = f"queue-{short_uid()}"
+        topic_name = f"topic-{short_uid()}"
+
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        topic = sns_create_topic(Name=topic_name)
+
+        queue_arn = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+
+        policy = {
+            "Id": f"policy-{short_uid()}",
+            "Statement": [
+                {
+                    "Action": ["sqs:SendMessage", "sqs:ReceiveMessage"],
+                    "Effect": "Allow",
+                    "Principal": {"Service": "sns.amazonaws.com"},
+                    "Resource": queue_arn,
+                }
+            ],
+            "Version": "2012-10-17",
+        }
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
+        )
+        sub = sns_client.subscribe(
+            TopicArn=topic["TopicArn"],
+            Protocol="sqs",
+            Attributes={"RawMessageDelivery": "true"},
+            Endpoint=queue_arn,
+        )
+        assert sub["SubscriptionArn"]
+        publish_response = sns_client.publish(
+            TopicArn=topic["TopicArn"],
+            Message="text",
+            MessageAttributes={
+                "an-attribute-key": {"DataType": "String", "StringValue": "an-attribute-value"}
+            },
+        )
+        assert publish_response["MessageId"]
+        msg = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            AttributeNames=["All"],
+            MessageAttributeNames=["All"],
+            WaitTimeSeconds=1,
+        )
+        assert "an-attribute-key" in msg["Messages"][0]["MessageAttributes"]

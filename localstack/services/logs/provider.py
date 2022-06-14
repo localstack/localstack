@@ -172,7 +172,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
     if events and self.destination_arn:
         log_events = [
             {
-                "id": event.event_id,
+                "id": str(event.event_id),
                 "timestamp": event.timestamp,
                 "message": event.message,
             }

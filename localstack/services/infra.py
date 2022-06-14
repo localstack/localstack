@@ -11,7 +11,7 @@ from typing import Dict, List, Union
 import boto3
 from localstack_client.config import get_service_port
 from moto.core import BaseModel
-from moto.core.models import InstanceTrackerMeta
+from moto.core.base_backend import InstanceTrackerMeta
 
 from localstack import config, constants
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER

@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 import gzip
 import json
+import re
 
 import pytest
 
 from localstack import config
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
@@ -156,6 +158,13 @@ class TestCloudWatchLogs:
             response["ResponseMetadata"]["HTTPHeaders"]["content-type"] == APPLICATION_AMZ_JSON_1_1
         )
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Statement.Condition.StringEquals",
+            "$..add_permission.ResponseMetadata.HTTPStatusCode",
+        ]
+    )
     def test_put_subscription_filter_lambda(
         self,
         lambda_client,
@@ -164,7 +173,25 @@ class TestCloudWatchLogs:
         logs_log_stream,
         create_lambda_function,
         sts_client,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        # special replacements for this test case:
+        snapshot.add_transformer(snapshot.transform.key_value("logGroupName"))
+        snapshot.add_transformer(snapshot.transform.key_value("logStreamName"))
+        snapshot.add_transformer(
+            KeyValueBasedTransformer(
+                lambda k, v: (
+                    v
+                    if k == "eventId"
+                    and (isinstance(v, str) and re.match(re.compile(r"^[0-9]+$"), v))
+                    else None
+                ),
+                replacement="event_id",
+                replace_reference=False,
+            ),
+        )
+
         test_lambda_name = f"test-lambda-function-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON3,
@@ -172,53 +199,57 @@ class TestCloudWatchLogs:
             func_name=test_lambda_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
-        try:
-            lambda_client.invoke(FunctionName=test_lambda_name, Payload=b"{}")
-            # get account-id to set the correct policy
-            account_id = sts_client.get_caller_identity()["Account"]
-            lambda_client.add_permission(
-                FunctionName=test_lambda_name,
-                StatementId=test_lambda_name,
-                Principal=f"logs.{config.DEFAULT_REGION}.amazonaws.com",
-                Action="lambda:InvokeFunction",
-                SourceArn=f"arn:aws:logs:{config.DEFAULT_REGION}:{account_id}:log-group:{logs_log_group}:*",
-                SourceAccount=account_id,
+        lambda_client.invoke(FunctionName=test_lambda_name, Payload=b"{}")
+        # get account-id to set the correct policy
+        account_id = sts_client.get_caller_identity()["Account"]
+        result = lambda_client.add_permission(
+            FunctionName=test_lambda_name,
+            StatementId=test_lambda_name,
+            Principal=f"logs.{config.DEFAULT_REGION}.amazonaws.com",
+            Action="lambda:InvokeFunction",
+            SourceArn=f"arn:aws:logs:{config.DEFAULT_REGION}:{account_id}:log-group:{logs_log_group}:*",
+            SourceAccount=account_id,
+        )
+
+        snapshot.match("add_permission", result)
+
+        result = logs_client.put_subscription_filter(
+            logGroupName=logs_log_group,
+            filterName="test",
+            filterPattern="",
+            destinationArn=aws_stack.lambda_function_arn(
+                test_lambda_name, account_id=account_id, region_name=config.DEFAULT_REGION
+            ),
+        )
+        snapshot.match("put_subscription_filter", result)
+
+        logs_client.put_log_events(
+            logGroupName=logs_log_group,
+            logStreamName=logs_log_stream,
+            logEvents=[
+                {"timestamp": now_utc(millis=True), "message": "test"},
+                {"timestamp": now_utc(millis=True), "message": "test 2"},
+            ],
+        )
+
+        response = logs_client.describe_subscription_filters(logGroupName=logs_log_group)
+        assert len(response["subscriptionFilters"]) == 1
+        snapshot.match("describe_subscription_filter", response)
+
+        def check_invocation():
+            events = testutil.list_all_log_events(
+                log_group_name=logs_log_group, logs_client=logs_client
             )
-            logs_client.put_subscription_filter(
-                logGroupName=logs_log_group,
-                filterName="test",
-                filterPattern="",
-                destinationArn=aws_stack.lambda_function_arn(
-                    test_lambda_name, account_id=account_id, region_name=config.DEFAULT_REGION
-                ),
-            )
+            assert len(events) == 2
+            events.sort(key=lambda k: k.get("message"))
+            snapshot.match("list_all_log_events", events)
+            assert isinstance(events[0]["eventId"], str)
+            assert "test" == events[0]["message"]
+            assert "test 2" in events[1]["message"]
 
-            logs_client.put_log_events(
-                logGroupName=logs_log_group,
-                logStreamName=logs_log_stream,
-                logEvents=[
-                    {"timestamp": now_utc(millis=True), "message": "test"},
-                    {"timestamp": now_utc(millis=True), "message": "test 2"},
-                ],
-            )
+        retry(check_invocation, retries=6, sleep=3.0)
 
-            response = logs_client.describe_subscription_filters(logGroupName=logs_log_group)
-            assert len(response["subscriptionFilters"]) == 1
-
-            def check_invocation():
-                events = testutil.get_lambda_log_events(
-                    test_lambda_name, log_group=logs_log_group, logs_client=logs_client
-                )
-                assert len(events) == 2
-                assert "test" in events
-                assert "test 2" in events
-
-            retry(check_invocation, retries=6, sleep=3.0)
-        finally:
-            # clean up lambda log group
-            log_group_name = f"/aws/lambda/{test_lambda_name}"
-            logs_client.delete_log_group(logGroupName=log_group_name)
-
+    @pytest.mark.aws_validated
     def test_put_subscription_filter_firehose(
         self,
         logs_client,
@@ -314,6 +345,7 @@ class TestCloudWatchLogs:
                 DeliveryStreamName=firehose_name, AllowForceDelete=True
             )
 
+    @pytest.mark.aws_validated
     def test_put_subscription_filter_kinesis(
         self,
         logs_client,

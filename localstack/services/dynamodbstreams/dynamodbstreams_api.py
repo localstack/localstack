@@ -1,8 +1,10 @@
 import json
 import logging
+import threading
 import time
 from typing import Dict
 
+from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
@@ -15,15 +17,25 @@ LOG = logging.getLogger(__name__)
 
 class DynamoDBStreamsBackend(RegionBackend):
     SEQUENCE_NUMBER_COUNTER = 1
-    # maps table names to DynamoDB stream details
-    ddb_streams: Dict[str, Dict]
+
+    _mutex = threading.RLock()
+
+    # maps table names to DynamoDB stream descriptions
+    ddb_streams: Dict[str, dict]
 
     def __init__(self):
         self.ddb_streams = {}
 
+    @classmethod
+    def get_and_increment_sequence_number_counter(cls) -> int:
+        with cls._mutex:
+            cnt = cls.SEQUENCE_NUMBER_COUNTER
+            cls.SEQUENCE_NUMBER_COUNTER += 1
+            return cnt
+
 
 def add_dynamodb_stream(
-    table_name, latest_stream_label=None, view_type="NEW_AND_OLD_IMAGES", enabled=True
+    table_name, latest_stream_label=None, view_type=StreamViewType.NEW_AND_OLD_IMAGES, enabled=True
 ):
     if enabled:
         region = DynamoDBStreamsBackend.get()
@@ -37,10 +49,11 @@ def add_dynamodb_stream(
             ),
             "TableName": table_name,
             "StreamLabel": latest_stream_label,
-            "StreamStatus": "ENABLING",
+            "StreamStatus": StreamStatus.ENABLING,
             "KeySchema": [],
             "Shards": [],
             "StreamViewType": view_type,
+            "shards_id_map": {},
         }
         region.ddb_streams[table_name] = stream
         # record event
@@ -50,13 +63,13 @@ def add_dynamodb_stream(
         )
 
 
-def get_stream_for_table(table_arn):
+def get_stream_for_table(table_arn: str) -> dict:
     region = DynamoDBStreamsBackend.get()
     table_name = table_name_from_stream_arn(table_arn)
     return region.ddb_streams.get(table_name)
 
 
-def forward_events(records):
+def forward_events(records: Dict) -> None:
     kinesis = aws_stack.connect_to_service("kinesis")
     for record in records:
         table_arn = record.pop("eventSourceARN", "")
@@ -67,7 +80,7 @@ def forward_events(records):
             kinesis.put_record(StreamName=stream_name, Data=json.dumps(record), PartitionKey="TODO")
 
 
-def delete_streams(table_arn):
+def delete_streams(table_arn: str) -> None:
     region = DynamoDBStreamsBackend.get()
     table_name = table_name_from_table_arn(table_arn)
     stream = region.ddb_streams.pop(table_name, None)
@@ -81,31 +94,39 @@ def delete_streams(table_arn):
             pass  # ignore "stream not found" errors
 
 
-def get_kinesis_stream_name(table_name):
+def get_kinesis_stream_name(table_name: str) -> str:
     return DDB_KINESIS_STREAM_NAME_PREFIX + table_name
 
 
-def table_name_from_stream_arn(stream_arn):
+def table_name_from_stream_arn(stream_arn: str) -> str:
     return stream_arn.split(":table/", 1)[-1].split("/")[0]
 
 
-def table_name_from_table_arn(table_arn):
+def table_name_from_table_arn(table_arn: str) -> str:
     return table_name_from_stream_arn(table_arn)
 
 
-def stream_name_from_stream_arn(stream_arn):
+def stream_name_from_stream_arn(stream_arn: str) -> str:
     table_name = table_name_from_stream_arn(stream_arn)
     return get_kinesis_stream_name(table_name)
 
 
-def shard_id(kinesis_shard_id):
+def shard_id(kinesis_shard_id: str) -> str:
     timestamp = str(int(now_utc()))
-    timestamp = "%s00000000" % timestamp[:-5]
-    timestamp = "%s%s" % ("0" * (20 - len(timestamp)), timestamp)
-    suffix = kinesis_shard_id.replace("shardId-", "")[:32]
-    return "shardId-%s-%s" % (timestamp, suffix)
+    timestamp = f"{timestamp[:-5]}00000000".rjust(20, "0")
+    kinesis_shard_params = kinesis_shard_id.split("-")
+    return f"{kinesis_shard_params[0]}-{timestamp}-{kinesis_shard_params[-1][:32]}"
 
 
-def kinesis_shard_id(dynamodbstream_shard_id):
+def kinesis_shard_id(dynamodbstream_shard_id: str) -> str:
     shard_params = dynamodbstream_shard_id.rsplit("-")
-    return "{0}-{1}".format(shard_params[0], shard_params[-1])
+    return f"{shard_params[0]}-{shard_params[-1]}"
+
+
+def get_shard_id(stream: Dict, kinesis_shard_id: str) -> str:
+    ddb_stream_shard_id = stream.get("shards_id_map", {}).get(kinesis_shard_id)
+    if not ddb_stream_shard_id:
+        ddb_stream_shard_id = shard_id(kinesis_shard_id)
+        stream["shards_id_map"][kinesis_shard_id] = ddb_stream_shard_id
+
+    return ddb_stream_shard_id

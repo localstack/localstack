@@ -9,11 +9,18 @@ else:
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
+ARN = str
 AWSAccountID = str
 AlarmName = str
 AliasHealthEnabled = bool
 AssociateVPCComment = str
+ChangeId = str
+Cidr = str
+CidrLocationNameDefaultAllowed = str
+CidrLocationNameDefaultNotAllowed = str
+CidrNonce = str
 CloudWatchLogsLogGroupArn = str
+CollectionName = str
 DNSName = str
 DNSRCode = str
 DimensionField = str
@@ -87,6 +94,7 @@ TrafficPolicyName = str
 TrafficPolicyVersion = int
 TrafficPolicyVersionMarker = str
 TransportProtocol = str
+UUID = str
 VPCId = str
 
 
@@ -107,6 +115,11 @@ class ChangeAction(str):
 class ChangeStatus(str):
     PENDING = "PENDING"
     INSYNC = "INSYNC"
+
+
+class CidrCollectionChangeAction(str):
+    PUT = "PUT"
+    DELETE_IF_EXISTS = "DELETE_IF_EXISTS"
 
 
 class CloudWatchRegion(str):
@@ -284,6 +297,22 @@ class VPCRegion(str):
     eu_south_1 = "eu-south-1"
 
 
+class CidrBlockInUseException(ServiceException):
+    Message: Optional[ErrorMessage]
+
+
+class CidrCollectionAlreadyExistsException(ServiceException):
+    Message: Optional[ErrorMessage]
+
+
+class CidrCollectionInUseException(ServiceException):
+    Message: Optional[ErrorMessage]
+
+
+class CidrCollectionVersionMismatchException(ServiceException):
+    Message: Optional[ErrorMessage]
+
+
 class ConcurrentModification(ServiceException):
     message: Optional[ErrorMessage]
 
@@ -434,6 +463,14 @@ class LimitsExceeded(ServiceException):
 
 class NoSuchChange(ServiceException):
     message: Optional[ErrorMessage]
+
+
+class NoSuchCidrCollectionException(ServiceException):
+    Message: Optional[ErrorMessage]
+
+
+class NoSuchCidrLocationException(ServiceException):
+    Message: Optional[ErrorMessage]
 
 
 class NoSuchCloudWatchLogsLogGroup(ServiceException):
@@ -593,6 +630,11 @@ class AssociateVPCWithHostedZoneResponse(TypedDict, total=False):
     ChangeInfo: ChangeInfo
 
 
+class CidrRoutingConfig(TypedDict, total=False):
+    CollectionId: UUID
+    LocationName: CidrLocationNameDefaultAllowed
+
+
 class ResourceRecord(TypedDict, total=False):
     Value: RData
 
@@ -624,6 +666,7 @@ class ResourceRecordSet(TypedDict, total=False):
     AliasTarget: Optional[AliasTarget]
     HealthCheckId: Optional[HealthCheckId]
     TrafficPolicyInstanceId: Optional[TrafficPolicyInstanceId]
+    CidrRoutingConfig: Optional[CidrRoutingConfig]
 
 
 class Change(TypedDict, total=False):
@@ -637,6 +680,29 @@ Changes = List[Change]
 class ChangeBatch(TypedDict, total=False):
     Comment: Optional[ResourceDescription]
     Changes: Changes
+
+
+CidrList = List[Cidr]
+
+
+class CidrCollectionChange(TypedDict, total=False):
+    LocationName: CidrLocationNameDefaultNotAllowed
+    Action: CidrCollectionChangeAction
+    CidrList: CidrList
+
+
+CidrCollectionChanges = List[CidrCollectionChange]
+CollectionVersion = int
+
+
+class ChangeCidrCollectionRequest(ServiceRequest):
+    Id: UUID
+    CollectionVersion: Optional[CollectionVersion]
+    Changes: CidrCollectionChanges
+
+
+class ChangeCidrCollectionResponse(TypedDict, total=False):
+    Id: ChangeId
 
 
 class ChangeResourceRecordSetsRequest(ServiceRequest):
@@ -674,6 +740,21 @@ CheckerIpRanges = List[IPAddressCidr]
 ChildHealthCheckList = List[HealthCheckId]
 
 
+class CidrBlockSummary(TypedDict, total=False):
+    CidrBlock: Optional[Cidr]
+    LocationName: Optional[CidrLocationNameDefaultNotAllowed]
+
+
+CidrBlockSummaries = List[CidrBlockSummary]
+
+
+class CidrCollection(TypedDict, total=False):
+    Arn: Optional[ARN]
+    Id: Optional[UUID]
+    Name: Optional[CollectionName]
+    Version: Optional[CollectionVersion]
+
+
 class Dimension(TypedDict, total=False):
     Name: DimensionField
     Value: DimensionField
@@ -691,6 +772,26 @@ class CloudWatchAlarmConfiguration(TypedDict, total=False):
     Namespace: Namespace
     Statistic: Statistic
     Dimensions: Optional[DimensionList]
+
+
+class CollectionSummary(TypedDict, total=False):
+    Arn: Optional[ARN]
+    Id: Optional[UUID]
+    Name: Optional[CollectionName]
+    Version: Optional[CollectionVersion]
+
+
+CollectionSummaries = List[CollectionSummary]
+
+
+class CreateCidrCollectionRequest(ServiceRequest):
+    Name: CollectionName
+    CallerReference: CidrNonce
+
+
+class CreateCidrCollectionResponse(TypedDict, total=False):
+    Collection: Optional[CidrCollection]
+    Location: Optional[ResourceURI]
 
 
 HealthCheckRegionList = List[HealthCheckRegion]
@@ -928,6 +1029,14 @@ class DeactivateKeySigningKeyResponse(TypedDict, total=False):
 DelegationSets = List[DelegationSet]
 
 
+class DeleteCidrCollectionRequest(ServiceRequest):
+    Id: UUID
+
+
+class DeleteCidrCollectionResponse(TypedDict, total=False):
+    pass
+
+
 class DeleteHealthCheckRequest(ServiceRequest):
     HealthCheckId: HealthCheckId
 
@@ -1046,7 +1155,7 @@ class GetAccountLimitResponse(TypedDict, total=False):
 
 
 class GetChangeRequest(ServiceRequest):
-    Id: ResourceId
+    Id: ChangeId
 
 
 class GetChangeResponse(TypedDict, total=False):
@@ -1243,6 +1352,46 @@ class HostedZoneSummary(TypedDict, total=False):
 
 HostedZoneSummaries = List[HostedZoneSummary]
 HostedZones = List[HostedZone]
+
+
+class ListCidrBlocksRequest(ServiceRequest):
+    CollectionId: UUID
+    LocationName: Optional[CidrLocationNameDefaultNotAllowed]
+    NextToken: Optional[PaginationToken]
+    MaxResults: Optional[MaxResults]
+
+
+class ListCidrBlocksResponse(TypedDict, total=False):
+    NextToken: Optional[PaginationToken]
+    CidrBlocks: Optional[CidrBlockSummaries]
+
+
+class ListCidrCollectionsRequest(ServiceRequest):
+    NextToken: Optional[PaginationToken]
+    MaxResults: Optional[MaxResults]
+
+
+class ListCidrCollectionsResponse(TypedDict, total=False):
+    NextToken: Optional[PaginationToken]
+    CidrCollections: Optional[CollectionSummaries]
+
+
+class ListCidrLocationsRequest(ServiceRequest):
+    CollectionId: UUID
+    NextToken: Optional[PaginationToken]
+    MaxResults: Optional[MaxResults]
+
+
+class LocationSummary(TypedDict, total=False):
+    LocationName: Optional[CidrLocationNameDefaultAllowed]
+
+
+LocationSummaries = List[LocationSummary]
+
+
+class ListCidrLocationsResponse(TypedDict, total=False):
+    NextToken: Optional[PaginationToken]
+    CidrLocations: Optional[LocationSummaries]
 
 
 class ListGeoLocationsRequest(ServiceRequest):
@@ -1594,6 +1743,16 @@ class Route53Api:
     ) -> AssociateVPCWithHostedZoneResponse:
         raise NotImplementedError
 
+    @handler("ChangeCidrCollection")
+    def change_cidr_collection(
+        self,
+        context: RequestContext,
+        id: UUID,
+        changes: CidrCollectionChanges,
+        collection_version: CollectionVersion = None,
+    ) -> ChangeCidrCollectionResponse:
+        raise NotImplementedError
+
     @handler("ChangeResourceRecordSets")
     def change_resource_record_sets(
         self, context: RequestContext, hosted_zone_id: ResourceId, change_batch: ChangeBatch
@@ -1609,6 +1768,12 @@ class Route53Api:
         add_tags: TagList = None,
         remove_tag_keys: TagKeyList = None,
     ) -> ChangeTagsForResourceResponse:
+        raise NotImplementedError
+
+    @handler("CreateCidrCollection")
+    def create_cidr_collection(
+        self, context: RequestContext, name: CollectionName, caller_reference: CidrNonce
+    ) -> CreateCidrCollectionResponse:
         raise NotImplementedError
 
     @handler("CreateHealthCheck")
@@ -1703,6 +1868,12 @@ class Route53Api:
     ) -> DeactivateKeySigningKeyResponse:
         raise NotImplementedError
 
+    @handler("DeleteCidrCollection")
+    def delete_cidr_collection(
+        self, context: RequestContext, id: UUID
+    ) -> DeleteCidrCollectionResponse:
+        raise NotImplementedError
+
     @handler("DeleteHealthCheck")
     def delete_health_check(
         self, context: RequestContext, health_check_id: HealthCheckId
@@ -1780,7 +1951,7 @@ class Route53Api:
         raise NotImplementedError
 
     @handler("GetChange")
-    def get_change(self, context: RequestContext, id: ResourceId) -> GetChangeResponse:
+    def get_change(self, context: RequestContext, id: ChangeId) -> GetChangeResponse:
         raise NotImplementedError
 
     @handler("GetCheckerIpRanges")
@@ -1881,6 +2052,36 @@ class Route53Api:
         self,
         context: RequestContext,
     ) -> GetTrafficPolicyInstanceCountResponse:
+        raise NotImplementedError
+
+    @handler("ListCidrBlocks")
+    def list_cidr_blocks(
+        self,
+        context: RequestContext,
+        collection_id: UUID,
+        location_name: CidrLocationNameDefaultNotAllowed = None,
+        next_token: PaginationToken = None,
+        max_results: MaxResults = None,
+    ) -> ListCidrBlocksResponse:
+        raise NotImplementedError
+
+    @handler("ListCidrCollections")
+    def list_cidr_collections(
+        self,
+        context: RequestContext,
+        next_token: PaginationToken = None,
+        max_results: MaxResults = None,
+    ) -> ListCidrCollectionsResponse:
+        raise NotImplementedError
+
+    @handler("ListCidrLocations")
+    def list_cidr_locations(
+        self,
+        context: RequestContext,
+        collection_id: UUID,
+        next_token: PaginationToken = None,
+        max_results: MaxResults = None,
+    ) -> ListCidrLocationsResponse:
         raise NotImplementedError
 
     @handler("ListGeoLocations")

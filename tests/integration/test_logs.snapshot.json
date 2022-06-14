@@ -1,0 +1,68 @@
+{
+  "tests/integration/test_logs.py::TestCloudWatchLogs::test_put_subscription_filter_lambda": {
+    "recorded-date": "08-06-2022, 11:51:14",
+    "recorded-content": {
+      "add_permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        },
+        "Statement": {
+          "Sid": "<resource:1>",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "logs.<region>.amazonaws.com"
+          },
+          "Action": "lambda:InvokeFunction",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "AWS:SourceAccount": "111111111111"
+            },
+            "ArnLike": {
+              "AWS:SourceArn": "arn:aws:logs:<region>:111111111111:log-group:<log-group-name:1>:<resource:2>"
+            }
+          }
+        }
+      },
+      "put_subscription_filter": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_subscription_filter": {
+        "subscriptionFilters": [
+          {
+            "filterName": "test",
+            "logGroupName": "<log-group-name:1>",
+            "filterPattern": "",
+            "destinationArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+            "distribution": "ByLogStream",
+            "creationTime": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_all_log_events": [
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "test",
+          "ingestionTime": "timestamp",
+          "eventId": "event_id"
+        },
+        {
+          "logStreamName": "<log-stream-name:1>",
+          "timestamp": "timestamp",
+          "message": "test 2",
+          "ingestionTime": "timestamp",
+          "eventId": "event_id"
+        }
+      ]
+    }
+  }
+}

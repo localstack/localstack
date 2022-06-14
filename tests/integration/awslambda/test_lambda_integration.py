@@ -77,6 +77,7 @@ s3_lambda_permission = {
 
 
 class TestSQSEventSourceMapping:
+    @pytest.mark.skip_snapshot_verify
     def test_event_source_mapping_default_batch_size(
         self,
         create_lambda_function,
@@ -87,7 +88,9 @@ class TestSQSEventSourceMapping:
         dynamodb_client,
         dynamodb_create_table,
         lambda_su_role,
+        snapshot,
     ):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         queue_name_2 = f"queue-{short_uid()}-2"
@@ -105,17 +108,20 @@ class TestSQSEventSourceMapping:
             rs = lambda_client.create_event_source_mapping(
                 EventSourceArn=queue_arn_1, FunctionName=function_name
             )
+            snapshot.match("create-event-source-mapping", rs)
+
             uuid = rs["UUID"]
             assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
             _await_event_source_mapping_enabled(lambda_client, uuid)
 
             with pytest.raises(ClientError) as e:
                 # Update batch size with invalid value
-                lambda_client.update_event_source_mapping(
+                rs = lambda_client.update_event_source_mapping(
                     UUID=uuid,
                     FunctionName=function_name,
                     BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
                 )
+            snapshot.match("invalid-update-event-source-mapping", e.value.response)
             e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
 
             queue_url_2 = sqs_create_queue(QueueName=queue_name_2)
@@ -123,11 +129,12 @@ class TestSQSEventSourceMapping:
 
             with pytest.raises(ClientError) as e:
                 # Create event source mapping with invalid batch size value
-                lambda_client.create_event_source_mapping(
+                rs = lambda_client.create_event_source_mapping(
                     EventSourceArn=queue_arn_2,
                     FunctionName=function_name,
                     BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
                 )
+            snapshot.match("invalid-create-event-source-mapping", e.value.response)
             e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
         finally:
             lambda_client.delete_event_source_mapping(UUID=uuid)

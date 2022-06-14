@@ -8,16 +8,12 @@ from botocore.exceptions import ClientError
 from localstack.aws.api.iam import Tag
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.strings import long_uid
 
 
 class TestIAMIntegrations:
-    @pytest.fixture
-    def iam_client(self):
-        return aws_stack.create_external_boto_client("iam")
 
     # TODO what does this test do?
     def test_run_kcl_with_iam_assume_role(self):
@@ -356,3 +352,22 @@ class TestIAMIntegrations:
         assert roles["Roles"][0]["Path"] == "myPath"
         assert roles["Roles"][0]["RoleName"] == role_name_2
         assert len(roles["Roles"]) == 1
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail
+    @pytest.mark.parametrize(
+        "service_name, expected_role",
+        [
+            ("ecs.amazonaws.com", "AWSServiceRoleForECS"),
+            ("eks.amazonaws.com", "AWSServiceRoleForAmazonEKS"),
+        ],
+    )
+    def test_service_linked_role_name_should_match_aws(
+        self, iam_client, service_name, expected_role
+    ):
+        try:
+            service_linked_role = iam_client.create_service_linked_role(AWSServiceName=service_name)
+            role_name = service_linked_role["Role"]["RoleName"]
+            assert role_name == expected_role
+        finally:
+            iam_client.delete_service_linked_role(RoleName=role_name)

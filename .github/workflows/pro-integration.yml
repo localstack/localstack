@@ -79,7 +79,7 @@ jobs:
       - name: Link community LocalStack into Pro venv
         run: |
           source .venv/bin/activate
-          pip install -e ../localstack[runtime]
+          pip install -e ../localstack[runtime,test]
       - name: Create Pro Entrypoints
         # Entrypoints need to be generated _after_ the community edition has been linked into the venv
         run: make entrypoints

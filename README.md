@@ -1,4 +1,3 @@
-<a href="https://form.typeform.com/to/REn2U10O/"><img src="./.github/images/survey.svg"></a>
 <p align="center">
   <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-header.png" alt="LocalStack - A fully functional local cloud stack">
 </p>
@@ -148,6 +147,14 @@ If you are interested in contributing to LocalStack:
 - Navigate our codebase and [open issues](https://github.com/localstack/localstack/issues).
 
 We are thankful for all the contributions and feedback we receive.
+
+## Get in touch
+
+To get in touch with LocalStack team for bugs/feature requests, support questions or general discussions, please use:
+
+- [LocalStack Slack Community](https://localstack.cloud/contact/)
+- [LocalStack Discussion Page](https://discuss.localstack.cloud/)
+- [LocalStack GitHub Issue tracker](https://github.com/localstack/localstack/issues)
 
 ### Contributors
 

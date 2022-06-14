@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: ❓ Question
+    url: https://discuss.localstack.cloud
+    about: Ask a question about LocalStack
   - name: 📖  LocalStack Documentation
     url: https://localstack.cloud/docs/getting-started/overview/
     about: The LocalStack documentation may answer your questions!

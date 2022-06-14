@@ -1,67 +1,154 @@
 {
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaAsfApi::test_basic_invoke": {
-    "lambda_create_fn": {
-      "ResponseMetadata": "<response-metadata>",
-      "FunctionName": "<name>",
-      "FunctionArn": "<arn>",
-      "Runtime": "python3.9",
-      "Role": "<arn>",
-      "Handler": "index.handler",
-      "CodeSize": 276,
-      "Description": "",
-      "Timeout": 3,
-      "MemorySize": 128,
-      "LastModified": "<date>",
-      "CodeSha256": "<sha>",
-      "Version": "$LATEST",
-      "TracingConfig": {
-        "Mode": "PassThrough"
-      },
-      "RevisionId": "<uuid>",
-      "State": "Pending",
-      "StateReason": "The function is being created.",
-      "StateReasonCode": "Creating",
-      "PackageType": "Zip",
-      "EphemeralStorage": {
-        "Size": 512
-      }
-    },
-    "lambda_get_fn": {
-      "ResponseMetadata": "<response-metadata>",
-      "Configuration": {
-        "FunctionName": "<name>",
-        "FunctionArn": "<arn>",
+    "recorded-date": "31-05-2022, 09:28:23",
+    "recorded-content": {
+      "lambda_create_fn": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 201,
+          "HTTPHeaders": {}
+        },
+        "FunctionName": "<function-name:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
         "Runtime": "python3.9",
-        "Role": "<arn>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Handler": "index.handler",
         "CodeSize": 276,
         "Description": "",
         "Timeout": 3,
         "MemorySize": 128,
-        "LastModified": "<date>",
-        "CodeSha256": "<sha>",
+        "LastModified": "date",
+        "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
         "Version": "$LATEST",
         "TracingConfig": {
           "Mode": "PassThrough"
         },
-        "RevisionId": "<uuid>",
-        "State": "Active",
-        "LastUpdateStatus": "Successful",
+        "RevisionId": "<uuid:1>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
         "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
         "EphemeralStorage": {
           "Size": 512
         }
       },
-      "Code": {
-        "RepositoryType": "S3",
-        "Location": "<location>"
+      "lambda_create_fn_2": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 201,
+          "HTTPHeaders": {}
+        },
+        "FunctionName": "<function-name:2>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:2>",
+        "Runtime": "python3.9",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Handler": "index.handler",
+        "CodeSize": 276,
+        "Description": "",
+        "Timeout": 3,
+        "MemorySize": 128,
+        "LastModified": "date",
+        "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
+        "Version": "$LATEST",
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "RevisionId": "<uuid:2>",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "PackageType": "Zip",
+        "Architectures": [
+          "x86_64"
+        ],
+        "EphemeralStorage": {
+          "Size": 512
+        }
+      },
+      "lambda_get_fn": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "Configuration": {
+          "FunctionName": "<function-name:1>",
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "Runtime": "python3.9",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Handler": "index.handler",
+          "CodeSize": 276,
+          "Description": "",
+          "Timeout": 3,
+          "MemorySize": 128,
+          "LastModified": "date",
+          "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
+          "Version": "$LATEST",
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "RevisionId": "<uuid:3>",
+          "State": "Active",
+          "LastUpdateStatus": "Successful",
+          "PackageType": "Zip",
+          "Architectures": [
+            "x86_64"
+          ],
+          "EphemeralStorage": {
+            "Size": 512
+          }
+        },
+        "Code": {
+          "RepositoryType": "S3",
+          "Location": "<location>"
+        }
+      },
+      "lambda_get_fn_2": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "Configuration": {
+          "FunctionName": "<function-name:2>",
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:2>",
+          "Runtime": "python3.9",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Handler": "index.handler",
+          "CodeSize": 276,
+          "Description": "",
+          "Timeout": 3,
+          "MemorySize": 128,
+          "LastModified": "date",
+          "CodeSha256": "zMYxuJ0J/jyyHt1fYZUuOqZ/Gc9Gm64Wp8fT6XNiXro=",
+          "Version": "$LATEST",
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "RevisionId": "<uuid:4>",
+          "State": "Active",
+          "LastUpdateStatus": "Successful",
+          "PackageType": "Zip",
+          "Architectures": [
+            "x86_64"
+          ],
+          "EphemeralStorage": {
+            "Size": 512
+          }
+        },
+        "Code": {
+          "RepositoryType": "S3",
+          "Location": "<location>"
+        }
+      },
+      "lambda_invoke_result": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "StatusCode": 200,
+        "ExecutedVersion": "$LATEST",
+        "Payload": {}
       }
-    },
-    "lambda_invoke_result": {
-      "ResponseMetadata": "<response-metadata>",
-      "StatusCode": 200,
-      "ExecutedVersion": "$LATEST",
-      "Payload": "{}"
     }
   }
 }

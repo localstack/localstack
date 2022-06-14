@@ -970,6 +970,7 @@ class InstanceAttributeName(str):
     sriovNetSupport = "sriovNetSupport"
     enaSupport = "enaSupport"
     enclaveOptions = "enclaveOptions"
+    disableApiStop = "disableApiStop"
 
 
 class InstanceAutoRecoveryState(str):
@@ -1564,6 +1565,17 @@ class InstanceType(str):
     i4i_8xlarge = "i4i.8xlarge"
     i4i_16xlarge = "i4i.16xlarge"
     i4i_32xlarge = "i4i.32xlarge"
+    i4i_metal = "i4i.metal"
+    x2idn_metal = "x2idn.metal"
+    x2iedn_metal = "x2iedn.metal"
+    c7g_medium = "c7g.medium"
+    c7g_large = "c7g.large"
+    c7g_xlarge = "c7g.xlarge"
+    c7g_2xlarge = "c7g.2xlarge"
+    c7g_4xlarge = "c7g.4xlarge"
+    c7g_8xlarge = "c7g.8xlarge"
+    c7g_12xlarge = "c7g.12xlarge"
+    c7g_16xlarge = "c7g.16xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -5581,6 +5593,7 @@ class RequestLaunchTemplateData(TypedDict, total=False):
     InstanceRequirements: Optional[InstanceRequirementsRequest]
     PrivateDnsNameOptions: Optional[LaunchTemplatePrivateDnsNameOptionsRequest]
     MaintenanceOptions: Optional[LaunchTemplateInstanceMaintenanceOptionsRequest]
+    DisableApiStop: Optional[Boolean]
 
 
 class CreateLaunchTemplateRequest(ServiceRequest):
@@ -5837,6 +5850,7 @@ class ResponseLaunchTemplateData(TypedDict, total=False):
     InstanceRequirements: Optional[InstanceRequirements]
     PrivateDnsNameOptions: Optional[LaunchTemplatePrivateDnsNameOptions]
     MaintenanceOptions: Optional[LaunchTemplateInstanceMaintenanceOptions]
+    DisableApiStop: Optional[Boolean]
 
 
 class LaunchTemplateVersion(TypedDict, total=False):
@@ -13390,6 +13404,7 @@ class InstanceAttribute(TypedDict, total=False):
     SourceDestCheck: Optional[AttributeBooleanValue]
     SriovNetSupport: Optional[AttributeValue]
     UserData: Optional[AttributeValue]
+    DisableApiStop: Optional[AttributeBooleanValue]
 
 
 class InstanceBlockDeviceMappingSpecification(TypedDict, total=False):
@@ -13719,6 +13734,7 @@ class ModifyInstanceAttributeRequest(ServiceRequest):
     SriovNetSupport: Optional[AttributeValue]
     UserData: Optional[BlobAttributeValue]
     Value: Optional[String]
+    DisableApiStop: Optional[AttributeBooleanValue]
 
 
 class ModifyInstanceCapacityReservationAttributesRequest(ServiceRequest):
@@ -14966,6 +14982,7 @@ class RunInstancesRequest(ServiceRequest):
     EnclaveOptions: Optional[EnclaveOptionsRequest]
     PrivateDnsNameOptions: Optional[PrivateDnsNameOptionsRequest]
     MaintenanceOptions: Optional[InstanceMaintenanceOptionsRequest]
+    DisableApiStop: Optional[Boolean]
 
 
 ScheduledInstancesSecurityGroupIdSet = List[SecurityGroupId]
@@ -19831,6 +19848,7 @@ class Ec2Api:
         sriov_net_support: AttributeValue = None,
         user_data: BlobAttributeValue = None,
         value: String = None,
+        disable_api_stop: AttributeBooleanValue = None,
     ) -> None:
         raise NotImplementedError
 
@@ -20876,6 +20894,7 @@ class Ec2Api:
         enclave_options: EnclaveOptionsRequest = None,
         private_dns_name_options: PrivateDnsNameOptionsRequest = None,
         maintenance_options: InstanceMaintenanceOptionsRequest = None,
+        disable_api_stop: Boolean = None,
     ) -> Reservation:
         raise NotImplementedError
 

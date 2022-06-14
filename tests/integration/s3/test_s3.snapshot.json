@@ -1,0 +1,254 @@
+{
+  "tests/integration/s3/test_s3.py::TestS3::test_put_and_get_object_with_utf8_key": {
+    "recorded-date": "02-06-2022, 11:43:43",
+    "recorded-content": {
+      "put-object": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "ETag": "\"e99a18c428cb38d5f260853678922e03\""
+      },
+      "get-object": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "AcceptRanges": "bytes",
+        "LastModified": "datetime",
+        "ContentLength": 6,
+        "ETag": "\"e99a18c428cb38d5f260853678922e03\"",
+        "ContentType": "binary/octet-stream",
+        "Metadata": {},
+        "Body": ""
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_metadata_header_character_decoding": {
+    "recorded-date": "31-05-2022, 09:37:56",
+    "recorded-content": {
+      "head-object": {
+        "test_meta_1": "foo",
+        "__meta_2": "bar"
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_delete_bucket_with_content": {
+    "recorded-date": "31-05-2022, 09:36:16",
+    "recorded-content": {
+      "list-objects": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "IsTruncated": false,
+        "Marker": "",
+        "Contents": [
+          {
+            "Key": "test-key-0",
+            "LastModified": "datetime",
+            "ETag": "\"86639701cdcc5b39438a5f009bd74cb1\"",
+            "Size": 6,
+            "StorageClass": "STANDARD",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            }
+          },
+          {
+            "Key": "test-key-1",
+            "LastModified": "datetime",
+            "ETag": "\"70a37754eb5a2e7db8cd887aaf11cda7\"",
+            "Size": 6,
+            "StorageClass": "STANDARD",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            }
+          },
+          {
+            "Key": "test-key-2",
+            "LastModified": "datetime",
+            "ETag": "\"282ff2cb3d9dadeb831bb3ba0128f2f4\"",
+            "Size": 6,
+            "StorageClass": "STANDARD",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            }
+          },
+          {
+            "Key": "test-key-3",
+            "LastModified": "datetime",
+            "ETag": "\"2b61ddda48445374b35a927b6ae2cd6d\"",
+            "Size": 6,
+            "StorageClass": "STANDARD",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            }
+          },
+          {
+            "Key": "test-key-4",
+            "LastModified": "datetime",
+            "ETag": "\"f533f549a84b9d7a381a7ed55c4f46b9\"",
+            "Size": 6,
+            "StorageClass": "STANDARD",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            }
+          },
+          {
+            "Key": "test-key-5",
+            "LastModified": "datetime",
+            "ETag": "\"0efcf24eb64fa875c294d05703096b0d\"",
+            "Size": 6,
+            "StorageClass": "STANDARD",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            }
+          },
+          {
+            "Key": "test-key-6",
+            "LastModified": "datetime",
+            "ETag": "\"7b1b88bb19a8c5a6a1d53eaa75108b80\"",
+            "Size": 6,
+            "StorageClass": "STANDARD",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            }
+          },
+          {
+            "Key": "test-key-7",
+            "LastModified": "datetime",
+            "ETag": "\"698fbf838fdda3065e058190398514f8\"",
+            "Size": 6,
+            "StorageClass": "STANDARD",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            }
+          },
+          {
+            "Key": "test-key-8",
+            "LastModified": "datetime",
+            "ETag": "\"96c2178517e273d4001ab7f68fdde969\"",
+            "Size": 6,
+            "StorageClass": "STANDARD",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            }
+          },
+          {
+            "Key": "test-key-9",
+            "LastModified": "datetime",
+            "ETag": "\"da51d6e22a1ae095154e69b07eef731b\"",
+            "Size": 6,
+            "StorageClass": "STANDARD",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            }
+          }
+        ],
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "MaxKeys": 100,
+        "EncodingType": "url"
+      },
+      "list-buckets": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "Buckets": [],
+        "Owner": {
+          "DisplayName": "<display-name>",
+          "ID": "<owner-id>"
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_region_header_exists": {
+    "recorded-date": "02-06-2022, 11:23:16",
+    "recorded-content": {
+      "head_bucket": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        }
+      },
+      "list_objects_v2": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "IsTruncated": false,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "MaxKeys": 1000,
+        "EncodingType": "url",
+        "KeyCount": 0
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_upload_file_multipart": {
+    "recorded-date": "02-06-2022, 11:52:47",
+    "recorded-content": {
+      "get_object": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "AcceptRanges": "bytes",
+        "LastModified": "datetime",
+        "ContentLength": 6144,
+        "ETag": "\"8eabe9d6b43316e840b079170916c079-1\"",
+        "ContentType": "binary/octet-stream",
+        "Metadata": {},
+        "Body": ""
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_object": {
+    "recorded-date": "02-06-2022, 11:55:55",
+    "recorded-content": {
+      "get_object": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "AcceptRanges": "bytes",
+        "LastModified": "datetime",
+        "ContentLength": 9,
+        "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+        "ContentType": "binary/octet-stream",
+        "Metadata": {},
+        "Body": ""
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_put_url_metadata": {
+    "recorded-date": "02-06-2022, 12:05:29",
+    "recorded-content": {
+      "head_object": {
+        "ResponseMetadata": {
+          "HTTPStatusCode": 200,
+          "HTTPHeaders": {}
+        },
+        "AcceptRanges": "bytes",
+        "LastModified": "datetime",
+        "ContentLength": 11,
+        "ETag": "\"0d9fa06a66933b40f615f530e59edd6b\"",
+        "ContentType": "binary/octet-stream",
+        "Metadata": {
+          "foo": "bar"
+        }
+      }
+    }
+  }
+}

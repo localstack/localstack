@@ -100,6 +100,7 @@ docker-build: 			  ## Build Docker image
 	# --cache-from: Use the inlined caching information when building the image
 	DOCKER_BUILDKIT=1 docker buildx build --pull --progress=plain \
 		--cache-from $(TAG) --build-arg BUILDKIT_INLINE_CACHE=1 \
+		--build-arg LOCALSTACK_PRE_RELEASE=$(shell cat localstack/__init__.py | grep '^__version__ =' | grep -v '.dev' >> /dev/null && echo "0" || echo "1") \
 		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
 		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
 		--build-arg=LOCALSTACK_BUILD_VERSION=$(IMAGE_TAG) \
@@ -129,7 +130,7 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
 			docker tag $(SOURCE_IMAGE_NAME):latest $(TARGET_IMAGE_NAME):latest-$(PLATFORM) && \
-		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
+		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
@@ -159,7 +160,7 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
 			docker manifest create $(MANIFEST_IMAGE_NAME):latest --amend $(MANIFEST_IMAGE_NAME):latest-amd64 --amend $(MANIFEST_IMAGE_NAME):latest-arm64 && \
-		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
+		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
 				echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 \
