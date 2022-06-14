@@ -12,6 +12,7 @@ from typing import Dict, List
 import requests as requests
 from flask import Response as FlaskResponse
 from moto.sns.exceptions import DuplicateSnsEndpointError
+from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from requests.models import Response
 
 from localstack.aws.api import RequestContext
@@ -116,7 +117,6 @@ SNS_PROTOCOLS = [
 
 # set up logger
 LOG = logging.getLogger(__name__)
-HTTP_SUBSCRIPTION_ATTRIBUTES = ["UnsubscribeURL"]
 
 
 class SNSBackend(RegionBackend):
@@ -537,6 +537,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if not message or all(not m for m in message):
             raise InvalidParameterException("Empty message")
 
+        if len(message) > MAXIMUM_MESSAGE_LENGTH:
+            raise InvalidParameterException("Message too long")
+
         if topic_arn and ".fifo" in topic_arn and not message_group_id:
             raise InvalidParameterException(
                 "The MessageGroupId parameter is required for FIFO topics",
@@ -835,7 +838,7 @@ async def message_to_subscriber(
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
             if "NonExistentQueue" in str(exc):
                 LOG.info(
                     'Removing non-existent queue "%s" subscribed to topic "%s"',
@@ -891,24 +894,28 @@ async def message_to_subscriber(
         except Exception:
             return
         try:
-            headers = {
+            message_headers = {
                 "Content-Type": "text/plain",
                 # AWS headers according to
                 # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
                 "x-amz-sns-message-type": msg_type,
+                "x-amz-sns-message-id": message_id,
                 "x-amz-sns-topic-arn": subscriber["TopicArn"],
-                "x-amz-sns-subscription-arn": subscriber["SubscriptionArn"],
                 "User-Agent": "Amazon Simple Notification Service Agent",
             }
+            if msg_type != "SubscriptionConfirmation":
+                # while testing, never had those from AWS but the docs above states it should be there
+                message_headers["x-amz-sns-subscription-arn"] = subscriber["SubscriptionArn"]
+
             # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
             # indicating that the message has been published without JSON formatting.
             # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-            if msg_type == "Notification" and is_raw_message_delivery(subscriber):
-                headers["x-amz-sns-rawdelivery"] = "true"
+            elif msg_type == "Notification" and is_raw_message_delivery(subscriber):
+                message_headers["x-amz-sns-rawdelivery"] = "true"
 
             response = requests.post(
                 subscriber["Endpoint"],
-                headers=headers,
+                headers=message_headers,
                 data=message_body,
                 verify=False,
             )
@@ -925,7 +932,9 @@ async def message_to_subscriber(
                 "Received error on sending SNS message, putting to DLQ (if configured): %s", exc
             )
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
+            # AWS doesnt send to the DLQ if there's an error trying to deliver a UnsubscribeConfirmation msg
+            if msg_type != "UnsubscribeConfirmation":
+                sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
         return
 
     elif subscriber["Protocol"] == "application":
@@ -999,7 +1008,6 @@ def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
         return message
 
     external_url = external_service_url("sns")
-    unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
 
     data = {
         "Type": message_type,
@@ -1012,19 +1020,15 @@ def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
         # Hardcoded
         "Signature": "EXAMPLEpH+..",
         "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
-        "UnsubscribeURL": unsubscribe_url,
     }
+
+    if message_type == "Notification":
+        unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
+        data["UnsubscribeURL"] = unsubscribe_url
 
     for key in ["Subject", "SubscribeURL", "Token"]:
         if req_data.get(key) and req_data[key][0]:
             data[key] = req_data[key][0]
-
-    for key in HTTP_SUBSCRIPTION_ATTRIBUTES:
-        if key in subscriber:
-            data[key] = subscriber[key]
-
-    if data["Type"] == "UnsubscribeConfirmation":
-        data.pop("UnsubscribeURL")
 
     if attributes:
         data["MessageAttributes"] = attributes
