@@ -1676,7 +1676,9 @@ class TemplateDeployer:
         elif action == "Remove":
             should_remove = self.is_deployable_resource(resource)
             if not should_remove:
-                LOG.debug(f"Action 'remove' not yet implemented for CF resource type {resource.get('Type')}")
+                LOG.debug(
+                    f"Action 'remove' not yet implemented for CF resource type {resource.get('Type')}"
+                )
             return should_remove
         return True
 

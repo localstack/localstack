@@ -399,11 +399,14 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
 
     stack = deploy_cfn_template(
         template=load_template_raw("for_removal_setup.yaml"),
-        template_mapping={"first_bucket_name": first_bucket_name, "second_bucket_name": second_bucket_name},
+        template_mapping={
+            "first_bucket_name": first_bucket_name,
+            "second_bucket_name": second_bucket_name,
+        },
     )
 
     available_buckets = s3_client.list_buckets()
-    bucket_names = [bucket['Name'] for bucket in available_buckets['Buckets']]
+    bucket_names = [bucket["Name"] for bucket in available_buckets["Buckets"]]
     assert first_bucket_name in bucket_names
     assert second_bucket_name in bucket_names
 
@@ -416,7 +419,7 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
 
     def assert_bucket_gone():
         available_buckets = s3_client.list_buckets()
-        bucket_names = [bucket['Name'] for bucket in available_buckets['Buckets']]
+        bucket_names = [bucket["Name"] for bucket in available_buckets["Buckets"]]
         return first_bucket_name in bucket_names and second_bucket_name not in bucket_names
-    
+
     poll_condition(condition=assert_bucket_gone, timeout=20, interval=5)
