@@ -32,7 +32,6 @@ class ExceptionLogger(ExceptionHandler):
 class ResponseLogger:
     def __call__(self, _: HandlerChain, context: RequestContext, response: Response):
         if context.operation:
-            # TODO: log analytics event here?
             LOG.info(
                 "%s %s.%s => %d",
                 context.request.method,
