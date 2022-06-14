@@ -386,7 +386,7 @@ class RegionBackend:
 
     Limitations
     ===========
-    - Do not add staticmethods/classmethods to subclasses as it causes issues with deepcopy
+    - Do not add new staticmethods/classmethods to subclasses. This causes issues with deepcopy
     """
 
     # Map of AWS account IDs to copies of this class
