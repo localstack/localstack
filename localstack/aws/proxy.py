@@ -10,11 +10,13 @@ from werkzeug.datastructures import Headers
 from localstack.aws.api import RequestContext
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.messages import MessagePayload
 from localstack.utils.accounts import get_default_account_id
+from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.persistence import PersistingProxyListener
 
@@ -44,8 +46,14 @@ class AwsApiListener(ProxyListenerAdapter):
         context.account_id = self.get_account_id_from_request(request)
         return context
 
-    def get_account_id_from_request(self, _: Request) -> str:
-        return get_default_account_id()
+    def get_account_id_from_request(self, request: Request) -> str:
+        access_key_id = extract_access_key_id_from_auth_header(request.headers)
+
+        # This is to keep backward compatibilty pre-multi-accounts revamp
+        if access_key_id == TEST_AWS_ACCESS_KEY_ID:
+            return get_default_account_id()
+        else:
+            return access_key_id
 
 
 def _raise_not_implemented_error(*args, **kwargs):
