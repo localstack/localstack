@@ -150,8 +150,6 @@ class Skeleton:
                 )
                 raise NotImplementedError
 
-            self.is_request_allowed(context, instance)
-
             return self.dispatch_request(context, instance)
         except ServiceException as e:
             return self.on_service_exception(context, e)
@@ -211,16 +209,3 @@ class Skeleton:
         context.service_exception = error
 
         return serializer.serialize_error_to_response(error, operation)
-
-    # TODO naming
-    def is_request_allowed(self, context: RequestContext, service_request: ServiceRequest) -> None:
-        """
-        Called by invoke to determine if request is allowed (IAM permissions, etc).
-        :param context: the request context
-        :param service_request: the service request
-        """
-        # TODO this import is cancerous, just for getting it somehow into the code
-        from localstack_ext.services.iam.policy_engine import engine
-
-        # TODO add abc for engine, and add dependency injection
-        engine.ENGINE.is_request_allowed(context, service_request)
