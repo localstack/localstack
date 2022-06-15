@@ -26,7 +26,7 @@ jobs:
           please feel free to open a new one.
         # These labels are required
         stale-issue-label: "status: stale"
-        exempt-issue-labels: "status: triage needed","status: confirmed","status: accepted"
+        exempt-issue-labels: "status: triage needed,status: confirmed,status: accepted"
         response-requested-label: "status: response required"
 
         # Don't set closed-for-staleness label to skip closing very old issues
