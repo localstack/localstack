@@ -3,6 +3,7 @@ name: "Triage Stale issues"
 on:
   schedule:
   - cron: "0 * * * *"
+  workflow_dispatch:
 
 jobs:
   issue-cleanup:
