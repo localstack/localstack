@@ -646,8 +646,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 ],
             }
             publish_message(topic_arn, confirmation, {}, subscription_arn, skip_checks=True)
-        elif protocol == "sqs":
-            # Auto-confirm sqs subscriptions for now
+        elif protocol in ["sqs", "lambda"]:
+            # Auto-confirm sqs and lambda subscriptions for now
             # TODO: revisit for multi-account
             self.confirm_subscription(context, topic_arn, token)
         return SubscribeResponse(SubscriptionArn=subscription_arn)
