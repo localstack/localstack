@@ -11,6 +11,7 @@ from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocume
 from moto.iam.responses import IamResponse
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.iam import (
     ActionNameListType,
@@ -48,7 +49,6 @@ from localstack.aws.api.iam import (
     tagKeyListType,
     tagListType,
 )
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
 

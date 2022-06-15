@@ -15,6 +15,7 @@ import boto3
 import requests
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
 from localstack.services.awslambda.lambda_api import LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_utils import (
@@ -23,7 +24,6 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import ensure_list
 from localstack.utils.files import (

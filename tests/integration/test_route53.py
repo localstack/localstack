@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from localstack.utils.accounts import get_aws_account_id
+from localstack.aws.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 

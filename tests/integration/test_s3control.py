@@ -1,9 +1,9 @@
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.config import EDGE_PORT
 from localstack.constants import LOCALHOST_HOSTNAME
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws.aws_stack import create_external_boto_client
 
 remote_endpoint = "https://%s:%s" % (LOCALHOST_HOSTNAME, EDGE_PORT)

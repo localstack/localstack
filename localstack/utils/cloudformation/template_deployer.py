@@ -10,6 +10,7 @@ import botocore
 from moto.ec2.utils import generate_route_id
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -22,7 +23,6 @@ from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
     GenericBaseModel,
 )
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.collections import merge_recursive

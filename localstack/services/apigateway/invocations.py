@@ -11,6 +11,7 @@ from jsonschema import ValidationError, validate
 from requests.models import Response
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_AUTHORIZATION
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
@@ -30,7 +31,6 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,

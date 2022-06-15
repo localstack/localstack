@@ -7,13 +7,13 @@ from moto.apigateway.exceptions import NoIntegrationDefined, UsagePlanNotFoundEx
 from moto.apigateway.responses import APIGatewayResponse
 from moto.core.utils import camelcase_to_underscores
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.apigateway import NotFoundException
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     apply_json_patch_safe,
     import_api_from_openapi_spec,
 )
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.collections import ensure_list
 from localstack.utils.common import DelSafeDict, short_uid, str_to_bool, to_str
 from localstack.utils.json import parse_json_or_yaml

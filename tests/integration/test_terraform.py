@@ -5,8 +5,8 @@ import threading
 import pytest
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.services.install import TERRAFORM_BIN, install_terraform
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
 
 #  TODO: remove all of these

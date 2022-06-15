@@ -32,7 +32,7 @@ def patch_get_account_id():
     from moto import core as moto_core
     from moto.core import models as moto_core_models
 
-    from localstack.utils.accounts import get_default_account_id
+    from localstack.aws.accounts import get_default_account_id
 
     moto_core.account_id_resolver = get_default_account_id
     moto_core.ACCOUNT_ID = moto_core_models.ACCOUNT_ID = get_default_account_id()

@@ -27,6 +27,7 @@ from requests.models import Request, Response
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.config import (
     EXTRA_CORS_ALLOWED_HEADERS,
     EXTRA_CORS_ALLOWED_ORIGINS,
@@ -43,7 +44,6 @@ from localstack.http.request import get_full_raw_path
 from localstack.services.messages import Headers, MessagePayload
 from localstack.services.messages import Request as RoutingRequest
 from localstack.services.messages import Response as RoutingResponse
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.asyncio import run_sync
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse, calculate_crc32

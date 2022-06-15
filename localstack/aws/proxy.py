@@ -7,6 +7,7 @@ from typing import Any, Optional
 from botocore.model import ServiceModel
 from werkzeug.datastructures import Headers
 
+from localstack.aws.accounts import get_account_id_from_access_key_id, set_ctx_aws_access_key_id
 from localstack.aws.api import RequestContext
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
@@ -14,7 +15,6 @@ from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.messages import MessagePayload
-from localstack.utils.accounts import get_account_id_from_access_key_id, set_ctx_aws_access_key_id
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.persistence import PersistingProxyListener

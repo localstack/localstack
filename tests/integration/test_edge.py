@@ -10,6 +10,7 @@ from quart import request as quart_request
 from requests.models import Request as RequestsRequest
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
 from localstack.http.request import get_full_raw_path
 from localstack.services.generic_proxy import (
@@ -19,7 +20,6 @@ from localstack.services.generic_proxy import (
     update_path_in_url,
 )
 from localstack.services.messages import Request, Response
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.common import get_free_tcp_port, short_uid, to_str

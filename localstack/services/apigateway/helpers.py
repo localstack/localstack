@@ -18,6 +18,7 @@ from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_EDGE_URL,
@@ -27,7 +28,6 @@ from localstack.constants import (
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import common
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.aws_stack import parse_arn

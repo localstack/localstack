@@ -12,6 +12,7 @@ from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend, secretsmanager_backends
 from moto.secretsmanager.responses import SecretsManagerResponse
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceResponse, handler
 from localstack.aws.api.secretsmanager import (
     CancelRotateSecretRequest,
@@ -60,7 +61,6 @@ from localstack.aws.api.secretsmanager import (
     ValidateResourcePolicyResponse,
 )
 from localstack.services.moto import call_moto, call_moto_with_request
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid

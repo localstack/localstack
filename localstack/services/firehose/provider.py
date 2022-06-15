@@ -9,6 +9,7 @@ from typing import Dict, List
 
 import requests
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.firehose import (
     AmazonopensearchserviceDestinationConfiguration,
@@ -76,7 +77,6 @@ from localstack.services.firehose.mappers import (
     convert_source_config_to_desc,
 )
 from localstack.services.generic_proxy import RegionBackend
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (

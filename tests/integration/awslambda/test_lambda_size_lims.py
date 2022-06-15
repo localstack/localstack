@@ -3,10 +3,10 @@ from io import BytesIO
 
 import pytest
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.services.awslambda.lambda_api import LAMBDA_DEFAULT_HANDLER, LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.utils import testutil
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.common import short_uid
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))

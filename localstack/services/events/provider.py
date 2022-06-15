@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from moto.events.responses import EventsHandler as MotoEventsHandler
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.core import CommonServiceException
 from localstack.aws.api.events import (
@@ -33,7 +34,6 @@ from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate

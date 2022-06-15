@@ -12,16 +12,15 @@ import boto3
 from localstack_client.config import get_service_port
 from moto.core import BaseModel
 from moto.core.base_backend import InstanceTrackerMeta
-from moto.core.models import get_account_id
 
 from localstack import config, constants
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
 from localstack.runtime import events, hooks
 from localstack.services import generic_proxy, install, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import analytics, config_listener, persistence
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import canonicalize_api_names, in_ci, log_duration, setup_logging

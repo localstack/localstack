@@ -12,6 +12,7 @@ import pytest
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.services.awslambda import lambda_api
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_DEFAULT_HANDLER,
@@ -43,7 +44,6 @@ from localstack.services.install import (
     download_and_extract,
 )
 from localstack.utils import testutil
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     cp_r,

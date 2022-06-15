@@ -5,9 +5,9 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.iam import Tag
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
-from localstack.utils.accounts import get_aws_account_id
 from localstack.utils.common import short_uid
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.strings import long_uid
