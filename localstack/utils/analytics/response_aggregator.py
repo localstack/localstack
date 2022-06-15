@@ -24,9 +24,15 @@ class ResponseAggregator:
     def __init__(self):
         self.response_counter = Counter()
         self.period_start_time = datetime.datetime.utcnow()
+        self.flush_scheduler = None
+
+    def start_thread(self):
+        """
+        Start a thread that periodically flushes HTTP response data aggregations as analytics events
+        """
         self.flush_scheduler = Scheduler()
-        self.scheduler_thread = threading.Thread(target=self.flush_scheduler.run)
-        self.scheduler_thread.start()
+        scheduler_thread = threading.Thread(target=self.flush_scheduler.run)
+        scheduler_thread.start()
         self.flush_scheduler.schedule(func=self._flush, period=FLUSH_INTERVAL_SECS, fixed_rate=True)
         atexit.register(self._flush)
 
