@@ -471,6 +471,8 @@ def run_process_as_sudo(component, port, asynchronous=False, env_vars=None):
     # prepare environment
     env_vars = env_vars or {}
     env_vars["PYTHONPATH"] = f".:{LOCALSTACK_ROOT_FOLDER}"
+    # FIXME the edge proxy forwarding is not yet supported for the new HTTP gateway
+    env_vars["LEGACY_EDGE_PROXY"] = 1
     env_vars["EDGE_FORWARD_URL"] = config.get_edge_url()
     env_vars["EDGE_BIND_HOST"] = config.EDGE_BIND_HOST
     env_vars_str = env_vars_to_string(env_vars)
