@@ -206,9 +206,10 @@ def message_to_endpoint(
 
     if response:
         sns_backend = SNSBackend.get()
-        prev_responses = sns_backend.platform_endpoint_responses.get(target_arn, [])
-        prev_responses.append({"status_code": response.status_code, "body": response.content})
-        sns_backend.platform_endpoint_responses[target_arn] = prev_responses
+        cache = sns_backend.platform_endpoint_responses[target_arn] = (
+            sns_backend.platform_endpoint_responses.get(target_arn) or []
+        )
+        cache.append({"status_code": response.status_code, "body": response.content})
 
 
 def send_message_to_GCM(app_attributes, endpoint_attributes, message):
@@ -219,11 +220,12 @@ def send_message_to_GCM(app_attributes, endpoint_attributes, message):
     data["to"] = token
     headers = {"Authorization": f"key={server_key}", "Content-type": "application/json"}
 
-    return requests.post(
+    response = requests.post(
         GCM_URL,
         headers=headers,
         data=json.dumps(data),
     )
+    return response
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
