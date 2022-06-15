@@ -33,6 +33,9 @@ class ResponseAggregator:
     def add_response(self, service_name: str, operation_name: str, response_code: int):
         """
         Add an HTTP response for aggregation and collection
+        :param service_name: name of the service the request was aimed at, e.g. s3
+        :param operation_name: name of the operation, e.g. CreateBucket
+        :param response_code: HTTP status code of the response, e.g. 200
         """
         if config.DISABLE_EVENTS:
             return
