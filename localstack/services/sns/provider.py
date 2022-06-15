@@ -204,7 +204,7 @@ def message_to_endpoint(
         response = send_message_to_GCM(app["Attributes"], endpoint_attributes, message["GCM"])
     # TODO: Add support for other platforms
 
-    if response:
+    if response is not None:
         sns_backend = SNSBackend.get()
         cache = sns_backend.platform_endpoint_responses[target_arn] = (
             sns_backend.platform_endpoint_responses.get(target_arn) or []

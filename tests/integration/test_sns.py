@@ -1820,10 +1820,8 @@ class TestSNSProvider:
 
         def check_responses():
             responses = sns_backend.platform_endpoint_responses[endpoint_arn]
-            assert responses[0]['status_code'] == "401"
+            assert responses[0]["status_code"] == 401
 
         retry(check_responses, sleep=1)
-        # print(sns_backend.platform_endpoint_messages)
-        print(sns_backend.platform_endpoint_responses)
         sns_client.delete_endpoint(EndpointArn=endpoint_arn)
         sns_client.delete_platform_application(PlatformApplicationArn=platform_app_arn)
