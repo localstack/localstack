@@ -613,11 +613,16 @@ def import_api_from_openapi_spec(
         security_schemes = path_payload.get("security")
         for security_scheme in security_schemes:
             for security_scheme_name, _ in security_scheme.items():
-                if security_scheme_name in body.get("securityDefinitions"):
+                if security_scheme_name in body.get("securityDefinitions", []):
                     security_config = body.get("securityDefinitions", {}).get(security_scheme_name)
-                    aws_apigateway_authorizer = security_config.get(
-                        "x-amazon-apigateway-authorizer"
-                    )
+                    if (
+                        aws_apigateway_authorizer := security_config.get(
+                            "x-amazon-apigateway-authorizer"
+                        )
+                        is None
+                    ):
+                        continue
+
                     if authorizers.get(security_scheme_name):
                         return authorizers.get(security_scheme_name)
                     else:
