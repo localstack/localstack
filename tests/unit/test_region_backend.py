@@ -25,7 +25,7 @@ def test_region_backend_namespacing(sample_region_backend):
     eu_region = "eu-central-1"
     ap_region = "ap-south-1"
 
-    with patch("localstack.utils.accounts.account_id_resolver", new=lambda: account1):
+    with patch("localstack.aws.accounts.account_id_resolver", new=lambda: account1):
         # Get backends for same account but different regions
         backend1_eu = sample_region_backend.get(region=eu_region)
         assert backend1_eu.account_id == account1
@@ -49,7 +49,7 @@ def test_region_backend_namespacing(sample_region_backend):
         assert id(backend1_ap._ACCOUNTS_CLS) == id(backend1_eu._ACCOUNTS_CLS)
         assert len(backend1_ap._ACCOUNTS_CLS) == len(backend1_eu._ACCOUNTS_CLS) == 1
 
-    with patch("localstack.utils.accounts.account_id_resolver", new=lambda: account2):
+    with patch("localstack.aws.accounts.account_id_resolver", new=lambda: account2):
         # Get backends for a different AWS account
         backend2_eu = sample_region_backend.get(region=eu_region)
         assert backend2_eu.account_id == account2
