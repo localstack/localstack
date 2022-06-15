@@ -1,9 +1,8 @@
 import atexit
-import dataclasses
 import datetime
-import json
 import logging
 import threading
+from collections import Counter, namedtuple
 from typing import Any, Dict
 
 from localstack.aws.api import RequestContext
@@ -16,19 +15,12 @@ LOG = logging.getLogger(__name__)
 FLUSH_INTERVAL_SECS = 10
 
 
-@dataclasses.dataclass
-class ResponseInfo:
-    service: str
-    operation: str
-    status_code: int
-
-    def to_string(self):
-        return json.dumps(dataclasses.asdict(self), sort_keys=True)
+ResponseInfo = namedtuple("ResponseInfo", "service, operation, status_code")
 
 
 class ResponseAggregator:
     def __init__(self):
-        self.response_counts = {}
+        self.response_counter = Counter()
         self.period_start_time = datetime.datetime.utcnow()
         self.flush_scheduler = Scheduler()
         self.scheduler_thread = threading.Thread(target=self.flush_scheduler.run)
@@ -39,26 +31,26 @@ class ResponseAggregator:
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if response is None:
             return
+
         response_info = ResponseInfo(
-            context.service.service_name, context.operation.name, response.status_code
-        ).to_string()
-        if response_info in self.response_counts:
-            self.response_counts[response_info] = self.response_counts[response_info] + 1
-        else:
-            self.response_counts[response_info] = 1
+            service=context.service.service_name,
+            operation=context.operation.name,
+            status_code=response.status_code,
+        )
+        self.response_counter[response_info] += 1
 
     def _get_analytics_payload(self) -> Dict[str, Any]:
         return {
             "period_start_time": self.period_start_time.isoformat() + "Z",
             "period_end_time": datetime.datetime.utcnow().isoformat() + "Z",
             "http_response_aggregations": [
-                {**json.loads(resp), "count": count} for resp, count in self.response_counts.items()
+                {**resp._asdict(), "count": count} for resp, count in self.response_counter.items()
             ],
         }
 
     def flush(self):
-        if len(self.response_counts) > 0:
+        if len(self.response_counter) > 0:
             analytics_payload = self._get_analytics_payload()
             analytics.log.event("http_response_agg", analytics_payload)
-            self.response_counts = {}
+            self.response_counter.clear()
         self.period_start_time = datetime.datetime.utcnow()
