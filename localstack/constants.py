@@ -43,7 +43,7 @@ if "TEST_AWS_ACCOUNT_ID" not in os.environ:
 
 # WARNING:
 # Do not use this constant to access the Account ID.
-# Use `localstack.services.infra.get_aws_account_id()` instead.
+# Use `localstack.utils.accounts.get_aws_account_id()` instead.
 _TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
 
 # root code folder

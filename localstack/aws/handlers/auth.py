@@ -1,10 +1,10 @@
 import logging
 
+from localstack.constants import HEADER_LOCALSTACK_ACCOUNT_ID
 from localstack.http import Response
+from localstack.utils.accounts import get_account_id_from_access_key_id, set_ctx_aws_access_key_id
+from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 
-from ...constants import HEADER_LOCALSTACK_ACCOUNT_ID
-from ...utils.accounts import get_account_id_from_access_key_id
-from ...utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
 
@@ -33,8 +33,12 @@ class AccountIdEnricher(Handler):
     """
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
+
+        # Save the request access key ID in the current thread local storage
+        set_ctx_aws_access_key_id(access_key_id)
+
         if account_id_from_header := context.request.headers.get(HEADER_LOCALSTACK_ACCOUNT_ID):
             context.account_id = account_id_from_header
         else:
-            access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
             context.account_id = get_account_id_from_access_key_id(access_key_id)

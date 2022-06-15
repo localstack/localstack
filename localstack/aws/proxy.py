@@ -14,7 +14,7 @@ from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.messages import MessagePayload
-from localstack.utils.accounts import get_account_id_from_access_key_id
+from localstack.utils.accounts import get_account_id_from_access_key_id, set_ctx_aws_access_key_id
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.persistence import PersistingProxyListener
@@ -47,6 +47,7 @@ class AwsApiListener(ProxyListenerAdapter):
 
     def get_account_id_from_request(self, request: Request) -> str:
         access_key_id = extract_access_key_id_from_auth_header(request.headers)
+        set_ctx_aws_access_key_id(access_key_id)
         return get_account_id_from_access_key_id(access_key_id)
 
 

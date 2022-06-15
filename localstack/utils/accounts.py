@@ -1,9 +1,15 @@
-"""Functionality related to AWS Account IDs"""
+"""Functionality related to AWS Accounts"""
+import threading
+from typing import Optional
+
 from localstack.constants import _TEST_AWS_ACCOUNT_ID, TEST_AWS_ACCESS_KEY_ID
+
+# Thread local storage for keeping current request & account related info
+REQUEST_CTX_TLS = threading.local()
 
 
 def get_aws_account_id() -> str:
-    """Return the AWS account ID."""
+    """Return the AWS account ID for the current context."""
     return account_id_resolver()
 
 
@@ -24,3 +30,12 @@ def get_account_id_from_access_key_id(access_key_id: str) -> str:
         return get_default_account_id()
     else:
         return access_key_id
+
+
+def get_ctx_aws_access_key_id() -> Optional[str]:
+    """Return the AWS access key ID for current context."""
+    return getattr(REQUEST_CTX_TLS, "access_key_id", None)
+
+
+def set_ctx_aws_access_key_id(access_key_id: str):
+    REQUEST_CTX_TLS.access_key_id = access_key_id

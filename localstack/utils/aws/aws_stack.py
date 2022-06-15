@@ -10,7 +10,7 @@ from functools import lru_cache
 from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
-from localstack.utils.accounts import get_aws_account_id
+from localstack.utils.accounts import get_aws_account_id, get_ctx_aws_access_key_id
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -894,7 +894,10 @@ def mock_aws_request_headers(
     elif service in ["sns", "sqs", "sts", "cloudformation"]:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
 
-    access_key = access_key or get_aws_account_id()
+    # For S3 presigned URLs, we require that the client and server use the same
+    # access key ID to sign requests. So try to use the access key ID for the
+    # current request if available
+    access_key = access_key or get_ctx_aws_access_key_id() or TEST_AWS_ACCESS_KEY_ID
     region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,
