@@ -616,7 +616,8 @@ def import_api_from_openapi_spec(
                 if security_scheme_name in body.get("securityDefinitions", []):
                     security_config = body.get("securityDefinitions", {}).get(security_scheme_name)
                     aws_apigateway_authorizer = security_config.get(
-                        "x-amazon-apigateway-authorizer", {})
+                        "x-amazon-apigateway-authorizer", {}
+                    )
                     if not aws_apigateway_authorizer:
                         continue
 
