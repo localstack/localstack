@@ -1,8 +1,9 @@
 """Functionality related to AWS Accounts"""
+import re
 import threading
 from typing import Optional
 
-from localstack.constants import _TEST_AWS_ACCOUNT_ID, TEST_AWS_ACCESS_KEY_ID
+from localstack.constants import _TEST_AWS_ACCOUNT_ID
 from localstack.runtime import hooks
 
 # Thread local storage for keeping current request & account related info
@@ -26,11 +27,10 @@ def get_account_id_from_access_key_id(access_key_id: str) -> str:
     # This utility ignores IAM mappings.
     # For now, we assume the client sends Account ID in Access Key ID field.
 
-    if access_key_id == TEST_AWS_ACCESS_KEY_ID:
-        # Keep backward compatibilty prior to multi-accounts revamp
-        return get_default_account_id()
-    else:
+    if re.match(r"\d{12}", access_key_id):
         return access_key_id
+    else:
+        return get_default_account_id()
 
 
 def get_ctx_aws_access_key_id() -> Optional[str]:
