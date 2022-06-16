@@ -18,7 +18,9 @@ class ResponseAggregatorHandler:
         self.aggregator_thread = None
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
-        if response is None or config.DISABLE_EVENTS:
+        if response is None or context.service is None or context.operation is None:
+            return
+        if config.DISABLE_EVENTS:
             return
         if self.aggregator_thread is None:
             self.aggregator_thread = self.aggregator.start_thread()
