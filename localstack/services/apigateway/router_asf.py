@@ -27,6 +27,9 @@ def to_invocation_context(
     :param url_params: the parameters extracted from the URL matching rules
     :return: the ApiInvocationContext
     """
+    if url_params is None:
+        url_params = {}
+
     method = request.method
     path = request.full_path if request.query_string else request.path
     data = restore_payload(request)
