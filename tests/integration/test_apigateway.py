@@ -1461,8 +1461,6 @@ class TestAPIGateway:
             s3_client.delete_bucket(Bucket=bucket_name)
 
     def test_api_mock_integration_response_params(self):
-        # apigw_client = aws_stack.create_external_boto_client('apigateway')
-
         resps = [
             {
                 "statusCode": "204",

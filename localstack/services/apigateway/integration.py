@@ -354,7 +354,7 @@ class ResponseTemplates(Templates):
         response_templates = integration_responses[return_code].get("responseTemplates", {})
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
-            return response
+            return response._content
 
         variables = self.build_variables_mapping(api_context)
         response._content = self.render_vtl(template, variables=variables)
