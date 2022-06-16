@@ -26,15 +26,17 @@ class ResponseAggregator:
         self.period_start_time = datetime.datetime.utcnow()
         self.flush_scheduler = None
 
-    def start_thread(self):
+    def start_thread(self) -> threading.Thread:
         """
         Start a thread that periodically flushes HTTP response data aggregations as analytics events
+        :returns: the thread containing the running flush scheduler
         """
         self.flush_scheduler = Scheduler()
-        scheduler_thread = threading.Thread(target=self.flush_scheduler.run)
+        scheduler_thread = threading.Thread(target=self.flush_scheduler.run, daemon=True)
         scheduler_thread.start()
         self.flush_scheduler.schedule(func=self._flush, period=FLUSH_INTERVAL_SECS, fixed_rate=True)
         atexit.register(self._flush)
+        return scheduler_thread
 
     def add_response(self, service_name: str, operation_name: str, response_code: int):
         """
