@@ -1,6 +1,6 @@
 import json
-import xml.etree.ElementTree as ET
 import logging
+import xml.etree.ElementTree as ET
 from typing import Optional
 
 from localstack import config
@@ -8,7 +8,6 @@ from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.http import Response
 from localstack.utils.analytics.response_aggregator import ResponseAggregator
-
 
 LOG = logging.getLogger(__name__)
 
@@ -26,7 +25,10 @@ class ResponseAggregatorHandler:
 
         err_type = self._get_err_type(response) if response.status_code >= 400 else None
         self.aggregator.add_response(
-            context.service.service_name, context.operation.name, response.status_code, err_type=err_type
+            context.service.service_name,
+            context.operation.name,
+            response.status_code,
+            err_type=err_type,
         )
 
     def _get_err_type(self, response: Response) -> Optional[str]:
@@ -35,9 +37,9 @@ class ResponseAggregatorHandler:
         """
         content_type = response.content_type
         try:
-            if 'json' in content_type:
+            if "json" in content_type:
                 return json.loads(response.get_data(as_text=True))["__type"]
-            elif 'xml' in content_type:
+            elif "xml" in content_type:
                 return ET.fromstring(response.get_data(as_text=True)).find("Code").text
             else:
                 LOG.debug(f"unrecognized content type: '{content_type}'")
@@ -45,9 +47,3 @@ class ResponseAggregatorHandler:
         except Exception:
             LOG.warning("unable to parse error type from response body")
             return None
-
-
-
-
-
-

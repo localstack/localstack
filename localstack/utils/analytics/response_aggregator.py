@@ -38,7 +38,9 @@ class ResponseAggregator:
         atexit.register(self._flush)
         return scheduler_thread
 
-    def add_response(self, service_name: str, operation_name: str, response_code: int, err_type: Optional[str]):
+    def add_response(
+        self, service_name: str, operation_name: str, response_code: int, err_type: Optional[str]
+    ):
         """
         Add an HTTP response for aggregation and collection
         :param service_name: name of the service the request was aimed at, e.g. s3
@@ -52,7 +54,7 @@ class ResponseAggregator:
             service=service_name,
             operation=operation_name,
             status_code=response_code,
-            err_type=err_type
+            err_type=err_type,
         )
         self.response_counter[response_info] += 1
 
@@ -67,7 +69,7 @@ class ResponseAggregator:
         return {
             "period_start_time": self.period_start_time.isoformat() + "Z",
             "period_end_time": datetime.datetime.utcnow().isoformat() + "Z",
-            "http_response_aggregations": aggregations
+            "http_response_aggregations": aggregations,
         }
 
     def _flush(self):
