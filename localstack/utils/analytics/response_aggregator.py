@@ -3,7 +3,7 @@ import datetime
 import logging
 import threading
 from collections import Counter, namedtuple
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from localstack import config
 from localstack.utils import analytics
@@ -13,7 +13,7 @@ LOG = logging.getLogger(__name__)
 FLUSH_INTERVAL_SECS = 10
 
 
-ResponseInfo = namedtuple("ResponseInfo", "service, operation, status_code")
+ResponseInfo = namedtuple("ResponseInfo", "service, operation, status_code, err_type")
 
 
 class ResponseAggregator:
@@ -38,7 +38,7 @@ class ResponseAggregator:
         atexit.register(self._flush)
         return scheduler_thread
 
-    def add_response(self, service_name: str, operation_name: str, response_code: int):
+    def add_response(self, service_name: str, operation_name: str, response_code: int, err_type: Optional[str]):
         """
         Add an HTTP response for aggregation and collection
         :param service_name: name of the service the request was aimed at, e.g. s3
@@ -52,16 +52,22 @@ class ResponseAggregator:
             service=service_name,
             operation=operation_name,
             status_code=response_code,
+            err_type=err_type
         )
         self.response_counter[response_info] += 1
 
     def _get_analytics_payload(self) -> Dict[str, Any]:
+        aggregations = []
+        for resp, count in self.response_counter.items():
+            resp_dict = resp._asdict()
+            if resp_dict.get("err_type") is None:
+                del resp_dict["err_type"]
+            resp_dict["count"] = count
+            aggregations.append(resp_dict)
         return {
             "period_start_time": self.period_start_time.isoformat() + "Z",
             "period_end_time": datetime.datetime.utcnow().isoformat() + "Z",
-            "http_response_aggregations": [
-                {**resp._asdict(), "count": count} for resp, count in self.response_counter.items()
-            ],
+            "http_response_aggregations": aggregations
         }
 
     def _flush(self):
