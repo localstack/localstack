@@ -27,6 +27,9 @@ def to_invocation_context(
     :param url_params: the parameters extracted from the URL matching rules
     :return: the ApiInvocationContext
     """
+    if url_params is None:
+        url_params = {}
+
     method = request.method
     path = request.full_path if request.query_string else request.path
     data = restore_payload(request)
@@ -39,7 +42,9 @@ def to_invocation_context(
     headers["X-Forwarded-For"] = ", ".join(x_forwarded_for)
 
     # this is for compatibility with the lower layers of apigw and lambda that make assumptions about header casing
-    headers = CaseInsensitiveDict({k: ", ".join(headers.getlist(k)) for k in headers.keys()})
+    headers = CaseInsensitiveDict(
+        {k.title(): ", ".join(headers.getlist(k)) for k in headers.keys()}
+    )
 
     # FIXME: Use the already parsed url params instead of parsing them into the ApiInvocationContext part-by-part.
     #   We already would have all params at hand to avoid _all_ the parsing, but the parsing
