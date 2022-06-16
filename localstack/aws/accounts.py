@@ -45,10 +45,10 @@ def set_ctx_aws_access_key_id(access_key_id: str):
 @hooks.on_infra_start()
 def patch_get_account_id():
     """Patch Moto's account ID resolver with our own."""
-    from moto import core as moto_core
-    from moto.core import models as moto_core_models
+    import moto
 
-    from localstack.aws.accounts import get_default_account_id
+    moto.core.models.account_id_resolver = get_aws_account_id
 
-    moto_core.account_id_resolver = get_default_account_id
-    moto_core.ACCOUNT_ID = moto_core_models.ACCOUNT_ID = get_default_account_id()
+    # Note: Moto templates making use of this constant will not get access to
+    # account ID from the current context
+    moto.core.models.ACCOUNT_ID = moto.core.ACCOUNT_ID = get_aws_account_id()
