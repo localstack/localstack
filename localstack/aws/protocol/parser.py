@@ -997,6 +997,7 @@ class S3RequestParser(RestXMLRequestParser):
                 # save the original path and host for restoring on context exit
                 self.old_path = self.request.path
                 self.old_host = self.request.host
+                self.old_raw_uri = self.request.environ.get("RAW_URI")
 
                 # extract the bucket name from the host part of the request
                 bucket_name, new_host = self.old_host.split(".", maxsplit=1)
@@ -1007,20 +1008,37 @@ class S3RequestParser(RestXMLRequestParser):
                 path_parts = [part for part in path_parts if part]
                 new_path = "/" + "/".join(path_parts) or "/"
 
+                # create a new RAW_URI for the WSGI environment, this is necessary because of our `get_raw_path` utility
+                if self.old_raw_uri:
+                    path_parts = self.old_raw_uri.split("/")
+                    path_parts = [bucket_name] + path_parts
+                    path_parts = [part for part in path_parts if part]
+                    new_raw_uri = "/" + "/".join(path_parts) or "/"
+                    if qs := self.request.query_string:
+                        new_raw_uri += "?" + qs.decode("utf-8")
+                else:
+                    new_raw_uri = None
+
                 # set the new path and host
-                self._set_request_props(self.request, new_path, new_host)
+                self._set_request_props(self.request, new_path, new_host, new_raw_uri)
             return self.request
 
         def __exit__(self, exc_type, exc_value, exc_traceback):
             # reset the original request properties on exit of the context
             if self.old_host or self.old_path:
-                self._set_request_props(self.request, self.old_path, self.old_host)
+                self._set_request_props(
+                    self.request, self.old_path, self.old_host, self.old_raw_uri
+                )
 
         @staticmethod
-        def _set_request_props(request: HttpRequest, path: str, host: str):
+        def _set_request_props(
+            request: HttpRequest, path: str, host: str, raw_uri: Optional[str] = None
+        ):
             """Sets the HTTP request's path and host and clears the cache in the request object."""
             request.path = path
             request.headers["Host"] = host
+            if raw_uri:
+                request.environ["RAW_URI"] = raw_uri
 
             try:
                 # delete the werkzeug request property cache that depends on path, but make sure all of them are
