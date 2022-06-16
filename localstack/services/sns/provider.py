@@ -9,6 +9,7 @@ import traceback
 import uuid
 from typing import Dict, List
 
+import botocore.exceptions
 import requests as requests
 from flask import Response as FlaskResponse
 from moto.sns.exceptions import DuplicateSnsEndpointError
@@ -190,11 +191,23 @@ def message_to_endpoint(
     structure,
 ):
     sns_client = aws_stack.connect_to_service("sns")
-    endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=target_arn)["Attributes"]
     app_name = target_arn.split("/")[-2]
     platform_name = target_arn.split("/")[-3]
-    platform_apps = sns_client.list_platform_applications()["PlatformApplications"]
-    app = [x for x in platform_apps if app_name in x["PlatformApplicationArn"]][0]
+
+    try:
+        endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=target_arn)[
+            "Attributes"
+        ]
+    except botocore.exceptions.ClientError:
+        LOG.warning(f"Missing attributes for endpoint: {target_arn}")
+        return
+
+    try:
+        platform_apps = sns_client.list_platform_applications()["PlatformApplications"]
+        app = [x for x in platform_apps if app_name in x["PlatformApplicationArn"]][0]
+    except IndexError:
+        LOG.warning(f"Missing Platform Application for endpoint: {target_arn}")
+        return
 
     if structure == "json":
         message = json.loads(message)
