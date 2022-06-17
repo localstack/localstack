@@ -3,8 +3,8 @@ import json
 import pytest
 import requests
 from botocore.exceptions import ClientError
-from moto.core import ACCOUNT_ID
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -469,7 +469,7 @@ def test_put_integration_validation(apigateway_client):
             restApiId=api_id,
             resourceId=root_id,
             credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
-                ACCOUNT_ID
+                get_aws_account_id()
             ),
             httpMethod="GET",
             type=_type,
@@ -494,7 +494,7 @@ def test_put_integration_validation(apigateway_client):
                 restApiId=api_id,
                 resourceId=root_id,
                 credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
-                    ACCOUNT_ID
+                    get_aws_account_id()
                 ),
                 httpMethod="GET",
                 type=_type,
