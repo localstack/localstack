@@ -12,7 +12,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Response
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.aws.accounts import get_aws_account_id
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import SNSBackend
 from localstack.utils import testutil
@@ -742,7 +742,7 @@ class TestSNSProvider:
         response = sns_create_topic(Name=topic_name)
         topic_arn_params = response["TopicArn"].split(":")
         testutil.response_arn_matches_partition(sns_client, response["TopicArn"])
-        assert topic_arn_params[4] == TEST_AWS_ACCOUNT_ID
+        assert topic_arn_params[4] == get_aws_account_id()
         assert topic_arn_params[5] == topic_name
 
     def test_publish_message_by_target_arn(

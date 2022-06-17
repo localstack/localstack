@@ -13,6 +13,7 @@ from moto.logs.models import LogsBackend
 from moto.logs.models import LogStream as MotoLogStream
 from moto.logs.models import logs_backends
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.logs import (
     InputLogEvents,
@@ -181,7 +182,7 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
 
         data = {
             "messageType": "DATA_MESSAGE",
-            "owner": aws_stack.get_account_id(),
+            "owner": get_aws_account_id(),
             "logGroup": log_group_name,
             "logStream": log_stream_name,
             "subscriptionFilters": [self.filter_name],
