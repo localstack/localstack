@@ -44,8 +44,8 @@ def test_region_backend_namespacing(sample_region_backend):
         assert backend1_ap.CLASS_ATTR == [4, 5, 6]
 
         # Ensure backend internals
-        assert id(backend1_ap._ACCOUNTS_REGIONS) == id(backend1_eu._ACCOUNTS_REGIONS)
-        assert len(backend1_ap._ACCOUNTS_REGIONS) == len(backend1_eu._ACCOUNTS_REGIONS) == 1
+        assert id(backend1_ap._ACCOUNT_BACKENDS) == id(backend1_eu._ACCOUNT_BACKENDS)
+        assert len(backend1_ap._ACCOUNT_BACKENDS) == len(backend1_eu._ACCOUNT_BACKENDS) == 1
         assert id(backend1_ap._ACCOUNTS_CLS) == id(backend1_eu._ACCOUNTS_CLS)
         assert len(backend1_ap._ACCOUNTS_CLS) == len(backend1_eu._ACCOUNTS_CLS) == 1
 
@@ -68,11 +68,11 @@ def test_region_backend_namespacing(sample_region_backend):
 
         # Ensure region backend internals
         assert (
-            id(backend2_ap._ACCOUNTS_REGIONS)
-            == id(backend2_eu._ACCOUNTS_REGIONS)
-            == id(backend1_eu._ACCOUNTS_REGIONS)
+            id(backend2_ap._ACCOUNT_BACKENDS)
+            == id(backend2_eu._ACCOUNT_BACKENDS)
+            == id(backend1_eu._ACCOUNT_BACKENDS)
         )
-        assert len(backend2_ap._ACCOUNTS_REGIONS) == len(backend2_eu._ACCOUNTS_REGIONS) == 2
+        assert len(backend2_ap._ACCOUNT_BACKENDS) == len(backend2_eu._ACCOUNT_BACKENDS) == 2
         assert (
             id(backend2_ap._ACCOUNTS_CLS)
             == id(backend2_eu._ACCOUNTS_CLS)
