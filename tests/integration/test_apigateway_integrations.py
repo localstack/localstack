@@ -2,6 +2,18 @@ import pytest
 import requests
 
 from localstack.services.apigateway.helpers import path_based_url
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.utils.aws import aws_stack
+from localstack.utils.strings import short_uid
+from localstack.utils.testutil import create_lambda_function
+from tests.integration.apigateway_fixtures import (
+    api_invoke_url,
+    create_rest_api,
+    create_rest_api_integration,
+    create_rest_resource,
+    create_rest_resource_method,
+)
+from tests.integration.awslambda.test_lambda import TEST_LAMBDA_HELLO_WORLD
 
 
 @pytest.mark.skip_offline
@@ -36,6 +48,44 @@ def test_http_integration(apigateway_client):
     response = requests.get(url)
 
     assert response.status_code == 200
+
+
+def test_lambda_aws_integration(apigateway_client):
+    fn_name = f"test-{short_uid()}"
+    create_lambda_function(
+        func_name=fn_name,
+        handler_file=TEST_LAMBDA_HELLO_WORLD,
+        handler="lambda_hello_world.handler",
+        runtime=LAMBDA_RUNTIME_PYTHON39,
+    )
+    lambda_arn = aws_stack.lambda_function_arn(fn_name)
+
+    api_id, _, root = create_rest_api(apigateway_client, name="aws lambda api")
+    resource_id, _ = create_rest_resource(
+        apigateway_client, restApiId=api_id, parentId=root, pathPart="test"
+    )
+
+    # create method and integration
+    create_rest_resource_method(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        authorizationType="NONE",
+    )
+    create_rest_api_integration(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="GET",
+        integrationHttpMethod="GET",
+        type="AWS",
+        uri=f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path//2015-03-31/functions/{lambda_arn}/invocations",
+    )
+
+    url = api_invoke_url(api_id=api_id, stage="local", path="/test")
+    response = requests.get(url)
+    assert response._content == b'{"message":"Hello from Lambda"}'
 
 
 #
