@@ -1239,8 +1239,8 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_get_deep_archive_object_restore(self):
-        bucket_name = "bucket-%s" % short_uid()
-        object_key = "key-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
+        object_key = f"key-{short_uid()}"
 
         self.s3_client.create_bucket(Bucket=bucket_name)
 
