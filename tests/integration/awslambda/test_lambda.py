@@ -12,10 +12,11 @@ import pytest
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 
-from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
+from localstack.aws.accounts import get_aws_account_id
 from localstack.services.awslambda import lambda_api
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_DEFAULT_HANDLER,
+    LAMBDA_TEST_ROLE,
     get_lambda_policy_name,
     use_docker,
 )
@@ -188,7 +189,7 @@ class TestLambdaAPI:
     def test_create_lambda_function(self, lambda_client):
         """Basic test that creates and deletes a Lambda function"""
         func_name = f"lambda_func-{short_uid()}"
-        kms_key_arn = f"arn:{aws_stack.get_partition()}:kms:{aws_stack.get_region()}:{TEST_AWS_ACCOUNT_ID}:key11"
+        kms_key_arn = f"arn:{aws_stack.get_partition()}:kms:{aws_stack.get_region()}:{get_aws_account_id()}:key11"
         vpc_config = {
             "SubnetIds": ["subnet-123456789"],
             "SecurityGroupIds": ["sg-123456789"],
@@ -199,7 +200,7 @@ class TestLambdaAPI:
             "FunctionName": func_name,
             "Runtime": LAMBDA_RUNTIME_PYTHON37,
             "Handler": LAMBDA_DEFAULT_HANDLER,
-            "Role": LAMBDA_TEST_ROLE,
+            "Role": LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
             "KMSKeyArn": kms_key_arn,
             "Code": {
                 "ZipFile": create_lambda_archive(

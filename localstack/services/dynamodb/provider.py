@@ -97,6 +97,9 @@ from localstack.services.dynamodb.utils import (
     extract_table_name_from_partiql_update,
 )
 from localstack.services.dynamodbstreams import dynamodbstreams_api
+from localstack.services.dynamodbstreams.dynamodbstreams_api import (
+    get_and_increment_sequence_number_counter,
+)
 from localstack.services.edge import ROUTER
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
@@ -208,9 +211,7 @@ class EventForwarder:
             if not stream_type:
                 continue
             if "SequenceNumber" not in ddb_record:
-                ddb_record["SequenceNumber"] = str(
-                    dynamodbstreams_api.DynamoDBStreamsBackend.get_and_increment_sequence_number_counter()
-                )
+                ddb_record["SequenceNumber"] = str(get_and_increment_sequence_number_counter())
             # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
             if stream_type == "KEYS_ONLY":
                 ddb_record.pop("OldImage", None)

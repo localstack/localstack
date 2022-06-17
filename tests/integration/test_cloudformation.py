@@ -8,7 +8,7 @@ from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.aws.accounts import get_aws_account_id
 from localstack.testing.aws.util import bucket_exists
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
@@ -86,7 +86,7 @@ Resources:
             - 'MessageFooHandler'
             - !FindInMap [ AccountInfo, !Ref "AWS::AccountId", ENV ]
 """
-    % TEST_AWS_ACCOUNT_ID
+    % get_aws_account_id()
 )
 
 TEST_TEMPLATE_10 = """
@@ -357,7 +357,7 @@ Resources:
     Properties:
       BucketName: cf-prd-{id}
 """
-    % TEST_AWS_ACCOUNT_ID
+    % get_aws_account_id()
 )
 
 TEST_TEMPLATE_20 = """
@@ -567,8 +567,8 @@ class TestCloudFormation:
             TemplateBody=TEST_TEMPLATE_3,
             ChangeSetName="nochanges",
         )
-        assert f":{TEST_AWS_ACCOUNT_ID}:changeSet/nochanges/" in response["Id"]
-        assert f":{TEST_AWS_ACCOUNT_ID}:stack/" in response["StackId"]
+        assert f":{get_aws_account_id()}:changeSet/nochanges/" in response["Id"]
+        assert f":{get_aws_account_id()}:stack/" in response["StackId"]
 
     def test_sam_template(self, lambda_client, deploy_cfn_template):
 

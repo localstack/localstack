@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.aws.accounts import get_aws_account_id
 from localstack.utils.crypto import encrypt
 
 
@@ -33,7 +33,7 @@ class TestKMS:
         response = kms_client.describe_key(KeyId=key_id)["KeyMetadata"]
         assert response["KeyId"] == key_id
         assert ":%s:" % config.DEFAULT_REGION in response["Arn"]
-        assert ":%s:" % TEST_AWS_ACCOUNT_ID in response["Arn"]
+        assert ":%s:" % get_aws_account_id() in response["Arn"]
 
     def test_create_grant_with_invalid_key(self, kms_client):
         with pytest.raises(botocore.exceptions.ClientError):

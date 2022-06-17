@@ -1,7 +1,7 @@
 import logging
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.aws.accounts import get_aws_account_id
 from localstack.services import install
 from localstack.services.infra import do_run, log_startup_message
 from localstack.utils.aws import aws_stack
@@ -29,7 +29,7 @@ def get_command(backend_port):
         install.INSTALL_DIR_STEPFUNCTIONS,
         backend_port,
         MAX_HEAP_SIZE,
-        TEST_AWS_ACCOUNT_ID,
+        get_aws_account_id(),
     )
     if config.STEPFUNCTIONS_LAMBDA_ENDPOINT.lower() != "default":
         lambda_endpoint = config.STEPFUNCTIONS_LAMBDA_ENDPOINT or aws_stack.get_local_service_url(

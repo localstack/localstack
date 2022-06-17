@@ -10,7 +10,8 @@ import botocore
 from moto.ec2.utils import generate_route_id
 
 from localstack import config
-from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME, TEST_AWS_ACCOUNT_ID
+from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     PLACEHOLDER_RESOURCE_NAME,
@@ -425,7 +426,7 @@ def resolve_ref(stack, ref, attribute):
         # TODO return proper stack id!
         return stack_name
     if ref == "AWS::AccountId":
-        return TEST_AWS_ACCOUNT_ID
+        return get_aws_account_id()
     if ref == "AWS::NoValue":
         return PLACEHOLDER_AWS_NO_VALUE
     if ref == "AWS::NotificationARNs":
