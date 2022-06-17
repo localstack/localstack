@@ -13,7 +13,8 @@ from botocore.awsrequest import AWSRequest
 from botocore.credentials import Credentials
 from botocore.exceptions import ClientError
 
-from localstack import config, constants
+from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid, to_str
@@ -67,7 +68,7 @@ class TestSqsProvider:
         sqs_create_queue(QueueName=queue_name)
 
         queue_url = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
-        account_id = constants.TEST_AWS_ACCOUNT_ID
+        account_id = get_aws_account_id()
 
         host = config.get_edge_url()
         # our current queue pattern looks like this, but may change going forward, or may be configurable
@@ -673,7 +674,7 @@ class TestSqsProvider:
         assert result.status_code == 200
         assert url in result.text
 
-        queue_url = f"http://{url}/{constants.TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        queue_url = f"http://{url}/{get_aws_account_id()}/{queue_name}"
         message_body = f"test message {short_uid()}"
         payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
         result = requests.post(edge_url, data=payload, headers=headers)
@@ -686,14 +687,14 @@ class TestSqsProvider:
         assert message_body in result.text
 
         # the customer said that he used to be able to access it via "127.0.0.1" instead of "aws-local" as well
-        queue_url = f"http://127.0.0.1/{constants.TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        queue_url = f"http://127.0.0.1/{get_aws_account_id()}/{queue_name}"
 
         payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
         result = requests.post(edge_url, data=payload, headers=headers)
         assert result.status_code == 200
         assert "MD5" in result.text
 
-        queue_url = f"http://127.0.0.1/{constants.TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        queue_url = f"http://127.0.0.1/{get_aws_account_id()}/{queue_name}"
 
         payload = f"Action=ReceiveMessage&QueueUrl={queue_url}&VisibilityTimeout=0"
         result = requests.post(edge_url, data=payload, headers=headers)

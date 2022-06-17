@@ -2,7 +2,7 @@ import logging
 import platform
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.aws.accounts import get_aws_account_id
 from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
 from localstack.services.install import INSTALL_PATH_KMS_BINARY_PATTERN
 from localstack.utils.common import get_arch, get_free_tcp_port, wait_for_port_open
@@ -18,12 +18,13 @@ def start_kms_local(port=None, backend_port=None, asynchronous=None, update_list
     )
     log_startup_message("KMS")
     start_proxy_for_service("kms", port, backend_port, update_listener)
+    account_id = get_aws_account_id()
     env_vars = {
         "PORT": str(backend_port),
         "KMS_REGION": config.DEFAULT_REGION,
         "REGION": config.DEFAULT_REGION,
-        "KMS_ACCOUNT_ID": TEST_AWS_ACCOUNT_ID,
-        "ACCOUNT_ID": TEST_AWS_ACCOUNT_ID,
+        "KMS_ACCOUNT_ID": account_id,
+        "ACCOUNT_ID": account_id,
     }
     if config.dirs.data:
         env_vars["KMS_DATA_PATH"] = config.dirs.data
