@@ -7,28 +7,23 @@ from typing import Any, Optional
 from botocore.model import ServiceModel
 from werkzeug.datastructures import Headers
 
-from localstack import constants
+from localstack.aws.accounts import get_account_id_from_access_key_id, set_ctx_aws_access_key_id
+from localstack.aws.api import RequestContext
+from localstack.aws.skeleton import Skeleton
+from localstack.aws.spec import load_service
 from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.messages import MessagePayload
+from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.persistence import PersistingProxyListener
-
-from .api import RequestContext
-from .skeleton import Skeleton
-from .spec import load_service
 
 LOG = logging.getLogger(__name__)
 
 
 def get_region(request: Request) -> str:
     return extract_region_from_headers(request.headers)
-
-
-def get_account_id(_: Request) -> str:
-    # TODO: at some point we may want to get the account id from credentials
-    return constants.TEST_AWS_ACCOUNT_ID
 
 
 class AwsApiListener(ProxyListenerAdapter):
@@ -47,8 +42,13 @@ class AwsApiListener(ProxyListenerAdapter):
         context.service = self.service
         context.request = request
         context.region = get_region(request)
-        context.account_id = get_account_id(request)
+        context.account_id = self.get_account_id_from_request(request)
         return context
+
+    def get_account_id_from_request(self, request: Request) -> str:
+        access_key_id = extract_access_key_id_from_auth_header(request.headers)
+        set_ctx_aws_access_key_id(access_key_id)
+        return get_account_id_from_access_key_id(access_key_id)
 
 
 def _raise_not_implemented_error(*args, **kwargs):

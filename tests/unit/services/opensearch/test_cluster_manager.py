@@ -1,15 +1,15 @@
 import pytest
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.opensearch import EngineType
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.opensearch.cluster_manager import DomainKey, build_cluster_endpoint
 
 
 class TestBuildClusterEndpoint:
     def test_endpoint_strategy_port(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
-        endpoint = build_cluster_endpoint(DomainKey("my-domain", "us-east-1", TEST_AWS_ACCOUNT_ID))
+        endpoint = build_cluster_endpoint(DomainKey("my-domain", "us-east-1", get_aws_account_id()))
         parts = endpoint.split(":")
         assert parts[0] == "localhost"
         assert int(parts[1]) in range(
@@ -28,12 +28,12 @@ class TestBuildClusterEndpoint:
         engine_path_prefix = engine[1]
 
         endpoint = build_cluster_endpoint(
-            DomainKey("my-domain", "us-east-1", TEST_AWS_ACCOUNT_ID), engine_type=engine_type
+            DomainKey("my-domain", "us-east-1", get_aws_account_id()), engine_type=engine_type
         )
         assert endpoint == f"localhost:4566/{engine_path_prefix}/us-east-1/my-domain"
 
         endpoint = build_cluster_endpoint(
-            DomainKey("my-domain-1", "eu-central-1", TEST_AWS_ACCOUNT_ID), engine_type=engine_type
+            DomainKey("my-domain-1", "eu-central-1", get_aws_account_id()), engine_type=engine_type
         )
         assert endpoint == f"localhost:4566/{engine_path_prefix}/eu-central-1/my-domain-1"
 
@@ -49,7 +49,7 @@ class TestBuildClusterEndpoint:
         engine_path_prefix = engine[1]
 
         endpoint = build_cluster_endpoint(
-            domain_key=DomainKey("my-domain", "us-east-1", TEST_AWS_ACCOUNT_ID),
+            domain_key=DomainKey("my-domain", "us-east-1", get_aws_account_id()),
             engine_type=engine_type,
         )
         assert (
@@ -57,7 +57,7 @@ class TestBuildClusterEndpoint:
         )
 
         endpoint = build_cluster_endpoint(
-            domain_key=DomainKey("my-domain-1", "eu-central-1", TEST_AWS_ACCOUNT_ID),
+            domain_key=DomainKey("my-domain-1", "eu-central-1", get_aws_account_id()),
             engine_type=engine_type,
         )
         assert (
