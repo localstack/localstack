@@ -34,7 +34,7 @@ class LocalstackAwsGateway(Gateway):
                 # start aws handler chain
                 handlers.inject_auth_header_if_missing,
                 handlers.add_region_from_header,
-                handlers.add_default_account_id,
+                handlers.add_account_id,
                 handlers.parse_service_request,
                 handlers.serve_custom_service_request_handlers,
                 load_service,  # once we have the service request we can make sure we load the service

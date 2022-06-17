@@ -8,7 +8,7 @@ import pytest
 import requests
 from py._code.code import ExceptionInfo
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.aws.accounts import get_aws_account_id
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -22,7 +22,7 @@ RESOURCE_POLICY = {
     "Statement": [
         {
             "Effect": "Allow",
-            "Principal": {"AWS": "arn:aws:iam::%s:root" % TEST_AWS_ACCOUNT_ID},
+            "Principal": {"AWS": "arn:aws:iam::%s:root" % get_aws_account_id()},
             "Action": "secretsmanager:GetSecretValue",
             "Resource": "*",
         }
