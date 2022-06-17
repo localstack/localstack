@@ -8,6 +8,7 @@ from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.sync import poll_condition
 
 
 # TODO: refactor file and remove this compatibility fn
@@ -382,3 +383,52 @@ def test_delete_change_set_nonexisting(cfn_client):
         cfn_client.delete_change_set(ChangeSetName="DoesNotExist")
 
     assert ex.value.response["Error"]["Code"] == "ResourceNotFoundException"
+
+
+@pytest.mark.aws_validated
+def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_template):
+    # first deploy cfn with a CodeArtifact resource that is not actually supported
+    stack = deploy_cfn_template(
+        template=load_template_raw("code_artifact_template.yaml"),
+        parameters={"CADomainName": f"domainname-{short_uid()}"},
+    )
+
+    # removal of CodeArtifact should not throw exception
+    deploy_cfn_template(
+        is_update=True,
+        template=load_template_raw("code_artifact_remove_template.yaml"),
+        stack_name=stack.stack_name,
+    )
+
+
+@pytest.mark.aws_validated
+def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_template, s3_client):
+    first_bucket_name = f"test-bucket-1-{short_uid()}"
+    second_bucket_name = f"test-bucket-2-{short_uid()}"
+
+    stack = deploy_cfn_template(
+        template=load_template_raw("for_removal_setup.yaml"),
+        template_mapping={
+            "first_bucket_name": first_bucket_name,
+            "second_bucket_name": second_bucket_name,
+        },
+    )
+
+    available_buckets = s3_client.list_buckets()
+    bucket_names = [bucket["Name"] for bucket in available_buckets["Buckets"]]
+    assert first_bucket_name in bucket_names
+    assert second_bucket_name in bucket_names
+
+    deploy_cfn_template(
+        is_update=True,
+        template=load_template_raw("for_removal_remove.yaml"),
+        template_mapping={"first_bucket_name": first_bucket_name},
+        stack_name=stack.stack_name,
+    )
+
+    def assert_bucket_gone():
+        available_buckets = s3_client.list_buckets()
+        bucket_names = [bucket["Name"] for bucket in available_buckets["Buckets"]]
+        return first_bucket_name in bucket_names and second_bucket_name not in bucket_names
+
+    poll_condition(condition=assert_bucket_gone, timeout=20, interval=5)
