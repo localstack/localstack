@@ -7,7 +7,8 @@ import botocore.exceptions
 import pytest
 
 from localstack import config
-from localstack.constants import OPENSEARCH_DEFAULT_VERSION, TEST_AWS_ACCOUNT_ID
+from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.install import install_opensearch
 from localstack.services.opensearch.cluster import EdgeProxiedOpensearchCluster
 from localstack.services.opensearch.cluster_manager import (
@@ -455,10 +456,14 @@ class TestMultiClusterManager:
 
         # create two opensearch domains
         domain_key_0 = DomainKey(
-            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+            domain_name=f"domain-{short_uid()}",
+            region="us-east-1",
+            account=get_aws_account_id(),
         )
         domain_key_1 = DomainKey(
-            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+            domain_name=f"domain-{short_uid()}",
+            region="us-east-1",
+            account=get_aws_account_id(),
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -498,10 +503,14 @@ class TestMultiplexingClusterManager:
 
         # create two opensearch domains
         domain_key_0 = DomainKey(
-            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+            domain_name=f"domain-{short_uid()}",
+            region="us-east-1",
+            account=get_aws_account_id(),
         )
         domain_key_1 = DomainKey(
-            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+            domain_name=f"domain-{short_uid()}",
+            region="us-east-1",
+            account=get_aws_account_id(),
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -541,10 +550,14 @@ class TestSingletonClusterManager:
 
         # create two opensearch domains
         domain_key_0 = DomainKey(
-            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+            domain_name=f"domain-{short_uid()}",
+            region="us-east-1",
+            account=get_aws_account_id(),
         )
         domain_key_1 = DomainKey(
-            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+            domain_name=f"domain-{short_uid()}",
+            region="us-east-1",
+            account=get_aws_account_id(),
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -621,7 +634,9 @@ class TestCustomBackendManager:
         assert isinstance(manager, CustomBackendManager)
 
         domain_key = DomainKey(
-            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+            domain_name=f"domain-{short_uid()}",
+            region="us-east-1",
+            account=get_aws_account_id(),
         )
         cluster = manager.create(domain_key.arn, OPENSEARCH_DEFAULT_VERSION)
         # check that we're using the domain endpoint strategy
