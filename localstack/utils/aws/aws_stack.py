@@ -552,12 +552,20 @@ def extract_region_from_auth_header(headers: Dict[str, str], use_default=True) -
     return region
 
 
-def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> str:
+def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[str]:
     auth = headers.get("Authorization") or ""
-    access_id = re.sub(r".*Credential=([^/]+)/[^/]+/[^/]+/.*", r"\1", auth)
-    if access_id == auth:
-        access_id = None
-    return access_id
+
+    if auth.startswith("AWS4-"):
+        # For Signature Version 4
+        access_id = re.findall(r".*Credential=([^/]+)/[^/]+/[^/]+/.*", auth)
+        if len(access_id):
+            return access_id[0]
+
+    elif auth.startswith("AWS "):
+        # For Signature Version 2
+        access_id = auth.removeprefix("AWS ").split(":")
+        if len(access_id):
+            return access_id[0]
 
 
 # TODO: extract ARN utils into separate file!
