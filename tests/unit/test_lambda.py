@@ -7,8 +7,8 @@ import unittest
 
 import mock
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.config import TMP_FOLDER
-from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
 from localstack.services.awslambda.lambda_executors import OutputLog
 from localstack.services.awslambda.lambda_utils import API_PATH_ROOT
@@ -764,7 +764,7 @@ class TestLambdaAPI(unittest.TestCase):
         executor = lambda_executors.EXECUTOR_CONTAINERS_REUSE
         name = executor.get_container_name(aws_stack.lambda_function_arn("my_function_name"))
         self.assertIn(
-            f"_lambda_arn_aws_lambda_{aws_stack.get_region()}_{TEST_AWS_ACCOUNT_ID}_function_my_function_name",
+            f"_lambda_arn_aws_lambda_{aws_stack.get_region()}_{get_aws_account_id()}_function_my_function_name",
             name,
         )
 
@@ -1074,7 +1074,7 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
     CODE_SIZE = 50
     CODE_SHA_256 = "/u60ZpAA9bzZPVwb8d4390i5oqP1YAObUwV03CZvsWA="
     MEMORY_SIZE = 128
-    ROLE = LAMBDA_TEST_ROLE
+    ROLE = lambda_api.LAMBDA_TEST_ROLE
     LAST_MODIFIED = datetime.datetime.utcnow()
     REVISION_ID = "e54dbcf8-e3ef-44ab-9af7-8dbef510608a"
     HANDLER = "index.handler"

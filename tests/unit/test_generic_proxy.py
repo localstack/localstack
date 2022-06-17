@@ -47,7 +47,9 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
     # incoming requests should be rewritten for both, internal and external requests (in contrast to the responses!)
     if internal_call:
         headers = mock_aws_request_headers(
-            region_name=origin_partition, access_key=INTERNAL_AWS_ACCESS_KEY_ID
+            region_name=origin_partition,
+            access_key=INTERNAL_AWS_ACCESS_KEY_ID,
+            internal=True,
         )
     else:
         headers = {}
@@ -155,7 +157,9 @@ def test_no_arn_partition_rewriting_in_internal_response():
 
     # mimic an internal request
     request_headers = mock_aws_request_headers(
-        region_name="us-gov-west-1", access_key=INTERNAL_AWS_ACCESS_KEY_ID
+        region_name="us-gov-west-1",
+        access_key=INTERNAL_AWS_ACCESS_KEY_ID,
+        internal=True,
     )
 
     result = listener.return_response(

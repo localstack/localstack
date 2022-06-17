@@ -10,7 +10,8 @@ from quart import request as quart_request
 from requests.models import Request as RequestsRequest
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL, TEST_AWS_ACCOUNT_ID
+from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
 from localstack.http.request import get_full_raw_path
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
@@ -328,7 +329,7 @@ class TestEdgeAPI:
             json.loads(content1)
         content1 = xmltodict.parse(content1)
         content1_result = content1["GetCallerIdentityResponse"]["GetCallerIdentityResult"]
-        assert content1_result["Account"] == TEST_AWS_ACCOUNT_ID
+        assert content1_result["Account"] == get_aws_account_id()
 
         # receive response as JSON (via Accept header)
         headers = aws_stack.mock_aws_request_headers("sts")
@@ -337,7 +338,7 @@ class TestEdgeAPI:
         assert response
         content2 = json.loads(to_str(response.content))
         content2_result = content2["GetCallerIdentityResponse"]["GetCallerIdentityResult"]
-        assert content2_result["Account"] == TEST_AWS_ACCOUNT_ID
+        assert content2_result["Account"] == get_aws_account_id()
         content1.get("GetCallerIdentityResponse", {}).pop("ResponseMetadata", None)
         content2.get("GetCallerIdentityResponse", {}).pop("ResponseMetadata", None)
         assert strip_xmlns(content1) == content2
