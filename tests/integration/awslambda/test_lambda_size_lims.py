@@ -3,8 +3,8 @@ from io import BytesIO
 
 import pytest
 
-from localstack.constants import LAMBDA_TEST_ROLE
-from localstack.services.awslambda.lambda_api import LAMBDA_DEFAULT_HANDLER
+from localstack.aws.accounts import get_aws_account_id
+from localstack.services.awslambda.lambda_api import LAMBDA_DEFAULT_HANDLER, LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.utils import testutil
 from localstack.utils.common import short_uid
@@ -43,7 +43,7 @@ class TestLambdaSizeLimits:
                 FunctionName=function_name,
                 Runtime=LAMBDA_RUNTIME_PYTHON37,
                 Handler=LAMBDA_DEFAULT_HANDLER,
-                Role=LAMBDA_TEST_ROLE,
+                Role=LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
                 Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
                 Timeout=10,
             )
