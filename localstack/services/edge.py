@@ -13,9 +13,9 @@ from requests.models import Response
 from localstack import config
 from localstack.aws.protocol.service_router import determine_aws_service_name
 from localstack.constants import (
+    HEADER_LOCALSTACK_ACCOUNT_ID,
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
-    INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
@@ -328,13 +328,12 @@ ROUTER: Router[Handler] = Router(
 )
 
 
-def is_trace_logging_enabled(headers):
+def is_trace_logging_enabled(headers) -> bool:
     if not config.LS_LOG:
         return False
     if config.LS_LOG == LS_LOG_TRACE_INTERNAL:
         return True
-    auth_header = headers.get("Authorization") or ""
-    return INTERNAL_AWS_ACCESS_KEY_ID not in auth_header
+    return HEADER_LOCALSTACK_ACCOUNT_ID not in headers.keys()
 
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):

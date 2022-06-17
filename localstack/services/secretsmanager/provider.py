@@ -12,6 +12,7 @@ from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend, secretsmanager_backends
 from moto.secretsmanager.responses import SecretsManagerResponse
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceResponse, handler
 from localstack.aws.api.secretsmanager import (
     CancelRotateSecretRequest,
@@ -59,7 +60,6 @@ from localstack.aws.api.secretsmanager import (
     ValidateResourcePolicyRequest,
     ValidateResourcePolicyResponse,
 )
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
@@ -561,7 +561,7 @@ def secretsmanager_models_secret_arn(region, secret_id):
     if k not in SECRET_ARN_STORAGE:
         id_string = short_uid()[:6]
         arn = aws_stack.secretsmanager_secret_arn(
-            secret_id, account_id=TEST_AWS_ACCOUNT_ID, region_name=region, random_suffix=id_string
+            secret_id, account_id=get_aws_account_id(), region_name=region, random_suffix=id_string
         )
         SECRET_ARN_STORAGE[k] = arn
     return SECRET_ARN_STORAGE[k]

@@ -7,8 +7,8 @@ from moto.apigateway.exceptions import NoIntegrationDefined, UsagePlanNotFoundEx
 from moto.apigateway.responses import APIGatewayResponse
 from moto.core.utils import camelcase_to_underscores
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.apigateway import NotFoundException
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     apply_json_patch_safe,
@@ -120,7 +120,7 @@ def apply_patches():
             rest_api = self.backend.apis.get(function_id)
             if not rest_api:
                 msg = "Invalid API identifier specified %s:%s" % (
-                    TEST_AWS_ACCOUNT_ID,
+                    get_aws_account_id(),
                     function_id,
                 )
                 raise NotFoundException(msg)

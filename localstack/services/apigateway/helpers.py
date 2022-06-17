@@ -18,12 +18,12 @@ from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_EDGE_URL,
     LOCALHOST_HOSTNAME,
     PATH_USER_REQUEST,
-    TEST_AWS_ACCOUNT_ID,
 )
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.generic_proxy import RegionBackend
@@ -519,7 +519,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
                 {
                     "type": "AWS",
                     "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
-                    % (sqs_region, TEST_AWS_ACCOUNT_ID, queue_name),
+                    % (sqs_region, get_aws_account_id(), queue_name),
                     "requestTemplates": {"application/json": template},
                 }
             ],
@@ -791,7 +791,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
-    account_id = account_id or TEST_AWS_ACCOUNT_ID
+    account_id = account_id or get_aws_account_id()
     request_context = {
         "accountId": account_id,
         "apiId": api_id,

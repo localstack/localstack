@@ -15,12 +15,8 @@ from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
-from localstack.constants import (
-    APPLICATION_JSON,
-    HEADER_LOCALSTACK_REQUEST_URL,
-    LOCALHOST_HOSTNAME,
-    TEST_AWS_ACCOUNT_ID,
-)
+from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_REQUEST_URL, LOCALHOST_HOSTNAME
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
@@ -446,7 +442,7 @@ class TestAPIGateway:
         expected_path = "/" + self.TEST_STAGE_NAME + "/lambda/foo1"
         assert expected_path == request_context["path"]
         assert request_context.get("stageVariables") is None
-        assert TEST_AWS_ACCOUNT_ID == request_context["accountId"]
+        assert get_aws_account_id() == request_context["accountId"]
         assert resource.get("id") == request_context["resourceId"]
         assert self.TEST_STAGE_NAME == request_context["stage"]
         assert "python-requests/testing" == request_context["identity"]["userAgent"]

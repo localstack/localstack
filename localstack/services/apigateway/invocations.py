@@ -11,11 +11,8 @@ from jsonschema import ValidationError, validate
 from requests.models import Response
 
 from localstack import config
-from localstack.constants import (
-    APPLICATION_JSON,
-    HEADER_LOCALSTACK_AUTHORIZATION,
-    TEST_AWS_ACCOUNT_ID,
-)
+from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_AUTHORIZATION
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
@@ -567,7 +564,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                     new_request = f"{payload}&QueueUrl={queue_url}"
                 headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
 
-                url = urljoin(config.service_url("sqs"), f"{TEST_AWS_ACCOUNT_ID}/{queue}")
+                url = urljoin(config.service_url("sqs"), f"{get_aws_account_id()}/{queue}")
                 result = common.make_http_request(
                     url, method="POST", headers=headers, data=new_request
                 )

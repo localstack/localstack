@@ -60,7 +60,7 @@ class TestCloudwatch:
         encoded_data = gzip.compress(bytes_data)
 
         url = config.get_edge_url()
-        headers = aws_stack.mock_aws_request_headers("cloudwatch")
+        headers = aws_stack.mock_aws_request_headers("cloudwatch", internal=True)
         authorization = aws_stack.mock_aws_request_headers("monitoring")["Authorization"]
 
         headers.update(
