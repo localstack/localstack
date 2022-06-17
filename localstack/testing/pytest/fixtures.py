@@ -19,6 +19,7 @@ from botocore.regions import EndpointResolver
 from pytest_httpserver import HTTPServer
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
@@ -108,7 +109,8 @@ def boto3_session():
         return boto3.Session()
 
     return boto3.Session(
-        aws_access_key_id="__test_call__",
+        # LocalStack assumes AWS_ACCESS_KEY_ID config contains the AWS_ACCOUNT_ID value.
+        aws_access_key_id=get_aws_account_id(),
         aws_secret_access_key="__test_key__",
     )
 

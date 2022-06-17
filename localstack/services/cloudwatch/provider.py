@@ -212,7 +212,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def get_raw_metrics(self, request: Request):
         region = aws_stack.extract_region_from_auth_header(request.headers)
-        backend = cloudwatch_backends.get(region)
+        backend = cloudwatch_backends[region]
         if backend:
             result = backend.metric_data
         else:
