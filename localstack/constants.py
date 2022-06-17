@@ -40,7 +40,11 @@ BIND_HOST = "0.0.0.0"
 # AWS user account ID used for tests - TODO move to config.py
 if "TEST_AWS_ACCOUNT_ID" not in os.environ:
     os.environ["TEST_AWS_ACCOUNT_ID"] = "000000000000"
-TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
+
+# WARNING:
+# Do not use this constant to access the Account ID.
+# Use `localstack.aws.accounts.get_aws_account_id()` instead.
+_TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
 
 # root code folder
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -97,9 +101,6 @@ TRUE_STRINGS = ("1", "true", "True")
 FALSE_STRINGS = ("0", "false", "False")
 # strings with valid log levels for LS_LOG
 LOG_LEVELS = ("trace-internal", "trace", "debug", "info", "warn", "error", "warning")
-
-# Lambda defaults
-LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % TEST_AWS_ACCOUNT_ID
 
 # the version of elasticsearch that is pre-seeded into the base image (sync with Dockerfile.base)
 ELASTICSEARCH_DEFAULT_VERSION = "Elasticsearch_7.10"
@@ -159,6 +160,11 @@ TEST_AWS_SECRET_ACCESS_KEY = "test"
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
 INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
 
+# This header must be set to the AWS Account ID
+# Presence of this header in an incoming request typically means that the request originated within localstack,
+# i.e. it is an internal cross-service call.
+HEADER_LOCALSTACK_ACCOUNT_ID = "x-localstack-account-id"
+
 # trace log levels (excluding/including internal API calls), configurable via $LS_LOG
 LS_LOG_TRACE = "trace"
 LS_LOG_TRACE_INTERNAL = "trace-internal"
@@ -186,23 +192,3 @@ OS_USER_OPENSEARCH = "localstack"
 
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = "Ready."
-
-# hardcoded AWS account ID used by moto
-MOTO_ACCOUNT_ID = TEST_AWS_ACCOUNT_ID
-
-
-def patch_moto_account_id():
-    # fix moto account ID - note: this needs to be executed before any other moto imports
-    try:
-        from moto import core as moto_core
-        from moto.core import models as moto_core_models
-
-        moto_core.ACCOUNT_ID = moto_core_models.ACCOUNT_ID = MOTO_ACCOUNT_ID
-    except Exception:
-        # ignore import errors
-        pass
-
-
-if not os.environ.get("SKIP_PATCH_MOTO_ACCOUNT_ID"):
-    # allow skipping this (importing moto takes a long time, and it's not necessary for the CLI)
-    patch_moto_account_id()

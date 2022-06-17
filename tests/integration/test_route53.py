@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from localstack import constants
+from localstack.aws.accounts import get_aws_account_id
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
@@ -82,7 +82,7 @@ class TestRoute53:
         expected = {
             "HostedZoneId": zone_id,
             "Name": "%s." % name,
-            "Owner": {"OwningAccount": constants.TEST_AWS_ACCOUNT_ID},
+            "Owner": {"OwningAccount": get_aws_account_id()},
         }
         assert expected in result
 
