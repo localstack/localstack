@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from moto.events.responses import EventsHandler as MotoEventsHandler
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.core import CommonServiceException
 from localstack.aws.api.events import (
@@ -29,7 +30,7 @@ from localstack.aws.api.events import (
     ScheduleExpression,
     TagList,
 )
-from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
@@ -463,7 +464,7 @@ def events_handler_put_events(self):
             "id": event_envelope["uuid"],
             "detail-type": event.get("DetailType"),
             "source": event.get("Source"),
-            "account": TEST_AWS_ACCOUNT_ID,
+            "account": get_aws_account_id(),
             "time": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "region": self.region,
             "resources": event.get("Resources", []),

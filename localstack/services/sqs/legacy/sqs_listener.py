@@ -8,7 +8,8 @@ from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 from moto.sqs.utils import parse_message_attributes
 from requests.models import Request
 
-from localstack import config, constants
+from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.config import SQS_PORT_EXTERNAL
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import unsubscribe_sqs_queue
@@ -390,7 +391,7 @@ class ProxyListenerSQS(PersistingProxyListener):
             # encode account ID in queue URL
             content_str = re.sub(
                 r"<QueueUrl>\s*([a-z]+)://([^/]+)/queue/([^<]*)\s*</QueueUrl>",
-                r"<QueueUrl>\1://\2/%s/\3</QueueUrl>" % constants.TEST_AWS_ACCOUNT_ID,
+                r"<QueueUrl>\1://\2/%s/\3</QueueUrl>" % get_aws_account_id(),
                 content_str,
             )
             # fix queue ARN
