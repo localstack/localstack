@@ -15,12 +15,9 @@ import boto3
 import requests
 
 from localstack import config
-from localstack.constants import (
-    LAMBDA_TEST_ROLE,
-    LOCALSTACK_ROOT_FOLDER,
-    LOCALSTACK_VENV_FOLDER,
-    TEST_AWS_ACCOUNT_ID,
-)
+from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
+from localstack.services.awslambda.lambda_api import LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
@@ -273,7 +270,7 @@ def create_lambda_function(
         "FunctionName": func_name,
         "Runtime": runtime,
         "Handler": handler,
-        "Role": role or LAMBDA_TEST_ROLE,
+        "Role": role or LAMBDA_TEST_ROLE.format(account_id=get_aws_account_id()),
         "Code": lambda_code,
         "Timeout": timeout or LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),
@@ -513,7 +510,7 @@ def get_sample_arn(service, resource):
     return "arn:aws:%s:%s:%s:%s" % (
         service,
         aws_stack.get_region(),
-        TEST_AWS_ACCOUNT_ID,
+        get_aws_account_id(),
         resource,
     )
 

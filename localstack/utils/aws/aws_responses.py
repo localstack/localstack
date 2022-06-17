@@ -14,13 +14,9 @@ from moto.core.exceptions import JsonRESTError
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.config import DEFAULT_ENCODING
-from localstack.constants import (
-    APPLICATION_JSON,
-    HEADER_CONTENT_TYPE,
-    MOTO_ACCOUNT_ID,
-    TEST_AWS_ACCOUNT_ID,
-)
+from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.utils.aws import aws_stack
 from localstack.utils.http import replace_response_content
 from localstack.utils.json import json_safe
@@ -475,7 +471,7 @@ class MessageConversion:
 
     @staticmethod
     def fix_account_id(response):
-        return aws_stack.fix_account_id_in_arns(response, replace=TEST_AWS_ACCOUNT_ID)
+        return aws_stack.fix_account_id_in_arns(response, replace=get_aws_account_id())
 
     @staticmethod
     def fix_error_codes(method, data, response):
@@ -506,15 +502,3 @@ class MessageConversion:
             response._content = re.sub(
                 regex_false, replace_false, to_str(response.content), flags=REGEX_FLAGS
             )
-
-    @staticmethod
-    def _reset_account_id(data):
-        """Fix account ID in request payload. All external-facing responses contain our
-        predefined account ID (defaults to 000000000000), whereas the backend endpoint
-        from moto expects a different hardcoded account ID (123456789012)."""
-        return aws_stack.fix_account_id_in_arns(
-            data,
-            colon_delimiter="%3A",
-            existing=TEST_AWS_ACCOUNT_ID,
-            replace=MOTO_ACCOUNT_ID,
-        )
