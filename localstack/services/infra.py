@@ -14,6 +14,7 @@ from moto.core import BaseModel
 from moto.core.base_backend import InstanceTrackerMeta
 
 from localstack import config, constants
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
 from localstack.runtime import events, hooks
 from localstack.services import generic_proxy, install, motoserver
@@ -62,7 +63,6 @@ SHUTDOWN_INFRA = threading.Event()
 
 # Start config update backdoor
 config_listener.start_listener()
-
 
 # ---------------
 # HELPER METHODS
@@ -310,15 +310,9 @@ def log_startup_message(service):
 
 
 def check_aws_credentials():
-    session = boto3.Session()
-    credentials = None
-    # hardcode credentials here, to allow us to determine internal API calls made via boto3
-    os.environ["AWS_ACCESS_KEY_ID"] = constants.INTERNAL_AWS_ACCESS_KEY_ID
+    # Setup AWS environment vars, these are used by Boto when LocalStack makes internal cross-service calls
+    os.environ["AWS_ACCESS_KEY_ID"] = get_aws_account_id()
     os.environ["AWS_SECRET_ACCESS_KEY"] = constants.INTERNAL_AWS_SECRET_ACCESS_KEY
-    try:
-        credentials = session.get_credentials()
-    except Exception:
-        pass
     session = boto3.Session()
     credentials = session.get_credentials()
     assert credentials
@@ -391,6 +385,7 @@ def start_infra(asynchronous=False, apis=None):
 
         # run hooks, to allow them to apply patches and changes
         hooks.on_infra_start.run()
+
         # with changes that hooks have made, now start the infrastructure
         thread = do_start_infra(asynchronous, apis, is_in_docker)
 
