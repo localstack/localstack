@@ -60,7 +60,7 @@ class Ec2Provider(Ec2Api, ABC):
         context: RequestContext,
         describe_availability_zones_request: DescribeAvailabilityZonesRequest,
     ) -> DescribeAvailabilityZonesResult:
-        backend = ec2_backends.get(context.region)
+        backend = ec2_backends[context.region]
 
         availability_zones = []
         zone_names = describe_availability_zones_request.get("ZoneNames")
@@ -168,7 +168,7 @@ class Ec2Provider(Ec2Api, ABC):
         remove_security_group_ids: VpcEndpointSecurityGroupIdList = None,
         private_dns_enabled: Boolean = None,
     ) -> ModifyVpcEndpointResult:
-        backend = ec2_backends.get(context.region)
+        backend = ec2_backends[context.region]
 
         vpc_endpoint = backend.vpc_end_points.get(vpc_endpoint_id)
         if not vpc_endpoint:
