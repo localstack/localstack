@@ -604,20 +604,37 @@ def append_last_modified_headers(response, content=None):
         LOGGER.error("Caught generic exception (setting LastModified header): %s", err)
 
 
-def append_list_objects_marker(method, path, data, response):
-    if "marker=" in path:
+def fix_list_objects_response(method, path, data, response):
+    content = response.content or b""
+    if b"<ListBucketResult" not in to_bytes(content):
+        return
+    content = to_str(content)
+    parsed = urlparse(path)
+    query_map = parse_qs(parsed.query)
+
+    # insert <Marker> element into response
+    if "<Marker>" not in content:
         marker = ""
-        content = to_str(response.content)
-        if "<ListBucketResult" in content and "<Marker>" not in content:
-            parsed = urlparse(path)
-            query_map = parse_qs(parsed.query)
-            if query_map.get("marker") and query_map.get("marker")[0]:
-                marker = query_map.get("marker")[0]
-            insert = "<Marker>%s</Marker>" % marker
-            response._content = content.replace(
-                "</ListBucketResult>", "%s</ListBucketResult>" % insert
-            )
-            response.headers.pop("Content-Length", None)
+        if query_map.get("marker"):
+            marker = query_map.get("marker")[0]
+        insert = "<Marker>%s</Marker>" % marker
+        content = content.replace("</ListBucketResult>", f"{insert}</ListBucketResult>")
+
+    # insert <EncodingType> element into response
+    encoding_type = query_map.get("encoding-type")
+    if "<EncodingType>" not in content and encoding_type:
+        insert = f"<EncodingType>{encoding_type[0]}</EncodingType>"
+        content = content.replace("</ListBucketResult>", f"{insert}</ListBucketResult>")
+
+    # fix URL-encoding of <Delimiter> response element
+    if "<Delimiter>" in content:
+        regex = "<Delimiter>([^<]+)</Delimiter>"
+        delimiter = re.search(regex, content).group(1).strip()
+        if delimiter != "/":
+            content = re.sub(regex, f"<Delimiter>{quote(delimiter)}</Delimiter>", content)
+
+    response._content = content
+    response.headers.pop("Content-Length", None)
 
 
 def append_metadata_headers(method, query_map, headers):
@@ -1509,7 +1526,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 response=response,
             )
             append_last_modified_headers(response=response)
-            append_list_objects_marker(method, path, data, response)
+            fix_list_objects_response(method, path, data, response)
             fix_range_content_type(bucket_name, path, headers, response)
             fix_delete_objects_response(bucket_name, method, parsed, data, headers, response)
             fix_metadata_key_underscores(response=response)

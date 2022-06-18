@@ -6,6 +6,7 @@ from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.utils.collections import is_sub_dict
 from localstack.utils.strings import short_uid
 
 
@@ -113,6 +114,37 @@ class TestS3:
         obj = s3_client.get_object(Bucket=s3_bucket, Key=key)
         assert obj["Body"].read() == data, f"body did not contain expected data {obj}"
         snapshot.match("get_object", obj)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("delimiter", ["/", "%2F"])
+    def test_list_objects_with_prefix(self, s3_client, s3_create_bucket, delimiter):
+        bucket_name = s3_create_bucket()
+        key = "test/foo/bar/123"
+        s3_client.put_object(Bucket=bucket_name, Key=key, Body=b"content 123")
+
+        response = s3_client.list_objects(
+            Bucket=bucket_name, Prefix="test/", Delimiter=delimiter, MaxKeys=1, EncodingType="url"
+        )
+        sub_dict = {
+            "Delimiter": delimiter,
+            "EncodingType": "url",
+            "IsTruncated": False,
+            "Marker": "",
+            "MaxKeys": 1,
+            "Name": bucket_name,
+            "Prefix": "test/",
+        }
+
+        if delimiter == "/":
+            # if delimiter is "/", then common prefixes are returned
+            sub_dict["CommonPrefixes"] = [{"Prefix": "test/foo/"}]
+        else:
+            # if delimiter is "%2F" (or other non-contained character), then the actual keys are returned in Contents
+            assert len(response["Contents"]) == 1
+            assert response["Contents"][0]["Key"] == key
+            sub_dict["Delimiter"] = "%252F"
+
+        assert is_sub_dict(sub_dict, response)
 
 
 class TestS3PresignedUrl:
