@@ -261,5 +261,7 @@ ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678
 
+HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD curl --fail http://localhost:4566/health || exit 1
+
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
