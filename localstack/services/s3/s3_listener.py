@@ -605,8 +605,8 @@ def append_last_modified_headers(response, content=None):
 
 
 def fix_list_objects_response(method, path, data, response):
-    content = response.content
-    if b"<ListBucketResult" not in content:
+    content = response.content or b""
+    if b"<ListBucketResult" not in to_bytes(content):
         return
     content = to_str(content)
     parsed = urlparse(path)
