@@ -18,7 +18,6 @@ from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
-from localstack.config import LAMBDA_TRUNCATE_STDOUT, TMP_FOLDER
 from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.runtime.hooks import hook_spec
 from localstack.services.awslambda.lambda_utils import (
@@ -1657,16 +1656,16 @@ class OutputLog:
         self._stdout = stdout
         self._stderr = stderr
 
-    def stderr_formatted(self, truncated_to: int = LAMBDA_TRUNCATE_STDOUT):
+    def stderr_formatted(self, truncated_to: int = config.LAMBDA_TRUNCATE_STDOUT):
         return truncate(to_str(self._stderr).strip().replace("\n", "\n> "), truncated_to)
 
-    def stdout_formatted(self, truncated_to: int = LAMBDA_TRUNCATE_STDOUT):
+    def stdout_formatted(self, truncated_to: int = config.LAMBDA_TRUNCATE_STDOUT):
         return truncate(to_str(self._stdout).strip(), truncated_to)
 
     def output_file(self):
         try:
             with tempfile.NamedTemporaryFile(
-                dir=TMP_FOLDER, delete=False, suffix=".log", prefix="lambda_"
+                dir=config.dirs.tmp, delete=False, suffix=".log", prefix="lambda_"
             ) as f:
                 LOG.info(f"writing log to file '{f.name}'")
                 f.write(to_bytes(self._stderr))
