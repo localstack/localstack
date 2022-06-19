@@ -119,7 +119,7 @@ class TestCliContainerLifecycle:
         monkeypatch.setattr(config, "DATA_DIR", str(data_dir))
         monkeypatch.setattr(config, "TMP_FOLDER", str(tmp_folder))
         # reload directories from manipulated config
-        monkeypatch.setattr(config, "dirs", config.Directories.from_config())
+        monkeypatch.setattr(config, "dirs", config.Directories.legacy_from_config())
 
         runner.invoke(cli, ["start", "-d"])
         runner.invoke(cli, ["wait", "-t", "60"])

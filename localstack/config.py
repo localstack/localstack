@@ -17,10 +17,10 @@ from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     ENV_INTERNAL_TEST_RUN,
     FALSE_STRINGS,
-    INSTALL_DIR_INFRA,
     LOCALHOST,
     LOCALHOST_IP,
     LOG_LEVELS,
+    MODULE_MAIN_PATH,
     TRACE_LOG_LEVELS,
     TRUE_STRINGS,
 )
@@ -61,15 +61,15 @@ class Directories:
 
     def __init__(
         self,
-        static_libs: str = None,
-        var_libs: str = None,
-        cache: str = None,
-        tmp: str = None,
-        functions: str = None,
-        data: str = None,
-        config: str = None,
-        init: str = None,
-        logs: str = None,
+        static_libs: str,
+        var_libs: str,
+        cache: str,
+        tmp: str,
+        functions: str,
+        data: str,
+        config: str,
+        init: str,
+        logs: str,
     ) -> None:
         super().__init__()
         self.static_libs = static_libs
@@ -83,10 +83,84 @@ class Directories:
         self.logs = logs
 
     @staticmethod
-    def from_config():
+    def defaults() -> "Directories":
+        """Returns Localstack directory paths based on the localstack filesystem hierarchy."""
+        return Directories(
+            static_libs="/usr/lib/localstack",
+            var_libs="/var/lib/localstack/lib",
+            cache="/var/lib/localstack/cache",
+            tmp="/var/lib/localstack/tmp",
+            functions="/var/lib/localstack/functions",
+            data="/var/lib/localstack/data",
+            config="/etc/localstack/conf.d",
+            init="/etc/localstack/init",
+            logs="/var/lib/localstack/logs",
+        )
+
+    def abspath(self) -> "Directories":
+        """Returns a new instance of Directories with all paths resolved to absolute paths."""
+        return Directories(
+            static_libs=os.path.abspath(self.static_libs),
+            var_libs=os.path.abspath(self.var_libs),
+            cache=os.path.abspath(self.cache),
+            tmp=os.path.abspath(self.tmp),
+            functions=os.path.abspath(self.functions),
+            data=os.path.abspath(self.data),
+            config=os.path.abspath(self.config),
+            init=os.path.abspath(self.init),
+            logs=os.path.abspath(self.logs),
+        )
+
+    @staticmethod
+    def from_config() -> "Directories":
         """Returns Localstack directory paths from the config/environment variables defined by the config."""
         # Note that the entries should be unique, as further downstream in docker_utils.py we're removing
         # duplicate host paths in the volume mounts via `dict(mount_volumes)`.
+        defaults = Directories.for_host()
+
+        return Directories(
+            static_libs=os.environ.get("STATIC_LIBS_DIR") or defaults.static_libs,
+            var_libs=os.environ.get("VAR_LIBS_DIR") or defaults.var_libs,
+            cache=os.environ.get("CACHE_DIR") or defaults.cache,
+            tmp=TMP_FOLDER,
+            functions=HOST_TMP_FOLDER,  # TODO: rename variable/consider a volume
+            data=DATA_DIR or defaults.data,
+            config=CONFIG_DIR or defaults.config,
+            init=None,  # TODO: introduce environment variable
+            logs=defaults.logs,  # TODO: add variable
+        )
+
+    @staticmethod
+    def for_host() -> "Directories":
+        root = os.environ.get("FILESYSTEM_ROOT") or os.path.expanduser("~/.local/localstack")
+        root = os.path.abspath(root)
+
+        defaults = Directories.defaults()
+        return Directories(
+            static_libs=os.path.join(root, defaults.static_libs.lstrip("/")),
+            var_libs=os.path.join(root, defaults.var_libs.lstrip("/")),
+            cache=os.path.join(root, defaults.cache.lstrip("/")),
+            tmp=os.path.join(root, defaults.tmp.lstrip("/")),
+            functions=os.path.join(root, defaults.functions.lstrip("/")),
+            data=os.path.join(root, defaults.data.lstrip("/")),
+            config=os.path.join(root, defaults.config.lstrip("/")),
+            init=os.path.join(root, defaults.init.lstrip("/")),
+            logs=os.path.join(root, defaults.logs.lstrip("/")),
+        )
+
+    @staticmethod
+    def legacy_from_config():
+        """Returns Localstack directory paths from the config/environment variables defined by the config."""
+        # Note that the entries should be unique, as further downstream in docker_utils.py we're removing
+        # duplicate host paths in the volume mounts via `dict(mount_volumes)`.
+
+        # legacy config variables inlined
+        INSTALL_DIR_INFRA = os.path.join(MODULE_MAIN_PATH, "infra")
+        # ephemeral cache dir that persists across reboots
+        CACHE_DIR = os.environ.get("CACHE_DIR", os.path.join(TMP_FOLDER, "cache")).strip()
+        # libs cache dir that persists across reboots
+        VAR_LIBS_DIR = os.environ.get("VAR_LIBS_DIR", os.path.join(TMP_FOLDER, "var_libs")).strip()
+
         return Directories(
             static_libs=INSTALL_DIR_INFRA,
             var_libs=VAR_LIBS_DIR,
@@ -100,7 +174,7 @@ class Directories:
         )
 
     @staticmethod
-    def for_container() -> "Directories":
+    def legacy_for_container() -> "Directories":
         """
         Returns Localstack directory paths as they are defined within the container. Everything shared and writable
         lives in /var/lib/localstack or /tmp/localstack.
@@ -121,7 +195,7 @@ class Directories:
             DATA_DIR if in_docker() else "/tmp/localstack_data"
         )  # TODO: move to /var/lib/localstack/data
         return Directories(
-            static_libs=INSTALL_DIR_INFRA,
+            static_libs=os.path.join(MODULE_MAIN_PATH, "infra"),
             var_libs=var_libs,
             cache=cache,
             tmp=tmp,
@@ -130,6 +204,28 @@ class Directories:
             config=None,  # config directory is host-only
             logs="/var/lib/localstack/logs",
             init="/docker-entrypoint-initaws.d",
+        )
+
+    @staticmethod
+    def for_container() -> "Directories":
+        """
+        Returns Localstack directory paths as they are defined within the container. Everything shared and writable
+        lives in /var/lib/localstack or /tmp/localstack.
+
+        :returns: Directories object
+        """
+        defaults = Directories.defaults()
+
+        return Directories(
+            static_libs=defaults.static_libs,
+            var_libs=defaults.var_libs,
+            cache=defaults.cache,
+            tmp=defaults.tmp,
+            functions=defaults.functions,
+            data=defaults.data if DATA_DIR else None,
+            config=defaults.config,
+            logs=defaults.logs,
+            init="/docker-entrypoint-initaws.d",  # FIXME should be reworked with lifecycle hooks
         )
 
     def mkdirs(self):
@@ -290,10 +386,8 @@ if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_
 # temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
 HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
 
-# ephemeral cache dir that persists across reboots
-CACHE_DIR = os.environ.get("CACHE_DIR", os.path.join(TMP_FOLDER, "cache")).strip()
-# libs cache dir that persists across reboots
-VAR_LIBS_DIR = os.environ.get("VAR_LIBS_DIR", os.path.join(TMP_FOLDER, "var_libs")).strip()
+# whether to use the old directory structure and mounting config
+LEGACY_DIRECTORIES = is_env_true("LEGACY_DIRECTORIES")
 
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
@@ -909,10 +1003,17 @@ SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 SERVICE_PROVIDER_CONFIG.load_from_environment()
 
 # initialize directories
-if is_in_docker:
-    dirs = Directories.for_container()
+if LEGACY_DIRECTORIES:
+    if is_in_docker:
+        dirs = Directories.legacy_for_container()
+    else:
+        dirs = Directories.legacy_from_config()
+
 else:
-    dirs = Directories.from_config()
+    if is_in_docker:
+        dirs = Directories.for_container().abspath()
+    else:
+        dirs = Directories.for_host().abspath()
 
 dirs.mkdirs()
 
