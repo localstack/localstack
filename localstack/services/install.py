@@ -54,7 +54,8 @@ from localstack.utils.threads import parallelize
 
 LOG = logging.getLogger(__name__)
 
-INSTALL_DIR_NPM = "%s/node_modules" % MODULE_MAIN_PATH  # FIXME: migrate to infra
+# TODO: install paths should become parameterizable to allow lpm to chose static_libs or var_libs
+INSTALL_DIR_NPM = "%s/node_modules" % dirs.static_libs
 INSTALL_DIR_DDB = "%s/dynamodb" % dirs.static_libs
 INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
 INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
@@ -114,6 +115,9 @@ KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.4"
 KINESIS_MOCK_RELEASE_URL = (
     "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
 )
+
+# kinesalite version (npm dependency)
+KINESALITE_VERSION = os.environ.get("KINESALITE_VERSION") or "3.3.3"
 
 # debugpy module
 DEBUGPY_MODULE = "debugpy"
@@ -346,7 +350,7 @@ def _apply_patches_kinesalite():
 def install_kinesalite():
     if not os.path.exists(INSTALL_PATH_KINESALITE_CLI):
         log_install_msg("Kinesis")
-        run(["npm", "install"], cwd=MODULE_MAIN_PATH)
+        run(["npm", "install", "--prefix", dirs.static_libs, f"kinesalite@{KINESALITE_VERSION}"])
         _apply_patches_kinesalite()
 
 
