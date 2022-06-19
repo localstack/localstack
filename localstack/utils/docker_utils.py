@@ -1,4 +1,6 @@
 import logging
+import platform
+from typing import Any, Dict
 
 from localstack import config
 from localstack.utils.container_utils.container_client import ContainerClient
@@ -38,6 +40,17 @@ def create_docker_client() -> ContainerClient:
         )
 
         return SdkDockerClient()
+
+
+def inspect_current_container() -> Dict[str, Any]:
+    if not config.is_in_docker:
+        raise ValueError("not in docker")
+
+    container_id = platform.node()
+    if not container_id:
+        raise ValueError("no hostname returned to use as container id")
+
+    return DOCKER_CLIENT.inspect_container(container_id)
 
 
 DOCKER_CLIENT: ContainerClient = create_docker_client()

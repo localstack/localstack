@@ -799,6 +799,8 @@ class InstallerManager:
 
 def main():
     if len(sys.argv) > 1:
+        config.dirs.mkdirs()
+
         # set test API key so pro install hooks are called
         os.environ["LOCALSTACK_API_KEY"] = os.environ.get("LOCALSTACK_API_KEY") or "test"
         if sys.argv[1] == "libs":

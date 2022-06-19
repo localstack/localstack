@@ -97,20 +97,6 @@ class Directories:
             logs="/var/lib/localstack/logs",
         )
 
-    def abspath(self) -> "Directories":
-        """Returns a new instance of Directories with all paths resolved to absolute paths."""
-        return Directories(
-            static_libs=os.path.abspath(self.static_libs),
-            var_libs=os.path.abspath(self.var_libs),
-            cache=os.path.abspath(self.cache),
-            tmp=os.path.abspath(self.tmp),
-            functions=os.path.abspath(self.functions),
-            data=os.path.abspath(self.data),
-            config=os.path.abspath(self.config),
-            init=os.path.abspath(self.init),
-            logs=os.path.abspath(self.logs),
-        )
-
     @staticmethod
     def from_config() -> "Directories":
         """Returns Localstack directory paths from the config/environment variables defined by the config."""
@@ -378,6 +364,9 @@ DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), "localstack")
+
+# this is exclusively for the CLI to configure the container mount into /var/lib/localstack
+VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR") or TMP_FOLDER
 
 # fix for Mac OS, to be able to mount /var/folders in Docker
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
@@ -763,6 +752,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_STAY_OPEN_MODE",
     "LAMBDA_TRUNCATE_STDOUT",
+    "LEGACY_DIRECTORIES",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_EDGE_PROXY",
     "LOCALSTACK_API_KEY",
@@ -1009,13 +999,15 @@ if LEGACY_DIRECTORIES:
     else:
         dirs = Directories.legacy_from_config()
 
+    dirs.mkdirs()
+
 else:
     if is_in_docker:
-        dirs = Directories.for_container().abspath()
+        dirs = Directories.for_container()
+        dirs.mkdirs()
     else:
-        dirs = Directories.for_host().abspath()
+        dirs = Directories.for_host()
 
-dirs.mkdirs()
 
 # TODO: remove deprecation warning with next release
 for path in [dirs.config, os.path.join(dirs.tmp, ".localstack")]:

@@ -71,7 +71,7 @@ from localstack.utils.container_utils.container_client import (
     DockerContainerStatus,
     PortMappings,
 )
-from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.docker_utils import DOCKER_CLIENT, inspect_current_container
 from localstack.utils.run import FuncThread
 
 # constants
@@ -1576,7 +1576,21 @@ class Util:
 
     @classmethod
     def get_host_path_for_path_in_docker(cls, path):
-        return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
+        if config.LEGACY_DIRECTORIES:
+            return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
+
+        fn_dir = config.dirs.functions
+
+        if config.is_in_docker:
+            for mount in inspect_current_container()["Mounts"]:
+                if mount["Destination"].rstrip("/") == "/var/lib/localstack":
+                    if mount["Type"] != "bind":
+                        raise ValueError(
+                            "Mount to /var/lib/localstack needs to be a bind mount for lambda to work"
+                        )
+                    fn_dir = mount["Source"]
+
+        return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % fn_dir, path)
 
     @classmethod
     def format_windows_path(cls, path):

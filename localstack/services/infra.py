@@ -367,6 +367,8 @@ def print_runtime_information(in_docker=False):
 
 
 def start_infra(asynchronous=False, apis=None):
+    config.dirs.mkdirs()
+
     events.infra_starting.set()
 
     try:

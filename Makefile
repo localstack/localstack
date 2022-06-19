@@ -193,7 +193,7 @@ docker-run:        		  ## Run Docker image locally
 
 docker-mount-run:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); echo MOTO_DIR $$MOTO_DIR; \
-		DOCKER_FLAGS="$(DOCKER_FLAGS) -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/plugin:/opt/code/localstack/localstack/plugin -v `pwd`/localstack/runtime:/opt/code/localstack/localstack/runtime -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/http:/opt/code/localstack/localstack/http -v `pwd`/localstack/contrib:/opt/code/localstack/localstack/contrib -v `pwd`/localstack/dashboard:/opt/code/localstack/localstack/dashboard -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/" make docker-run
+		DOCKER_FLAGS="$(DOCKER_FLAGS) -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/plugin:/opt/code/localstack/localstack/plugin -v `pwd`/localstack/runtime:/opt/code/localstack/localstack/runtime -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/http:/opt/code/localstack/localstack/http -v `pwd`/localstack/contrib:/opt/code/localstack/localstack/contrib -v `pwd`/localstack/dashboard:/opt/code/localstack/localstack/dashboard -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.10/site-packages/moto/" make docker-run
 
 docker-build-lambdas:
 	docker build -t localstack/lambda-js:nodejs14.x -f bin/lambda/Dockerfile.nodejs14x .
@@ -220,13 +220,13 @@ test-docker-mount:		  ## Run automated tests in Docker (mounting local code)
 	# TODO: find a cleaner way to mount/copy the dependencies into the container...
 	VENV_DIR=$$(pwd)/.venv/; \
 		PKG_DIR=$$(echo $$VENV_DIR/lib/python*/site-packages | awk '{print $$NF}'); \
-		PKG_DIR_CON=/opt/code/localstack/.venv/lib/python3.8/site-packages; \
+		PKG_DIR_CON=/opt/code/localstack/.venv/lib/python3.10/site-packages; \
 		echo "#!/usr/bin/env python" > /tmp/pytest.ls.bin; cat $$VENV_DIR/bin/pytest >> /tmp/pytest.ls.bin; chmod +x /tmp/pytest.ls.bin; \
-		DOCKER_FLAGS="-v `pwd`/tests:/opt/code/localstack/tests -v /tmp/pytest.ls.bin:/opt/code/localstack/.venv/bin/pytest -v $$PKG_DIR/py:$$PKG_DIR_CON/py -v $$PKG_DIR/pluggy:$$PKG_DIR_CON/pluggy -v $$PKG_DIR/iniconfig:$$PKG_DIR_CON/iniconfig -v $$PKG_DIR/packaging:$$PKG_DIR_CON/packaging -v $$PKG_DIR/pytest:$$PKG_DIR_CON/pytest -v $$PKG_DIR/_pytest:/opt/code/localstack/.venv/lib/python3.8/site-packages/_pytest" make test-docker-mount-code
+		DOCKER_FLAGS="-v `pwd`/tests:/opt/code/localstack/tests -v /tmp/pytest.ls.bin:/opt/code/localstack/.venv/bin/pytest -v $$PKG_DIR/py:$$PKG_DIR_CON/py -v $$PKG_DIR/pluggy:$$PKG_DIR_CON/pluggy -v $$PKG_DIR/iniconfig:$$PKG_DIR_CON/iniconfig -v $$PKG_DIR/packaging:$$PKG_DIR_CON/packaging -v $$PKG_DIR/pytest:$$PKG_DIR_CON/pytest -v $$PKG_DIR/_pytest:/opt/code/localstack/.venv/lib/python3.10/site-packages/_pytest" make test-docker-mount-code
 
 test-docker-mount-code:
 	PACKAGES_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages | awk '{print $$NF}'); \
-		DOCKER_FLAGS="$(DOCKER_FLAGS) --entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/aws:/opt/code/localstack/localstack/aws -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$PACKAGES_DIR/moto:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/ -e TEST_PATH=\\'$(TEST_PATH)\\' -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
+		DOCKER_FLAGS="$(DOCKER_FLAGS) --entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/aws:/opt/code/localstack/localstack/aws -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$PACKAGES_DIR/moto:/opt/code/localstack/.venv/lib/python3.10/site-packages/moto/ -e TEST_PATH=\\'$(TEST_PATH)\\' -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
 
 # Note: the ci-* targets below should only be used in CI builds!
 
