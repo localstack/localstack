@@ -7,11 +7,37 @@ on:
         required: true
         default: 'master'
   pull_request:
+    paths:
+      - ".github/workflows/pro-integration.yml"
+      - "localstack/**"
+      - "tests/**"
+      - "setup.py"
+      - "pyproject.toml"
+      - "setup.cfg"
+      - "Dockerfile"
+      - "Dockerfile.rh"
+      - "docker-compose.yml"
+      - "bin/**"
     branches:
       - master
   push:
+    paths:
+      - ".github/workflows/pro-integration.yml"
+      - "localstack/**"
+      - "tests/**"
+      - "setup.py"
+      - "pyproject.toml"
+      - "setup.cfg"
+      - "Dockerfile"
+      - "Dockerfile.rh"
+      - "docker-compose.yml"
+      - "bin/**"
     branches:
       - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   run-integration-tests:
