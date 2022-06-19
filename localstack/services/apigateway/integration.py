@@ -4,7 +4,7 @@ import logging
 from abc import ABC
 from enum import Enum
 from http import HTTPStatus
-from typing import Any, Dict
+from typing import Any, Dict, Union
 from urllib.parse import quote_plus, unquote_plus
 
 from requests import Response
@@ -43,9 +43,9 @@ class MappingTemplates:
         pass
 
     def __init__(self, passthrough_behaviour: str):
-        self.passthrough_behavior = self.passthrough_behavior(passthrough_behaviour)
+        self.passthrough_behavior = self.get_passthrough_behavior(passthrough_behaviour)
 
-    def request_body_passthrough(self, request_template):
+    def check_passthrough_behavior(self, request_template):
         """
         Specifies how the method request body of an unmapped content type will be passed through
         the integration request to the back end without transformation.
@@ -59,7 +59,7 @@ class MappingTemplates:
             raise MappingTemplates.UnsupportedMediaType()
 
     @staticmethod
-    def passthrough_behavior(passthrough_behaviour: str):
+    def get_passthrough_behavior(passthrough_behaviour: str):
         return getattr(PassthroughBehavior, passthrough_behaviour, None)
 
 
@@ -104,7 +104,7 @@ class BackendIntegration(ABC):
 
 class SnsIntegration(BackendIntegration):
     @classmethod
-    def invoke(cls, invocation_context: ApiInvocationContext):
+    def invoke(cls, invocation_context: ApiInvocationContext) -> Response:
         try:
             request_templates = RequestTemplates()
             payload = request_templates.render(invocation_context)
@@ -125,10 +125,10 @@ class SnsIntegration(BackendIntegration):
 
 class MockIntegration(BackendIntegration):
     @classmethod
-    def evaluate_passthrough_behavior(cls, passthrough_behavior: str, request_template: str):
-        return MappingTemplates(passthrough_behavior).request_body_passthrough(request_template)
+    def check_passthrough_behavior(cls, passthrough_behavior: str, request_template: str):
+        return MappingTemplates(passthrough_behavior).check_passthrough_behavior(request_template)
 
-    def invoke(self, invocation_context: ApiInvocationContext):
+    def invoke(self, invocation_context: ApiInvocationContext) -> Response:
         passthrough_behavior = invocation_context.integration.get("passthroughBehavior") or ""
         request_template = invocation_context.integration.get("requestTemplates", {}).get(
             invocation_context.headers.get(HEADER_CONTENT_TYPE)
@@ -137,7 +137,7 @@ class MockIntegration(BackendIntegration):
         # based on the configured passthrough behavior and the existence of template or not,
         # we proceed calling the integration or raise an exception.
         try:
-            self.evaluate_passthrough_behavior(passthrough_behavior, request_template)
+            self.check_passthrough_behavior(passthrough_behavior, request_template)
         except MappingTemplates.UnsupportedMediaType:
             http_status = HTTPStatus(415)
             return MockIntegration._create_response(
@@ -282,7 +282,7 @@ class Templates:
     def __init__(self):
         self.vtl = ApiGatewayVtlTemplate()
 
-    def render(self, api_context: ApiInvocationContext):
+    def render(self, api_context: ApiInvocationContext) -> Union[bytes, str]:
         pass
 
     def render_vtl(self, template, variables):
@@ -310,7 +310,7 @@ class RequestTemplates(Templates):
     Handles request template rendering
     """
 
-    def render(self, api_context: ApiInvocationContext):
+    def render(self, api_context: ApiInvocationContext) -> Union[bytes, str]:
         LOG.info(
             "Method request body before transformations: %s", to_str(api_context.data_as_string())
         )
@@ -330,7 +330,7 @@ class ResponseTemplates(Templates):
     Handles response template rendering
     """
 
-    def render(self, api_context: ApiInvocationContext, **kwargs):
+    def render(self, api_context: ApiInvocationContext, **kwargs) -> Union[bytes, str]:
         # XXX: keep backwards compatibility until we migrate all integrations to this new classes
         # api_context contains a response object that we want slowly remove from it
         data = kwargs["response"] if "response" in kwargs else ""
