@@ -44,7 +44,7 @@ class KinesaliteServer(Server):
             "%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s"
             " --createStreamMs %s --deleteStreamMs %s --updateStreamMs %s %s"
         ) % (
-            install.MODULE_MAIN_PATH,
+            config.dirs.static_libs,
             config.KINESIS_SHARD_LIMIT,
             self.port,
             self._latency,

@@ -90,10 +90,6 @@ ADD https://raw.githubusercontent.com/carlossg/docker-maven/master/openjdk-11/se
 RUN mkdir -p /opt/code/localstack
 WORKDIR /opt/code/localstack/
 
-# install npm dependencies
-ADD localstack/package.json localstack/package.json
-RUN cd localstack && npm install -g npm && npm install && rm -rf /root/.npm;
-
 # install basic (global) tools to final image
 RUN pip install --no-cache-dir --upgrade supervisor virtualenv
 
