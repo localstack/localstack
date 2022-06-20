@@ -94,7 +94,7 @@ WORKDIR /opt/code/localstack/
 RUN mkdir -p /var/lib/localstack && \
     mkdir -p /usr/lib/localstack
 # backwards compatibility with LEGACY_DIRECTORIES
-RUN ln -s /usr/lib/localstack /opt/code/localstack/localstack/infra
+RUN mkdir -p /opt/code/localstack/localstack && ln -s /usr/lib/localstack /opt/code/localstack/localstack/infra
 
 # install basic (global) tools to final image
 RUN pip install --no-cache-dir --upgrade supervisor virtualenv
