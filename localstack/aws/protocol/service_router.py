@@ -300,17 +300,23 @@ def determine_aws_service_name(
 
     # 5. check the query / form-data
     values = request.values
-    if "Action" in values and "Version" in values:
+    if "Action" in values:
         # query / ec2 protocol requests always have an action and a version (the action is more significant)
-        query_candidates = services.by_operation(values["Action"])
+        query_candidates = [
+            service
+            for service in services.by_operation(values["Action"])
+            if services.get(service).protocol in ("ec2", "query")
+        ]
+
         if len(query_candidates) == 1:
             return query_candidates[0]
 
-        for service in list(query_candidates):
-            service_model = services.get(service)
-            if values["Version"] != service_model.api_version:
-                # the combination of Version and Action is not unique, add matches to the candidates
-                query_candidates.remove(service)
+        if "Version" in values:
+            for service in list(query_candidates):
+                service_model = services.get(service)
+                if values["Version"] != service_model.api_version:
+                    # the combination of Version and Action is not unique, add matches to the candidates
+                    query_candidates.remove(service)
 
         if len(query_candidates) == 1:
             return query_candidates[0]

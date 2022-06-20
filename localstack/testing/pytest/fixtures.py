@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import time
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 
 import boto3
 import botocore.auth
@@ -16,6 +16,7 @@ from _pytest.config import Config
 from _pytest.nodes import Item
 from botocore.exceptions import ClientError
 from botocore.regions import EndpointResolver
+from pytest_httpserver import HTTPServer
 
 from localstack import config
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
@@ -29,6 +30,7 @@ from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
 from localstack.utils.functions import run_safe
 from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.net import wait_for_port_open
 from localstack.utils.testutil import start_http_server
 
 if TYPE_CHECKING:
@@ -525,7 +527,33 @@ def sns_topic(sns_client, sns_create_topic) -> "GetTopicAttributesResponseTypeDe
 
 
 @pytest.fixture
-def sns_create_sqs_subscription(sns_client, sqs_client):
+def sns_allow_topic_sqs_queue(sqs_client):
+    def _allow_sns_topic(sqs_queue_url, sqs_queue_arn, sns_topic_arn) -> None:
+        # allow topic to write to sqs queue
+        sqs_client.set_queue_attributes(
+            QueueUrl=sqs_queue_url,
+            Attributes={
+                "Policy": json.dumps(
+                    {
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Principal": {"Service": "sns.amazonaws.com"},
+                                "Action": "sqs:SendMessage",
+                                "Resource": sqs_queue_arn,
+                                "Condition": {"ArnEquals": {"aws:SourceArn": sns_topic_arn}},
+                            }
+                        ]
+                    }
+                )
+            },
+        )
+
+    return _allow_sns_topic
+
+
+@pytest.fixture
+def sns_create_sqs_subscription(sns_client, sqs_client, sns_allow_topic_sqs_queue):
     subscriptions = []
 
     def _factory(topic_arn: str, queue_url: str) -> Dict[str, str]:
@@ -542,23 +570,8 @@ def sns_create_sqs_subscription(sns_client, sqs_client):
         subscription_arn = subscription["SubscriptionArn"]
 
         # allow topic to write to sqs queue
-        sqs_client.set_queue_attributes(
-            QueueUrl=queue_url,
-            Attributes={
-                "Policy": json.dumps(
-                    {
-                        "Statement": [
-                            {
-                                "Effect": "Allow",
-                                "Principal": {"Service": "sns.amazonaws.com"},
-                                "Action": "sqs:SendMessage",
-                                "Resource": queue_arn,
-                                "Condition": {"ArnEquals": {"aws:SourceArn": topic_arn}},
-                            }
-                        ]
-                    }
-                )
-            },
+        sns_allow_topic_sqs_queue(
+            sqs_queue_url=queue_url, sqs_queue_arn=queue_arn, sns_topic_arn=topic_arn
         )
 
         subscriptions.append(subscription_arn)
@@ -573,6 +586,59 @@ def sns_create_sqs_subscription(sns_client, sqs_client):
             sns_client.unsubscribe(SubscriptionArn=arn)
         except Exception as e:
             LOG.error("error cleaning up subscription %s: %s", arn, e)
+
+
+@pytest.fixture
+def sns_create_http_endpoint(sns_client, sns_create_topic, sns_subscription):
+    http_servers = []
+
+    def _create_http_endpoint(
+        raw_message_delivery: bool = False,
+    ) -> Tuple[str, str, str, HTTPServer]:
+        server = HTTPServer()
+        server.start()
+        http_servers.append(server)
+        server.expect_request("/sns-endpoint").respond_with_data(status=200)
+        endpoint_url = server.url_for("/sns-endpoint")
+        wait_for_port_open(endpoint_url)
+
+        topic_arn = sns_create_topic()["TopicArn"]
+        subscription = sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint_url)
+        subscription_arn = subscription["SubscriptionArn"]
+        delivery_policy = {
+            "healthyRetryPolicy": {
+                "minDelayTarget": 1,
+                "maxDelayTarget": 1,
+                "numRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "numMaxDelayRetries": 0,
+                "backoffFunction": "linear",
+            },
+            "sicklyRetryPolicy": None,
+            "throttlePolicy": {"maxReceivesPerSecond": 1000},
+            "guaranteed": False,
+        }
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="DeliveryPolicy",
+            AttributeValue=json.dumps(delivery_policy),
+        )
+
+        if raw_message_delivery:
+            sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="RawMessageDelivery",
+                AttributeValue="true",
+            )
+
+        return topic_arn, subscription_arn, endpoint_url, server
+
+    yield _create_http_endpoint
+
+    for http_server in http_servers:
+        if http_server.is_running():
+            http_server.stop()
 
 
 @pytest.fixture

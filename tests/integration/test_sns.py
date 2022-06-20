@@ -5,12 +5,12 @@ import random
 
 import pytest
 import requests
+import xmltodict
 from botocore.exceptions import ClientError
 from pytest_httpserver import HTTPServer
 from werkzeug import Response
 
 from localstack import config
-from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import SNSBackend
@@ -125,34 +125,6 @@ class TestSNSProvider:
             assert message == msg_received
 
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
-
-    def test_subscribe_http_endpoint(
-        self, sns_client, sns_create_topic, sns_subscription, httpserver: HTTPServer
-    ):
-        topic_arn = sns_create_topic()["TopicArn"]
-
-        # create HTTP endpoint and connect it to SNS topic
-        httpserver.expect_request("/").respond_with_data(status=200)
-        endpoint_url = httpserver.url_for("/")
-        wait_for_port_open(endpoint_url)
-
-        sns_subscription(TopicArn=topic_arn, Protocol="http", Endpoint=endpoint_url)
-
-        assert poll_condition(lambda: len(httpserver.log) >= 1)
-
-        request, response = httpserver.log[0]
-        payload = request.get_json(True)
-
-        assert payload["Type"] == "SubscriptionConfirmation"
-        assert request.headers["x-amz-sns-message-type"] == "SubscriptionConfirmation"
-        assert "Signature" in payload
-        assert "SigningCertURL" in payload
-
-        token = payload["Token"]
-        subscribe_url = payload["SubscribeURL"]
-        assert subscribe_url == (
-            f"{external_service_url('sns')}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
-        )
 
     def test_subscribe_with_invalid_protocol(self, sns_client, sns_create_topic, sns_subscription):
         topic_arn = sns_create_topic()["TopicArn"]
@@ -1509,6 +1481,7 @@ class TestSNSProvider:
         sqs_queue_arn,
         sqs_queue_exists,
         sns_create_sqs_subscription,
+        sns_allow_topic_sqs_queue,
         raw_message_delivery,
         snapshot,
     ):
@@ -1548,25 +1521,10 @@ class TestSNSProvider:
                 AttributeValue="true",
             )
 
-        # allow topic to write to the DLQ sqs queue
-        # taken from localstack.testing.pytest.fixtures.sns_create_sqs_subscription#494
-        sqs_client.set_queue_attributes(
-            QueueUrl=dlq_url,
-            Attributes={
-                "Policy": json.dumps(
-                    {
-                        "Statement": [
-                            {
-                                "Effect": "Allow",
-                                "Principal": {"Service": "sns.amazonaws.com"},
-                                "Action": "sqs:SendMessage",
-                                "Resource": dlq_arn,
-                                "Condition": {"ArnEquals": {"aws:SourceArn": topic_arn}},
-                            }
-                        ]
-                    }
-                )
-            },
+        sns_allow_topic_sqs_queue(
+            sqs_queue_url=dlq_url,
+            sqs_queue_arn=dlq_arn,
+            sns_topic_arn=topic_arn,
         )
 
         sqs_client.delete_queue(QueueUrl=queue_url)
@@ -1645,3 +1603,195 @@ class TestSNSProvider:
             WaitTimeSeconds=1,
         )
         assert "an-attribute-key" in msg["Messages"][0]["MessageAttributes"]
+
+    @pytest.mark.only_localstack
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    def test_subscribe_external_http_endpoint(
+        self,
+        sns_client,
+        sns_create_http_endpoint,
+        raw_message_delivery,
+    ):
+        # Necessitate manual set up to allow external access to endpoint, only in local testing
+        topic_arn, subscription_arn, endpoint_url, server = sns_create_http_endpoint(
+            raw_message_delivery
+        )
+        assert poll_condition(
+            lambda: len(server.log) >= 1,
+            timeout=5,
+        )
+        sub_request, _ = server.log[0]
+        payload = sub_request.get_json(force=True)
+        assert payload["Type"] == "SubscriptionConfirmation"
+        assert sub_request.headers["x-amz-sns-message-type"] == "SubscriptionConfirmation"
+        assert "Signature" in payload
+        assert "SigningCertURL" in payload
+
+        token = payload["Token"]
+        subscribe_url = payload["SubscribeURL"]
+        service_url, subscribe_url_path = payload["SubscribeURL"].rsplit("/", maxsplit=1)
+        assert subscribe_url == (
+            f"{service_url}/?Action=ConfirmSubscription" f"&TopicArn={topic_arn}&Token={token}"
+        )
+
+        confirm_subscribe_request = requests.get(subscribe_url)
+        confirm_subscribe = xmltodict.parse(confirm_subscribe_request.content)
+        assert (
+            confirm_subscribe["ConfirmSubscriptionResponse"]["ConfirmSubscriptionResult"][
+                "SubscriptionArn"
+            ]
+            == subscription_arn
+        )
+
+        subscription_attributes = sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription_arn
+        )
+        assert subscription_attributes["Attributes"]["PendingConfirmation"] == "false"
+
+        message = "test_external_http_endpoint"
+        sns_client.publish(TopicArn=topic_arn, Message=message)
+
+        assert poll_condition(
+            lambda: len(server.log) >= 2,
+            timeout=5,
+        )
+        notification_request, _ = server.log[1]
+        assert notification_request.headers["x-amz-sns-message-type"] == "Notification"
+
+        expected_unsubscribe_url = (
+            f"{service_url}/?Action=Unsubscribe&SubscriptionArn={subscription_arn}"
+        )
+        if raw_message_delivery:
+            payload = notification_request.data.decode()
+            assert payload == message
+        else:
+            payload = notification_request.get_json(force=True)
+            assert payload["Type"] == "Notification"
+            assert "Signature" in payload
+            assert "SigningCertURL" in payload
+            assert payload["Message"] == message
+            assert payload["UnsubscribeURL"] == expected_unsubscribe_url
+
+        unsub_request = requests.get(expected_unsubscribe_url)
+        unsubscribe_confirmation = xmltodict.parse(unsub_request.content)
+        assert "UnsubscribeResponse" in unsubscribe_confirmation
+
+        assert poll_condition(
+            lambda: len(server.log) >= 3,
+            timeout=5,
+        )
+        unsub_request, _ = server.log[2]
+
+        payload = unsub_request.get_json(force=True)
+        assert payload["Type"] == "UnsubscribeConfirmation"
+        assert unsub_request.headers["x-amz-sns-message-type"] == "UnsubscribeConfirmation"
+        assert "Signature" in payload
+        assert "SigningCertURL" in payload
+        token = payload["Token"]
+        assert payload["SubscribeURL"] == (
+            f"{service_url}/?" f"Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
+        )
+
+    @pytest.mark.only_localstack
+    @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    def test_dlq_external_http_endpoint(
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sns_subscription,
+        sns_create_http_endpoint,
+        sns_create_sqs_subscription,
+        sns_allow_topic_sqs_queue,
+        raw_message_delivery,
+    ):
+        # Necessitate manual set up to allow external access to endpoint, only in local testing
+        topic_arn, http_subscription_arn, endpoint_url, server = sns_create_http_endpoint(
+            raw_message_delivery
+        )
+
+        dlq_url = sqs_create_queue()
+        dlq_arn = sqs_queue_arn(dlq_url)
+
+        sns_allow_topic_sqs_queue(
+            sqs_queue_url=dlq_url, sqs_queue_arn=dlq_arn, sns_topic_arn=topic_arn
+        )
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=http_subscription_arn,
+            AttributeName="RedrivePolicy",
+            AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
+        )
+        assert poll_condition(
+            lambda: len(server.log) >= 1,
+            timeout=5,
+        )
+        sub_request, _ = server.log[0]
+        payload = sub_request.get_json(force=True)
+        assert payload["Type"] == "SubscriptionConfirmation"
+        assert sub_request.headers["x-amz-sns-message-type"] == "SubscriptionConfirmation"
+
+        subscribe_url = payload["SubscribeURL"]
+        service_url, subscribe_url_path = payload["SubscribeURL"].rsplit("/", maxsplit=1)
+
+        confirm_subscribe_request = requests.get(subscribe_url)
+        confirm_subscribe = xmltodict.parse(confirm_subscribe_request.content)
+        assert (
+            confirm_subscribe["ConfirmSubscriptionResponse"]["ConfirmSubscriptionResult"][
+                "SubscriptionArn"
+            ]
+            == http_subscription_arn
+        )
+
+        subscription_attributes = sns_client.get_subscription_attributes(
+            SubscriptionArn=http_subscription_arn
+        )
+        assert subscription_attributes["Attributes"]["PendingConfirmation"] == "false"
+
+        server.stop()
+        wait_for_port_closed(server.port)
+
+        message = "test_dlq_external_http_endpoint"
+        sns_client.publish(TopicArn=topic_arn, Message=message)
+
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=3)
+        assert (
+            len(response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {response}"
+
+        if raw_message_delivery:
+            assert response["Messages"][0]["Body"] == message
+        else:
+            received_message = json.loads(response["Messages"][0]["Body"])
+            assert received_message["Type"] == "Notification"
+            assert received_message["Message"] == message
+
+        receipt_handle = response["Messages"][0]["ReceiptHandle"]
+        sqs_client.delete_message(QueueUrl=dlq_url, ReceiptHandle=receipt_handle)
+
+        expected_unsubscribe_url = (
+            f"{service_url}/?Action=Unsubscribe&SubscriptionArn={http_subscription_arn}"
+        )
+
+        unsub_request = requests.get(expected_unsubscribe_url)
+        unsubscribe_confirmation = xmltodict.parse(unsub_request.content)
+        assert "UnsubscribeResponse" in unsubscribe_confirmation
+
+        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=2)
+        # AWS doesn't send to the DLQ if the UnsubscribeConfirmation fails to be delivered
+        assert "Messages" not in response
+
+    def test_publish_too_long_message(self, sns_client):
+        fake_arn = "arn:aws:sns:us-east-1:123456789012:i_dont_exist"
+        # simulate payload over 256kb
+        message = "This is a test message" * 12000
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish(TopicArn=fake_arn, Message=message)
+
+        assert e.value.response["Error"]["Code"] == "InvalidParameter"
+        assert e.value.response["Error"]["Message"] == "Message too long"
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400

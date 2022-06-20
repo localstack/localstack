@@ -12,6 +12,7 @@ from typing import Dict, List
 import requests as requests
 from flask import Response as FlaskResponse
 from moto.sns.exceptions import DuplicateSnsEndpointError
+from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from requests.models import Response
 
 from localstack.aws.api import RequestContext
@@ -116,7 +117,6 @@ SNS_PROTOCOLS = [
 
 # set up logger
 LOG = logging.getLogger(__name__)
-HTTP_SUBSCRIPTION_ATTRIBUTES = ["UnsubscribeURL"]
 
 
 class SNSBackend(RegionBackend):
@@ -402,6 +402,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             for i in v:
                 if i["TopicArn"] == topic_arn:
                     i["PendingConfirmation"] = "false"
+
         return ConfirmSubscriptionResponse(SubscriptionArn=sub_arn)
 
     def untag_resource(
@@ -464,17 +465,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
             if current_subscription["Protocol"] in ["http", "https"]:
                 external_url = external_service_url("sns")
-                token = short_uid()
+                subscription_token = short_uid()
                 message_id = long_uid()
-                subscription_url = "%s/?Action=ConfirmSubscription&SubscriptionArn=%s&Token=%s" % (
-                    external_url,
-                    target_subscription_arn,
-                    token,
+                subscription_url = create_subscribe_url(
+                    external_url, current_subscription["TopicArn"], subscription_token
                 )
                 message = {
                     "Type": ["UnsubscribeConfirmation"],
                     "MessageId": [message_id],
-                    "Token": [token],
+                    "Token": [subscription_token],
                     "TopicArn": [current_subscription["TopicArn"]],
                     "Message": [
                         "You have chosen to deactivate subscription %s.\nTo cancel this operation and restore the subscription, visit the SubscribeURL included in this message."
@@ -538,6 +537,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if not message or all(not m for m in message):
             raise InvalidParameterException("Empty message")
 
+        if len(message) > MAXIMUM_MESSAGE_LENGTH:
+            raise InvalidParameterException("Message too long")
+
         if topic_arn and ".fifo" in topic_arn and not message_group_id:
             raise InvalidParameterException(
                 "The MessageGroupId parameter is required for FIFO topics",
@@ -586,6 +588,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException(
                 f"Invalid parameter: Amazon SNS does not support this protocol string: {protocol}"
             )
+        elif protocol in ["http", "https"] and not endpoint.startswith(f"{protocol}://"):
+            raise InvalidParameterException(
+                "Invalid parameter: Endpoint must match the specified protocol"
+            )
         if ".fifo" in endpoint and ".fifo" not in topic_arn:
             raise InvalidParameterException(
                 "FIFO SQS Queues can not be subscribed to standard SNS topics"
@@ -621,35 +627,28 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if subscription_arn not in sns_backend.subscription_status:
             sns_backend.subscription_status[subscription_arn] = {}
 
-        token = short_uid()
+        subscription_token = short_uid()
         sns_backend.subscription_status[subscription_arn].update(
-            {"TopicArn": topic_arn, "Token": token, "Status": "Not Subscribed"}
+            {"TopicArn": topic_arn, "Token": subscription_token, "Status": "Not Subscribed"}
         )
         # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
         if protocol in ["http", "https"]:
-            token = short_uid()
             external_url = external_service_url("sns")
-            subscription["UnsubscribeURL"] = "%s/?Action=Unsubscribe&SubscriptionArn=%s" % (
-                external_url,
-                subscription_arn,
-            )
+            subscription["UnsubscribeURL"] = create_unsubscribe_url(external_url, subscription_arn)
             confirmation = {
                 "Type": ["SubscriptionConfirmation"],
-                "Token": [token],
+                "Token": [subscription_token],
                 "Message": [
-                    ("You have chosen to subscribe to the topic %s.\n" % topic_arn)
+                    f"You have chosen to subscribe to the topic {topic_arn}.\n"
                     + "To confirm the subscription, visit the SubscribeURL included in this message."
                 ],
-                "SubscribeURL": [
-                    "%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s"
-                    % (external_url, topic_arn, token)
-                ],
+                "SubscribeURL": [create_subscribe_url(external_url, topic_arn, subscription_token)],
             }
             publish_message(topic_arn, confirmation, {}, subscription_arn, skip_checks=True)
         elif protocol in ["sqs", "lambda"]:
             # Auto-confirm sqs and lambda subscriptions for now
             # TODO: revisit for multi-account
-            self.confirm_subscription(context, topic_arn, token)
+            self.confirm_subscription(context, topic_arn, subscription_token)
         return SubscribeResponse(SubscriptionArn=subscription_arn)
 
     def tag_resource(
@@ -839,7 +838,7 @@ async def message_to_subscriber(
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
             if "NonExistentQueue" in str(exc):
                 LOG.info(
                     'Removing non-existent queue "%s" subscribed to topic "%s"',
@@ -852,10 +851,7 @@ async def message_to_subscriber(
     elif subscriber["Protocol"] == "lambda":
         try:
             external_url = external_service_url("sns")
-            unsubscribe_url = "%s/?Action=Unsubscribe&SubscriptionArn=%s" % (
-                external_url,
-                subscriber["SubscriptionArn"],
-            )
+            unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
             response = lambda_api.process_sns_notification(
                 subscriber["Endpoint"],
                 topic_arn,
@@ -888,7 +884,7 @@ async def message_to_subscriber(
             )
             store_delivery_log(subscriber, False, message, message_id)
             message_body = create_sns_message_body(subscriber, req_data, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
         return
 
     elif subscriber["Protocol"] in ["http", "https"]:
@@ -898,24 +894,28 @@ async def message_to_subscriber(
         except Exception:
             return
         try:
-            headers = {
+            message_headers = {
                 "Content-Type": "text/plain",
                 # AWS headers according to
                 # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
                 "x-amz-sns-message-type": msg_type,
+                "x-amz-sns-message-id": message_id,
                 "x-amz-sns-topic-arn": subscriber["TopicArn"],
-                "x-amz-sns-subscription-arn": subscriber["SubscriptionArn"],
                 "User-Agent": "Amazon Simple Notification Service Agent",
             }
+            if msg_type != "SubscriptionConfirmation":
+                # while testing, never had those from AWS but the docs above states it should be there
+                message_headers["x-amz-sns-subscription-arn"] = subscriber["SubscriptionArn"]
+
             # When raw message delivery is enabled, x-amz-sns-rawdelivery needs to be set to 'true'
             # indicating that the message has been published without JSON formatting.
             # https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html
-            if is_raw_message_delivery(subscriber):
-                headers["x-amz-sns-rawdelivery"] = "true"
+            elif msg_type == "Notification" and is_raw_message_delivery(subscriber):
+                message_headers["x-amz-sns-rawdelivery"] = "true"
 
             response = requests.post(
                 subscriber["Endpoint"],
-                headers=headers,
+                headers=message_headers,
                 data=message_body,
                 verify=False,
             )
@@ -932,7 +932,9 @@ async def message_to_subscriber(
                 "Received error on sending SNS message, putting to DLQ (if configured): %s", exc
             )
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
+            # AWS doesnt send to the DLQ if there's an error trying to deliver a UnsubscribeConfirmation msg
+            if msg_type != "UnsubscribeConfirmation":
+                sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
         return
 
     elif subscriber["Protocol"] == "application":
@@ -948,7 +950,7 @@ async def message_to_subscriber(
             )
             store_delivery_log(subscriber, False, message, message_id)
             message_body = create_sns_message_body(subscriber, req_data, message_id)
-            sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], message_body, str(exc))
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
         return
 
     elif subscriber["Protocol"] in ["email", "email-json"]:
@@ -989,6 +991,7 @@ def get_subscription_by_arn(sub_arn):
 
 def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
     message = req_data["Message"][0]
+    message_type = req_data.get("Type", ["Notification"])[0]
     protocol = subscriber["Protocol"]
     attributes = get_message_attributes(req_data)
 
@@ -999,18 +1002,15 @@ def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
         except KeyError:
             raise Exception("Unable to find 'default' key in message payload")
 
-    if is_raw_message_delivery(subscriber):
+    if message_type == "Notification" and is_raw_message_delivery(subscriber):
         if attributes:
             message["MessageAttributes"] = attributes
         return message
 
     external_url = external_service_url("sns")
-    unsubscribe_url = (
-        f"{external_url}/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}"
-    )
 
     data = {
-        "Type": req_data.get("Type", ["Notification"])[0],
+        "Type": message_type,
         "MessageId": message_id,
         "TopicArn": subscriber["TopicArn"],
         "Message": message,
@@ -1020,16 +1020,15 @@ def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
         # Hardcoded
         "Signature": "EXAMPLEpH+..",
         "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
-        "UnsubscribeURL": unsubscribe_url,
     }
+
+    if message_type == "Notification":
+        unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
+        data["UnsubscribeURL"] = unsubscribe_url
 
     for key in ["Subject", "SubscribeURL", "Token"]:
         if req_data.get(key) and req_data[key][0]:
             data[key] = req_data[key][0]
-
-    for key in HTTP_SUBSCRIPTION_ATTRIBUTES:
-        if key in subscriber:
-            data[key] = subscriber[key]
 
     if attributes:
         data["MessageAttributes"] = attributes
@@ -1089,6 +1088,14 @@ def prepare_message_attributes(message_attributes):
             else attr["Value"]["BinaryValue"],
         }
     return attributes
+
+
+def create_subscribe_url(external_url, topic_arn, subscription_token):
+    return f"{external_url}/?Action=ConfirmSubscription&TopicArn={topic_arn}&Token={subscription_token}"
+
+
+def create_unsubscribe_url(external_url, subscription_arn):
+    return f"{external_url}/?Action=Unsubscribe&SubscriptionArn={subscription_arn}"
 
 
 def is_number(x):
