@@ -161,12 +161,14 @@ def publish_message(
         message_structure = req_data.get("MessageStructure", [None])[0]
         LOG.debug("Publishing message to Endpoint: %s | Message: %s", target_arn, message)
 
-        message_to_endpoint(
-            target_arn,
-            message,
-            message_structure,
-            endpoint_attributes,
-            platform_app,
+        start_thread(
+            lambda _: message_to_endpoint(
+                target_arn,
+                message,
+                message_structure,
+                endpoint_attributes,
+                platform_app,
+            )
         )
         return message_id
 
@@ -207,7 +209,22 @@ def get_attributes_for_application_endpoint(target_arn):
         )
 
     platform_apps = sns_client.list_platform_applications()["PlatformApplications"]
-    app = [x for x in platform_apps if app_name in x["PlatformApplicationArn"]][0]
+    app = None
+    try:
+        app = [x for x in platform_apps if app_name in x["PlatformApplicationArn"]][0]
+    except IndexError:
+        LOG.warning(f"Missing application: {target_arn}")
+
+    if not app:
+        raise CommonServiceException(
+            message="No account found for the given parameters",
+            code="InvalidClientTokenId",
+            status_code=403,
+        )
+
+    # Validate parameters
+    if "app/GCM/" in app["PlatformApplicationArn"]:
+        validate_gcm_parameters(app, endpoint_attributes)
 
     return app, endpoint_attributes
 
@@ -218,19 +235,42 @@ def message_to_endpoint(target_arn, message, structure, endpoint_attributes, pla
 
     platform_name = target_arn.split("/")[-3]
 
+    response = None
     if platform_name == "GCM":
         response = send_message_to_GCM(
             platform_app["Attributes"], endpoint_attributes, message["GCM"]
         )
 
-        if response.status_code == 401:
-            raise InvalidParameterException(
-                "Invalid parameter: Attributes Reason: Platform credentials are invalid"
-            )
+    if response is None:
+        LOG.warn("Platform not implemeted yet")
+    elif response.status_code != 200:
+        LOG.warn(
+            f"Platform {platform_name} returned response {response.status_code} with content {response.content}"
+        )
 
-        # TODO add more error messages depending on the response
-        elif response.status_code != 200:
-            raise InvalidParameterException("Invalid parameter: Attributes Reason:")
+
+def validate_gcm_parameters(platform_app: Dict, endpoint_attributes: Dict):
+    server_key = platform_app["Attributes"].get("PlatformCredential", "")
+    if not server_key:
+        raise InvalidParameterException(
+            "Invalid parameter: Attributes Reason: Invalid value for attribute: PlatformCredential: cannot be empty"
+        )
+    headers = {"Authorization": f"key={server_key}", "Content-type": "application/json"}
+    response = requests.post(
+        GCM_URL,
+        headers=headers,
+        data='{"registration_ids":["ABC"]}',
+    )
+
+    if response.status_code == 401:
+        raise InvalidParameterException(
+            "Invalid parameter: Attributes Reason: Platform credentials are invalid"
+        )
+
+    if not endpoint_attributes.get("Token"):
+        raise InvalidParameterException(
+            "Invalid parameter: Attributes Reason: Invalid value for attribute: Token: cannot be empty"
+        )
 
 
 def send_message_to_GCM(app_attributes, endpoint_attributes, message):
