@@ -17,6 +17,7 @@ from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from requests.models import Response
 
 from localstack.aws.api import RequestContext
+from localstack.aws.api.core import CommonServiceException
 from localstack.aws.api.sns import (
     ActionsList,
     AmazonResourceName,
@@ -131,8 +132,6 @@ class SNSBackend(RegionBackend):
     sns_tags: Dict[str, List[Dict]]
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
     platform_endpoint_messages: Dict[str, List[Dict]]
-    # cache of target ARN to platform endpoint responses (used primarily for testing)
-    platform_endpoint_responses: Dict[str, List[Dict]]
 
     # list of sent SMS messages - TODO: expose via internal API
     sms_messages: List[Dict]
@@ -142,7 +141,6 @@ class SNSBackend(RegionBackend):
         self.subscription_status = {}
         self.sns_tags = {}
         self.platform_endpoint_messages = {}
-        self.platform_endpoint_responses = {}
         self.sms_messages = []
 
 
@@ -155,16 +153,21 @@ def publish_message(
 
     target_arn = req_data.get("TargetArn")
     if target_arn and ":endpoint/" in target_arn:
-        # cache messages published to platform endpoints
         cache = sns_backend.platform_endpoint_messages[target_arn] = (
             sns_backend.platform_endpoint_messages.get(target_arn) or []
         )
-        # TODO: check this in the old provider
         cache.append(req_data)
-
+        platform_app, endpoint_attributes = get_attributes_for_application_endpoint(target_arn)
         message_structure = req_data.get("MessageStructure", [None])[0]
         LOG.debug("Publishing message to Endpoint: %s | Message: %s", target_arn, message)
-        message_to_endpoint(target_arn, message, message_structure)
+
+        message_to_endpoint(
+            target_arn,
+            message,
+            message_structure,
+            endpoint_attributes,
+            platform_app,
+        )
         return message_id
 
     LOG.debug("Publishing message to TopicArn: %s | Message: %s", topic_arn, message)
@@ -185,44 +188,49 @@ def publish_message(
     return message_id
 
 
-def message_to_endpoint(
-    target_arn,
-    message,
-    structure,
-):
+def get_attributes_for_application_endpoint(target_arn):
     sns_client = aws_stack.connect_to_service("sns")
     app_name = target_arn.split("/")[-2]
-    platform_name = target_arn.split("/")[-3]
 
+    endpoint_attributes = None
     try:
         endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=target_arn)[
             "Attributes"
         ]
     except botocore.exceptions.ClientError:
         LOG.warning(f"Missing attributes for endpoint: {target_arn}")
-        return
+    if not endpoint_attributes:
+        raise CommonServiceException(
+            message="No account found for the given parameters",
+            code="InvalidClientTokenId",
+            status_code=403,
+        )
 
-    try:
-        platform_apps = sns_client.list_platform_applications()["PlatformApplications"]
-        app = [x for x in platform_apps if app_name in x["PlatformApplicationArn"]][0]
-    except IndexError:
-        LOG.warning(f"Missing Platform Application for endpoint: {target_arn}")
-        return
+    platform_apps = sns_client.list_platform_applications()["PlatformApplications"]
+    app = [x for x in platform_apps if app_name in x["PlatformApplicationArn"]][0]
 
+    return app, endpoint_attributes
+
+
+def message_to_endpoint(target_arn, message, structure, endpoint_attributes, platform_app):
     if structure == "json":
         message = json.loads(message)
 
-    response = None
-    if platform_name == "GCM":
-        response = send_message_to_GCM(app["Attributes"], endpoint_attributes, message["GCM"])
-    # TODO: Add support for other platforms
+    platform_name = target_arn.split("/")[-3]
 
-    if response is not None:
-        sns_backend = SNSBackend.get()
-        cache = sns_backend.platform_endpoint_responses[target_arn] = (
-            sns_backend.platform_endpoint_responses.get(target_arn) or []
+    if platform_name == "GCM":
+        response = send_message_to_GCM(
+            platform_app["Attributes"], endpoint_attributes, message["GCM"]
         )
-        cache.append({"status_code": response.status_code, "body": response.content})
+
+        if response.status_code == 401:
+            raise InvalidParameterException(
+                "Invalid parameter: Attributes Reason: Platform credentials are invalid"
+            )
+
+        # TODO add more error messages depending on the response
+        elif response.status_code != 200:
+            raise InvalidParameterException("Invalid parameter: Attributes Reason:")
 
 
 def send_message_to_GCM(app_attributes, endpoint_attributes, message):

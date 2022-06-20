@@ -472,13 +472,14 @@ class TestSNSProvider:
         assert "MessageId" in response
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-    def test_publish_target(self, sns_client):
-        response = sns_client.publish(
-            TargetArn="arn:aws:sns:us-east-1:000000000000:endpoint/APNS/abcdef/0f7d5971-aa8b-4bd5-b585-0826e9f93a66",
-            Message="This is a push notification",
-        )
-        assert "MessageId" in response
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    def test_publish_non_existent_target(self, sns_client):
+        with pytest.raises(ClientError) as ex:
+            sns_client.publish(
+                TargetArn="arn:aws:sns:us-east-1:000000000000:endpoint/APNS/abcdef/0f7d5971-aa8b-4bd5-b585-0826e9f93a66",
+                Message="This is a push notification",
+            )
+
+        assert ex.value.response["Error"]["Code"] == "InvalidClientTokenId"
 
     def test_tags(self, sns_client, sns_create_topic):
 
@@ -1797,8 +1798,6 @@ class TestSNSProvider:
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
     def test_publish_to_gcm(self, sns_client):
-        sns_backend = SNSBackend.get()
-        # TODO: use real keys in the future
         key = "mock_server_key"
         token = "mock_token"
 
@@ -1814,14 +1813,13 @@ class TestSNSProvider:
         message = {
             "GCM": '{ "notification": {"title": "Title of notification", "body": "It works" } }'
         }
-        sns_client.publish(
-            TargetArn=endpoint_arn, MessageStructure="json", Message=json.dumps(message)
-        )
 
-        def check_responses():
-            responses = sns_backend.platform_endpoint_responses[endpoint_arn]
-            assert responses[0]["status_code"] == 401
+        with pytest.raises(ClientError) as ex:
+            sns_client.publish(
+                TargetArn=endpoint_arn, MessageStructure="json", Message=json.dumps(message)
+            )
 
-        retry(check_responses, sleep=1)
+        assert ex.value.response["Error"]["Code"] == "InvalidParameter"
+
         sns_client.delete_endpoint(EndpointArn=endpoint_arn)
         sns_client.delete_platform_application(PlatformApplicationArn=platform_app_arn)
