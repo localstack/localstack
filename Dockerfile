@@ -132,10 +132,7 @@ RUN (cd /tmp && git clone https://github.com/timescale/timescaledb.git) && \
 ARG DYNAMODB_ZIP_URL=https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip
 RUN mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
       curl -L -o /tmp/localstack.ddb.zip ${DYNAMODB_ZIP_URL} && \
-      (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip) && \
-    mkdir -p /opt/code/localstack/localstack/infra/elasticmq && \
-    curl -L -o /opt/code/localstack/localstack/infra/elasticmq/elasticmq-server.jar \
-        https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar
+      (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip)
 
 # upgrade python build tools
 RUN (virtualenv .venv && source .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
