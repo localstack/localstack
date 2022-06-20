@@ -19,6 +19,7 @@ from localstack.constants import (
     FALSE_STRINGS,
     LOCALHOST,
     LOCALHOST_IP,
+    LOCALSTACK_ROOT_FOLDER,
     LOG_LEVELS,
     MODULE_MAIN_PATH,
     TRACE_LOG_LEVELS,
@@ -118,7 +119,7 @@ class Directories:
 
     @staticmethod
     def for_host() -> "Directories":
-        root = os.environ.get("FILESYSTEM_ROOT") or os.path.expanduser("~/.local/localstack")
+        root = os.environ.get("FILESYSTEM_ROOT") or os.path.join(LOCALSTACK_ROOT_FOLDER, ".cache")
         root = os.path.abspath(root)
 
         defaults = Directories.defaults()
