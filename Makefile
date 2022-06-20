@@ -277,7 +277,7 @@ init-precommit:    		  ## install te pre-commit hook into your local git reposit
 	($(VENV_RUN); pre-commit install)
 
 clean:             		  ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
-	rm -rf .volume
+	rm -rf .cache
 	rm -rf localstack/dashboard/web/node_modules
 	# TODO: remove localstack/infra/ as it's no longer used
 	rm -rf localstack/infra/amazon-kinesis-client

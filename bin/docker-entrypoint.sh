@@ -5,7 +5,7 @@ shopt -s nullglob
 
 if [[ ! $INIT_SCRIPTS_PATH ]]
 then
-  # FIXME: move
+  # FIXME: move to /etc/localstack/init/ready.d
   INIT_SCRIPTS_PATH=/docker-entrypoint-initaws.d
 fi
 if [[ ! $EDGE_PORT ]]
@@ -45,14 +45,20 @@ if [ "$DISABLE_TERM_HANDLER" == "" ]; then
   trap 'kill -31 ${!}; term_handler 31' SIGUSR2
 fi
 
-cat /dev/null > /tmp/localstack_infra.log
-cat /dev/null > /tmp/localstack_infra.err
+LOG_DIR=/var/lib/localstack/logs
+
+cat /dev/null > ${LOG_DIR}/localstack_infra.log
+cat /dev/null > ${LOG_DIR}/localstack_infra.err
+
+# for backwards compatibility with LEGACY_DIRECTORIES=1
+test -f /tmp/localstack_infra.log || ln -s ${LOG_DIR}/localstack_infra.log /tmp/localstack_infra.log
+test -f /tmp/localstack_infra.err || ln -s ${LOG_DIR}/localstack_infra.err /tmp/localstack_infra.err
 
 supervisord -c /etc/supervisord.conf &
 suppid="$!"
 
 function run_startup_scripts {
-  until grep -q '^Ready.' /tmp/localstack_infra.log >/dev/null 2>&1 ; do
+  until grep -q '^Ready.' ${LOG_DIR}/localstack_infra.log >/dev/null 2>&1 ; do
     echo "Waiting for all LocalStack services to be ready"
     sleep 7
   done
@@ -73,8 +79,8 @@ run_startup_scripts &
 # Run tail on the localstack log files forever until we are told to terminate
 if [ "$DISABLE_TERM_HANDLER" == "" ]; then
   while true; do
-    tail -qF /tmp/localstack_infra.log /tmp/localstack_infra.err & wait ${!}
+    tail -qF ${LOG_DIR}/localstack_infra.log ${LOG_DIR}/localstack_infra.err & wait ${!}
   done
 else
-  tail -qF /tmp/localstack_infra.log /tmp/localstack_infra.err
+  tail -qF ${LOG_DIR}/localstack_infra.log ${LOG_DIR}/localstack_infra.err
 fi
