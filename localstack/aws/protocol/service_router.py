@@ -302,8 +302,12 @@ def determine_aws_service_name(
     values = request.values
     if "Action" in values:
         # query / ec2 protocol requests always have an action and a version (the action is more significant)
-        protocols = ["query", "ec2"]
-        query_candidates = services.by_protocol_and_operation(protocols, values["Action"])
+        query_candidates = [
+            service
+            for service in services.by_operation(values["Action"])
+            if services.get(service).protocol in ("ec2", "query")
+        ]
+
         if len(query_candidates) == 1:
             return query_candidates[0]
 

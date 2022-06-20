@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import json
-import os
 import queue
 import random
 
@@ -1605,6 +1604,7 @@ class TestSNSProvider:
         )
         assert "an-attribute-key" in msg["Messages"][0]["MessageAttributes"]
 
+    @pytest.mark.only_localstack
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_subscribe_external_http_endpoint(
@@ -1613,9 +1613,7 @@ class TestSNSProvider:
         sns_create_http_endpoint,
         raw_message_delivery,
     ):
-        if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":
-            pytest.skip("Necessitate manual set up to allow external access to endpoint")
-
+        # Necessitate manual set up to allow external access to endpoint, only in local testing
         topic_arn, subscription_arn, endpoint_url, server = sns_create_http_endpoint(
             raw_message_delivery
         )
@@ -1695,6 +1693,7 @@ class TestSNSProvider:
             f"{service_url}/?" f"Action=ConfirmSubscription&TopicArn={topic_arn}&Token={token}"
         )
 
+    @pytest.mark.only_localstack
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_dlq_external_http_endpoint(
         self,
@@ -1709,9 +1708,7 @@ class TestSNSProvider:
         sns_allow_topic_sqs_queue,
         raw_message_delivery,
     ):
-        if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":
-            pytest.skip("Necessitate manual set up to allow external access to endpoint")
-
+        # Necessitate manual set up to allow external access to endpoint, only in local testing
         topic_arn, http_subscription_arn, endpoint_url, server = sns_create_http_endpoint(
             raw_message_delivery
         )
