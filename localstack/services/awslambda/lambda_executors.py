@@ -1579,8 +1579,6 @@ class Util:
         if config.LEGACY_DIRECTORIES:
             return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
 
-        fn_dir = config.dirs.functions
-
         if config.is_in_docker:
             for mount in inspect_current_container()["Mounts"]:
                 if mount["Destination"].rstrip("/") == DEFAULT_VOLUME_DIR:
@@ -1590,7 +1588,9 @@ class Util:
                         )
                     fn_dir = mount["Source"]
 
-        return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % fn_dir, path)
+                    return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % fn_dir, path)
+
+        return path
 
     @classmethod
     def format_windows_path(cls, path):

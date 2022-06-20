@@ -92,7 +92,7 @@ class Directories:
             var_libs=f"{DEFAULT_VOLUME_DIR}/lib",
             cache=f"{DEFAULT_VOLUME_DIR}/cache",
             tmp=f"{DEFAULT_VOLUME_DIR}/tmp",
-            functions=f"{DEFAULT_VOLUME_DIR}/functions",
+            functions=f"{DEFAULT_VOLUME_DIR}/tmp",  # FIXME: remove - this was misconceived
             data=f"{DEFAULT_VOLUME_DIR}/data",
             logs=f"{DEFAULT_VOLUME_DIR}/logs",
             config="/etc/localstack/conf.d",  # for future use
