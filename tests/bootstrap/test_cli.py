@@ -110,6 +110,9 @@ class TestCliContainerLifecycle:
         assert "42069/tcp" in inspect["HostConfig"]["PortBindings"]
         assert f"{volume}:{volume}" in inspect["HostConfig"]["Binds"]
 
+    @pytest.mark.skipif(
+        condition=not config.LEGACY_DIRECTORIES, reason="this test targets LEGACY_DIRECTORIES=1"
+    )
     def test_directories_mounted_correctly(self, runner, tmp_path, monkeypatch, container_client):
         data_dir = tmp_path / "data_dir"
         tmp_folder = tmp_path / "tmp"
@@ -131,3 +134,21 @@ class TestCliContainerLifecycle:
         assert f"{tmp_folder}:{container_dirs.tmp}" in binds
         assert f"{data_dir}:{container_dirs.data}" in binds
         assert f"{DOCKER_SOCK}:{DOCKER_SOCK}" in binds
+
+    @pytest.mark.skipif(
+        condition=config.LEGACY_DIRECTORIES, reason="this test targets LEGACY_DIRECTORIES=0"
+    )
+    def test_volume_dir_mounted_correctly(self, runner, tmp_path, monkeypatch, container_client):
+        volume_dir = tmp_path / "volume"
+
+        # set different directories and make sure they are mounted correctly
+        monkeypatch.setenv("LOCALSTACK_VOLUME_DIR", str(volume_dir))
+        monkeypatch.setattr(config, "VOLUME_DIR", str(volume_dir))
+
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "60"])
+
+        # check that mounts were created correctly
+        inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
+        binds = inspect["HostConfig"]["Binds"]
+        assert f"{volume_dir}:{constants.DEFAULT_VOLUME_DIR}" in binds

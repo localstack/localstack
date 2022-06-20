@@ -12,6 +12,7 @@ from typing import Dict, Iterable, List, Optional, Set
 
 from localstack import config, constants
 from localstack.config import Directories
+from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
@@ -646,7 +647,7 @@ def configure_container(container: LocalstackContainer):
 
 def configure_volume_mounts(container: LocalstackContainer):
     if not config.LEGACY_DIRECTORIES:
-        container.volumes.add(VolumeBind(config.VOLUME_DIR, "/var/lib/localstack"))
+        container.volumes.add(VolumeBind(config.VOLUME_DIR, DEFAULT_VOLUME_DIR))
         return
 
     source_dirs = config.dirs

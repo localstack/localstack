@@ -62,6 +62,9 @@ if not LOCALSTACK_VENV_FOLDER:
             os.path.join(LOCALSTACK_ROOT_FOLDER, "..", "..", "..")
         )
 
+# default volume directory containing shared data
+DEFAULT_VOLUME_DIR = "/var/lib/localstack"
+
 # API Gateway path to indicate a user request sent to the gateway
 PATH_USER_REQUEST = "_user_request_"
 

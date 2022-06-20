@@ -18,7 +18,7 @@ from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
-from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
+from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_VOLUME_DIR
 from localstack.runtime.hooks import hook_spec
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
@@ -1583,7 +1583,7 @@ class Util:
 
         if config.is_in_docker:
             for mount in inspect_current_container()["Mounts"]:
-                if mount["Destination"].rstrip("/") == "/var/lib/localstack":
+                if mount["Destination"].rstrip("/") == DEFAULT_VOLUME_DIR:
                     if mount["Type"] != "bind":
                         raise ValueError(
                             "Mount to /var/lib/localstack needs to be a bind mount for lambda to work"

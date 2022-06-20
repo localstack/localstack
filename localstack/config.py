@@ -15,6 +15,7 @@ from localstack.constants import (
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
     DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
+    DEFAULT_VOLUME_DIR,
     ENV_INTERNAL_TEST_RUN,
     FALSE_STRINGS,
     LOCALHOST,
@@ -88,33 +89,36 @@ class Directories:
         """Returns Localstack directory paths based on the localstack filesystem hierarchy."""
         return Directories(
             static_libs="/usr/lib/localstack",
-            var_libs="/var/lib/localstack/lib",
-            cache="/var/lib/localstack/cache",
-            tmp="/var/lib/localstack/tmp",
-            functions="/var/lib/localstack/functions",
-            data="/var/lib/localstack/data",
-            config="/etc/localstack/conf.d",
-            init="/etc/localstack/init",
-            logs="/var/lib/localstack/logs",
+            var_libs=f"{DEFAULT_VOLUME_DIR}/lib",
+            cache=f"{DEFAULT_VOLUME_DIR}/cache",
+            tmp=f"{DEFAULT_VOLUME_DIR}/tmp",
+            functions=f"{DEFAULT_VOLUME_DIR}/functions",
+            data=f"{DEFAULT_VOLUME_DIR}/data",
+            logs=f"{DEFAULT_VOLUME_DIR}/logs",
+            config="/etc/localstack/conf.d",  # for future use
+            init="/etc/localstack/init",  # for future use
         )
 
     @staticmethod
-    def from_config() -> "Directories":
-        """Returns Localstack directory paths from the config/environment variables defined by the config."""
-        # Note that the entries should be unique, as further downstream in docker_utils.py we're removing
-        # duplicate host paths in the volume mounts via `dict(mount_volumes)`.
-        defaults = Directories.for_host()
+    def for_container() -> "Directories":
+        """
+        Returns Localstack directory paths as they are defined within the container. Everything shared and writable
+        lives in /var/lib/localstack or /tmp/localstack.
+
+        :returns: Directories object
+        """
+        defaults = Directories.defaults()
 
         return Directories(
-            static_libs=os.environ.get("STATIC_LIBS_DIR") or defaults.static_libs,
-            var_libs=os.environ.get("VAR_LIBS_DIR") or defaults.var_libs,
-            cache=os.environ.get("CACHE_DIR") or defaults.cache,
-            tmp=TMP_FOLDER,
-            functions=HOST_TMP_FOLDER,  # TODO: rename variable/consider a volume
-            data=DATA_DIR or defaults.data,
-            config=CONFIG_DIR or defaults.config,
-            init=None,  # TODO: introduce environment variable
-            logs=defaults.logs,  # TODO: add variable
+            static_libs=defaults.static_libs,
+            var_libs=defaults.var_libs,
+            cache=defaults.cache,
+            tmp=defaults.tmp,
+            functions=defaults.functions,
+            data=defaults.data if DATA_DIR else None,
+            config=defaults.config,
+            logs=defaults.logs,
+            init="/docker-entrypoint-initaws.d",  # FIXME should be reworked with lifecycle hooks
         )
 
     @staticmethod
@@ -172,9 +176,11 @@ class Directories:
         # another directory to avoid override by host mount
         var_libs = (
             os.environ.get("CONTAINER_VAR_LIBS_FOLDER", "").strip()
-            or "/var/lib/localstack/var_libs"
+            or f"{DEFAULT_VOLUME_DIR}/var_libs"
         )
-        cache = os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or "/var/lib/localstack/cache"
+        cache = (
+            os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or f"{DEFAULT_VOLUME_DIR}/cache"
+        )
         tmp = (
             os.environ.get("CONTAINER_TMP_FOLDER", "").strip() or "/tmp/localstack"
         )  # TODO: discuss movement to /var/lib/localstack/tmp
@@ -189,30 +195,8 @@ class Directories:
             functions=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
             data=data_dir,
             config=None,  # config directory is host-only
-            logs="/var/lib/localstack/logs",
+            logs=f"{DEFAULT_VOLUME_DIR}/logs",
             init="/docker-entrypoint-initaws.d",
-        )
-
-    @staticmethod
-    def for_container() -> "Directories":
-        """
-        Returns Localstack directory paths as they are defined within the container. Everything shared and writable
-        lives in /var/lib/localstack or /tmp/localstack.
-
-        :returns: Directories object
-        """
-        defaults = Directories.defaults()
-
-        return Directories(
-            static_libs=defaults.static_libs,
-            var_libs=defaults.var_libs,
-            cache=defaults.cache,
-            tmp=defaults.tmp,
-            functions=defaults.functions,
-            data=defaults.data if DATA_DIR else None,
-            config=defaults.config,
-            logs=defaults.logs,
-            init="/docker-entrypoint-initaws.d",  # FIXME should be reworked with lifecycle hooks
         )
 
     def mkdirs(self):
@@ -531,7 +515,6 @@ try:
             LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
 except socket.error:
     pass
-
 
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
@@ -1008,7 +991,6 @@ else:
         dirs.mkdirs()
     else:
         dirs = Directories.for_host()
-
 
 # TODO: remove deprecation warning with next release
 for path in [dirs.config, os.path.join(dirs.tmp, ".localstack")]:
