@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 import xml.etree.ElementTree as ET
 from typing import Optional
 
@@ -16,14 +17,18 @@ class ResponseAggregatorHandler:
     def __init__(self):
         self.aggregator = ResponseAggregator()
         self.aggregator_thread = None
+        self._aggregator_mutex = threading.Lock()
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if response is None or context.service is None or context.operation is None:
             return
         if config.DISABLE_EVENTS:
             return
+        # this condition will only be true only for the first call, so it makes sense to not acquire the lock every time
         if self.aggregator_thread is None:
-            self.aggregator_thread = self.aggregator.start_thread()
+            with self._aggregator_mutex:
+                if self.aggregator_thread is None:
+                    self.aggregator_thread = self.aggregator.start_thread()
 
         err_type = self._get_err_type(response) if response.status_code >= 400 else None
         self.aggregator.add_response(

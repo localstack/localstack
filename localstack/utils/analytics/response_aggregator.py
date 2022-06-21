@@ -25,6 +25,7 @@ class ResponseAggregator:
         self.response_counter = Counter()
         self.period_start_time = datetime.datetime.utcnow()
         self.flush_scheduler = None
+        self._flush_mutex = threading.Lock()
 
     def start_thread(self) -> threading.Thread:
         """
@@ -56,7 +57,8 @@ class ResponseAggregator:
             status_code=response_code,
             err_type=err_type,
         )
-        self.response_counter[response_info] += 1
+        with self._flush_mutex:
+            self.response_counter[response_info] += 1
 
     def _get_analytics_payload(self) -> Dict[str, Any]:
         aggregations = []
@@ -77,8 +79,9 @@ class ResponseAggregator:
         Flushes the current batch of HTTP response data as an analytics event.
         This happens automatically in the background.
         """
-        if len(self.response_counter) > 0:
-            analytics_payload = self._get_analytics_payload()
-            analytics.log.event("http_response_agg", analytics_payload)
-            self.response_counter.clear()
+        with self._flush_mutex:
+            if len(self.response_counter) > 0:
+                analytics_payload = self._get_analytics_payload()
+                analytics.log.event("http_response_agg", analytics_payload)
+                self.response_counter.clear()
         self.period_start_time = datetime.datetime.utcnow()
