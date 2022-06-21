@@ -93,8 +93,12 @@ WORKDIR /opt/code/localstack/
 # create filesystem hierarchy
 RUN mkdir -p /var/lib/localstack && \
     mkdir -p /usr/lib/localstack
-# backwards compatibility with LEGACY_DIRECTORIES
-RUN mkdir -p /opt/code/localstack/localstack && ln -s /usr/lib/localstack /opt/code/localstack/localstack/infra
+# backwards compatibility with LEGACY_DIRECTORIES (TODO: deprecate and remove)
+RUN mkdir -p /opt/code/localstack/localstack && \
+    ln -s /usr/lib/localstack /opt/code/localstack/localstack/infra && \
+    mkdir /tmp/localstack && \
+    chmod -R 777 /tmp/localstack && \
+    chmod -R 777 /usr/lib/localstack
 
 # install basic (global) tools to final image
 RUN pip install --no-cache-dir --upgrade supervisor virtualenv
@@ -214,15 +218,13 @@ COPY --from=builder /opt/code/localstack/ /opt/code/localstack/
 COPY --from=builder /usr/share/postgresql/11/extension /usr/share/postgresql/11/extension
 COPY --from=builder /usr/lib/postgresql/11/lib /usr/lib/postgresql/11/lib
 
-RUN mkdir -p /tmp/localstack && \
-    if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
+RUN if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
 
 # fix some permissions and create local user
 RUN mkdir -p /.npm && \
     chmod 777 . && \
     chmod 755 /root && \
     chmod -R 777 /.npm && \
-    chmod -R 777 /tmp/localstack && \
     chmod -R 777 /var/lib/localstack && \
     useradd -ms /bin/bash localstack && \
     ln -s `pwd` /tmp/localstack_install_dir

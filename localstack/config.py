@@ -135,7 +135,7 @@ class Directories:
             cache=os.path.join(root, defaults.cache.lstrip("/")),
             tmp=os.path.join(root, defaults.tmp.lstrip("/")),
             functions=os.path.join(root, defaults.functions.lstrip("/")),
-            data=os.path.join(root, defaults.data.lstrip("/")),
+            data=os.path.join(root, defaults.data.lstrip("/")) if DATA_DIR else None,
             config=os.path.join(root, defaults.config.lstrip("/")),
             init=os.path.join(root, defaults.init.lstrip("/")),
             logs=os.path.join(root, defaults.logs.lstrip("/")),
