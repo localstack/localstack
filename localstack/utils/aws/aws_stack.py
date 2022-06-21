@@ -380,13 +380,19 @@ def create_external_boto_client(
     *args,
     **kwargs,
 ):
+    disabled_validation = botocore.config.Config(parameter_validation=False)
+    if config is None:
+        config = disabled_validation
+    else:
+        config = config.merge(disabled_validation)
+
     return connect_to_service(
         service_name,
         client,
         env,
         region_name,
         endpoint_url,
-        config.merge(botocore.config.Config(parameter_validation=False)),
+        config,
         verify,
         cache,
         aws_access_key_id="__test_call__",
