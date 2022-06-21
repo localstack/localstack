@@ -6,7 +6,7 @@ and manipulate python collection (dicts, list, sets).
 import logging
 import re
 import sys
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sized, Tuple, Type, TypeVar, Union
 
 if sys.version_info >= (3, 8):
@@ -45,38 +45,12 @@ class DelSafeDict(dict):
         self[key] = None
 
 
-class ImmutableList(Sequence):
-    """Wrapper class to create an immutable view of a given list or sequence."""
-
-    def __init__(self, seq=()):
-        self._list = list(seq)
-
-    def index(self, value: Any, *args, **kwargs) -> int:
-        return self._list.index(value, *args, **kwargs)
-
-    def count(self, value: Any) -> int:
-        return self._list.count(value)
-
-    def __getitem__(self, i: int):
-        return self._list.__getitem__(i)
-
-    def __contains__(self, x: object) -> bool:
-        return self._list.__contains__(x)
-
-    def __iter__(self) -> Iterator:
-        return self._list.__iter__()
-
-    def __reversed__(self) -> Iterator:
-        return self._list.__reversed__()
-
-    def __len__(self) -> int:
-        return self._list.__len__()
-
-    def __eq__(self, other):
-        return self._list.__eq__(other._list if isinstance(other, ImmutableList) else other)
-
-    def __str__(self):
-        return self._list.__str__()
+class ImmutableList(tuple):
+    """
+    Wrapper class to create an immutable view of a given list or sequence.
+    Note: Currently, this is simply a wrapper around `tuple` - could be replaced with
+    custom implementations over time, if needed.
+    """
 
 
 class HashableList(ImmutableList):
