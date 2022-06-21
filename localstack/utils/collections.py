@@ -43,13 +43,25 @@ class DelSafeDict(dict):
 
 
 class HashableList(list):
-    """Hashable list class that can be used with dicts or hashsets."""
+    """Hashable list class that can be used with dicts or hash sets."""
 
     def __hash__(self):
         result = 0
         for i in self:
             result += hash(i)
         return result
+
+
+class HashableJsonDict(dict):
+    """
+    Simple dict wrapper that can be used with dicts or hash sets. Note: the assumption is that the dict
+    can be JSON-encoded (i.e., must be acyclic and contain only lists/dicts and simple types)
+    """
+
+    def __hash__(self):
+        from localstack.utils.json import canonical_json
+
+        return hash(canonical_json(self))
 
 
 _ListType = TypeVar("_ListType")
