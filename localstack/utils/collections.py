@@ -1,10 +1,13 @@
-"""This package provides custom collection types, as well as tools to analyze and manipulate python collection (
-dicts, list, sets). """
+"""
+This package provides custom collection types, as well as tools to analyze
+and manipulate python collection (dicts, list, sets).
+"""
 
 import logging
 import re
 import sys
-from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, Type, TypeVar, Union
+from collections.abc import Mapping, Sequence
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sized, Tuple, Type, TypeVar, Union
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -42,17 +45,70 @@ class DelSafeDict(dict):
         self[key] = None
 
 
-class HashableList(list):
-    """Hashable list class that can be used with dicts or hash sets."""
+class ImmutableList(Sequence):
+    """Wrapper class to create an immutable view of a given list or sequence."""
+
+    def __init__(self, seq=()):
+        self._list = list(seq)
+
+    def index(self, value: Any, *args, **kwargs) -> int:
+        return self._list.index(value, *args, **kwargs)
+
+    def count(self, value: Any) -> int:
+        return self._list.count(value)
+
+    def __getitem__(self, i: int):
+        return self._list.__getitem__(i)
+
+    def __contains__(self, x: object) -> bool:
+        return self._list.__contains__(x)
+
+    def __iter__(self) -> Iterator:
+        return self._list.__iter__()
+
+    def __reversed__(self) -> Iterator:
+        return self._list.__reversed__()
+
+    def __len__(self) -> int:
+        return self._list.__len__()
+
+    def __eq__(self, other):
+        return self._list.__eq__(other._list if isinstance(other, ImmutableList) else other)
+
+    def __str__(self):
+        return self._list.__str__()
+
+
+class HashableList(ImmutableList):
+    """Hashable, immutable list wrapper that can be used with dicts or hash sets."""
 
     def __hash__(self):
-        result = 0
-        for i in self:
-            result += hash(i)
-        return result
+        return sum(hash(i) for i in self)
 
 
-class HashableJsonDict(dict):
+class ImmutableDict(Mapping):
+    """Wrapper class to create an immutable view of a given list or sequence."""
+
+    def __init__(self, seq=None, **kwargs):
+        self._dict = dict(seq, **kwargs)
+
+    def __len__(self) -> int:
+        return self._dict.__len__()
+
+    def __iter__(self) -> Iterator:
+        return self._dict.__iter__()
+
+    def __getitem__(self, key):
+        return self._dict.__getitem__(key)
+
+    def __eq__(self, other):
+        return self._dict.__eq__(other._dict if isinstance(other, ImmutableDict) else other)
+
+    def __str__(self):
+        return self._dict.__str__()
+
+
+class HashableJsonDict(ImmutableDict):
     """
     Simple dict wrapper that can be used with dicts or hash sets. Note: the assumption is that the dict
     can be JSON-encoded (i.e., must be acyclic and contain only lists/dicts and simple types)
@@ -61,7 +117,7 @@ class HashableJsonDict(dict):
     def __hash__(self):
         from localstack.utils.json import canonical_json
 
-        return hash(canonical_json(self))
+        return hash(canonical_json(self._dict))
 
 
 _ListType = TypeVar("_ListType")
