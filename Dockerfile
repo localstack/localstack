@@ -232,7 +232,7 @@ RUN pip3 install --upgrade awscli awscli-local requests
 
 # Adds the results of `make init` to the container.
 # `make init` _needs_ to be executed before building this docker image (since the execution needs docker itself).
-ADD .cache/usr/lib/localstack /usr/lib/localstack
+ADD .filesystem/usr/lib/localstack /usr/lib/localstack
 # Add the code in the last step
 ADD localstack/ localstack/
 

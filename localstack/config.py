@@ -123,7 +123,9 @@ class Directories:
 
     @staticmethod
     def for_host() -> "Directories":
-        root = os.environ.get("FILESYSTEM_ROOT") or os.path.join(LOCALSTACK_ROOT_FOLDER, ".cache")
+        root = os.environ.get("FILESYSTEM_ROOT") or os.path.join(
+            LOCALSTACK_ROOT_FOLDER, ".filesystem"
+        )
         root = os.path.abspath(root)
 
         defaults = Directories.defaults()
