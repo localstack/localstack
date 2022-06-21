@@ -1,6 +1,6 @@
 import logging
 from functools import lru_cache
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Set
 
 from werkzeug.http import parse_dict_header
 
@@ -226,6 +226,16 @@ def get_service_catalog() -> ServiceCatalog:
     return ServiceCatalog()
 
 
+def resolve_conflicts(candidates: Set[str], request: Request):
+    """
+    Some service definitions are overlapping to a point where they are _not_ distinguishable at all
+    (f.e. ``DescribeEndpints`` in timestream-query and timestream-write).
+    These conflicts need to be resolved manually.
+    """
+    if candidates == {"timestream-query", "timestream-write"}:
+        return "timestream-query"
+
+
 def determine_aws_service_name(
     request: Request, services: ServiceCatalog = get_service_catalog()
 ) -> Optional[str]:
@@ -323,7 +333,12 @@ def determine_aws_service_name(
 
         candidates.update(query_candidates)
 
-    # 6. check the legacy rules in the end
+    # 6. resolve service spec conflicts
+    resolved_conflict = resolve_conflicts(candidates, request)
+    if resolved_conflict:
+        return resolved_conflict
+
+    # 7. check the legacy rules in the end
     legacy_match = legacy_rules(request)
     if legacy_match:
         return legacy_match
