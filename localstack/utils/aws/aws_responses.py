@@ -9,14 +9,17 @@ from typing import Dict, Optional, Union
 from urllib.parse import parse_qs
 
 import xmltodict
+from botocore.parsers import create_parser as create_response_parser
 from flask import Response as FlaskResponse
 from moto.core.exceptions import JsonRESTError
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api import RequestContext, ServiceResponse
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
+from localstack.http import Response
 from localstack.utils.aws import aws_stack
 from localstack.utils.http import replace_response_content
 from localstack.utils.json import json_safe
@@ -445,6 +448,24 @@ def convert_to_binary_event_payload(result, event_type=None, message_type=None):
     result += pack("!I", payload_crc)
 
     return result
+
+
+def parse_response(context: RequestContext, response: Response) -> ServiceResponse:
+    """
+    Parses a LocalStack HTTP response object into an AWS response object using botocore
+    """
+    operation_model = context.operation
+    response_dict = {  # this is what botocore.endpoint.convert_to_response_dict normally does
+        "headers": dict(response.headers.items()),  # boto doesn't like werkzeug headers
+        "status_code": response.status_code,
+        "body": response.data,
+        "context": {
+            "operation_name": operation_model.name,
+        },
+    }
+
+    parser = create_response_parser(context.service.protocol)
+    return parser.parse(response_dict, operation_model.output_shape)
 
 
 class LambdaResponse:
