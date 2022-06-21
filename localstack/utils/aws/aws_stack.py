@@ -386,7 +386,7 @@ def create_external_boto_client(
         env,
         region_name,
         endpoint_url,
-        config,
+        config.merge(botocore.config.Config(parameter_validation=False)),
         verify,
         cache,
         aws_access_key_id="__test_call__",
