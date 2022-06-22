@@ -101,6 +101,9 @@ class TestIAMExtensions:
             "PermissionsBoundaryArn": policy_arn,
             "PermissionsBoundaryType": "Policy",
         } == get_user_reply["User"]["PermissionsBoundary"]
+        iam_client.delete_user_permissions_boundary(UserName=user_name)
+        get_user_reply = iam_client.get_user(UserName=user_name)
+        assert "PermissionsBoundary" not in get_user_reply["User"]
 
     def test_create_user_add_permission_boundary_afterwards(
         self, iam_client, create_user, create_policy
@@ -121,6 +124,9 @@ class TestIAMExtensions:
             "PermissionsBoundaryArn": policy_arn,
             "PermissionsBoundaryType": "Policy",
         } == get_user_reply["User"]["PermissionsBoundary"]
+        iam_client.delete_user_permissions_boundary(UserName=user_name)
+        get_user_reply = iam_client.get_user(UserName=user_name)
+        assert "PermissionsBoundary" not in get_user_reply["User"]
 
 
 class TestIAMIntegrations:
