@@ -8,9 +8,119 @@ from botocore.exceptions import ClientError
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.iam import Tag
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
+from localstack.testing.aws.util import create_client_with_keys
 from localstack.utils.common import short_uid
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.strings import long_uid
+
+GET_USER_POLICY_DOC = """{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "sgetuser",
+            "Effect": "Allow",
+            "Action": ["iam:GetUser"],
+            "Resource": "*"
+        }
+    ]
+}"""
+
+
+class TestIAMExtensions:
+    def test_get_user_without_username_as_user(
+        self, create_user, iam_client, sts_client, wait_for_user
+    ):
+        user_name = f"user-{short_uid()}"
+        policy_name = f"policy={short_uid()}"
+        create_user(UserName=user_name)
+        iam_client.put_user_policy(
+            UserName=user_name, PolicyName=policy_name, PolicyDocument=GET_USER_POLICY_DOC
+        )
+        account_id = sts_client.get_caller_identity()["Account"]
+        keys = iam_client.create_access_key(UserName=user_name)["AccessKey"]
+        wait_for_user(keys)
+        iam_client_as_user = create_client_with_keys("iam", keys=keys)
+        user_response = iam_client_as_user.get_user()
+        user = user_response["User"]
+        assert user["UserName"] == user_name
+        assert user["Arn"] == f"arn:aws:iam::{account_id}:user/{user_name}"
+
+    @pytest.mark.only_localstack
+    def test_get_user_without_username_as_root(self, iam_client, sts_client):
+        """Test get_user on root account. Marked only localstack, since we usually cannot access as root directly"""
+        account_id = sts_client.get_caller_identity()["Account"]
+        user_response = iam_client.get_user()
+        user = user_response["User"]
+        assert user["UserId"] == account_id
+        assert user["Arn"] == f"arn:aws:iam::{account_id}:root"
+
+    def test_get_user_without_username_as_role(
+        self, iam_client, create_role, wait_and_assume_role, sts_client
+    ):
+        role_name = f"role-{short_uid()}"
+        policy_name = f"policy={short_uid()}"
+        session_name = f"session-{short_uid()}"
+        account_arn = sts_client.get_caller_identity()["Arn"]
+        assume_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {"AWS": account_arn},
+                    "Effect": "Allow",
+                }
+            ],
+        }
+        created_role_arn = create_role(
+            RoleName=role_name, AssumeRolePolicyDocument=json.dumps(assume_policy_doc)
+        )["Role"]["Arn"]
+        iam_client.put_role_policy(
+            RoleName=role_name, PolicyName=policy_name, PolicyDocument=GET_USER_POLICY_DOC
+        )
+        keys = wait_and_assume_role(role_arn=created_role_arn, session_name=session_name)
+        iam_client_as_role = create_client_with_keys("iam", keys=keys)
+        with pytest.raises(ClientError) as e:
+            iam_client_as_role.get_user()
+        e.match("Must specify userName when calling with non-User credentials")
+
+    def test_create_user_with_permission_boundary(self, iam_client, create_user, create_policy):
+        user_name = f"user-{short_uid()}"
+        policy_name = f"policy-{short_uid()}"
+        policy_arn = create_policy(PolicyName=policy_name, PolicyDocument=GET_USER_POLICY_DOC)[
+            "Policy"
+        ]["Arn"]
+        create_user_reply = create_user(UserName=user_name, PermissionsBoundary=policy_arn)
+        assert "PermissionsBoundary" in create_user_reply["User"]
+        assert {
+            "PermissionsBoundaryArn": policy_arn,
+            "PermissionsBoundaryType": "Policy",
+        } == create_user_reply["User"]["PermissionsBoundary"]
+        get_user_reply = iam_client.get_user(UserName=user_name)
+        assert "PermissionsBoundary" in get_user_reply["User"]
+        assert {
+            "PermissionsBoundaryArn": policy_arn,
+            "PermissionsBoundaryType": "Policy",
+        } == get_user_reply["User"]["PermissionsBoundary"]
+
+    def test_create_user_add_permission_boundary_afterwards(
+        self, iam_client, create_user, create_policy
+    ):
+        user_name = f"user-{short_uid()}"
+        policy_name = f"policy-{short_uid()}"
+        policy_arn = create_policy(PolicyName=policy_name, PolicyDocument=GET_USER_POLICY_DOC)[
+            "Policy"
+        ]["Arn"]
+        create_user_reply = create_user(UserName=user_name)
+        assert "PermissionsBoundary" not in create_user_reply["User"]
+        get_user_reply = iam_client.get_user(UserName=user_name)
+        assert "PermissionsBoundary" not in get_user_reply["User"]
+        iam_client.put_user_permissions_boundary(UserName=user_name, PermissionsBoundary=policy_arn)
+        get_user_reply = iam_client.get_user(UserName=user_name)
+        assert "PermissionsBoundary" in get_user_reply["User"]
+        assert {
+            "PermissionsBoundaryArn": policy_arn,
+            "PermissionsBoundaryType": "Policy",
+        } == get_user_reply["User"]["PermissionsBoundary"]
 
 
 class TestIAMIntegrations:

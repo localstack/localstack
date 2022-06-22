@@ -1,5 +1,10 @@
 import os
+from typing import Dict
 
+import boto3
+from botocore.config import Config
+
+from localstack import config
 from localstack.utils.aws import aws_stack
 
 
@@ -24,3 +29,34 @@ def bucket_exists(client, bucket_name: str) -> bool:
         if bucket["Name"] == bucket_name:
             return True
     return False
+
+
+def create_client_with_keys(
+    service: str,
+    keys: Dict[str, str],
+    region_name: str = None,
+    client_config: Config = None,
+):
+    """
+    Create a boto client with the given access key, targeted against LS per default, but to AWS if TEST_TARGET is set
+    accordingly.
+
+    :param service: Service to create the Client for
+    :param keys: Access Keys
+    :param region_name: Region for the client
+    :param client_config:
+    :return:
+    """
+    if not region_name and os.environ.get("TEST_TARGET") != "AWS_CLOUD":
+        region_name = aws_stack.get_region()
+    return boto3.client(
+        service,
+        region_name=region_name,
+        aws_access_key_id=keys["AccessKeyId"],
+        aws_secret_access_key=keys["SecretAccessKey"],
+        aws_session_token=keys.get("SessionToken"),
+        config=client_config,
+        endpoint_url=config.get_edge_url()
+        if os.environ.get("TEST_TARGET") != "AWS_CLOUD"
+        else None,
+    )

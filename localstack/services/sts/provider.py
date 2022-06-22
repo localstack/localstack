@@ -3,7 +3,6 @@ import re
 
 import xmltodict
 
-from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sts import GetCallerIdentityResponse, StsApi
 from localstack.aws.proxy import AwsApiListener
@@ -21,10 +20,9 @@ LOG = logging.getLogger(__name__)
 class StsProvider(StsApi, ServiceLifecycleHook):
     def get_caller_identity(self, context: RequestContext) -> GetCallerIdentityResponse:
         result = call_moto(context)
-        username = config.TEST_IAM_USER_NAME or "localstack"
-        result["Arn"] = result["Arn"].replace("user/moto", f"user/{username}")
-        if config.TEST_IAM_USER_ID:
-            result["UserId"] = config.TEST_IAM_USER_ID
+        if "user/moto" in result["Arn"] and "sts" in result["Arn"]:
+            # FIXME double replace is ugly AF
+            result["Arn"] = result["Arn"].replace("user/moto", "root").replace(":sts:", ":iam:")
         return result
 
 

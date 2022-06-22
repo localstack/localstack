@@ -637,10 +637,6 @@ WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get("WINDOWS_DOCKER_MOUNT_PREFIX", "/ho
 # whether to skip S3 presign URL signature validation (TODO: currently enabled, until all issues are resolved)
 S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false("S3_SKIP_SIGNATURE_VALIDATION")
 
-# user ID of default user, to be returned on sts.get_caller_identity
-TEST_IAM_USER_ID = str(os.environ.get("TEST_IAM_USER_ID") or "").strip()
-TEST_IAM_USER_NAME = str(os.environ.get("TEST_IAM_USER_NAME") or "").strip()
-
 # user-defined lambda executor mode
 LAMBDA_EXECUTOR = os.environ.get("LAMBDA_EXECUTOR", "").strip()
 

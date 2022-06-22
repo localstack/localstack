@@ -7,7 +7,6 @@ import requests
 from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid
 from localstack.utils.numbers import is_number
 from localstack.utils.strings import to_str
 
@@ -162,25 +161,11 @@ class TestSTSIntegrations:
         federated_user_info = response["FederatedUser"]["FederatedUserId"].split(":")
         assert federated_user_info[1] == token_name
 
-    def test_custom_caller_identity(self, sts_client, iam_client, monkeypatch):
+    @pytest.mark.only_localstack
+    def test_get_caller_identity_root(self, sts_client, iam_client, monkeypatch):
         response = sts_client.get_caller_identity()
-        assert ":user/localstack" in response.get("Arn")
-
-        # set custom name/id for default user
-        test_name = f"u-{short_uid()}"
-        test_id = short_uid()
-        monkeypatch.setattr(config, "TEST_IAM_USER_NAME", test_name)
-        monkeypatch.setattr(config, "TEST_IAM_USER_ID", test_id)
-
-        # assert STS identity
-        response = sts_client.get_caller_identity()
-        assert f":user/{test_name}" in response.get("Arn")
-        assert response.get("UserId") == test_id
-
-        # assert IAM user
-        response = iam_client.get_user()
-        assert response["User"]["UserName"] == test_name
-        assert response["User"]["UserId"] == test_id
+        account_id = response["Account"]
+        assert f"arn:aws:iam::{account_id}:root" == response["Arn"]
 
     @pytest.mark.only_localstack
     def test_expiration_date_format(self):

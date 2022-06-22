@@ -1,5 +1,6 @@
 import json
 import re
+from datetime import datetime
 from typing import Dict, List
 from urllib.parse import quote
 
@@ -10,15 +11,15 @@ from moto.iam.models import iam_backend as moto_iam_backend
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.responses import IamResponse
 
-from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import RequestContext
+from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.iam import (
     ActionNameListType,
     ActionNameType,
     AttachedPermissionsBoundary,
     ContextEntryListType,
     CreateServiceLinkedRoleResponse,
+    CreateUserResponse,
     DeleteServiceLinkedRoleResponse,
     DeletionTaskIdType,
     DeletionTaskStatusType,
@@ -29,7 +30,6 @@ from localstack.aws.api.iam import (
     ListInstanceProfileTagsResponse,
     ListRolesResponse,
     NoSuchEntityException,
-    PermissionsBoundaryAttachmentType,
     PolicyEvaluationDecisionType,
     ResourceHandlingOptionType,
     ResourceNameListType,
@@ -38,6 +38,7 @@ from localstack.aws.api.iam import (
     SimulatePolicyResponse,
     SimulationPolicyListType,
     Tag,
+    User,
     arnType,
     customSuffixType,
     existingUserNameType,
@@ -54,7 +55,10 @@ from localstack.aws.api.iam import (
     tagListType,
     userNameType,
 )
+from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.moto import call_moto
+from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
 
@@ -321,15 +325,59 @@ class IamProvider(IamApi):
         else:
             raise NoSuchEntityException()
 
+    def create_user(
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        path: pathType = None,
+        permissions_boundary: arnType = None,
+        tags: tagListType = None,
+    ) -> CreateUserResponse:
+        response = call_moto(context=context)
+        user = moto_iam_backend.get_user(user_name)
+        if permissions_boundary:
+            user.permissions_boundary = permissions_boundary
+            response["User"]["PermissionsBoundary"] = AttachedPermissionsBoundary(
+                PermissionsBoundaryArn=permissions_boundary,
+                PermissionsBoundaryType="Policy",
+            )
+        return response
+
     def get_user(
         self, context: RequestContext, user_name: existingUserNameType = None
     ) -> GetUserResponse:
         response = call_moto(context=context)
-        moto_user = moto_iam_backend.get_user(user_name)
+        moto_user_name = response["User"]["UserName"]
+        moto_user = moto_iam_backend.users.get(moto_user_name)
+        # if the user does not exist or is no user
+        if not moto_user:
+            access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
+            sts_client = aws_stack.connect_to_service(
+                "sts",
+                aws_access_key_id=access_key_id,
+                aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
+            )
+            caller_identity = sts_client.get_caller_identity()
+            caller_arn = caller_identity["Arn"]
+            if caller_arn.endswith(":root"):
+                return GetUserResponse(
+                    User=User(
+                        UserId=context.account_id,
+                        Arn=caller_arn,
+                        CreateDate=datetime.now(),
+                        PasswordLastUsed=datetime.now(),
+                    )
+                )
+            else:
+                raise CommonServiceException(
+                    "ValidationError",
+                    "Must specify userName when calling with non-User credentials",
+                )
+
         if hasattr(moto_user, "permissions_boundary") and moto_user.permissions_boundary:
             response["User"]["PermissionsBoundary"] = AttachedPermissionsBoundary(
                 PermissionsBoundaryArn=moto_user.permissions_boundary,
-                PermissionsBoundaryType=PermissionsBoundaryAttachmentType.PermissionsBoundaryPolicy,
+                PermissionsBoundaryType="Policy",
             )
 
         return response
@@ -403,16 +451,10 @@ def apply_patches():
     def iam_response_get_user(fn, self):
         result = fn(self)
         regex = r"(.*<UserName>\s*)([^\s]+)(\s*</UserName>.*)"
-        regex2 = r"(.*<UserId>\s*)([^\s]+)(\s*</UserId>.*)"
         flags = re.MULTILINE | re.DOTALL
 
         user_name = re.match(regex, result, flags=flags).group(2)
         # replace default user id/name in response
-        if config.TEST_IAM_USER_NAME:
-            result = re.sub(regex, r"\g<1>%s\3" % config.TEST_IAM_USER_NAME, result)
-            user_name = config.TEST_IAM_USER_NAME
-        if config.TEST_IAM_USER_ID:
-            result = re.sub(regex2, r"\g<1>%s\3" % config.TEST_IAM_USER_ID, result)
 
         user = moto_iam_backend.users.get(user_name)
         if not user:

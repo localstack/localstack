@@ -21,7 +21,7 @@ from pytest_httpserver import HTTPServer
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
-from localstack.testing.aws.util import get_lambda_logs
+from localstack.testing.aws.util import create_client_with_keys, get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
@@ -1151,6 +1151,154 @@ def check_lambda_logs(logs_client):
             assert line in log_messages
 
     return _check_logs
+
+
+@pytest.fixture
+def wait_for_user():
+    def _wait(keys):
+        sts_client = create_client_with_keys(service="sts", keys=keys)
+
+        def is_user_ready():
+            try:
+                sts_client.get_caller_identity()
+                return True
+            except ClientError as e:
+                if e.response["Error"]["Code"] == "InvalidClientTokenId":
+                    return False
+                return True
+
+        # wait until the given user is ready, takes AWS IAM a while...
+        poll_condition(is_user_ready, interval=5, timeout=20)
+
+    return _wait
+
+
+@pytest.fixture
+def create_policy(iam_client):
+    policy_arns = []
+
+    def _create_policy(*args, **kwargs):
+        if "PolicyName" not in kwargs:
+            kwargs["PolicyName"] = f"policy-{short_uid()}"
+        response = iam_client.create_policy(*args, **kwargs)
+        policy_arn = response["Policy"]["Arn"]
+        policy_arns.append(policy_arn)
+        return response
+
+    yield _create_policy
+
+    for policy_arn in policy_arns:
+        try:
+            iam_client.delete_policy(PolicyArn=policy_arn)
+        except ClientError:
+            LOG.debug("Could not delete policy '%s' during test cleanup", policy_arn)
+
+
+@pytest.fixture
+def create_user(iam_client):
+    usernames = []
+
+    def _create_user(**kwargs):
+        if "UserName" not in kwargs:
+            kwargs["UserName"] = f"user-{short_uid()}"
+        response = iam_client.create_user(**kwargs)
+        usernames.append(response["User"]["UserName"])
+        return response
+
+    yield _create_user
+
+    for username in usernames:
+        inline_policies = iam_client.list_user_policies(UserName=username)["PolicyNames"]
+        for inline_policy in inline_policies:
+            try:
+                iam_client.delete_user_policy(UserName=username, PolicyName=inline_policy)
+            except Exception:
+                LOG.debug(
+                    "Could not delete user policy '%s' from '%s' during cleanup",
+                    inline_policy,
+                    username,
+                )
+        attached_policies = iam_client.list_attached_user_policies(UserName=username)[
+            "AttachedPolicies"
+        ]
+        for attached_policy in attached_policies:
+            try:
+                iam_client.detach_user_policy(
+                    UserName=username, PolicyArn=attached_policy["PolicyArn"]
+                )
+            except Exception:
+                LOG.debug(
+                    "Error detaching policy '%s' from user '%s'",
+                    attached_policy["PolicyArn"],
+                    username,
+                )
+        try:
+            iam_client.delete_user(UserName=username)
+        except Exception:
+            LOG.debug("Error deleting user '%s' during test cleanup", username)
+
+
+@pytest.fixture
+def wait_and_assume_role(sts_client):
+    def _wait_and_assume_role(role_arn: str, session_name: str = None):
+        if not session_name:
+            session_name = f"session-{short_uid()}"
+
+        def assume_role():
+            return sts_client.assume_role(RoleArn=role_arn, RoleSessionName=session_name)[
+                "Credentials"
+            ]
+
+        # need to retry a couple of times before we are allowed to assume this role in AWS
+        keys = retry(assume_role, sleep=5, retries=4)
+        return keys
+
+    return _wait_and_assume_role
+
+
+@pytest.fixture
+def create_role(iam_client):
+    role_names = []
+
+    def _create_role(**kwargs):
+        if not kwargs.get("RoleName"):
+            kwargs["RoleName"] = f"role-{short_uid()}"
+        result = iam_client.create_role(**kwargs)
+        role_names.append(result["Role"]["RoleName"])
+        return result
+
+    yield _create_role
+
+    for role_name in role_names:
+        # detach policies
+        attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
+            "AttachedPolicies"
+        ]
+        for attached_policy in attached_policies:
+            try:
+                iam_client.detach_role_policy(
+                    RoleName=role_name, PolicyArn=attached_policy["PolicyArn"]
+                )
+            except Exception:
+                LOG.debug(
+                    "Could not detach role policy '%s' from '%s' during cleanup",
+                    attached_policy["PolicyArn"],
+                    role_name,
+                )
+        role_policies = iam_client.list_role_policies(RoleName=role_name)["PolicyNames"]
+        for role_policy in role_policies:
+            try:
+                iam_client.delete_role_policy(RoleName=role_name, PolicyName=role_policy)
+            except Exception:
+                LOG.debug(
+                    "Could not delete role policy '%s' from '%s' during cleanup",
+                    role_policy,
+                    role_name,
+                )
+        try:
+            iam_client.delete_role(RoleName=role_name)
+        except Exception:
+            LOG.debug("Could not delete role '%s' during cleanup", role_name)
 
 
 @pytest.fixture
