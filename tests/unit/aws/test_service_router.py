@@ -175,3 +175,20 @@ def test_service_router_works_for_every_service(
 
     # Make sure the detected service is the same as the one we generated the request for
     assert service.service_name == detected_service_name
+
+
+def test_endpoint_prefix_based_routing():
+    # TODO could be generalized using endpoint resolvers and replacing "amazonaws.com" with "localhost.localstack.cloud"
+    detected_service_name = determine_aws_service_name(
+        Request(method="GET", path="/", headers={"Host": "sqs.localhost.localstack.cloud"})
+    )
+    assert detected_service_name == "sqs"
+
+    detected_service_name = determine_aws_service_name(
+        Request(
+            method="POST",
+            path="/app-instances",
+            headers={"Host": "identity-chime.localhost.localstack.cloud"},
+        )
+    )
+    assert detected_service_name == "chime-sdk-identity"
