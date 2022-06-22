@@ -7,13 +7,15 @@ from typing import Any, Dict, Optional
 
 from localstack import config
 from localstack.utils import analytics
+from localstack.utils.analytics.event_publisher import get_hash
 from localstack.utils.scheduler import Scheduler
 
 LOG = logging.getLogger(__name__)
 FLUSH_INTERVAL_SECS = 10
+OPTIONAL_FIELDS = {"err_type", "resource_id"}
 
 
-ResponseInfo = namedtuple("ResponseInfo", "service, operation, status_code, err_type")
+ResponseInfo = namedtuple("ResponseInfo", "service, operation, status_code, err_type, resource_id")
 
 
 class ResponseAggregator:
@@ -40,7 +42,12 @@ class ResponseAggregator:
         return scheduler_thread
 
     def add_response(
-        self, service_name: str, operation_name: str, response_code: int, err_type: Optional[str]
+        self,
+        service_name: str,
+        operation_name: str,
+        response_code: int,
+        err_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
     ):
         """
         Add an HTTP response for aggregation and collection
@@ -56,6 +63,7 @@ class ResponseAggregator:
             operation=operation_name,
             status_code=response_code,
             err_type=err_type,
+            resource_id=get_hash(resource_id) if resource_id is not None else None,
         )
         with self._flush_mutex:
             self.response_counter[response_info] += 1
@@ -64,8 +72,9 @@ class ResponseAggregator:
         aggregations = []
         for resp, count in self.response_counter.items():
             resp_dict = resp._asdict()
-            if resp_dict.get("err_type") is None:
-                del resp_dict["err_type"]
+            for field in OPTIONAL_FIELDS:
+                if resp_dict.get(field) is None:
+                    del resp_dict[field]
             resp_dict["count"] = count
             aggregations.append(resp_dict)
         return {
