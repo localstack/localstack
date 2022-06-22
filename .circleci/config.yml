@@ -254,6 +254,7 @@ jobs:
           paths:
             - repo/target/reports/
             - repo/target/coverage/
+            - repo/target/metric_reports/
 
   report:
     executor: ubuntu-machine-amd64
@@ -276,8 +277,15 @@ jobs:
             coverage report || true
             coverage html || true
             coveralls || true
+      - run:
+          name: Metric aggregation
+          command: |
+            source .venv/bin/activate
+            python etc/metric_aggregator.py .
       - store_artifacts:
           path: htmlcov/
+      - store_artifacts:
+          path: metrics/
 
   docker-push:
     executor: ubuntu-machine-amd64
