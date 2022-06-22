@@ -15,12 +15,13 @@ import botocore.config
 import dateutil.parser
 import xmltodict
 from botocore.client import ClientError
-from moto.s3.exceptions import InvalidFilterRuleName
+from moto.s3.exceptions import InvalidFilterRuleName, MissingBucket
 from moto.s3.models import FakeBucket, s3_backend
 from pytz import timezone
 from requests.models import Request, Response
 
 from localstack import config, constants
+from localstack.aws.api import CommonServiceException
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
@@ -111,11 +112,16 @@ CORS_HEADERS = [
 ]
 
 
-class NoSuchBucket(Exception):
+class NoSuchBucket(CommonServiceException):
     """Exception to indicate that a bucket cannot be found"""
 
-    def __init__(self, bucket_name: str):
-        super().__init__(f"The specified bucket {bucket_name} does not exist")
+    def __init__(self):
+        super().__init__(
+            code="NoSuchBucket",
+            message="The specified bucket does not exist",
+            status_code=404,
+            sender_fault=True,
+        )
 
 
 class BackendState:
@@ -167,7 +173,11 @@ class BackendState:
         bucket_name = normalize_bucket_name(bucket_name)
         bucket = s3_backend.buckets.get(bucket_name)
         if not bucket:
-            raise NoSuchBucket(bucket_name)
+            # note: adding a switch here to be able to handle both, moto's MissingBucket with the
+            # legacy edge proxy, as well as our custom CommonServiceException with the new Gateway.
+            if config.LEGACY_EDGE_PROXY:
+                raise MissingBucket()
+            raise NoSuchBucket()
         return bucket
 
 
@@ -509,8 +519,12 @@ def get_origin_host(headers):
     return origin
 
 
-def append_cors_headers(bucket_name, request_method, request_headers, response):
+def append_cors_headers(
+    bucket_name: str, request_method: str, request_headers: Dict[str, str], response
+):
     bucket_name = normalize_bucket_name(bucket_name)
+    if not bucket_name:
+        return
 
     # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Request-Method
     # > The Access-Control-Request-Method request header is used by browsers when issuing a preflight request,
@@ -521,8 +535,10 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
         request_method = request_headers["Access-Control-Request-Method"]
 
     # Checking CORS is allowed or not
-    cors = BackendState.cors_config(bucket_name)
-    if not cors:
+    try:
+        cors = BackendState.cors_config(bucket_name)
+        assert cors
+    except Exception:
         return
 
     # Cleaning headers
@@ -1120,7 +1136,7 @@ def handle_get_bucket_notification(bucket):
 
     # TODO check if bucket exists
     result = f'<NotificationConfiguration xmlns="{XMLNS_S3}">'
-    notifications = BackendState.notification_configs(bucket)
+    notifications = BackendState.notification_configs(bucket) or []
     for notif in notifications:
         for dest in NOTIFICATION_DESTINATION_TYPES:
             if dest in notif:
