@@ -65,8 +65,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 )
             # Exclude services / operations which have ambiguities and where the service routing needs to resolve those
             elif (
-                service.service_name in ["rds", "docdb", "neptune"]
-                or service.service_name in "timestream-write"
+                service.service_name in ["docdb", "neptune"]  # maps to rds
+                or service.service_name in "timestream-write"  # maps to timestream-query
                 or (
                     service.service_name == "sesv2"
                     and operation_name == "PutEmailIdentityDkimSigningAttributes"
