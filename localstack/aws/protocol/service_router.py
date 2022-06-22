@@ -234,6 +234,8 @@ def resolve_conflicts(candidates: Set[str], request: Request):
     """
     if candidates == {"timestream-query", "timestream-write"}:
         return "timestream-query"
+    if candidates == {"docdb", "neptune", "rds"}:
+        return "rds"
 
 
 def determine_aws_service_name(
@@ -288,8 +290,8 @@ def determine_aws_service_name(
     if len(candidates) == 1:
         return candidates.pop()
 
-    # 3. check the path
-    if path:
+    # 3. check the path if it is set and not a trivial root path
+    if path and path != "/":
         # iterate over the service spec's endpoint prefix
         for prefix, services_per_prefix in services.endpoint_prefix_index.items():
             if path.startswith(prefix):
