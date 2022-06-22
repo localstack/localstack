@@ -191,4 +191,4 @@ def test_endpoint_prefix_based_routing():
             headers={"Host": "identity-chime.localhost.localstack.cloud"},
         )
     )
-    assert detected_service_name == "chime"
+    assert detected_service_name == "chime-sdk-identity"
