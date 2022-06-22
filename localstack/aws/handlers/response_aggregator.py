@@ -19,6 +19,12 @@ LOG = logging.getLogger(__name__)
 def get_resource_id(
     service_name: str, operation_name: str, service_request: ServiceRequest, response: Response
 ) -> Optional[str]:
+    """
+    Attempts to extract the ID (name) of a particular resource contained within the request or response object.
+    For example, if the service is s3 and the operation is CreateBucket -> return the name of the bucket.
+    The logic for extracting the resource name depends on the service and operation in question, so it has to be
+    implemented manually on a per service/operation basis.
+    """
     if service_name == "kinesis" and operation_name in {"CreateStream", "DeleteStream"}:
         return service_request.get("StreamName")
     if service_name == "lambda" and operation_name in {
