@@ -2,11 +2,15 @@ import base64
 import json
 import logging
 from abc import ABC
-from typing import Any, Dict
+from enum import Enum
+from http import HTTPStatus
+from typing import Any, Dict, Union
 from urllib.parse import quote_plus, unquote_plus
 
+from requests import Response
+
 from localstack import config
-from localstack.constants import APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
@@ -17,13 +21,90 @@ from localstack.utils.numbers import is_number, to_number
 LOG = logging.getLogger(__name__)
 
 
+class PassthroughBehavior(Enum):
+    WHEN_NO_MATCH = "WHEN_NO_MATCH"
+    WHEN_NO_TEMPLATES = "WHEN_NO_TEMPLATES"
+    NEVER = "NEVER"
+
+
+class MappingTemplates:
+    """
+    API Gateway uses mapping templates to transform incoming requests before they are sent to the
+    integration back end. With API Gateway, you can define one mapping template for each possible
+    content type. The content type selection is based on the Content-Type header of the incoming
+    request. If no content type is specified in the request, API Gateway uses an application/json
+    mapping template. By default, mapping templates are configured to simply pass through the
+    request input. Mapping templates use Apache Velocity to generate a request to your back end.
+    """
+
+    passthrough_behavior: PassthroughBehavior
+
+    class UnsupportedMediaType(Exception):
+        pass
+
+    def __init__(self, passthrough_behaviour: str):
+        self.passthrough_behavior = self.get_passthrough_behavior(passthrough_behaviour)
+
+    def check_passthrough_behavior(self, request_template):
+        """
+        Specifies how the method request body of an unmapped content type will be passed through
+        the integration request to the back end without transformation.
+        A content type is unmapped if no mapping template is defined in the integration or the
+        content type does not match any of the mapped content types, as specified in requestTemplates
+        """
+        if not request_template and self.passthrough_behavior in {
+            PassthroughBehavior.NEVER,
+            PassthroughBehavior.WHEN_NO_TEMPLATES,
+        }:
+            raise MappingTemplates.UnsupportedMediaType()
+
+    @staticmethod
+    def get_passthrough_behavior(passthrough_behaviour: str):
+        return getattr(PassthroughBehavior, passthrough_behaviour, None)
+
+
 class BackendIntegration(ABC):
     """Abstract base class representing a backend integration"""
+
+    def __init__(self):
+        self.request_templates = RequestTemplates()
+        self.response_templates = ResponseTemplates()
+
+    @classmethod
+    def _create_response(cls, status_code, headers, data=""):
+        response = Response()
+        response.status_code = status_code
+        response.headers = headers
+        response._content = data
+        return response
+
+    @classmethod
+    def apply_response_parameters(
+        cls, invocation_context: ApiInvocationContext, response: Response
+    ):
+        integration = invocation_context.integration
+        integration_responses = integration.get("integrationResponses") or {}
+        if not integration_responses:
+            return response
+        entries = list(integration_responses.keys())
+        return_code = str(response.status_code)
+        if return_code not in entries:
+            if len(entries) > 1:
+                LOG.info("Found multiple integration response status codes: %s", entries)
+                return response
+            return_code = entries[0]
+        response_params = integration_responses[return_code].get("responseParameters", {})
+        for key, value in response_params.items():
+            # TODO: add support for method.response.body, etc ...
+            if str(key).lower().startswith("method.response.header."):
+                header_name = key[len("method.response.header.") :]
+                response.headers[header_name] = value.strip("'")
+        return response
 
 
 class SnsIntegration(BackendIntegration):
     @classmethod
-    def invoke(cls, invocation_context: ApiInvocationContext):
+    def invoke(cls, invocation_context: ApiInvocationContext) -> Response:
         try:
             request_templates = RequestTemplates()
             payload = request_templates.render(invocation_context)
@@ -40,6 +121,59 @@ class SnsIntegration(BackendIntegration):
         return make_http_request(
             config.service_url("sns"), method="POST", headers=headers, data=payload
         )
+
+
+class MockIntegration(BackendIntegration):
+    @classmethod
+    def check_passthrough_behavior(cls, passthrough_behavior: str, request_template: str):
+        return MappingTemplates(passthrough_behavior).check_passthrough_behavior(request_template)
+
+    def invoke(self, invocation_context: ApiInvocationContext) -> Response:
+        passthrough_behavior = invocation_context.integration.get("passthroughBehavior") or ""
+        request_template = invocation_context.integration.get("requestTemplates", {}).get(
+            invocation_context.headers.get(HEADER_CONTENT_TYPE)
+        )
+
+        # based on the configured passthrough behavior and the existence of template or not,
+        # we proceed calling the integration or raise an exception.
+        try:
+            self.check_passthrough_behavior(passthrough_behavior, request_template)
+        except MappingTemplates.UnsupportedMediaType:
+            http_status = HTTPStatus(415)
+            return MockIntegration._create_response(
+                http_status.value,
+                headers={"Content-Type": APPLICATION_JSON},
+                data=json.dumps({"message": f"{http_status.phrase}"}),
+            )
+
+        # request template rendering
+        request_payload = self.request_templates.render(invocation_context)
+
+        # mapping is done based on "statusCode" field
+        status_code = 200
+        if invocation_context.headers.get(HEADER_CONTENT_TYPE) == APPLICATION_JSON:
+            try:
+                mock_response = json.loads(request_payload)
+                status_code = mock_response.get("statusCode", status_code)
+            except Exception as e:
+                LOG.warning("failed to deserialize request payload after transformation: %s", e)
+                http_status = HTTPStatus(500)
+                return MockIntegration._create_response(
+                    http_status.value,
+                    headers={"Content-Type": APPLICATION_JSON},
+                    data=json.dumps({"message": f"{http_status.phrase}"}),
+                )
+
+        # response template
+        response = MockIntegration._create_response(
+            status_code, invocation_context.headers, data=request_payload
+        )
+        response._content = self.response_templates.render(invocation_context, response=response)
+        # apply response parameters
+        response = self.apply_response_parameters(invocation_context, response)
+        if not invocation_context.headers.get(HEADER_CONTENT_TYPE):
+            invocation_context.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
+        return response
 
 
 class VelocityUtilApiGateway(VelocityUtil):
@@ -148,7 +282,7 @@ class Templates:
     def __init__(self):
         self.vtl = ApiGatewayVtlTemplate()
 
-    def render(self, api_context: ApiInvocationContext):
+    def render(self, api_context: ApiInvocationContext) -> Union[bytes, str]:
         pass
 
     def render_vtl(self, template, variables):
@@ -176,7 +310,7 @@ class RequestTemplates(Templates):
     Handles request template rendering
     """
 
-    def render(self, api_context: ApiInvocationContext):
+    def render(self, api_context: ApiInvocationContext) -> Union[bytes, str]:
         LOG.info(
             "Method request body before transformations: %s", to_str(api_context.data_as_string())
         )
@@ -196,27 +330,31 @@ class ResponseTemplates(Templates):
     Handles response template rendering
     """
 
-    def render(self, api_context: ApiInvocationContext):
-        response = api_context.response
+    def render(self, api_context: ApiInvocationContext, **kwargs) -> Union[bytes, str]:
+        # XXX: keep backwards compatibility until we migrate all integrations to this new classes
+        # api_context contains a response object that we want slowly remove from it
+        data = kwargs["response"] if "response" in kwargs else ""
+        response = data or api_context.response
         integration = api_context.integration
         # we set context data with the response content because later on we use context data as
         # the body field in the template. We need to improve this by using the right source
         # depending on the type of templates.
         api_context.data = response._content
-        int_responses = integration.get("integrationResponses") or {}
-        if not int_responses:
+
+        integration_responses = integration.get("integrationResponses") or {}
+        if not integration_responses:
             return response._content
-        entries = list(int_responses.keys())
+        entries = list(integration_responses.keys())
         return_code = str(response.status_code)
         if return_code not in entries and len(entries) > 1:
             LOG.info("Found multiple integration response status codes: %s", entries)
             return response._content
         return_code = entries[0]
 
-        response_templates = int_responses[return_code].get("responseTemplates", {})
+        response_templates = integration_responses[return_code].get("responseTemplates", {})
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
-            return response
+            return response._content
 
         variables = self.build_variables_mapping(api_context)
         response._content = self.render_vtl(template, variables=variables)

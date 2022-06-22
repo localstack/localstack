@@ -69,6 +69,7 @@ TEST_SWAGGER_FILE_JSON = os.path.join(THIS_FOLDER, "files", "swagger.json")
 TEST_SWAGGER_FILE_YAML = os.path.join(THIS_FOLDER, "files", "swagger.yaml")
 TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "files", "pets.json")
 TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "files", "petstore-swagger.json")
+TEST_IMPORT_MOCK_INTEGRATION = os.path.join(THIS_FOLDER, "files", "openapi-mock.json")
 
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
     "ApiGatewayLambdaProxyIntegrationTestResult",
@@ -153,7 +154,7 @@ class TestAPIGateway:
 
     def test_create_rest_api_with_custom_id(self):
         client = aws_stack.create_external_boto_client("apigateway")
-        apigw_name = "gw-%s" % short_uid()
+        apigw_name = f"gw-{short_uid()}"
         test_id = "testId123"
         result = client.create_rest_api(name=apigw_name, tags={TAG_KEY_CUSTOM_ID: test_id})
         assert test_id == result["id"]
@@ -251,7 +252,7 @@ class TestAPIGateway:
 
     def test_api_gateway_sqs_integration(self):
         # create target SQS stream
-        queue_name = "queue-%s" % short_uid()
+        queue_name = f"queue-{short_uid()}"
         aws_stack.create_sqs_queue(queue_name)
 
         # create API Gateway and connect it to the target queue
@@ -489,6 +490,17 @@ class TestAPIGateway:
             self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
         )
+
+    def test_api_gateway_mock_integration(self, apigateway_client):
+        rest_api_name = f"apigw-{short_uid()}"
+        rest_api_id = apigateway_client.create_rest_api(name=rest_api_name)["id"]
+
+        spec_file = load_file(TEST_IMPORT_MOCK_INTEGRATION)
+        apigateway_client.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
+
+        url = path_based_url(api_id=rest_api_id, stage_name="latest", path="/echo/foobar")
+        response = requests.get(url)
+        assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
     def test_api_gateway_authorizer_crud(self):
         apig = aws_stack.create_external_boto_client("apigateway")
@@ -1461,8 +1473,6 @@ class TestAPIGateway:
             s3_client.delete_bucket(Bucket=bucket_name)
 
     def test_api_mock_integration_response_params(self):
-        # apigw_client = aws_stack.create_external_boto_client('apigateway')
-
         resps = [
             {
                 "statusCode": "204",

@@ -695,16 +695,18 @@ def import_api_from_openapi_spec(
             integration = apigateway_models.Integration(
                 http_method=method,
                 uri=method_integration.get("uri"),
-                integration_type=method_integration["type"],
+                integration_type=method_integration.get("type"),
                 passthrough_behavior=method_integration.get("passthroughBehavior"),
                 request_templates=method_integration.get("requestTemplates") or {},
             )
             integration.create_integration_response(
-                status_code=method_integration.get("default", {}).get("statusCode", 200),
+                status_code=method_integration.get("responses", {})
+                .get("default", {})
+                .get("statusCode", 200),
                 selection_pattern=None,
-                response_templates=method_integration.get("default", {}).get(
-                    "responseTemplates", None
-                ),
+                response_templates=method_integration.get("responses", {})
+                .get("default", {})
+                .get("responseTemplates", None),
                 content_handling=None,
             )
             resource.resource_methods[method]["methodIntegration"] = integration

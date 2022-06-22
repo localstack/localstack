@@ -25,6 +25,7 @@ from localstack.services.apigateway.helpers import (
     make_error_response,
 )
 from localstack.services.apigateway.integration import (
+    MockIntegration,
     RequestTemplates,
     ResponseTemplates,
     SnsIntegration,
@@ -653,15 +654,8 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         return invocation_context.response
 
     elif integration_type == "MOCK":
-
-        # TODO: apply tell don't ask principle inside ResponseTemplates or InvocationContext
-        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-        invocation_context.response = requests_response({})
-
-        response_templates = ResponseTemplates()
-        response_templates.render(invocation_context)
-
-        return invocation_context.response
+        mock_integration = MockIntegration()
+        return mock_integration.invoke(invocation_context)
 
     if method == "OPTIONS":
         # fall back to returning CORS headers if this is an OPTIONS request
