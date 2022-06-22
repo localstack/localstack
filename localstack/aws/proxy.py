@@ -11,6 +11,7 @@ from localstack.aws.accounts import get_account_id_from_access_key_id, set_ctx_a
 from localstack.aws.api import RequestContext
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
 from localstack.services.generic_proxy import ProxyListener
@@ -46,7 +47,9 @@ class AwsApiListener(ProxyListenerAdapter):
         return context
 
     def get_account_id_from_request(self, request: Request) -> str:
-        access_key_id = extract_access_key_id_from_auth_header(request.headers)
+        access_key_id = (
+            extract_access_key_id_from_auth_header(request.headers) or TEST_AWS_ACCESS_KEY_ID
+        )
         set_ctx_aws_access_key_id(access_key_id)
         return get_account_id_from_access_key_id(access_key_id)
 
