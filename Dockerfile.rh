@@ -58,5 +58,7 @@ ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 # expose ports
 EXPOSE 4510-4559 4566
 
+HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD ./bin/localstack status services
+
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
