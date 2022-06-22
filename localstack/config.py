@@ -93,7 +93,7 @@ class Directories:
             cache=f"{DEFAULT_VOLUME_DIR}/cache",
             tmp=f"{DEFAULT_VOLUME_DIR}/tmp",
             functions=f"{DEFAULT_VOLUME_DIR}/tmp",  # FIXME: remove - this was misconceived
-            data=f"{DEFAULT_VOLUME_DIR}/data",
+            data=f"{DEFAULT_VOLUME_DIR}/state",
             logs=f"{DEFAULT_VOLUME_DIR}/logs",
             config="/etc/localstack/conf.d",  # for future use
             init="/etc/localstack/init",  # for future use
@@ -115,7 +115,7 @@ class Directories:
             cache=defaults.cache,
             tmp=defaults.tmp,
             functions=defaults.functions,
-            data=defaults.data if DATA_DIR else None,
+            data=defaults.data if PERSISTENCE else os.path.join(defaults.tmp, "state"),
             config=defaults.config,
             logs=defaults.logs,
             init="/docker-entrypoint-initaws.d",  # FIXME should be reworked with lifecycle hooks
@@ -123,19 +123,25 @@ class Directories:
 
     @staticmethod
     def for_host() -> "Directories":
+        """Return directories used for running localstack in host mode. Note that these are *not* the directories
+        that are mounted into the container when the user starts localstack."""
         root = os.environ.get("FILESYSTEM_ROOT") or os.path.join(
             LOCALSTACK_ROOT_FOLDER, ".filesystem"
         )
         root = os.path.abspath(root)
 
-        defaults = Directories.defaults()
+        defaults = Directories.for_container()
+
+        tmp = os.path.join(root, defaults.tmp.lstrip("/"))
+        data = os.path.join(root, defaults.data.lstrip("/"))
+
         return Directories(
             static_libs=os.path.join(root, defaults.static_libs.lstrip("/")),
             var_libs=os.path.join(root, defaults.var_libs.lstrip("/")),
             cache=os.path.join(root, defaults.cache.lstrip("/")),
-            tmp=os.path.join(root, defaults.tmp.lstrip("/")),
+            tmp=tmp,
             functions=os.path.join(root, defaults.functions.lstrip("/")),
-            data=os.path.join(root, defaults.data.lstrip("/")) if DATA_DIR else None,
+            data=data if PERSISTENCE else os.path.join(tmp, "state"),
             config=os.path.join(root, defaults.config.lstrip("/")),
             init=os.path.join(root, defaults.init.lstrip("/")),
             logs=os.path.join(root, defaults.logs.lstrip("/")),
@@ -346,8 +352,14 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 # name of the host under which the LocalStack services are available
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
-# directory for persisting data
+# directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
+
+# whether localstack should persist service state across localstack runs
+PERSISTENCE = is_env_true("PERSISTENCE")
+
+# whether to clear config.dirs.tmp on startup and shutdown
+CLEAR_TMP_FOLDER = is_env_not_false("CLEAR_TMP_FOLDER")
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), "localstack")
@@ -750,6 +762,7 @@ CONFIG_ENV_VARS = [
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
+    "PERSISTENCE",
     "PERSISTENCE_SINGLE_FILE",
     "REQUESTS_CA_BUNDLE",
     "S3_SKIP_SIGNATURE_VALIDATION",
@@ -978,26 +991,54 @@ SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 
 SERVICE_PROVIDER_CONFIG.load_from_environment()
 
-# initialize directories
-if LEGACY_DIRECTORIES:
+
+def init_legacy_directories() -> Directories:
+    global DATA_DIR, PERSISTENCE
+
+    if DATA_DIR:
+        PERSISTENCE = True
+
     if is_in_docker:
         dirs = Directories.legacy_for_container()
     else:
         dirs = Directories.legacy_from_config()
 
     dirs.mkdirs()
+    return dirs
 
-else:
+
+def init_directories() -> Directories:
+    global DATA_DIR, PERSISTENCE
+
+    if DATA_DIR:
+        # deprecation path: DATA_DIR being set means persistence is activated, but we're ignoring the path set in
+        # DATA_DIR
+        os.environ["PERSISTENCE"] = "1"
+        PERSISTENCE = True
+
     if is_in_docker:
         dirs = Directories.for_container()
-        dirs.mkdirs()
     else:
         dirs = Directories.for_host()
 
-# TODO: remove deprecation warning with next release
-for path in [dirs.config, os.path.join(dirs.tmp, ".localstack")]:
-    if path and os.path.isfile(path):
-        print(
-            f"warning: the config file .localstack is deprecated and no longer used, "
-            f"please remove it by running rm {path}"
-        )
+    if PERSISTENCE:
+        if DATA_DIR:
+            LOG.warning(
+                "Persistence mode was activated using the DATA_DIR variable. The DATA_DIR is deprecated and "
+                "its value is ignore. The data is instead stored into %s in the LocalStack filesystem.",
+                dirs.data,
+            )
+
+        # deprecation path
+        DATA_DIR = dirs.data
+        os.environ["DATA_DIR"] = dirs.data  # still needed for external tools
+
+    return dirs
+
+
+# initialize directories
+dirs: Directories
+if LEGACY_DIRECTORIES:
+    dirs = init_legacy_directories()
+else:
+    dirs = init_directories()
