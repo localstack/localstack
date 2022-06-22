@@ -151,7 +151,11 @@ def _generate_test_name(param: Any):
     _collect_operations(),
     ids=_generate_test_name,
 )
-def test_service_router_works_for_every_service(service: ServiceModel, operation: OperationModel):
+def test_service_router_works_for_every_service(
+    service: ServiceModel, operation: OperationModel, caplog
+):
+    caplog.set_level("CRITICAL", "botocore")
+
     # Create a dummy request for the service router
     client = _client(service.service_name)
     request_context = {
