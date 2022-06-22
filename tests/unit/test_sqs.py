@@ -39,8 +39,10 @@ def test_compare_sqs_message_attrs_md5():
 
 
 def test_handle_string_max_receive_count_in_dead_letter_check():
-    queue = provider.SqsQueue('TestQueue', 'us-east-1', '123456789', {
-                              "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:000000000000:DeadLetterQueue\",\"maxReceiveCount\": \"5\" }"})
+    # fmt: off
+    policy = {"RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:000000000000:DeadLetterQueue\",\"maxReceiveCount\": \"5\" }"}
+    # fmt: on
+    queue = provider.SqsQueue("TestQueue", "us-east-1", "123456789", policy)
     sqs_message = provider.SqsMessage(Message(), {})
     result = provider.SqsProvider()._dead_letter_check(queue, sqs_message, None)
     assert result is False
