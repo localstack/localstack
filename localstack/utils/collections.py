@@ -1,10 +1,13 @@
-"""This package provides custom collection types, as well as tools to analyze and manipulate python collection (
-dicts, list, sets). """
+"""
+This package provides custom collection types, as well as tools to analyze
+and manipulate python collection (dicts, list, sets).
+"""
 
 import logging
 import re
 import sys
-from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, Type, TypeVar, Union
+from collections.abc import Mapping
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sized, Tuple, Type, TypeVar, Union
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -42,17 +45,44 @@ class DelSafeDict(dict):
         self[key] = None
 
 
-class HashableList(list):
-    """Hashable list class that can be used with dicts or hash sets."""
+class ImmutableList(tuple):
+    """
+    Wrapper class to create an immutable view of a given list or sequence.
+    Note: Currently, this is simply a wrapper around `tuple` - could be replaced with
+    custom implementations over time, if needed.
+    """
+
+
+class HashableList(ImmutableList):
+    """Hashable, immutable list wrapper that can be used with dicts or hash sets."""
 
     def __hash__(self):
-        result = 0
-        for i in self:
-            result += hash(i)
-        return result
+        return sum(hash(i) for i in self)
 
 
-class HashableJsonDict(dict):
+class ImmutableDict(Mapping):
+    """Wrapper class to create an immutable view of a given list or sequence."""
+
+    def __init__(self, seq=None, **kwargs):
+        self._dict = dict(seq, **kwargs)
+
+    def __len__(self) -> int:
+        return self._dict.__len__()
+
+    def __iter__(self) -> Iterator:
+        return self._dict.__iter__()
+
+    def __getitem__(self, key):
+        return self._dict.__getitem__(key)
+
+    def __eq__(self, other):
+        return self._dict.__eq__(other._dict if isinstance(other, ImmutableDict) else other)
+
+    def __str__(self):
+        return self._dict.__str__()
+
+
+class HashableJsonDict(ImmutableDict):
     """
     Simple dict wrapper that can be used with dicts or hash sets. Note: the assumption is that the dict
     can be JSON-encoded (i.e., must be acyclic and contain only lists/dicts and simple types)
@@ -61,7 +91,7 @@ class HashableJsonDict(dict):
     def __hash__(self):
         from localstack.utils.json import canonical_json
 
-        return hash(canonical_json(self))
+        return hash(canonical_json(self._dict))
 
 
 _ListType = TypeVar("_ListType")

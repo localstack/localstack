@@ -1,6 +1,5 @@
 import json
 import logging
-import unittest
 from typing import List
 from unittest.mock import patch
 
@@ -18,7 +17,7 @@ from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 LOG = logging.getLogger(__name__)
 
 
-class TestDockerClient(unittest.TestCase):
+class TestDockerClient:
     def _docker_cmd(self) -> List[str]:
         """Return the string to be used for running Docker commands."""
         return config.DOCKER_CMD.split()
@@ -44,10 +43,10 @@ class TestDockerClient(unittest.TestCase):
         container_list = docker_client.list_containers()
         call_arguments = run_mock.call_args[0][0]
         LOG.info("Intercepted call arguments: %s", call_arguments)
-        self.assertEqual(return_container, container_list[0])
-        self.assertTrue(list_in(self._docker_cmd() + ["ps"], call_arguments))
-        self.assertIn("-a", call_arguments)
-        self.assertIn("--format", call_arguments)
+        assert container_list[0] == return_container
+        assert list_in(self._docker_cmd() + ["ps"], call_arguments)
+        assert "-a" in call_arguments
+        assert "--format" in call_arguments
 
     @patch("localstack.utils.container_utils.docker_cmd_client.run")
     def test_container_status(self, run_mock):
@@ -55,13 +54,13 @@ class TestDockerClient(unittest.TestCase):
         run_mock.return_value = test_output
         docker_client = CmdDockerClient()
         status = docker_client.get_container_status("localstack_main")
-        self.assertEqual(DockerContainerStatus.UP, status)
+        assert status == DockerContainerStatus.UP
         run_mock.return_value = "Exited (0) 1 minute ago - localstack_main"
         status = docker_client.get_container_status("localstack_main")
-        self.assertEqual(DockerContainerStatus.DOWN, status)
+        assert status == DockerContainerStatus.DOWN
         run_mock.return_value = "STATUS    NAME"
         status = docker_client.get_container_status("localstack_main")
-        self.assertEqual(DockerContainerStatus.NON_EXISTENT, status)
+        assert status == DockerContainerStatus.NON_EXISTENT
 
 
 def test_argument_parsing():
@@ -125,22 +124,22 @@ def list_in(a, b):
     )
 
 
-class TestPortMappings(unittest.TestCase):
+class TestPortMappings:
     def test_extract_port_flags(self):
         port_mappings = PortMappings()
         flags = extract_port_flags("foo -p 1234:1234 bar", port_mappings=port_mappings)
-        self.assertEqual("foo  bar", flags)
+        assert flags == "foo  bar"
         mapping_str = port_mappings.to_str()
-        self.assertEqual("-p 1234:1234", mapping_str)
+        assert mapping_str == "-p 1234:1234"
 
         port_mappings = PortMappings()
         flags = extract_port_flags(
             "foo -p 1234:1234 bar -p 80-90:81-91 baz", port_mappings=port_mappings
         )
-        self.assertEqual("foo  bar  baz", flags)
+        assert flags == "foo  bar  baz"
         mapping_str = port_mappings.to_str()
-        self.assertIn("-p 1234:1234", mapping_str)
-        self.assertIn("-p 80-90:81-91", mapping_str)
+        assert "-p 1234:1234" in mapping_str
+        assert "-p 80-90:81-91" in mapping_str
 
     def test_overlapping_port_ranges(self):
         port_mappings = PortMappings()
@@ -151,7 +150,8 @@ class TestPortMappings(unittest.TestCase):
         port_mappings.add(4593)
         result = port_mappings.to_str()
         # assert that ranges are non-overlapping, i.e., no duplicate ports
-        self.assertEqual("-p 4590-4592:4590-4592 -p 4593:4593", result)
+        assert "-p 4593:4593" in result
+        assert "-p 4590-4592:4590-4592" in result
 
     def test_port_ranges_with_bind_host(self):
         port_mappings = PortMappings(bind_host="0.0.0.0")
@@ -160,8 +160,9 @@ class TestPortMappings(unittest.TestCase):
         port_mappings.add(5003)
         port_mappings.add([5004, 5006], 9000)
         result = port_mappings.to_str()
-        self.assertEqual(
-            "-p 0.0.0.0:5000-5001:5000-5001 -p 0.0.0.0:5003:5003 -p 0.0.0.0:5004-5006:9000", result
+        assert (
+            result
+            == "-p 0.0.0.0:5000-5001:5000-5001 -p 0.0.0.0:5003:5003 -p 0.0.0.0:5004-5006:9000"
         )
 
     def test_port_ranges_with_bind_host_to_dict(self):
@@ -177,7 +178,7 @@ class TestPortMappings(unittest.TestCase):
             "8000/tcp": ("0.0.0.0", 5003),
             "9000/tcp": ("0.0.0.0", [5004, 5005, 5006]),
         }
-        self.assertEqual(expected_result, result)
+        assert result == expected_result
 
     def test_many_to_one_adjacent_to_uniform(self):
         port_mappings = PortMappings()
@@ -190,7 +191,7 @@ class TestPortMappings(unittest.TestCase):
             "5004/tcp": [5004, 5005, 5006],
         }
         result = port_mappings.to_dict()
-        self.assertEqual(expected_result, result)
+        assert result == expected_result
 
     def test_adjacent_port_to_many_to_one(self):
         port_mappings = PortMappings()
@@ -201,4 +202,4 @@ class TestPortMappings(unittest.TestCase):
             "7000/tcp": [7000, 7001, 7002],
         }
         result = port_mappings.to_dict()
-        self.assertEqual(expected_result, result)
+        assert result == expected_result

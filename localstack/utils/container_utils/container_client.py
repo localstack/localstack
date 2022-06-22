@@ -96,28 +96,42 @@ class CancellableStream(Protocol):
         raise NotImplementedError
 
 
+# defines the type for port mappings (source->target port range)
+PortRange = Union[List, HashableList]
+
+
 class PortMappings:
     """Maps source to target port ranges for Docker port mappings."""
 
-    def __init__(self, bind_host=None):
+    # bind host to be used for defining port mappings
+    bind_host: str
+    # maps `from` port range to `to` port range for port mappings
+    mappings: Dict[PortRange, List]
+
+    def __init__(self, bind_host: str = None):
         self.bind_host = bind_host if bind_host else ""
         self.mappings = {}
 
-    def add(self, port, mapped=None, protocol="tcp"):
+    def add(
+        self,
+        port: Union[int, PortRange],
+        mapped: Union[int, PortRange] = None,
+        protocol: str = "tcp",
+    ):
         mapped = mapped or port
-        if isinstance(port, list):
+        if isinstance(port, PortRange):
             for i in range(port[1] - port[0] + 1):
-                if isinstance(mapped, list):
+                if isinstance(mapped, PortRange):
                     self.add(port[0] + i, mapped[0] + i)
                 else:
                     self.add(port[0] + i, mapped)
             return
         if port is None or int(port) <= 0:
-            raise Exception("Unable to add mapping for invalid port: %s" % port)
+            raise Exception(f"Unable to add mapping for invalid port: {port}")
         if self.contains(port):
             return
         bisected_host_port = None
-        for from_range, to_range in self.mappings.items():
+        for from_range, to_range in dict(self.mappings).items():
             if not self.in_expanded_range(port, from_range):
                 continue
             if not self.in_expanded_range(mapped, to_range):
@@ -126,20 +140,20 @@ class PortMappings:
             to_range_len = to_range[1] - to_range[0]
             is_uniform = from_range_len == to_range_len
             if is_uniform:
-                self.expand_range(port, from_range)
+                self.expand_range(port, from_range, remap=True)
                 self.expand_range(mapped, to_range)
             else:
                 if not self.in_range(mapped, to_range):
                     continue
                 # extending a 1 to 1 mapping to be many to 1
                 elif from_range_len == 1:
-                    self.expand_range(port, from_range)
+                    self.expand_range(port, from_range, remap=True)
                 # splitting a uniform mapping
                 else:
                     bisected_port_index = mapped - to_range[0]
                     bisected_host_port = from_range[0] + bisected_port_index
                     self.bisect_range(mapped, to_range)
-                    self.bisect_range(bisected_host_port, from_range)
+                    self.bisect_range(bisected_host_port, from_range, remap=True)
                     break
             return
         protocol = str(protocol or "tcp").lower()
@@ -200,39 +214,51 @@ class PortMappings:
         items = [item for k, v in self.mappings.items() for item in entry(k, v)]
         return dict(items)
 
-    def contains(self, port):
+    def contains(self, port: int) -> bool:
         for from_range, to_range in self.mappings.items():
             if self.in_range(port, from_range):
                 return True
 
-    def in_range(self, port, range):
+    def in_range(self, port: int, range: PortRange) -> bool:
         return port >= range[0] and port <= range[1]
 
-    def in_expanded_range(self, port, range):
+    def in_expanded_range(self, port: int, range: PortRange):
         return port >= range[0] - 1 and port <= range[1] + 1
 
-    def expand_range(self, port, range):
+    def expand_range(self, port: int, range: PortRange, remap: bool = False):
+        """
+        Expand the given port range by the given port. If remap==True, put the updated range into self.mappings
+        """
         if self.in_range(port, range):
             return
+        new_range = list(range) if remap else range
         if port == range[0] - 1:
-            range[0] = port
+            new_range[0] = port
         elif port == range[1] + 1:
-            range[1] = port
+            new_range[1] = port
         else:
-            raise Exception("Unable to add port %s to existing range %s" % (port, range))
+            raise Exception(f"Unable to add port {port} to existing range {range}")
+        if remap:
+            self._remap_range(range, new_range)
 
-    """Bisect a port range, at the provided port
-        This is needed in some cases when adding a non-uniform host to port mapping
-        adjacent to an existing port range
-    """
-
-    def bisect_range(self, port, range):
+    def bisect_range(self, port: int, range: PortRange, remap: bool = False):
+        """
+        Bisect a port range, at the provided port. This is needed in some cases when adding a
+        non-uniform host to port mapping adjacent to an existing port range.
+        If remap==True, put the updated range into self.mappings
+        """
         if not self.in_range(port, range):
             return
+        new_range = list(range) if remap else range
         if port == range[0]:
-            range[0] = port + 1
+            new_range[0] = port + 1
         else:
-            range[1] = port - 1
+            new_range[1] = port - 1
+        if remap:
+            self._remap_range(range, new_range)
+
+    def _remap_range(self, old_key: PortRange, new_key: PortRange):
+        self.mappings[HashableList(new_key)] = self.mappings.pop(old_key)
 
     def __repr__(self):
         return f"<PortMappings: {self.to_dict()}>"
