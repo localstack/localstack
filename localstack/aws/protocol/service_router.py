@@ -292,13 +292,6 @@ def determine_aws_service_name(
 
     # 3. check the path if it is set and not a trivial root path
     if path and path != "/":
-        # iterate over the service spec's endpoint prefix
-        for prefix, services_per_prefix in services.endpoint_prefix_index.items():
-            if path.startswith(prefix):
-                if len(services_per_prefix) == 1:
-                    return services_per_prefix[0]
-                candidates.update(services_per_prefix)
-
         # try to find a match with the custom path rules
         custom_path_match = custom_path_addressing_rules(path)
         if custom_path_match:
@@ -306,6 +299,13 @@ def determine_aws_service_name(
 
     # 4. check the host (custom host addressing rules)
     if host:
+        # iterate over the service spec's endpoint prefix
+        for prefix, services_per_prefix in services.endpoint_prefix_index.items():
+            if host.startswith(prefix):
+                if len(services_per_prefix) == 1:
+                    return services_per_prefix[0]
+                candidates.update(services_per_prefix)
+
         custom_host_match = custom_host_addressing_rules(host)
         if custom_host_match:
             return custom_host_match
