@@ -603,9 +603,12 @@ def add_accept_range_header(response):
 def is_object_expired(bucket_name: str, key: str) -> bool:
     bucket = BackendState.get_bucket(bucket_name)
     key_obj = bucket.keys.get(key)
-    if not key_obj._expiry:
+    if not key_obj or not key_obj._expiry:
         return False
-    tzone = timezone(key_obj._expiry.tzname())
+    tzname = key_obj._expiry.tzname()
+    if not tzname:
+        return False
+    tzone = timezone(tzname)
     return key_obj._expiry <= datetime.datetime.now(tzone)
 
 
