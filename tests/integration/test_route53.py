@@ -51,29 +51,36 @@ class TestRoute53:
         zone_id = response["HostedZone"]["Id"]
         zone_id = zone_id.replace("/hostedzone/", "")
 
+        # create VPCs
+        vpc1 = ec2_client.create_vpc(CidrBlock="10.113.0.0/24")
+        cleanups.append(lambda: ec2_client.delete_vpc(VpcId=vpc1["Vpc"]["VpcId"]))
+        vpc1_id = vpc1["Vpc"]["VpcId"]
+        vpc2 = ec2_client.create_vpc(CidrBlock="10.114.0.0/24")
+        cleanups.append(lambda: ec2_client.delete_vpc(VpcId=vpc2["Vpc"]["VpcId"]))
+        vpc2_id = vpc2["Vpc"]["VpcId"]
+
         # associate zone with VPC
-        vpc = ec2_client.create_vpc(CidrBlock="10.0.0.0/24")
-        cleanups.append(lambda: ec2_client.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
-        vpc_id = vpc["Vpc"]["VpcId"]
         vpc_region = aws_stack.get_region()
-        result = route53_client.associate_vpc_with_hosted_zone(
-            HostedZoneId=zone_id,
-            VPC={"VPCRegion": vpc_region, "VPCId": vpc_id},
-            Comment="test 123",
-        )
+        for vpc_id in [vpc1_id, vpc2_id]:
+            result = route53_client.associate_vpc_with_hosted_zone(
+                HostedZoneId=zone_id,
+                VPC={"VPCRegion": vpc_region, "VPCId": vpc_id},
+                Comment="test 123",
+            )
+            assert result["ChangeInfo"].get("Id")
+
         cleanups.append(
             lambda: route53_client.disassociate_vpc_from_hosted_zone(
-                HostedZoneId=zone_id, VPC={"VPCRegion": vpc_region, "VPCId": vpc_id}
+                HostedZoneId=zone_id, VPC={"VPCRegion": vpc_region, "VPCId": vpc1_id}
             )
         )
-        assert result["ChangeInfo"].get("Id")
 
         # list zones by VPC
-        result = route53_client.list_hosted_zones_by_vpc(VPCId=vpc_id, VPCRegion=vpc_region)[
+        result = route53_client.list_hosted_zones_by_vpc(VPCId=vpc1_id, VPCRegion=vpc_region)[
             "HostedZoneSummaries"
         ]
         expected = {
-            "HostedZoneId": f"/hostedzone/{zone_id}",
+            "HostedZoneId": zone_id,
             "Name": "%s." % name,
             "Owner": {"OwningAccount": constants.TEST_AWS_ACCOUNT_ID},
         }
@@ -87,12 +94,13 @@ class TestRoute53:
 
         # assert that VPC is attached in Zone response
         result = route53_client.get_hosted_zone(Id=zone_id)
-        assert result["VPCs"] == [{"VPCRegion": vpc_region, "VPCId": vpc_id}]
+        for vpc_id in [vpc1_id, vpc2_id]:
+            assert {"VPCRegion": vpc_region, "VPCId": vpc_id} in result["VPCs"]
 
         # disassociate
         route53_client.disassociate_vpc_from_hosted_zone(
             HostedZoneId=zone_id,
-            VPC={"VPCRegion": aws_stack.get_region(), "VPCId": vpc_id},
+            VPC={"VPCRegion": vpc_region, "VPCId": vpc2_id},
             Comment="test2",
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] in [200, 201]
@@ -100,7 +108,7 @@ class TestRoute53:
         with pytest.raises(Exception):
             route53_client.disassociate_vpc_from_hosted_zone(
                 HostedZoneId=zone_id,
-                VPC={"VPCRegion": aws_stack.get_region(), "VPCId": vpc_id},
+                VPC={"VPCRegion": vpc_region, "VPCId": vpc2_id},
             )
 
     def test_reusable_delegation_sets(self):

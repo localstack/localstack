@@ -1,5 +1,6 @@
 import logging
 import os
+import urllib
 from urllib.parse import urlparse
 
 from moto.s3 import models as s3_models
@@ -361,3 +362,10 @@ def apply_patches():
         key = self.get_object(dest_bucket_name, dest_key_name)
         # reset etag
         key._etag = None
+
+    @patch(s3_models.FakeKey.safe_name)
+    def safe_name(fn, self, encoding_type=None):
+        if encoding_type == "url":
+            # fixes an issue where upstream also encodes "/", which should not be the case
+            return urllib.parse.quote(self.name, safe="/")
+        return self.name
