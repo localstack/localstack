@@ -99,7 +99,7 @@ def uses_host_addressing(headers: Dict[str, str]):
     return True if match and match.group(3) else False
 
 
-def extract_bucket_name(headers, path):
+def extract_bucket_name(headers: Dict[str, str], path: str):
     """
     Extract the bucket name
     if using host based addressing it's extracted from host header
@@ -113,7 +113,8 @@ def extract_bucket_name(headers, path):
         if match and match.group(3):
             bucket_name = match.group(3)
     else:
-        bucket_name = path.split("/", maxsplit=2)[1]
+        path_without_params = path.partition("?")[0]
+        bucket_name = path_without_params.split("/", maxsplit=2)[1]
     return bucket_name if bucket_name else None
 
 
@@ -304,6 +305,7 @@ def authenticate_presign_url(method, path, headers, data=None):
             else request_dict["url"]
         )
 
+    response = None
     if not is_v2 and any(p in query_params for p in SIGNATURE_V2_PARAMS):
         response = requests_error_response_xml_signature_calculation(
             code=403,
