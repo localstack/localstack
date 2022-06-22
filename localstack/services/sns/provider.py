@@ -9,6 +9,7 @@ import traceback
 import uuid
 from typing import Dict, List
 
+import botocore.exceptions
 import requests as requests
 from flask import Response as FlaskResponse
 from moto.sns.exceptions import DuplicateSnsEndpointError
@@ -16,6 +17,7 @@ from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from requests.models import Response
 
 from localstack.aws.api import RequestContext
+from localstack.aws.api.core import CommonServiceException
 from localstack.aws.api.sns import (
     ActionsList,
     AmazonResourceName,
@@ -118,6 +120,8 @@ SNS_PROTOCOLS = [
 # set up logger
 LOG = logging.getLogger(__name__)
 
+GCM_URL = "https://fcm.googleapis.com/fcm/send"
+
 
 class SNSBackend(RegionBackend):
     # maps topic ARN to list of subscriptions
@@ -128,6 +132,7 @@ class SNSBackend(RegionBackend):
     sns_tags: Dict[str, List[Dict]]
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
     platform_endpoint_messages: Dict[str, List[Dict]]
+
     # list of sent SMS messages - TODO: expose via internal API
     sms_messages: List[Dict]
 
@@ -148,12 +153,24 @@ def publish_message(
 
     target_arn = req_data.get("TargetArn")
     if target_arn and ":endpoint/" in target_arn:
-        # cache messages published to platform endpoints
         cache = sns_backend.platform_endpoint_messages[target_arn] = (
             sns_backend.platform_endpoint_messages.get(target_arn) or []
         )
-        # TODO: check this in the old provider
         cache.append(req_data)
+        platform_app, endpoint_attributes = get_attributes_for_application_endpoint(target_arn)
+        message_structure = req_data.get("MessageStructure", [None])[0]
+        LOG.debug("Publishing message to Endpoint: %s | Message: %s", target_arn, message)
+
+        start_thread(
+            lambda _: message_to_endpoint(
+                target_arn,
+                message,
+                message_structure,
+                endpoint_attributes,
+                platform_app,
+            )
+        )
+        return message_id
 
     LOG.debug("Publishing message to TopicArn: %s | Message: %s", topic_arn, message)
     start_thread(
@@ -169,7 +186,107 @@ def publish_message(
             message_attributes,
         )
     )
+
     return message_id
+
+
+def get_attributes_for_application_endpoint(target_arn):
+    sns_client = aws_stack.connect_to_service("sns")
+    app_name = target_arn.split("/")[-2]
+
+    endpoint_attributes = None
+    try:
+        endpoint_attributes = sns_client.get_endpoint_attributes(EndpointArn=target_arn)[
+            "Attributes"
+        ]
+    except botocore.exceptions.ClientError:
+        LOG.warning(f"Missing attributes for endpoint: {target_arn}")
+    if not endpoint_attributes:
+        raise CommonServiceException(
+            message="No account found for the given parameters",
+            code="InvalidClientTokenId",
+            status_code=403,
+        )
+
+    platform_apps = sns_client.list_platform_applications()["PlatformApplications"]
+    app = None
+    try:
+        app = [x for x in platform_apps if app_name in x["PlatformApplicationArn"]][0]
+    except IndexError:
+        LOG.warning(f"Missing application: {target_arn}")
+
+    if not app:
+        raise CommonServiceException(
+            message="No account found for the given parameters",
+            code="InvalidClientTokenId",
+            status_code=403,
+        )
+
+    # Validate parameters
+    if "app/GCM/" in app["PlatformApplicationArn"]:
+        validate_gcm_parameters(app, endpoint_attributes)
+
+    return app, endpoint_attributes
+
+
+def message_to_endpoint(target_arn, message, structure, endpoint_attributes, platform_app):
+    if structure == "json":
+        message = json.loads(message)
+
+    platform_name = target_arn.split("/")[-3]
+
+    response = None
+    if platform_name == "GCM":
+        response = send_message_to_GCM(
+            platform_app["Attributes"], endpoint_attributes, message["GCM"]
+        )
+
+    if response is None:
+        LOG.warn("Platform not implemeted yet")
+    elif response.status_code != 200:
+        LOG.warn(
+            f"Platform {platform_name} returned response {response.status_code} with content {response.content}"
+        )
+
+
+def validate_gcm_parameters(platform_app: Dict, endpoint_attributes: Dict):
+    server_key = platform_app["Attributes"].get("PlatformCredential", "")
+    if not server_key:
+        raise InvalidParameterException(
+            "Invalid parameter: Attributes Reason: Invalid value for attribute: PlatformCredential: cannot be empty"
+        )
+    headers = {"Authorization": f"key={server_key}", "Content-type": "application/json"}
+    response = requests.post(
+        GCM_URL,
+        headers=headers,
+        data='{"registration_ids":["ABC"]}',
+    )
+
+    if response.status_code == 401:
+        raise InvalidParameterException(
+            "Invalid parameter: Attributes Reason: Platform credentials are invalid"
+        )
+
+    if not endpoint_attributes.get("Token"):
+        raise InvalidParameterException(
+            "Invalid parameter: Attributes Reason: Invalid value for attribute: Token: cannot be empty"
+        )
+
+
+def send_message_to_GCM(app_attributes, endpoint_attributes, message):
+    server_key = app_attributes.get("PlatformCredential", "")
+    token = endpoint_attributes.get("Token", "")
+    data = json.loads(message)
+
+    data["to"] = token
+    headers = {"Authorization": f"key={server_key}", "Content-type": "application/json"}
+
+    response = requests.post(
+        GCM_URL,
+        headers=headers,
+        data=json.dumps(data),
+    )
+    return response
 
 
 class SnsProvider(SnsApi, ServiceLifecycleHook):
