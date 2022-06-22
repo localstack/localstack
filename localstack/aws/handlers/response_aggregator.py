@@ -1,11 +1,13 @@
 import logging
+import os
 import threading
 from typing import Optional
 
 import xmltodict
+from localstack_ext.bootstrap.licensing import ENV_LOCALSTACK_API_KEY
 
 from localstack import config
-from localstack.aws.api import RequestContext
+from localstack.aws.api import RequestContext, ServiceRequest
 from localstack.aws.chain import HandlerChain
 from localstack.http import Response
 from localstack.utils.analytics.response_aggregator import ResponseAggregator
@@ -15,7 +17,7 @@ LOG = logging.getLogger(__name__)
 
 
 def get_resource_id(
-    service_name: str, operation_name: str, service_request: RequestContext, response: Response
+    service_name: str, operation_name: str, service_request: ServiceRequest, response: Response
 ) -> Optional[str]:
     if service_name == "kinesis" and operation_name in {"CreateStream", "DeleteStream"}:
         return service_request.get("StreamName")
@@ -25,8 +27,8 @@ def get_resource_id(
         "Invoke",
     }:
         return service_request.get("FunctionName")
-    if service_name == "s3" and operation_name in {"CreateTable", "DeleteTable"}:
-        return service_request.get("Table")
+    if service_name == "s3" and operation_name in {"CreateBucket", "DeleteBucket"}:
+        return service_request.get("Bucket")
     if service_name == "stepfunctions" and operation_name in {
         "CreateStateMachine",
         "DeleteStateMachine",
@@ -82,6 +84,8 @@ class ResponseAggregatorHandler:
         self.aggregator = ResponseAggregator()
         self.aggregator_thread = None
         self._aggregator_mutex = threading.Lock()
+        # TODO FIXME: find a good way to actually check if pro is enabled
+        self._is_pro_enabled = os.getenv(ENV_LOCALSTACK_API_KEY) is not None
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if response is None or context.service is None or context.operation is None:
@@ -97,9 +101,10 @@ class ResponseAggregatorHandler:
         err_type = self._get_err_type(context, response) if response.status_code >= 400 else None
         service_name = context.service.service_name
         operation_name = context.operation.name
-        # TODO check for pro enabled
-        resource_id = get_resource_id(
-            service_name, operation_name, context.service_request, response
+        resource_id = (
+            get_resource_id(service_name, operation_name, context.service_request, response)
+            if self._is_pro_enabled
+            else None
         )
         self.aggregator.add_response(
             service_name,
