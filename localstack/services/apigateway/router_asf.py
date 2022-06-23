@@ -79,9 +79,15 @@ class ApigatewayRouter:
 
     def __init__(self, router: Router[Handler]):
         self.router = router
+        self.registered = False
 
     def register_routes(self) -> None:
         """Registers parameterized routes for API Gateway user invocations."""
+        if self.registered:
+            LOG.debug("Skipped API gateway route registration (routes already registered).")
+            return
+        self.registered = True
+        LOG.debug("Registering parameterized API gateway routes.")
         self.router.add(
             "/",
             host="<api_id>.execute-api.<regex('.*'):server>",
