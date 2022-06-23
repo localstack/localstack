@@ -613,36 +613,38 @@ def import_api_from_openapi_spec(
         security_schemes = path_payload.get("security")
         for security_scheme in security_schemes:
             for security_scheme_name, _ in security_scheme.items():
-                if security_scheme_name in body.get("securityDefinitions"):
+                if security_scheme_name in body.get("securityDefinitions", []):
                     security_config = body.get("securityDefinitions", {}).get(security_scheme_name)
                     aws_apigateway_authorizer = security_config.get(
-                        "x-amazon-apigateway-authorizer"
+                        "x-amazon-apigateway-authorizer", {}
                     )
+                    if not aws_apigateway_authorizer:
+                        continue
+
                     if authorizers.get(security_scheme_name):
                         return authorizers.get(security_scheme_name)
-                    else:
-                        authorizer = rest_api.create_authorizer(
-                            create_resource_id(),
-                            name=security_scheme_name,
-                            authorizer_type=aws_apigateway_authorizer.get("type"),
-                            provider_arns=None,
-                            auth_type=security_config.get("x-amazon-apigateway-authtype"),
-                            authorizer_uri=aws_apigateway_authorizer.get("authorizerUri"),
-                            authorizer_credentials=aws_apigateway_authorizer.get(
-                                "authorizerCredentials"
-                            ),
-                            identity_source=aws_apigateway_authorizer.get("identitySource"),
-                            identiy_validation_expression=aws_apigateway_authorizer.get(
-                                "identityValidationExpression"
-                            ),
-                            authorizer_result_ttl=aws_apigateway_authorizer.get(
-                                "authorizerResultTtlInSeconds"
-                            )
-                            or 300,
+                    authorizer = rest_api.create_authorizer(
+                        create_resource_id(),
+                        name=security_scheme_name,
+                        authorizer_type=aws_apigateway_authorizer.get("type"),
+                        provider_arns=None,
+                        auth_type=security_config.get("x-amazon-apigateway-authtype"),
+                        authorizer_uri=aws_apigateway_authorizer.get("authorizerUri"),
+                        authorizer_credentials=aws_apigateway_authorizer.get(
+                            "authorizerCredentials"
+                        ),
+                        identity_source=aws_apigateway_authorizer.get("identitySource"),
+                        identiy_validation_expression=aws_apigateway_authorizer.get(
+                            "identityValidationExpression"
+                        ),
+                        authorizer_result_ttl=aws_apigateway_authorizer.get(
+                            "authorizerResultTtlInSeconds"
                         )
-                        if authorizer:
-                            authorizers.update({security_scheme_name: authorizer})
-                        return authorizer
+                        or 300,
+                    )
+                    if authorizer:
+                        authorizers.update({security_scheme_name: authorizer})
+                    return authorizer
 
     def get_or_create_path(path):
         parts = path.rstrip("/").replace("//", "/").split("/")
