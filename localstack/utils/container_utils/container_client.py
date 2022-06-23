@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 if sys.version_info >= (3, 8):
-    from typing import Protocol
+    from typing import Protocol, get_args
 else:
-    from typing_extensions import Protocol
+    from typing_extensions import Protocol, get_args
 
 from localstack import config
 from localstack.utils.collections import HashableList
@@ -100,6 +100,14 @@ class CancellableStream(Protocol):
 PortRange = Union[List, HashableList]
 
 
+def isinstance_union(obj, class_or_tuple):
+    # that's some dirty hack
+    if sys.version_info < (3, 10):
+        return isinstance(obj, get_args(PortRange))
+    else:
+        return isinstance(obj, class_or_tuple)
+
+
 class PortMappings:
     """Maps source to target port ranges for Docker port mappings."""
 
@@ -119,9 +127,9 @@ class PortMappings:
         protocol: str = "tcp",
     ):
         mapped = mapped or port
-        if isinstance(port, PortRange):
+        if isinstance_union(port, PortRange):
             for i in range(port[1] - port[0] + 1):
-                if isinstance(mapped, PortRange):
+                if isinstance_union(mapped, PortRange):
                     self.add(port[0] + i, mapped[0] + i)
                 else:
                     self.add(port[0] + i, mapped)
