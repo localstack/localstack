@@ -1037,8 +1037,11 @@ class TestCloudFormation:
         assert rs["QueueConfigurations"][0]["QueueArn"] == queue_arn
 
         stack.destroy()
-        rs = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
-        assert "QueueConfigurations" not in rs
+
+        # exception below tested against AWS
+        with pytest.raises(Exception) as exc:
+            s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        exc.match("NoSuchBucket")
 
     # TODO: re-evaluate purpose
     def test_cfn_lambda_function_with_iam_role(self, iam_client, deploy_cfn_template, cleanups):

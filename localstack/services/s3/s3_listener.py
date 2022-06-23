@@ -267,8 +267,9 @@ def get_event_message(
 
 
 def send_notifications(method, bucket_name, object_path, version_id, headers, method_map):
-    notification_configs = BackendState.notification_configs(bucket_name)
-    if not notification_configs:
+    try:
+        notification_configs = BackendState.notification_configs(bucket_name) or []
+    except (NoSuchBucket, MissingBucket):
         return
 
     action = method_map[method]
@@ -1134,7 +1135,6 @@ def handle_get_bucket_notification(bucket):
     response.status_code = 200
     response._content = ""
 
-    # TODO check if bucket exists
     result = f'<NotificationConfiguration xmlns="{XMLNS_S3}">'
     notifications = BackendState.notification_configs(bucket) or []
     for notif in notifications:
