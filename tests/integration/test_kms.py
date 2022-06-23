@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.crypto import encrypt
+from localstack.utils.strings import short_uid
 
 
 class TestKMS:
@@ -50,7 +51,7 @@ class TestKMS:
             )
 
     def test_create_grant_with_valid_key(self, kms_client, kms_key):
-        key_id = kms_key["KeyMetadata"]["KeyId"]
+        key_id = kms_key["KeyId"]
 
         grants_before = kms_client.list_grants(KeyId=key_id)["Grants"]
 
@@ -67,7 +68,7 @@ class TestKMS:
 
     def test_revoke_grant(self, kms_client, kms_grant_and_key):
         grant = kms_grant_and_key[0]
-        key_id = kms_grant_and_key[1]["KeyMetadata"]["KeyId"]
+        key_id = kms_grant_and_key[1]["KeyId"]
         grants_before = kms_client.list_grants(KeyId=key_id)["Grants"]
 
         kms_client.revoke_grant(KeyId=key_id, GrantId=grant["GrantId"])
@@ -77,7 +78,7 @@ class TestKMS:
 
     def test_retire_grant(self, kms_client, kms_grant_and_key):
         grant = kms_grant_and_key[0]
-        key_id = kms_grant_and_key[1]["KeyMetadata"]["KeyId"]
+        key_id = kms_grant_and_key[1]["KeyId"]
         grants_before = kms_client.list_grants(KeyId=key_id)["Grants"]
 
         kms_client.retire_grant(GrantToken=grant["GrantToken"])
@@ -86,7 +87,7 @@ class TestKMS:
         assert len(grants_after) == len(grants_before) - 1
 
     def test_asymmetric_keys(self, kms_client, kms_key):
-        key_id = kms_key["KeyMetadata"]["KeyId"]
+        key_id = kms_key["KeyId"]
 
         # generate key pair without plaintext
         result = kms_client.generate_data_key_pair_without_plaintext(
@@ -199,3 +200,17 @@ class TestKMS:
             CiphertextBlob=encrypt_result["CiphertextBlob"], KeyId=key_id
         )
         assert api_decrypted["Plaintext"] == plaintext
+
+    def test_list_aliases_of_key(self, kms_client, kms_create_key):
+        aliased_key = kms_create_key()
+        comparison_key = kms_create_key()
+
+        alias_name = f"alias/{short_uid()}"
+
+        kms_client.create_alias(AliasName=alias_name, TargetKeyId=aliased_key["KeyId"])
+
+        response = kms_client.list_aliases(KeyId=aliased_key["KeyId"])
+        assert len(response["Aliases"]) == 1
+
+        response = kms_client.list_aliases(KeyId=comparison_key["KeyId"])
+        assert len(response["Aliases"]) == 0

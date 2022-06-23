@@ -13,6 +13,7 @@ from moto.kms.models import Key, kms_backends
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.kms import (
     AlgorithmSpec,
+    AliasListEntry,
     CiphertextType,
     CreateGrantRequest,
     CreateGrantResponse,
@@ -38,6 +39,7 @@ from localstack.aws.api.kms import (
     KeyIdType,
     KmsApi,
     LimitType,
+    ListAliasesResponse,
     ListGrantsRequest,
     ListGrantsResponse,
     MarkerType,
@@ -53,7 +55,8 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.collections import remove_attributes
+from localstack.utils.aws.aws_stack import kms_alias_arn
+from localstack.utils.collections import PaginatedList, remove_attributes
 from localstack.utils.common import select_attributes
 from localstack.utils.crypto import decrypt, encrypt
 from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
@@ -448,6 +451,38 @@ class KmsProvider(KmsApi):
         key_material = import_state.key_obj.decrypt(encrypted_key_material, padding.PKCS1v15())
         key_obj.key_material = key_material
         return ImportKeyMaterialResponse()
+
+    def list_aliases(
+        self,
+        context: RequestContext,
+        key_id: KeyIdType = None,
+        limit: LimitType = None,
+        marker: MarkerType = None,
+    ) -> ListAliasesResponse:
+        if key_id is None:
+            return call_moto(context)
+
+        response_aliases = PaginatedList()
+
+        if kms_backends.get(context.region).keys.get(key_id) is None:
+            raise NotFoundException(f"Unable to find key '{key_id}'")
+
+        aliases_of_key = kms_backends.get(context.region).get_all_aliases().get(key_id) or []
+
+        for alias_name in aliases_of_key:
+            response_aliases.append(
+                AliasListEntry(
+                    AliasArn=kms_alias_arn(alias_name, region_name=context.region),
+                    AliasName=alias_name,
+                    TargetKeyId=key_id,
+                )
+            )
+
+        page, nxt = response_aliases.get_page(
+            lambda a: a["AliasName"], next_token=marker, page_size=limit
+        )
+
+        return ListAliasesResponse(Aliases=page, NextMarker=nxt, Truncated=nxt is not None)
 
     def _verify_key_exists(self, key_id):
         try:
