@@ -91,6 +91,9 @@ class ResponseAggregator:
         with self._flush_mutex:
             if len(self.response_counter) > 0:
                 analytics_payload = self._get_analytics_payload()
-                analytics.log.event("http_response_agg", analytics_payload)
+                self._emit_payload(analytics_payload)
                 self.response_counter.clear()
         self.period_start_time = datetime.datetime.utcnow()
+
+    def _emit_payload(self, analytics_payload: Dict):
+        analytics.log.event("http_response_agg", analytics_payload)
