@@ -216,14 +216,13 @@ class LambdaProxyIntegration(BackendIntegration):
             except Exception as e:
                 LOG.warning("Couldn't set Lambda response content: %s", e)
                 response._content = "{}"
-            self.update_content_length(response)
             response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
 
         # apply custom response template
+        self.update_content_length(response)
         invocation_context.response = response
 
         self.response_templates.render(invocation_context)
-        invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response
 
 
