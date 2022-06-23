@@ -15,7 +15,7 @@ from localstack.utils.strings import short_uid
 
 class TestKMS:
     @pytest.fixture(scope="class")
-    def test_user_arn(self, sts_client):
+    def user_arn(self, sts_client):
         return sts_client.get_caller_identity()["Arn"]
 
     @pytest.mark.aws_validated
@@ -40,12 +40,12 @@ class TestKMS:
         assert f":{account_id}:" in response["Arn"]
 
     @pytest.mark.aws_validated
-    def test_create_grant_with_invalid_key(self, kms_client, test_user_arn):
+    def test_create_grant_with_invalid_key(self, kms_client, user_arn):
 
         with pytest.raises(botocore.exceptions.ClientError):
             kms_client.create_grant(
                 KeyId="invalid",
-                GranteePrincipal=test_user_arn,
+                GranteePrincipal=user_arn,
                 Operations=["Decrypt", "Encrypt"],
             )
 
@@ -57,14 +57,14 @@ class TestKMS:
             )
 
     @pytest.mark.aws_validated
-    def test_create_grant_with_valid_key(self, kms_client, kms_key, test_user_arn):
+    def test_create_grant_with_valid_key(self, kms_client, kms_key, user_arn):
         key_id = kms_key["KeyId"]
 
         grants_before = kms_client.list_grants(KeyId=key_id)["Grants"]
 
         grant = kms_client.create_grant(
             KeyId=key_id,
-            GranteePrincipal=test_user_arn,
+            GranteePrincipal=user_arn,
             Operations=["Decrypt", "Encrypt"],
         )
         assert "GrantId" in grant
