@@ -1,7 +1,8 @@
+import os
 from typing import Any
 from unittest.mock import patch
 
-from pytest import fixture
+from pytest import fixture, mark
 
 from localstack.services.generic_proxy import RegionBackend
 
@@ -18,6 +19,10 @@ def sample_region_backend():
     return SampleRegionBackend
 
 
+@mark.skipif(
+    condition=os.getenv("MULTI_ACCOUNTS", False),
+    reason="Multi-accounts feature must be explicitely enabled in env config",
+)
 def test_region_backend_namespacing(sample_region_backend):
     account1 = "696969696969"
     account2 = "424242424242"
