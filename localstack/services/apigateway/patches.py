@@ -179,6 +179,7 @@ def apply_patches():
             request_parameters = self._get_param("requestParameters") or {}
             cache_key_parameters = self._get_param("cacheKeyParameters") or []
             content_handling = self._get_param("contentHandling")
+            integration["cacheNamespace"] = resource_id
             integration["timeoutInMillis"] = timeout_milliseconds
             integration["requestParameters"] = request_parameters
             integration["cacheKeyParameters"] = cache_key_parameters
