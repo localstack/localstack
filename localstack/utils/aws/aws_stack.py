@@ -776,6 +776,13 @@ def kms_key_arn(key_id: str, account_id: str = None, region_name: str = None) ->
     return _resource_arn(key_id, pattern, account_id=account_id, region_name=region_name)
 
 
+def kms_alias_arn(alias_name: str, account_id: str = None, region_name: str = None):
+    if not alias_name.startswith("alias/"):
+        alias_name = "alias/" + alias_name
+    pattern = "arn:aws:kms:%s:%s:%s"
+    return _resource_arn(alias_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def code_signing_arn(code_signing_id: str, account_id: str = None, region_name: str = None) -> str:
     pattern = "arn:aws:lambda:%s:%s:code-signing-config:%s"
     return _resource_arn(code_signing_id, pattern, account_id=account_id, region_name=region_name)

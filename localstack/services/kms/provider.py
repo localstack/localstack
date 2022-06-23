@@ -55,7 +55,7 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import get_account_id
+from localstack.utils.aws.aws_stack import kms_alias_arn
 from localstack.utils.collections import PaginatedList, remove_attributes
 from localstack.utils.common import select_attributes
 from localstack.utils.crypto import decrypt, encrypt
@@ -472,7 +472,7 @@ class KmsProvider(KmsApi):
         for alias_name in aliases_of_key:
             response_aliases.append(
                 AliasListEntry(
-                    AliasArn=f"arn:aws:kms:{context.region}:{get_account_id()}:{alias_name}",
+                    AliasArn=kms_alias_arn(alias_name, region_name=context.region),
                     AliasName=alias_name,
                     TargetKeyId=key_id,
                 )
@@ -482,10 +482,7 @@ class KmsProvider(KmsApi):
             lambda a: a["AliasName"], next_token=marker, page_size=limit
         )
 
-        if nxt is None:
-            return ListAliasesResponse(Aliases=page, Truncated=False)
-        else:
-            return ListAliasesResponse(Aliases=page, NextMarker=nxt, Truncated=True)
+        return ListAliasesResponse(Aliases=page, NextMarker=nxt, Truncated=nxt is not None)
 
     def _verify_key_exists(self, key_id):
         try:
