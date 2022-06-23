@@ -337,3 +337,14 @@ class TestS3DeepArchive:
         for obj in objects:
             keys.append(obj.key)
             assert obj.storage_class == "DEEP_ARCHIVE"
+
+    @pytest.mark.aws_validated
+    def test_get_object_no_such_bucket(self, s3_client):
+        with pytest.raises(ClientError) as e:
+            s3_client.get_object(Bucket=f"does-not-exist-{short_uid()}", Key="foobar")
+
+        response = e.value.response
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 404
+        error = response["Error"]
+        assert error["Code"] == "NoSuchBucket"
+        assert error["Message"] == "The specified bucket does not exist"

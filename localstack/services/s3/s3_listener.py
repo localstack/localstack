@@ -8,18 +8,20 @@ import logging
 import random
 import re
 import uuid
+from typing import Any, Dict, List
 from urllib.parse import parse_qs, parse_qsl, quote, unquote, urlencode, urlparse, urlunparse
 
 import botocore.config
 import dateutil.parser
 import xmltodict
 from botocore.client import ClientError
-from moto.s3.exceptions import InvalidFilterRuleName
-from moto.s3.models import s3_backend
+from moto.s3.exceptions import InvalidFilterRuleName, MissingBucket
+from moto.s3.models import FakeBucket, s3_backend
 from pytz import timezone
 from requests.models import Request, Response
 
 from localstack import config, constants
+from localstack.aws.api import CommonServiceException
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
@@ -59,23 +61,6 @@ from localstack.utils.persistence import PersistingProxyListener
 
 # backend port (configured in s3_starter.py on startup)
 PORT_S3_BACKEND = None
-
-# mappings for S3 bucket notifications
-S3_NOTIFICATIONS = s3_backend.S3_NOTIFICATIONS = getattr(s3_backend, "S3_NOTIFICATIONS", {})
-
-# mappings for bucket CORS settings
-BUCKET_CORS = s3_backend.BUCKET_CORS = getattr(s3_backend, "BUCKET_CORS", {})
-
-# maps bucket name to lifecycle settings
-BUCKET_LIFECYCLE = s3_backend.BUCKET_LIFECYCLE = getattr(s3_backend, "BUCKET_LIFECYCLE", {})
-
-# maps bucket name to replication settings
-BUCKET_REPLICATIONS = s3_backend.BUCKET_REPLICATIONS = getattr(
-    s3_backend, "BUCKET_REPLICATIONS", {}
-)
-
-# map to store the s3 expiry dates
-OBJECT_EXPIRY = s3_backend.OBJECT_EXPIRY = getattr(s3_backend, "OBJECT_EXPIRY", {})
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -125,6 +110,75 @@ CORS_HEADERS = [
     "Access-Control-Request-Headers",
     "Access-Control-Request-Method",
 ]
+
+
+class NoSuchBucket(CommonServiceException):
+    """Exception to indicate that a bucket cannot be found"""
+
+    def __init__(self):
+        super().__init__(
+            code="NoSuchBucket",
+            message="The specified bucket does not exist",
+            status_code=404,
+            sender_fault=True,
+        )
+
+
+class BackendState:
+    """
+    Utility class that encapsulates access to additional state attributes like bucket
+    notifications, CORS settings, lifecycle configurations, etc.
+
+    The state attributes themselves are attached to the moto S3 bucket objects directly,
+    which simplifies handling of persistence.
+    """
+
+    @classmethod
+    def notification_configs(cls, bucket_name: str) -> List[Dict]:
+        """Return the list of notification configurations for the given S3 bucket"""
+        return cls._bucket_attribute(bucket_name, "_notifications", [])
+
+    @classmethod
+    def cors_config(cls, bucket_name: str) -> Dict:
+        """Return the CORS settings for the given S3 bucket"""
+        return cls._bucket_attribute(bucket_name, "_cors", {})
+
+    @classmethod
+    def lifecycle_config(cls, bucket_name: str) -> Dict:
+        """Return the lifecycle settings for the given S3 bucket"""
+        return cls._bucket_attribute(bucket_name, "_lifecycle", {})
+
+    @classmethod
+    def replication_config(cls, bucket_name: str) -> Dict:
+        """Return the lifecycle settings for the given S3 bucket"""
+        return cls._bucket_attribute(bucket_name, "_replication", {})
+
+    @classmethod
+    def _bucket_attribute(cls, bucket_name: str, attr_name: str, default: Any) -> Any:
+        """
+        Return a custom attribute for the given bucket.
+        If the attribute is not yet defined, it is initialized with the given default value.
+        If the bucket does not exist in the backend, then None is returned.
+        """
+        try:
+            bucket = cls.get_bucket(bucket_name)
+        except NoSuchBucket:
+            return None
+        if not hasattr(bucket, attr_name):
+            setattr(bucket, attr_name, default)
+        return getattr(bucket, attr_name)
+
+    @staticmethod
+    def get_bucket(bucket_name: str) -> FakeBucket:
+        bucket_name = normalize_bucket_name(bucket_name)
+        bucket = s3_backend.buckets.get(bucket_name)
+        if not bucket:
+            # note: adding a switch here to be able to handle both, moto's MissingBucket with the
+            # legacy edge proxy, as well as our custom CommonServiceException with the new Gateway.
+            if config.LEGACY_EDGE_PROXY:
+                raise MissingBucket()
+            raise NoSuchBucket()
+        return bucket
 
 
 def event_type_matches(events, action, api_method):
@@ -213,36 +267,39 @@ def get_event_message(
 
 
 def send_notifications(method, bucket_name, object_path, version_id, headers, method_map):
-    for bucket, notifs in S3_NOTIFICATIONS.items():
-        if normalize_bucket_name(bucket) == normalize_bucket_name(bucket_name):
-            action = method_map[method]
-            # TODO: support more detailed methods, e.g., DeleteMarkerCreated
-            # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
-            if action == "ObjectCreated" and method == "PUT" and "x-amz-copy-source" in headers:
-                api_method = "Copy"
-            elif (
-                action == "ObjectCreated"
-                and method == "POST"
-                and "form-data" in headers.get("Content-Type", "")
-            ):
-                api_method = "Post"
-            elif action == "ObjectCreated" and method == "POST":
-                api_method = "CompleteMultipartUpload"
-            else:
-                api_method = {"PUT": "Put", "POST": "Post", "DELETE": "Delete"}[method]
+    try:
+        notification_configs = BackendState.notification_configs(bucket_name) or []
+    except (NoSuchBucket, MissingBucket):
+        return
 
-            event_name = "%s:%s" % (action, api_method)
-            for notif in notifs:
-                send_notification_for_subscriber(
-                    notif,
-                    bucket_name,
-                    object_path,
-                    version_id,
-                    api_method,
-                    action,
-                    event_name,
-                    headers,
-                )
+    action = method_map[method]
+    # TODO: support more detailed methods, e.g., DeleteMarkerCreated
+    # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
+    if action == "ObjectCreated" and method == "PUT" and "x-amz-copy-source" in headers:
+        api_method = "Copy"
+    elif (
+        action == "ObjectCreated"
+        and method == "POST"
+        and "form-data" in headers.get("Content-Type", "")
+    ):
+        api_method = "Post"
+    elif action == "ObjectCreated" and method == "POST":
+        api_method = "CompleteMultipartUpload"
+    else:
+        api_method = {"PUT": "Put", "POST": "Post", "DELETE": "Delete"}[method]
+
+    event_name = f"{action}:{api_method}"
+    for notif in notification_configs:
+        send_notification_for_subscriber(
+            notif,
+            bucket_name,
+            object_path,
+            version_id,
+            api_method,
+            action,
+            event_name,
+            headers,
+        )
 
 
 def send_notification_for_subscriber(
@@ -347,7 +404,7 @@ def get_cors(bucket_name):
         return response
 
     response.status_code = 200
-    cors = BUCKET_CORS.get(bucket_name)
+    cors = BackendState.cors_config(bucket_name)
     if not cors:
         response.status_code = 404
         cors = {
@@ -376,7 +433,10 @@ def set_cors(bucket_name, cors):
     if not isinstance(cors, dict):
         cors = xmltodict.parse(cors)
 
-    BUCKET_CORS[bucket_name] = cors
+    bucket_cors_config = BackendState.cors_config(bucket_name)
+    bucket_cors_config.clear()
+    bucket_cors_config.update(cors)
+
     response.status_code = 200
     return response
 
@@ -390,7 +450,7 @@ def delete_cors(bucket_name):
         response.status_code = int(code)
         return response
 
-    BUCKET_CORS.pop(bucket_name, {})
+    BackendState.cors_config(bucket_name).clear()
     response.status_code = 200
     return response
 
@@ -406,7 +466,7 @@ def get_request_payment(bucket_name):
     content = {
         "RequestPaymentConfiguration": {
             "@xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
-            "Payer": s3_backend.buckets[bucket_name].payer,
+            "Payer": BackendState.get_bucket(bucket_name).payer,
         }
     }
 
@@ -460,8 +520,12 @@ def get_origin_host(headers):
     return origin
 
 
-def append_cors_headers(bucket_name, request_method, request_headers, response):
+def append_cors_headers(
+    bucket_name: str, request_method: str, request_headers: Dict[str, str], response
+):
     bucket_name = normalize_bucket_name(bucket_name)
+    if not bucket_name:
+        return
 
     # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Request-Method
     # > The Access-Control-Request-Method request header is used by browsers when issuing a preflight request,
@@ -472,8 +536,10 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
         request_method = request_headers["Access-Control-Request-Method"]
 
     # Checking CORS is allowed or not
-    cors = BUCKET_CORS.get(bucket_name)
-    if not cors:
+    try:
+        cors = BackendState.cors_config(bucket_name)
+        assert cors
+    except Exception:
         return
 
     # Cleaning headers
@@ -551,23 +617,27 @@ def add_accept_range_header(response):
         response.headers["accept-ranges"] = "bytes"
 
 
-def is_object_expired(path):
-    object_expiry = get_object_expiry(path)
-    if not object_expiry:
+def is_object_expired(bucket_name: str, key: str) -> bool:
+    bucket = BackendState.get_bucket(bucket_name)
+    key_obj = bucket.keys.get(key)
+    if not key_obj or not key_obj._expiry:
         return False
-    if dateutil.parser.parse(object_expiry) > datetime.datetime.now(
-        timezone(dateutil.parser.parse(object_expiry).tzname())
-    ):
+    tzname = key_obj._expiry.tzname()
+    if not tzname:
         return False
-    return True
+    tzone = timezone(tzname)
+    return key_obj._expiry <= datetime.datetime.now(tzone)
 
 
-def set_object_expiry(path, headers):
-    OBJECT_EXPIRY[path] = headers.get("expires")
-
-
-def get_object_expiry(path):
-    return OBJECT_EXPIRY.get(path)
+def set_object_expiry(bucket_name: str, key: str, headers: Dict[str, str]):
+    expires = headers.get("expires")
+    if not expires:
+        return
+    bucket = BackendState.get_bucket(bucket_name)
+    key_obj = bucket.keys.get(key)
+    if key_obj:
+        expires = dateutil.parser.parse(expires)
+        key_obj.set_expiry(expires)
 
 
 def add_response_metadata_headers(response):
@@ -787,7 +857,7 @@ def get_lifecycle(bucket_name):
     if not exists:
         return xml_response(body, status_code=code)
 
-    lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
+    lifecycle = BackendState.lifecycle_config(bucket_name)
     status_code = 200
 
     if not lifecycle:
@@ -809,7 +879,7 @@ def get_replication(bucket_name):
     if not exists:
         return xml_response(body, status_code=code)
 
-    replication = BUCKET_REPLICATIONS.get(bucket_name)
+    replication = BackendState.replication_config(bucket_name)
     status_code = 200
     if not replication:
         replication = {
@@ -832,7 +902,11 @@ def set_lifecycle(bucket_name, lifecycle):
 
     if isinstance(to_str(lifecycle), str):
         lifecycle = xmltodict.parse(lifecycle)
-    BUCKET_LIFECYCLE[bucket_name] = lifecycle
+
+    bucket_lifecycle = BackendState.lifecycle_config(bucket_name)
+    bucket_lifecycle.clear()
+    bucket_lifecycle.update(lifecycle)
+
     return 200
 
 
@@ -842,8 +916,7 @@ def delete_lifecycle(bucket_name):
     if not exists:
         return xml_response(body, status_code=code)
 
-    if BUCKET_LIFECYCLE.get(bucket_name):
-        BUCKET_LIFECYCLE.pop(bucket_name)
+    BackendState.lifecycle_config(bucket_name).clear()
 
 
 def set_replication(bucket_name, replication):
@@ -854,7 +927,9 @@ def set_replication(bucket_name, replication):
 
     if isinstance(to_str(replication), str):
         replication = xmltodict.parse(replication)
-    BUCKET_REPLICATIONS[bucket_name] = replication
+    bucket_replication = BackendState.replication_config(bucket_name)
+    bucket_replication.clear()
+    bucket_replication.update(replication)
     return 200
 
 
@@ -1060,23 +1135,20 @@ def handle_get_bucket_notification(bucket):
     response.status_code = 200
     response._content = ""
 
-    # TODO check if bucket exists
-    result = '<NotificationConfiguration xmlns="%s">' % XMLNS_S3
-    if bucket in S3_NOTIFICATIONS:
-        notifs = S3_NOTIFICATIONS[bucket]
-        for notif in notifs:
-            for dest in NOTIFICATION_DESTINATION_TYPES:
-                if dest in notif:
-                    dest_dict = {
-                        "%sConfiguration"
-                        % dest: {
-                            "Id": notif["Id"],
-                            dest: notif[dest],
-                            "Event": notif["Event"],
-                            "Filter": notif["Filter"],
-                        }
+    result = f'<NotificationConfiguration xmlns="{XMLNS_S3}">'
+    notifications = BackendState.notification_configs(bucket) or []
+    for notif in notifications:
+        for dest in NOTIFICATION_DESTINATION_TYPES:
+            if dest in notif:
+                dest_dict = {
+                    f"{dest}Configuration": {
+                        "Id": notif["Id"],
+                        dest: notif[dest],
+                        "Event": notif["Event"],
+                        "Filter": notif["Filter"],
                     }
-                    result += xmltodict.unparse(dest_dict, full_document=False)
+                }
+                result += xmltodict.unparse(dest_dict, full_document=False)
     result += "</NotificationConfiguration>"
     response._content = result
     return response
@@ -1112,7 +1184,8 @@ def handle_put_bucket_notification(bucket, data):
     parsed = strip_xmlns(xmltodict.parse(data))
     notif_config = parsed.get("NotificationConfiguration")
 
-    notifications = []
+    notifications = BackendState.notification_configs(bucket)
+    notifications.clear()
 
     for dest in NOTIFICATION_DESTINATION_TYPES:
         config = notif_config.get("%sConfiguration" % dest)
@@ -1141,14 +1214,13 @@ def handle_put_bucket_notification(bucket, data):
 
             notifications.append(clone(notification_details))
 
-    S3_NOTIFICATIONS[bucket] = notifications
-
     return empty_response()
 
 
 def remove_bucket_notification(bucket):
-    if bucket in S3_NOTIFICATIONS:
-        del S3_NOTIFICATIONS[bucket]
+    notification_configs = BackendState.notification_configs(bucket)
+    if notification_configs:
+        notification_configs.clear()
 
 
 class ProxyListenerS3(PersistingProxyListener):
@@ -1537,7 +1609,9 @@ class ProxyListenerS3(PersistingProxyListener):
             fix_xml_preamble_newline(method, path, headers, response)
 
             if method == "PUT":
-                set_object_expiry(path, headers)
+                key_name = extract_key_name(headers, path)
+                if key_name:
+                    set_object_expiry(bucket_name, key_name, headers)
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
@@ -1562,10 +1636,12 @@ class ProxyListenerS3(PersistingProxyListener):
             # Honor response header overrides
             # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
             if method == "GET":
+                key_name = extract_key_name(headers, path)
+                if key_name and is_object_expired(bucket_name, key_name):
+                    return no_such_key_error(path, headers.get("x-amz-request-id"), 400)
+
                 add_accept_range_header(response)
                 add_response_metadata_headers(response)
-                if is_object_expired(path):
-                    return no_such_key_error(path, headers.get("x-amz-request-id"), 400)
                 # AWS C# SDK uses get bucket acl to check the existence of the bucket
                 # If not exists, raises a NoSuchBucket Error
                 if bucket_name and "/?acl" in path:
