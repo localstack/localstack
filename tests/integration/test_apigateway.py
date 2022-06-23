@@ -1881,7 +1881,7 @@ def test_apigateway_rust_lambda(
             restApiId=rest_api_id,
             resourceId=root_resource_id,
             httpMethod="GET",
-            type="AWS",
+            type="AWS_PROXY",
             integrationHttpMethod="POST",
             uri=lambda_target_uri,
             credentials=role_arn,
