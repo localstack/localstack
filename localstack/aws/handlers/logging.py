@@ -1,7 +1,7 @@
 """Handlers for logging."""
 import logging
 
-from localstack.aws.api import RequestContext
+from localstack.aws.api import RequestContext, ServiceException
 from localstack.aws.chain import ExceptionHandler, HandlerChain
 from localstack.http import Response
 
@@ -23,6 +23,10 @@ class ExceptionLogger(ExceptionHandler):
         context: RequestContext,
         response: Response,
     ):
+        if isinstance(exception, ServiceException):
+            # We do not want to log an error/stacktrace if the handler is working as expected, but chooses to through
+            # a service exception
+            return
         if self.logger.isEnabledFor(level=logging.DEBUG):
             self.logger.exception("exception during call chain", exc_info=exception)
         else:
