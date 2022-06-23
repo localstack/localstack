@@ -1164,7 +1164,7 @@ class JSONResponseSerializer(ResponseSerializer):
                 try:
                     member_shape = members[member_key]
                 except KeyError:
-                    LOG.exception(
+                    LOG.warning(
                         "Response object %s contains a member which is not specified: %s",
                         shape.name,
                         member_key,
