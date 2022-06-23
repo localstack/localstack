@@ -8,7 +8,7 @@ from botocore.exceptions import ClientError
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.iam import Tag
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
-from localstack.testing.aws.util import create_client_with_keys
+from localstack.testing.aws.util import create_client_with_keys, wait_for_user
 from localstack.utils.common import short_uid
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.strings import long_uid
@@ -27,9 +27,7 @@ GET_USER_POLICY_DOC = """{
 
 
 class TestIAMExtensions:
-    def test_get_user_without_username_as_user(
-        self, create_user, iam_client, sts_client, wait_for_user
-    ):
+    def test_get_user_without_username_as_user(self, create_user, iam_client, sts_client):
         user_name = f"user-{short_uid()}"
         policy_name = f"policy={short_uid()}"
         create_user(UserName=user_name)

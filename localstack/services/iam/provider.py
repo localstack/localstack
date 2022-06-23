@@ -350,7 +350,7 @@ class IamProvider(IamApi):
         moto_user_name = response["User"]["UserName"]
         moto_user = moto_iam_backend.users.get(moto_user_name)
         # if the user does not exist or is no user
-        if not moto_user:
+        if not moto_user and not user_name:
             access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
             sts_client = aws_stack.connect_to_service(
                 "sts",

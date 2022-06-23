@@ -21,7 +21,7 @@ from pytest_httpserver import HTTPServer
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
-from localstack.testing.aws.util import create_client_with_keys, get_lambda_logs
+from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
@@ -1154,26 +1154,6 @@ def check_lambda_logs(logs_client):
 
 
 @pytest.fixture
-def wait_for_user():
-    def _wait(keys):
-        sts_client = create_client_with_keys(service="sts", keys=keys)
-
-        def is_user_ready():
-            try:
-                sts_client.get_caller_identity()
-                return True
-            except ClientError as e:
-                if e.response["Error"]["Code"] == "InvalidClientTokenId":
-                    return False
-                return True
-
-        # wait until the given user is ready, takes AWS IAM a while...
-        poll_condition(is_user_ready, interval=5, timeout=20)
-
-    return _wait
-
-
-@pytest.fixture
 def create_policy(iam_client):
     policy_arns = []
 
@@ -1190,7 +1170,7 @@ def create_policy(iam_client):
     for policy_arn in policy_arns:
         try:
             iam_client.delete_policy(PolicyArn=policy_arn)
-        except ClientError:
+        except Exception:
             LOG.debug("Could not delete policy '%s' during test cleanup", policy_arn)
 
 

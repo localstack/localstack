@@ -3,9 +3,11 @@ from typing import Dict
 
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.utils.aws import aws_stack
+from localstack.utils.sync import poll_condition
 
 
 def is_aws_cloud() -> bool:
@@ -29,6 +31,22 @@ def bucket_exists(client, bucket_name: str) -> bool:
         if bucket["Name"] == bucket_name:
             return True
     return False
+
+
+def wait_for_user(keys):
+    sts_client = create_client_with_keys(service="sts", keys=keys)
+
+    def is_user_ready():
+        try:
+            sts_client.get_caller_identity()
+            return True
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "InvalidClientTokenId":
+                return False
+            return True
+
+    # wait until the given user is ready, takes AWS IAM a while...
+    poll_condition(is_user_ready, interval=5, timeout=20)
 
 
 def create_client_with_keys(
