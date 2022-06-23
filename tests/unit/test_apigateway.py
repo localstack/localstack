@@ -11,6 +11,7 @@ from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import (
     Resolver,
     apply_json_patch_safe,
+    create_invocation_headers,
     extract_path_params,
     extract_query_string_params,
     get_resource_for_path,
@@ -408,3 +409,20 @@ def test_openapi_resolver_given_list_references():
         "schema": {"value": ["v1", "v2"]},
         "definitions": {"Found": {"value": ["v1", "v2"]}},
     }
+
+
+def test_create_invocation_headers():
+    invocation_context = ApiInvocationContext(
+        method="GET", path="/", data="", headers={"X-Header": "foobar"}
+    )
+    invocation_context.integration = {
+        "requestParameters": {"integration.request.header.X-Custom": "'Event'"}
+    }
+    headers = create_invocation_headers(invocation_context)
+    assert headers == {"X-Header": "foobar", "X-Custom": "'Event'"}
+
+    invocation_context.integration = {
+        "requestParameters": {"integration.request.path.foobar": "'CustomValue'"}
+    }
+    headers = create_invocation_headers(invocation_context)
+    assert headers == {"X-Header": "foobar", "X-Custom": "'Event'"}

@@ -900,11 +900,12 @@ def create_invocation_headers(invocation_context: ApiInvocationContext) -> Dict[
 
     if request_parameters := integration.get("requestParameters"):
         for req_parameter_key, req_parameter_value in request_parameters.items():
-            if header_name := list(
-                filter(None, req_parameter_key.split("integration.request.header."))
+            if (
+                header_name := req_parameter_key.lstrip("integration.request.header.")
+                if "integration.request.header." in req_parameter_key
+                else None
             ):
-                headers.update({header_name[0]: req_parameter_value})
-
+                headers.update({header_name: req_parameter_value})
     return headers
 
 
