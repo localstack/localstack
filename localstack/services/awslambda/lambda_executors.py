@@ -71,7 +71,7 @@ from localstack.utils.container_utils.container_client import (
     DockerContainerStatus,
     PortMappings,
 )
-from localstack.utils.docker_utils import DOCKER_CLIENT, inspect_current_container
+from localstack.utils.docker_utils import DOCKER_CLIENT, get_default_volume_dir_mount
 from localstack.utils.run import FuncThread
 
 # constants
@@ -1271,7 +1271,6 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
 
 class LambdaExecutorLocal(LambdaExecutor):
-
     # maps functionARN -> functionVersion -> callable used to invoke a Lambda function locally
     FUNCTION_CALLABLES: Dict[str, Dict[str, Callable]] = {}
 
@@ -1580,15 +1579,17 @@ class Util:
             return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
 
         if config.is_in_docker:
-            for mount in inspect_current_container()["Mounts"]:
-                if mount["Destination"].rstrip("/") == DEFAULT_VOLUME_DIR:
-                    if mount["Type"] != "bind":
-                        raise ValueError(
-                            "Mount to /var/lib/localstack needs to be a bind mount for lambda to work"
-                        )
-                    fn_dir = mount["Source"]
+            volume = get_default_volume_dir_mount()
 
-                    return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % fn_dir, path)
+            if volume:
+                if volume.type != "bind":
+                    raise ValueError(
+                        f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for lambda to work"
+                    )
+
+                return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % volume.source, path)
+            else:
+                raise ValueError(f"No volume mounted to {DEFAULT_VOLUME_DIR}")
 
         return path
 
@@ -1663,7 +1664,6 @@ class Util:
 
 
 class OutputLog:
-
     __slots__ = ["_stdout", "_stderr"]
 
     def __init__(self, stdout, stderr):

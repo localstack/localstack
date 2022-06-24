@@ -365,7 +365,7 @@ CLEAR_TMP_FOLDER = is_env_not_false("CLEAR_TMP_FOLDER")
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), "localstack")
 
 # this is exclusively for the CLI to configure the container mount into /var/lib/localstack
-VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR") or TMP_FOLDER
+VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip() or TMP_FOLDER
 
 # fix for Mac OS, to be able to mount /var/folders in Docker
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
@@ -993,7 +993,7 @@ SERVICE_PROVIDER_CONFIG.load_from_environment()
 
 
 def init_legacy_directories() -> Directories:
-    global DATA_DIR, PERSISTENCE
+    global PERSISTENCE
 
     if DATA_DIR:
         PERSISTENCE = True
