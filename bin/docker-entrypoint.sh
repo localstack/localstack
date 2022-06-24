@@ -46,6 +46,7 @@ if [ "$DISABLE_TERM_HANDLER" == "" ]; then
 fi
 
 LOG_DIR=/var/lib/localstack/logs
+test -d ${LOG_DIR} || mkdir -p ${LOG_DIR}
 
 cat /dev/null > ${LOG_DIR}/localstack_infra.log
 cat /dev/null > ${LOG_DIR}/localstack_infra.err
