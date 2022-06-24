@@ -269,16 +269,16 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
     if not is_api_key_valid(api_key_required, headers, invocation_context.stage):
         return make_error_response("Access denied - invalid API key", 403)
 
-    integrations = resource.get("resourceMethods", {})
-    integration = integrations.get(method, {})
-    if not integration:
+    resource_methods = resource.get("resourceMethods", {})
+    resource_method = resource_methods.get(method, {})
+    if not resource_method:
         # HttpMethod: '*'
         # ResourcePath: '/*' - produces 'X-AMAZON-APIGATEWAY-ANY-METHOD'
-        integration = integrations.get("ANY", {}) or integrations.get(
+        resource_method = resource_methods.get("ANY", {}) or resource_methods.get(
             "X-AMAZON-APIGATEWAY-ANY-METHOD", {}
         )
-    integration = integration.get("methodIntegration")
-    if not integration:
+    method_integration = resource_method.get("methodIntegration")
+    if not method_integration:
         if method == "OPTIONS" and "Origin" in headers:
             # default to returning CORS headers if this is an OPTIONS request
             return get_cors_response(headers)
@@ -287,16 +287,9 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
             404,
         )
 
-    res_methods = resource.get("resourceMethods", {})
-    meth_integration = res_methods.get(method, {}).get("methodIntegration", {})
-    int_responses = meth_integration.get("integrationResponses", {})
-    response_templates = int_responses.get("200", {}).get("responseTemplates", {})
-
     # update fields in invocation context, then forward request to next handler
-    invocation_context.resource = resource
     invocation_context.resource_path = extracted_path
-    invocation_context.response_templates = response_templates
-    invocation_context.integration = integration
+    invocation_context.integration = method_integration
 
     return invoke_rest_api_integration(invocation_context)
 
@@ -326,9 +319,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     api_id = invocation_context.api_id
     stage = invocation_context.stage
     resource_path = invocation_context.resource_path
-    response_templates = invocation_context.response_templates
     integration = invocation_context.integration
-
+    integration_response = integration.get("integrationResponses", {})
+    response_templates = integration_response.get("200", {}).get("responseTemplates", {})
     # extract integration type and path parameters
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
@@ -355,6 +348,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                     uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
                 )
 
+            headers = helpers.create_invocation_headers(invocation_context)
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
             if invocation_context.authorizer_type:
@@ -644,7 +638,10 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             payload = json.dumps(payload)
 
         uri = apply_request_parameters(
-            uri, integration=integration, path_params=path_params, query_params=query_string_params
+            uri,
+            integration=integration,
+            path_params=path_params,
+            query_params=query_string_params,
         )
         result = requests.request(method=method, url=uri, data=payload, headers=headers)
         # apply custom response template

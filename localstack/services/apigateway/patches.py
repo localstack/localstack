@@ -15,7 +15,7 @@ from localstack.services.apigateway.helpers import (
     import_api_from_openapi_spec,
 )
 from localstack.utils.collections import ensure_list
-from localstack.utils.common import DelSafeDict, short_uid, str_to_bool, to_str
+from localstack.utils.common import DelSafeDict, str_to_bool, to_str
 from localstack.utils.json import parse_json_or_yaml
 
 LOG = logging.getLogger(__name__)
@@ -47,39 +47,6 @@ def apply_patches():
 
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
-
-    def apigateway_models_Integration_init(
-        self,
-        integration_type,
-        uri,
-        http_method,
-        request_templates=None,
-        passthrough_behavior="WHEN_NO_MATCH",
-        cache_key_parameters=None,
-        *args,
-        **kwargs,
-    ):
-        if cache_key_parameters is None:
-            cache_key_parameters = []
-        apigateway_models_Integration_init_orig(
-            self,
-            integration_type=integration_type,
-            uri=uri,
-            http_method=http_method,
-            request_templates=request_templates,
-            *args,
-            **kwargs,
-        )
-
-        self["passthroughBehavior"] = passthrough_behavior
-        self["cacheKeyParameters"] = cache_key_parameters
-        self["cacheNamespace"] = self.get("cacheNamespace") or short_uid()
-
-        # httpMethod not present in response if integration_type is None, verified against AWS
-        if integration_type == "MOCK":
-            self["httpMethod"] = None
-        if request_templates:
-            self["requestTemplates"] = request_templates
 
     def apigateway_models_backend_put_rest_api(self, function_id, body, query_params):
         rest_api = self.get_rest_api(function_id)
@@ -212,6 +179,7 @@ def apply_patches():
             request_parameters = self._get_param("requestParameters") or {}
             cache_key_parameters = self._get_param("cacheKeyParameters") or []
             content_handling = self._get_param("contentHandling")
+            integration["cacheNamespace"] = resource_id
             integration["timeoutInMillis"] = timeout_milliseconds
             integration["requestParameters"] = request_parameters
             integration["cacheKeyParameters"] = cache_key_parameters
@@ -501,6 +469,4 @@ def apply_patches():
     APIGatewayResponse.resource_method_responses = apigateway_response_resource_method_responses
     apigateway_response_usage_plan_individual_orig = APIGatewayResponse.usage_plan_individual
     APIGatewayResponse.usage_plan_individual = apigateway_response_usage_plan_individual
-    apigateway_models_Integration_init_orig = apigateway_models.Integration.__init__
-    apigateway_models.Integration.__init__ = apigateway_models_Integration_init
     apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict

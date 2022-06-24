@@ -70,6 +70,8 @@ TEST_SWAGGER_FILE_YAML = os.path.join(THIS_FOLDER, "files", "swagger.yaml")
 TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "files", "pets.json")
 TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "files", "petstore-swagger.json")
 TEST_IMPORT_MOCK_INTEGRATION = os.path.join(THIS_FOLDER, "files", "openapi-mock.json")
+TEST_IMPORT_REST_API_ASYNC_LAMBDA = os.path.join(THIS_FOLDER, "files", "api_definition.yaml")
+
 
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
     "ApiGatewayLambdaProxyIntegrationTestResult",
@@ -205,7 +207,7 @@ class TestAPIGateway:
 
     def test_api_gateway_sqs_integration_with_event_source(self):
         # create target SQS stream
-        queue_name = "queue-%s" % short_uid()
+        queue_name = f"queue-{short_uid()}"
         queue_url = aws_stack.create_sqs_queue(queue_name)["QueueUrl"]
 
         # create API Gateway and connect it to the target queue
@@ -491,6 +493,25 @@ class TestAPIGateway:
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
         )
 
+    def test_api_gateway_lambda_asynchronous_invocation(self, apigateway_client):
+        api_gateway_name = f"api_gateway_{short_uid()}"
+        rest_api_id = apigateway_client.create_rest_api(name=api_gateway_name)["id"]
+
+        fn_name = f"test-{short_uid()}"
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
+        )
+        lambda_arn = aws_stack.lambda_function_arn(fn_name)
+
+        spec_file = load_file(TEST_IMPORT_REST_API_ASYNC_LAMBDA)
+        spec_file = spec_file.replace("${lambda_invocation_arn}", lambda_arn)
+
+        apigateway_client.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
+        url = path_based_url(api_id=rest_api_id, stage_name="latest", path="/wait/3")
+        result = requests.get(url)
+        assert result.status_code == 200
+        assert result.content == b""
+
     def test_api_gateway_mock_integration(self, apigateway_client):
         rest_api_name = f"apigw-{short_uid()}"
         rest_api_id = apigateway_client.create_rest_api(name=rest_api_name)["id"]
@@ -549,7 +570,7 @@ class TestAPIGateway:
         apigw_client = aws_stack.create_external_boto_client("apigateway")
 
         # create Lambda function
-        lambda_name = "apigw-lambda-%s" % short_uid()
+        lambda_name = f"apigw-lambda-{short_uid()}"
         self.create_lambda_function(lambda_name)
         lambda_uri = aws_stack.lambda_function_arn(lambda_name)
         target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
@@ -607,7 +628,7 @@ class TestAPIGateway:
 
         # invoke the gateway endpoint
         url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/test")
-        response = requests.get("%s?param1=foobar" % url)
+        response = requests.get(f"{url}?param1=foobar")
         assert response.status_code < 400
         content = response.json()
         assert "GET" == content.get("httpMethod")
@@ -617,7 +638,7 @@ class TestAPIGateway:
 
         # additional checks from https://github.com/localstack/localstack/issues/5041
         # pass Signature param
-        response = requests.get("%s?param1=foobar&Signature=1" % url)
+        response = requests.get(f"{url}?param1=foobar&Signature=1")
         assert response.status_code == 200
         content = response.json()
         assert "GET" == content.get("httpMethod")
@@ -626,7 +647,7 @@ class TestAPIGateway:
         assert '{"param1": "foobar"}' == content.get("body")
 
         # pass TestSignature param as well
-        response = requests.get("%s?param1=foobar&TestSignature=1" % url)
+        response = requests.get(f"{url}?param1=foobar&TestSignature=1")
         assert response.status_code == 200
         content = response.json()
         assert "GET" == content.get("httpMethod")
