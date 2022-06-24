@@ -139,3 +139,38 @@ def test_parameter_usepreviousvalue_behavior(cfn_client, cleanups):
     assert wait_until(wait_stack_done)
     stack_describe_response = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
     assert len(stack_describe_response["Outputs"]) == 2
+
+
+@pytest.mark.aws_validated
+def test_stack_time_attributes(cfn_client, deploy_cfn_template):
+    api_name = f"test_{short_uid()}"
+    template_path = os.path.join(os.path.dirname(__file__), "../templates/simple_api.yaml")
+
+    deployed = deploy_cfn_template(
+        template_path=template_path,
+        parameters={"ApiName": api_name},
+    )
+    stack_name = deployed.stack_name
+    assert "CreationTime" in cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]
+
+    api_name = f"test_{short_uid()}"
+    stack_id = deployed.stack_id
+    cfn_client.update_stack(
+        StackName=stack_name,
+        TemplateBody=load_template_file(template_path),
+        Parameters=[{"ParameterKey": "ApiName", "ParameterValue": api_name}],
+    )
+
+    def wait_stack_done():
+        return cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["StackStatus"] in [
+            "CREATE_COMPLETE",
+            "UPDATE_COMPLETE",
+        ]
+
+    assert wait_until(wait_stack_done)
+
+    assert "LastUpdatedTime" in cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]
+    cfn_client.delete_stack(
+        StackName=stack_name,
+    )
+    assert "DeletionTime" in cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]
