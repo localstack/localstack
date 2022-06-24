@@ -631,29 +631,17 @@ class TestAPIGateway:
         response = requests.get(f"{url}?param1=foobar")
         assert response.status_code < 400
         content = response.json()
-        assert "GET" == content.get("httpMethod")
-        assert api_resource["id"] == content.get("requestContext", {}).get("resourceId")
-        assert self.TEST_STAGE_NAME == content.get("requestContext", {}).get("stage")
-        assert '{"param1": "foobar"}' == content.get("body")
+        assert '{"param1": "foobar"}' == content.get("body").get("body")
 
         # additional checks from https://github.com/localstack/localstack/issues/5041
         # pass Signature param
         response = requests.get(f"{url}?param1=foobar&Signature=1")
         assert response.status_code == 200
         content = response.json()
-        assert "GET" == content.get("httpMethod")
-        assert api_resource["id"] == content.get("requestContext", {}).get("resourceId")
-        assert self.TEST_STAGE_NAME == content.get("requestContext", {}).get("stage")
-        assert '{"param1": "foobar"}' == content.get("body")
-
-        # pass TestSignature param as well
-        response = requests.get(f"{url}?param1=foobar&TestSignature=1")
-        assert response.status_code == 200
-        content = response.json()
-        assert "GET" == content.get("httpMethod")
-        assert api_resource["id"] == content.get("requestContext", {}).get("resourceId")
-        assert self.TEST_STAGE_NAME == content.get("requestContext", {}).get("stage")
-        assert '{"param1": "foobar"}' == content.get("body")
+        assert '{"param1": "foobar"}' == content.get("body").get("body")
+        assert {"Signature": "1", "param1": "foobar"} == content.get("body").get(
+            "queryStringParameters"
+        )
 
         # delete integration
         rs = apigw_client.delete_integration(
@@ -1695,7 +1683,7 @@ class TestAPIGateway:
         )
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
         assert 200 == response.get("status")
-        assert "response from" in response.get("body")
+        assert "response from" in response.get("body").get("body")
 
         # run test_invoke_method API #2
         response = client.test_invoke_method(
@@ -1708,8 +1696,8 @@ class TestAPIGateway:
         )
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
         assert 200 == response.get("status")
-        assert "response from" in response.get("body")
-        assert "val123" in response.get("body")
+        assert "response from" in response.get("body").get("body")
+        assert "val123" in response.get("body").get("body")
 
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)
@@ -1893,7 +1881,7 @@ def test_apigateway_rust_lambda(
             restApiId=rest_api_id,
             resourceId=root_resource_id,
             httpMethod="GET",
-            type="AWS",
+            type="AWS_PROXY",
             integrationHttpMethod="POST",
             uri=lambda_target_uri,
             credentials=role_arn,

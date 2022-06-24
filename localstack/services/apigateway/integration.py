@@ -1,22 +1,32 @@
 import base64
 import json
 import logging
-from abc import ABC
+from abc import ABC, abstractmethod
 from enum import Enum
 from http import HTTPStatus
 from typing import Any, Dict, Union
 from urllib.parse import quote_plus, unquote_plus
 
+from flask import Response as FlaskResponse
 from requests import Response
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway.context import ApiInvocationContext
+from localstack.services.apigateway.helpers import (
+    extract_path_params,
+    extract_query_string_params,
+    get_event_request_context,
+)
+from localstack.services.awslambda import lambda_api
+from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_responses import LambdaResponse, flask_to_requests_response
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
+from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -70,6 +80,10 @@ class BackendIntegration(ABC):
         self.request_templates = RequestTemplates()
         self.response_templates = ResponseTemplates()
 
+    @abstractmethod
+    def invoke(self, invocation_context: ApiInvocationContext):
+        pass
+
     @classmethod
     def _create_response(cls, status_code, headers, data=""):
         response = Response()
@@ -103,11 +117,10 @@ class BackendIntegration(ABC):
 
 
 class SnsIntegration(BackendIntegration):
-    @classmethod
-    def invoke(cls, invocation_context: ApiInvocationContext) -> Response:
+    def invoke(self, invocation_context: ApiInvocationContext) -> Response:
+        invocation_context.context = get_event_request_context(invocation_context)
         try:
-            request_templates = RequestTemplates()
-            payload = request_templates.render(invocation_context)
+            payload = self.request_templates.render(invocation_context)
         except Exception as e:
             LOG.warning("Failed to apply template for SNS integration", e)
             raise
@@ -121,6 +134,96 @@ class SnsIntegration(BackendIntegration):
         return make_http_request(
             config.service_url("sns"), method="POST", headers=headers, data=payload
         )
+
+
+class LambdaProxyIntegration(BackendIntegration):
+    @classmethod
+    def update_content_length(cls, response: Response):
+        if response and response.content is not None:
+            response.headers["Content-Length"] = str(len(response.content))
+
+    def invoke(self, invocation_context: ApiInvocationContext):
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
+        relative_path, query_string_params = extract_query_string_params(
+            path=invocation_context.path_with_query_string
+        )
+        api_id = invocation_context.api_id
+        stage = invocation_context.stage
+        headers = invocation_context.headers
+        resource_path = invocation_context.resource_path
+        invocation_context.context = get_event_request_context(invocation_context)
+        try:
+            path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
+            invocation_context.path_params = path_params
+        except Exception:
+            path_params = {}
+
+        func_arn = uri
+        if ":lambda:path" in uri:
+            func_arn = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
+
+        if invocation_context.authorizer_type:
+            authorizer_context = {
+                invocation_context.authorizer_type: invocation_context.auth_context
+            }
+            invocation_context.context["authorizer"] = authorizer_context
+
+        payload = self.request_templates.render(invocation_context)
+
+        # TODO: change this signature to InvocationContext as well!
+        result = lambda_api.process_apigateway_invocation(
+            func_arn,
+            relative_path,
+            payload,
+            stage,
+            api_id,
+            headers,
+            is_base64_encoded=invocation_context.is_data_base64_encoded,
+            path_params=path_params,
+            query_string_params=query_string_params,
+            method=invocation_context.method,
+            resource_path=resource_path,
+            request_context=invocation_context.context,
+            stage_variables=invocation_context.stage_variables,
+        )
+
+        if isinstance(result, FlaskResponse):
+            response = flask_to_requests_response(result)
+        elif isinstance(result, Response):
+            response = result
+        else:
+            response = LambdaResponse()
+            parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
+            parsed_result = common.json_safe(parsed_result)
+            parsed_result = {} if parsed_result is None else parsed_result
+            response.status_code = int(parsed_result.get("statusCode", 200))
+            parsed_headers = parsed_result.get("headers", {})
+            if parsed_headers is not None:
+                response.headers.update(parsed_headers)
+            try:
+                result_body = parsed_result.get("body")
+                if isinstance(result_body, dict):
+                    response._content = json.dumps(result_body)
+                else:
+                    body_bytes = to_bytes(to_str(result_body or ""))
+                    if parsed_result.get("isBase64Encoded", False):
+                        body_bytes = base64.b64decode(body_bytes)
+                    response._content = body_bytes
+            except Exception as e:
+                LOG.warning("Couldn't set Lambda response content: %s", e)
+                response._content = "{}"
+            response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
+
+        # apply custom response template
+        self.update_content_length(response)
+        invocation_context.response = response
+
+        self.response_templates.render(invocation_context)
+        return invocation_context.response
 
 
 class MockIntegration(BackendIntegration):
