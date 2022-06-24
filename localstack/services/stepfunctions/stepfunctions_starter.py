@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -64,7 +65,7 @@ def get_command(backend_port):
     return cmd
 
 
-def start_stepfunctions(asynchronous=True):
+def start_stepfunctions(asynchronous=True, persistence_path: Optional[str] = None):
     # TODO: introduce Server abstraction for StepFunctions process
     global PROCESS_THREAD
     backend_port = config.LOCAL_PORT_STEPFUNCTIONS
@@ -79,7 +80,7 @@ def start_stepfunctions(asynchronous=True):
         env_vars={
             "EDGE_PORT": config.EDGE_PORT_HTTP or config.EDGE_PORT,
             "EDGE_PORT_HTTP": config.EDGE_PORT_HTTP or config.EDGE_PORT,
-            "DATA_DIR": config.DATA_DIR,
+            "DATA_DIR": persistence_path or config.dirs.data,
         },
     )
     return PROCESS_THREAD
@@ -105,11 +106,3 @@ def check_stepfunctions(expect_shutdown=False, print_error=False):
         assert out is None
     else:
         assert out and isinstance(out.get("stateMachines"), list)
-
-
-def restart_stepfunctions():
-    if not PROCESS_THREAD:
-        return
-    LOG.debug("Restarting StepFunctions process ...")
-    PROCESS_THREAD.stop()
-    start_stepfunctions(asynchronous=True)

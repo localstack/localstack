@@ -79,7 +79,7 @@ MARKER_FILE_LIGHT_VERSION = f"{dirs.static_libs}/.light-version"
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SFN_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/2958554c8aeadff0e8f5d0e35f6e520d834854ea/stepfunctions-local-patch"
+    f"{ARTIFACTS_REPO}/raw/d644316ba05675709e20644688ada0413d9e9941/stepfunctions-local-patch"
 )
 SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
 SFN_PATCH_CLASS2 = (
