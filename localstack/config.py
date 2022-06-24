@@ -183,12 +183,9 @@ class Directories:
         # only set CONTAINER_VAR_LIBS_FOLDER/CONTAINER_CACHE_FOLDER inside the container to redirect var_libs/cache to
         # another directory to avoid override by host mount
         var_libs = (
-            os.environ.get("CONTAINER_VAR_LIBS_FOLDER", "").strip()
-            or f"{DEFAULT_VOLUME_DIR}/var_libs"
+            os.environ.get("CONTAINER_VAR_LIBS_FOLDER", "").strip() or "/tmp/localstack/var_libs"
         )
-        cache = (
-            os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or f"{DEFAULT_VOLUME_DIR}/cache"
-        )
+        cache = os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or "/tmp/localstack/cache"
         tmp = (
             os.environ.get("CONTAINER_TMP_FOLDER", "").strip() or "/tmp/localstack"
         )  # TODO: discuss movement to /var/lib/localstack/tmp
@@ -203,7 +200,7 @@ class Directories:
             functions=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
             data=data_dir,
             config=None,  # config directory is host-only
-            logs=f"{DEFAULT_VOLUME_DIR}/logs",
+            logs="/tmp/localstack/logs",
             init="/docker-entrypoint-initaws.d",
         )
 
@@ -994,6 +991,9 @@ SERVICE_PROVIDER_CONFIG.load_from_environment()
 
 def init_legacy_directories() -> Directories:
     global PERSISTENCE
+    from localstack import constants
+
+    constants.DEFAULT_VOLUME_DIR = "/tmp/localstack"
 
     if DATA_DIR:
         PERSISTENCE = True
@@ -1039,6 +1039,7 @@ def init_directories() -> Directories:
 # initialize directories
 dirs: Directories
 if LEGACY_DIRECTORIES:
+    CLEAR_TMP_FOLDER = False
     dirs = init_legacy_directories()
 else:
     dirs = init_directories()

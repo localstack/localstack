@@ -1584,7 +1584,7 @@ class Util:
             if volume:
                 if volume.type != "bind":
                     raise ValueError(
-                        f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for lambda to work"
+                        f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for lambda code mounting to work"
                     )
 
                 return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % volume.source, path)
