@@ -372,7 +372,7 @@ if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_
 HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
 
 # whether to use the old directory structure and mounting config
-LEGACY_DIRECTORIES = is_env_true("LEGACY_DIRECTORIES")
+LEGACY_DIRECTORIES = is_env_not_false("LEGACY_DIRECTORIES")
 
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
