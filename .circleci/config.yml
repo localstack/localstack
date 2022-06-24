@@ -163,30 +163,6 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-bootstrap:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Run bootstrap tests
-          environment:
-            TEST_PATH: "tests/bootstrap"
-            PYTEST_ARGS: "--junitxml=target/reports/bootstrap.xml -o junit_suite_name='bootstrap'"
-            COVERAGE_ARGS: "-p"
-          command: make test-coverage
-      - run:
-          name: Store coverage results
-          command: mv .coverage.* target/coverage/
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   docker-build:
     parameters:
       platform:
@@ -369,9 +345,6 @@ workflows:
       - itest-lambda-provider:
           requires:
             - preflight
-      - itest-bootstrap:
-          requires:
-            - preflight
       - unit-tests:
           requires:
             - preflight
@@ -409,7 +382,6 @@ workflows:
           requires:
             - itest-lambda-docker
             - itest-lambda-provider
-            - itest-bootstrap
             - docker-test-amd64
             - docker-test-arm64
             - unit-tests
@@ -420,7 +392,6 @@ workflows:
           requires:
             - itest-lambda-docker
             - itest-lambda-provider
-            - itest-bootstrap
             - docker-test-amd64
             - docker-test-arm64
             - unit-tests
