@@ -679,10 +679,14 @@ def prepare_host():
     hooks.prepare_host.run()
 
 
+# TODO delete again
+ContainerType = LocalstackContainer | LocalstackContainerServer
+
+
 def start_infra_in_docker():
     prepare_docker_start()
 
-    container = LocalstackContainer()
+    container: ContainerType = LocalstackContainer()
 
     # create and prepare container
     configure_container(container)

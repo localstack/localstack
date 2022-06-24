@@ -35,7 +35,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  run-cli-tests:
+  cli-tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
