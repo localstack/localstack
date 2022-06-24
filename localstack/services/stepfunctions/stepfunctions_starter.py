@@ -80,7 +80,7 @@ def start_stepfunctions(asynchronous=True, persistence_path: Optional[str] = Non
         env_vars={
             "EDGE_PORT": config.EDGE_PORT_HTTP or config.EDGE_PORT,
             "EDGE_PORT_HTTP": config.EDGE_PORT_HTTP or config.EDGE_PORT,
-            "DATA_DIR": persistence_path or config.DATA_DIR,
+            "DATA_DIR": persistence_path or config.dirs.data,
         },
     )
     return PROCESS_THREAD
@@ -109,8 +109,19 @@ def check_stepfunctions(expect_shutdown=False, print_error=False):
 
 
 def restart_stepfunctions(persistence_path: Optional[str] = None):
-    if not PROCESS_THREAD:
+    if not PROCESS_THREAD or not PROCESS_THREAD.process:
         return
     LOG.debug("Restarting StepFunctions process ...")
+    pid = PROCESS_THREAD.process.pid
     PROCESS_THREAD.stop()
+    _wait_for_process_to_be_killed(pid)
     start_stepfunctions(persistence_path=persistence_path)
+
+
+def _wait_for_process_to_be_killed(pid):
+    import psutil
+
+    def _check_pid():
+        assert not psutil.pid_exists(pid)
+
+    retry(_check_pid, sleep=0.3, retries=10)
