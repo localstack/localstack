@@ -12,9 +12,10 @@ from localstack.aws.handlers.metric_handler import Metric, MetricHandler
 from localstack.utils.strings import short_uid
 
 BASE_PATH = os.path.join(os.path.dirname(__file__), "../../../target/metric_reports")
+CIRCLE_CI_JOB_NAME = os.environ.get("CIRCLE_JOB", "")
 FNAME_RAW_DATA_CSV = os.path.join(
     BASE_PATH,
-    f"metric-report-raw-data-{datetime.utcnow().strftime('%Y-%m-%d_%H:%M:%S')}-{short_uid()}.csv",
+    f"metric-report-raw-data-{datetime.utcnow().strftime('%Y-%m-%d__%H_%M_%S')}-{short_uid()}-{CIRCLE_CI_JOB_NAME}.csv",
 )
 
 

@@ -281,7 +281,7 @@ jobs:
           name: Metric aggregation
           command: |
             source .venv/bin/activate
-            python etc/metric_aggregator.py .
+            python scripts/metric_aggregator.py . amd64
       - store_artifacts:
           path: htmlcov/
       - store_artifacts:
