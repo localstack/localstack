@@ -633,7 +633,27 @@ class TestLambdaAPI:
             FunctionName=function_name,
         )
         snapshot.match("policy_after_2_add", policy_response)
+    
+    def test_url_config_lifecycle(self, lambda_client, create_lambda_function):
+        function_name = f"test-function-{short_uid()}"
+        
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="lambda_handler.handler",
+        )
 
+        url_config = lambda_client.create_function_url_config(
+            FunctionName=function_name,
+            AuthType='NONE',
+        )
+
+        url_config = lambda_client.get_function_url_config(FunctionName=function_name)
+
+        lambda_client.delete_function_url_config(FunctionName=function_name)
+
+        lambda_client.get_function_url_config(FunctionName=function_name)
 
 class TestLambdaBaseFeatures:
     @pytest.mark.skip_snapshot_verify

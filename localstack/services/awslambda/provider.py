@@ -262,3 +262,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             "name"
         )  # TODO: handle None and raise
         self.lambda_service.delete_function(context.region, really_function_name)
+    
+    def create_function_url_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+    ):
+        print("=>>>>>>>>>>>>heeeere")

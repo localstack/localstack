@@ -104,6 +104,10 @@ class Architecture(str):
     arm64 = "arm64"
 
 
+class AuthType(str):
+    NONE = "NONE"
+    AWS_IAM = "AWS_IAM"
+
 class CodeSigningPolicy(str):
     Warn = "Warn"
     Enforce = "Enforce"
@@ -598,16 +602,13 @@ class Concurrency(TypedDict, total=False):
     ReservedConcurrentExecutions: Optional[ReservedConcurrentExecutions]
 
 
-HeadersList = List[Header]
-
-
 class Cors(TypedDict, total=False):
-    AllowCredentials: Optional[AllowCredentials]
-    AllowHeaders: Optional[HeadersList]
-    AllowMethods: Optional[AllowMethodsList]
-    AllowOrigins: Optional[AllowOriginsList]
-    ExposeHeaders: Optional[HeadersList]
-    MaxAge: Optional[MaxAge]
+    AllowCredentials: bool
+    AllowHeaders: List[str]
+    AllowMethods: List[str]
+    AllowOrigins: List[str]
+    ExposeHeaders: List[str]
+    MaxAge: int
 
 
 class CreateAliasRequest(ServiceRequest):
@@ -790,11 +791,15 @@ class CreateFunctionUrlConfigResponse(TypedDict, total=False):
     Cors: Optional[Cors]
     CreationTime: Timestamp
 
+class CreateFunctionUrlConfigRequest(ServiceRequest):
+    FunctionName: FunctionName
+    Qualifier: Optional[str]
+    AuthType: AuthType
+    Cors: Optional[str]
 
 class DeleteAliasRequest(ServiceRequest):
     FunctionName: FunctionName
     Name: Alias
-
 
 class DeleteCodeSigningConfigRequest(ServiceRequest):
     CodeSigningConfigArn: CodeSigningConfigArn
@@ -960,6 +965,14 @@ class FunctionEventInvokeConfig(TypedDict, total=False):
     MaximumRetryAttempts: Optional[MaximumRetryAttempts]
     MaximumEventAgeInSeconds: Optional[MaximumEventAgeInSeconds]
     DestinationConfig: Optional[DestinationConfig]
+
+
+class FunctionUrlConfig(TypedDict, total=False):
+    FunctionUrl: FunctionUrl
+    FunctionArn: NameSpacedFunctionArn
+    AuthType: AuthType
+    Cors: Cors
+    CreationTime: Timestamp
 
 
 FunctionEventInvokeConfigList = List[FunctionEventInvokeConfig]
@@ -1621,6 +1634,17 @@ class LambdaApi:
         architectures: ArchitecturesList = None,
         ephemeral_storage: EphemeralStorage = None,
     ) -> FunctionConfiguration:
+        raise NotImplementedError
+    
+    @handler("CreateFunctionUrlConfig")
+    def create_function_url_config(
+        self,
+        contest: RequestContext,
+        function_name: FunctionName,
+        auth_type: AuthType,
+        qualifier: Qualifier = None,
+        cors: Cors = None,
+    ) -> FunctionUrlConfig:
         raise NotImplementedError
 
     @handler("CreateFunctionUrlConfig")
