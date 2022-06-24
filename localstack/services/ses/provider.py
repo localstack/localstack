@@ -93,11 +93,22 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
 class SesServiceApiResource:
     """Provides a REST API for retrospective access to emails sent via SES.
 
-    This is registered as a LocalStack internal HTTP resource."""
+    This is registered as a LocalStack internal HTTP resource.
+
+    This endpoint accepts:
+    - GET param `email`: filter for `source` field in SES message
+    """
 
     def on_get(self, request):
+        filter_source = request.args.get("email")
+        messages = []
+
+        for msg in EMAILS.values():
+            if filter_source in (msg["Source"], None, ""):
+                messages.append(msg)
+
         return {
-            "messages": list(EMAILS.values()),
+            "messages": messages,
         }
 
 

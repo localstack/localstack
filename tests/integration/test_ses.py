@@ -94,6 +94,7 @@ class TestSES:
                 "ToAddresses": ["success@example.com"],
             },
         )
+
         message_id = message["MessageId"]
 
         with open(os.path.join(data_dir, "ses", message_id + ".json"), "r") as f:
@@ -109,8 +110,22 @@ class TestSES:
         emails_url = config.get_edge_url() + INTERNAL_RESOURCE_PATH + EMAILS_ENDPOINT
         api_contents = requests.get(emails_url).json()
         api_contents = {msg["Id"]: msg for msg in api_contents["messages"]}
+        assert len(api_contents) == 1
         assert message_id in api_contents
         assert api_contents[message_id] == contents
+
+        # Ensure messages can be filtered by email source
+        emails_url = (
+            config.get_edge_url()
+            + INTERNAL_RESOURCE_PATH
+            + EMAILS_ENDPOINT
+            + "?email=none@example.com"
+        )
+        assert len(requests.get(emails_url).json()["messages"]) == 0
+        emails_url = (
+            config.get_edge_url() + INTERNAL_RESOURCE_PATH + EMAILS_ENDPOINT + f"?email={email}"
+        )
+        assert len(requests.get(emails_url).json()["messages"]) == 1
 
     def test_send_templated_email_can_retrospect(self, ses_client, create_template):
         # Test that sent emails can be retrospected through saved file and API access
