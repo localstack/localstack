@@ -106,22 +106,3 @@ def check_stepfunctions(expect_shutdown=False, print_error=False):
         assert out is None
     else:
         assert out and isinstance(out.get("stateMachines"), list)
-
-
-def restart_stepfunctions(persistence_path: Optional[str] = None):
-    if not PROCESS_THREAD or not PROCESS_THREAD.process:
-        return
-    LOG.debug("Restarting StepFunctions process ...")
-    pid = PROCESS_THREAD.process.pid
-    PROCESS_THREAD.stop()
-    _wait_for_process_to_be_killed(pid)
-    start_stepfunctions(persistence_path=persistence_path)
-
-
-def _wait_for_process_to_be_killed(pid):
-    import psutil
-
-    def _check_pid():
-        assert not psutil.pid_exists(pid)
-
-    retry(_check_pid, sleep=0.3, retries=10)

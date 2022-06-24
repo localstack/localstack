@@ -16,6 +16,7 @@ from localstack import config
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.platform import is_linux, is_mac_os, is_windows  # noqa
 
+from .sync import retry
 from .threads import FuncThread, start_worker_thread
 
 LOG = logging.getLogger(__name__)
@@ -170,6 +171,15 @@ def kill_process_tree(parent_pid):
         except Exception:
             pass
     parent.kill()
+
+
+def wait_for_process_to_be_killed(pid: int, sleep: float = None, retries: int = None):
+    import psutil
+
+    def _check_pid():
+        assert not psutil.pid_exists(pid)
+
+    retry(_check_pid, sleep=sleep, retries=retries)
 
 
 def is_root() -> bool:
