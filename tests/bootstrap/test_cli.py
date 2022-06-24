@@ -2,7 +2,7 @@ import pytest
 import requests
 from click.testing import CliRunner
 
-import localstack.utils.container_utils.docker_sdk_client
+import localstack.utils.container_utils.docker_cmd_client
 from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
 from localstack.config import DOCKER_SOCK, get_edge_url, in_docker
@@ -24,12 +24,12 @@ def container_exists(client, container_name):
 
 @pytest.fixture(autouse=True)
 def container_client():
-    client = localstack.utils.container_utils.docker_sdk_client.SdkDockerClient()
+    client = localstack.utils.container_utils.docker_cmd_client.CmdDockerClient()
 
     yield client
 
     try:
-        client.stop_container(config.MAIN_CONTAINER_NAME)
+        client.stop_container(config.MAIN_CONTAINER_NAME, timeout=5)
     except Exception:
         pass
 

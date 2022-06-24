@@ -1,0 +1,62 @@
+name: cli-tests
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/pro-integration.yml"
+      - "localstack/**"
+      - "tests/**"
+      - "setup.py"
+      - "pyproject.toml"
+      - "setup.cfg"
+      - "Dockerfile"
+      - "Dockerfile.rh"
+      - "docker-compose.yml"
+      - "bin/**"
+    branches:
+      - master
+  push:
+    paths:
+      - ".github/workflows/pro-integration.yml"
+      - "localstack/**"
+      - "tests/**"
+      - "setup.py"
+      - "pyproject.toml"
+      - "setup.cfg"
+      - "Dockerfile"
+      - "Dockerfile.rh"
+      - "docker-compose.yml"
+      - "bin/**"
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  cli-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.7", "3.8", "3.9", "3.10" ]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install CLI test dependencies
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          pip install -e .
+          pip install pytest
+      - name: Run CLI tests
+        env:
+          PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -s"
+        run: |
+          python -m pytest tests/bootstrap/
