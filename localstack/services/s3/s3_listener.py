@@ -160,10 +160,7 @@ class BackendState:
         If the attribute is not yet defined, it is initialized with the given default value.
         If the bucket does not exist in the backend, then None is returned.
         """
-        try:
-            bucket = cls.get_bucket(bucket_name)
-        except NoSuchBucket:
-            return None
+        bucket = cls.get_bucket(bucket_name)
         if not hasattr(bucket, attr_name):
             setattr(bucket, attr_name, default)
         return getattr(bucket, attr_name)
