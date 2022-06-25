@@ -158,7 +158,7 @@ class BackendState:
         """
         Return a custom attribute for the given bucket.
         If the attribute is not yet defined, it is initialized with the given default value.
-        If the bucket does not exist in the backend, then None is returned.
+        If the bucket does not exist in the backend, then an exception is raised.
         """
         bucket = cls.get_bucket(bucket_name)
         if not hasattr(bucket, attr_name):
