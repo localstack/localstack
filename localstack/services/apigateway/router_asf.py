@@ -55,6 +55,7 @@ def convert_response(result: RequestsResponse) -> Response:
     """
     if result is None:
         return Response()
+
     if isinstance(result, LambdaResponse):
         headers = Headers(dict(result.headers))
         for k, values in result.multi_value_headers.items():
@@ -62,11 +63,17 @@ def convert_response(result: RequestsResponse) -> Response:
                 headers.add(k, value)
     else:
         headers = dict(result.headers)
-    return Response(
-        response=result.content,
-        status=result.status_code,
-        headers=headers,
-    )
+
+    response = Response(status=result.status_code, headers=headers)
+
+    if isinstance(result.content, dict):
+        response.set_json(result.content)
+    elif isinstance(result.content, (str, bytes)):
+        response.data = result.content
+    else:
+        raise ValueError(f"Unhandled content type {type(result.content)}")
+
+    return response
 
 
 class ApigatewayRouter:

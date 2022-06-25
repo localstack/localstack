@@ -85,7 +85,7 @@ def test_lambda_aws_integration(apigateway_client):
 
     url = api_invoke_url(api_id=api_id, stage="local", path="/test")
     response = requests.get(url)
-    assert response._content == b'{"message":"Hello from Lambda"}'
+    assert response.json() == {"message": "Hello from Lambda"}
 
 
 #

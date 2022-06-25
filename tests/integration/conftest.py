@@ -51,7 +51,7 @@ def pytest_runtestloop(session):
         parent_name = str(item.parent).lower()
         if any(opensearch_test in parent_name for opensearch_test in ["opensearch", "firehose"]):
             test_init_functions.add(opensearch_install_async)
-        if any(opensearch_test in parent_name for opensearch_test in ["es", "firehose"]):
+        if any(opensearch_test in parent_name for opensearch_test in ["test_es", "firehose"]):
             test_init_functions.add(es_install_async)
 
     # add init functions for certain tests that download/install things
