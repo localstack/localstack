@@ -366,7 +366,7 @@ def do_start_edge_proxy(bind_address, port, use_ssl, asynchronous=False):
     proxy = start_proxy_server(
         port,
         bind_address=bind_address,
-        use_ssl=True,
+        use_ssl=use_ssl,
         update_listener=listeners,
         check_port=False,
     )
@@ -437,7 +437,7 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
         do_start_edge(
             config.EDGE_BIND_HOST,
             config.EDGE_PORT_HTTP,
-            use_ssl=False,
+            use_ssl=use_ssl,
             asynchronous=True,
         )
     if port > 1024 or is_root():
