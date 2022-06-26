@@ -29,6 +29,7 @@ from .functions import lambda_integration
 from .test_lambda import (
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS_APIGW_502,
+    TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
@@ -485,6 +486,30 @@ class TestLambdaHttpInvocation:
         assert result.status_code == 502
         assert result.headers.get("Content-Type") == "application/json"
         assert json.loads(result.content)["message"] == "Internal server error"
+
+    def test_invocation_with_url_config(self, lambda_client, create_lambda_function):        
+        function_name = f"test-function-{short_uid()}"
+
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="lambda_handler.handler",
+        )
+
+        url_config = lambda_client.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+
+        url = url_config["FunctionUrl"]
+        url += "/?test_param=test_value"
+        
+        result = safe_requests.post(
+            url, data=b"{'key':'value'}", headers={"User-Agent": "python-requests/testing"}
+        )
+
+        assert result.status_code == 200
 
 
 class TestKinesisSource:
