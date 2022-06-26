@@ -146,6 +146,42 @@ class TestS3:
 
         assert is_sub_dict(sub_dict, response)
 
+    @pytest.mark.aws_validated
+    def test_get_object_no_such_bucket(self, s3_client):
+        with pytest.raises(ClientError) as e:
+            s3_client.get_object(Bucket=f"does-not-exist-{short_uid()}", Key="foobar")
+
+        # TODO: simplify with snapshot test once activated
+        response = e.value.response
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 404
+        error = response["Error"]
+        assert error["Code"] == "NoSuchBucket"
+        assert error["Message"] == "The specified bucket does not exist"
+
+    @pytest.mark.aws_validated
+    def test_delete_bucket_no_such_bucket(self, s3_client):
+        with pytest.raises(ClientError) as e:
+            s3_client.delete_bucket(Bucket=f"does-not-exist-{short_uid()}")
+
+        # TODO: simplify with snapshot test once activated
+        response = e.value.response
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 404
+        error = response["Error"]
+        assert error["Code"] == "NoSuchBucket"
+        assert error["Message"] == "The specified bucket does not exist"
+
+    @pytest.mark.aws_validated
+    def test_get_bucket_notification_configuration_no_such_bucket(self, s3_client):
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_notification_configuration(Bucket=f"doesnotexist-{short_uid()}")
+
+        # TODO: simplify with snapshot test once activated
+        response = e.value.response
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 404
+        error = response["Error"]
+        assert error["Code"] == "NoSuchBucket"
+        assert error["Message"] == "The specified bucket does not exist"
+
 
 class TestS3PresignedUrl:
     """
@@ -303,30 +339,6 @@ class TestS3PresignedUrl:
         response = requests.get(url, data=b"get body is ignored by AWS")
         assert response.status_code == 200
         assert response.text == body
-
-    @pytest.mark.aws_validated
-    def test_get_object_no_such_bucket(self, s3_client):
-        with pytest.raises(ClientError) as e:
-            s3_client.get_object(Bucket=f"does-not-exist-{short_uid()}", Key="foobar")
-
-        # TODO: simplify with snapshot test once activated
-        response = e.value.response
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 404
-        error = response["Error"]
-        assert error["Code"] == "NoSuchBucket"
-        assert error["Message"] == "The specified bucket does not exist"
-
-    @pytest.mark.aws_validated
-    def test_get_bucket_notification_configuration_no_such_bucket(self, s3_client):
-        with pytest.raises(ClientError) as e:
-            s3_client.get_bucket_notification_configuration(Bucket=f"doesnotexist-{short_uid()}")
-
-        # TODO: simplify with snapshot test once activated
-        response = e.value.response
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 404
-        error = response["Error"]
-        assert error["Code"] == "NoSuchBucket"
-        assert error["Message"] == "The specified bucket does not exist"
 
 
 class TestS3DeepArchive:
