@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 from moto.s3 import models as s3_models
 from moto.s3 import responses as s3_responses
-from moto.s3.exceptions import S3ClientError
+from moto.s3.exceptions import MissingBucket, S3ClientError
 from moto.s3.responses import S3_ALL_MULTIPARTS, MalformedXML, is_delete_keys, minidom
 from moto.s3.utils import undo_clean_key_name
 from moto.s3bucket_path import utils as s3bucket_path_utils
@@ -133,7 +133,10 @@ def apply_patches():
     @patch(s3_models.s3_backend.delete_bucket)
     def delete_bucket(self, fn, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
-        s3_listener.remove_bucket_notification(bucket_name)
+        try:
+            s3_listener.remove_bucket_notification(bucket_name)
+        except s3_listener.NoSuchBucket:
+            raise MissingBucket()
         return fn(bucket_name, *args, **kwargs)
 
     # patch _key_response_post(..)
