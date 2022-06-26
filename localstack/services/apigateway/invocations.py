@@ -380,14 +380,20 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             else:
                 response = LambdaResponse()
 
-                parsed_result = (
-                    result if isinstance(result, dict) else json.loads(str(result or "{}"))
-                )
-                parsed_result = common.json_safe(parsed_result)
-                parsed_result = {} if parsed_result is None else parsed_result
-                response.status_code = 200
-                response._content = parsed_result
-                update_content_length(response)
+                is_async = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
+
+                if is_async:
+                    response._content = ""
+                    response.status_code = 200
+                else:
+                    parsed_result = (
+                        result if isinstance(result, dict) else json.loads(str(result or "{}"))
+                    )
+                    parsed_result = common.json_safe(parsed_result)
+                    parsed_result = {} if parsed_result is None else parsed_result
+                    response.status_code = 200
+                    response._content = parsed_result
+                    update_content_length(response)
 
             # apply custom response template
             invocation_context.response = response
