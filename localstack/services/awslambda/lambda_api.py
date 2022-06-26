@@ -20,7 +20,11 @@ from flask import Flask, Response, jsonify, request
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import APPLICATION_JSON
+from localstack.constants import (
+    APPLICATION_JSON,
+    LAMBDA_TEST_ROLE,
+    LOCALHOST_HOSTNAME,
+)
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -29,6 +33,7 @@ from localstack.services.awslambda.invocation.lambda_util import function_name_f
 from localstack.services.awslambda.lambda_executors import InvocationResult, LambdaContext
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
+    API_PATH_ROOT_2,
     DOTNET_LAMBDA_RUNTIMES,
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
@@ -78,6 +83,7 @@ from localstack.utils.functions import run_safe
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.patch import patch
 from localstack.utils.run import run_for_max_seconds
+from localstack.utils.strings import md5
 
 LOG = logging.getLogger(__name__)
 
@@ -162,11 +168,14 @@ class LambdaRegion(RegionBackend):
     code_signing_configs: Dict[str, CodeSigningConfig]
     # list of event source mappings for the API
     event_source_mappings: List[Dict]
+    # map ARN strings to url configs
+    url_configs = Dict[str, Dict]
 
     def __init__(self):
         self.lambdas = {}
         self.code_signing_configs = {}
         self.event_source_mappings = []
+        self.url_configs = {}
 
 
 def cleanup():
@@ -1382,6 +1391,122 @@ def add_permission(function):
     q_arn = func_qualifier(function, qualifier)
     result = add_permission_policy_statement(function, arn, q_arn, qualifier=qualifier)
     return result
+
+
+@app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["POST"])
+def create_url_config(function):
+    arn = func_arn(function)
+    qualifier = request.args.get("Qualifier")
+    q_arn = func_qualifier(function, qualifier)
+
+    lambda_backend = LambdaRegion.get()
+    function = lambda_backend.lambdas.get(arn)
+    if function is None:
+        return not_found_error()
+
+    if qualifier and not function.qualifier_exists(qualifier=qualifier):
+        return not_found_error()
+
+    arn = q_arn or arn
+    lambda_backend = LambdaRegion.get()
+    if arn in lambda_backend.url_configs.keys():
+        return error_response(
+            "The resource already exists, or another operation is in progress.",
+            409,
+            "ResourceConflictException",
+        )
+
+    custom_id = md5(arn)
+    region = LambdaRegion.get_current_request_region()
+    url = f"{custom_id}.lambda-url.{region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+
+    data = json.loads(to_str(request.data))
+    cors = data.get("Cors", {})
+    url_config = {
+        "AuthType": data.get("AuthType"),
+        "Cors": {
+            "AllowCredentials": cors.get("AllowCredentials", ["*"]),
+            "AllowHeaders": cors.get("AllowHeaders", ["*"]),
+            "AllowMethods": cors.get("AllowMethods", ["*"]),
+            "AllowOrigins": cors.get("AllowOrigins", ["*"]),
+            "ExposeHeaders": cors.get("ExposeHeaders", []),
+            "MaxAge": cors.get("MaxAge", 0),
+        },
+        "FunctionArn": arn,
+        "FunctionUrl": url,
+        "CreationTime": datetime.now().isoformat(),
+        "CustomId": custom_id,
+    }
+
+    lambda_backend.url_configs.update({arn: url_config})
+    response = url_config.copy()
+    response.pop("CustomId")
+    return response
+
+
+@app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["GET"])
+def get_url_config(function):
+    arn = func_arn(function)
+    qualifier = request.args.get("Qualifier")
+    q_arn = func_qualifier(function, qualifier)
+    arn = q_arn or arn
+    lambda_backend = LambdaRegion.get()
+    url_config = lambda_backend.url_configs.get(arn)
+
+    if url_config is None:
+        return not_found_error()
+
+    response = url_config.copy()
+    response.pop("CustomId")
+    return response
+
+
+@app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["PUT"])
+def update_url_config(function):
+    arn = func_arn(function)
+    qualifier = request.args.get("Qualifier")
+    q_arn = func_qualifier(function, qualifier)
+    arn = q_arn or arn
+
+    lambda_backend = LambdaRegion.get()
+    prev_url_config = lambda_backend.url_configs.get(arn)
+
+    if prev_url_config is None:
+        return not_found_error()
+
+    data = json.loads(to_str(request.data))
+    cors = data.get("Cors", {})
+    new_url_config = {
+        "AuthType": data.get("AuthType"),
+        "Cors": {
+            "AllowCredentials": cors.get("AllowCredentials", ["*"]),
+            "AllowHeaders": cors.get("AllowHeaders", ["*"]),
+            "AllowMethods": cors.get("AllowMethods", ["*"]),
+            "AllowOrigins": cors.get("AllowOrigins", ["*"]),
+            "ExposeHeaders": cors.get("ExposeHeaders", []),
+            "MaxAge": cors.get("MaxAge", 0),
+        },
+        "LastModifiedTime": datetime.now().isoformat(),
+    }
+    prev_url_config.update(new_url_config)
+
+    response = prev_url_config.copy()
+    response.pop("CustomId")
+    return response
+
+
+@app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["DELETE"])
+def delete_url_config(function):
+    arn = func_arn(function)
+    qualifier = request.args.get("Qualifier")
+    q_arn = func_qualifier(function, qualifier)
+    arn = q_arn or arn
+
+    lambda_backend = LambdaRegion.get()
+    if arn in lambda_backend.url_configs.keys():
+        lambda_backend.url_configs.pop(arn)
+
+    return {}
 
 
 def add_permission_policy_statement(

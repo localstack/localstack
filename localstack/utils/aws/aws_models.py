@@ -207,6 +207,7 @@ class LambdaFunction(Component):
         self.image_config = {}
         self.tracing_config = {}
         self.state = None
+        self.url_config = None
 
     def set_dead_letter_config(self, data):
         config = data.get("DeadLetterConfig")

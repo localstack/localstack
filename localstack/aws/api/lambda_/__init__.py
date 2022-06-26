@@ -108,6 +108,7 @@ class AuthType(str):
     NONE = "NONE"
     AWS_IAM = "AWS_IAM"
 
+
 class CodeSigningPolicy(str):
     Warn = "Warn"
     Enforce = "Enforce"
@@ -791,15 +792,18 @@ class CreateFunctionUrlConfigResponse(TypedDict, total=False):
     Cors: Optional[Cors]
     CreationTime: Timestamp
 
+
 class CreateFunctionUrlConfigRequest(ServiceRequest):
     FunctionName: FunctionName
     Qualifier: Optional[str]
     AuthType: AuthType
     Cors: Optional[str]
 
+
 class DeleteAliasRequest(ServiceRequest):
     FunctionName: FunctionName
     Name: Alias
+
 
 class DeleteCodeSigningConfigRequest(ServiceRequest):
     CodeSigningConfigArn: CodeSigningConfigArn
@@ -1635,7 +1639,7 @@ class LambdaApi:
         ephemeral_storage: EphemeralStorage = None,
     ) -> FunctionConfiguration:
         raise NotImplementedError
-    
+
     @handler("CreateFunctionUrlConfig")
     def create_function_url_config(
         self,

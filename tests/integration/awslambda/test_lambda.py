@@ -633,10 +633,17 @@ class TestLambdaAPI:
             FunctionName=function_name,
         )
         snapshot.match("policy_after_2_add", policy_response)
-    
+
     def test_url_config_lifecycle(self, lambda_client, create_lambda_function):
         function_name = f"test-function-{short_uid()}"
-        
+
+        with pytest.raises(ClientError) as ex:
+            lambda_client.create_function_url_config(
+                FunctionName=function_name,
+                AuthType="NONE",
+            )
+        assert ex.value.response["Error"]["Code"] == "ResourceNotFoundException"
+
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
@@ -644,16 +651,38 @@ class TestLambdaAPI:
             handler="lambda_handler.handler",
         )
 
-        url_config = lambda_client.create_function_url_config(
+        url_config_created = lambda_client.create_function_url_config(
             FunctionName=function_name,
-            AuthType='NONE',
+            AuthType="NONE",
         )
 
-        url_config = lambda_client.get_function_url_config(FunctionName=function_name)
+        with pytest.raises(ClientError) as ex:
+            lambda_client.create_function_url_config(
+                FunctionName=function_name,
+                AuthType="NONE",
+            )
+        assert ex.value.response["Error"]["Code"] == "ResourceConflictException"
+
+        url_config_obtained = lambda_client.get_function_url_config(FunctionName=function_name)
+
+        assert url_config_created["AuthType"] == url_config_obtained["AuthType"]
+        assert url_config_created["FunctionUrl"] == url_config_obtained["FunctionUrl"]
+        assert url_config_created["FunctionArn"] == url_config_obtained["FunctionArn"]
+        assert url_config_created["Cors"] == url_config_obtained["Cors"]
+        assert url_config_created["CreationTime"] == url_config_obtained["CreationTime"]
+
+        url_config_updated = lambda_client.update_function_url_config(
+            FunctionName=function_name,
+            AuthType="AWS_IAM",
+        )
+        assert "LastModifiedTime" in url_config_updated
+        assert url_config_updated["AuthType"] == "AWS_IAM"
 
         lambda_client.delete_function_url_config(FunctionName=function_name)
+        with pytest.raises(ClientError) as ex:
+            lambda_client.get_function_url_config(FunctionName=function_name)
+        assert ex.value.response["Error"]["Code"] == "ResourceNotFoundException"
 
-        lambda_client.get_function_url_config(FunctionName=function_name)
 
 class TestLambdaBaseFeatures:
     @pytest.mark.skip_snapshot_verify
