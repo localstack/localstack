@@ -32,6 +32,7 @@ from localstack.config import (
     EXTRA_CORS_ALLOWED_HEADERS,
     EXTRA_CORS_ALLOWED_ORIGINS,
     EXTRA_CORS_EXPOSE_HEADERS,
+    MULTI_ACCOUNTS,
 )
 from localstack.constants import (
     APPLICATION_JSON,
@@ -395,6 +396,9 @@ class RegionBackend:
     # Map of AWS account IDs to (Map of region names to backend instances)
     _ACCOUNT_BACKENDS: DefaultDict[str, Dict[str, T]]
 
+    # Used when multi-accounts is disabled
+    REGIONS: Dict[str, T]
+
     name: str  # name of the region for the backend instance
     account_id: str  # AWS account ID of the backend instance
 
@@ -410,7 +414,7 @@ class RegionBackend:
         # - Class attributes defined in subclasses represent data common across regions but same account IDs
         # To enable this, we keep copies of this class in `_ACCOUNT_CLS` by account IDs and instantiate that
         # copy of the class for different regions and same account ID
-        if account_id not in cls._ACCOUNTS_CLS:
+        if MULTI_ACCOUNTS and account_id not in cls._ACCOUNTS_CLS:
             cls_dict = copy.deepcopy(dict(cls.__dict__))
             cls_dict["_ACCOUNTS_CLS"] = cls._ACCOUNTS_CLS
             cls_dict["_ACCOUNT_BACKENDS"] = cls._ACCOUNT_BACKENDS
@@ -421,7 +425,11 @@ class RegionBackend:
         backend = regions.get(region)
 
         if not backend:
-            backend = cls._ACCOUNTS_CLS[account_id]()
+            if MULTI_ACCOUNTS:
+                backend = cls._ACCOUNTS_CLS[account_id]()
+            else:
+                backend = cls()
+
             backend.name = region
             backend.account_id = account_id
             regions[region] = backend
@@ -435,6 +443,9 @@ class RegionBackend:
 
         if not hasattr(cls, "_ACCOUNTS_CLS"):
             cls._ACCOUNTS_CLS = dict()
+
+        if not hasattr(cls, "REGIONS"):
+            cls.REGIONS = dict()
 
     @classmethod
     def regions(cls: Type[T]) -> Dict[str, T]:
@@ -455,6 +466,7 @@ class RegionBackend:
     def reset(cls):
         """Reset the (in-memory) state of this service region backend."""
         cls.initialise()
+        cls.REGIONS = {}
         account_id = cls.get_current_request_account_id()
         cls._ACCOUNT_BACKENDS[account_id] = {}
 
