@@ -4702,6 +4702,7 @@ class CreateCustomerGatewayRequest(ServiceRequest):
     Type: GatewayType
     TagSpecifications: Optional[TagSpecificationList]
     DeviceName: Optional[String]
+    IpAddress: Optional[String]
     DryRun: Optional[Boolean]
 
 
@@ -7223,6 +7224,8 @@ class VpnConnectionOptionsSpecification(TypedDict, total=False):
     RemoteIpv4NetworkCidr: Optional[String]
     LocalIpv6NetworkCidr: Optional[String]
     RemoteIpv6NetworkCidr: Optional[String]
+    OutsideIpAddressType: Optional[String]
+    TransportTransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
 
 
 class CreateVpnConnectionRequest(ServiceRequest):
@@ -7337,6 +7340,8 @@ class VpnConnectionOptions(TypedDict, total=False):
     RemoteIpv4NetworkCidr: Optional[String]
     LocalIpv6NetworkCidr: Optional[String]
     RemoteIpv6NetworkCidr: Optional[String]
+    OutsideIpAddressType: Optional[String]
+    TransportTransitGatewayAttachmentId: Optional[String]
     TunnelInsideIpVersion: Optional[TunnelInsideIpVersion]
     TunnelOptions: Optional[TunnelOptionsList]
 
