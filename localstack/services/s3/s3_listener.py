@@ -223,6 +223,7 @@ def get_event_message(
     etag="",
     version_id=None,
     file_size=0,
+    config_id="testConfigRule",
 ):
     # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
     bucket_name = normalize_bucket_name(bucket_name)
@@ -244,7 +245,7 @@ def get_event_message(
                 },
                 "s3": {
                     "s3SchemaVersion": "1.0",
-                    "configurationId": "testConfigRule",
+                    "configurationId": config_id,
                     "bucket": {
                         "name": bucket_name,
                         "ownerIdentity": {"principalId": "A3NL1KOZZKExample"},
@@ -326,6 +327,7 @@ def send_notification_for_subscriber(
         etag=object_data.get("ETag", ""),
         file_size=object_data.get("ContentLength", 0),
         version_id=version_id,
+        config_id=notif["Id"],
     )
     message = json.dumps(message)
 
