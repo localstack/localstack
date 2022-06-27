@@ -2,10 +2,10 @@ import logging
 from typing import Any, Dict
 
 from requests.models import Response as RequestsResponse
-from requests.structures import CaseInsensitiveDict
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
 
+from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
 from localstack.http.request import restore_payload
@@ -38,8 +38,8 @@ def to_invocation_context(
     x_forwarded_for.append(request.host)
     headers["X-Forwarded-For"] = ", ".join(x_forwarded_for)
 
-    # this is for compatibility with the lower layers of apigw and lambda that make assumptions about header casing
-    headers = CaseInsensitiveDict({k: ", ".join(headers.getlist(k)) for k in headers.keys()})
+    # set the x-localstack-edge header, it is used to parse the domain
+    headers[HEADER_LOCALSTACK_EDGE_URL] = request.host_url.strip("/")
 
     # FIXME: Use the already parsed url params instead of parsing them into the ApiInvocationContext part-by-part.
     #   We already would have all params at hand to avoid _all_ the parsing, but the parsing
