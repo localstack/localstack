@@ -209,7 +209,7 @@ def restore_persisted_data(apis):
 
 
 def is_persistence_enabled():
-    return bool(config.dirs.data)
+    return config.PERSISTENCE and config.dirs.data
 
 
 def is_persistence_restored():

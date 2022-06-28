@@ -11,12 +11,12 @@ import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 if sys.version_info >= (3, 8):
-    from typing import Protocol, get_args
+    from typing import Literal, Protocol, get_args
 else:
-    from typing_extensions import Protocol, get_args
+    from typing_extensions import Protocol, get_args, Literal
 
 from localstack import config
 from localstack.utils.collections import HashableList
@@ -324,6 +324,22 @@ class VolumeMappings:
         return self.mappings.__iter__()
 
 
+VolumeType = Literal["bind", "volume"]
+
+
+class VolumeInfo(NamedTuple):
+    """Container volume information."""
+
+    type: VolumeType
+    source: str
+    destination: str
+    mode: str
+    rw: bool
+    propagation: str
+    name: Optional[str] = None
+    driver: Optional[str] = None
+
+
 @dataclasses.dataclass
 class ContainerConfiguration:
     image_name: str
@@ -510,11 +526,23 @@ class ContainerClient(metaclass=ABCMeta):
 
     @abstractmethod
     def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
-        """Get detailed attributes of an container.
+        """Get detailed attributes of a container.
 
         :return: Dict containing docker attributes as returned by the daemon
         """
         pass
+
+    def inspect_container_volumes(self, container_name_or_id) -> List[VolumeInfo]:
+        """Return information about the volumes mounted into the given container.
+
+        :param container_name_or_id: the container name or id
+        :return: a list of volumes
+        """
+        volumes = []
+        for doc in self.inspect_container(container_name_or_id)["Mounts"]:
+            volumes.append(VolumeInfo(**{k.lower(): v for k, v in doc.items()}))
+
+        return volumes
 
     @abstractmethod
     def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
