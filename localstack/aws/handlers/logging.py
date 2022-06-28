@@ -24,7 +24,7 @@ class ExceptionLogger(ExceptionHandler):
         response: Response,
     ):
         if isinstance(exception, ServiceException):
-            # We do not want to log an error/stacktrace if the handler is working as expected, but chooses to through
+            # We do not want to log an error/stacktrace if the handler is working as expected, but chooses to throw
             # a service exception
             return
         if self.logger.isEnabledFor(level=logging.DEBUG):

@@ -21,8 +21,7 @@ class StsProvider(StsApi, ServiceLifecycleHook):
     def get_caller_identity(self, context: RequestContext) -> GetCallerIdentityResponse:
         result = call_moto(context)
         if "user/moto" in result["Arn"] and "sts" in result["Arn"]:
-            # FIXME double replace is ugly AF
-            result["Arn"] = result["Arn"].replace("user/moto", "root").replace(":sts:", ":iam:")
+            result["Arn"] = f"arn:aws:iam::{result['Account']}:root"
         return result
 
 
