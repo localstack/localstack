@@ -4,8 +4,7 @@ on:
     inputs:
       targetRef:
         description: 'LocalStack Pro Ref to test with'
-        required: true
-        default: 'master'
+        required: false
   pull_request:
     paths:
       - ".github/workflows/pro-integration.yml"
@@ -20,6 +19,7 @@ on:
       - "bin/**"
     branches:
       - master
+      - 'v[0-9]+'
   push:
     paths:
       - ".github/workflows/pro-integration.yml"
@@ -49,11 +49,67 @@ jobs:
     environment: localstack-ext-tests
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository  # skip job if fork PR
     steps:
+      - name: Determine companion-ref
+        id: determine-companion-ref
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
+          result-encoding: string
+          script: |
+            if (context.payload.inputs && context.payload.inputs.targetRef) {
+              console.log("Using manually set target reference: ", context.payload.inputs.targetRef)
+              return context.payload.inputs.targetRef
+            }
+
+            const DEFAULT_REF = "refs/heads/master"
+
+            async function isCompanionRefExisting(refName) {
+              try {
+                // strip the leading "refs/" for the API call
+                const apiRef = refName.substr(5)
+                console.log("Checking if companion repo has ref: ", apiRef)
+                await github.rest.git.getRef({owner: "localstack", repo: "localstack-ext", ref: apiRef})
+                return true
+              } catch (error) {
+                  if (error.status == 404) {
+                    return false
+                  } else {
+                    // another (unexpected) error ocurred, raise the error
+                    throw new Error(`Fetching companion refs failed: ${JSON.stringify(error)}`)
+                  }
+              }
+            }
+
+            let ref = context.ref
+            let baseRef = null
+            if (context.payload.pull_request) {
+              // pull requests have their own refs (f.e. 'refs/pull/1/merge')
+              // use the PR head ref instead
+              ref = `refs/heads/${context.payload.pull_request.head.ref}`
+              baseRef = `refs/heads/${context.payload.pull_request.base.ref}`
+            }
+
+            if (ref == DEFAULT_REF) {
+              console.log("Current ref is default ref. Using the same for ext repo: ", DEFAULT_REF)
+              return DEFAULT_REF
+            }
+
+            if (await isCompanionRefExisting(ref)) {
+              console.log("Using companion ref in ext repo: ", ref)
+              return ref
+            } else if (baseRef && baseRef != DEFAULT_REF && (await isCompanionRefExisting(baseRef))) {
+              console.log("Using PR base companion ref in ext repo: ", baseRef)
+              return baseRef
+            }
+
+            // the companion repo does not have a companion ref, use the default
+            console.log("Ext repo does not have a companion ref. Using default: ", DEFAULT_REF)
+            return DEFAULT_REF
       - name: Checkout Pro
         uses: actions/checkout@v2
         with:
           repository: localstack/localstack-ext
-          ref: ${{ github.event.inputs.targetRef }}
+          ref: ${{steps.determine-companion-ref.outputs.result}}
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           path: localstack-ext
       - name: Checkout Open Source

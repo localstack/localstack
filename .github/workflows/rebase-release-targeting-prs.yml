@@ -1,0 +1,22 @@
+name: Rebase PRs targeting release branches
+on:
+  push:
+    branches:
+    # TODO use a better pattern here (once there's a clear branch name pattern)
+    - 'v[0-9]+'
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine base ref
+        id: determine-base-ref
+        uses: actions/github-script@v6
+        with:
+          result-encoding: string
+          script: |
+            // remove the ref prefx "refs/heads/"
+            return context.payload.ref.substr(11)
+      - uses: peter-evans/rebase@v2
+        with:
+          token: ${{ secrets.PRO_ACCESS_TOKEN }}
+          base: ${{steps.determine-base-ref.outputs.result}}
