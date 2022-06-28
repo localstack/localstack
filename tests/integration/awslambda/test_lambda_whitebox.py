@@ -219,7 +219,7 @@ class TestDockerExecutors(unittest.TestCase):
     )
     def test_prime_and_destroy_containers(self):
         executor = lambda_api.LAMBDA_EXECUTOR
-        func_name = "test_prime_and_destroy_containers"
+        func_name = f"test_prime_and_destroy_containers_{short_uid()}"
         func_arn = lambda_api.func_arn(func_name)
 
         # make sure existing containers are gone

@@ -5,6 +5,7 @@ import socket
 from typing import Dict, List, Union
 
 from localstack import config
+from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.utils import bootstrap
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import NoSuchImage
@@ -68,7 +69,7 @@ EXCLUDE_CONFIG_KEYS = {
     "__spec__",
 }
 ENDPOINT_RESOLVE_LIST = ["localhost.localstack.cloud", "api.localstack.cloud"]
-INSPECT_DIRECTORIES = ["/var/lib/localstack", "/tmp"]
+INSPECT_DIRECTORIES = [DEFAULT_VOLUME_DIR, "/tmp"]
 
 
 def get_localstack_logs() -> Union[str, Dict]:

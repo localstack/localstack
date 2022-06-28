@@ -22,7 +22,9 @@ from localstack.utils.container_utils.container_client import (
     PortMappings,
     RegistryConnectionError,
     Util,
+    VolumeInfo,
 )
+from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.net import get_free_tcp_port
 
 ContainerInfo = NamedTuple(
@@ -385,6 +387,79 @@ class TestDockerClient:
         )
         docker_client.start_container(c.container_id)
         assert tmpdir.join("foo.log").isfile(), "foo.log was not created in mounted dir"
+
+    @pytest.mark.skipif(
+        condition=in_docker(), reason="cannot test volume mounts from host when in docker"
+    )
+    def test_inspect_container_volumes(
+        self, tmpdir, docker_client: ContainerClient, create_container
+    ):
+        mount_volumes = [
+            (tmpdir.realpath() / "foo", "/tmp/mypath/foo"),
+            ("some_named_volume", "/tmp/mypath/volume"),
+        ]
+
+        c = create_container(
+            "alpine",
+            command=["sh", "-c", "while true; do sleep 1; done"],
+            mount_volumes=mount_volumes,
+        )
+        docker_client.start_container(c.container_id)
+
+        vols = docker_client.inspect_container_volumes(c.container_id)
+
+        # FIXME cmd docker client creates different default permission mode flags
+        if isinstance(docker_client, CmdDockerClient):
+            vol1 = VolumeInfo(
+                type="bind",
+                source=f"{tmpdir}/foo",
+                destination="/tmp/mypath/foo",
+                mode="",
+                rw=True,
+                propagation="rprivate",
+                name=None,
+                driver=None,
+            )
+            vol2 = VolumeInfo(
+                type="volume",
+                source="/var/lib/docker/volumes/some_named_volume/_data",
+                destination="/tmp/mypath/volume",
+                mode="z",
+                rw=True,
+                propagation="",
+                name="some_named_volume",
+                driver="local",
+            )
+        else:
+            vol1 = VolumeInfo(
+                type="bind",
+                source=f"{tmpdir}/foo",
+                destination="/tmp/mypath/foo",
+                mode="rw",
+                rw=True,
+                propagation="rprivate",
+                name=None,
+                driver=None,
+            )
+            vol2 = VolumeInfo(
+                type="volume",
+                source="/var/lib/docker/volumes/some_named_volume/_data",
+                destination="/tmp/mypath/volume",
+                mode="rw",
+                rw=True,
+                propagation="",
+                name="some_named_volume",
+                driver="local",
+            )
+
+        assert vol1 in vols
+        assert vol2 in vols
+
+    def test_inspect_container_volumes_with_no_volumes(
+        self, docker_client: ContainerClient, dummy_container
+    ):
+        docker_client.start_container(dummy_container.container_id)
+        assert len(docker_client.inspect_container_volumes(dummy_container.container_id)) == 0
 
     def test_copy_into_container(self, tmpdir, docker_client: ContainerClient, create_container):
         local_path = tmpdir.join("myfile.txt")

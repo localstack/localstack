@@ -7,8 +7,8 @@ import unittest
 
 import mock
 
+from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.config import TMP_FOLDER
 from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
 from localstack.services.awslambda.lambda_executors import OutputLog
 from localstack.services.awslambda.lambda_utils import API_PATH_ROOT
@@ -1067,7 +1067,9 @@ class TestLambdaAPI(unittest.TestCase):
 
         output.output_file()
 
-        temp.assert_called_once_with(dir=TMP_FOLDER, delete=False, suffix=".log", prefix="lambda_")
+        temp.assert_called_once_with(
+            dir=config.dirs.tmp, delete=False, suffix=".log", prefix="lambda_"
+        )
 
 
 class TestLambdaEventInvokeConfig(unittest.TestCase):
