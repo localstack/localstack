@@ -18,8 +18,7 @@ from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
-from localstack.config import LAMBDA_TRUNCATE_STDOUT, TMP_FOLDER
-from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
+from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_VOLUME_DIR
 from localstack.runtime.hooks import hook_spec
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
@@ -72,7 +71,7 @@ from localstack.utils.container_utils.container_client import (
     DockerContainerStatus,
     PortMappings,
 )
-from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.docker_utils import DOCKER_CLIENT, get_default_volume_dir_mount
 from localstack.utils.run import FuncThread
 
 # constants
@@ -1274,7 +1273,6 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
 
 class LambdaExecutorLocal(LambdaExecutor):
-
     # maps functionARN -> functionVersion -> callable used to invoke a Lambda function locally
     FUNCTION_CALLABLES: Dict[str, Dict[str, Callable]] = {}
 
@@ -1579,7 +1577,23 @@ class Util:
 
     @classmethod
     def get_host_path_for_path_in_docker(cls, path):
-        return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
+        if config.LEGACY_DIRECTORIES:
+            return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
+
+        if config.is_in_docker:
+            volume = get_default_volume_dir_mount()
+
+            if volume:
+                if volume.type != "bind":
+                    raise ValueError(
+                        f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for lambda code mounting to work"
+                    )
+
+                return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % volume.source, path)
+            else:
+                raise ValueError(f"No volume mounted to {DEFAULT_VOLUME_DIR}")
+
+        return path
 
     @classmethod
     def format_windows_path(cls, path):
@@ -1649,23 +1663,22 @@ class Util:
 
 
 class OutputLog:
-
     __slots__ = ["_stdout", "_stderr"]
 
     def __init__(self, stdout, stderr):
         self._stdout = stdout
         self._stderr = stderr
 
-    def stderr_formatted(self, truncated_to: int = LAMBDA_TRUNCATE_STDOUT):
+    def stderr_formatted(self, truncated_to: int = config.LAMBDA_TRUNCATE_STDOUT):
         return truncate(to_str(self._stderr).strip().replace("\n", "\n> "), truncated_to)
 
-    def stdout_formatted(self, truncated_to: int = LAMBDA_TRUNCATE_STDOUT):
+    def stdout_formatted(self, truncated_to: int = config.LAMBDA_TRUNCATE_STDOUT):
         return truncate(to_str(self._stdout).strip(), truncated_to)
 
     def output_file(self):
         try:
             with tempfile.NamedTemporaryFile(
-                dir=TMP_FOLDER, delete=False, suffix=".log", prefix="lambda_"
+                dir=config.dirs.tmp, delete=False, suffix=".log", prefix="lambda_"
             ) as f:
                 LOG.info(f"writing log to file '{f.name}'")
                 f.write(to_bytes(self._stderr))
