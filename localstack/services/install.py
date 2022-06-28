@@ -63,7 +63,7 @@ INSTALL_DIR_DDB = "%s/dynamodb" % dirs.static_libs
 INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
 INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
 INSTALL_DIR_KMS = "%s/kms" % dirs.static_libs
-INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.static_libs
+INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.var_libs
 INSTALL_DIR_KINESIS_MOCK = os.path.join(dirs.static_libs, "kinesis-mock")
 INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % dirs.static_libs
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
@@ -198,7 +198,7 @@ def install_elasticsearch(version=None):
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
-        tmp_archive = os.path.join(config.dirs.tmp, f"localstack.{os.path.basename(es_url)}")
+        tmp_archive = os.path.join(config.dirs.cache, f"localstack.{os.path.basename(es_url)}")
         download_and_extract_with_retry(es_url, tmp_archive, install_dir_parent)
         elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, "elasticsearch*"))
         if not elasticsearch_dir:
@@ -287,7 +287,7 @@ def install_opensearch(version=None):
                 mkdir(install_dir_parent)
                 # download and extract archive
                 tmp_archive = os.path.join(
-                    config.dirs.tmp, f"localstack.{os.path.basename(opensearch_url)}"
+                    config.dirs.cache, f"localstack.{os.path.basename(opensearch_url)}"
                 )
                 download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
                 opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
@@ -349,7 +349,7 @@ def install_elasticmq():
         log_install_msg("ElasticMQ")
         mkdir(INSTALL_DIR_ELASTICMQ)
         # download archive
-        tmp_archive = os.path.join(config.dirs.tmp, "elasticmq-server.jar")
+        tmp_archive = os.path.join(config.dirs.cache, "elasticmq-server.jar")
         if not os.path.exists(tmp_archive):
             download(ELASTICMQ_JAR_URL, tmp_archive)
         shutil.copy(tmp_archive, INSTALL_DIR_ELASTICMQ)
@@ -837,6 +837,8 @@ class InstallerManager:
 
 def main():
     if len(sys.argv) > 1:
+        config.dirs.mkdirs()
+
         # set test API key so pro install hooks are called
         os.environ["LOCALSTACK_API_KEY"] = os.environ.get("LOCALSTACK_API_KEY") or "test"
         if sys.argv[1] == "libs":

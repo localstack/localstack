@@ -55,7 +55,7 @@ def init_directories(dirs: Directories):
     LOG.debug("initializing cluster directories %s", dirs)
     chmod_r(dirs.install, 0o777)
 
-    if not dirs.data.startswith(config.dirs.data):
+    if not config.dirs.data or not dirs.data.startswith(config.dirs.data):
         # only clear previous data if it's not in DATA_DIR
         rm_rf(dirs.data)
 

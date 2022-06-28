@@ -6,6 +6,8 @@
 .coverage.*
 htmlcov
 
+.cache
+.filesystem
 /infra/
 localstack/infra/
 

@@ -51,9 +51,6 @@ _TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
 # TODO rename to "ROOT_FOLDER"!
 LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(MODULE_MAIN_PATH, ".."))
-INSTALL_DIR_INFRA = os.path.join(
-    MODULE_MAIN_PATH, "infra"
-)  # FIXME: deprecated, use config.dirs.infra
 
 # virtualenv folder
 LOCALSTACK_VENV_FOLDER = os.environ.get("VIRTUAL_ENV")
@@ -65,6 +62,9 @@ if not LOCALSTACK_VENV_FOLDER:
         LOCALSTACK_VENV_FOLDER = os.path.realpath(
             os.path.join(LOCALSTACK_ROOT_FOLDER, "..", "..", "..")
         )
+
+# default volume directory containing shared data
+DEFAULT_VOLUME_DIR = "/var/lib/localstack"
 
 # API Gateway path to indicate a user request sent to the gateway
 PATH_USER_REQUEST = "_user_request_"
