@@ -110,7 +110,7 @@ class TestSES:
         emails_url = config.get_edge_url() + INTERNAL_RESOURCE_PATH + EMAILS_ENDPOINT
         api_contents = requests.get(emails_url).json()
         api_contents = {msg["Id"]: msg for msg in api_contents["messages"]}
-        assert len(api_contents) == 1
+        assert len(api_contents) >= 1
         assert message_id in api_contents
         assert api_contents[message_id] == contents
 
