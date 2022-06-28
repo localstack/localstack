@@ -1275,3 +1275,10 @@ def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None, regio
 def get_ecr_repository_arn(name, account_id=None, region_name=None):
     pattern = "arn:aws:ecr:%s:%s:repository/%s"
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
+
+
+def get_route53_resolver_firewall_rule_group_arn(
+    id: str, account_id: str = None, region_name: str = None
+):
+    pattern = "arn:aws:route53resolver:%s:%s:firewall-rule-group/%s"
+    return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)

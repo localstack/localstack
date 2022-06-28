@@ -17,12 +17,7 @@ from localstack.aws.api.route53 import (
     ResourceId,
     Route53Api,
 )
-from localstack.aws.api.route53resolver import Route53ResolverApi
 from localstack.services.plugins import ServiceLifecycleHook
-
-
-class Route53ResolverProvider(Route53ResolverApi):
-    pass
 
 
 class Route53Provider(Route53Api, ServiceLifecycleHook):
