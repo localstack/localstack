@@ -151,9 +151,6 @@ ADD bin/localstack bin/localstack.bat bin/
 RUN make install-runtime
 RUN make freeze > requirements-runtime.txt
 
-# remove localstack (added as a transitive dependency of localstack-ext)
-RUN (virtualenv .venv && source .venv/bin/activate && pip3 uninstall -y localstack)
-
 
 
 # base-light: Stage which does not add additional dependencies (like elasticsearch)
@@ -240,12 +237,10 @@ RUN make init
 
 # Install the latest version of localstack-ext and generate the plugin entrypoints.
 # If this is a pre-release build, also include dev releases of these packages.
-# Run pip twice, also with --no-deps, to ensure the versions do not get overwritten by transitive dependencies.
 ARG LOCALSTACK_PRE_RELEASE=1
 RUN (PIP_ARGS=$([[ "$LOCALSTACK_PRE_RELEASE" == "1" ]] && echo "--pre" || true); \
       virtualenv .venv && source .venv/bin/activate && \
-      pip3 install --upgrade ${PIP_ARGS} localstack-ext plux && \
-      pip3 install --upgrade ${PIP_ARGS} --no-deps localstack-ext plux)
+      pip3 install --upgrade ${PIP_ARGS} localstack-ext)
 RUN make entrypoints
 
 # Add the build date and git hash at last (changes everytime)
