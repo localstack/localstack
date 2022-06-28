@@ -8,6 +8,7 @@ import requests
 import localstack.config as config
 from localstack.constants import INTERNAL_RESOURCE_PATH
 from localstack.services.ses.provider import EMAILS_ENDPOINT
+from localstack.utils.strings import short_uid
 
 TEST_TEMPLATE_ATTRIBUTES = {
     "TemplateName": "hello-world",
@@ -59,7 +60,7 @@ class TestSES:
 
     def test_get_identity_verification_attributes(self, ses_client):
         domain = "example.com"
-        email = "user@example.com"
+        email = f"user-{short_uid()}@example.com"
         test_values = [domain, email]
         response = ses_client.get_identity_verification_attributes(Identities=test_values)[
             "VerificationAttributes"
@@ -73,7 +74,7 @@ class TestSES:
     def test_send_email_can_retrospect(self, ses_client):
         # Test that sent emails can be retrospected through saved file and API access
         data_dir = config.dirs.data or config.dirs.tmp
-        email = "user@example.com"
+        email = f"user-{short_uid()}@example.com"
         ses_client.verify_email_address(EmailAddress=email)
         message = ses_client.send_email(
             Source=email,
@@ -130,7 +131,7 @@ class TestSES:
     def test_send_templated_email_can_retrospect(self, ses_client, create_template):
         # Test that sent emails can be retrospected through saved file and API access
         data_dir = config.dirs.data or config.dirs.tmp
-        email = "user@example.com"
+        email = f"user-{short_uid()}@example.com"
         ses_client.verify_email_address(EmailAddress=email)
         ses_client.delete_template(TemplateName=TEST_TEMPLATE_ATTRIBUTES["TemplateName"])
         create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
