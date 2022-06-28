@@ -15,12 +15,14 @@ from localstack.constants import (
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
     DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
+    DEFAULT_VOLUME_DIR,
     ENV_INTERNAL_TEST_RUN,
     FALSE_STRINGS,
-    INSTALL_DIR_INFRA,
     LOCALHOST,
     LOCALHOST_IP,
+    LOCALSTACK_ROOT_FOLDER,
     LOG_LEVELS,
+    MODULE_MAIN_PATH,
     TRACE_LOG_LEVELS,
     TRUE_STRINGS,
 )
@@ -61,15 +63,15 @@ class Directories:
 
     def __init__(
         self,
-        static_libs: str = None,
-        var_libs: str = None,
-        cache: str = None,
-        tmp: str = None,
-        functions: str = None,
-        data: str = None,
-        config: str = None,
-        init: str = None,
-        logs: str = None,
+        static_libs: str,
+        var_libs: str,
+        cache: str,
+        tmp: str,
+        functions: str,
+        data: str,
+        config: str,
+        init: str,
+        logs: str,
     ) -> None:
         super().__init__()
         self.static_libs = static_libs
@@ -83,10 +85,81 @@ class Directories:
         self.logs = logs
 
     @staticmethod
-    def from_config():
+    def defaults() -> "Directories":
+        """Returns Localstack directory paths based on the localstack filesystem hierarchy."""
+        return Directories(
+            static_libs="/usr/lib/localstack",
+            var_libs=f"{DEFAULT_VOLUME_DIR}/lib",
+            cache=f"{DEFAULT_VOLUME_DIR}/cache",
+            tmp=f"{DEFAULT_VOLUME_DIR}/tmp",
+            functions=f"{DEFAULT_VOLUME_DIR}/tmp",  # FIXME: remove - this was misconceived
+            data=f"{DEFAULT_VOLUME_DIR}/state",
+            logs=f"{DEFAULT_VOLUME_DIR}/logs",
+            config="/etc/localstack/conf.d",  # for future use
+            init="/etc/localstack/init",  # for future use
+        )
+
+    @staticmethod
+    def for_container() -> "Directories":
+        """
+        Returns Localstack directory paths as they are defined within the container. Everything shared and writable
+        lives in /var/lib/localstack or /tmp/localstack.
+
+        :returns: Directories object
+        """
+        defaults = Directories.defaults()
+
+        return Directories(
+            static_libs=defaults.static_libs,
+            var_libs=defaults.var_libs,
+            cache=defaults.cache,
+            tmp=defaults.tmp,
+            functions=defaults.functions,
+            data=defaults.data if PERSISTENCE else os.path.join(defaults.tmp, "state"),
+            config=defaults.config,
+            logs=defaults.logs,
+            init="/docker-entrypoint-initaws.d",  # FIXME should be reworked with lifecycle hooks
+        )
+
+    @staticmethod
+    def for_host() -> "Directories":
+        """Return directories used for running localstack in host mode. Note that these are *not* the directories
+        that are mounted into the container when the user starts localstack."""
+        root = os.environ.get("FILESYSTEM_ROOT") or os.path.join(
+            LOCALSTACK_ROOT_FOLDER, ".filesystem"
+        )
+        root = os.path.abspath(root)
+
+        defaults = Directories.for_container()
+
+        tmp = os.path.join(root, defaults.tmp.lstrip("/"))
+        data = os.path.join(root, defaults.data.lstrip("/"))
+
+        return Directories(
+            static_libs=os.path.join(root, defaults.static_libs.lstrip("/")),
+            var_libs=os.path.join(root, defaults.var_libs.lstrip("/")),
+            cache=os.path.join(root, defaults.cache.lstrip("/")),
+            tmp=tmp,
+            functions=os.path.join(root, defaults.functions.lstrip("/")),
+            data=data if PERSISTENCE else os.path.join(tmp, "state"),
+            config=os.path.join(root, defaults.config.lstrip("/")),
+            init=os.path.join(root, defaults.init.lstrip("/")),
+            logs=os.path.join(root, defaults.logs.lstrip("/")),
+        )
+
+    @staticmethod
+    def legacy_from_config():
         """Returns Localstack directory paths from the config/environment variables defined by the config."""
         # Note that the entries should be unique, as further downstream in docker_utils.py we're removing
         # duplicate host paths in the volume mounts via `dict(mount_volumes)`.
+
+        # legacy config variables inlined
+        INSTALL_DIR_INFRA = os.path.join(MODULE_MAIN_PATH, "infra")
+        # ephemeral cache dir that persists across reboots
+        CACHE_DIR = os.environ.get("CACHE_DIR", os.path.join(TMP_FOLDER, "cache")).strip()
+        # libs cache dir that persists across reboots
+        VAR_LIBS_DIR = os.environ.get("VAR_LIBS_DIR", os.path.join(TMP_FOLDER, "var_libs")).strip()
+
         return Directories(
             static_libs=INSTALL_DIR_INFRA,
             var_libs=VAR_LIBS_DIR,
@@ -100,7 +173,7 @@ class Directories:
         )
 
     @staticmethod
-    def for_container() -> "Directories":
+    def legacy_for_container() -> "Directories":
         """
         Returns Localstack directory paths as they are defined within the container. Everything shared and writable
         lives in /var/lib/localstack or /tmp/localstack.
@@ -110,10 +183,9 @@ class Directories:
         # only set CONTAINER_VAR_LIBS_FOLDER/CONTAINER_CACHE_FOLDER inside the container to redirect var_libs/cache to
         # another directory to avoid override by host mount
         var_libs = (
-            os.environ.get("CONTAINER_VAR_LIBS_FOLDER", "").strip()
-            or "/var/lib/localstack/var_libs"
+            os.environ.get("CONTAINER_VAR_LIBS_FOLDER", "").strip() or "/tmp/localstack/var_libs"
         )
-        cache = os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or "/var/lib/localstack/cache"
+        cache = os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or "/tmp/localstack/cache"
         tmp = (
             os.environ.get("CONTAINER_TMP_FOLDER", "").strip() or "/tmp/localstack"
         )  # TODO: discuss movement to /var/lib/localstack/tmp
@@ -121,14 +193,14 @@ class Directories:
             DATA_DIR if in_docker() else "/tmp/localstack_data"
         )  # TODO: move to /var/lib/localstack/data
         return Directories(
-            static_libs=INSTALL_DIR_INFRA,
+            static_libs=os.path.join(MODULE_MAIN_PATH, "infra"),
             var_libs=var_libs,
             cache=cache,
             tmp=tmp,
             functions=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
             data=data_dir,
             config=None,  # config directory is host-only
-            logs="/var/lib/localstack/logs",
+            logs="/tmp/localstack/logs",
             init="/docker-entrypoint-initaws.d",
         )
 
@@ -277,11 +349,20 @@ HOSTNAME_EXTERNAL = os.environ.get("HOSTNAME_EXTERNAL", "").strip() or LOCALHOST
 # name of the host under which the LocalStack services are available
 LOCALSTACK_HOSTNAME = os.environ.get("LOCALSTACK_HOSTNAME", "").strip() or LOCALHOST
 
-# directory for persisting data
+# directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
+
+# whether localstack should persist service state across localstack runs
+PERSISTENCE = is_env_true("PERSISTENCE")
+
+# whether to clear config.dirs.tmp on startup and shutdown
+CLEAR_TMP_FOLDER = is_env_not_false("CLEAR_TMP_FOLDER")
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), "localstack")
+
+# this is exclusively for the CLI to configure the container mount into /var/lib/localstack
+VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip() or TMP_FOLDER
 
 # fix for Mac OS, to be able to mount /var/folders in Docker
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
@@ -290,10 +371,8 @@ if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_
 # temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
 HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
 
-# ephemeral cache dir that persists across reboots
-CACHE_DIR = os.environ.get("CACHE_DIR", os.path.join(TMP_FOLDER, "cache")).strip()
-# libs cache dir that persists across reboots
-VAR_LIBS_DIR = os.environ.get("VAR_LIBS_DIR", os.path.join(TMP_FOLDER, "var_libs")).strip()
+# whether to use the old directory structure and mounting config
+LEGACY_DIRECTORIES = is_env_true("LEGACY_DIRECTORIES")
 
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
@@ -447,7 +526,6 @@ try:
             LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
 except socket.error:
     pass
-
 
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
@@ -669,6 +747,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_STAY_OPEN_MODE",
     "LAMBDA_TRUNCATE_STDOUT",
+    "LEGACY_DIRECTORIES",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_EDGE_PROXY",
     "LOCALSTACK_API_KEY",
@@ -680,6 +759,7 @@ CONFIG_ENV_VARS = [
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
+    "PERSISTENCE",
     "PERSISTENCE_SINGLE_FILE",
     "REQUESTS_CA_BUNDLE",
     "S3_SKIP_SIGNATURE_VALIDATION",
@@ -908,18 +988,58 @@ SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 
 SERVICE_PROVIDER_CONFIG.load_from_environment()
 
+
+def init_legacy_directories() -> Directories:
+    global PERSISTENCE
+    from localstack import constants
+
+    constants.DEFAULT_VOLUME_DIR = "/tmp/localstack"
+
+    if DATA_DIR:
+        PERSISTENCE = True
+
+    if is_in_docker:
+        dirs = Directories.legacy_for_container()
+    else:
+        dirs = Directories.legacy_from_config()
+
+    dirs.mkdirs()
+    return dirs
+
+
+def init_directories() -> Directories:
+    global DATA_DIR, PERSISTENCE
+
+    if DATA_DIR:
+        # deprecation path: DATA_DIR being set means persistence is activated, but we're ignoring the path set in
+        # DATA_DIR
+        os.environ["PERSISTENCE"] = "1"
+        PERSISTENCE = True
+
+    if is_in_docker:
+        dirs = Directories.for_container()
+    else:
+        dirs = Directories.for_host()
+
+    if PERSISTENCE:
+        if DATA_DIR:
+            LOG.warning(
+                "Persistence mode was activated using the DATA_DIR variable. The DATA_DIR is deprecated and "
+                "its value is ignore. The data is instead stored into %s in the LocalStack filesystem.",
+                dirs.data,
+            )
+
+        # deprecation path
+        DATA_DIR = dirs.data
+        os.environ["DATA_DIR"] = dirs.data  # still needed for external tools
+
+    return dirs
+
+
 # initialize directories
-if is_in_docker:
-    dirs = Directories.for_container()
+dirs: Directories
+if LEGACY_DIRECTORIES:
+    CLEAR_TMP_FOLDER = False
+    dirs = init_legacy_directories()
 else:
-    dirs = Directories.from_config()
-
-dirs.mkdirs()
-
-# TODO: remove deprecation warning with next release
-for path in [dirs.config, os.path.join(dirs.tmp, ".localstack")]:
-    if path and os.path.isfile(path):
-        print(
-            f"warning: the config file .localstack is deprecated and no longer used, "
-            f"please remove it by running rm {path}"
-        )
+    dirs = init_directories()
