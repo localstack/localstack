@@ -90,6 +90,16 @@ ADD https://raw.githubusercontent.com/carlossg/docker-maven/master/openjdk-11/se
 RUN mkdir -p /opt/code/localstack
 WORKDIR /opt/code/localstack/
 
+# create filesystem hierarchy
+RUN mkdir -p /var/lib/localstack && \
+    mkdir -p /usr/lib/localstack
+# backwards compatibility with LEGACY_DIRECTORIES (TODO: deprecate and remove)
+RUN mkdir -p /opt/code/localstack/localstack && \
+    ln -s /usr/lib/localstack /opt/code/localstack/localstack/infra && \
+    mkdir /tmp/localstack && \
+    chmod -R 777 /tmp/localstack && \
+    chmod -R 777 /usr/lib/localstack
+
 # install basic (global) tools to final image
 RUN pip install --no-cache-dir --upgrade supervisor virtualenv
 
@@ -130,12 +140,9 @@ RUN (cd /tmp && git clone https://github.com/timescale/timescaledb.git) && \
 
 # init environment and cache some dependencies
 ARG DYNAMODB_ZIP_URL=https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip
-RUN mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
+RUN mkdir -p /usr/lib/localstack/dynamodb && \
       curl -L -o /tmp/localstack.ddb.zip ${DYNAMODB_ZIP_URL} && \
-      (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip) && \
-    mkdir -p /opt/code/localstack/localstack/infra/elasticmq && \
-    curl -L -o /opt/code/localstack/localstack/infra/elasticmq/elasticmq-server.jar \
-        https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar
+      (cd /usr/lib/localstack/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip)
 
 # upgrade python build tools
 RUN (virtualenv .venv && source .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
@@ -155,8 +162,7 @@ RUN make freeze > requirements-runtime.txt
 
 # base-light: Stage which does not add additional dependencies (like elasticsearch)
 FROM base as base-light
-RUN mkdir -p /opt/code/localstack/localstack/infra && \
-    touch localstack/infra/.light-version
+RUN touch /usr/lib/localstack/.light-version
 
 
 
@@ -167,13 +173,12 @@ FROM base as base-full
 # https://github.com/pires/docker-elasticsearch/issues/56
 ENV ES_TMPDIR /tmp
 
-ENV ES_BASE_DIR=localstack/infra/elasticsearch
+ENV ES_BASE_DIR=/usr/lib/localstack/elasticsearch
 ENV ES_JAVA_HOME /usr/lib/jvm/java-11
 RUN TARGETARCH_SYNONYM=$([[ "$TARGETARCH" == "amd64" ]] && echo "x86_64" || echo "aarch64"); \
-    mkdir -p /opt/code/localstack/localstack/infra && \
     curl -L -o /tmp/localstack.es.tar.gz \
         https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.0-linux-${TARGETARCH_SYNONYM}.tar.gz && \
-    (cd localstack/infra/ && tar -xf /tmp/localstack.es.tar.gz && \
+    (cd /usr/lib/localstack && tar -xf /tmp/localstack.es.tar.gz && \
         mv elasticsearch* elasticsearch && rm /tmp/localstack.es.tar.gz) && \
     (cd $ES_BASE_DIR && \
         bin/elasticsearch-plugin install analysis-icu && \
@@ -210,24 +215,24 @@ COPY --from=builder /opt/code/localstack/ /opt/code/localstack/
 COPY --from=builder /usr/share/postgresql/11/extension /usr/share/postgresql/11/extension
 COPY --from=builder /usr/lib/postgresql/11/lib /usr/lib/postgresql/11/lib
 
-RUN mkdir -p /tmp/localstack && \
-    if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
+RUN if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
 
 # fix some permissions and create local user
 RUN mkdir -p /.npm && \
     chmod 777 . && \
     chmod 755 /root && \
     chmod -R 777 /.npm && \
-    chmod -R 777 /tmp/localstack && \
+    chmod -R 777 /var/lib/localstack && \
     useradd -ms /bin/bash localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
 
 # Install the latest version of awslocal globally
 RUN pip3 install --upgrade awscli awscli-local requests
 
-# Add the code in the last step
-# Also adds the results of `make init` to the container.
+# Adds the results of `make init` to the container.
 # `make init` _needs_ to be executed before building this docker image (since the execution needs docker itself).
+ADD .filesystem/usr/lib/localstack /usr/lib/localstack
+# Add the code in the last step
 ADD localstack/ localstack/
 
 # Download some more dependencies (make init needs the LocalStack code)
@@ -255,6 +260,9 @@ ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
 EXPOSE 4566 4510-4559 5678
 
 HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD ./bin/localstack status services --format=json
+
+# default volume directory
+VOLUME /var/lib/localstack
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
