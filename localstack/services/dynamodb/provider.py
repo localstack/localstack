@@ -550,7 +550,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 {
                     "Keys": keys,
                     "NewImage": item,
-                    "SizeBytes": len(json.dumps(item)),
+                    "SizeBytes": _get_size_bytes(item),
                 }
             )
             if stream_spec:
@@ -586,7 +586,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     {
                         "Keys": delete_item_input["Key"],
                         "OldImage": existing_item,
-                        "SizeBytes": len(json.dumps(existing_item)),
+                        "SizeBytes": _get_size_bytes(existing_item),
                     }
                 )
                 # Get stream specifications details for the table
@@ -623,7 +623,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     {
                         "Keys": update_item_input["Key"],
                         "NewImage": updated_item,
-                        "SizeBytes": len(json.dumps(updated_item)),
+                        "SizeBytes": _get_size_bytes(updated_item),
                     }
                 )
                 if existing_item:
