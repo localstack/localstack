@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import functools
+import inspect
 import json
 import logging
 import os
@@ -415,7 +416,9 @@ class RegionBackend:
         # To enable this, we keep copies of this class in `_ACCOUNT_CLS` by account IDs and instantiate that
         # copy of the class for different regions and same account ID
         if MULTI_ACCOUNTS and account_id not in cls._ACCOUNTS_CLS:
-            cls_dict = copy.deepcopy(dict(cls.__dict__))
+            # @classmethod descriptors will be part of a cls.__dict__, but they cannot be pickled by deepcopy
+            data = {k: v for k, v in cls.__dict__.items() if not inspect.ismethoddescriptor(v)}
+            cls_dict = copy.deepcopy(data)
             cls_dict["_ACCOUNTS_CLS"] = cls._ACCOUNTS_CLS
             cls_dict["_ACCOUNT_BACKENDS"] = cls._ACCOUNT_BACKENDS
 
