@@ -5,6 +5,7 @@ from glob import glob
 
 from amazon_kclpy import kcl
 
+from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import save_file
 
@@ -53,17 +54,7 @@ def get_kcl_classpath(properties=None, paths=None):
     # add path of custom java code
     dir_name = os.path.dirname(os.path.realpath(__file__))
     paths.insert(
-        0,
-        os.path.realpath(
-            os.path.join(
-                dir_name,
-                "..",
-                "..",
-                "infra",
-                "amazon-kinesis-client",
-                "aws-java-sdk-sts.jar",
-            )
-        ),
+        0, os.path.join(config.dirs.static_libs, "amazon-kinesis-client", "aws-java-sdk-sts.jar")
     )
     paths.insert(0, os.path.realpath(os.path.join(dir_name, "java")))
     return ":".join([p for p in paths if p != ""])

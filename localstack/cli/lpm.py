@@ -5,6 +5,7 @@ import click
 from click import ClickException
 from rich.console import Console
 
+from localstack import config
 from localstack.services.install import InstallerManager
 from localstack.utils.bootstrap import setup_logging
 
@@ -59,6 +60,7 @@ def install(package, parallel):
     """
     console.print(f"resolving packages: {package}")
     installers: Dict[str, Callable] = InstallerManager().get_installers()
+    config.dirs.mkdirs()
 
     for pkg in package:
         if pkg not in installers:
