@@ -288,6 +288,17 @@ class TestOpensearchProvider:
             opensearch_client.create_domain(DomainName="abc#")  # no special characters allowed
         assert e.value.response["Error"]["Code"] == "ValidationException"
 
+    @pytest.mark.aws_validated
+    def test_exception_header_field(self, opensearch_client):
+        """Test if the error response correctly sets the error code in the headers (see #6304)."""
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            # use an invalid domain name to provoke an exception
+            opensearch_client.create_domain(DomainName="123")
+        assert (
+            e.value.response["ResponseMetadata"]["HTTPHeaders"]["x-amzn-errortype"]
+            == "ValidationException"
+        )
+
     def test_create_existing_domain_causes_exception(
         self, opensearch_client, opensearch_wait_for_cluster
     ):
