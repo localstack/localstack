@@ -10,6 +10,7 @@ from localstack.aws.api.route53resolver import (
     CreatorRequestId,
     DeleteFirewallRuleGroupResponse,
     FirewallRuleGroup,
+    FirewallRuleGroupMetadata,
     FirewallRuleGroupMetadataList,
     GetFirewallRuleGroupResponse,
     ListFirewallRuleGroupsResponse,
@@ -83,15 +84,22 @@ class Route53ResolverProvider(Route53ResolverApi):
             raise ResourceNotFoundException(
                 f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '1-{get_random_hex(8)}-{get_random_hex(24)}'"
             )
-        return DeleteFirewallRuleGroupResponse(FirewallRuleGroup=firewall_rule_group)
+        return GetFirewallRuleGroupResponse(FirewallRuleGroup=firewall_rule_group)
 
     def list_firewall_rule_groups(
         self, context: RequestContext, max_results: MaxResults = None, next_token: NextToken = None
     ) -> ListFirewallRuleGroupsResponse:
         region_details = Route53ResolverBackend.get()
-        firewall_group_rules: Optional[
-            FirewallRuleGroupMetadataList
-        ] = region_details.firewall_rule_groups.values()
+        firewall_group_rules: Optional[FirewallRuleGroupMetadataList] = []
+        for firewall_rule_group in region_details.firewall_rule_groups.values():
+            firewall_group_rules.append(FirewallRuleGroupMetadata(
+                Id=firewall_rule_group.get("Id"),
+                Arn=firewall_rule_group.get("Arn"),
+                Name=firewall_rule_group.get("Name"),
+                OwnerId=firewall_rule_group.get("OwnerId"),
+                CreatorRequestId=firewall_rule_group.get("CreatorRequestId"),
+                ShareStatus=firewall_rule_group.get("ShareStatus")
+            ))
         return ListFirewallRuleGroupsResponse(FirewallRuleGroups=firewall_group_rules)
 
 
