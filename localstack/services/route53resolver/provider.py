@@ -92,14 +92,16 @@ class Route53ResolverProvider(Route53ResolverApi):
         region_details = Route53ResolverBackend.get()
         firewall_group_rules: Optional[FirewallRuleGroupMetadataList] = []
         for firewall_rule_group in region_details.firewall_rule_groups.values():
-            firewall_group_rules.append(FirewallRuleGroupMetadata(
-                Id=firewall_rule_group.get("Id"),
-                Arn=firewall_rule_group.get("Arn"),
-                Name=firewall_rule_group.get("Name"),
-                OwnerId=firewall_rule_group.get("OwnerId"),
-                CreatorRequestId=firewall_rule_group.get("CreatorRequestId"),
-                ShareStatus=firewall_rule_group.get("ShareStatus")
-            ))
+            firewall_group_rules.append(
+                FirewallRuleGroupMetadata(
+                    Id=firewall_rule_group.get("Id"),
+                    Arn=firewall_rule_group.get("Arn"),
+                    Name=firewall_rule_group.get("Name"),
+                    OwnerId=firewall_rule_group.get("OwnerId"),
+                    CreatorRequestId=firewall_rule_group.get("CreatorRequestId"),
+                    ShareStatus=firewall_rule_group.get("ShareStatus"),
+                )
+            )
         return ListFirewallRuleGroupsResponse(FirewallRuleGroups=firewall_group_rules)
 
 
