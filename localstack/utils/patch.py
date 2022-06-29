@@ -53,7 +53,7 @@ class Patch:
         super().__init__()
         self.obj = obj
         self.name = name
-        self.old = getattr(self.obj, name)
+        self.old = getattr(self.obj, name, None)
         self.new = new
         self.is_applied = False
 
