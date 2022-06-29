@@ -105,6 +105,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
+from localstack.utils.json import BytesEncoder
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.threads import start_worker_thread
 
@@ -194,7 +195,7 @@ class EventForwarder:
             partition_key = hash_keys[0]["AttributeName"]
             kinesis.put_record(
                 StreamName=stream_name,
-                Data=json.dumps(record),
+                Data=json.dumps(record, cls=BytesEncoder),
                 PartitionKey=partition_key,
             )
 
@@ -1179,7 +1180,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         unprocessed_item = unprocessed_put_items[i]
                         if unprocessed_item:
                             unprocessed_items["PutRequest"].update(
-                                json.loads(json.dumps(unprocessed_item))
+                                json.loads(json.dumps(unprocessed_item, cls=BytesEncoder))
                             )
                 delete_request = request.get("DeleteRequest")
                 if delete_request:
@@ -1197,7 +1198,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         unprocessed_item = unprocessed_delete_items[i]
                         if unprocessed_item:
                             unprocessed_items["DeleteRequest"].update(
-                                json.loads(json.dumps(unprocessed_item))
+                                json.loads(json.dumps(unprocessed_item, cls=BytesEncoder))
                             )
                 i += 1
         return records, unprocessed_items

@@ -12,6 +12,24 @@ from localstack.utils.common import poll_condition, retry, select_attributes, sh
 from localstack.utils.kinesis import kinesis_connector
 
 
+def get_shard_iterator(stream_name, kinesis_client):
+    response = kinesis_client.describe_stream(StreamName=stream_name)
+    sequence_number = (
+        response.get("StreamDescription")
+        .get("Shards")[0]
+        .get("SequenceNumberRange")
+        .get("StartingSequenceNumber")
+    )
+    shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
+    response = kinesis_client.get_shard_iterator(
+        StreamName=stream_name,
+        ShardId=shard_id,
+        ShardIteratorType="AT_SEQUENCE_NUMBER",
+        StartingSequenceNumber=sequence_number,
+    )
+    return response.get("ShardIterator")
+
+
 class TestKinesis:
     def test_stream_consumers(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready
@@ -201,14 +219,14 @@ class TestKinesis:
         )
 
         # get records with JSON encoding
-        iterator = self._get_shard_iterator(stream_name, kinesis_client)
+        iterator = get_shard_iterator(stream_name, kinesis_client)
         response = kinesis_client.get_records(ShardIterator=iterator)
         json_records = response.get("Records")
         assert 1 == len(json_records)
         assert "Data" in json_records[0]
 
         # get records with CBOR encoding
-        iterator = self._get_shard_iterator(stream_name, kinesis_client)
+        iterator = get_shard_iterator(stream_name, kinesis_client)
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers("kinesis")
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
@@ -233,7 +251,7 @@ class TestKinesis:
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
         wait_for_stream_ready(stream_name)
 
-        iterator = self._get_shard_iterator(stream_name, kinesis_client)
+        iterator = get_shard_iterator(stream_name, kinesis_client)
 
         for record_data in records_data:
             kinesis_client.put_record(
@@ -247,23 +265,6 @@ class TestKinesis:
         assert len(records_data) == len(response_records)
         for response_record in response_records:
             assert response_record.get("Data").decode("utf-8") in records_data
-
-    def _get_shard_iterator(self, stream_name, kinesis_client):
-        response = kinesis_client.describe_stream(StreamName=stream_name)
-        sequence_number = (
-            response.get("StreamDescription")
-            .get("Shards")[0]
-            .get("SequenceNumberRange")
-            .get("StartingSequenceNumber")
-        )
-        shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
-        response = kinesis_client.get_shard_iterator(
-            StreamName=stream_name,
-            ShardId=shard_id,
-            ShardIteratorType="AT_SEQUENCE_NUMBER",
-            StartingSequenceNumber=sequence_number,
-        )
-        return response.get("ShardIterator")
 
 
 @pytest.fixture

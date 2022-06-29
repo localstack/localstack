@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import re
-import time
 from datetime import datetime
 from time import sleep
 
@@ -18,6 +17,7 @@ from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+from .test_kinesis import get_shard_iterator
 
 PARTITION_KEY = "id"
 
@@ -500,7 +500,13 @@ class TestDynamoDB:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         dynamodb_client.delete_table(TableName=table_name)
 
-    def test_binary_data_with_stream(self, wait_for_stream_ready, dynamodb_create_table_with_parameters, dynamodb_client, kinesis_client):
+    def test_binary_data_with_stream(
+        self,
+        wait_for_stream_ready,
+        dynamodb_create_table_with_parameters,
+        dynamodb_client,
+        kinesis_client,
+    ):
         table_name = f"table-{short_uid()}"
         dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -510,13 +516,20 @@ class TestDynamoDB:
             StreamSpecification={
                 "StreamEnabled": True,
                 "StreamViewType": "NEW_AND_OLD_IMAGES",
-            }
+            },
         )
         stream_name = get_kinesis_stream_name(table_name)
         wait_for_stream_ready(stream_name)
-        response = dynamodb_client.put_item(TableName=table_name, Item={"id": {"S": "id1"}, "data": {"B": b"binary_data"}})
+        response = dynamodb_client.put_item(
+            TableName=table_name, Item={"id": {"S": "id1"}, "data": {"B": b"binary_data"}}
+        )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+        iterator = get_shard_iterator(stream_name, kinesis_client)
+        response = kinesis_client.get_records(ShardIterator=iterator)
+        json_records = response.get("Records")
+        assert 1 == len(json_records)
+        assert "Data" in json_records[0]
 
     def test_dynamodb_stream_shard_iterator(self, wait_for_stream_ready):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
