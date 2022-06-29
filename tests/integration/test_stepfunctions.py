@@ -197,7 +197,7 @@ def setup_and_tear_down():
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_2)
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_3)
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_4)
-    testutil.create_lambda_function(name=TEST_LAMBDA_NAME_5)
+    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_5)
 
 
 def _assert_machine_instances(expected_instances, sfn_client):
