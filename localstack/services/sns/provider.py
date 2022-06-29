@@ -892,6 +892,7 @@ async def message_to_subscriber(
             "SNS filter policy %s does not match attributes %s", filter_policy, message_attributes
         )
         return
+    # todo: Message attributes are sent only when the message structure is String, not JSON.
     if subscriber["Protocol"] == "sms":
         event = {
             "topic_arn": topic_arn,
@@ -921,7 +922,6 @@ async def message_to_subscriber(
     elif subscriber["Protocol"] == "sqs":
         queue_url = None
         message_body = create_sns_message_body(subscriber, req_data, message_id, message_attributes)
-        print(message_body)
         try:
             endpoint = subscriber["Endpoint"]
 
@@ -1184,7 +1184,7 @@ def create_sqs_message_attributes(subscriber, attributes):
             attribute = {"DataType": tpe}
             if tpe == "Binary":
                 val = value.get("BinaryValue") or value.get("Value")
-                attribute["BinaryValue"] = base64.decodebytes(to_bytes(val))
+                attribute["BinaryValue"] = base64.b64decode(to_bytes(val))
                 # base64 decoding might already have happened, in which decode fails.
                 # If decode fails, fallback to whatever is in there.
                 if not attribute["BinaryValue"]:
@@ -1203,11 +1203,19 @@ def prepare_message_attributes(message_attributes: MessageAttributeMap):
     attributes = {}
     if not message_attributes:
         return attributes
-
+    # todo: Number type is not supported for Lambda subscriptions, passed as String
+    #  do conversion here
     for attr_name, attr in message_attributes.items():
+        if attr.get("StringValue", None):
+            val = attr["StringValue"]
+        else:
+            # binary payload in base64 encoded by AWS, UTF-8 for JSON
+            # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
+            val = base64.b64encode(attr["BinaryValue"]).decode()
+
         attributes[attr_name] = {
             "Type": attr["DataType"],
-            "Value": attr["StringValue"] if attr.get("StringValue", None) else attr["BinaryValue"],
+            "Value": val,
         }
     return attributes
 
