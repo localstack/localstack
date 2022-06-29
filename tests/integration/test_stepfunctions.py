@@ -1,6 +1,5 @@
 import json
 import os
-import unittest
 
 import pytest
 
@@ -165,86 +164,123 @@ STATE_MACHINE_EVENTS = {
 }
 
 
-class TestStateMachine(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
-        cls.s3_client = aws_stack.create_external_boto_client("s3")
-        cls.sfn_client = aws_stack.create_external_boto_client("stepfunctions")
+@pytest.fixture(scope="module")
+def setup_and_tear_down():
 
-        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True)
-        zip_file2 = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
-        )
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_1,
-            zip_file=zip_file,
-            envvars={"Hello": TEST_RESULT_VALUE},
-        )
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_2,
-            zip_file=zip_file,
-            envvars={"Hello": TEST_RESULT_VALUE},
-        )
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_3,
-            zip_file=zip_file,
-            envvars={"Hello": "Replace Value"},
-        )
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_4,
-            zip_file=zip_file,
-            envvars={"Hello": TEST_RESULT_VALUE},
-        )
-        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_5, zip_file=zip_file2)
+    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True)
+    zip_file2 = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+    testutil.create_lambda_function(
+        func_name=TEST_LAMBDA_NAME_1,
+        zip_file=zip_file,
+        envvars={"Hello": TEST_RESULT_VALUE},
+    )
+    testutil.create_lambda_function(
+        func_name=TEST_LAMBDA_NAME_2,
+        zip_file=zip_file,
+        envvars={"Hello": TEST_RESULT_VALUE},
+    )
+    testutil.create_lambda_function(
+        func_name=TEST_LAMBDA_NAME_3,
+        zip_file=zip_file,
+        envvars={"Hello": "Replace Value"},
+    )
+    testutil.create_lambda_function(
+        func_name=TEST_LAMBDA_NAME_4,
+        zip_file=zip_file,
+        envvars={"Hello": TEST_RESULT_VALUE},
+    )
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_5, zip_file=zip_file2)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_1)
-        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_2)
-        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_3)
-        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_4)
+    yield
 
-    def test_create_choice_state_machine(self):
-        state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
+    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_1)
+    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_2)
+    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_3)
+    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_4)
+    testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_5)
+
+
+def _assert_machine_instances(expected_instances, sfn_client):
+    def check():
+        state_machines_after = sfn_client.list_state_machines()["stateMachines"]
+        assert expected_instances == len(state_machines_after)
+        return state_machines_after
+
+    return retry(check, sleep=1, retries=4)
+
+
+def _get_execution_results(sm_arn, sfn_client):
+    response = sfn_client.list_executions(stateMachineArn=sm_arn)
+    executions = sorted(response["executions"], key=lambda x: x["startDate"])
+    execution = executions[-1]
+    result = sfn_client.get_execution_history(executionArn=execution["executionArn"])
+    events = sorted(result["events"], key=lambda event: event["timestamp"])
+    result = json.loads(events[-1]["executionSucceededEventDetails"]["output"])
+    return result
+
+
+def assert_machine_deleted(state_machines_before, sfn_client):
+    return _assert_machine_instances(len(state_machines_before), sfn_client)
+
+
+def assert_machine_created(state_machines_before, sfn_client):
+    return _assert_machine_instances(len(state_machines_before) + 1, sfn_client=sfn_client)
+
+
+def cleanup(sm_arn, state_machines_before, sfn_client):
+    sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+    assert_machine_deleted(state_machines_before, sfn_client=sfn_client)
+
+
+def get_machine_arn(sm_name, sfn_client):
+    state_machines = sfn_client.list_state_machines()["stateMachines"]
+    return [m["stateMachineArn"] for m in state_machines if m["name"] == sm_name][0]
+
+
+@pytest.mark.usefixtures("setup_and_tear_down")
+class TestStateMachine:
+    def test_create_choice_state_machine(self, stepfunctions_client):
+        state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
         role_arn = aws_stack.role_arn("sfn_role")
 
         definition = clone(STATE_MACHINE_CHOICE)
         lambda_arn_4 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_4)
         definition["States"]["Add"]["Resource"] = lambda_arn_4
         definition = json.dumps(definition)
-        sm_name = "choice-%s" % short_uid()
-        result = self.sfn_client.create_state_machine(
+        sm_name = f"choice-{short_uid()}"
+        stepfunctions_client.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
 
         # assert that the SM has been created
-        self.assert_machine_created(state_machines_before)
+        assert_machine_created(state_machines_before, stepfunctions_client)
 
         # run state machine
-        sm_arn = self.get_machine_arn(sm_name)
+        sm_arn = get_machine_arn(sm_name, stepfunctions_client)
         input = {"x": "1", "y": "2"}
-        result = self.sfn_client.start_execution(stateMachineArn=sm_arn, input=json.dumps(input))
-        self.assertTrue(result.get("executionArn"))
+        result = stepfunctions_client.start_execution(
+            stateMachineArn=sm_arn, input=json.dumps(input)
+        )
+        assert result.get("executionArn")
 
         # define expected output
         test_output = {**input, "added": {"Hello": TEST_RESULT_VALUE}}
 
         def check_result():
-            result = self._get_execution_results(sm_arn)
-            self.assertEqual(test_output, result)
+            result = _get_execution_results(sm_arn, stepfunctions_client)
+            assert test_output == result
 
         # assert that the result is correct
         retry(check_result, sleep=2, retries=10)
 
         # clean up
-        self.cleanup(sm_arn, state_machines_before)
+        cleanup(sm_arn, state_machines_before, sfn_client=stepfunctions_client)
 
-    def test_create_run_map_state_machine(self):
+    def test_create_run_map_state_machine(self, stepfunctions_client):
         names = ["Bob", "Meg", "Joe"]
         test_input = [{"map": name} for name in names]
         test_output = [{"Hello": name} for name in names]
-        state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
+        state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
         role_arn = aws_stack.role_arn("sfn_role")
         definition = clone(STATE_MACHINE_MAP)
@@ -253,36 +289,36 @@ class TestStateMachine(unittest.TestCase):
             "Resource"
         ] = lambda_arn_3
         definition = json.dumps(definition)
-        sm_name = "map-%s" % short_uid()
-        _ = self.sfn_client.create_state_machine(
+        sm_name = f"map-{short_uid()}"
+        stepfunctions_client.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
 
         # assert that the SM has been created
-        self.assert_machine_created(state_machines_before)
+        assert_machine_created(state_machines_before, stepfunctions_client)
 
         # run state machine
-        sm_arn = self.get_machine_arn(sm_name)
+        sm_arn = get_machine_arn(sm_name, stepfunctions_client)
         lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
-        result = self.sfn_client.start_execution(
+        result = stepfunctions_client.start_execution(
             stateMachineArn=sm_arn, input=json.dumps(test_input)
         )
-        self.assertTrue(result.get("executionArn"))
+        assert result.get("executionArn")
 
         def check_invocations():
-            self.assertIn(lambda_arn_3, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
+            assert lambda_arn_3 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
-            result = self._get_execution_results(sm_arn)
-            self.assertEqual(test_output, result)
+            result = _get_execution_results(sm_arn, stepfunctions_client)
+            assert test_output == result
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
 
         # clean up
-        self.cleanup(sm_arn, state_machines_before)
+        cleanup(sm_arn, state_machines_before, stepfunctions_client)
 
-    def test_create_run_state_machine(self):
-        state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
+    def test_create_run_state_machine(self, stepfunctions_client):
+        state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
         # create state machine
         role_arn = aws_stack.role_arn("sfn_role")
@@ -292,38 +328,38 @@ class TestStateMachine(unittest.TestCase):
         definition["States"]["step1"]["Resource"] = lambda_arn_1
         definition["States"]["step2"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
-        sm_name = "basic-%s" % short_uid()
-        result = self.sfn_client.create_state_machine(
+        sm_name = f"basic-{short_uid()}"
+        stepfunctions_client.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
 
         # assert that the SM has been created
-        self.assert_machine_created(state_machines_before)
+        assert_machine_created(state_machines_before, stepfunctions_client)
 
         # run state machine
-        sm_arn = self.get_machine_arn(sm_name)
+        sm_arn = get_machine_arn(sm_name, stepfunctions_client)
         lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
-        result = self.sfn_client.start_execution(stateMachineArn=sm_arn)
-        self.assertTrue(result.get("executionArn"))
+        result = stepfunctions_client.start_execution(stateMachineArn=sm_arn)
+        assert result.get("executionArn")
 
         def check_invocations():
-            self.assertIn(lambda_arn_1, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
-            self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
+            assert lambda_arn_1 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
+            assert lambda_arn_2 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
-            result = self._get_execution_results(sm_arn)
-            self.assertEqual({"Hello": TEST_RESULT_VALUE}, result["result_value"])
+            result = _get_execution_results(sm_arn, stepfunctions_client)
+            assert {"Hello": TEST_RESULT_VALUE} == result["result_value"]
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=0.7, retries=25)
 
         # clean up
-        self.cleanup(sm_arn, state_machines_before)
+        cleanup(sm_arn, state_machines_before, stepfunctions_client)
 
-    def test_try_catch_state_machine(self):
+    def test_try_catch_state_machine(self, stepfunctions_client):
         if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
             pytest.skip("skipping non us-east-1 temporarily")
 
-        state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
+        state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
         # create state machine
         role_arn = aws_stack.role_arn("sfn_role")
@@ -334,35 +370,35 @@ class TestStateMachine(unittest.TestCase):
         definition["States"]["ErrorHandler"]["Resource"] = lambda_arn_2
         definition["States"]["Final"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
-        sm_name = "catch-%s" % short_uid()
-        result = self.sfn_client.create_state_machine(
+        sm_name = f"catch-{short_uid()}"
+        stepfunctions_client.create_state_machine(
             name=sm_name, definition=definition, roleArn=role_arn
         )
 
         # run state machine
-        sm_arn = self.get_machine_arn(sm_name)
+        sm_arn = get_machine_arn(sm_name, stepfunctions_client)
         lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
-        result = self.sfn_client.start_execution(stateMachineArn=sm_arn)
-        self.assertTrue(result.get("executionArn"))
+        result = stepfunctions_client.start_execution(stateMachineArn=sm_arn)
+        assert result.get("executionArn")
 
         def check_invocations():
-            self.assertIn(lambda_arn_1, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
-            self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
+            assert lambda_arn_1 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
+            assert lambda_arn_2 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
-            result = self._get_execution_results(sm_arn)
-            self.assertEqual({"Hello": TEST_RESULT_VALUE}, result.get("handled"))
+            result = _get_execution_results(sm_arn, stepfunctions_client)
+            assert {"Hello": TEST_RESULT_VALUE} == result.get("handled")
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
 
         # clean up
-        self.cleanup(sm_arn, state_machines_before)
+        cleanup(sm_arn, state_machines_before, stepfunctions_client)
 
-    def test_intrinsic_functions(self):
+    def test_intrinsic_functions(self, stepfunctions_client):
         if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
             pytest.skip("skipping non us-east-1 temporarily")
 
-        state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
+        state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
         # create state machine
         role_arn = aws_stack.role_arn("sfn_role")
@@ -375,32 +411,36 @@ class TestStateMachine(unittest.TestCase):
             ] = lambda_arn_1
             definition["States"]["state3"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
-        sm_name = "intrinsic-%s" % short_uid()
-        self.sfn_client.create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
+        sm_name = f"intrinsic-{short_uid()}"
+        stepfunctions_client.create_state_machine(
+            name=sm_name, definition=definition, roleArn=role_arn
+        )
 
         # run state machine
-        sm_arn = self.get_machine_arn(sm_name)
+        sm_arn = get_machine_arn(sm_name, stepfunctions_client)
         lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
         input = {}
-        result = self.sfn_client.start_execution(stateMachineArn=sm_arn, input=json.dumps(input))
-        self.assertTrue(result.get("executionArn"))
+        result = stepfunctions_client.start_execution(
+            stateMachineArn=sm_arn, input=json.dumps(input)
+        )
+        assert result.get("executionArn")
 
         def check_invocations():
-            self.assertIn(lambda_arn_1, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
-            self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
+            assert lambda_arn_1 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
+            assert lambda_arn_2 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
-            result = self._get_execution_results(sm_arn)
-            self.assertEqual({"payload": {"values": [1, "v2"]}}, result.get("result_value"))
+            result = _get_execution_results(sm_arn, stepfunctions_client)
+            assert {"payload": {"values": [1, "v2"]}} == result.get("result_value")
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
 
         # clean up
-        self.cleanup(sm_arn, state_machines_before)
+        cleanup(sm_arn, state_machines_before, stepfunctions_client)
 
-    def test_events_state_machine(self):
+    def test_events_state_machine(self, stepfunctions_client):
         events = aws_stack.create_external_boto_client("events")
-        state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
+        state_machines_before = stepfunctions_client.list_state_machines()["stateMachines"]
 
         # create event bus
         bus_name = f"bus-{short_uid()}"
@@ -410,68 +450,33 @@ class TestStateMachine(unittest.TestCase):
         definition = clone(STATE_MACHINE_EVENTS)
         definition["States"]["step1"]["Parameters"]["Entries"][0]["EventBusName"] = bus_name
         definition = json.dumps(definition)
-        sm_name = "events-%s" % short_uid()
+        sm_name = f"events-{short_uid()}"
         role_arn = aws_stack.role_arn("sfn_role")
-        self.sfn_client.create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
+        stepfunctions_client.create_state_machine(
+            name=sm_name, definition=definition, roleArn=role_arn
+        )
 
         # run state machine
         events_before = len(TEST_EVENTS_CACHE)
-        sm_arn = self.get_machine_arn(sm_name)
-        result = self.sfn_client.start_execution(stateMachineArn=sm_arn)
-        self.assertTrue(result.get("executionArn"))
+        sm_arn = get_machine_arn(sm_name, stepfunctions_client)
+        result = stepfunctions_client.start_execution(stateMachineArn=sm_arn)
+        assert result.get("executionArn")
 
         def check_invocations():
             # assert that the event is received
-            self.assertEqual(events_before + 1, len(TEST_EVENTS_CACHE))
+            assert events_before + 1 == len(TEST_EVENTS_CACHE)
             last_event = TEST_EVENTS_CACHE[-1]
-            self.assertEqual(bus_name, last_event["EventBusName"])
-            self.assertEqual("TestSource", last_event["Source"])
-            self.assertEqual("TestMessage", last_event["DetailType"])
-            self.assertEqual(
-                {"Message": "Hello from Step Functions!"}, json.loads(last_event["Detail"])
-            )
+            assert bus_name == last_event["EventBusName"]
+            assert "TestSource" == last_event["Source"]
+            assert "TestMessage" == last_event["DetailType"]
+            assert {"Message": "Hello from Step Functions!"} == json.loads(last_event["Detail"])
 
         # assert that the event bus has received an event from the SM execution
         retry(check_invocations, sleep=1, retries=10)
 
         # clean up
-        self.cleanup(sm_arn, state_machines_before)
+        cleanup(sm_arn, state_machines_before, stepfunctions_client)
         events.delete_event_bus(Name=bus_name)
-
-    # -----------------
-    # HELPER FUNCTIONS
-    # -----------------
-
-    def get_machine_arn(self, sm_name):
-        state_machines = self.sfn_client.list_state_machines()["stateMachines"]
-        return [m["stateMachineArn"] for m in state_machines if m["name"] == sm_name][0]
-
-    def assert_machine_created(self, state_machines_before):
-        return self._assert_machine_instances(len(state_machines_before) + 1)
-
-    def assert_machine_deleted(self, state_machines_before):
-        return self._assert_machine_instances(len(state_machines_before))
-
-    def cleanup(self, sm_arn, state_machines_before):
-        self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)
-        self.assert_machine_deleted(state_machines_before)
-
-    def _assert_machine_instances(self, expected_instances):
-        def check():
-            state_machines_after = self.sfn_client.list_state_machines()["stateMachines"]
-            self.assertEqual(expected_instances, len(state_machines_after))
-            return state_machines_after
-
-        return retry(check, sleep=1, retries=4)
-
-    def _get_execution_results(self, sm_arn):
-        response = self.sfn_client.list_executions(stateMachineArn=sm_arn)
-        executions = sorted(response["executions"], key=lambda x: x["startDate"])
-        execution = executions[-1]
-        result = self.sfn_client.get_execution_history(executionArn=execution["executionArn"])
-        events = sorted(result["events"], key=lambda event: event["timestamp"])
-        result = json.loads(events[-1]["executionSucceededEventDetails"]["output"])
-        return result
 
 
 TEST_STATE_MACHINE = {
