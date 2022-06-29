@@ -1,4 +1,3 @@
-import base64
 import json
 import re
 import uuid
@@ -9,8 +8,6 @@ import pytest
 from localstack.services.sns.provider import (
     check_filter_policy,
     create_sns_message_body,
-    create_sqs_message_attributes,
-    get_message_attributes,
     get_subscribe_attributes,
     is_raw_message_delivery,
 )
@@ -165,35 +162,6 @@ class TestSns:
         result = create_sns_message_body(subscriber, action)
 
         assert {"message": "sqs version"} == result
-
-    def test_create_sqs_message_attributes(self, subscriber):
-        subscriber["RawMessageDelivery"] = "true"
-        action = {
-            "Message": ["msg"],
-            "Subject": ["subject"],
-            "MessageAttributes.entry.1.Name": ["attr1"],
-            "MessageAttributes.entry.1.Value.DataType": ["String"],
-            "MessageAttributes.entry.1.Value.StringValue": ["value1"],
-            "MessageAttributes.entry.2.Name": ["attr2"],
-            "MessageAttributes.entry.2.Value.DataType": ["Binary"],
-            # SNS gets binary data as base64 encoded string, but it should pass raw bytes further to SQS
-            "MessageAttributes.entry.2.Value.BinaryValue": [
-                base64.b64encode("value2".encode("utf-8"))
-            ],
-            "MessageAttributes.entry.3.Name": ["attr3"],
-            "MessageAttributes.entry.3.Value.DataType": ["Number"],
-            "MessageAttributes.entry.3.Value.StringValue": ["3"],
-        }
-
-        attributes = get_message_attributes(action)
-        result = create_sqs_message_attributes(subscriber, attributes)
-
-        assert "String" == result["attr1"]["DataType"]
-        assert "value1" == result["attr1"]["StringValue"]
-        assert "Binary" == result["attr2"]["DataType"]
-        assert "value2".encode("utf-8") == result["attr2"]["BinaryValue"]
-        assert "Number" == result["attr3"]["DataType"]
-        assert "3" == result["attr3"]["StringValue"]
 
     def test_create_sns_message_timestamp_millis(self, subscriber):
         action = {"Message": ["msg"]}
