@@ -1379,6 +1379,9 @@ class TestNodeJSRuntimes:
 
     @pytest.mark.parametrize("runtime", (LAMBDA_RUNTIME_NODEJS14X, LAMBDA_RUNTIME_NODEJS16X))
     @pytest.mark.skip_snapshot_verify
+    @pytest.mark.skipif(
+        not use_docker(), reason="ES6 support is only guaranteed when using the docker executor"
+    )
     def test_invoke_nodejs_es6_lambda(
         self, lambda_client, create_lambda_function, logs_client, snapshot, runtime
     ):
