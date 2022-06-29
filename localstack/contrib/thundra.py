@@ -20,6 +20,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS10X,
     LAMBDA_RUNTIME_NODEJS12X,
     LAMBDA_RUNTIME_NODEJS14X,
+    LAMBDA_RUNTIME_NODEJS16X,
     LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_PYTHON37,
     LAMBDA_RUNTIME_PYTHON38,
@@ -251,6 +252,7 @@ def _is_node_lambda_with_support_version(func_details):
         LAMBDA_RUNTIME_NODEJS10X,
         LAMBDA_RUNTIME_NODEJS12X,
         LAMBDA_RUNTIME_NODEJS14X,
+        LAMBDA_RUNTIME_NODEJS16X,
     ]
 
 
