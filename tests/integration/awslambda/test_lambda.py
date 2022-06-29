@@ -81,6 +81,7 @@ TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
 TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "functions/lambda_python3.py")
 TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
+TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
 TEST_LAMBDA_HELLO_WORLD = os.path.join(THIS_FOLDER, "functions/lambda_hello_world.py")
 TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions/golang/handler.zip")
 TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions/lambda_integration.rb")
@@ -1355,6 +1356,44 @@ class TestNodeJSRuntimes:
             zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
             runtime=runtime,
             handler="lambda_handler.handler",
+        )
+        snapshot.match("creation-result", result)
+
+        rs = lambda_client.invoke(
+            FunctionName=function_name,
+            Payload=json.dumps({"event_type": "test_lambda"}),
+        )
+        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
+        rs = read_streams(rs)
+        snapshot.match("invocation-result", rs)
+
+        payload = rs["Payload"]
+        response = json.loads(payload)
+        assert "response from localstack lambda" in response["body"]
+
+        def assert_events():
+            events = get_lambda_log_events(function_name, logs_client=logs_client)
+            assert len(events) > 0
+
+        retry(assert_events, retries=10)
+
+    @pytest.mark.parametrize("runtime", (LAMBDA_RUNTIME_NODEJS14X, LAMBDA_RUNTIME_NODEJS16X))
+    @pytest.mark.skip_snapshot_verify
+    @pytest.mark.skipif(
+        not use_docker(), reason="ES6 support is only guaranteed when using the docker executor"
+    )
+    def test_invoke_nodejs_es6_lambda(
+        self, lambda_client, create_lambda_function, logs_client, snapshot, runtime
+    ):
+        """Test simple nodejs lambda invocation"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
+        function_name = f"test-function-{short_uid()}"
+        result = create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS_ES6, get_content=True),
+            runtime=runtime,
+            handler="lambda_handler_es6.handler",
         )
         snapshot.match("creation-result", result)
 
