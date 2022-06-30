@@ -1575,6 +1575,13 @@ class Util:
 
     @classmethod
     def get_host_path_for_path_in_docker(cls, path):
+        """
+        Returns the calculated host location for a given subpath of DEFAULT_VOLUME_DIR inside the localstack container.
+        The path **has** to be a subdirectory of DEFAULT_VOLUME_DIR (the dir itself *will not* work).
+
+        :param path: Path to be replaced (subpath of DEFAULT_VOLUME_DIR)
+        :return: Path on the host
+        """
         if config.LEGACY_DIRECTORIES:
             return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
 
