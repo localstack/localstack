@@ -1587,7 +1587,18 @@ class Util:
                         f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for lambda code mounting to work"
                     )
 
-                return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % volume.source, path)
+                result, subs = re.subn(
+                    r"^%s/(.*)$" % DEFAULT_VOLUME_DIR, r"%s/\1" % volume.source, path
+                )
+                if subs == 0:
+                    # We should be able to replace something here.
+                    # if this warning is printed, the usage of this function is probably wrong.
+                    # Please check for missing slashes after DEFAULT_VOLUME_DIR etc.
+                    LOG.warning(
+                        "Error while performing automatic host path replacement for path %s to source %s"
+                    )
+                else:
+                    return result
             else:
                 raise ValueError(f"No volume mounted to {DEFAULT_VOLUME_DIR}")
 
