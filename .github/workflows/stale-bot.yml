@@ -45,5 +45,5 @@ jobs:
         # on an issue.
         minimum-upvotes-to-exempt: 2
 
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        repo-token: ${{ secrets.PRO_ACCESS_TOKEN }}
         loglevel: DEBUG
