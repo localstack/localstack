@@ -305,7 +305,14 @@ def cleanup_resources():
     cleanup_threads_and_processes()
 
     if config.CLEAR_TMP_FOLDER:
-        files.rm_rf(config.dirs.tmp)
+        try:
+            files.rm_rf(config.dirs.tmp)
+        except PermissionError as e:
+            LOG.error(
+                "unable to delete temp folder %s: %s, please delete manually or you will keep seeing these errors",
+                config.dirs.tmp,
+                e,
+            )
 
 
 def log_startup_message(service):
@@ -371,7 +378,16 @@ def print_runtime_information(in_docker=False):
 
 def start_infra(asynchronous=False, apis=None):
     if config.CLEAR_TMP_FOLDER:
-        files.rm_rf(config.dirs.tmp)  # clear temp dir on startup
+        # try to clear temp dir on startup
+        try:
+            files.rm_rf(config.dirs.tmp)
+        except PermissionError as e:
+            LOG.error(
+                "unable to delete temp folder %s: %s, please delete manually or you will keep seeing these errors",
+                config.dirs.tmp,
+                e,
+            )
+
     config.dirs.mkdirs()
 
     events.infra_starting.set()

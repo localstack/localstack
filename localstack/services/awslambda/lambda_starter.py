@@ -30,7 +30,12 @@ def start_lambda(port=None, asynchronous=False):
             lambda_utils.get_executor_mode(),
         )
 
-    if config.is_in_docker and not config.LAMBDA_REMOTE_DOCKER and not config.dirs.functions:
+    if (
+        config.is_in_docker
+        and not config.LAMBDA_REMOTE_DOCKER
+        and not config.dirs.functions
+        and config.LEGACY_DIRECTORIES
+    ):
         LOG.warning(
             "!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=0 - "
             "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR"
