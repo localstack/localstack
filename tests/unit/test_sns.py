@@ -1,6 +1,7 @@
 import json
 import re
 import uuid
+from base64 import b64encode
 
 import dateutil.parser
 import pytest
@@ -8,7 +9,6 @@ import pytest
 from localstack.services.sns.provider import (
     check_filter_policy,
     create_sns_message_body,
-    get_subscribe_attributes,
     is_raw_message_delivery,
 )
 
@@ -25,21 +25,6 @@ def subscriber():
 
 @pytest.mark.usefixtures("subscriber")
 class TestSns:
-    def test_get_subscribe_attributes(self):
-        req_data = {
-            "Attribute.entry.1.key": ["RawMessageDelivery"],
-            "Attribute.entry.1.value": ["true"],
-            "Attribute.entry.2.key": ["FilterPolicy"],
-            "Attribute.entry.2.value": ['{"type": ["foo", "bar"]}'],
-        }
-        attributes = get_subscribe_attributes(req_data)
-        expected = {
-            "RawMessageDelivery": "true",
-            "PendingConfirmation": "false",
-            "FilterPolicy": '{"type": ["foo", "bar"]}',
-        }
-        assert attributes == expected
-
     def test_create_sns_message_body_raw_message_delivery(self, subscriber):
         subscriber["RawMessageDelivery"] = "true"
         action = {"Message": ["msg"]}
@@ -76,20 +61,24 @@ class TestSns:
         }
         assert expected_sns_body == result
 
-        # Now add a subject
+        # Now add a subject and message attributes
         action = {
             "Message": ["msg"],
             "Subject": ["subject"],
-            "MessageAttributes.entry.1.Name": ["attr1"],
-            "MessageAttributes.entry.1.Value.DataType": ["String"],
-            "MessageAttributes.entry.1.Value.StringValue": ["value1"],
-            "MessageAttributes.entry.1.Value.BinaryValue": ["value1"],
-            "MessageAttributes.entry.2.Name": ["attr2"],
-            "MessageAttributes.entry.2.Value.DataType": ["String"],
-            "MessageAttributes.entry.2.Value.StringValue": ["value2"],
-            "MessageAttributes.entry.2.Value.BinaryValue": ["value2"],
         }
-        result_str = create_sns_message_body(subscriber, action)
+        message_attributes = {
+            "attr1": {
+                "DataType": "String",
+                "StringValue": "value1",
+            },
+            "attr2": {
+                "DataType": "Binary",
+                "BinaryValue": b"\x02\x03\x04",
+            },
+        }
+        result_str = create_sns_message_body(
+            subscriber, action, str(uuid.uuid4()), message_attributes
+        )
         result = json.loads(result_str)
         del result["MessageId"]
         del result["Timestamp"]
@@ -108,8 +97,8 @@ class TestSns:
                     "Value": "value1",
                 },
                 "attr2": {
-                    "Type": "String",
-                    "Value": "value2",
+                    "Type": "Binary",
+                    "Value": b64encode(b"\x02\x03\x04").decode("utf-8"),
                 },
             },
         }

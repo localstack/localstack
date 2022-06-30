@@ -1384,18 +1384,3 @@ def unsubscribe_sqs_queue(queue_url):
             sub_url = subscriber.get("sqs_queue_url") or subscriber["Endpoint"]
             if queue_url == sub_url:
                 subscriptions.remove(subscriber)
-
-
-def get_subscribe_attributes(req_data):
-    attributes = {}
-    for key in req_data.keys():
-        if ".key" in key:
-            attributes[req_data[key][0]] = req_data[key.replace("key", "value")][0]
-    defaults = {
-        # TODO: this is required to get TF "aws_sns_topic_subscription" working, but this should
-        # be revisited (e.g., cross-account subscriptions should not be confirmed automatically)
-        "PendingConfirmation": "false"
-    }
-    for key, value in defaults.items():
-        attributes[key] = attributes.get(key, value)
-    return attributes
