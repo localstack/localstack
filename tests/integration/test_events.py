@@ -636,7 +636,7 @@ class TestEvents:
     @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
     def test_api_destinations(self, events_client, auth):
         token = short_uid()
-        bearer = "Bearer %s" % token
+        bearer = f"Bearer {token}"
 
         class HttpEndpointListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
@@ -647,10 +647,6 @@ class TestEvents:
                 paths_list.append(request_split[0])
                 query_params_received.update(request_split[1])
 
-                auth = headers.get("Authorization", "")
-                if "Bearer" in auth and "Authorization" in headers_received:
-                    headers.pop("Authorization")
-                    headers.update({"Oauth_token": auth})
                 headers_received.update(headers)
 
                 if "client_id" in event:
@@ -686,7 +682,7 @@ class TestEvents:
         if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
             auth["parameters"]["AuthorizationEndpoint"] = url
 
-        connection_name = "c-%s" % short_uid()
+        connection_name = f"c-{short_uid()}"
         connection_arn = events_client.create_connection(
             Name=connection_name,
             AuthorizationType=auth.get("type"),
@@ -729,7 +725,7 @@ class TestEvents:
         )["ConnectionArn"]
 
         # create api destination
-        dest_name = "d-%s" % short_uid()
+        dest_name = f"d-{short_uid()}"
         result = events_client.create_api_destination(
             Name=dest_name,
             ConnectionArn=connection_arn,
@@ -738,8 +734,8 @@ class TestEvents:
         )
 
         # create rule and target
-        rule_name = "r-%s" % short_uid()
-        target_id = "target-{}".format(short_uid())
+        rule_name = f"r-{short_uid()}"
+        target_id = f"target-{short_uid}"
         pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
         events_client.put_rule(Name=rule_name, EventPattern=pattern)
         events_client.put_targets(
@@ -768,7 +764,7 @@ class TestEvents:
             {
                 "Source": "source-123",
                 "DetailType": "type-123",
-                "Detail": '{"i": %s}' % 0,
+                "Detail": '{"i": 0}',
             }
         ]
         events_client.put_events(Entries=entries)
@@ -803,7 +799,7 @@ class TestEvents:
             if auth.get("type") == "API_KEY":
                 assert headers_received.get("Api") == "apikey_secret"
             if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
-                assert headers_received.get("Oauth_token") == bearer
+                assert headers_received.get("Authorization") == bearer
 
                 # Oauth login validation
                 assert oauth_data.get("client_id") == "id"
