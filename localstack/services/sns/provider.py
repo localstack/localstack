@@ -978,7 +978,7 @@ async def message_to_subscriber(
                 message_id,
                 # see the format here
                 # https://docs.aws.amazon.com/lambda/latest/dg/with-sns.html
-                # issue with cdk to serialize the attribute inside lambda
+                # issue with sdk to serialize the attribute inside lambda
                 prepare_message_attributes(message_attributes),
                 unsubscribe_url,
                 subject=req_data.get("Subject")[0],
