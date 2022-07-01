@@ -476,15 +476,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         # listing the available service plugins will cause resolution of the entry points
         available_services = SERVICE_PLUGINS.list_available()
 
-        if persistence.is_persistence_enabled():
-            if not config.is_env_true(constants.ENV_PRO_ACTIVATED):
-                LOG.warning(
-                    "Persistence mechanism for community services (based on API calls record&replay) "
-                    "will be deprecated in versions 0.13.0 and above"
-                )
-
-            persistence.restore_persisted_data(available_services)
-
         # lazy is the default beginning with version 0.13.0
         if not config.EAGER_SERVICE_LOADING:
             return
