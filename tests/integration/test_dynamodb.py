@@ -521,7 +521,7 @@ class TestDynamoDB:
         stream_name = get_kinesis_stream_name(table_name)
         wait_for_stream_ready(stream_name)
         response = dynamodb_client.put_item(
-            TableName=table_name, Item={"id": {"S": "id1"}, "data": {"B": b"binary_data"}}
+            TableName=table_name, Item={"id": {"S": "id1"}, "data": {"B": b"\x90"}}
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 

@@ -47,7 +47,7 @@ class BytesEncoder(json.JSONEncoder):
 
     def default(self, obj):
         if isinstance(obj, bytes):
-            return to_str(obj)
+            return to_str(obj, errors="replace")
         return super().default(obj)
 
 
