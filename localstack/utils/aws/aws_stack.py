@@ -5,7 +5,6 @@ import re
 import socket
 import sys
 import threading
-import time
 from functools import lru_cache
 from typing import Dict, Optional, Union
 from urllib.parse import urlparse
@@ -961,11 +960,10 @@ def create_dynamodb_table(
         if "AccessDeniedException" in str(e):
             raise
 
+    def _is_active():
+        return dynamodb.describe_table(TableName=table_name)["Table"]["TableStatus"] == "ACTIVE"
+
     if wait_for_active:
-
-        def _is_active():
-            return dynamodb.describe_table(TableName=table_name)["Table"]["TableStatus"] == "ACTIVE"
-
         poll_condition(_is_active)
 
     return table
