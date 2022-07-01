@@ -1,27 +1,35 @@
+import json
 from typing import Any, Dict, Protocol, Union
 
+from werkzeug import Response as WerkzeugResponse
 from werkzeug.exceptions import MethodNotAllowed
+
+from localstack.utils.json import CustomEncoder
 
 from .request import Request
 from .response import Response
 from .router import Dispatcher, RequestArguments
 
 ResultValue = Union[
-    Response,
+    WerkzeugResponse,
     str,
     bytes,
     Dict[str, Any],  # a JSON dict
 ]
 
 
-def _populate_response(response: Response, result: ResultValue):
+def _populate_response(response: WerkzeugResponse, result: ResultValue):
     if result is None:
         return response
 
-    if isinstance(result, dict):
-        response.set_json(result)
-    else:
+    elif isinstance(result, (str, bytes, bytearray)):
         response.data = result
+    elif isinstance(result, dict):
+        response.data = json.dumps(result, cls=CustomEncoder)
+        response.mimetype = "application/json"
+    else:
+        raise ValueError("unhandled result type %s", type(result))
+
     return response
 
 
@@ -64,7 +72,7 @@ def resource_dispatcher(pass_response: bool = False) -> Dispatcher:
                 fn(request, response, **args)
             else:
                 result = fn(request, **args)
-                if isinstance(result, Response):
+                if isinstance(result, WerkzeugResponse):
                     return result
                 response = Response()
                 _populate_response(response, result)
@@ -90,7 +98,7 @@ def handler_dispatcher() -> Dispatcher[Handler]:
 
     def _dispatch(request: Request, endpoint: Handler, args: RequestArguments) -> Response:
         result = endpoint(request, **args)
-        if isinstance(result, Response):
+        if isinstance(result, WerkzeugResponse):
             return result
         response = Response()
         if result is not None:
