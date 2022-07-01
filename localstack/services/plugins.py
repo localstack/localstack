@@ -495,13 +495,28 @@ class ServicePluginManager(ServiceManager):
         self.provider_config = provider_config or config.SERVICE_PROVIDER_CONFIG
 
     def get_active_provider(self, service: str) -> str:
+        """
+        Get configured provider for a given service
+
+        :param service: Service name
+        :return: configured provider
+        """
         return self.provider_config.get_provider(service)
+
+    def get_default_provider(self) -> str:
+        """
+        Get the default provider
+
+        :return: default provider
+        """
+        return self.provider_config.default_value
 
     # TODO make the abstraction clearer, to provide better information if service is available versus discoverable
     # especially important when considering pro services
     def list_available(self) -> List[str]:
         """
         List all available services, which have an available, configured provider
+
         :return: List of service names
         """
         return [
@@ -513,6 +528,7 @@ class ServicePluginManager(ServiceManager):
     def list_loaded_services(self) -> List[str]:
         """
         Lists all the services which have a provider that has been initialized
+
         :return: a list of service names
         """
         return [
@@ -585,13 +601,17 @@ class ServicePluginManager(ServiceManager):
         if preferred_provider in providers:
             provider = preferred_provider
         else:
+            default = self.get_default_provider()
             LOG.warning(
-                "Configured provider (%s) does not exist for service (%s). Available options are: %s",
+                "Configured provider (%s) does not exist for service (%s). Available options are: %s. "
+                "Falling back to default provider '%s'. This can impact the availability of Pro functionality, "
+                "please fix this configuration issue as soon as possible.",
                 preferred_provider,
                 name,
                 providers,
+                default,
             )
-            return None
+            provider = default
 
         plugin_name = f"{name}:{provider}"
         plugin = self.plugin_manager.load(plugin_name)
