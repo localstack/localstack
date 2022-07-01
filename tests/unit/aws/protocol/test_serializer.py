@@ -31,7 +31,7 @@ def _botocore_serializer_integration_test(
     response: dict,
     status_code=200,
     expected_response_content: dict = None,
-):
+) -> dict:
     """
     Performs an integration test for the serializer using botocore as parser.
     It executes the following steps:
@@ -47,7 +47,7 @@ def _botocore_serializer_integration_test(
     :param status_code: Optional - expected status code of the response - defaults to 200
     :param expected_response_content: Optional - if the input data ("response") differs from the actually expected data
                                       (because f.e. it contains None values)
-    :return: None
+    :return: boto-parsed serialized response
     """
 
     # Load the appropriate service
@@ -94,7 +94,7 @@ def _botocore_error_serializer_integration_test(
     status_code: int,
     message: Optional[str],
     is_sender_fault: bool = False,
-):
+) -> dict:
     """
     Performs an integration test for the error serialization using botocore as parser.
     It executes the following steps:
@@ -111,7 +111,7 @@ def _botocore_error_serializer_integration_test(
                  "CloudFrontOriginAccessIdentityAlreadyExists")
     :param status_code: expected HTTP response status code
     :param message: expected error message
-    :return: None
+    :return: boto-parsed serialized error response
     """
 
     # Load the appropriate service
@@ -147,6 +147,7 @@ def _botocore_error_serializer_integration_test(
         assert type == "Sender"
     else:
         assert type is None
+    return parsed_response
 
 
 def test_rest_xml_serializer_cloudfront_with_botocore():
@@ -520,13 +521,20 @@ def test_json_protocol_error_serialization():
         pass
 
     exception = UserPoolTaggingException("Exception message!")
-    _botocore_error_serializer_integration_test(
+    response = _botocore_error_serializer_integration_test(
         "cognito-idp",
         "CreateUserPool",
         exception,
         "UserPoolTaggingException",
         400,
         "Exception message!",
+    )
+
+    # some clients also expect the X-Amzn-Errortype header according to
+    # https://awslabs.github.io/smithy/1.0/spec/aws/aws-json-1_1-protocol.html#operation-error-serialization
+    assert (
+        response.get("ResponseMetadata", {}).get("HTTPHeaders", {}).get("x-amzn-errortype")
+        == "UserPoolTaggingException"
     )
 
 
@@ -536,13 +544,20 @@ def test_json_protocol_custom_error_serialization():
         "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
         status_code=451,
     )
-    _botocore_error_serializer_integration_test(
+    response = _botocore_error_serializer_integration_test(
         "cognito-idp",
         "CreateUserPool",
         exception,
         "APIAccessCensorship",
         451,
         "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
+    )
+
+    # some clients also expect the X-Amzn-Errortype header according to
+    # https://awslabs.github.io/smithy/1.0/spec/aws/aws-json-1_1-protocol.html#operation-error-serialization
+    assert (
+        response.get("ResponseMetadata", {}).get("HTTPHeaders", {}).get("x-amzn-errortype")
+        == "APIAccessCensorship"
     )
 
 
@@ -690,13 +705,20 @@ def test_restjson_protocol_error_serialization():
         pass
 
     exception = ThrottledException("Exception message!")
-    _botocore_error_serializer_integration_test(
+    response = _botocore_error_serializer_integration_test(
         "xray",
         "UpdateSamplingRule",
         exception,
         "ThrottledException",
         429,
         "Exception message!",
+    )
+
+    # some clients also expect the X-Amzn-Errortype header according to
+    # https://awslabs.github.io/smithy/1.0/spec/aws/aws-restjson1-protocol.html#operation-error-serialization
+    assert (
+        response.get("ResponseMetadata", {}).get("HTTPHeaders", {}).get("x-amzn-errortype")
+        == "ThrottledException"
     )
 
 
@@ -706,13 +728,20 @@ def test_restjson_protocol_custom_error_serialization():
         "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
         status_code=451,
     )
-    _botocore_error_serializer_integration_test(
+    response = _botocore_error_serializer_integration_test(
         "xray",
         "UpdateSamplingRule",
         exception,
         "APIAccessCensorship",
         451,
         "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
+    )
+
+    # some clients also expect the X-Amzn-Errortype header according to
+    # https://awslabs.github.io/smithy/1.0/spec/aws/aws-restjson1-protocol.html#operation-error-serialization
+    assert (
+        response.get("ResponseMetadata", {}).get("HTTPHeaders", {}).get("x-amzn-errortype")
+        == "APIAccessCensorship"
     )
 
 

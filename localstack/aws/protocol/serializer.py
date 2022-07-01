@@ -1105,7 +1105,12 @@ class JSONResponseSerializer(ResponseSerializer):
         operation_model: OperationModel,
     ) -> None:
         # TODO handle error shapes with members
+        # TODO implement different service-specific serializer configurations
+        #   - currently we set both, the `__type` member as well as the `X-Amzn-Errortype` header
+        #   - the specification defines that it's either the __type field OR the header
+        #     (https://awslabs.github.io/smithy/1.0/spec/aws/aws-json-1_1-protocol.html#operation-error-serialization)
         body = {"__type": code}
+        response.headers["X-Amzn-Errortype"] = code
         message = self._get_error_message(error)
         if message is not None:
             body["message"] = message
