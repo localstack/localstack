@@ -38,6 +38,7 @@ def populate_wsgi_environment(environ: "WSGIEnvironment", scope: "HTTPScope"):
         environ["QUERY_STRING"] = query_string.decode("latin1")
     else:
         raw_uri = scope["raw_path"]
+        environ["QUERY_STRING"] = ""
 
     environ["RAW_URI"] = environ["REQUEST_URI"] = raw_uri.decode("utf-8")
 

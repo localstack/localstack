@@ -1,69 +1,18 @@
-import asyncio
 import json
 import logging
 import time
-from asyncio import AbstractEventLoop
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
 from threading import Thread
 from typing import List
 
-import pytest
 import requests
-from hypercorn import Config
-from hypercorn.typing import ASGI3Framework
 from werkzeug import Request, Response
-
-from localstack.http.asgi import ASGIAdapter
-from localstack.http.hypercorn import HypercornServer
-from localstack.utils import net
-from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
 
 
-@pytest.fixture()
-def serve_asgi_app():
-    _servers = []
-
-    def _create(
-        app: ASGI3Framework, config: Config = None, event_loop: AbstractEventLoop = None
-    ) -> HypercornServer:
-        if not config:
-            config = Config()
-            config.bind = f"localhost:{net.get_free_tcp_port()}"
-
-        srv = HypercornServer(app, config, loop=event_loop)
-        _servers.append(srv)
-        srv.start()
-        assert srv.wait_is_up(timeout=10), "gave up waiting for server to start up"
-        return srv
-
-    yield _create
-
-    for server in _servers:
-        server.shutdown()
-        assert poll_condition(
-            lambda: not server.is_up(), timeout=10
-        ), "gave up waiting for server to shut down"
-
-
-@pytest.fixture()
-def serve_wsgi_app(serve_asgi_app):
-    def _create(wsgi_app):
-        loop = asyncio.new_event_loop()
-        return serve_asgi_app(
-            ASGIAdapter(
-                wsgi_app,
-                event_loop=loop,
-            ),
-            event_loop=loop,
-        )
-
-    yield _create
-
-
-def test_serve_wsgi_app(serve_wsgi_app):
+def test_serve_asgi_adapter(serve_asgi_adapter):
     request_list: List[Request] = []
 
     @Request.application
@@ -71,7 +20,7 @@ def test_serve_wsgi_app(serve_wsgi_app):
         request_list.append(request)
         return Response("ok", 200)
 
-    server = serve_wsgi_app(app)
+    server = serve_asgi_adapter(app)
 
     response0 = requests.get(server.url + "/foobar?foo=bar", headers={"x-amz-target": "testing"})
     assert response0.ok
@@ -93,7 +42,7 @@ def test_serve_wsgi_app(serve_wsgi_app):
     assert request1.get_data() == b'{"foo": "bar"}'
 
 
-def test_requests_are_not_blocking_the_server(serve_wsgi_app):
+def test_requests_are_not_blocking_the_server(serve_asgi_adapter):
     queue = Queue()
 
     @Request.application
@@ -102,7 +51,7 @@ def test_requests_are_not_blocking_the_server(serve_wsgi_app):
         queue.put_nowait(request)
         return Response("ok", 200)
 
-    server = serve_wsgi_app(app)
+    server = serve_asgi_adapter(app)
 
     then = time.time()
 
@@ -120,7 +69,7 @@ def test_requests_are_not_blocking_the_server(serve_wsgi_app):
     assert (time.time() - then) < 4, "requests did not seem to be parallelized"
 
 
-def test_chunked_transfer_encoding_response(serve_wsgi_app):
+def test_chunked_transfer_encoding_response(serve_asgi_adapter):
     # this test makes sure that creating a response with a generator automatically creates a
     # transfer-encoding=chunked response
 
@@ -133,7 +82,7 @@ def test_chunked_transfer_encoding_response(serve_wsgi_app):
 
         return Response(_gen(), 200)
 
-    server = serve_wsgi_app(app)
+    server = serve_asgi_adapter(app)
 
     response = requests.get(server.url)
 
@@ -145,7 +94,7 @@ def test_chunked_transfer_encoding_response(serve_wsgi_app):
     assert next(it) == b"baz"
 
 
-def test_chunked_transfer_encoding_request(serve_wsgi_app):
+def test_chunked_transfer_encoding_request(serve_asgi_adapter):
     request_list: List[Request] = []
 
     @Request.application
@@ -165,7 +114,7 @@ def test_chunked_transfer_encoding_request(serve_wsgi_app):
 
         return Response(data.decode("utf-8"), 200)
 
-    server = serve_wsgi_app(app)
+    server = serve_asgi_adapter(app)
 
     def gen():
         yield b"foo"
@@ -179,7 +128,7 @@ def test_chunked_transfer_encoding_request(serve_wsgi_app):
     assert request_list[0].headers["Transfer-Encoding"].lower() == "chunked"
 
 
-def test_input_stream_methods(serve_wsgi_app):
+def test_input_stream_methods(serve_asgi_adapter):
     @Request.application
     def app(request: Request) -> Response:
         assert request.stream.read(1) == b"f"
@@ -193,7 +142,7 @@ def test_input_stream_methods(serve_wsgi_app):
 
         return Response("ok", 200)
 
-    server = serve_wsgi_app(app)
+    server = serve_asgi_adapter(app)
 
     def gen():
         yield b"fo"
@@ -209,13 +158,13 @@ def test_input_stream_methods(serve_wsgi_app):
     assert response.text == "ok"
 
 
-def test_input_stream_readlines(serve_wsgi_app):
+def test_input_stream_readlines(serve_asgi_adapter):
     @Request.application
     def app(request: Request) -> Response:
         assert request.stream.readlines() == [b"fizz\n", b"buzz\n", b"done"]
         return Response("ok", 200)
 
-    server = serve_wsgi_app(app)
+    server = serve_asgi_adapter(app)
 
     def gen():
         yield b"fizz\n"
@@ -227,13 +176,13 @@ def test_input_stream_readlines(serve_wsgi_app):
     assert response.text == "ok"
 
 
-def test_input_stream_readlines_with_limit(serve_wsgi_app):
+def test_input_stream_readlines_with_limit(serve_asgi_adapter):
     @Request.application
     def app(request: Request) -> Response:
         assert request.stream.readlines(1000) == [b"fizz\n", b"buzz\n", b"done"]
         return Response("ok", 200)
 
-    server = serve_wsgi_app(app)
+    server = serve_asgi_adapter(app)
 
     def gen():
         yield b"fizz\n"
@@ -245,7 +194,7 @@ def test_input_stream_readlines_with_limit(serve_wsgi_app):
     assert response.text == "ok"
 
 
-def test_multipart_post(serve_wsgi_app):
+def test_multipart_post(serve_asgi_adapter):
     @Request.application
     def app(request: Request) -> Response:
         assert request.mimetype == "multipart/form-data"
@@ -256,14 +205,14 @@ def test_multipart_post(serve_wsgi_app):
 
         return Response(json.dumps(result), 200)
 
-    server = serve_wsgi_app(app)
+    server = serve_asgi_adapter(app)
 
     response = requests.post(server.url, files={"foo": "bar", "baz": "ed"})
     assert response.ok
     assert response.json() == {"foo": "bar", "baz": "ed"}
 
 
-def test_utf8_path(serve_wsgi_app):
+def test_utf8_path(serve_asgi_adapter):
     @Request.application
     def app(request: Request) -> Response:
         assert request.path == "/foo/Ā0Ä"
@@ -271,13 +220,13 @@ def test_utf8_path(serve_wsgi_app):
 
         return Response("ok", 200)
 
-    server = serve_wsgi_app(app)
+    server = serve_asgi_adapter(app)
 
     response = requests.get(server.url + "/foo/Ā0Ä")
     assert response.ok
 
 
-def test_serve_multiple_apps(serve_wsgi_app):
+def test_serve_multiple_apps(serve_asgi_adapter):
     @Request.application
     def app0(request: Request) -> Response:
         return Response("ok0", 200)
@@ -286,8 +235,8 @@ def test_serve_multiple_apps(serve_wsgi_app):
     def app1(request: Request) -> Response:
         return Response("ok1", 200)
 
-    server0 = serve_wsgi_app(app0)
-    server1 = serve_wsgi_app(app1)
+    server0 = serve_asgi_adapter(app0)
+    server1 = serve_asgi_adapter(app1)
 
     executor = ThreadPoolExecutor(6)
 
