@@ -933,9 +933,10 @@ if DEBUG:
     logging.getLogger("").setLevel(logging.DEBUG)
     logging.getLogger("localstack").setLevel(logging.DEBUG)
 
+LOG = logging.getLogger(__name__)
+
 if LS_LOG in TRACE_LOG_LEVELS:
     load_end_time = time.time()
-    LOG = logging.getLogger(__name__)
     LOG.debug(
         "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
     )
