@@ -22,6 +22,7 @@ from requests.models import Request, Response
 
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException
+from localstack.services.generic_proxy import ProxyListener
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
@@ -57,7 +58,6 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
-from localstack.utils.persistence import PersistingProxyListener
 
 # backend port (configured in s3_starter.py on startup)
 PORT_S3_BACKEND = None
@@ -84,7 +84,7 @@ OBJECT_METADATA_KEY_PREFIX = "x-amz-meta-"
 POLICY_EXPIRATION_FORMAT1 = "%Y-%m-%dT%H:%M:%SZ"
 POLICY_EXPIRATION_FORMAT2 = "%Y-%m-%dT%H:%M:%S.%fZ"
 
-# ignored_headers_lower conatins headers which don't get involved in signature calculations process
+# ignored_headers_lower contains headers which don't get involved in signature calculations process
 # these headers are being sent by the localstack by default.
 IGNORED_HEADERS_LOWER = [
     "remote-addr",
@@ -192,7 +192,7 @@ def event_type_matches(events, action, api_method):
 
 
 def filter_rules_match(filters, object_path):
-    """check whether the given object path matches all of the given filters"""
+    """check whether the given object path matches all the given filters"""
     filters = filters or {}
     s3_filter = _get_s3_filter(filters)
     for rule in s3_filter.get("FilterRule", []):
@@ -1222,7 +1222,7 @@ def remove_bucket_notification(bucket):
         notification_configs.clear()
 
 
-class ProxyListenerS3(PersistingProxyListener):
+class ProxyListenerS3(ProxyListener):
     def api_name(self):
         return "s3"
 
