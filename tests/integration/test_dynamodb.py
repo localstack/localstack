@@ -446,19 +446,25 @@ class TestDynamoDB:
         # Attribute values should be returned
         assert not response.get("Attributes")
 
-    def test_empty_and_binary_values(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+    @pytest.mark.aws_validated
+    def test_empty_and_binary_values(self, dynamodb, dynamodb_client):
+        aws_stack.create_dynamodb_table(
+            TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY, client=dynamodb_client
+        )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
         # items which are being used to put in the table
         item1 = {PARTITION_KEY: "id1", "data": ""}
-        item2 = {PARTITION_KEY: "id2", "data": b"foobar"}
+        item2 = {PARTITION_KEY: "id2", "data": b"\x90"}
 
         response = table.put_item(Item=item1)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         response = table.put_item(Item=item2)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        # clean up
+        table.delete()
 
     def test_batch_write_binary(self, dynamodb_client):
         table_name = "table_batch_binary_%s" % short_uid()

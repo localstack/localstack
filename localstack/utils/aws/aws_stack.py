@@ -42,7 +42,7 @@ from localstack.utils.collections import pick_attributes
 from localstack.utils.functions import run_safe
 from localstack.utils.http import make_http_request
 from localstack.utils.strings import is_string, is_string_or_bytes, to_str
-from localstack.utils.sync import retry
+from localstack.utils.sync import poll_condition, retry
 
 # AWS environment variable names
 ENV_ACCESS_KEY = "AWS_ACCESS_KEY_ID"
@@ -930,19 +930,16 @@ def dynamodb_get_item_raw(request):
 
 
 def create_dynamodb_table(
-    table_name,
-    partition_key,
-    env=None,
-    stream_view_type=None,
-    region_name=None,
+    table_name: str,
+    partition_key: str,
+    stream_view_type: str = None,
+    region_name: str = None,
     client=None,
-    sleep_after=2,
+    wait_for_active: bool = True,
 ):
     """Utility method to create a DynamoDB table"""
 
-    dynamodb = client or connect_to_service(
-        "dynamodb", env=env, client=True, region_name=region_name
-    )
+    dynamodb = client or connect_to_service("dynamodb", region_name=region_name)
     stream_spec = {"StreamEnabled": False}
     key_schema = [{"AttributeName": partition_key, "KeyType": "HASH"}]
     attr_defs = [{"AttributeName": partition_key, "AttributeType": "S"}]
@@ -954,21 +951,22 @@ def create_dynamodb_table(
             TableName=table_name,
             KeySchema=key_schema,
             AttributeDefinitions=attr_defs,
-            ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+            BillingMode="PAY_PER_REQUEST",
             StreamSpecification=stream_spec,
         )
     except Exception as e:
         if "ResourceInUseException" in str(e):
             # Table already exists -> return table reference
-            return connect_to_resource("dynamodb", env=env, region_name=region_name).Table(
-                table_name
-            )
+            return connect_to_resource("dynamodb", region_name=region_name).Table(table_name)
         if "AccessDeniedException" in str(e):
             raise
 
-    if sleep_after:
-        # TODO: do we need this?
-        time.sleep(sleep_after)
+    if wait_for_active:
+
+        def _is_active():
+            return dynamodb.describe_table(TableName=table_name)["Table"]["TableStatus"] == "ACTIVE"
+
+        poll_condition(_is_active)
 
     return table
 

@@ -361,8 +361,6 @@ def dynamodb_create_table(dynamodb_client):
         if "partition_key" not in kwargs:
             kwargs["partition_key"] = "id"
 
-        kwargs["sleep_after"] = 0
-
         tables.append(kwargs["table_name"])
 
         return create_dynamodb_table(**kwargs)
