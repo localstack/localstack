@@ -240,7 +240,7 @@ RUN make init
 ARG LOCALSTACK_PRE_RELEASE=1
 RUN (PIP_ARGS=$([[ "$LOCALSTACK_PRE_RELEASE" == "1" ]] && echo "--pre" || true); \
       virtualenv .venv && source .venv/bin/activate && \
-      pip3 install --upgrade ${PIP_ARGS} localstack-ext)
+      pip3 install --upgrade ${PIP_ARGS} localstack-ext[runtime])
 RUN make entrypoints
 
 # Add the build date and git hash at last (changes everytime)
