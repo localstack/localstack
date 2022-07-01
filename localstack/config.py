@@ -462,9 +462,6 @@ SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 # Whether to skip downloading our signed SSL cert.
 SKIP_SSL_CERT_DOWNLOAD = is_env_true("SKIP_SSL_CERT_DOWNLOAD")
 
-# whether to enable legacy record&replay persistence mechanism (default true, but will be disabled in a future release!)
-LEGACY_PERSISTENCE = is_env_not_false("LEGACY_PERSISTENCE")
-
 # name of the main Docker container
 MAIN_CONTAINER_NAME = os.environ.get("MAIN_CONTAINER_NAME", "").strip() or "localstack_main"
 
@@ -760,7 +757,6 @@ CONFIG_ENV_VARS = [
     "OUTBOUND_HTTP_PROXY",
     "OUTBOUND_HTTPS_PROXY",
     "PERSISTENCE",
-    "PERSISTENCE_SINGLE_FILE",
     "REQUESTS_CA_BUNDLE",
     "S3_SKIP_SIGNATURE_VALIDATION",
     "SERVICES",
@@ -933,9 +929,9 @@ if DEBUG:
     logging.getLogger("").setLevel(logging.DEBUG)
     logging.getLogger("localstack").setLevel(logging.DEBUG)
 
+LOG = logging.getLogger(__name__)
 if LS_LOG in TRACE_LOG_LEVELS:
     load_end_time = time.time()
-    LOG = logging.getLogger(__name__)
     LOG.debug(
         "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
     )
