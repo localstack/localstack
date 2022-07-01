@@ -203,10 +203,14 @@ class TestDynamoDB:
 
         # clean up
         delete_table(table_name)
+
+        def _assert_stream_deleted():
+            stream_tables = [s["TableName"] for s in ddbstreams.list_streams()["Streams"]]
+            assert table_name not in stream_tables
+            assert stream_name not in kinesis.list_streams()["StreamNames"]
+
         # assert stream has been deleted
-        stream_tables = [s["TableName"] for s in ddbstreams.list_streams()["Streams"]]
-        assert table_name not in stream_tables
-        assert stream_name not in kinesis.list_streams()["StreamNames"]
+        retry(_assert_stream_deleted, sleep=0.4, retries=5)
 
     def test_multiple_update_expressions(self, dynamodb):
         dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
