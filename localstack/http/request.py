@@ -56,8 +56,7 @@ def dummy_wsgi_environment(
 
     data = strings.to_bytes(body) if body else b""
 
-    if query_string is not None:
-        environ["QUERY_STRING"] = query_string
+    environ["QUERY_STRING"] = query_string or ""
 
     if raw_uri:
         if query_string:
