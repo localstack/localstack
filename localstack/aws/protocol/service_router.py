@@ -128,6 +128,9 @@ def custom_host_addressing_rules(host: str) -> Optional[str]:
     """
     if ".execute-api." in host:
         return "apigateway"
+    
+    if ".lambda-url." in host:
+        return "apigateway"
 
 
 def custom_path_addressing_rules(path: str) -> Optional[str]:
@@ -159,6 +162,9 @@ def legacy_rules(request: Request) -> Optional[str]:
     if ("/%s/" % PATH_USER_REQUEST) in request.path or (
         host.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host
     ):
+        return "apigateway"
+    
+    if ".lambda-url." in request.path:
         return "apigateway"
 
     # DynamoDB shell URLs

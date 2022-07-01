@@ -242,6 +242,15 @@ def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
     except AuthorizationError as e:
         api_id = invocation_context.api_id
         return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
+    
+    
+def invoke_lambda_url_from_request(invocation_context: ApiInvocationContext):
+    helpers.set_lambda_url_id_invocation_path(invocation_context)
+    try:
+        return invoke_rest_api(invocation_context)
+    except AuthorizationError as e:
+        api_id = invocation_context.api_id
+        return make_error_response("forbidden", 403)
 
 
 def invoke_rest_api(invocation_context: ApiInvocationContext):

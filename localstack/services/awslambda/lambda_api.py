@@ -1418,7 +1418,7 @@ def create_url_config(function):
 
     custom_id = md5(arn)
     region = LambdaRegion.get_current_request_region()
-    url = f"{custom_id}.lambda-url.{region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+    url = f"http://{custom_id}.lambda-url.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
 
     data = json.loads(to_str(request.data))
     cors = data.get("Cors", {})

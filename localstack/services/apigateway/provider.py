@@ -52,7 +52,7 @@ from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
     find_api_subentity_by_id,
 )
-from localstack.services.apigateway.invocations import invoke_rest_api_from_request
+from localstack.services.apigateway.invocations import invoke_rest_api_from_request, invoke_lambda_url_from_request
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -75,6 +75,11 @@ class ApigatewayApiListener(AwsApiListener):
         forwarded_for = headers.get(HEADER_LOCALSTACK_EDGE_URL, "")
         if re.match(PATH_REGEX_USER_REQUEST, path) or "execute-api" in forwarded_for:
             result = invoke_rest_api_from_request(invocation_context)
+            if result is not None:
+                return result
+
+        if  "lambda-url" in forwarded_for:            
+            result = invoke_lambda_url_from_request(invocation_context)
             if result is not None:
                 return result
 
