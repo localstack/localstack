@@ -1,6 +1,6 @@
 {
   "tests/integration/test_sns.py::TestSNSProvider::test_dead_letter_queue_with_deleted_sqs_queue[True]": {
-    "recorded-date": "01-06-2022, 14:07:57",
+    "recorded-date": "29-06-2022, 16:43:14",
     "recorded-content": {
       "raw_message_delivery": {
         "Messages": [
@@ -12,14 +12,14 @@
           }
         ],
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_dead_letter_queue_with_deleted_sqs_queue[False]": {
-    "recorded-date": "01-06-2022, 14:08:00",
+    "recorded-date": "29-06-2022, 16:43:18",
     "recorded-content": {
       "json_encoded_delivery": {
         "Messages": [
@@ -36,13 +36,23 @@
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<token:1>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<token:1>",
+              "MessageAttributes": {
+                "attr2": {
+                  "Type": "Binary",
+                  "Value": "AgME"
+                },
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "111"
+                }
+              }
             }
           }
         ],
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

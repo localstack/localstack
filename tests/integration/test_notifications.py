@@ -62,7 +62,7 @@ class TestNotifications(unittest.TestCase):
             # make sure we receive the correct topic ARN in notifications
             assertions.append({"TopicArn": topic_info["TopicArn"]})
             # make sure the notification contains message attributes
-            assertions.append({"StringValue": test_value})
+            assertions.append({"Value": test_value})
             self._receive_assert_delete(queue_url, assertions, sqs_client)
 
         retry(assert_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
@@ -332,8 +332,6 @@ class TestNotifications(unittest.TestCase):
         messages = []
         for m in response["Messages"]:
             message = json.loads(to_str(m["Body"]))
-            message_attributes = m.get("MessageAttributes", {})
-            message.update(message_attributes)
             messages.append(message)
         testutil.assert_objects(assertions, messages)
         for message in response["Messages"]:

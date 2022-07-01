@@ -2,6 +2,7 @@
 import json
 import queue
 import random
+from base64 import b64encode
 
 import pytest
 import requests
@@ -99,32 +100,30 @@ class TestSNSSubscription:
 
 
 class TestSNSProvider:
+    @pytest.mark.aws_validated
     def test_publish_unicode_chars(
         self,
         sns_client,
         sns_create_topic,
         sqs_create_queue,
         sqs_client,
-        sqs_queue_arn,
-        sns_subscription,
+        sns_create_sqs_subscription,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
-        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
         # publish message to SNS, receive it from SQS, assert that messages are equal
         message = 'ö§a1"_!?,. £$-'
         sns_client.publish(TopicArn=topic_arn, Message=message)
 
-        def check_message():
-            msgs = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
-            msg_received = msgs["Messages"][0]
-            msg_received = json.loads(to_str(msg_received["Body"]))
-            msg_received = msg_received["Message"]
-            assert message == msg_received
-
-        retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )
+        msg_received = response["Messages"][0]
+        msg_received = json.loads(to_str(msg_received["Body"]))
+        msg_received = msg_received["Message"]
+        assert message == msg_received
 
     def test_subscribe_with_invalid_protocol(self, sns_client, sns_create_topic, sns_subscription):
         topic_arn = sns_create_topic()["TopicArn"]
@@ -137,28 +136,26 @@ class TestSNSProvider:
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
         assert e.value.response["Error"]["Code"] == "InvalidParameter"
 
+    @pytest.mark.aws_validated
     def test_attribute_raw_subscribe(
-        self, sqs_client, sns_client, sns_create_topic, sqs_queue, sqs_queue_arn, sns_subscription
+        self,
+        sqs_client,
+        sns_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
-        # create SNS topic and connect it to an SQS queue
-        queue_url = sqs_queue
-        queue_arn = sqs_queue_arn(queue_url)
-        attributes = {"RawMessageDelivery": "True"}
-        sns_subscription(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
-            Attributes=attributes,
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="RawMessageDelivery",
+            AttributeValue="true",
         )
 
-        # fetch subscription information
-        subscription_list = sns_client.list_subscriptions()
-
-        subscription_arn = ""
-        for subscription in subscription_list["Subscriptions"]:
-            if subscription["TopicArn"] == topic_arn:
-                subscription_arn = subscription["SubscriptionArn"]
         actual_attributes = sns_client.get_subscription_attributes(
             SubscriptionArn=subscription_arn
         )["Attributes"]
@@ -177,40 +174,36 @@ class TestSNSProvider:
             MessageAttributes={"store": {"DataType": "Binary", "BinaryValue": binary_attribute}},
         )
 
-        def check_message():
-            msgs = sqs_client.receive_message(
-                QueueUrl=queue_url, MessageAttributeNames=["All"], VisibilityTimeout=0
-            )
-            msg_received = msgs["Messages"][0]
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            MessageAttributeNames=["All"],
+            VisibilityTimeout=0,
+            WaitTimeSeconds=4,
+        )
+        msg_received = response["Messages"][0]
+        assert message == msg_received["Body"]
+        # MessageAttributes are attached to the message when RawDelivery is true
+        assert binary_attribute == msg_received["MessageAttributes"]["store"]["BinaryValue"]
 
-            assert message == msg_received["Body"]
-            assert binary_attribute == msg_received["MessageAttributes"]["store"]["BinaryValue"]
-
-        retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
-
-        sns_client.unsubscribe(SubscriptionArn=subscription_arn)
-
+    @pytest.mark.aws_validated
     def test_filter_policy(
         self,
-        sqs_create_queue,
-        sqs_queue_arn,
         sns_client,
-        sns_create_topic,
         sqs_client,
-        sns_subscription,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
     ):
-        # connect SNS topic to an SQS queue
-        queue_name = f"queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
         topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
 
         filter_policy = {"attr1": [{"numeric": [">", 0, "<=", 100]}]}
-        sns_subscription(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
-            Attributes={"FilterPolicy": json.dumps(filter_policy)},
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=json.dumps(filter_policy),
         )
 
         # get number of messages
@@ -227,13 +220,11 @@ class TestSNSProvider:
             MessageAttributes=message_attributes,
         )
 
-        def check_message():
-            msgs_1 = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)["Messages"]
-            num_msgs_1 = len(msgs_1)
-            assert num_msgs_1 == (num_msgs_0 + 1)
-            return num_msgs_1
-
-        num_msgs_1 = retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+        msgs_1 = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )["Messages"]
+        num_msgs_1 = len(msgs_1)
+        assert num_msgs_1 == (num_msgs_0 + 1)
 
         # publish message that does not satisfy the filter policy, assert that message is not received
         message = "This is another test message"
@@ -243,41 +234,33 @@ class TestSNSProvider:
             MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "111"}},
         )
 
-        def check_message2():
-            num_msgs_2 = len(
-                sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)["Messages"]
-            )
-            assert num_msgs_2 == num_msgs_1
-            return num_msgs_2
+        num_msgs_2 = len(
+            sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4)[
+                "Messages"
+            ]
+        )
+        assert num_msgs_2 == num_msgs_1
 
-        retry(check_message2, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
-
+    @pytest.mark.aws_validated
     def test_exists_filter_policy(
         self,
-        sqs_create_queue,
-        sqs_queue_arn,
-        sns_create_topic,
         sns_client,
         sqs_client,
-        sns_subscription,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
     ):
-        # connect SNS topic to an SQS queue
-        queue_name = f"queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
         topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
 
         filter_policy = {"store": [{"exists": True}]}
-
-        def do_subscribe(filter_policy, queue_arn):
-            sns_subscription(
-                TopicArn=topic_arn,
-                Protocol="sqs",
-                Endpoint=queue_arn,
-                Attributes={"FilterPolicy": json.dumps(filter_policy)},
-            )
-
-        do_subscribe(filter_policy, queue_arn)
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=json.dumps(filter_policy),
+        )
 
         # get number of messages
         num_msgs_0 = len(
@@ -285,115 +268,117 @@ class TestSNSProvider:
         )
 
         # publish message that satisfies the filter policy, assert that message is received
-        message = f"message-{short_uid()}"
+        message_1 = f"message-{short_uid()}"
         sns_client.publish(
             TopicArn=topic_arn,
-            Message=message,
+            Message=message_1,
             MessageAttributes={
                 "store": {"DataType": "Number", "StringValue": "99"},
                 "def": {"DataType": "Number", "StringValue": "99"},
             },
         )
+        msgs_1 = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )["Messages"]
 
-        def check_message1():
-            num_msgs_1 = len(
-                sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)["Messages"]
-            )
-            assert num_msgs_1 == (num_msgs_0 + 1)
-            return num_msgs_1
-
-        num_msgs_1 = retry(check_message1, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+        num_msgs_1 = len(msgs_1)
+        assert message_1 == json.loads(msgs_1[0]["Body"])["Message"]
+        assert num_msgs_1 == (num_msgs_0 + 1)
 
         # publish message that does not satisfy the filter policy, assert that message is not received
-        message = f"message-{short_uid()}"
+        message_2 = f"message-{short_uid()}"
         sns_client.publish(
             TopicArn=topic_arn,
-            Message=message,
+            Message=message_2,
             MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "111"}},
         )
 
-        def check_message2():
-            num_msgs_2 = len(
-                sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)["Messages"]
-            )
-            assert num_msgs_2 == num_msgs_1
-            return num_msgs_2
+        msgs_2 = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )["Messages"]
+        num_msgs_2 = len(msgs_2)
+        # assert that it's still the same message that #1
+        assert json.loads(msgs_2[0]["Body"])["Message"] == message_1
+        assert num_msgs_2 == num_msgs_1
 
-        retry(check_message2, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+        # delete first message
+        sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=msgs_1[0]["ReceiptHandle"])
 
         # test with exist operator set to false.
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
-        filter_policy = {"store": [{"exists": False}]}
-        do_subscribe(filter_policy, queue_arn)
-        # get number of messages
-        num_msgs_0 = len(sqs_client.receive_message(QueueUrl=queue_url).get("Messages", []))
+        filter_policy = json.dumps({"store": [{"exists": False}]})
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=filter_policy,
+        )
 
-        # publish message with the attribute and see if its getting filtered.
-        message = f"message-{short_uid()}"
+        def get_filter_policy():
+            subscription_attrs = sns_client.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            return subscription_attrs["Attributes"]["FilterPolicy"] == filter_policy
+
+        # wait for the new filter policy to be in effect
+        poll_condition(lambda: get_filter_policy() == filter_policy, timeout=4)
+
+        # publish message that satisfies the filter policy, assert that message is received
+        message_3 = f"message-{short_uid()}"
         sns_client.publish(
             TopicArn=topic_arn,
-            Message=message,
+            Message=message_3,
+            MessageAttributes={"def": {"DataType": "Number", "StringValue": "99"}},
+        )
+
+        msgs_3 = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )["Messages"]
+        num_msgs_3 = len(msgs_3)
+        # assert that it is not the the same message that #1
+        assert json.loads(msgs_3[0]["Body"])["Message"] == message_3
+        assert num_msgs_3 == num_msgs_1
+
+        # publish message that does not satisfy the filter policy, assert that message is not received
+        message_4 = f"message-{short_uid()}"
+        sns_client.publish(
+            TopicArn=topic_arn,
+            Message=message_4,
             MessageAttributes={
                 "store": {"DataType": "Number", "StringValue": "99"},
                 "def": {"DataType": "Number", "StringValue": "99"},
             },
         )
 
-        def check_message():
-            num_msgs_1 = len(
-                sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0).get(
-                    "Messages", []
-                )
-            )
-            assert num_msgs_1 == num_msgs_0
-            return num_msgs_1
+        msgs_4 = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )["Messages"]
+        num_msgs_4 = len(msgs_4)
+        # assert that it's still the same message that #3
+        assert json.loads(msgs_4[0]["Body"])["Message"] == message_3
+        assert num_msgs_4 == num_msgs_3
 
-        num_msgs_1 = retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
-
-        # publish message that without the attribute and see if its getting filtered.
-        message = f"message-{short_uid()}"
-        sns_client.publish(
-            TopicArn=topic_arn,
-            Message=message,
-            MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "111"}},
-        )
-
-        def check_message3():
-            num_msgs_2 = len(
-                sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0).get(
-                    "Messages", []
-                )
-            )
-            assert num_msgs_2 == num_msgs_1
-            return num_msgs_2
-
-        retry(check_message3, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
-
+    @pytest.mark.aws_validated
     def test_subscribe_sqs_queue(
         self,
-        sqs_create_queue,
-        sqs_queue_arn,
-        sns_create_topic,
         sns_client,
         sqs_client,
-        sns_subscription,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
     ):
         # TODO: check with non default external port
 
-        # connect SNS topic to an SQS queue
-        queue_name = f"queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
         topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
 
         # create subscription with filter policy
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
         filter_policy = {"attr1": [{"numeric": [">", 0, "<=", 100]}]}
-        subscription = sns_subscription(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
-            Attributes={"FilterPolicy": json.dumps(filter_policy)},
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"],
+            AttributeName="FilterPolicy",
+            AttributeValue=json.dumps(filter_policy),
         )
+
         # publish message that satisfies the filter policy
         message = "This is a test message"
         sns_client.publish(
@@ -403,17 +388,15 @@ class TestSNSProvider:
         )
 
         # assert that message is received
-        def check_message():
-            messages = sqs_client.receive_message(
-                QueueUrl=queue_url, VisibilityTimeout=0, MessageAttributeNames=["All"]
-            )["Messages"]
-            message = messages[0]
-            assert message["MessageAttributes"]["attr1"]["StringValue"] == "99.12"
-
-        retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
-
-        # clean up
-        sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            VisibilityTimeout=0,
+            MessageAttributeNames=["All"],
+            WaitTimeSeconds=4,
+        )
+        message = response["Messages"][0]
+        message_body = json.loads(message["Body"])
+        assert message_body["MessageAttributes"]["attr1"]["Value"] == "99.12"
 
     def test_subscribe_platform_endpoint(
         self, sns_client, sqs_create_queue, sns_create_topic, sns_subscription
@@ -1020,25 +1003,25 @@ class TestSNSProvider:
 
         retry(check_messages, sleep=0.5)
 
+    @pytest.mark.aws_validated
     def test_publish_sqs_from_sns(
         self,
         sns_client,
-        sns_create_topic,
         sqs_client,
+        sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
-        sns_subscription,
+        sns_create_sqs_subscription,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
-        subscription_arn = sns_subscription(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
-            Attributes={"RawMessageDelivery": "true"},
-        )["SubscriptionArn"]
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
 
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="RawMessageDelivery",
+            AttributeValue="true",
+        )
         string_value = "99.12"
         sns_client.publish(
             TopicArn=topic_arn,
@@ -1046,18 +1029,20 @@ class TestSNSProvider:
             MessageAttributes={"attr1": {"DataType": "Number", "StringValue": string_value}},
         )
 
-        def get_message_with_attributes(queue_url):
-            response = sqs_client.receive_message(
-                QueueUrl=queue_url, MessageAttributeNames=["All"], VisibilityTimeout=0
-            )
-            assert response["Messages"][0]["MessageAttributes"] == {
-                "attr1": {"DataType": "Number", "StringValue": string_value}
-            }
-            sqs_client.delete_message(
-                QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
-            )
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            MessageAttributeNames=["All"],
+            VisibilityTimeout=0,
+            WaitTimeSeconds=4,
+        )
+        # format is of SQS MessageAttributes when RawDelivery is set to "true"
+        assert response["Messages"][0]["MessageAttributes"] == {
+            "attr1": {"DataType": "Number", "StringValue": string_value}
+        }
 
-        retry(get_message_with_attributes, retries=3, sleep=3, queue_url=queue_url)
+        sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
 
         sns_client.set_subscription_attributes(
             SubscriptionArn=subscription_arn,
@@ -1070,26 +1055,36 @@ class TestSNSProvider:
             Message="Test msg",
             MessageAttributes={"attr1": {"DataType": "Number", "StringValue": string_value}},
         )
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            MessageAttributeNames=["All"],
+            VisibilityTimeout=0,
+            WaitTimeSeconds=4,
+        )
+        message_body = json.loads(response["Messages"][0]["Body"])
+        # format is SNS MessageAttributes when RawDelivery is "false"
+        assert message_body["MessageAttributes"] == {
+            "attr1": {"Type": "Number", "Value": string_value}
+        }
 
-        retry(get_message_with_attributes, retries=3, sleep=3, queue_url=queue_url)
-
+    @pytest.mark.aws_validated
     def test_publish_batch_messages_from_sns_to_sqs(
         self,
         sns_client,
+        sqs_client,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
-        sqs_client,
-        sns_subscription,
+        sns_create_sqs_subscription,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
-        sns_subscription(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
-            Attributes={"RawMessageDelivery": "true"},
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="RawMessageDelivery",
+            AttributeValue="true",
         )
 
         publish_batch_response = sns_client.publish_batch(
@@ -1121,22 +1116,23 @@ class TestSNSProvider:
                 },
             ],
         )
-
         assert "Successful" in publish_batch_response
+        assert len(publish_batch_response["Successful"]) == 4
         assert "Failed" in publish_batch_response
 
         for successful_resp in publish_batch_response["Successful"]:
             assert "Id" in successful_resp
             assert "MessageId" in successful_resp
 
-        def get_messages(queue_url):
+        message_received = set()
+
+        def get_messages():
             response = sqs_client.receive_message(
-                QueueUrl=queue_url,
-                MessageAttributeNames=["All"],
-                MaxNumberOfMessages=10,
+                QueueUrl=queue_url, MessageAttributeNames=["All"], WaitTimeSeconds=1
             )
-            assert len(response["Messages"]) == 4
+
             for message in response["Messages"]:
+                message_received.add(message["MessageId"])
                 assert "Body" in message
 
                 if message["Body"] == "Test Message with two attributes":
@@ -1160,7 +1156,9 @@ class TestSNSProvider:
                 elif message["Body"] == "Test Message without attribute":
                     assert message.get("MessageAttributes") is None
 
-        retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
+            assert len(message_received) == 4
+
+        retry(get_messages, retries=3, sleep=1)
 
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
         self, sns_client, sns_create_topic, sqs_client, sqs_create_queue, sns_subscription
@@ -1534,7 +1532,17 @@ class TestSNSProvider:
         assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
 
         message = "test_dlq_after_sqs_endpoint_deleted"
-        sns_client.publish(TopicArn=topic_arn, Message=message)
+        message_attr = {
+            "attr1": {
+                "DataType": "Number",
+                "StringValue": "111",
+            },
+            "attr2": {
+                "DataType": "Binary",
+                "BinaryValue": b"\x02\x03\x04",
+            },
+        }
+        sns_client.publish(TopicArn=topic_arn, Message=message, MessageAttributes=message_attr)
 
         response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
         assert (
@@ -1543,6 +1551,8 @@ class TestSNSProvider:
 
         if raw_message_delivery:
             assert response["Messages"][0]["Body"] == message
+            # MessageAttributes are lost with RawDelivery in AWS
+            assert "MessageAttributes" not in response["Messages"][0]
             snapshot.match("raw_message_delivery", response)
         else:
             received_message = json.loads(response["Messages"][0]["Body"])
@@ -1551,59 +1561,81 @@ class TestSNSProvider:
 
             # Set the decoded JSON Body to be able to skip keys directly
             response["Messages"][0]["Body"] = received_message
-
             snapshot.match("json_encoded_delivery", response)
 
+    @pytest.mark.aws_validated
     def test_message_attributes_not_missing(
-        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_sqs_subscription,
+        sns_create_topic,
+        sqs_create_queue,
     ):
-        queue_name = f"queue-{short_uid()}"
-        topic_name = f"topic-{short_uid()}"
 
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        topic = sns_create_topic(Name=topic_name)
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
 
-        queue_arn = sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        assert subscription["SubscriptionArn"]
 
-        policy = {
-            "Id": f"policy-{short_uid()}",
-            "Statement": [
-                {
-                    "Action": ["sqs:SendMessage", "sqs:ReceiveMessage"],
-                    "Effect": "Allow",
-                    "Principal": {"Service": "sns.amazonaws.com"},
-                    "Resource": queue_arn,
-                }
-            ],
-            "Version": "2012-10-17",
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"],
+            AttributeName="RawMessageDelivery",
+            AttributeValue="true",
+        )
+        attributes = {
+            "an-attribute-key": {"DataType": "String", "StringValue": "an-attribute-value"},
+            "binary-attribute": {"DataType": "Binary", "BinaryValue": b"\x02\x03\x04"},
         }
-        sqs_client.set_queue_attributes(
-            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
-        )
-        sub = sns_client.subscribe(
-            TopicArn=topic["TopicArn"],
-            Protocol="sqs",
-            Attributes={"RawMessageDelivery": "true"},
-            Endpoint=queue_arn,
-        )
-        assert sub["SubscriptionArn"]
+
         publish_response = sns_client.publish(
-            TopicArn=topic["TopicArn"],
+            TopicArn=topic_arn,
             Message="text",
-            MessageAttributes={
-                "an-attribute-key": {"DataType": "String", "StringValue": "an-attribute-value"}
-            },
+            MessageAttributes=attributes,
         )
         assert publish_response["MessageId"]
         msg = sqs_client.receive_message(
             QueueUrl=queue_url,
             AttributeNames=["All"],
             MessageAttributeNames=["All"],
-            WaitTimeSeconds=1,
+            WaitTimeSeconds=3,
         )
-        assert "an-attribute-key" in msg["Messages"][0]["MessageAttributes"]
+        # as SNS piggybacks on SQS MessageAttributes when RawDelivery is true
+        # BinaryValue depends on SQS implementation, and is decoded automatically
+        assert msg["Messages"][0]["MessageAttributes"] == attributes
+        sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=msg["Messages"][0]["ReceiptHandle"]
+        )
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"],
+            AttributeName="RawMessageDelivery",
+            AttributeValue="false",
+        )
+
+        publish_response = sns_client.publish(
+            TopicArn=topic_arn,
+            Message="text",
+            MessageAttributes=attributes,
+        )
+        assert publish_response["MessageId"]
+        msg = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            AttributeNames=["All"],
+            MessageAttributeNames=["All"],
+            WaitTimeSeconds=3,
+        )
+        assert json.loads(msg["Messages"][0]["Body"])["MessageAttributes"] == {
+            "an-attribute-key": {"Type": "String", "Value": "an-attribute-value"},
+            "binary-attribute": {
+                # binary payload in base64 encoded by AWS, UTF-8 for JSON
+                # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
+                # need to be decoded manually as it's part of the message Body
+                "Type": "Binary",
+                "Value": b64encode(b"\x02\x03\x04").decode("utf-8"),
+            },
+        }
 
     @pytest.mark.only_localstack
     @pytest.mark.aws_validated
@@ -1720,7 +1752,6 @@ class TestSNSProvider:
         sns_allow_topic_sqs_queue(
             sqs_queue_url=dlq_url, sqs_queue_arn=dlq_arn, sns_topic_arn=topic_arn
         )
-
         sns_client.set_subscription_attributes(
             SubscriptionArn=http_subscription_arn,
             AttributeName="RedrivePolicy",

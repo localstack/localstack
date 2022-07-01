@@ -96,7 +96,7 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import create_sqs_system_attributes, parse_urlencoded_data
+from localstack.utils.aws.aws_responses import create_sqs_system_attributes
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.json import json_safe
@@ -145,11 +145,12 @@ class SNSBackend(RegionBackend):
 
 
 def publish_message(
-    topic_arn, req_data, headers, subscription_arn=None, skip_checks=False, message_attributes={}
+    topic_arn, req_data, headers, subscription_arn=None, skip_checks=False, message_attributes=None
 ):
     sns_backend = SNSBackend.get()
     message = req_data["Message"][0]
     message_id = str(uuid.uuid4())
+    message_attributes = message_attributes or {}
 
     target_arn = req_data.get("TargetArn")
     if target_arn and ":endpoint/" in target_arn:
@@ -472,7 +473,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 data["MessageGroupId"] = [entry.get("MessageGroupId")]
             # TODO: add MessageDeduplication checks once ASF-SQS implementation becomes default
 
-            message_attributes = entry.get("MessageAttributes", [])
+            message_attributes = entry.get("MessageAttributes", {})
             try:
                 message_to_subscribers(
                     message_id,
@@ -885,13 +886,13 @@ async def message_to_subscriber(
         return
 
     filter_policy = json.loads(subscriber.get("FilterPolicy") or "{}")
-    if not message_attributes:
-        message_attributes = get_message_attributes(req_data)
+
     if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
         LOG.info(
             "SNS filter policy %s does not match attributes %s", filter_policy, message_attributes
         )
         return
+    # todo: Message attributes are sent only when the message structure is String, not JSON.
     if subscriber["Protocol"] == "sms":
         event = {
             "topic_arn": topic_arn,
@@ -920,7 +921,7 @@ async def message_to_subscriber(
 
     elif subscriber["Protocol"] == "sqs":
         queue_url = None
-        message_body = create_sns_message_body(subscriber, req_data, message_id)
+        message_body = create_sns_message_body(subscriber, req_data, message_id, message_attributes)
         try:
             endpoint = subscriber["Endpoint"]
 
@@ -975,7 +976,10 @@ async def message_to_subscriber(
                 subscriber["SubscriptionArn"],
                 message,
                 message_id,
-                message_attributes,
+                # see the format here
+                # https://docs.aws.amazon.com/lambda/latest/dg/with-sns.html
+                # issue with sdk to serialize the attribute inside lambda
+                prepare_message_attributes(message_attributes),
                 unsubscribe_url,
                 subject=req_data.get("Subject")[0],
             )
@@ -1000,14 +1004,18 @@ async def message_to_subscriber(
                 "Unable to run Lambda function on SNS message: %s %s", exc, traceback.format_exc()
             )
             store_delivery_log(subscriber, False, message, message_id)
-            message_body = create_sns_message_body(subscriber, req_data, message_id)
+            message_body = create_sns_message_body(
+                subscriber, req_data, message_id, message_attributes
+            )
             sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
         return
 
     elif subscriber["Protocol"] in ["http", "https"]:
         msg_type = (req_data.get("Type") or ["Notification"])[0]
         try:
-            message_body = create_sns_message_body(subscriber, req_data, message_id)
+            message_body = create_sns_message_body(
+                subscriber, req_data, message_id, message_attributes
+            )
         except Exception:
             return
         try:
@@ -1106,11 +1114,12 @@ def get_subscription_by_arn(sub_arn):
                 return sub
 
 
-def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
+def create_sns_message_body(
+    subscriber, req_data, message_id=None, message_attributes: MessageAttributeMap = None
+) -> str:
     message = req_data["Message"][0]
     message_type = req_data.get("Type", ["Notification"])[0]
     protocol = subscriber["Protocol"]
-    attributes = get_message_attributes(req_data)
 
     if req_data.get("MessageStructure") == ["json"]:
         message = json.loads(message)
@@ -1120,8 +1129,6 @@ def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
             raise Exception("Unable to find 'default' key in message payload")
 
     if message_type == "Notification" and is_raw_message_delivery(subscriber):
-        if attributes:
-            message["MessageAttributes"] = attributes
         return message
 
     external_url = external_service_url("sns")
@@ -1147,8 +1154,8 @@ def create_sns_message_body(subscriber, req_data, message_id=None) -> str:
         if req_data.get(key) and req_data[key][0]:
             data[key] = req_data[key][0]
 
-    if attributes:
-        data["MessageAttributes"] = attributes
+    if message_attributes:
+        data["MessageAttributes"] = prepare_message_attributes(message_attributes)
 
     return json.dumps(data)
 
@@ -1161,18 +1168,15 @@ def _get_tags(topic_arn):
     return sns_backend.sns_tags[topic_arn]
 
 
-def get_message_attributes(req_data):
-    extracted_msg_attrs = parse_urlencoded_data(req_data, "MessageAttributes.entry")
-    return prepare_message_attributes(extracted_msg_attrs)
-
-
 def is_raw_message_delivery(susbcriber):
     return susbcriber.get("RawMessageDelivery") in ("true", True, "True")
 
 
 def create_sqs_message_attributes(subscriber, attributes):
-
     message_attributes = {}
+    if not is_raw_message_delivery(subscriber):
+        return message_attributes
+
     for key, value in attributes.items():
         # TODO: check if naming differs between ASF and QueryParameters, if not remove .get("Type") and .get("Value")
         if value.get("Type") or value.get("DataType"):
@@ -1180,7 +1184,7 @@ def create_sqs_message_attributes(subscriber, attributes):
             attribute = {"DataType": tpe}
             if tpe == "Binary":
                 val = value.get("BinaryValue") or value.get("Value")
-                attribute["BinaryValue"] = base64.decodebytes(to_bytes(val))
+                attribute["BinaryValue"] = base64.b64decode(to_bytes(val))
                 # base64 decoding might already have happened, in which decode fails.
                 # If decode fails, fallback to whatever is in there.
                 if not attribute["BinaryValue"]:
@@ -1195,14 +1199,23 @@ def create_sqs_message_attributes(subscriber, attributes):
     return message_attributes
 
 
-def prepare_message_attributes(message_attributes):
+def prepare_message_attributes(message_attributes: MessageAttributeMap):
     attributes = {}
-    for attr in message_attributes:
-        attributes[attr["Name"]] = {
-            "Type": attr["Value"]["DataType"],
-            "Value": attr["Value"]["StringValue"]
-            if attr["Value"].get("StringValue", None)
-            else attr["Value"]["BinaryValue"],
+    if not message_attributes:
+        return attributes
+    # todo: Number type is not supported for Lambda subscriptions, passed as String
+    #  do conversion here
+    for attr_name, attr in message_attributes.items():
+        if attr.get("StringValue", None):
+            val = attr["StringValue"]
+        else:
+            # binary payload in base64 encoded by AWS, UTF-8 for JSON
+            # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
+            val = base64.b64encode(attr["BinaryValue"]).decode()
+
+        attributes[attr_name] = {
+            "Type": attr["DataType"],
+            "Value": val,
         }
     return attributes
 
@@ -1371,18 +1384,3 @@ def unsubscribe_sqs_queue(queue_url):
             sub_url = subscriber.get("sqs_queue_url") or subscriber["Endpoint"]
             if queue_url == sub_url:
                 subscriptions.remove(subscriber)
-
-
-def get_subscribe_attributes(req_data):
-    attributes = {}
-    for key in req_data.keys():
-        if ".key" in key:
-            attributes[req_data[key][0]] = req_data[key.replace("key", "value")][0]
-    defaults = {
-        # TODO: this is required to get TF "aws_sns_topic_subscription" working, but this should
-        # be revisited (e.g., cross-account subscriptions should not be confirmed automatically)
-        "PendingConfirmation": "false"
-    }
-    for key, value in defaults.items():
-        attributes[key] = attributes.get(key, value)
-    return attributes
