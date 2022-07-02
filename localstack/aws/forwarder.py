@@ -7,7 +7,6 @@ from urllib.parse import urlsplit
 
 import requests
 from botocore.awsrequest import AWSPreparedRequest
-from botocore.parsers import create_parser
 from werkzeug.datastructures import Headers
 
 from localstack import config
@@ -19,10 +18,12 @@ from localstack.aws.api.core import (
     ServiceRequestHandler,
     ServiceResponse,
 )
+from localstack.aws.client import parse_response
 from localstack.aws.skeleton import DispatchTable, create_dispatch_table
 from localstack.aws.spec import load_service
+from localstack.http import Response
 from localstack.utils.aws import aws_stack
-from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.strings import to_str
 
 HttpBackendResponse = Tuple[int, dict, Union[str, bytes]]
 
@@ -107,18 +108,7 @@ def dispatch_to_backend(
     """
     status, headers, content = http_request_dispatcher(context)
 
-    operation_model = context.operation
-    response_dict = {  # this is what botocore.endpoint.convert_to_response_dict normally does
-        "headers": dict(headers.items()),  # boto doesn't like werkzeug headers
-        "status_code": status,
-        "body": to_bytes(content),
-        "context": {
-            "operation_name": operation_model.name,
-        },
-    }
-
-    parser = create_parser(context.service.protocol)
-    response = parser.parse(response_dict, operation_model.output_shape)
+    response = parse_response(context.operation, Response(content, status, headers))
 
     if status >= 301:
         error = response["Error"]
