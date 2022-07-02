@@ -14,7 +14,7 @@ LOG = logging.getLogger(__name__)
 
 FLUSH_INTERVAL_SECS = 10
 OPTIONAL_FIELDS = {"err_type", "resource_id"}
-EVENT_NAME = "http_response_agg"
+EVENT_NAME = "aws_op_count"
 
 
 class ResponseInfo(NamedTuple):
@@ -90,7 +90,7 @@ class ResponseAggregator:
         return {
             "period_start_time": self.period_start_time.isoformat() + "Z",
             "period_end_time": datetime.datetime.utcnow().isoformat() + "Z",
-            "http_response_aggregations": aggregations,
+            "operations": aggregations,
         }
 
     def _flush(self):

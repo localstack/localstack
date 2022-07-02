@@ -1,16 +1,15 @@
 import datetime
-import json
 import threading
 from queue import Queue
 from typing import List
 
 from localstack import config
-from localstack.utils import testutil
 from localstack.utils.analytics import GlobalAnalyticsBus
 from localstack.utils.analytics.client import AnalyticsClient
 from localstack.utils.analytics.events import Event, EventMetadata
 from localstack.utils.analytics.metadata import get_session_id
 from localstack.utils.analytics.publisher import Publisher, PublisherBuffer
+from localstack.utils.sync import retry
 
 
 def new_event(payload=None) -> Event:
@@ -92,32 +91,27 @@ class TestPublisherBuffer:
 
 
 class TestGlobalAnalyticsBus:
-    def test(self):
+    def test(self, httpserver):
         config.DEBUG_ANALYTICS = True
-        http_requests = Queue()
 
-        def handler(_request, _data):
-            http_requests.put((_request.__dict__, _data))
+        httpserver.expect_request("/v0/session").respond_with_json({"track_events": True})
+        httpserver.expect_request("/v0/events").respond_with_data(b"")
 
-            if _request.path == "/v0/session":
-                return testutil.json_response({"track_events": True})
+        client = AnalyticsClient(httpserver.url_for("/v0"))
+        bus = GlobalAnalyticsBus(client=client, flush_size=2)
+        bus.force_tracking = True
 
-        with testutil.http_server(handler) as url:
-            client = AnalyticsClient(url.lstrip("/") + "/v0")
-            bus = GlobalAnalyticsBus(client=client, flush_size=2)
-            bus.force_tracking = True
+        assert not httpserver.log
 
-            assert http_requests.empty()
+        bus.handle(new_event())
 
-            bus.handle(new_event())
+        # first event should trigger registration
+        request, response = retry(httpserver.log.pop, sleep=0.2, retries=10)
+        assert request.path == "/v0/session"
+        assert response.json["track_events"]
 
-            # first event should trigger registration
-            request, data = http_requests.get(timeout=5)
-            assert request["path"] == "/v0/session"
+        bus.handle(new_event())  # should flush here because of flush_size 2
 
-            bus.handle(new_event())  # should flush here because of flush_size 2
-
-            request, data = http_requests.get()
-            assert request["path"] == "/v0/events"
-            json_data = json.loads(data)
-            assert len(json_data["events"]) == 2
+        request, _ = retry(httpserver.log.pop, sleep=0.2, retries=10)
+        assert request.path == "/v0/events"
+        assert len(request.json["events"]) == 2
