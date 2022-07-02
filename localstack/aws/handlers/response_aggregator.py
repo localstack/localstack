@@ -1,88 +1,96 @@
 import logging
 import os
 import threading
-from typing import Optional
+from functools import lru_cache
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
-import xmltodict
 from localstack_ext.bootstrap.licensing import ENV_LOCALSTACK_API_KEY
 
 from localstack import config
-from localstack.aws.api import RequestContext, ServiceRequest
+from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.http import Response
 from localstack.utils.analytics.response_aggregator import ResponseAggregator
 from localstack.utils.aws.aws_responses import parse_response
+from localstack.utils.aws.aws_stack import parse_arn
 
 LOG = logging.getLogger(__name__)
 
+ParameterPath = Union[str, Callable[[RequestContext, Response], str]]
+ServiceName = str
+OperationName = str
+OperationNameList = List[OperationName]
+OperationResourceNameMappings = List[Tuple[OperationNameList, ParameterPath]]
 
-def get_resource_id(
-    service_name: str, operation_name: str, service_request: ServiceRequest, response: Response
-) -> Optional[str]:
+
+def get_operation_resource_name_mappings() -> Dict[ServiceName, OperationResourceNameMappings]:
+    return {
+        "kinesis": [
+            (["CreateStream", "DeleteStream"], "StreamName"),
+        ],
+        "lambda": [
+            (["CreateFunction", "DeleteFunction", "Invoke"], "FunctionName"),
+        ],
+        "s3": [
+            (["CreateBucket", "DeleteBucket"], "Bucket"),
+        ],
+        "stepfunctions": [
+            (["CreateStateMachine", "DeleteStateMachine"], "name"),
+        ],
+        "dynamodb": [
+            (["CreateTable", "DeleteTable"], "TableName"),
+        ],
+        "cloudformation": [
+            (["CreateStack", "DeleteStack"], "StackName"),
+        ],
+        "es": [
+            (["CreateElasticsearchDomain", "DeleteElasticsearchDomain"], "DomainName"),
+        ],
+        "opensearch": [
+            (["CreateDomain", "DeleteDomain"], "DomainName"),
+        ],
+        "firehose": [
+            (["CreateDeliveryStream", "DeleteDeliveryStream"], "DeliveryStreamName"),
+        ],
+        "sns": [
+            (["CreateTopic"], "Name"),
+            (["DeleteTopic"], _get_resource_from_arn("TopicArn")),
+        ],
+        "sqs": [
+            (["CreateQueue"], "QueueName"),
+            (["DeleteQueue"], _get_queue_name_from_url),
+        ],
+    }
+
+
+def get_resource_id(context: RequestContext, response: Response) -> Optional[str]:
     """
     Attempts to extract the ID (name) of a particular resource contained within the request or response object.
     For example, if the service is s3 and the operation is CreateBucket -> return the name of the bucket.
     The logic for extracting the resource name depends on the service and operation in question, so it has to be
     implemented manually on a per service/operation basis.
     """
-    if service_name == "kinesis" and operation_name in {"CreateStream", "DeleteStream"}:
-        return service_request.get("StreamName")
-    if service_name == "lambda" and operation_name in {
-        "CreateFunction",
-        "DeleteFunction",
-        "Invoke",
-    }:
-        return service_request.get("FunctionName")
-    if service_name == "s3" and operation_name in {"CreateBucket", "DeleteBucket"}:
-        return service_request.get("Bucket")
-    if service_name == "stepfunctions" and operation_name in {
-        "CreateStateMachine",
-        "DeleteStateMachine",
-    }:
-        return service_request.get("name")
-    if service_name == "dynamodb" and operation_name in {"CreateTable", "DeleteTable"}:
-        return service_request.get("TableName")
-    if service_name == "cloudformation" and operation_name == "CreateStack":
-        return service_request.get("StackName")
-    if service_name == "es" and operation_name in {
-        "CreateElasticsearchDomain",
-        "DeleteElasticsearchDomain",
-    }:
-        return service_request.get("DomainName")
-    if service_name == "opensearch" and operation_name in {"CreateDomain", "DeleteDomain"}:
-        return service_request.get("DomainName")
-    if service_name == "firehose" and operation_name in {
-        "CreateDeliveryStream",
-        "DeleteDeliveryStream",
-    }:
-        return service_request.get("DeliveryStreamName")
-    if service_name == "apigateway":
-        if operation_name == "DeleteRestApi":
-            return service_request.get("restApiId")
-        if operation_name == "CreateRestApi":
-            return response.get_json(force=True, silent=True).get("id")
-    if service_name == "sqs":
-        if operation_name == "CreateQueue":
-            response_data = xmltodict.parse(response.get_data(as_text=True))
-            return (
-                response_data.get("CreateQueueResponse", {})
-                .get("CreateQueueResult", {})
-                .get("QueueUrl")
-            )
-        if operation_name == "DeleteQueue":
-            return service_request.get("QueueUrl")
-    if service_name == "sns":
-        if operation_name == "CreateTopic":
-            response_data = xmltodict.parse(response.get_data(as_text=True))
-            return (
-                response_data.get("CreateTopicResponse", {})
-                .get("CreateTopicResult", {})
-                .get("TopicArn")
-            )
-        if operation_name == "DeleteTopic":
-            return service_request.get("TopicArn")
+    service_name = context.service.service_name
+    operation_name = context.operation.name
+    service_request = context.service_request
 
-    return None
+    if service_request is None:
+        raise ValueError("No service request set")
+
+    index = _get_operation_resource_name_index()
+
+    if service_name not in index:
+        return
+
+    if operation_name not in index[service_name]:
+        return
+
+    path = index[service_name][operation_name]
+
+    if callable(path):
+        return path(context, response)
+
+    return service_request.get(path)
 
 
 class ResponseAggregatorHandler:
@@ -98,6 +106,7 @@ class ResponseAggregatorHandler:
             return
         if config.DISABLE_EVENTS:
             return
+
         # this condition will only be true only for the first call, so it makes sense to not acquire the lock every time
         if self.aggregator_thread is None:
             with self._aggregator_mutex:
@@ -107,11 +116,7 @@ class ResponseAggregatorHandler:
         err_type = self._get_err_type(context, response) if response.status_code >= 400 else None
         service_name = context.service.service_name
         operation_name = context.operation.name
-        resource_id = (
-            get_resource_id(service_name, operation_name, context.service_request, response)
-            if self._is_pro_enabled
-            else None
-        )
+        resource_id = get_resource_id(context, response) if self._is_pro_enabled else None
         self.aggregator.add_response(
             service_name,
             operation_name,
@@ -130,3 +135,29 @@ class ResponseAggregatorHandler:
         except Exception:
             LOG.exception("error parsing response")
             return None
+
+
+@lru_cache()
+def _get_operation_resource_name_index() -> Dict[ServiceName, Dict[OperationName, ParameterPath]]:
+    index = {}
+
+    for service_name, mappings in get_operation_resource_name_mappings().items():
+        index[service_name] = {}
+        for ops, path in mappings:
+            for op in ops:
+                index[service_name][op] = path
+
+    return index
+
+
+def _get_resource_from_arn(arn_parameter: str):
+    def _extract(context, _response) -> str:
+        return parse_arn(context.service_request.get(arn_parameter))["resource"]
+
+    return _extract
+
+
+def _get_queue_name_from_url(context, _response) -> str:
+    from localstack.services.sqs.provider import get_queue_name_from_url
+
+    return get_queue_name_from_url(context.service_request.get("QueueUrl"))

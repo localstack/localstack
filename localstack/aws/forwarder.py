@@ -182,6 +182,7 @@ def create_aws_request_context(
     context.operation = operation
     context.region = region
     context.request = create_http_request(aws_request)
+    context.service_request = parameters
 
     return context
 

@@ -2,8 +2,8 @@ import atexit
 import datetime
 import logging
 import threading
-from collections import Counter, namedtuple
-from typing import Any, Dict, Optional
+from collections import Counter
+from typing import Any, Dict, NamedTuple, Optional
 
 from localstack import config
 from localstack.utils import analytics
@@ -11,16 +11,24 @@ from localstack.utils.analytics.event_publisher import get_hash
 from localstack.utils.scheduler import Scheduler
 
 LOG = logging.getLogger(__name__)
+
 FLUSH_INTERVAL_SECS = 10
 OPTIONAL_FIELDS = {"err_type", "resource_id"}
+EVENT_NAME = "http_response_agg"
 
 
-ResponseInfo = namedtuple("ResponseInfo", "service, operation, status_code, err_type, resource_id")
+class ResponseInfo(NamedTuple):
+    service: str
+    operation: str
+    status_code: int
+    err_type: Optional[str] = None
+    resource_id: Optional[str] = None
 
 
 class ResponseAggregator:
     """
-    Collects HTTP response data, aggregates it into small batches, and periodically emits (flushes) it as an analytics event
+    Collects HTTP response data, aggregates it into small batches, and periodically emits (flushes) it as an
+    analytics event.
     """
 
     def __init__(self):
@@ -54,6 +62,8 @@ class ResponseAggregator:
         :param service_name: name of the service the request was aimed at, e.g. s3
         :param operation_name: name of the operation, e.g. CreateBucket
         :param response_code: HTTP status code of the response, e.g. 200
+        :param err_type: optionally the error type if this is an error response
+        :param resource_id: optionally the resource id if this method operates on a resource
         """
         if config.DISABLE_EVENTS:
             return
@@ -63,7 +73,7 @@ class ResponseAggregator:
             operation=operation_name,
             status_code=response_code,
             err_type=err_type,
-            resource_id=get_hash(resource_id) if resource_id is not None else None,
+            resource_id=get_hash(resource_id) if resource_id else None,
         )
         with self._flush_mutex:
             self.response_counter[response_info] += 1
@@ -96,4 +106,4 @@ class ResponseAggregator:
         self.period_start_time = datetime.datetime.utcnow()
 
     def _emit_payload(self, analytics_payload: Dict):
-        analytics.log.event("http_response_agg", analytics_payload)
+        analytics.log.event(EVENT_NAME, analytics_payload)
