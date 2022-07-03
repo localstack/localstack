@@ -5,12 +5,12 @@ from typing import Optional
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
+from localstack.aws.client import parse_response
 from localstack.http import Response
 from localstack.utils.analytics.service_request_aggregator import (
     ServiceRequestAggregator,
     ServiceRequestInfo,
 )
-from localstack.utils.aws.aws_responses import parse_response
 
 LOG = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class ServiceRequestCounter:
          multiple handlers, either by storing it in the context or the chain.
         """
         try:
-            parsed_response = parse_response(context, response)
+            parsed_response = parse_response(context.operation, response)
             return parsed_response["Error"]["Code"]
         except Exception:
             if config.DEBUG_ANALYTICS:
