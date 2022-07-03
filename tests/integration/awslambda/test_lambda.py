@@ -8,7 +8,9 @@ import time
 from io import BytesIO
 from typing import Dict, TypeVar
 
+import mypy_boto3_lambda
 import pytest
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 
@@ -74,6 +76,7 @@ from .lambda_test_util import concurrency_update_done, get_invoke_init_type, upd
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_COUNTER = os.path.join(THIS_FOLDER, "functions/lambda_dynamodb_counter.py")
 TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_python_version.py")
 TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
     THIS_FOLDER, "functions/lambda_unhandled_error.py"
@@ -502,28 +505,6 @@ class TestLambdaAPI:
         # clean up
         lambda_client.delete_function_event_invoke_config(FunctionName=function_name)
 
-    def test_function_concurrency(self, lambda_client, create_lambda_function, snapshot):
-        """Testing the api of the put function concurrency action"""
-
-        snapshot.add_transformer(snapshot.transform.lambda_api())
-        function_name = f"lambda_func-{short_uid()}"
-        create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-        )
-        # TODO botocore.errorfactory.InvalidParameterValueException:
-        #  An error occurred (InvalidParameterValueException) when calling the PutFunctionConcurrency operation: Specified ReservedConcurrentExecutions for function decreases account's UnreservedConcurrentExecution below its minimum value of [50].
-        response = lambda_client.put_function_concurrency(
-            FunctionName=function_name, ReservedConcurrentExecutions=123
-        )
-        snapshot.match("put_function_concurrency", response)
-        assert "ReservedConcurrentExecutions" in response
-        response = lambda_client.get_function_concurrency(FunctionName=function_name)
-        snapshot.match("get_function_concurrency", response)
-        assert "ReservedConcurrentExecutions" in response
-        lambda_client.delete_function_concurrency(FunctionName=function_name)
-
     @pytest.mark.skip_snapshot_verify
     def test_function_code_signing_config(self, lambda_client, create_lambda_function, snapshot):
         """Testing the API of code signing config"""
@@ -627,6 +608,191 @@ class TestLambdaAPI:
             FunctionName=function_name,
         )
         snapshot.match("policy_after_2_add", policy_response)
+
+
+# Reserved Concurrency tests won't work when the AWS account service quota for ConcurrentExecutions is <= 100
+# because AWS always reserves at least 100 concurrent executions that can not be limited to a single function
+class TestConcurrency:
+    @pytest.mark.aws_validated
+    def test_function_concurrency(self, lambda_client, create_lambda_function, snapshot):
+        """Testing the api of the put function concurrency action"""
+
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON38,
+        )
+        # If this returns "Specified ReservedConcurrentExecutions for function decreases account's
+        # UnreservedConcurrentExecution below its minimum value"
+        # you'll need to increase the service quota for ConcurrentExecutions
+        response = lambda_client.put_function_concurrency(
+            FunctionName=function_name, ReservedConcurrentExecutions=123
+        )
+        snapshot.match("put_function_concurrency", response)
+        response = lambda_client.get_function_concurrency(FunctionName=function_name)
+        snapshot.match("get_function_concurrency", response)
+        lambda_client.delete_function_concurrency(FunctionName=function_name)
+
+    # note:  this might be flaky atm
+    @pytest.mark.aws_validated
+    @pytest.mark.slow
+    def test_function_concurrency_concurrent_invokes(
+        self,
+        create_boto_client,
+        dynamodb_client,
+        dynamodb_create_table,
+        create_lambda_function,
+        lambda_su_role,
+        snapshot,
+        cleanups,
+    ):
+        """
+        Internally the Lambda service on AWS uses an event queue to store events before passing them to a Function.
+        (not in the current provider)
+        With ReservedConcurrency=1 asynchronous requests (Type "Event") won't fail, but will be forced to run sequentially
+        Sync requests (RequestResponse) will fail if there's already a function running at the time.
+        For a RequestResponse type invoke to fail, it does not matter here if the currently running function has been invoked asynchronously or not.
+
+        The pattern here is not 100% reliable.
+        Other mechanisms would allow better verification of concurrent executions
+        but would already require a better implementation of other features in LocalStack
+        (e.g. CloudWatch metrics and/or DynamoDB streams).
+
+        TODO: verify across multiple published function versions (ReservedConcurrency is applied to the whole Fn)
+        TODO: add multiple async calls and check total + parallel call count
+            (parallel should be == 1 and total the sum of all since async invokes are not rejected)
+        """
+        # 0. setup
+        lambda_client: mypy_boto3_lambda.LambdaClient = create_boto_client(
+            "lambda", additional_config=Config(retries={"total_max_attempts": 1, "max_attempts": 0})
+        )
+        sleep_seconds = 5
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        function_name = f"lambda_func-{short_uid()}"
+        table_name = f"table-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_COUNTER,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON38,
+            role=lambda_su_role,
+            envvars={"TABLE_NAME": table_name, "TEST_WAIT_TIME_S": str(sleep_seconds)},
+        )
+        dynamodb_create_table(table_name=table_name, partition_key="Id")
+        dynamodb_client.put_item(
+            TableName=table_name,
+            Item={
+                "Id": {"S": "testcountid"},
+                "TestCounterStart": {"N": "0"},
+                "TestCounterStop": {"N": "0"},
+            },
+        )
+
+        def assert_counter(started: str, stopped: str):
+            def _assert_counter():
+                item = dynamodb_client.get_item(
+                    TableName=table_name, Key={"Id": {"S": "testcountid"}}
+                )
+                return (
+                    item["Item"]["TestCounterStart"]["N"] == started
+                    and item["Item"]["TestCounterStop"]["N"] == stopped
+                )
+
+            return _assert_counter
+
+        def reset_counter():
+            dynamodb_client.update_item(
+                TableName=table_name,
+                Key={"Id": {"S": "testcountid"}},
+                UpdateExpression="SET TestCounterStart = :val, TestCounterStop = :val",
+                ExpressionAttributeValues={":val": {"N": "0"}},
+                ReturnValues="ALL_NEW",
+            )
+            assert poll_condition(assert_counter("0", "0"))
+
+        reset_counter()
+
+        # 1. verify the function can be called in parallel by default
+        lambda_client.invoke(FunctionName=function_name, InvocationType="Event", Payload=b"{}")
+        lambda_client.invoke(
+            FunctionName=function_name, InvocationType="RequestResponse", Payload=b"{}"
+        )
+        assert poll_condition(assert_counter("2", "2"), timeout=2 * sleep_seconds)
+        reset_counter()
+
+        # 2. add function concurrency == 1
+        # If this returns "Specified ReservedConcurrentExecutions for function decreases account's
+        # UnreservedConcurrentExecution below its minimum value"
+        # you'll need to increase the service quota for ConcurrentExecutions
+
+        put_response = lambda_client.put_function_concurrency(
+            FunctionName=function_name, ReservedConcurrentExecutions=1
+        )
+        assert put_response["ReservedConcurrentExecutions"] == 1
+
+        # 3. verify function can now only be called sequentially again
+        lambda_client.invoke(FunctionName=function_name, InvocationType="Event", Payload=b"{}")
+        # assert poll_condition(assert_counter("1", "0"), timeout=sleep_seconds)
+        with pytest.raises(lambda_client.exceptions.TooManyRequestsException) as e:
+            lambda_client.invoke(
+                FunctionName=function_name, InvocationType="RequestResponse", Payload=b"{}"
+            )
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 429
+        assert e.value.response["Error"] == {
+            "Message": "Rate Exceeded.",
+            "Code": "TooManyRequestsException",
+        }
+        assert poll_condition(assert_counter("1", "1"), timeout=2 * sleep_seconds)
+        reset_counter()
+
+        time.sleep(2 * sleep_seconds)
+
+        # Invoke with "Event" type should be queued and executed later when no concurrent executions are free
+        lambda_client.invoke(FunctionName=function_name, InvocationType="Event", Payload=b"{}")
+        lambda_client.invoke(FunctionName=function_name, InvocationType="Event", Payload=b"{}")
+        lambda_client.invoke(FunctionName=function_name, InvocationType="Event", Payload=b"{}")
+
+        # TODO: these depend on the actual invocation "speed" i.e. especially cold start speed which is currently pretty slow in LocalStack
+        #   concretely they depend on a sub-second cold start
+        time.sleep(2)
+        item = dynamodb_client.get_item(TableName=table_name, Key={"Id": {"S": "testcountid"}})
+        assert item["Item"]["TestCounterStart"]["N"] == "1"
+        assert item["Item"]["TestCounterStop"]["N"] == "0"
+
+        assert poll_condition(assert_counter("1", "0"), timeout=2 * sleep_seconds)  # 1st running
+        assert poll_condition(
+            assert_counter("2", "1"), timeout=2 * sleep_seconds
+        )  # 1st finished, 2nd running
+        assert poll_condition(
+            assert_counter("3", "2"), timeout=2 * sleep_seconds
+        )  # 1 + 2 finished, 3rd running
+        assert poll_condition(assert_counter("3", "3"), timeout=2 * sleep_seconds)  # all finished
+        reset_counter()
+
+        # 4. delete reserved concurrency. Multiple invokes can be processed in parallel again
+        get_concurrency_predelete_response = lambda_client.get_function_concurrency(
+            FunctionName=function_name
+        )
+        assert get_concurrency_predelete_response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert "ReservedConcurrentExecutions" in get_concurrency_predelete_response
+
+        lambda_client.delete_function_concurrency(FunctionName=function_name)
+        get_concurrency_postdelete_response = lambda_client.get_function_concurrency(
+            FunctionName=function_name
+        )
+        assert get_concurrency_postdelete_response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert "ReservedConcurrentExecutions" not in get_concurrency_postdelete_response
+
+        # # 4. verify that we can call the function in parallel again (this time with a synchronous call as well)
+        lambda_client.invoke(FunctionName=function_name, InvocationType="Event", Payload=b"{}")
+        lambda_client.invoke(FunctionName=function_name, InvocationType="Event", Payload=b"{}")
+
+        # assert poll_condition(assert_counter("2", "0"), timeout=2*sleep_seconds)
+        lambda_client.invoke(
+            FunctionName=function_name, InvocationType="RequestResponse", Payload=b"{}"
+        )
+        assert poll_condition(assert_counter("3", "3"), timeout=2 * sleep_seconds)
 
 
 class TestLambdaBaseFeatures:

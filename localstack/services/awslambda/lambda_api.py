@@ -24,7 +24,11 @@ from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.awslambda.lambda_executors import InvocationResult, LambdaContext
+from localstack.services.awslambda.lambda_executors import (
+    LAMBDA_ASYNC_LOCKS,
+    InvocationResult,
+    LambdaContext,
+)
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     DOTNET_LAMBDA_RUNTIMES,
@@ -501,6 +505,7 @@ def do_update_alias(arn, alias, version, description=None):
     return new_alias
 
 
+# TODO: find all usage outside of this file and refactor it to client usage
 def run_lambda(
     func_arn,
     event,
@@ -509,7 +514,7 @@ def run_lambda(
     suppress_output=False,
     asynchronous=False,
     callback=None,
-    lock_discriminator: str = None,
+    lock_discriminator: str = None,  # TODO: remove
 ) -> InvocationResult:
     if context is None:
         context = {}
@@ -1153,6 +1158,9 @@ def create_function():
         result.update(format_func_details(lambda_function))
         if data.get("Publish"):
             result["Version"] = publish_new_function_version(arn)["Version"]
+        LAMBDA_ASYNC_LOCKS.assure_lock_present(
+            lambda_name, threading.BoundedSemaphore(100)
+        )  # TODO: remove
         return jsonify(result or {})
     except Exception as e:
         region.lambdas.pop(arn, None)
@@ -1609,11 +1617,21 @@ def invoke_function(function):
             context=context,
             asynchronous=False,
             version=qualifier,
+            lock_discriminator=function,
         )
+        if isinstance(result, Response):
+            return result
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
         return _create_response(result)
     elif invocation_type == "Event":
-        run_lambda(func_arn=arn, event=data, context={}, asynchronous=True, version=qualifier)
+        run_lambda(
+            func_arn=arn,
+            event=data,
+            context={},
+            asynchronous=True,
+            version=qualifier,
+            lock_discriminator=function,
+        )
         return _create_response("", status_code=202)
     elif invocation_type == "DryRun":
         # Assume the dry run always passes.
@@ -1815,11 +1833,17 @@ def function_concurrency(version, function):
         return not_found_error(arn)
     if request.method == "GET":
         data = lambda_details.concurrency
+        if data is None:
+            return Response("", status=200)
     if request.method == "PUT":
         data = json.loads(request.data)
         lambda_details.concurrency = data
+        LAMBDA_ASYNC_LOCKS.locks[function] = threading.BoundedSemaphore(
+            data["ReservedConcurrentExecutions"]
+        )
     if request.method == "DELETE":
         lambda_details.concurrency = None
+        LAMBDA_ASYNC_LOCKS.locks[function] = threading.BoundedSemaphore(100)  # TODO: delete instead
         return Response("", status=204)
     return jsonify(data)
 

@@ -5,7 +5,6 @@ import re
 import socket
 import sys
 import threading
-import time
 from functools import lru_cache
 from typing import Dict, Optional, Union
 from urllib.parse import urlparse
@@ -936,7 +935,6 @@ def create_dynamodb_table(
     stream_view_type=None,
     region_name=None,
     client=None,
-    sleep_after=2,
 ):
     """Utility method to create a DynamoDB table"""
 
@@ -957,6 +955,7 @@ def create_dynamodb_table(
             ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
             StreamSpecification=stream_spec,
         )
+        dynamodb.get_waiter("table_exists").wait(TableName=table_name)
     except Exception as e:
         if "ResourceInUseException" in str(e):
             # Table already exists -> return table reference
@@ -965,10 +964,6 @@ def create_dynamodb_table(
             )
         if "AccessDeniedException" in str(e):
             raise
-
-    if sleep_after:
-        # TODO: do we need this?
-        time.sleep(sleep_after)
 
     return table
 

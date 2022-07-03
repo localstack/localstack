@@ -116,6 +116,9 @@ class StreamEventSourceListener(EventSourceListener):
         self._COORDINATOR_THREAD = FuncThread(self._monitor_stream_event_sources)
         self._COORDINATOR_THREAD.start()
 
+    # FIXME: this should be replaced by Lambda API calls and a concurrency guard in *front* of it
+    #   => the parallelization and concurrency limit here should be handled *before* the invoke call
+    #   (i.e. separate from the function concurrency)
     def _invoke_lambda(
         self, function_arn, payload, lock_discriminator, parallelization_factor
     ) -> Tuple[bool, int]:

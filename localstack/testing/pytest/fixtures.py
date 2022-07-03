@@ -69,17 +69,23 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
-def _client(service, region_name=None):
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return boto3.client(service, region_name=region_name)
+def _client(service, region_name=None, *, additional_config=None):
+    config = botocore.config.Config()
+
     # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
-    config = (
-        botocore.config.Config(
-            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+    if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
+        config = config.merge(
+            botocore.config.Config(
+                connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+            )
         )
-        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
-        else None
-    )
+
+    if additional_config:
+        config = config.merge(additional_config)
+
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.client(service, region_name=region_name, config=config)
+
     return aws_stack.create_external_boto_client(service, config=config, region_name=region_name)
 
 
@@ -361,8 +367,6 @@ def dynamodb_create_table(dynamodb_client):
         if "partition_key" not in kwargs:
             kwargs["partition_key"] = "id"
 
-        kwargs["sleep_after"] = 0
-
         tables.append(kwargs["table_name"])
 
         return create_dynamodb_table(**kwargs)
@@ -372,14 +376,7 @@ def dynamodb_create_table(dynamodb_client):
     # cleanup
     for table in tables:
         try:
-            # table has to be in ACTIVE state before deletion
-            def wait_for_table_created():
-                return (
-                    dynamodb_client.describe_table(TableName=table)["Table"]["TableStatus"]
-                    == "ACTIVE"
-                )
-
-            poll_condition(wait_for_table_created, timeout=30)
+            dynamodb_client.get_waiter("table_exists").wait(TableName=table)
             dynamodb_client.delete_table(TableName=table)
         except Exception as e:
             LOG.debug("error cleaning up table %s: %s", table, e)

@@ -24,6 +24,7 @@ from localstack.runtime.hooks import hook_spec
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
+    error_response,
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
     get_record_from_event,
@@ -446,6 +447,7 @@ class LambdaExecutor:
                         callback and callback(
                             result, func_arn, event, error=raised_error, dlq_sent=dlq_sent
                         )
+                        # TODO: should skip forwarding for sync requests
                         lambda_result_to_destination(
                             lambda_function, event, result, asynchronous, raised_error
                         )
@@ -463,7 +465,17 @@ class LambdaExecutor:
             FuncThread(do_execute).start()
             return InvocationResult(None, log_output="Lambda executed asynchronously.")
 
-        return do_execute()
+        lock = LAMBDA_ASYNC_LOCKS.locks[lock_discriminator]
+        acquired = False
+        try:
+            acquired = lock.acquire(blocking=False)
+            if acquired:
+                return do_execute()
+            else:
+                return error_response("Rate Exceeded.", 429, error_type="TooManyRequestsException")
+        finally:
+            if acquired:
+                lock.release()
 
     def _execute(self, lambda_function: LambdaFunction, inv_context: InvocationContext):
         """This method must be overwritten by subclasses."""
