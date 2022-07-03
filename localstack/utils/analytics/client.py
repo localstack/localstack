@@ -31,7 +31,7 @@ class AnalyticsClient:
     api: str
 
     def __init__(self, api=None):
-        self.api = (api or constants.ANALYTICS_API).lstrip("/")
+        self.api = (api or constants.ANALYTICS_API).rstrip("/")
         self.debug = config.DEBUG_ANALYTICS
 
         self.endpoint_session = self.api + "/session"

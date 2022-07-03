@@ -3,7 +3,6 @@ import threading
 from queue import Queue
 from typing import List
 
-from localstack import config
 from localstack.utils.analytics import GlobalAnalyticsBus
 from localstack.utils.analytics.client import AnalyticsClient
 from localstack.utils.analytics.events import Event, EventMetadata
@@ -92,8 +91,6 @@ class TestPublisherBuffer:
 
 class TestGlobalAnalyticsBus:
     def test(self, httpserver):
-        config.DEBUG_ANALYTICS = True
-
         httpserver.expect_request("/v0/session").respond_with_json({"track_events": True})
         httpserver.expect_request("/v0/events").respond_with_data(b"")
 
