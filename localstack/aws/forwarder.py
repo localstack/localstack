@@ -108,7 +108,7 @@ def dispatch_to_backend(
     """
     status, headers, content = http_request_dispatcher(context)
 
-    response = parse_response(context.operation, Response(content, status, headers))
+    response = parse_response(context.operation, Response(content, status, dict(headers)))
 
     if status >= 301:
         error = response["Error"]
