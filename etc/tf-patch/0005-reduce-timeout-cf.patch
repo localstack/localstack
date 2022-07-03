@@ -1,0 +1,56 @@
+diff --git a/internal/service/cloudfront/distribution.go b/internal/service/cloudfront/distribution.go
+index 3d34f2cf1c..2f009d98c4 100644
+--- a/internal/service/cloudfront/distribution.go
++++ b/internal/service/cloudfront/distribution.go
+@@ -833,7 +833,7 @@ func resourceDistributionCreate(d *schema.ResourceData, meta interface{}) error
+ 
+ 	var resp *cloudfront.CreateDistributionWithTagsOutput
+ 	// Handle eventual consistency issues
+-	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
++	err := resource.Retry(1*time.Second, func() *resource.RetryError {
+ 		var err error
+ 		resp, err = conn.CreateDistributionWithTags(params)
+ 
+@@ -946,7 +946,7 @@ func resourceDistributionUpdate(d *schema.ResourceData, meta interface{}) error
+ 	}
+ 
+ 	// Handle eventual consistency issues
+-	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
++	err := resource.Retry(1*time.Second, func() *resource.RetryError {
+ 		_, err := conn.UpdateDistribution(params)
+ 
+ 		// ACM and IAM certificate eventual consistency
+@@ -1137,7 +1137,7 @@ func resourceDistributionDelete(d *schema.ResourceData, meta interface{}) error
+ 		// Occasionally the DeleteDistribution call will return this error as well, in which retries will succeed:
+ 		//   * PreconditionFailed: The request failed because it didn't meet the preconditions in one or more request-header fields
+ 		if tfawserr.ErrCodeEquals(err, cloudfront.ErrCodeDistributionNotDisabled) || tfawserr.ErrCodeEquals(err, cloudfront.ErrCodePreconditionFailed) {
+-			err = resource.Retry(2*time.Minute, func() *resource.RetryError {
++			err = resource.Retry(2*time.Second, func() *resource.RetryError {
+ 				_, err := conn.DeleteDistribution(deleteDistributionInput)
+ 
+ 				if tfawserr.ErrCodeEquals(err, cloudfront.ErrCodeDistributionNotDisabled) {
+@@ -1185,9 +1185,9 @@ func DistributionWaitUntilDeployed(id string, meta interface{}) error {
+ 		Pending:    []string{"InProgress"},
+ 		Target:     []string{"Deployed"},
+ 		Refresh:    resourceWebDistributionStateRefreshFunc(id, meta),
+-		Timeout:    90 * time.Minute,
++		Timeout:    90 * time.Second,
+ 		MinTimeout: 15 * time.Second,
+-		Delay:      1 * time.Minute,
++		Delay:      1 * time.Second,
+ 	}
+ 
+ 	_, err := stateConf.WaitForState()
+diff --git a/internal/service/cloudfront/distribution_test.go b/internal/service/cloudfront/distribution_test.go
+index 02b7d56f13..42a306dd9e 100644
+--- a/internal/service/cloudfront/distribution_test.go
++++ b/internal/service/cloudfront/distribution_test.go
+@@ -1490,7 +1490,7 @@ func testAccCheckDistributionDisappears(distribution *cloudfront.Distribution) r
+ 			IfMatch: getDistributionOutput.ETag,
+ 		}
+ 
+-		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
++		err = resource.Retry(2*time.Second, func() *resource.RetryError {
+ 			_, err = conn.DeleteDistribution(deleteDistributionInput)
+ 
+ 			if tfawserr.ErrCodeEquals(err, cloudfront.ErrCodeDistributionNotDisabled) {

@@ -1,0 +1,48 @@
+diff --git a/internal/service/iam/server_certificate.go b/internal/service/iam/server_certificate.go
+index 4abc8f7d41..6908dc09dc 100644
+--- a/internal/service/iam/server_certificate.go
++++ b/internal/service/iam/server_certificate.go
+@@ -249,7 +249,7 @@ func resourceServerCertificateUpdate(d *schema.ResourceData, meta interface{}) e
+ func resourceServerCertificateDelete(d *schema.ResourceData, meta interface{}) error {
+ 	conn := meta.(*conns.AWSClient).IAMConn
+ 	log.Printf("[INFO] Deleting IAM Server Certificate: %s", d.Id())
+-	err := resource.Retry(15*time.Minute, func() *resource.RetryError {
++	err := resource.Retry(15*time.Second, func() *resource.RetryError {
+ 		_, err := conn.DeleteServerCertificate(&iam.DeleteServerCertificateInput{
+ 			ServerCertificateName: aws.String(d.Get("name").(string)),
+ 		})
+diff --git a/internal/service/iam/user_login_profile_test.go b/internal/service/iam/user_login_profile_test.go
+index 66f9344f5f..39d60e79f5 100644
+--- a/internal/service/iam/user_login_profile_test.go
++++ b/internal/service/iam/user_login_profile_test.go
+@@ -327,7 +327,7 @@ func testDecryptPasswordAndTest(nProfile, nAccessKey, key string) resource.TestC
+ 			return fmt.Errorf("Error getting session credentials: %s", err)
+ 		}
+ 
+-		return resource.Retry(2*time.Minute, func() *resource.RetryError {
++		return resource.Retry(2*time.Second, func() *resource.RetryError {
+ 			iamAsCreatedUser := iam.New(iamAsCreatedUserSession)
+ 			newPassword, err := tfiam.GeneratePassword(20)
+ 			if err != nil {
+diff --git a/internal/service/iam/wait.go b/internal/service/iam/wait.go
+index 705d88d664..527f4fa9b8 100644
+--- a/internal/service/iam/wait.go
++++ b/internal/service/iam/wait.go
+@@ -17,7 +17,7 @@ const (
+ 	// as this will negatively impact user experience when configurations
+ 	// have incorrect references or permissions.
+ 	// Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/troubleshoot_general.html#troubleshoot_general_eventual-consistency
+-	propagationTimeout = 2 * time.Minute
++	propagationTimeout = 2 * time.Second
+ 
+ 	RoleStatusARNIsUniqueID = "uniqueid"
+ 	RoleStatusARNIsARN      = "arn"
+@@ -72,7 +72,7 @@ func waitDeleteServiceLinkedRole(conn *iam.IAM, deletionTaskID string) error {
+ 		Pending: []string{iam.DeletionTaskStatusTypeInProgress, iam.DeletionTaskStatusTypeNotStarted},
+ 		Target:  []string{iam.DeletionTaskStatusTypeSucceeded},
+ 		Refresh: statusDeleteServiceLinkedRole(conn, deletionTaskID),
+-		Timeout: 5 * time.Minute,
++		Timeout: 5 * time.Second,
+ 		Delay:   10 * time.Second,
+ 	}
+ 

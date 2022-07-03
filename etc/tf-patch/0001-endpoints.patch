@@ -1,0 +1,40 @@
+diff --git a/internal/conns/config.go b/internal/conns/config.go
+index 7bfd3100fd..3258372938 100644
+--- a/internal/conns/config.go
++++ b/internal/conns/config.go
+@@ -78,8 +78,22 @@ type Config struct {
+ 	UseFIPSEndpoint                bool
+ }
+ 
++func GetLocalEndpoints() map[string]string {
++	const localEndpoint = "http://localhost:4566"
++	var localEndpoints = map[string]string{}
++	for _, name := range names.Aliases() {
++		if name == "s3" {
++			localEndpoints[name] = "http://s3.localhost.localstack.cloud:4566"
++		} else {
++			localEndpoints[name] = localEndpoint
++		}
++	}
++	return localEndpoints
++}
++
+ // Client configures and returns a fully initialized AWSClient
+ func (c *Config) Client(ctx context.Context) (interface{}, diag.Diagnostics) {
++	c.Endpoints = GetLocalEndpoints()
+ 	awsbaseConfig := awsbase.Config{
+ 		AccessKey:                     c.AccessKey,
+ 		APNInfo:                       StdUserAgentProducts(c.TerraformVersion),
+diff --git a/internal/provider/provider.go b/internal/provider/provider.go
+index c24f096fb7..44887ea1fc 100644
+--- a/internal/provider/provider.go
++++ b/internal/provider/provider.go
+@@ -2113,7 +2113,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, terraformVer
+ 		CustomCABundle:                 d.Get("custom_ca_bundle").(string),
+ 		EC2MetadataServiceEndpoint:     d.Get("ec2_metadata_service_endpoint").(string),
+ 		EC2MetadataServiceEndpointMode: d.Get("ec2_metadata_service_endpoint_mode").(string),
+-		Endpoints:                      make(map[string]string),
++		Endpoints:                      conns.GetLocalEndpoints(),
+ 		HTTPProxy:                      d.Get("http_proxy").(string),
+ 		IgnoreTagsConfig:               expandProviderIgnoreTags(d.Get("ignore_tags").([]interface{})),
+ 		Insecure:                       d.Get("insecure").(bool),

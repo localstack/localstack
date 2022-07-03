@@ -1,0 +1,80 @@
+on:
+  pull_request:
+    branches:
+      - master
+
+name: Terraform Tests
+jobs:
+
+  prepare_list:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - id: set-matrix
+        run: echo "::set-output name=matrix::$(python tests/terraform/get-tf-services.py --names)"
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+  test_service:
+    needs: prepare_list
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.prepare_list.outputs.matrix) }}
+        go-version: [1.18.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      DNS_ADDRESS: 0
+      AWS_DEFAULT_REGION: us-east-2
+      AWS_ALTERNATE_REGION: eu-west-1
+
+    steps:
+    - uses: actions/setup-go@v3
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
+      with:
+        repository: hashicorp/terraform-provider-aws
+        path: './terraform-provider-aws'
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Create Virtual Environment
+      run: |
+        pip install --upgrade pip
+        python3 -m venv .venv
+
+    - name: Installing Localstack Dependancies Start Localstack
+      run: |
+        make install
+        make start &
+
+    - name: Get list of tests for  this service
+      id: get-list
+      run: echo "::set-output name=testlist::$(python tests/terraform/get-tf-tests.py ${{ matrix.service }})"
+
+    - name: Patching Terraform Provider
+      run: |
+        cd terraform-provider-aws
+        git apply ../etc/tf-patch/0001-endpoints.patch
+
+    - name: Download Cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-2-${{ hashFiles('**/terraform-provider-aws/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ matrix.go-version }}-2-
+
+    - name: Run Test Cases
+      run: |
+        cd terraform-provider-aws
+        AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test TF_ACC=true go test ./internal/service/${{ matrix.service }}/ -v -timeout 60m -run ${{ steps.get-list.outputs.testlist }}

@@ -1,0 +1,123 @@
+diff --git a/internal/service/route53/record.go b/internal/service/route53/record.go
+index 48521ea5a5..8e4312cade 100644
+--- a/internal/service/route53/record.go
++++ b/internal/service/route53/record.go
+@@ -507,7 +507,7 @@ func resourceRecordCreate(d *schema.ResourceData, meta interface{}) error {
+ 
+ func ChangeRecordSet(conn *route53.Route53, input *route53.ChangeResourceRecordSetsInput) (interface{}, error) {
+ 	var out *route53.ChangeResourceRecordSetsOutput
+-	err := resource.Retry(1*time.Minute, func() *resource.RetryError {
++	err := resource.Retry(1*time.Second, func() *resource.RetryError {
+ 		var err error
+ 		out, err = conn.ChangeResourceRecordSets(input)
+ 		if tfawserr.ErrCodeEquals(err, route53.ErrCodeNoSuchHostedZone) {
+@@ -535,7 +535,7 @@ func WaitForRecordSetToSync(conn *route53.Route53, requestId string) error {
+ 		Delay:        time.Duration(rand.Int63n(recordSetSyncMaxDelay-recordSetSyncMinDelay)+recordSetSyncMinDelay) * time.Second,
+ 		MinTimeout:   5 * time.Second,
+ 		PollInterval: 20 * time.Second,
+-		Timeout:      30 * time.Minute,
++		Timeout:      30 * time.Second,
+ 		Refresh: func() (result interface{}, state string, err error) {
+ 			changeRequest := &route53.GetChangeInput{
+ 				Id: aws.String(requestId),
+diff --git a/internal/service/route53/sweep.go b/internal/service/route53/sweep.go
+index 77c898289e..39dc62e05a 100644
+--- a/internal/service/route53/sweep.go
++++ b/internal/service/route53/sweep.go
+@@ -101,7 +101,7 @@ func sweepHealthChecks(region string) error {
+ 		errs = multierror.Append(errs, fmt.Errorf("error describing Route53 Health Checks for %s: %w", region, err))
+ 	}
+ 
+-	if err = sweep.SweepOrchestratorWithContext(context.Background(), sweepResources, 0*time.Minute, 1*time.Minute, 10*time.Second, 18*time.Second, 10*time.Minute); err != nil {
++	if err = sweep.SweepOrchestratorWithContext(context.Background(), sweepResources, 0*time.Second, 1*time.Second, 10*time.Second, 18*time.Second, 10*time.Second); err != nil {
+ 		errs = multierror.Append(errs, fmt.Errorf("error sweeping Route53 Health Checks for %s: %w", region, err))
+ 	}
+ 
+@@ -180,7 +180,7 @@ func sweepKeySigningKeys(region string) error {
+ 		errs = multierror.Append(errs, fmt.Errorf("error getting Route53 Key-Signing Keys for %s: %w", region, err))
+ 	}
+ 
+-	if err = sweep.SweepOrchestratorWithContext(context.Background(), sweepResources, 0*time.Millisecond, 1*time.Minute, 30*time.Second, 30*time.Second, 10*time.Minute); err != nil {
++	if err = sweep.SweepOrchestratorWithContext(context.Background(), sweepResources, 0*time.Millisecond, 1*time.Second, 30*time.Second, 30*time.Second, 10*time.Second); err != nil {
+ 		errs = multierror.Append(errs, fmt.Errorf("error sweeping Route53 Key-Signing Keys for %s: %w", region, err))
+ 	}
+ 
+@@ -370,7 +370,7 @@ func sweepZones(region string) error {
+ 		errs = multierror.Append(errs, fmt.Errorf("error describing Route53 Hosted Zones for %s: %w", region, err))
+ 	}
+ 
+-	if err = sweep.SweepOrchestratorWithContext(context.Background(), sweepResources, 0*time.Minute, 1*time.Minute, 10*time.Second, 18*time.Second, 10*time.Minute); err != nil {
++	if err = sweep.SweepOrchestratorWithContext(context.Background(), sweepResources, 0*time.Second, 1*time.Second, 10*time.Second, 18*time.Second, 10*time.Second); err != nil {
+ 		errs = multierror.Append(errs, fmt.Errorf("error sweeping Route53 Hosted Zones for %s: %w", region, err))
+ 	}
+ 
+diff --git a/internal/service/route53/wait.go b/internal/service/route53/wait.go
+index c47a81ef03..bb059d2adf 100644
+--- a/internal/service/route53/wait.go
++++ b/internal/service/route53/wait.go
+@@ -13,17 +13,17 @@ import (
+ )
+ 
+ const (
+-	changeTimeout      = 30 * time.Minute
++	changeTimeout      = 30 * time.Second
+ 	changeMinTimeout   = 5 * time.Second
+ 	changePollInterval = 15 * time.Second
+ 	changeMinDelay     = 10
+ 	changeMaxDelay     = 30
+ 
+-	hostedZoneDNSSECStatusTimeout = 5 * time.Minute
++	hostedZoneDNSSECStatusTimeout = 5 * time.Second
+ 
+-	keySigningKeyStatusTimeout = 5 * time.Minute
++	keySigningKeyStatusTimeout = 5 * time.Second
+ 
+-	trafficPolicyInstanceOperationTimeout = 4 * time.Minute
++	trafficPolicyInstanceOperationTimeout = 4 * time.Second
+ )
+ 
+ func waitChangeInfoStatusInsync(conn *route53.Route53, changeID string) (*route53.ChangeInfo, error) { //nolint:unparam
+diff --git a/internal/service/route53/zone.go b/internal/service/route53/zone.go
+index d91b13f953..3f5f8cbe45 100644
+--- a/internal/service/route53/zone.go
++++ b/internal/service/route53/zone.go
+@@ -432,7 +432,7 @@ func dnsSECStatus(conn *route53.Route53, hostedZoneID string) (string, error) {
+ 	}
+ 
+ 	var output *route53.GetDNSSECOutput
+-	err := tfresource.RetryConfigContext(context.Background(), 0*time.Millisecond, 1*time.Minute, 0*time.Millisecond, 30*time.Second, 3*time.Minute, func() *resource.RetryError {
++	err := tfresource.RetryConfigContext(context.Background(), 0*time.Millisecond, 1*time.Second, 0*time.Millisecond, 30*time.Second, 3*time.Second, func() *resource.RetryError {
+ 		var err error
+ 
+ 		output, err = conn.GetDNSSEC(input)
+@@ -488,7 +488,7 @@ func disableDNSSECForZone(conn *route53.Route53, hostedZoneId string) error {
+ 	}
+ 
+ 	var output *route53.DisableHostedZoneDNSSECOutput
+-	err = tfresource.RetryConfigContext(context.Background(), 0*time.Millisecond, 1*time.Minute, 0*time.Millisecond, 20*time.Second, 5*time.Minute, func() *resource.RetryError {
++	err = tfresource.RetryConfigContext(context.Background(), 0*time.Millisecond, 1*time.Second, 0*time.Millisecond, 20*time.Second, 5*time.Second, func() *resource.RetryError {
+ 		var err error
+ 
+ 		output, err = conn.DisableHostedZoneDNSSEC(input)
+@@ -698,7 +698,7 @@ func waitForChangeSynchronization(conn *route53.Route53, changeID string) error
+ 		Delay:        time.Duration(rand.Int63n(zoneChangeSyncMaxDelay-zoneChangeSyncMinDelay)+zoneChangeSyncMinDelay) * time.Second,
+ 		MinTimeout:   5 * time.Second,
+ 		PollInterval: time.Duration(rand.Int63n(zoneChangeSyncMaxPollInterval-zoneChangeSyncMinPollInterval)+zoneChangeSyncMinPollInterval) * time.Second,
+-		Timeout:      15 * time.Minute,
++		Timeout:      15 * time.Second,
+ 		Refresh: func() (result interface{}, state string, err error) {
+ 			input := &route53.GetChangeInput{
+ 				Id: aws.String(changeID),
+diff --git a/internal/service/route53/zone_association.go b/internal/service/route53/zone_association.go
+index c11188caa9..4d95cc8d49 100644
+--- a/internal/service/route53/zone_association.go
++++ b/internal/service/route53/zone_association.go
+@@ -84,7 +84,7 @@ func resourceZoneAssociationCreate(d *schema.ResourceData, meta interface{}) err
+ 			Delay:      30 * time.Second,
+ 			Pending:    []string{route53.ChangeStatusPending},
+ 			Target:     []string{route53.ChangeStatusInsync},
+-			Timeout:    10 * time.Minute,
++			Timeout:    10 * time.Second,
+ 			MinTimeout: 2 * time.Second,
+ 			Refresh:    resourceZoneAssociationRefreshFunc(conn, CleanChangeID(aws.StringValue(output.ChangeInfo.Id)), d.Id()),
+ 		}
