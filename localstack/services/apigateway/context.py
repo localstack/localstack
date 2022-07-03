@@ -1,15 +1,21 @@
 import base64
+import datetime
 import json
+import urllib.parse
 from enum import Enum
 from typing import Any, Dict, Optional, Union
 
 from responses import Response
 
+from localstack.aws import api
+from localstack.aws.api.core import RequestContext
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.utils.aws.aws_responses import parse_query_string
+from localstack.utils.json import json_safe
 
 # type definition for data parameters (i.e., invocation payloads)
 from localstack.utils.strings import short_uid, to_str
+from localstack.utils.time import now, now_utc
 
 InvocationPayload = Union[Dict, str, bytes]
 
@@ -183,3 +189,68 @@ class ApiInvocationContext:
     def domain_prefix(self):
         host = self._extract_host_from_header()
         return host.split(".")[0]
+
+
+class LambdaUrlInvocationContext:
+    method: str
+    path: str
+    data: InvocationPayload
+    headers: Dict[str, str]
+
+    api_id: str
+
+    rawPath = str
+    rawQueryString: str
+    queryStringParamters: Dict
+    requestContext: Dict
+
+    def __init__(
+        self,
+        method,
+        path,
+        data,
+        headers,
+    ):
+        self.method = method
+        self.path = path
+        self.data = data
+
+        self.headers = headers
+        self.rawPath = self.path.split("?")[0]
+        self.rawQueryString = self.path.split("?")[1] if len(self.path.split("?")) > 1 else ""
+        self.queryStringParameters = (
+            {} if not self.rawQueryString else urllib.parse.parse_qs(self.rawQueryString)
+        )
+        self.api_id = self.headers.get("Host", "").split(".")[0]
+
+        self.requestContext = {
+            "acountId": "anonymous",
+            "apiId": self.api_id,
+            "domainName": self.headers.get("Host", ""),
+            "domainPrefix": self.api_id,
+            "http": {
+                "method": self.method,
+                "path": self.rawPath,
+                "protocol": "HTTP/1.1",
+                "sourceIp": self.headers.get("Remote-Addr", ""),
+                "userAgent": self.headers.get("User-Agent", ""),
+            },
+            "requestId": short_uid(),
+            "routeKey": "$default",
+            "stage": "$default",
+            "time": datetime.datetime.utcnow().isoformat(),
+            "timeEpoch": datetime.datetime.utcnow().timestamp(),
+        }
+
+    def to_event(self):
+        return {
+            "version": "2.0",
+            "routeKey": "$default",
+            "rawPath": self.rawPath,
+            "rawQueryString": self.rawQueryString,
+            "headers": self.headers,
+            "queryStringParameters": self.queryStringParameters,
+            "requestContext": self.requestContext,
+            "body": base64.b64encode(self.data).decode(),
+            "isBase64Encoded": True,
+        }

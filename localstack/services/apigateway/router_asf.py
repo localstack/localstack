@@ -141,6 +141,6 @@ class ApigatewayRouter:
         if result is not None:
             return convert_response(result)
         raise NotFound()
-    
+
     def invoke_lambda_url():
         return Response(status=202)

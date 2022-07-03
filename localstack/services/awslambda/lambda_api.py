@@ -13,6 +13,7 @@ import traceback
 import uuid
 from datetime import datetime
 from io import StringIO
+from operator import inv
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
@@ -25,6 +26,7 @@ from localstack.constants import (
     LAMBDA_TEST_ROLE,
     LOCALHOST_HOSTNAME,
 )
+from localstack.services.apigateway.context import LambdaUrlInvocationContext
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -395,6 +397,21 @@ def process_apigateway_invocation(
         LOG.warning(
             "Unable to run Lambda function on API Gateway message: %s %s", e, traceback.format_exc()
         )
+
+
+def proccess_lambda_url_invocation(invocation_context: LambdaUrlInvocationContext):
+    lambda_backend = LambdaRegion.get()
+    url_configs = lambda_backend.url_configs.values()
+    lambda_url_config = [
+        config for config in url_configs if config.get("CustomId") == invocation_context.api_id
+    ][0]
+
+    inv_result = run_lambda(
+        func_arn=lambda_url_config["FunctionArn"],
+        event=invocation_context.to_event(),
+        asynchronous=False,
+    )
+    return inv_result.result
 
 
 def construct_invocation_event(

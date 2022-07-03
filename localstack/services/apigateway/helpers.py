@@ -911,7 +911,7 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     return match.group(1)
 
 
-def lambda_url_id_from_hostname_in_url(hostname: str) -> str:
+def extract_lambda_url_id_from_hostname_in_url(hostname: str) -> str:
     """Extract API ID 'id123' from URLs like https://id123.lambda-url.localhost.localstack.cloud:4566"""
     match = re.match(HOST_REGEX_LAMBDA_URL, hostname)
     return match.group(1)

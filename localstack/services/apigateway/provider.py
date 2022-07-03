@@ -43,7 +43,7 @@ from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.apigateway import helpers
-from localstack.services.apigateway.context import ApiInvocationContext
+from localstack.services.apigateway.context import ApiInvocationContext, LambdaUrlInvocationContext
 from localstack.services.apigateway.helpers import (
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_USER_REQUEST,
@@ -52,7 +52,10 @@ from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
     find_api_subentity_by_id,
 )
-from localstack.services.apigateway.invocations import invoke_rest_api_from_request, invoke_lambda_url_from_request
+from localstack.services.apigateway.invocations import (
+    invoke_lambda_url_from_request,
+    invoke_rest_api_from_request,
+)
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -78,8 +81,10 @@ class ApigatewayApiListener(AwsApiListener):
             if result is not None:
                 return result
 
-        if  "lambda-url" in forwarded_for:            
-            result = invoke_lambda_url_from_request(invocation_context)
+        if ".lambda-url." in forwarded_for:
+            result = invoke_lambda_url_from_request(
+                LambdaUrlInvocationContext(method, path, data, headers)
+            )
             if result is not None:
                 return result
 

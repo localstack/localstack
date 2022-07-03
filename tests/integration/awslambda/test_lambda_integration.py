@@ -504,7 +504,7 @@ class TestLambdaHttpInvocation:
 
         url = url_config["FunctionUrl"]
         url += "/?test_param=test_value"
-        
+
         result = safe_requests.post(
             url, data=b"{'key':'value'}", headers={"User-Agent": "python-requests/testing"}
         )

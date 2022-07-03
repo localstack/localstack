@@ -128,7 +128,7 @@ def custom_host_addressing_rules(host: str) -> Optional[str]:
     """
     if ".execute-api." in host:
         return "apigateway"
-    
+
     if ".lambda-url." in host:
         return "apigateway"
 
@@ -163,7 +163,7 @@ def legacy_rules(request: Request) -> Optional[str]:
         host.endswith(LOCALHOST_HOSTNAME) and "execute-api" in host
     ):
         return "apigateway"
-    
+
     if ".lambda-url." in request.path:
         return "apigateway"
 
