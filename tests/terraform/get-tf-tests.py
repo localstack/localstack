@@ -1,5 +1,6 @@
-import yaml
 import sys
+
+import yaml
 
 
 def print_test_names(service):
