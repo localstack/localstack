@@ -789,8 +789,8 @@ def is_local_test_mode() -> bool:
 
 
 def is_collect_metrics_mode() -> bool:
-    """Returns True if we are running in the context of our local integration tests and metric collection is enabled."""
-    return is_env_true(ENV_INTERNAL_TEST_RUN) and is_env_true(ENV_INTERNAL_TEST_COLLECT_METRIC)
+    """Returns True if metric collection is enabled."""
+    return is_env_true(ENV_INTERNAL_TEST_COLLECT_METRIC)
 
 
 def collect_config_items() -> List[Tuple[str, Any]]:

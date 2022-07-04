@@ -163,9 +163,9 @@ def main():
     for path in pathlist:
         print(f"checking {str(path)}")
         arch = ""
-        if str(path).endswith("arm64.csv"):
+        if "arm64" in str(path):
             arch = "arm64"
-        elif str(path).endswith("amd64.csv"):
+        elif "amd64" in str(path):
             arch = "amd64"
         with open(path, "r") as csv_obj:
             csv_dict_reader = csv.reader(csv_obj)
@@ -177,7 +177,7 @@ def main():
                 if metric.xfail == "True":
                     print(f"test {metric.node_id} marked as xfail")
                     continue
-                if not str(path).endswith(f"{collect_for_arch}.csv"):
+                if collect_for_arch and collect_for_arch not in str(path):
                     continue
                 recorder = (
                     metric_recorder_internal

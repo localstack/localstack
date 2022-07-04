@@ -1,5 +1,6 @@
 import csv
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -12,16 +13,25 @@ from localstack.aws.handlers.metric_handler import Metric, MetricHandler
 from localstack.utils.strings import short_uid
 
 BASE_PATH = os.path.join(os.path.dirname(__file__), "../../../target/metric_reports")
-CIRCLE_CI_JOB_NAME = os.environ.get("CIRCLE_JOB", "")
 FNAME_RAW_DATA_CSV = os.path.join(
     BASE_PATH,
-    f"metric-report-raw-data-{datetime.utcnow().strftime('%Y-%m-%d__%H_%M_%S')}-{short_uid()}-{CIRCLE_CI_JOB_NAME}.csv",
+    f"metric-report-raw-data-{datetime.utcnow().strftime('%Y-%m-%d__%H_%M_%S')}-{short_uid()}.csv",
 )
 
 
 @pytest.hookimpl()
 def pytest_sessionstart(session: "Session") -> None:
     Path(BASE_PATH).mkdir(parents=True, exist_ok=True)
+    pattern = re.compile("--junitxml=(.*)\\.xml")
+    if session.config.invocation_params:
+        for ip in session.config.invocation_params.args:
+            if m := pattern.match(ip):
+                report_file_name = m.groups()[-1].split("/")[-1]
+                global FNAME_RAW_DATA_CSV
+                FNAME_RAW_DATA_CSV = os.path.join(
+                    BASE_PATH,
+                    f"metric-report-raw-data-{datetime.utcnow().strftime('%Y-%m-%d__%H_%M_%S')}-{report_file_name}.csv",
+                )
 
     with open(FNAME_RAW_DATA_CSV, "w") as fd:
         writer = csv.writer(fd)
