@@ -1,4 +1,7 @@
 on:
+  push:
+    branches:
+      - master
   pull_request:
     branches:
       - master
@@ -23,6 +26,7 @@ jobs:
         service: ${{ fromJson(needs.prepare_list.outputs.matrix) }}
         go-version: [1.18.x]
         os: [ubuntu-latest]
+        python-version: [3.9]
     runs-on: ${{ matrix.os }}
     env:
       DNS_ADDRESS: 0
@@ -34,8 +38,11 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
-    - uses: actions/checkout@v3
-    - uses: actions/checkout@v3
+    - name: Checkout Localstack
+      uses: actions/checkout@v3
+
+    - name: Checkout Terraform AWS Provider
+      uses: actions/checkout@v3
       with:
         repository: hashicorp/terraform-provider-aws
         path: './terraform-provider-aws'
@@ -45,10 +52,19 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Create Virtual Environment
+    - name: Caching Python .venv
+      id: python-cache
+      uses: actions/cache@v2
+      path: ./.venv/
+      with:
+        key: ${{ runner.os }}-venv-${{ matrix.python-version }}-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-venv-${{ matrix.python-version }}-
+
+    - name: Creating Virtual Environment & Install Dependencies
+      if: steps.python-cache.outputs.cache-hit != 'true'
       run: |
-        pip install --upgrade pip
-        python3 -m venv .venv
+        pip install --upgrade pip && python3 -m venv .venv
 
     - name: Installing Localstack Dependancies Start Localstack
       run: |
@@ -70,9 +86,9 @@ jobs:
         path: |
           ~/go/pkg/mod
           ~/.cache/go-build
-        key: ${{ runner.os }}-go-${{ matrix.go-version }}-2-${{ hashFiles('**/terraform-provider-aws/go.sum') }}
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/terraform-provider-aws/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ matrix.go-version }}-2-
+          ${{ runner.os }}-go-${{ matrix.go-version }}-
 
     - name: Run Test Cases
       run: |
