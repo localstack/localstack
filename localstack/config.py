@@ -325,10 +325,10 @@ OVERRIDE_IN_DOCKER = is_env_true("OVERRIDE_IN_DOCKER")
 is_in_docker = in_docker()
 is_in_linux = is_linux()
 
-# the configuration profile to load
+# CLI specific: the configuration profile to load
 CONFIG_PROFILE = os.environ.get("CONFIG_PROFILE", "").strip()
 
-# host configuration directory
+# CLI specific: host configuration directory
 CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
 
 # keep this on top to populate environment

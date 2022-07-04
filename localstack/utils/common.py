@@ -222,6 +222,8 @@ class ExternalServicePortsManager(PortRange):
 
 
 external_service_ports = ExternalServicePortsManager()
+"""The PortRange object of LocalStack's external service port range. This port range is by default exposed by the
+localstack container when starting via the CLI."""
 
 # TODO: replace references with config.get_protocol/config.edge_ports_info
 get_service_protocol = config.get_protocol

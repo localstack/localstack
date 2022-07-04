@@ -6,6 +6,7 @@ import math
 import typing as t
 from asyncio import AbstractEventLoop
 from concurrent.futures import Executor
+from tempfile import SpooledTemporaryFile
 from urllib.parse import quote, unquote, urlparse
 
 if t.TYPE_CHECKING:
@@ -132,6 +133,7 @@ class HTTPRequestEventStreamAdapter:
 
         self._more_body = True
         self._buffer = bytearray()
+        self._buffer_file = SpooledTemporaryFile()
 
     def _read_into(self, buf: bytearray) -> t.Tuple[int, bool]:
         if not self._more_body:
