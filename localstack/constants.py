@@ -121,6 +121,11 @@ ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
 # the version of opensearch which is used by default
 OPENSEARCH_DEFAULT_VERSION = "OpenSearch_1.1"
 
+# See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
+OPENSEARCH_PLUGIN_LIST = [
+    "ingest-attachment",
+]
+
 ELASTICMQ_JAR_URL = (
     "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar"
 )
