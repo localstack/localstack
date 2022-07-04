@@ -26,7 +26,7 @@ jobs:
         service: ${{ fromJson(needs.prepare_list.outputs.matrix) }}
         go-version: [1.18.x]
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: [3.x]
     runs-on: ${{ matrix.os }}
     env:
       DNS_ADDRESS: 0
@@ -61,10 +61,17 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-venv-${{ matrix.python-version }}-
 
-    - name: Creating Virtual Environment & Install Dependencies
+    - name: Upgrading Pip
+      run: |
+        sudo apt update
+        sudo apt install libsasl2-dev -y
+        pip install --upgrade pip
+        pip install pyyaml
+
+    - name: Creating Virtual Environment
       if: steps.python-cache.outputs.cache-hit != 'true'
       run: |
-        pip install --upgrade pip && python3 -m venv .venv
+        python3 -m venv .venv
 
     - name: Installing Localstack Dependancies Start Localstack
       run: |
