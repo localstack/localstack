@@ -9,7 +9,7 @@ from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
 from localstack.http.request import restore_payload
-from localstack.services.apigateway.context import ApiInvocationContext
+from localstack.services.apigateway.context import ApiInvocationContext, LambdaUrlInvocationContext
 from localstack.services.apigateway.helpers import get_api_region
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.utils.aws.aws_responses import LambdaResponse
@@ -50,6 +50,14 @@ def to_invocation_context(
     #   It would be best to use a small (immutable) context for the already parsed params and the Request object
     #   and use it everywhere.
     return ApiInvocationContext(method, path, data, headers, stage=url_params.get("stage"))
+
+
+def to_lambda_url_invocation_context(request: Request):
+    method = request.method
+    path = request.full_path if request.query_string else request.path
+    data = restore_payload(request)
+    headers = Headers(request.headers)
+    return LambdaUrlInvocationContext(method, path, data, headers)
 
 
 def convert_response(result: RequestsResponse) -> Response:
@@ -142,5 +150,9 @@ class ApigatewayRouter:
             return convert_response(result)
         raise NotFound()
 
-    def invoke_lambda_url():
-        return Response(status=202)
+    def invoke_lambda_url(self, request: Request):
+        invocation_context = to_lambda_url_invocation_context(request)
+        result = invoke_rest_api_from_request(invocation_context)
+        if result is not None:
+            return result
+        return Response({"message": "null"})
