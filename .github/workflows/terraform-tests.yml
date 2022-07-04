@@ -55,8 +55,8 @@ jobs:
     - name: Caching Python .venv
       id: python-cache
       uses: actions/cache@v2
-      path: ./.venv/
       with:
+        path: ./.venv/
         key: ${{ runner.os }}-venv-${{ matrix.python-version }}-${{ hashFiles('**/setup.cfg') }}
         restore-keys: |
           ${{ runner.os }}-venv-${{ matrix.python-version }}-
