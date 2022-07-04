@@ -159,6 +159,21 @@ class CompositeHandler(Handler):
         self.handlers = []
         self.return_on_stop = return_on_stop
 
+    def append(self, handler: Handler) -> None:
+        """
+        Adds the given handler to the list of handlers.
+
+        :param handler: the handler to add
+        """
+        self.handlers.append(handler)
+
+    def remove(self, handler: Handler) -> None:
+        """
+        Remove the given handler from the list of handlers
+        :param handler: the handler to remove
+        """
+        self.handlers.remove(handler)
+
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         for handler in self.handlers:
             handler(chain, context, response)

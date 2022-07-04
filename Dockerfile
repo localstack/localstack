@@ -157,6 +157,9 @@ ADD bin/localstack bin/localstack.bat bin/
 # install dependencies to run the localstack runtime and save which ones were installed
 RUN make install-runtime
 RUN make freeze > requirements-runtime.txt
+# link the extensions virtual environment into the localstack venv
+RUN echo /var/lib/localstack/lib/extensions/python_venv/lib/python3.10/site-packages > localstack-extensions-venv.pth && \
+    mv localstack-extensions-venv.pth .venv/lib/python*/site-packages/
 
 
 
