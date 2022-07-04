@@ -9,6 +9,7 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc
+from localstack.utils.json import BytesEncoder
 
 DDB_KINESIS_STREAM_NAME_PREFIX = "__ddb_stream_"
 
@@ -77,7 +78,11 @@ def forward_events(records: Dict) -> None:
         if stream:
             table_name = table_name_from_stream_arn(stream["StreamArn"])
             stream_name = get_kinesis_stream_name(table_name)
-            kinesis.put_record(StreamName=stream_name, Data=json.dumps(record), PartitionKey="TODO")
+            kinesis.put_record(
+                StreamName=stream_name,
+                Data=json.dumps(record, cls=BytesEncoder),
+                PartitionKey="TODO",
+            )
 
 
 def delete_streams(table_arn: str) -> None:

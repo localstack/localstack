@@ -42,6 +42,15 @@ class CustomEncoder(json.JSONEncoder):
             return None
 
 
+class BytesEncoder(json.JSONEncoder):
+    """Helper class that converts JSON documents with bytes"""
+
+    def default(self, obj):
+        if isinstance(obj, bytes):
+            return to_str(obj, errors="replace")
+        return super().default(obj)
+
+
 class JsonObject:
     """Generic JSON serializable object for simplified subclassing"""
 
