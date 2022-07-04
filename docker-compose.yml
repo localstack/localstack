@@ -4,20 +4,18 @@ services:
   localstack:
     container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
     image: localstack/localstack
-    network_mode: bridge
     ports:
-      - "127.0.0.1:53:53"                # only required for Pro (DNS)
-      - "127.0.0.1:53:53/udp"            # only required for Pro (DNS)
-      - "127.0.0.1:443:443"              # only required for Pro (LocalStack HTTPS Edge Proxy)
-      - "127.0.0.1:4510-4559:4510-4559"  # external service port range
-      - "127.0.0.1:4566:4566"            # LocalStack Edge Proxy
+      - "127.0.0.1:4566:4566"            # LocalStack Gateway
+      - "127.0.0.1:4510-4559:4510-4559"  # external services port range
+      - "127.0.0.1:53:53"                # DNS config (only required for Pro)
+      - "127.0.0.1:53:53/udp"            # DNS config (only required for Pro)
+      - "127.0.0.1:443:443"              # LocalStack HTTPS Gateway (only required for Pro)
     environment:
       - DEBUG=${DEBUG-}
-      - DATA_DIR=${DATA_DIR-}
+      - PERSISTENCE=${PERSISTENCE-}
       - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR-}
       - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY-}  # only required for Pro
-      - HOST_TMP_FOLDER=${TMPDIR:-/tmp/}localstack
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
-      - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
