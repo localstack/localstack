@@ -354,7 +354,6 @@ def validate_localstack_config(name):
         )
 
     # prepare config options
-    network_mode = ls_service_details.get("network_mode")
     image_name = ls_service_details.get("image")
     container_name = ls_service_details.get("container_name") or ""
     docker_ports = (port.split(":")[-2] for port in ls_service_details.get("ports", []))
@@ -375,12 +374,6 @@ def validate_localstack_config(name):
             'and requires to use the "localstack/localstack-full" image.'
         )
 
-    if not docker_env.get("HOST_TMP_FOLDER"):
-        warns.append(
-            'Please configure the "HOST_TMP_FOLDER" environment variable to point to the '
-            + "absolute path of a temp folder on your host system (e.g., HOST_TMP_FOLDER=${TMPDIR})"
-        )
-
     if (main_container not in container_name) and not docker_env.get("MAIN_CONTAINER_NAME"):
         warns.append(
             'Please use "container_name: %s" or add "MAIN_CONTAINER_NAME" in "environment".'
@@ -399,13 +392,6 @@ def validate_localstack_config(name):
                 'to the "ports" section of the docker-compose file.'
             )
             % edge_port
-        )
-
-    if network_mode != "bridge" and not docker_env.get("LAMBDA_DOCKER_NETWORK"):
-        warns.append(
-            'Network mode is not set to "bridge" which may cause networking issues in Lambda containers. '
-            'Consider adding "network_mode: bridge" to your docker-compose file, or configure '
-            "LAMBDA_DOCKER_NETWORK with the name of the Docker network of your compose stack."
         )
 
     # print warning/info messages
