@@ -11,7 +11,6 @@ from flask import Response as FlaskResponse
 from requests import Response
 
 from localstack import config
-from localstack.aws.api.apigateway import StatusCode
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.services.apigateway.context import ApiInvocationContext, LambdaUrlInvocationContext
 from localstack.services.apigateway.helpers import (

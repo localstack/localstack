@@ -13,7 +13,6 @@ import traceback
 import uuid
 from datetime import datetime
 from io import StringIO
-from operator import inv
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
@@ -1434,7 +1433,6 @@ def create_url_config(function):
         )
 
     custom_id = md5(arn)
-    region = LambdaRegion.get_current_request_region()
     url = f"http://{custom_id}.lambda-url.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
 
     data = json.loads(to_str(request.data))
