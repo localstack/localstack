@@ -7,7 +7,11 @@ import botocore.exceptions
 import pytest
 
 from localstack import config
-from localstack.constants import OPENSEARCH_DEFAULT_VERSION, TEST_AWS_ACCOUNT_ID
+from localstack.constants import (
+    OPENSEARCH_DEFAULT_VERSION,
+    OPENSEARCH_PLUGIN_LIST,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.services.install import install_opensearch
 from localstack.services.opensearch.cluster import EdgeProxiedOpensearchCluster
 from localstack.services.opensearch.cluster_manager import (
@@ -264,7 +268,7 @@ class TestOpensearchProvider:
     def test_create_domain(self, opensearch_client, opensearch_wait_for_cluster):
         domain_name = f"opensearch-domain-{short_uid()}"
         try:
-            opensearch_client.create_domain(DomainName=domain_name)
+            domain_status = opensearch_client.create_domain(DomainName=domain_name)["DomainStatus"]
 
             response = opensearch_client.list_domain_names(EngineType="OpenSearch")
             domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
@@ -273,6 +277,14 @@ class TestOpensearchProvider:
             # wait for the cluster
             opensearch_wait_for_cluster(domain_name=domain_name)
 
+            # make sure the plugins are installed
+            plugins_url = (
+                f"https://{domain_status['Endpoint']}/_cat/plugins?s=component&h=component"
+            )
+            plugins_response = requests.get(plugins_url, headers={"Accept": "application/json"})
+            installed_plugins = set(plugin["component"] for plugin in plugins_response.json())
+            requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
+            assert requested_plugins.issubset(installed_plugins)
         finally:
             opensearch_client.delete_domain(DomainName=domain_name)
 

@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 import requests
+import semver
 from plugin import Plugin, PluginManager
 
 from localstack import config
@@ -30,6 +31,7 @@ from localstack.constants import (
     LOCALSTACK_MAVEN_VERSION,
     MODULE_MAIN_PATH,
     OPENSEARCH_DEFAULT_VERSION,
+    OPENSEARCH_PLUGIN_LIST,
     STS_JAR_URL,
 )
 from localstack.runtime import hooks
@@ -296,6 +298,33 @@ def install_opensearch(version=None):
                     dir_path = os.path.join(install_dir, dir_name)
                     mkdir(dir_path)
                     chmod_r(dir_path, 0o777)
+
+                # install default plugins for opensearch 1.1+
+                # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
+                parsed_version = semver.VersionInfo.parse(version)
+                if parsed_version >= "1.1.0":
+                    for plugin in OPENSEARCH_PLUGIN_LIST:
+                        plugin_binary = os.path.join(install_dir, "bin", "opensearch-plugin")
+                        plugin_dir = os.path.join(install_dir, "plugins", plugin)
+                        if not os.path.exists(plugin_dir):
+                            LOG.info("Installing OpenSearch plugin %s", plugin)
+
+                            def try_install():
+                                output = run([plugin_binary, "install", "-b", plugin])
+                                LOG.debug("Plugin installation output: %s", output)
+
+                            # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
+                            download_attempts = 3
+                            try:
+                                retry(try_install, retries=download_attempts - 1, sleep=2)
+                            except Exception:
+                                LOG.warning(
+                                    "Unable to download OpenSearch plugin '%s' after %s attempts",
+                                    plugin,
+                                    download_attempts,
+                                )
+                                if not os.environ.get("IGNORE_OS_DOWNLOAD_ERRORS"):
+                                    raise
 
     # patch JVM options file - replace hardcoded heap size settings
     jvm_options_file = os.path.join(install_dir, "config", "jvm.options")
