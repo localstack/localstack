@@ -3,7 +3,7 @@ import re
 import threading
 from typing import Optional
 
-from localstack.constants import _TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.runtime import hooks
 
 # Thread local storage for keeping current request & account related info
@@ -16,7 +16,7 @@ def get_aws_account_id() -> str:
 
 
 def get_default_account_id() -> str:
-    return _TEST_AWS_ACCOUNT_ID
+    return TEST_AWS_ACCOUNT_ID
 
 
 account_id_resolver = get_default_account_id
