@@ -321,11 +321,12 @@ def get_service_port_for_account(service, headers):
 
 
 PROXY_LISTENER_EDGE = ProxyListenerEdge()
-# the ROUTER is part of the edge proxy. use the router to inject custom handlers that are handled before actual
-# service calls
+
 ROUTER: Router[Handler] = Router(
     dispatcher=handler_dispatcher(), converters={"regex": RegexConverter}
 )
+"""This special Router is part of the edge proxy. Use the router to inject custom handlers that are handled before
+the actual AWS service call is made."""
 
 
 def is_trace_logging_enabled(headers) -> bool:

@@ -12,7 +12,8 @@ HOOKS_PREPARE_HOST = "localstack.hooks.prepare_host"
 
 def hook(namespace: str, priority: int = 0, **kwargs):
     """
-    Decorator for creating functional plugins that have a hook_priority attribute.
+    Decorator for creating functional plugins that have a hook_priority attribute. Hooks with a higher priority value
+    will be executed earlier.
     """
 
     def wrapper(fn):
@@ -68,12 +69,18 @@ class HookManager(PluginManager):
         return self.__str__()
 
 
-# localstack container configuration (on the host)
 configure_localstack_container = hook_spec(HOOKS_CONFIGURE_LOCALSTACK_CONTAINER)
-# additional installers
+"""Hooks to configure the LocalStack container before it starts. Executed on the host when invoking the CLI."""
+
 install = hook_spec(HOOKS_INSTALL)
-# prepare the host that's starting localstack
+"""Additional programmatic installers."""
+
 prepare_host = hook_spec(HOOKS_PREPARE_HOST)
-# infra (runtime) lifecycle hooks
+"""Hooks to prepare the host that's starting LocalStack. Executed on the host when invoking the CLI."""
+
 on_infra_start = hook_spec(HOOKS_ON_INFRA_START)
+"""Hooks that are executed right before starting the LocalStack infrastructure."""
+
 on_infra_ready = hook_spec(HOOKS_ON_INFRA_READY)
+"""Hooks that are execute after all startup hooks have been executed, and the LocalStack infrastructure has become
+available. """
