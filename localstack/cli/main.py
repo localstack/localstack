@@ -1,7 +1,7 @@
-from .localstack import create_with_plugins
-
-
 def main():
+    # initialize repositories
+    from .localstack import create_with_plugins
+
     cli = create_with_plugins()
     cli()
 
