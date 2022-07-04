@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from collections import defaultdict
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 from werkzeug.exceptions import NotFound
@@ -164,6 +164,42 @@ class DiagnoseResource:
         }
 
 
+class PluginsResource:
+    """
+    Resource to list information about plux plugins.
+    """
+
+    def on_get(self, request):
+        from plugin import PluginManager
+
+        from localstack.runtime import hooks
+        from localstack.services.plugins import SERVICE_PLUGINS
+
+        plugin_managers: List[PluginManager] = [
+            SERVICE_PLUGINS.plugin_manager,
+            hooks.configure_localstack_container.manager,
+            hooks.prepare_host.manager,
+            hooks.on_infra_ready.manager,
+            hooks.on_infra_start.manager,
+        ]
+
+        def get_plugin_details(_manager: PluginManager, _name: str):
+            container = _manager.get_container(_name)
+
+            details = {
+                "name": _name,
+                "is_initialized": container.is_init,
+                "is_loaded": container.is_loaded,
+            }
+
+            return details
+
+        return {
+            manager.namespace: [get_plugin_details(manager, name) for name in manager.list_names()]
+            for manager in plugin_managers
+        }
+
+
 class LocalstackResources(Router):
     """
     Router for localstack-internal HTTP resources.
@@ -179,6 +215,7 @@ class LocalstackResources(Router):
 
         health_resource = HealthResource(SERVICE_PLUGINS)
         graph_resource = ResourceGraph()
+        plugins_resource = PluginsResource()
 
         # two special routes for legacy support (before `/_localstack` was introduced)
         super().add("/health", health_resource)
@@ -186,6 +223,7 @@ class LocalstackResources(Router):
 
         self.add("/health", health_resource)
         self.add("/graph", graph_resource)
+        self.add("/plugins", plugins_resource)
         self.add("/cloudformation/deploy", CloudFormationUi())
 
         if config.DEBUG:

@@ -1,5 +1,4 @@
 import dataclasses
-import functools
 import logging
 import os
 import platform
@@ -8,6 +7,7 @@ from localstack import config, constants
 from localstack.runtime import hooks
 from localstack.utils.functions import call_safe
 from localstack.utils.json import FileMappedDocument
+from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid, md5, short_uid
 
 LOG = logging.getLogger(__name__)
@@ -57,12 +57,16 @@ def read_client_metadata() -> ClientMetadata:
     )
 
 
-@functools.lru_cache()
+@singleton_factory
 def get_session_id() -> str:
+    """
+    Returns the unique ID for this LocalStack session.
+    :return: a UUID
+    """
     return _generate_session_id()
 
 
-@functools.lru_cache()
+@singleton_factory
 def get_client_metadata() -> ClientMetadata:
     metadata = read_client_metadata()
 
@@ -72,7 +76,7 @@ def get_client_metadata() -> ClientMetadata:
     return metadata
 
 
-@functools.lru_cache()
+@singleton_factory
 def get_machine_id() -> str:
     cache_path = os.path.join(config.dirs.cache, "machine.json")
     doc = FileMappedDocument(cache_path)

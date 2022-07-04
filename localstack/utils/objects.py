@@ -1,10 +1,40 @@
+import functools
 import re
-from typing import Any, Callable, Dict, List, Optional, Set, Type, Union
+import threading
+from typing import Any, Callable, Dict, Generic, List, Optional, Set, Type, TypeVar, Union
 
 from .collections import ensure_list
 from .strings import first_char_to_lower
 
 ComplexType = Union[List, Dict, object]
+
+_T = TypeVar("_T")
+
+
+class Value(Generic[_T]):
+    """
+    Simple value container.
+    """
+
+    value: Optional[_T]
+
+    def __init__(self) -> None:
+        self.value = None
+
+    def clear(self):
+        self.value = None
+
+    def set(self, value: _T):
+        self.value = value
+
+    def is_set(self) -> bool:
+        return self.value is not None
+
+    def get(self) -> Optional[_T]:
+        return self.value
+
+    def __bool__(self):
+        return True if self.value else False
 
 
 class ArbitraryAccessObj:
@@ -141,3 +171,29 @@ def keys_to_lower(obj: ComplexType, skip_children_of: List[str] = None) -> Compl
 
     result = recurse_object(obj, fix_keys)
     return result
+
+
+def singleton_factory(factory: Callable[[], _T]) -> Callable[[], _T]:
+    """
+    Decorator for methods that create a particular value once and then return the same value in a thread safe way.
+
+    :param factory: the method to decorate
+    :return: a threadsafe singleton factory
+    """
+    lock = threading.RLock()
+    instance: Value[_T] = Value()
+
+    @functools.wraps(factory)
+    def _singleton_factory() -> _T:
+        if instance.is_set():
+            return instance.get()
+
+        with lock:
+            if not instance:
+                instance.set(factory())
+
+            return instance.get()
+
+    _singleton_factory.clear = instance.clear
+
+    return _singleton_factory

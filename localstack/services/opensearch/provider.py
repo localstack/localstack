@@ -87,8 +87,8 @@ from localstack.services.opensearch.cluster_manager import (
 )
 from localstack.utils.analytics import event_publisher
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
+from localstack.utils.objects import singleton_factory
 from localstack.utils.serving import Server
-from localstack.utils.sync import synchronized
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
@@ -105,16 +105,10 @@ DEFAULT_OPENSEARCH_CLUSTER_CONFIG = ClusterConfig(
     DedicatedMasterCount=1,
 )
 
-# cluster manager singleton
-_cluster_manager = None
 
-
-@synchronized(_domain_mutex)
+@singleton_factory
 def cluster_manager() -> ClusterManager:
-    global _cluster_manager
-    if not _cluster_manager:
-        _cluster_manager = create_cluster_manager()
-    return _cluster_manager
+    return create_cluster_manager()
 
 
 def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str):
