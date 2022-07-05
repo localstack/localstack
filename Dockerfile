@@ -232,8 +232,8 @@ RUN mkdir -p /.npm && \
 # Install the latest version of awslocal globally
 RUN pip3 install --upgrade awscli awscli-local requests
 
-# Adds the results of `make init` to the container.
-# `make init` _needs_ to be executed before building this docker image (since the execution needs docker itself).
+# Adds the results of `make init` that are explicitly include in .dockerignore to the image.
+# `make init` needs to be executed before building the image, because some package installers need docker themselves.
 ADD .filesystem/usr/lib/localstack /usr/lib/localstack
 # Add the code in the last step
 ADD localstack/ localstack/
