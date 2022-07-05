@@ -43,6 +43,33 @@ TEST_EVENT_PATTERN = {
     "detail": {"command": ["update-account"]},
 }
 
+API_DESTINATION_AUTHS = [
+    {
+        "type": "BASIC",
+        "key": "BasicAuthParameters",
+        "parameters": {"Username": "user", "Password": "pass"},
+    },
+    {
+        "type": "API_KEY",
+        "key": "ApiKeyAuthParameters",
+        "parameters": {"ApiKeyName": "Api", "ApiKeyValue": "apikey_secret"},
+    },
+    {
+        "type": "OAUTH_CLIENT_CREDENTIALS",
+        "key": "OAuthParameters",
+        "parameters": {
+            "AuthorizationEndpoint": "replace_this",
+            "ClientParameters": {"ClientID": "id", "ClientSecret": "password"},
+            "HttpMethod": "put",
+            "OAuthHttpParameters": {
+                "BodyParameters": [{"Key": "oauthbody", "Value": "value1"}],
+                "HeaderParameters": [{"Key": "oauthheader", "Value": "value2"}],
+                "QueryStringParameters": [{"Key": "oauthquery", "Value": "value3"}],
+            },
+        },
+    },
+]
+
 
 class TestEvents:
     def assert_valid_event(self, event):
@@ -606,9 +633,10 @@ class TestEvents:
         sns_client.delete_topic(TopicArn=topic_arn)
         stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
-    def test_api_destinations(self, events_client):
+    @pytest.mark.parametrize("auth", API_DESTINATION_AUTHS)
+    def test_api_destinations(self, events_client, auth):
         token = short_uid()
-        bearer = "Bearer %s" % token
+        bearer = f"Bearer {token}"
 
         class HttpEndpointListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
@@ -619,10 +647,6 @@ class TestEvents:
                 paths_list.append(request_split[0])
                 query_params_received.update(request_split[1])
 
-                auth = headers.get("Authorization", "")
-                if "Bearer" in auth and "Authorization" in headers_received:
-                    headers.pop("Authorization")
-                    headers.update({"Oauth_token": auth})
                 headers_received.update(headers)
 
                 if "client_id" in event:
@@ -655,136 +679,134 @@ class TestEvents:
         wait_for_port_open(local_port)
         url = f"http://localhost:{local_port}"
 
-        auth_types = [
-            {
-                "type": "BASIC",
-                "key": "BasicAuthParameters",
-                "parameters": {"Username": "user", "Password": "pass"},
-            },
-            {
-                "type": "API_KEY",
-                "key": "ApiKeyAuthParameters",
-                "parameters": {"ApiKeyName": "Api", "ApiKeyValue": "apikey_secret"},
-            },
-            {
-                "type": "OAUTH_CLIENT_CREDENTIALS",
-                "key": "OAuthParameters",
-                "parameters": {
-                    "AuthorizationEndpoint": url,
-                    "ClientParameters": {"ClientID": "id", "ClientSecret": "password"},
-                    "HttpMethod": "put",
-                    "OAuthHttpParameters": {
-                        "BodyParameters": [{"Key": "oauthbody", "Value": "value1"}],
-                        "HeaderParameters": [{"Key": "oauthheader", "Value": "value2"}],
-                        "QueryStringParameters": [{"Key": "oauthquery", "Value": "value3"}],
-                    },
-                },
-            },
-        ]
+        if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
+            auth["parameters"]["AuthorizationEndpoint"] = url
 
-        for auth in auth_types:
-            connection_name = "c-%s" % short_uid()
-            connection_arn = events_client.create_connection(
-                Name=connection_name,
-                AuthorizationType=auth.get("type"),
-                AuthParameters={
-                    auth.get("key"): auth.get("parameters"),
-                    "InvocationHttpParameters": {
-                        "BodyParameters": [
-                            {"Key": "key", "Value": "value", "IsValueSecret": False},
-                        ],
-                        "HeaderParameters": [
-                            {"Key": "key", "Value": "value", "IsValueSecret": False},
-                            {
-                                "Key": "overwritten_header",
-                                "Value": "original",
-                                "IsValueSecret": False,
-                            },
-                        ],
-                        "QueryStringParameters": [
-                            {"Key": "key", "Value": "value", "IsValueSecret": False},
-                            {
-                                "Key": "overwritten_query",
-                                "Value": "original",
-                                "IsValueSecret": False,
-                            },
-                        ],
-                    },
-                },
-            )["ConnectionArn"]
-
-            # create api destination
-            dest_name = "d-%s" % short_uid()
-            result = events_client.create_api_destination(
-                Name=dest_name,
-                ConnectionArn=connection_arn,
-                InvocationEndpoint=url,
-                HttpMethod="POST",
-            )
-
-            # create rule and target
-            rule_name = "r-%s" % short_uid()
-            target_id = "target-{}".format(short_uid())
-            pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
-            events_client.put_rule(Name=rule_name, EventPattern=pattern)
-            events_client.put_targets(
-                Rule=rule_name,
-                Targets=[
-                    {
-                        "Id": target_id,
-                        "Arn": result["ApiDestinationArn"],
-                        "Input": '{"target_value":"value"}',
-                        "HttpParameters": {
-                            "PathParameterValues": ["target_path"],
-                            "HeaderParameters": {
-                                "target_header": "target_header_value",
-                                "overwritten_header": "changed",
-                            },
-                            "QueryStringParameters": {
-                                "target_query": "t_query",
-                                "overwritten_query": "changed",
-                            },
+        connection_name = f"c-{short_uid()}"
+        connection_arn = events_client.create_connection(
+            Name=connection_name,
+            AuthorizationType=auth.get("type"),
+            AuthParameters={
+                auth.get("key"): auth.get("parameters"),
+                "InvocationHttpParameters": {
+                    "BodyParameters": [
+                        {
+                            "Key": "connection_body_param",
+                            "Value": "value",
+                            "IsValueSecret": False,
                         },
-                    }
-                ],
-            )
+                    ],
+                    "HeaderParameters": [
+                        {
+                            "Key": "connection_header_param",
+                            "Value": "value",
+                            "IsValueSecret": False,
+                        },
+                        {
+                            "Key": "overwritten_header",
+                            "Value": "original",
+                            "IsValueSecret": False,
+                        },
+                    ],
+                    "QueryStringParameters": [
+                        {
+                            "Key": "connection_query_param",
+                            "Value": "value",
+                            "IsValueSecret": False,
+                        },
+                        {
+                            "Key": "overwritten_query",
+                            "Value": "original",
+                            "IsValueSecret": False,
+                        },
+                    ],
+                },
+            },
+        )["ConnectionArn"]
 
-            entries = [
+        # create api destination
+        dest_name = f"d-{short_uid()}"
+        result = events_client.create_api_destination(
+            Name=dest_name,
+            ConnectionArn=connection_arn,
+            InvocationEndpoint=url,
+            HttpMethod="POST",
+        )
+
+        # create rule and target
+        rule_name = f"r-{short_uid()}"
+        target_id = f"target-{short_uid}"
+        pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
+        events_client.put_rule(Name=rule_name, EventPattern=pattern)
+        events_client.put_targets(
+            Rule=rule_name,
+            Targets=[
                 {
-                    "Source": "source-123",
-                    "DetailType": "type-123",
-                    "Detail": '{"i": %s}' % 0,
+                    "Id": target_id,
+                    "Arn": result["ApiDestinationArn"],
+                    "Input": '{"target_value":"value"}',
+                    "HttpParameters": {
+                        "PathParameterValues": ["target_path"],
+                        "HeaderParameters": {
+                            "target_header": "target_header_value",
+                            "overwritten_header": "changed",
+                        },
+                        "QueryStringParameters": {
+                            "target_query": "t_query",
+                            "overwritten_query": "changed",
+                        },
+                    },
                 }
-            ]
-            events_client.put_events(Entries=entries)
+            ],
+        )
 
-            # clean up
-            events_client.delete_connection(Name=connection_name)
-            events_client.delete_api_destination(Name=dest_name)
-            self.cleanup(rule_name=rule_name, target_ids=target_id)
+        entries = [
+            {
+                "Source": "source-123",
+                "DetailType": "type-123",
+                "Detail": '{"i": 0}',
+            }
+        ]
+        events_client.put_events(Entries=entries)
+
+        # clean up
+        events_client.delete_connection(Name=connection_name)
+        events_client.delete_api_destination(Name=dest_name)
+        self.cleanup(rule_name=rule_name, target_ids=target_id)
 
         # assert that all events have been received in the HTTP server listener
         user_pass = to_str(base64.b64encode(b"user:pass"))
 
         def check():
-            assert data_received.get("key") == "value"
-            assert data_received.get("target_value") == "value"
+            # Connection data validation
+            assert data_received.get("connection_body_param") == "value"
+            assert headers_received.get("Connection_Header_Param") == "value"
+            assert query_params_received.get("connection_query_param") == "value"
+
+            # Target parameters validation
             assert "/target_path" in paths_list
-
-            assert oauth_data.get("client_id") == "id"
-            assert oauth_data.get("client_secret") == "password"
-            assert oauth_data.get("header_value") == "value2"
-            assert oauth_data.get("body_value") == "value1"
-            assert "oauthquery=value3" in oauth_data.get("path")
-
-            assert headers_received.get("Api") == "apikey_secret"
-            assert headers_received.get("Authorization") == f"Basic {user_pass}"
-            assert headers_received.get("Oauth_token") == bearer
+            assert data_received.get("target_value") == "value"
             assert headers_received.get("Target_Header") == "target_header_value"
+            assert query_params_received.get("target_query") == "t_query"
 
-            # overwrite test
+            # connection/target overwrite test
             assert headers_received.get("Overwritten_Header") == "original"
             assert query_params_received.get("overwritten_query") == "original"
+
+            # Auth validation
+            if auth.get("type") == "BASIC":
+                assert headers_received.get("Authorization") == f"Basic {user_pass}"
+            if auth.get("type") == "API_KEY":
+                assert headers_received.get("Api") == "apikey_secret"
+            if auth.get("type") == "OAUTH_CLIENT_CREDENTIALS":
+                assert headers_received.get("Authorization") == bearer
+
+                # Oauth login validation
+                assert oauth_data.get("client_id") == "id"
+                assert oauth_data.get("client_secret") == "password"
+                assert oauth_data.get("header_value") == "value2"
+                assert oauth_data.get("body_value") == "value1"
+                assert "oauthquery=value3" in oauth_data.get("path")
 
         retry(check, sleep=0.5, retries=5)
 
