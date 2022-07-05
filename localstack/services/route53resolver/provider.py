@@ -11,7 +11,6 @@ from localstack.aws.api.route53resolver import (
     DeleteFirewallRuleGroupResponse,
     FirewallRuleGroup,
     FirewallRuleGroupMetadata,
-    FirewallRuleGroupMetadataList,
     GetFirewallRuleGroupResponse,
     ListFirewallRuleGroupsResponse,
     MaxResults,
@@ -26,6 +25,7 @@ from localstack.services.route53resolver.models import Route53ResolverBackend
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
 from localstack.utils.strings import get_random_hex
+from localstack.utils.collections import select_from_typed_dict
 
 
 def get_route53_resolver_firewall_rule_group_id():
@@ -90,19 +90,10 @@ class Route53ResolverProvider(Route53ResolverApi):
         self, context: RequestContext, max_results: MaxResults = None, next_token: NextToken = None
     ) -> ListFirewallRuleGroupsResponse:
         region_details = Route53ResolverBackend.get()
-        firewall_group_rules: Optional[FirewallRuleGroupMetadataList] = []
+        firewall_rule_groups = []
         for firewall_rule_group in region_details.firewall_rule_groups.values():
-            firewall_group_rules.append(
-                FirewallRuleGroupMetadata(
-                    Id=firewall_rule_group.get("Id"),
-                    Arn=firewall_rule_group.get("Arn"),
-                    Name=firewall_rule_group.get("Name"),
-                    OwnerId=firewall_rule_group.get("OwnerId"),
-                    CreatorRequestId=firewall_rule_group.get("CreatorRequestId"),
-                    ShareStatus=firewall_rule_group.get("ShareStatus"),
-                )
-            )
-        return ListFirewallRuleGroupsResponse(FirewallRuleGroups=firewall_group_rules)
+            firewall_rule_groups.append(select_from_typed_dict(FirewallRuleGroupMetadata, firewall_rule_group))
+        return ListFirewallRuleGroupsResponse(FirewallRuleGroups=firewall_rule_groups)
 
 
 @patch(MotoRoute53ResolverBackend._matched_arn)
