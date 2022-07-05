@@ -200,6 +200,18 @@ class LambdaProxyIntegration(BackendIntegration):
             parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
             parsed_result = common.json_safe(parsed_result)
             parsed_result = {} if parsed_result is None else parsed_result
+
+            keys = parsed_result.keys()
+
+            if not ("statusCode" in keys and "body" in keys):
+                LOG.warning(
+                    'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
+                )
+                response.status_code = 502
+                response.headers.update({"content-type": "application/json"})
+                response._content = json.dumps({"message": "Internal server error"})
+                return response
+
             response.status_code = int(parsed_result.get("statusCode", 200))
             parsed_headers = parsed_result.get("headers", {})
             if parsed_headers is not None:

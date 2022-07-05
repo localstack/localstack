@@ -14,6 +14,7 @@ from localstack.services.awslambda.lambda_api import (
     INVALID_PARAMETER_VALUE_EXCEPTION,
 )
 from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_RUNTIME_NODEJS14X,
     LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_PYTHON37,
 )
@@ -27,6 +28,7 @@ from localstack.utils.testutil import check_expected_lambda_log_events_length, g
 from .functions import lambda_integration
 from .test_lambda import (
     TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_NODEJS_APIGW_502,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
@@ -453,6 +455,32 @@ class TestLambdaHttpInvocation:
         assert lambda_resource == content["resource"]
         assert lambda_request_context_path == content["requestContext"]["path"]
         assert lambda_request_context_resource_path == content["requestContext"]["resourcePath"]
+
+    def test_malformed_response_apigw_invocation(self, create_lambda_function, lambda_client):
+        lambda_name = f"test_lambda_{short_uid()}"
+        lambda_resource = "/api/v1/{proxy+}"
+        lambda_path = "/api/v1/hello/world"
+
+        create_lambda_function(
+            func_name=lambda_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS_APIGW_502, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="apigw_502.handler",
+        )
+
+        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+        target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
+        result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
+            "test_gateway",
+            target_uri,
+            path=lambda_resource,
+            stage_name=TEST_STAGE_NAME,
+        )
+        api_id = result["id"]
+        url = path_based_url(api_id=api_id, stage_name=TEST_STAGE_NAME, path=lambda_path)
+        result = safe_requests.get(url)
+
+        assert result.status_code == 502
 
 
 class TestKinesisSource:

@@ -70,7 +70,7 @@ def handler(event, context):
         body["headers"] = event.get("headers")
         body["isBase64Encoded"] = event.get("isBase64Encoded")
         if body["httpMethod"] == "DELETE":
-            return {"statusCode": 204}
+            return {"statusCode": 204, "body": ""}
 
         # This parameter is often just completely excluded from the response.
         base64_response = {}
@@ -85,6 +85,7 @@ def handler(event, context):
         return {
             "body": body,
             "statusCode": status_code,
+            "isBase64Encoded": is_base_64_encoded,
             "headers": headers,
             "multiValueHeaders": {"set-cookie": ["language=en-US", "theme=blue moon"]},
             **base64_response,

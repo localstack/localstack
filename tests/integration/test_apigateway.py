@@ -32,6 +32,7 @@ from localstack.services.apigateway.helpers import (
 from localstack.services.awslambda.lambda_api import add_event_source, use_docker
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS12X,
+    LAMBDA_RUNTIME_NODEJS14X,
     LAMBDA_RUNTIME_PYTHON36,
 )
 from localstack.services.generic_proxy import ProxyListener
@@ -41,12 +42,14 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
+from tests.integration.awslambda.test_lambda_integration import TEST_STAGE_NAME
 
 from ..unit.test_apigateway import load_test_resource
 from .awslambda.test_lambda import (
     TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS,
+    TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
 )
@@ -1524,6 +1527,37 @@ class TestAPIGateway:
 
         # clean up
         apigw_client.delete_rest_api(restApiId=api_id)
+
+    def test_response_headers_invocation_with_apigw(self, create_lambda_function, lambda_client):
+        lambda_name = f"test_lambda_{short_uid()}"
+        lambda_resource = "/api/v1/{proxy+}"
+        lambda_path = "/api/v1/hello/world"
+
+        create_lambda_function(
+            func_name=lambda_name,
+            zip_file=testutil.create_zip_file(
+                TEST_LAMBDA_NODEJS_APIGW_INTEGRATION, get_content=True
+            ),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="apigw_integration.handler",
+        )
+
+        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+        target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
+        result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
+            "test_gateway",
+            target_uri,
+            path=lambda_resource,
+            stage_name=TEST_STAGE_NAME,
+        )
+        api_id = result["id"]
+        url = path_based_url(api_id=api_id, stage_name=TEST_STAGE_NAME, path=lambda_path)
+        result = requests.get(url)
+
+        assert result.status_code == 300
+        assert result.headers["Content-Type"] == "application/xml"
+        body = xmltodict.parse(result.content)
+        assert body.get("message") == "completed"
 
     # =====================================================================
     # Helper methods
