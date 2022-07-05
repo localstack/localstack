@@ -61,7 +61,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-venv-
 
-    - name: Upgrading Pip
+    - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install libsasl2-dev -y
@@ -76,11 +76,6 @@ jobs:
       if: ${{ steps.get-list.outputs.testlist == '' }}
       run: exit 1
 
-    - name: Creating Virtual Environment
-      if: steps.python-cache.outputs.cache-hit != 'true'
-      run: |
-        python3 -m venv .venv
-
     - name: Installing Localstack Dependancies Start Localstack
       run: |
         make install
@@ -91,7 +86,7 @@ jobs:
         cd terraform-provider-aws
         git apply ../etc/tf-patch/0001-endpoints.patch
 
-    - name: Download Cache
+    - name: Caching Go dependencies
       uses: actions/cache@v2
       with:
         path: |
