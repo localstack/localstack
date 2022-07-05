@@ -4,7 +4,7 @@ from typing import Optional
 from moto.route53resolver.models import Route53ResolverBackend as MotoRoute53ResolverBackend
 from moto.route53resolver.models import route53resolver_backends as moto_route53resolver_backends
 
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import RequestContext
 from localstack.aws.api.route53resolver import (
     Action,
     BlockOverrideDnsType,
@@ -12,7 +12,6 @@ from localstack.aws.api.route53resolver import (
     BlockOverrideTtl,
     BlockResponse,
     CreateFirewallDomainListResponse,
-    CreateFirewallRuleGroupRequest,
     CreateFirewallRuleGroupResponse,
     CreateFirewallRuleResponse,
     CreatorRequestId,
