@@ -26,7 +26,6 @@ jobs:
         service: ${{ fromJson(needs.prepare_list.outputs.matrix) }}
         go-version: [1.18.x]
         os: [ubuntu-latest]
-        python-version: [3.x]
     runs-on: ${{ matrix.os }}
     env:
       DNS_ADDRESS: 0
@@ -47,19 +46,19 @@ jobs:
         repository: hashicorp/terraform-provider-aws
         path: './terraform-provider-aws'
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python 3.10.5
       uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.10.5'
 
     - name: Caching Python .venv
       id: python-cache
       uses: actions/cache@v2
       with:
         path: ./.venv/
-        key: ${{ runner.os }}-venv-${{ matrix.python-version }}-${{ hashFiles('**/setup.cfg') }}
+        key: ${{ runner.os }}-venv-${{ hashFiles('**/setup.cfg') }}
         restore-keys: |
-          ${{ runner.os }}-venv-${{ matrix.python-version }}-
+          ${{ runner.os }}-venv-
 
     - name: Upgrading Pip
       run: |
@@ -67,6 +66,14 @@ jobs:
         sudo apt install libsasl2-dev -y
         pip install --upgrade pip
         pip install pyyaml
+
+    - name: Get list of tests for this service
+      id: get-list
+      run: echo "::set-output name=testlist::$(python tests/terraform/get-tf-tests.py ${{ matrix.service }})"
+
+    - name: Check Test Lists
+      if: ${{ steps.get-list.outputs.testlist == '' }}
+      run: exit 1
 
     - name: Creating Virtual Environment
       if: steps.python-cache.outputs.cache-hit != 'true'
@@ -77,10 +84,6 @@ jobs:
       run: |
         make install
         make start &
-
-    - name: Get list of tests for this service
-      id: get-list
-      run: echo "::set-output name=testlist::$(python tests/terraform/get-tf-tests.py ${{ matrix.service }})"
 
     - name: Patching Terraform Provider
       run: |
