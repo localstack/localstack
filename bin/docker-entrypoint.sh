@@ -31,7 +31,7 @@ if [ ! -f /tmp/localstack/.marker ]; then
         echo ""
         echo "  See: https://github.com/localstack/localstack/issues/6398"
         echo "============================================================================"
-        echo
+        echo ""
     fi
 fi
 
