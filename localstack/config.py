@@ -1020,8 +1020,8 @@ def init_directories() -> Directories:
     if PERSISTENCE:
         if DATA_DIR:
             LOG.warning(
-                "Persistence mode was activated using the DATA_DIR variable. The DATA_DIR is deprecated and "
-                "its value is ignore. The data is instead stored into %s in the LocalStack filesystem.",
+                "Persistence mode was activated using the DATA_DIR variable. DATA_DIR is deprecated and "
+                "its value is ignored. The data is instead stored into %s in the LocalStack volume.",
                 dirs.data,
             )
 
