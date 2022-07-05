@@ -13,6 +13,28 @@ then
   EDGE_PORT=4566
 fi
 
+# FIXME: deprecation path for legacy directories
+# the Dockerfile creates .marker file that will be overwritten if a volume is mounted into /tmp/localstack
+if [ ! -f /tmp/localstack/.marker ]; then
+    # unless LEGACY_DIRECTORIES is explicitly set to 1, print a friendly warning message
+    if [[ -z ${LEGACY_DIRECTORIES} ]] || [[ ${LEGACY_DIRECTORIES} == "0" ]]; then
+        export LEGACY_DIRECTORIES=1
+
+        echo "WARNING"
+        echo "============================================================================"
+        echo "  It seems you are mounting the LocalStack volume into /tmp/localstack."
+        echo "  This will break the LocalStack container! Please update your volume mount"
+        echo "  destination to /var/lib/localstack. In the meantime, we have set"
+        echo "  LEGACY_DIRECTORIES=1, to make LocalStack behave as in <1.0.0, and which "
+        echo "  should prevent any serious issues, but will be removed soon!"
+        echo "  You can suppress this warning by setting LEGACY_DIRECTORIES=1"
+        echo ""
+        echo "  See: https://github.com/localstack/localstack/issues/6398"
+        echo "============================================================================"
+        echo ""
+    fi
+fi
+
 # This stores the PID of supervisord for us after forking
 suppid=0
 
@@ -51,7 +73,7 @@ test -d ${LOG_DIR} || mkdir -p ${LOG_DIR}
 cat /dev/null > ${LOG_DIR}/localstack_infra.log
 cat /dev/null > ${LOG_DIR}/localstack_infra.err
 
-# for backwards compatibility with LEGACY_DIRECTORIES=1
+# FIXME for backwards compatibility with LEGACY_DIRECTORIES=1
 test -f /tmp/localstack_infra.log || ln -s ${LOG_DIR}/localstack_infra.log /tmp/localstack_infra.log
 test -f /tmp/localstack_infra.err || ln -s ${LOG_DIR}/localstack_infra.err /tmp/localstack_infra.err
 
