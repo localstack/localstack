@@ -1,6 +1,8 @@
 route53:
     - TestAccRoute53Record_basic
 route53resolver:
-    - TestAccRoute53ResolverFirewallRuleGroup
+    - TestAccRoute53ResolverFirewallRuleGroup_basic
+    - TestAccRoute53ResolverFirewallRuleGroup_disappears
+    - TestAccRoute53ResolverFirewallRuleGroup_tags
 s3:
     - TestAccS3ObjectCopy
