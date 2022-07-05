@@ -1,0 +1,101 @@
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+name: Terraform Tests
+jobs:
+
+  prepare_list:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - id: set-matrix
+        run: echo "::set-output name=matrix::$(python tests/terraform/get-tf-services.py --names)"
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+  test_service:
+    needs: prepare_list
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.prepare_list.outputs.matrix) }}
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      DNS_ADDRESS: 0
+      AWS_DEFAULT_REGION: us-east-2
+      AWS_ALTERNATE_REGION: eu-west-1
+
+    steps:
+    - uses: actions/setup-go@v3
+      with:
+        go-version: 1.18.x
+
+    - name: Checkout Localstack
+      uses: actions/checkout@v3
+
+    - name: Checkout Terraform AWS Provider
+      uses: actions/checkout@v3
+      with:
+        repository: hashicorp/terraform-provider-aws
+        path: './terraform-provider-aws'
+
+    - name: Set up Python 3.10.5
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10.5'
+
+    - name: Cache Python .venv
+      id: python-cache
+      uses: actions/cache@v2
+      with:
+        path: ./.venv/
+        key: ${{ runner.os }}-venv-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-venv-
+
+    - name: Install system dependencies
+      run: |
+        sudo apt update
+        sudo apt install libsasl2-dev -y
+        pip install --upgrade pip
+        pip install pyyaml
+
+    - name: Get list of tests for this service
+      id: get-list
+      run: echo "::set-output name=testlist::$(python tests/terraform/get-tf-tests.py ${{ matrix.service }})"
+
+    - name: Check Test Lists
+      if: ${{ steps.get-list.outputs.testlist == '' }}
+      run: exit 1
+
+    - name: Installing Localstack Dependancies and Start Localstack
+      run: |
+        make install
+        make start &
+
+    - name: Patch Terraform Provider
+      run: |
+        cd terraform-provider-aws
+        git apply ../etc/tf-patch/0001-endpoints.patch
+
+    - name: Cache Go dependencies
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ hashFiles('**/terraform-provider-aws/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Run Test Cases
+      run: |
+        cd terraform-provider-aws
+        AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test TF_ACC=true go test ./internal/service/${{ matrix.service }}/ -v -timeout 60m -run ${{ steps.get-list.outputs.testlist }}
