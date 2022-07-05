@@ -1,4 +1,15 @@
 route53:
     - TestAccRoute53Record_basic
+route53resolver:
+    - TestAccRoute53ResolverEndpoint_basicInbound
+    - TestAccRoute53ResolverEndpointDataSource
+    - TestAccRoute53ResolverFirewallRule_basic
+    - TestAccRoute53ResolverFirewallRule_block
+    - TestAccRoute53ResolverFirewallRule_blockOverride
+    - TestAccRoute53ResolverFirewallRule_disappears
+    - TestAccRoute53ResolverFirewallRuleGroup_basic
+    - TestAccRoute53ResolverFirewallRuleGroup_disappears
+    - TestAccRoute53ResolverFirewallRuleGroup_tags
+    - TestAccRoute53ResolverFirewallDomainList
 s3:
     - TestAccS3ObjectCopy

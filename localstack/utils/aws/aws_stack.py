@@ -40,7 +40,7 @@ from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.collections import pick_attributes
 from localstack.utils.functions import run_safe
 from localstack.utils.http import make_http_request
-from localstack.utils.strings import is_string, is_string_or_bytes, to_str
+from localstack.utils.strings import get_random_hex, is_string, is_string_or_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 
 # AWS environment variable names
@@ -1275,3 +1275,21 @@ def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None, regio
 def get_ecr_repository_arn(name, account_id=None, region_name=None):
     pattern = "arn:aws:ecr:%s:%s:repository/%s"
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
+
+
+def get_route53_resolver_firewall_rule_group_arn(
+    id: str, account_id: str = None, region_name: str = None
+):
+    pattern = "arn:aws:route53resolver:%s:%s:firewall-rule-group/%s"
+    return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
+
+
+def get_route53_resolver_firewall_domain_list_arn(
+    id: str, account_id: str = None, region_name: str = None
+):
+    pattern = "arn:aws:route53resolver:%s:%s:firewall-domain-list/%s"
+    return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
+
+
+def get_trace_id():
+    return f"1-{get_random_hex(8)}-{get_random_hex(24)}"

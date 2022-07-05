@@ -2,7 +2,9 @@ import base64
 import binascii
 import hashlib
 import itertools
+import random
 import re
+import string
 import uuid
 from typing import Dict, List, Union
 
@@ -154,3 +156,7 @@ def base64_decode(data: Union[str, bytes]) -> bytes:
     if "-" in data or "_" in data:
         return base64.urlsafe_b64decode(data)
     return base64.b64decode(data)
+
+
+def get_random_hex(length: int) -> str:
+    return "".join(random.choices(string.hexdigits[:16], k=length)).lower()

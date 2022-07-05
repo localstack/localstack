@@ -228,9 +228,9 @@ def route53():
 
 @aws_provider()
 def route53resolver():
-    from localstack.services.route53.provider import Route53ResolverApi
+    from localstack.services.route53resolver.provider import Route53ResolverProvider
 
-    provider = Route53ResolverApi()
+    provider = Route53ResolverProvider()
 
     return Service(
         "route53resolver",
