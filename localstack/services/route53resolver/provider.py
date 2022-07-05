@@ -23,9 +23,9 @@ from localstack.aws.api.route53resolver import (
 )
 from localstack.services.route53resolver.models import Route53ResolverBackend
 from localstack.utils.aws import aws_stack
+from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.patch import patch
 from localstack.utils.strings import get_random_hex
-from localstack.utils.collections import select_from_typed_dict
 
 
 def get_route53_resolver_firewall_rule_group_id():
@@ -92,7 +92,9 @@ class Route53ResolverProvider(Route53ResolverApi):
         region_details = Route53ResolverBackend.get()
         firewall_rule_groups = []
         for firewall_rule_group in region_details.firewall_rule_groups.values():
-            firewall_rule_groups.append(select_from_typed_dict(FirewallRuleGroupMetadata, firewall_rule_group))
+            firewall_rule_groups.append(
+                select_from_typed_dict(FirewallRuleGroupMetadata, firewall_rule_group)
+            )
         return ListFirewallRuleGroupsResponse(FirewallRuleGroups=firewall_rule_groups)
 
 

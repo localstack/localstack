@@ -1,4 +1,5 @@
 route53:
     - TestAccRoute53Record_basic
+    - TestAccRoute53ResolverFirewallRuleGroup
 s3:
     - TestAccS3ObjectCopy
