@@ -10,3 +10,6 @@ class Route53ResolverBackend(RegionBackend):
 
     def __init__(self):
         self.firewall_rule_groups = {}
+        self.firewall_domain_lists = {}
+        self.firewall_domains = {}
+        self.firewall_rules = {}
