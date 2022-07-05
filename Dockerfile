@@ -98,6 +98,7 @@ RUN mkdir -p /opt/code/localstack/localstack && \
     ln -s /usr/lib/localstack /opt/code/localstack/localstack/infra && \
     mkdir /tmp/localstack && \
     chmod -R 777 /tmp/localstack && \
+    touch /tmp/localstack/.marker && \
     chmod -R 777 /usr/lib/localstack
 
 # install basic (global) tools to final image

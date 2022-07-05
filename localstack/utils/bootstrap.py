@@ -637,7 +637,7 @@ def configure_volume_mounts(container: LocalstackContainer):
         return
 
     source_dirs = config.dirs
-    target_dirs = Directories.for_container()
+    target_dirs = Directories.legacy_for_container()
 
     # default shared directories
     for name in Directories.default_bind_mounts:

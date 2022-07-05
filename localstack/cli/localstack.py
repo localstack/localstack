@@ -3,6 +3,7 @@ import os
 import sys
 from typing import Dict, List, Optional
 
+from localstack import config
 from localstack.utils.analytics.cli import publish_invocation
 
 if sys.version_info >= (3, 8):
@@ -30,7 +31,6 @@ def create_with_plugins() -> LocalstackCli:
 
 
 def _setup_cli_debug():
-    from localstack import config
     from localstack.utils.bootstrap import setup_logging
 
     config.DEBUG = True
@@ -48,6 +48,12 @@ def localstack(debug, profile):
         os.environ["CONFIG_PROFILE"] = profile
     if debug:
         _setup_cli_debug()
+
+    from localstack.utils.files import cache_dir
+
+    # overwrite the config variable here to defer import of cache_dir
+    if not config.LEGACY_DIRECTORIES and not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
+        config.VOLUME_DIR = cache_dir() / "volume"
 
 
 @localstack.group(name="config", help="Inspect your LocalStack configuration")
@@ -81,8 +87,6 @@ def cmd_status_docker(format):
 @publish_invocation
 def cmd_status_services(format):
     import requests
-
-    from localstack import config
 
     url = config.get_edge_url()
 
@@ -151,7 +155,6 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
 @localstack.command(name="stop", help="Stop the running LocalStack container")
 @publish_invocation
 def cmd_stop():
-    from localstack import config
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     from ..utils.container_utils.container_client import NoSuchContainer
@@ -176,7 +179,6 @@ def cmd_stop():
 )
 @publish_invocation
 def cmd_logs(follow: bool):
-    from localstack import config
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     container_name = config.MAIN_CONTAINER_NAME
@@ -243,8 +245,6 @@ def cmd_config_show(format):
 
     from localstack_ext import config as ext_config
 
-    from localstack import config
-
     assert config
     assert ext_config
 
@@ -263,28 +263,20 @@ def cmd_config_show(format):
 def print_config_json():
     import json
 
-    from localstack import config
-
     console.print(json.dumps(dict(config.collect_config_items())))
 
 
 def print_config_pairs():
-    from localstack import config
-
     for key, value in config.collect_config_items():
         console.print(f"{key}={value}")
 
 
 def print_config_dict():
-    from localstack import config
-
     console.print(dict(config.collect_config_items()))
 
 
 def print_config_table():
     from rich.table import Table
-
-    from localstack import config
 
     grid = Table(show_header=True)
     grid.add_column("Key")
@@ -299,7 +291,6 @@ def print_config_table():
 @localstack.command(name="ssh", help="Obtain a shell in the running LocalStack container")
 @publish_invocation
 def cmd_ssh():
-    from localstack import config
     from localstack.utils.docker_utils import DOCKER_CLIENT
     from localstack.utils.run import run
 
@@ -437,7 +428,6 @@ class DockerStatus(TypedDict, total=False):
 
 
 def print_docker_status(format):
-    from localstack import config
     from localstack.utils import docker_utils
     from localstack.utils.bootstrap import get_docker_image_details, get_server_version
     from localstack.utils.container_networking import get_main_container_ip, get_main_container_name
