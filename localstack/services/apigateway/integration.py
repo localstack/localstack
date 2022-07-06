@@ -197,6 +197,7 @@ class LambdaProxyIntegration(BackendIntegration):
             response = result
         else:
             response = LambdaResponse()
+            response.headers.update({"content-type": "application/json"})
             parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
             parsed_result = common.json_safe(parsed_result)
             parsed_result = {} if parsed_result is None else parsed_result
@@ -208,7 +209,6 @@ class LambdaProxyIntegration(BackendIntegration):
                     'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
                 )
                 response.status_code = 502
-                response.headers.update({"content-type": "application/json"})
                 response._content = json.dumps({"message": "Internal server error"})
                 return response
 
