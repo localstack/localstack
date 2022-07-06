@@ -228,16 +228,14 @@ class ServiceExceptionSerializer(ExceptionHandler):
 
 class ServiceResponseParser(Handler):
     """
-    This response handler makes sure that, if the current request in an AWS request,
-    that ``RequestContext.service_response`` is set to something sensible before other downstream response handlers
-    are called. When the Skeleton is invoked, this will mostly return immediately because the skeleton sets the
-    service response directly to what comes out of the provider. When responses come back from backends like Moto,
-    we may need to parse the raw HTTP response, since we sometimes proxy directly.
-
-    If the RequestContext.service_exception is set, then it will create a dictionary similar to that of botocore but
-    without the HTTPResponseMetadata, of the form::
-
-       {"Error": {"Code": "SomeServiceError", "Message": "oh noes"}
+    This response handler makes sure that, if the current request in an AWS request, that either ``service_response``
+    or ``service_exception`` of ``RequestContext`` is set to something sensible before other downstream response
+    handlers are called. When the Skeleton invokes an ASF-native provider, this will mostly return immediately
+    because the skeleton sets the service response directly to what comes out of the provider. When responses come
+    back from backends like Moto, we may need to parse the raw HTTP response, since we sometimes proxy directly. If
+    the ``service_response`` is an error, then we parse the response and create an appropriate exception from the
+    error response. If ``service_exception`` is set, then we also try to make sure the exception attributes like
+    code, sender_fault, and message have values.
     """
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
