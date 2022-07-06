@@ -4,7 +4,7 @@ import traceback
 from functools import lru_cache
 from typing import Any, Dict, Optional, Union
 
-from botocore.model import ServiceModel
+from botocore.model import OperationModel, ServiceModel
 
 from localstack import config
 from localstack.http import Response
@@ -247,25 +247,15 @@ class ServiceResponseParser(Handler):
         if context.service_response:
             return
 
-        # if the handler chain set an exception, then we determine the service response from it
-        if context.service_exception:
-            # in this case we can easily construct the boto service response from the exception arguments
-            if isinstance(context.service_exception, CommonServiceException):
-                context.service_response = {
-                    "Error": {
-                        "Code": context.service_exception.code,
-                        "Message": context.service_exception.message,
-                    }
-                }
+        if exception := context.service_exception:
+            if isinstance(exception, ServiceException):
+                try:
+                    exception.code
+                except AttributeError:
+                    # FIXME: we should set the exception attributes in the scaffold when we generate the exceptions.
+                    #  this is a workaround for now, since we are not doing that yet, and the attributes may be unset.
+                    self._set_exception_attributes(context.operation, exception)
                 return
-
-            # in this case we need to parse it
-            elif isinstance(context.service_exception, ServiceException):
-                parsed = parse_response(context.operation, response)
-                parsed.pop("ResponseMetadata", None)
-                context.service_response = parsed
-                return
-
             # this shouldn't happen, but we'll log a warning anyway
             else:
                 LOG.warning("Cannot parse exception %s", context.service_exception)
@@ -274,4 +264,24 @@ class ServiceResponseParser(Handler):
         # in this case we need to parse the raw response
         parsed = parse_response(context.operation, response)
         parsed.pop("ResponseMetadata", None)
-        context.service_response = parsed
+
+        if response.status_code >= 400:
+            error = parsed["Error"]
+            context.service_exception = CommonServiceException(
+                code=error.get("Code", f"'{response.status_code}'"),
+                status_code=response.status_code,
+                message=error.get("Message", ""),
+                sender_fault=error.get("Type") == "Sender",
+            )
+        else:
+            context.service_response = parsed
+
+    @staticmethod
+    def _set_exception_attributes(operation: OperationModel, error: ServiceException):
+        """Sets the code, sender_fault, and status_code attributes of the ServiceException from the shape."""
+        error_shape_name = error.__class__.__name__
+        shape = operation.service_model.shape_for(error_shape_name)
+        error_spec = shape.metadata.get("error", {})
+        error.code = error_spec.get("code", shape.name)
+        error.sender_fault = error_spec.get("senderFault", False)
+        error.status_code = error_spec.get("httpStatusCode", 400)

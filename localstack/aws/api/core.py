@@ -30,7 +30,18 @@ class ServiceException(Exception):
     Do not use this exception directly (use the generated subclasses or CommonsServiceException instead).
     """
 
-    pass
+    code: str
+    status_code: int
+    sender_fault: bool
+    message: str
+
+    def __init__(self, *args):
+        super(ServiceException, self).__init__(*args)
+
+        if len(args) >= 1:
+            self.message = args[0]
+        else:
+            self.message = ""
 
 
 class CommonServiceException(ServiceException):
@@ -42,11 +53,10 @@ class CommonServiceException(ServiceException):
     """
 
     def __init__(self, code: str, message: str, status_code: int = 400, sender_fault: bool = False):
+        super().__init__(message)
         self.code = code
         self.status_code = status_code
         self.sender_fault = sender_fault
-        self.message = message
-        super().__init__(self.message)
 
 
 Operation = Type[ServiceRequest]

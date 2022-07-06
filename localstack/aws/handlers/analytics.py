@@ -55,9 +55,10 @@ class ServiceRequestCounter:
         e.g. ``ResourceInUseException``.
         """
         try:
-            response = context.service_response
-            if not response:
-                response = parse_response(context.operation, response)
+            if context.service_exception:
+                return context.service_exception.code
+
+            response = parse_response(context.operation, response)
             return response["Error"]["Code"]
         except Exception:
             if config.DEBUG_ANALYTICS:
