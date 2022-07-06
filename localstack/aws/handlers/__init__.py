@@ -1,7 +1,7 @@
 """ A set of common handlers to build an AWS server application."""
 
 from .. import chain
-from . import auth, codec, cors, fallback, internal, legacy, logging, region, service
+from . import analytics, auth, codec, cors, fallback, internal, legacy, logging, region, service
 
 enforce_cors = cors.CorsEnforcer()
 add_cors_response_headers = cors.CorsResponseEnricher()
@@ -13,6 +13,7 @@ inject_auth_header_if_missing = auth.MissingAuthHeaderInjector()
 add_region_from_header = region.RegionContextEnricher()
 log_exception = logging.ExceptionLogger()
 log_response = logging.ResponseLogger()
+count_service_request = analytics.ServiceRequestCounter()
 handle_service_exception = service.ServiceExceptionSerializer()
 handle_internal_failure = fallback.InternalFailureHandler()
 serve_custom_service_request_handlers = chain.CompositeHandler()

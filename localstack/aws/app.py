@@ -59,6 +59,7 @@ class LocalstackAwsGateway(Gateway):
                 handlers.run_custom_response_handlers,
                 handlers.add_cors_response_headers,
                 handlers.log_response,
+                handlers.count_service_request,
                 handlers.pop_request_context,
             ]
         )

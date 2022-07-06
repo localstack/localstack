@@ -5,7 +5,6 @@ import sys
 from functools import lru_cache
 from typing import Callable
 
-from botocore.parsers import create_parser
 from moto.backends import get_backend as get_moto_backend
 from moto.core.exceptions import RESTError
 from moto.core.utils import BackendDict
@@ -22,13 +21,14 @@ from localstack.aws.api import (
     ServiceRequest,
     ServiceResponse,
 )
+from localstack.aws.client import parse_response
 from localstack.aws.forwarder import (
     ForwardingFallbackDispatcher,
     HttpBackendResponse,
     create_aws_request_context,
 )
 from localstack.aws.skeleton import DispatchTable
-from localstack.utils.strings import to_bytes
+from localstack.http import Response
 
 MotoResponse = HttpBackendResponse
 MotoDispatcher = Callable[[HttpRequest, str, dict], MotoResponse]
@@ -46,18 +46,7 @@ def call_moto(context: RequestContext, include_response_metadata=False) -> Servi
     """
     status, headers, content = dispatch_to_moto(context)
 
-    operation_model = context.operation
-    response_dict = {  # this is what botocore.endpoint.convert_to_response_dict normally does
-        "headers": dict(headers.items()),  # boto doesn't like werkzeug headers
-        "status_code": status,
-        "body": to_bytes(content),
-        "context": {
-            "operation_name": operation_model.name,
-        },
-    }
-
-    parser = create_parser(context.service.protocol)
-    response = parser.parse(response_dict, operation_model.output_shape)
+    response = parse_response(context.operation, Response(content, status, headers))
 
     if status >= 301:
         error = response["Error"]

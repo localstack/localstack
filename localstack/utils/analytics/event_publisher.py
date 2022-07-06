@@ -1,7 +1,5 @@
 import os
 
-from localstack import config
-
 # event type constants
 EVENT_START_INFRA = "inf.up"
 EVENT_STOP_INFRA = "inf.dn"
@@ -46,18 +44,5 @@ def get_hash(name):
 
 
 def fire_event(event_type, payload=None):
-    # TODO: replace fire_event calls with analytics.log.event
-    if config.DISABLE_EVENTS:
-        return
-
-    from localstack.utils.analytics import log
-
-    if payload is None:
-        payload = {}
-    if isinstance(payload, dict):
-        if is_travis():
-            payload["travis"] = True
-        if config.is_local_test_mode():
-            payload["int"] = True
-
-    log.event("legacy", {"event": event_type, "payload": payload})
+    # TODO: remove legacy analytics from code
+    pass
