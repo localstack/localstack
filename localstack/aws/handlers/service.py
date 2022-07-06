@@ -259,6 +259,11 @@ class ServiceResponseParser(Handler):
                 LOG.warning("Cannot parse exception %s", context.service_exception)
                 return
 
+        if response.content_length is None:
+            # cannot/should not parse streaming responses
+            context.service_response = {}
+            return
+
         # in this case we need to parse the raw response
         parsed = parse_response(context.operation, response)
         parsed.pop("ResponseMetadata", None)
