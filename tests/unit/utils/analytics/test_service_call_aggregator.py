@@ -8,6 +8,7 @@ import pytest
 from localstack.utils import analytics
 from localstack.utils.analytics.events import Event
 from localstack.utils.analytics.service_request_aggregator import (
+    EVENT_NAME,
     ServiceRequestAggregator,
     ServiceRequestInfo,
 )
@@ -100,14 +101,14 @@ def test_integration(monkeypatch):
     assert len(events) == 2, f"expected events to be flushed {events}"
 
     event = events[0]
-    assert event.name == "service_call_agg"
+    assert event.name == EVENT_NAME
     calls = event.payload["api_calls"]
     assert {"count": 1, "operation": "ListBuckets", "service": "s3", "status_code": 200} in calls
     assert {"count": 1, "operation": "CreateBucket", "service": "s3", "status_code": 200} in calls
     assert {"count": 2, "operation": "HeadBucket", "service": "s3", "status_code": 200} in calls
 
     event = events[1]
-    assert event.name == "service_call_agg"
+    assert event.name == EVENT_NAME
     calls = event.payload["api_calls"]
     assert {"count": 1, "operation": "CreateBucket", "service": "s3", "status_code": 200} in calls
     assert {"count": 1, "operation": "HeadBucket", "service": "s3", "status_code": 200} in calls
