@@ -59,67 +59,99 @@ class QueueAttributeName(str):
 
 
 class BatchEntryIdsNotDistinct(ServiceException):
-    pass
+    code: str = "AWS.SimpleQueueService.BatchEntryIdsNotDistinct"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class BatchRequestTooLong(ServiceException):
-    pass
+    code: str = "AWS.SimpleQueueService.BatchRequestTooLong"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class EmptyBatchRequest(ServiceException):
-    pass
+    code: str = "AWS.SimpleQueueService.EmptyBatchRequest"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidAttributeName(ServiceException):
-    pass
+    code: str = "InvalidAttributeName"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidBatchEntryId(ServiceException):
-    pass
+    code: str = "AWS.SimpleQueueService.InvalidBatchEntryId"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidIdFormat(ServiceException):
-    pass
+    code: str = "InvalidIdFormat"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidMessageContents(ServiceException):
-    pass
+    code: str = "InvalidMessageContents"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class MessageNotInflight(ServiceException):
-    pass
+    code: str = "AWS.SimpleQueueService.MessageNotInflight"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class OverLimit(ServiceException):
-    pass
+    code: str = "OverLimit"
+    sender_fault: bool = True
+    status_code: int = 403
 
 
 class PurgeQueueInProgress(ServiceException):
-    pass
+    code: str = "AWS.SimpleQueueService.PurgeQueueInProgress"
+    sender_fault: bool = True
+    status_code: int = 403
 
 
 class QueueDeletedRecently(ServiceException):
-    pass
+    code: str = "AWS.SimpleQueueService.QueueDeletedRecently"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class QueueDoesNotExist(ServiceException):
-    pass
+    code: str = "AWS.SimpleQueueService.NonExistentQueue"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class QueueNameExists(ServiceException):
-    pass
+    code: str = "QueueAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ReceiptHandleIsInvalid(ServiceException):
-    pass
+    code: str = "ReceiptHandleIsInvalid"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class TooManyEntriesInBatchRequest(ServiceException):
-    pass
+    code: str = "AWS.SimpleQueueService.TooManyEntriesInBatchRequest"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class UnsupportedOperation(ServiceException):
-    pass
+    code: str = "AWS.SimpleQueueService.UnsupportedOperation"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 AWSAccountIdList = List[String]

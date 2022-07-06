@@ -211,72 +211,120 @@ class Validation(str):
 
 
 class AccessDeniedException(ServiceException):
+    code: str = "AccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ExceptionMessage]
 
 
 class ConflictException(ServiceException):
+    code: str = "ConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ExceptionMessage]
 
 
 class InternalServiceErrorException(ServiceException):
+    code: str = "InternalServiceErrorException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ExceptionMessage]
 
 
 class InvalidNextTokenException(ServiceException):
+    code: str = "InvalidNextTokenException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[String]
 
 
 class InvalidParameterException(ServiceException):
+    code: str = "InvalidParameterException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: ExceptionMessage
     FieldName: Optional[String]
 
 
 class InvalidPolicyDocument(ServiceException):
+    code: str = "InvalidPolicyDocument"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ExceptionMessage]
 
 
 class InvalidRequestException(ServiceException):
+    code: str = "InvalidRequestException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ExceptionMessage]
 
 
 class InvalidTagException(ServiceException):
+    code: str = "InvalidTagException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ExceptionMessage]
 
 
 class LimitExceededException(ServiceException):
+    code: str = "LimitExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[String]
     ResourceType: Optional[String]
 
 
 class ResourceExistsException(ServiceException):
+    code: str = "ResourceExistsException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[String]
     ResourceType: Optional[String]
 
 
 class ResourceInUseException(ServiceException):
+    code: str = "ResourceInUseException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[String]
     ResourceType: Optional[String]
 
 
 class ResourceNotFoundException(ServiceException):
+    code: str = "ResourceNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[String]
     ResourceType: Optional[String]
 
 
 class ResourceUnavailableException(ServiceException):
+    code: str = "ResourceUnavailableException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[String]
     ResourceType: Optional[String]
 
 
 class ThrottlingException(ServiceException):
+    code: str = "ThrottlingException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ExceptionMessage]
 
 
 class UnknownResourceException(ServiceException):
+    code: str = "UnknownResourceException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ExceptionMessage]
 
 
 class ValidationException(ServiceException):
+    code: str = "ValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ExceptionMessage]
 
 

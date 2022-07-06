@@ -525,91 +525,136 @@ class Visibility(str):
 
 
 class AlreadyExistsException(ServiceException):
-    pass
+    code: str = "AlreadyExistsException"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class CFNRegistryException(ServiceException):
+    code: str = "CFNRegistryException"
+    sender_fault: bool = True
+    status_code: int = 400
     Message: Optional[ErrorMessage]
 
 
 class ChangeSetNotFoundException(ServiceException):
-    pass
+    code: str = "ChangeSetNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class CreatedButModifiedException(ServiceException):
-    pass
+    code: str = "CreatedButModifiedException"
+    sender_fault: bool = True
+    status_code: int = 409
 
 
 class InsufficientCapabilitiesException(ServiceException):
-    pass
+    code: str = "InsufficientCapabilitiesException"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidChangeSetStatusException(ServiceException):
-    pass
+    code: str = "InvalidChangeSetStatus"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidOperationException(ServiceException):
-    pass
+    code: str = "InvalidOperationException"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidStateTransitionException(ServiceException):
-    pass
+    code: str = "InvalidStateTransition"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class LimitExceededException(ServiceException):
-    pass
+    code: str = "LimitExceededException"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class NameAlreadyExistsException(ServiceException):
-    pass
+    code: str = "NameAlreadyExistsException"
+    sender_fault: bool = True
+    status_code: int = 409
 
 
 class OperationIdAlreadyExistsException(ServiceException):
-    pass
+    code: str = "OperationIdAlreadyExistsException"
+    sender_fault: bool = True
+    status_code: int = 409
 
 
 class OperationInProgressException(ServiceException):
-    pass
+    code: str = "OperationInProgressException"
+    sender_fault: bool = True
+    status_code: int = 409
 
 
 class OperationNotFoundException(ServiceException):
-    pass
+    code: str = "OperationNotFoundException"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class OperationStatusCheckFailedException(ServiceException):
-    pass
+    code: str = "ConditionalCheckFailed"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class StackInstanceNotFoundException(ServiceException):
-    pass
+    code: str = "StackInstanceNotFoundException"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class StackNotFoundException(ServiceException):
-    pass
+    code: str = "StackNotFoundException"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class StackSetNotEmptyException(ServiceException):
-    pass
+    code: str = "StackSetNotEmptyException"
+    sender_fault: bool = True
+    status_code: int = 409
 
 
 class StackSetNotFoundException(ServiceException):
-    pass
+    code: str = "StackSetNotFoundException"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class StaleRequestException(ServiceException):
-    pass
+    code: str = "StaleRequestException"
+    sender_fault: bool = True
+    status_code: int = 409
 
 
 class TokenAlreadyExistsException(ServiceException):
-    pass
+    code: str = "TokenAlreadyExistsException"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class TypeConfigurationNotFoundException(ServiceException):
-    pass
+    code: str = "TypeConfigurationNotFoundException"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class TypeNotFoundException(ServiceException):
-    pass
+    code: str = "TypeNotFoundException"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class AccountGateResult(TypedDict, total=False):

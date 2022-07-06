@@ -125,23 +125,35 @@ class StandardUnit(str):
 
 
 class DataAlreadyAcceptedException(ServiceException):
+    code: str = "DataAlreadyAcceptedException"
+    sender_fault: bool = False
+    status_code: int = 400
     expectedSequenceToken: Optional[SequenceToken]
 
 
 class InvalidOperationException(ServiceException):
-    pass
+    code: str = "InvalidOperationException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidParameterException(ServiceException):
-    pass
+    code: str = "InvalidParameterException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidSequenceTokenException(ServiceException):
+    code: str = "InvalidSequenceTokenException"
+    sender_fault: bool = False
+    status_code: int = 400
     expectedSequenceToken: Optional[SequenceToken]
 
 
 class LimitExceededException(ServiceException):
-    pass
+    code: str = "LimitExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class QueryCompileErrorLocation(TypedDict, total=False):
@@ -155,27 +167,40 @@ class QueryCompileError(TypedDict, total=False):
 
 
 class MalformedQueryException(ServiceException):
+    code: str = "MalformedQueryException"
+    sender_fault: bool = False
+    status_code: int = 400
     queryCompileError: Optional[QueryCompileError]
 
 
 class OperationAbortedException(ServiceException):
-    pass
+    code: str = "OperationAbortedException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ResourceAlreadyExistsException(ServiceException):
-    pass
+    code: str = "ResourceAlreadyExistsException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ResourceNotFoundException(ServiceException):
-    pass
+    code: str = "ResourceNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ServiceUnavailableException(ServiceException):
-    pass
+    code: str = "ServiceUnavailableException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class UnrecognizedClientException(ServiceException):
-    pass
+    code: str = "UnrecognizedClientException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class AssociateKmsKeyRequest(ServiceRequest):

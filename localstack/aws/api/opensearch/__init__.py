@@ -337,47 +337,70 @@ class VolumeType(str):
 
 
 class AccessDeniedException(ServiceException):
-    pass
+    code: str = "AccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 403
 
 
 class BaseException(ServiceException):
+    code: str = "BaseException"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class ConflictException(ServiceException):
-    pass
+    code: str = "ConflictException"
+    sender_fault: bool = False
+    status_code: int = 409
 
 
 class DisabledOperationException(ServiceException):
-    pass
+    code: str = "DisabledOperationException"
+    sender_fault: bool = False
+    status_code: int = 409
 
 
 class InternalException(ServiceException):
-    pass
+    code: str = "InternalException"
+    sender_fault: bool = False
+    status_code: int = 500
 
 
 class InvalidPaginationTokenException(ServiceException):
-    pass
+    code: str = "InvalidPaginationTokenException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidTypeException(ServiceException):
-    pass
+    code: str = "InvalidTypeException"
+    sender_fault: bool = False
+    status_code: int = 409
 
 
 class LimitExceededException(ServiceException):
-    pass
+    code: str = "LimitExceededException"
+    sender_fault: bool = False
+    status_code: int = 409
 
 
 class ResourceAlreadyExistsException(ServiceException):
-    pass
+    code: str = "ResourceAlreadyExistsException"
+    sender_fault: bool = False
+    status_code: int = 409
 
 
 class ResourceNotFoundException(ServiceException):
-    pass
+    code: str = "ResourceNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 409
 
 
 class ValidationException(ServiceException):
-    pass
+    code: str = "ValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class AWSDomainInformation(TypedDict, total=False):

@@ -214,47 +214,69 @@ class RuleState(str):
 
 
 class ConcurrentModificationException(ServiceException):
-    pass
+    code: str = "ConcurrentModificationException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class IllegalStatusException(ServiceException):
-    pass
+    code: str = "IllegalStatusException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InternalException(ServiceException):
-    pass
+    code: str = "InternalException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidEventPatternException(ServiceException):
-    pass
+    code: str = "InvalidEventPatternException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidStateException(ServiceException):
-    pass
+    code: str = "InvalidStateException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class LimitExceededException(ServiceException):
-    pass
+    code: str = "LimitExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ManagedRuleException(ServiceException):
-    pass
+    code: str = "ManagedRuleException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class OperationDisabledException(ServiceException):
-    pass
+    code: str = "OperationDisabledException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class PolicyLengthExceededException(ServiceException):
-    pass
+    code: str = "PolicyLengthExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ResourceAlreadyExistsException(ServiceException):
-    pass
+    code: str = "ResourceAlreadyExistsException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ResourceNotFoundException(ServiceException):
-    pass
+    code: str = "ResourceNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ActivateEventSourceRequest(ServiceRequest):

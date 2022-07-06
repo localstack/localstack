@@ -399,215 +399,322 @@ class ResourceValueType(str):
 
 
 class ConformancePackTemplateValidationException(ServiceException):
-    pass
+    code: str = "ConformancePackTemplateValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InsufficientDeliveryPolicyException(ServiceException):
-    pass
+    code: str = "InsufficientDeliveryPolicyException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InsufficientPermissionsException(ServiceException):
-    pass
+    code: str = "InsufficientPermissionsException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidConfigurationRecorderNameException(ServiceException):
-    pass
+    code: str = "InvalidConfigurationRecorderNameException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidDeliveryChannelNameException(ServiceException):
-    pass
+    code: str = "InvalidDeliveryChannelNameException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidExpressionException(ServiceException):
-    pass
+    code: str = "InvalidExpressionException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidLimitException(ServiceException):
-    pass
+    code: str = "InvalidLimitException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidNextTokenException(ServiceException):
-    pass
+    code: str = "InvalidNextTokenException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidParameterValueException(ServiceException):
-    pass
+    code: str = "InvalidParameterValueException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidRecordingGroupException(ServiceException):
-    pass
+    code: str = "InvalidRecordingGroupException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidResultTokenException(ServiceException):
-    pass
+    code: str = "InvalidResultTokenException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidRoleException(ServiceException):
-    pass
+    code: str = "InvalidRoleException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidS3KeyPrefixException(ServiceException):
-    pass
+    code: str = "InvalidS3KeyPrefixException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidS3KmsKeyArnException(ServiceException):
-    pass
+    code: str = "InvalidS3KmsKeyArnException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidSNSTopicARNException(ServiceException):
-    pass
+    code: str = "InvalidSNSTopicARNException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidTimeRangeException(ServiceException):
-    pass
+    code: str = "InvalidTimeRangeException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class LastDeliveryChannelDeleteFailedException(ServiceException):
-    pass
+    code: str = "LastDeliveryChannelDeleteFailedException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class LimitExceededException(ServiceException):
-    pass
+    code: str = "LimitExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class MaxActiveResourcesExceededException(ServiceException):
-    pass
+    code: str = "MaxActiveResourcesExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class MaxNumberOfConfigRulesExceededException(ServiceException):
-    pass
+    code: str = "MaxNumberOfConfigRulesExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class MaxNumberOfConfigurationRecordersExceededException(ServiceException):
-    pass
+    code: str = "MaxNumberOfConfigurationRecordersExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class MaxNumberOfConformancePacksExceededException(ServiceException):
-    pass
+    code: str = "MaxNumberOfConformancePacksExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class MaxNumberOfDeliveryChannelsExceededException(ServiceException):
-    pass
+    code: str = "MaxNumberOfDeliveryChannelsExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class MaxNumberOfOrganizationConfigRulesExceededException(ServiceException):
-    pass
+    code: str = "MaxNumberOfOrganizationConfigRulesExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class MaxNumberOfOrganizationConformancePacksExceededException(ServiceException):
-    pass
+    code: str = "MaxNumberOfOrganizationConformancePacksExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class MaxNumberOfRetentionConfigurationsExceededException(ServiceException):
-    pass
+    code: str = "MaxNumberOfRetentionConfigurationsExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoAvailableConfigurationRecorderException(ServiceException):
-    pass
+    code: str = "NoAvailableConfigurationRecorderException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoAvailableDeliveryChannelException(ServiceException):
-    pass
+    code: str = "NoAvailableDeliveryChannelException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoAvailableOrganizationException(ServiceException):
-    pass
+    code: str = "NoAvailableOrganizationException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoRunningConfigurationRecorderException(ServiceException):
-    pass
+    code: str = "NoRunningConfigurationRecorderException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchBucketException(ServiceException):
-    pass
+    code: str = "NoSuchBucketException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchConfigRuleException(ServiceException):
-    pass
+    code: str = "NoSuchConfigRuleException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchConfigRuleInConformancePackException(ServiceException):
-    pass
+    code: str = "NoSuchConfigRuleInConformancePackException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchConfigurationAggregatorException(ServiceException):
-    pass
+    code: str = "NoSuchConfigurationAggregatorException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchConfigurationRecorderException(ServiceException):
-    pass
+    code: str = "NoSuchConfigurationRecorderException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchConformancePackException(ServiceException):
-    pass
+    code: str = "NoSuchConformancePackException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchDeliveryChannelException(ServiceException):
-    pass
+    code: str = "NoSuchDeliveryChannelException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchOrganizationConfigRuleException(ServiceException):
-    pass
+    code: str = "NoSuchOrganizationConfigRuleException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchOrganizationConformancePackException(ServiceException):
-    pass
+    code: str = "NoSuchOrganizationConformancePackException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchRemediationConfigurationException(ServiceException):
-    pass
+    code: str = "NoSuchRemediationConfigurationException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchRemediationExceptionException(ServiceException):
-    pass
+    code: str = "NoSuchRemediationExceptionException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class NoSuchRetentionConfigurationException(ServiceException):
-    pass
+    code: str = "NoSuchRetentionConfigurationException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class OrganizationAccessDeniedException(ServiceException):
-    pass
+    code: str = "OrganizationAccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class OrganizationAllFeaturesNotEnabledException(ServiceException):
-    pass
+    code: str = "OrganizationAllFeaturesNotEnabledException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class OrganizationConformancePackTemplateValidationException(ServiceException):
-    pass
+    code: str = "OrganizationConformancePackTemplateValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class OversizedConfigurationItemException(ServiceException):
-    pass
+    code: str = "OversizedConfigurationItemException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class RemediationInProgressException(ServiceException):
-    pass
+    code: str = "RemediationInProgressException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ResourceConcurrentModificationException(ServiceException):
+    code: str = "ResourceConcurrentModificationException"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class ResourceInUseException(ServiceException):
-    pass
+    code: str = "ResourceInUseException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ResourceNotDiscoveredException(ServiceException):
-    pass
+    code: str = "ResourceNotDiscoveredException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ResourceNotFoundException(ServiceException):
-    pass
+    code: str = "ResourceNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class TooManyTagsException(ServiceException):
-    pass
+    code: str = "TooManyTagsException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ValidationException(ServiceException):
-    pass
+    code: str = "ValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 AggregatorRegionList = List[String]

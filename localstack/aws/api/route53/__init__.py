@@ -298,98 +298,170 @@ class VPCRegion(str):
 
 
 class CidrBlockInUseException(ServiceException):
+    code: str = "CidrBlockInUseException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ErrorMessage]
 
 
 class CidrCollectionAlreadyExistsException(ServiceException):
+    code: str = "CidrCollectionAlreadyExistsException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ErrorMessage]
 
 
 class CidrCollectionInUseException(ServiceException):
+    code: str = "CidrCollectionInUseException"
+    sender_fault: bool = False
+    status_code: int = 400
     Message: Optional[ErrorMessage]
 
 
 class CidrCollectionVersionMismatchException(ServiceException):
+    code: str = "CidrCollectionVersionMismatchException"
+    sender_fault: bool = False
+    status_code: int = 409
     Message: Optional[ErrorMessage]
 
 
 class ConcurrentModification(ServiceException):
+    code: str = "ConcurrentModification"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class ConflictingDomainExists(ServiceException):
+    code: str = "ConflictingDomainExists"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class ConflictingTypes(ServiceException):
+    code: str = "ConflictingTypes"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class DNSSECNotFound(ServiceException):
+    code: str = "DNSSECNotFound"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class DelegationSetAlreadyCreated(ServiceException):
+    code: str = "DelegationSetAlreadyCreated"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class DelegationSetAlreadyReusable(ServiceException):
+    code: str = "DelegationSetAlreadyReusable"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class DelegationSetInUse(ServiceException):
+    code: str = "DelegationSetInUse"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class DelegationSetNotAvailable(ServiceException):
+    code: str = "DelegationSetNotAvailable"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class DelegationSetNotReusable(ServiceException):
+    code: str = "DelegationSetNotReusable"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class HealthCheckAlreadyExists(ServiceException):
+    code: str = "HealthCheckAlreadyExists"
+    sender_fault: bool = False
+    status_code: int = 409
     message: Optional[ErrorMessage]
 
 
 class HealthCheckInUse(ServiceException):
+    code: str = "HealthCheckInUse"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class HealthCheckVersionMismatch(ServiceException):
+    code: str = "HealthCheckVersionMismatch"
+    sender_fault: bool = False
+    status_code: int = 409
     message: Optional[ErrorMessage]
 
 
 class HostedZoneAlreadyExists(ServiceException):
+    code: str = "HostedZoneAlreadyExists"
+    sender_fault: bool = False
+    status_code: int = 409
     message: Optional[ErrorMessage]
 
 
 class HostedZoneNotEmpty(ServiceException):
+    code: str = "HostedZoneNotEmpty"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class HostedZoneNotFound(ServiceException):
+    code: str = "HostedZoneNotFound"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class HostedZoneNotPrivate(ServiceException):
+    code: str = "HostedZoneNotPrivate"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class HostedZonePartiallyDelegated(ServiceException):
+    code: str = "HostedZonePartiallyDelegated"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class IncompatibleVersion(ServiceException):
+    code: str = "IncompatibleVersion"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InsufficientCloudWatchLogsResourcePolicy(ServiceException):
+    code: str = "InsufficientCloudWatchLogsResourcePolicy"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidArgument(ServiceException):
+    code: str = "InvalidArgument"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
@@ -397,183 +469,318 @@ ErrorMessages = List[ErrorMessage]
 
 
 class InvalidChangeBatch(ServiceException):
+    code: str = "InvalidChangeBatch"
+    sender_fault: bool = False
+    status_code: int = 400
     messages: Optional[ErrorMessages]
     message: Optional[ErrorMessage]
 
 
 class InvalidDomainName(ServiceException):
+    code: str = "InvalidDomainName"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidInput(ServiceException):
+    code: str = "InvalidInput"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidKMSArn(ServiceException):
+    code: str = "InvalidKMSArn"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidKeySigningKeyName(ServiceException):
+    code: str = "InvalidKeySigningKeyName"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidKeySigningKeyStatus(ServiceException):
+    code: str = "InvalidKeySigningKeyStatus"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidPaginationToken(ServiceException):
+    code: str = "InvalidPaginationToken"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidSigningStatus(ServiceException):
+    code: str = "InvalidSigningStatus"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidTrafficPolicyDocument(ServiceException):
+    code: str = "InvalidTrafficPolicyDocument"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidVPCId(ServiceException):
+    code: str = "InvalidVPCId"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class KeySigningKeyAlreadyExists(ServiceException):
+    code: str = "KeySigningKeyAlreadyExists"
+    sender_fault: bool = False
+    status_code: int = 409
     message: Optional[ErrorMessage]
 
 
 class KeySigningKeyInParentDSRecord(ServiceException):
+    code: str = "KeySigningKeyInParentDSRecord"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class KeySigningKeyInUse(ServiceException):
+    code: str = "KeySigningKeyInUse"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class KeySigningKeyWithActiveStatusNotFound(ServiceException):
+    code: str = "KeySigningKeyWithActiveStatusNotFound"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class LastVPCAssociation(ServiceException):
+    code: str = "LastVPCAssociation"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class LimitsExceeded(ServiceException):
+    code: str = "LimitsExceeded"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class NoSuchChange(ServiceException):
+    code: str = "NoSuchChange"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class NoSuchCidrCollectionException(ServiceException):
+    code: str = "NoSuchCidrCollectionException"
+    sender_fault: bool = False
+    status_code: int = 404
     Message: Optional[ErrorMessage]
 
 
 class NoSuchCidrLocationException(ServiceException):
+    code: str = "NoSuchCidrLocationException"
+    sender_fault: bool = False
+    status_code: int = 404
     Message: Optional[ErrorMessage]
 
 
 class NoSuchCloudWatchLogsLogGroup(ServiceException):
+    code: str = "NoSuchCloudWatchLogsLogGroup"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class NoSuchDelegationSet(ServiceException):
+    code: str = "NoSuchDelegationSet"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class NoSuchGeoLocation(ServiceException):
+    code: str = "NoSuchGeoLocation"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class NoSuchHealthCheck(ServiceException):
+    code: str = "NoSuchHealthCheck"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class NoSuchHostedZone(ServiceException):
+    code: str = "NoSuchHostedZone"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class NoSuchKeySigningKey(ServiceException):
+    code: str = "NoSuchKeySigningKey"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class NoSuchQueryLoggingConfig(ServiceException):
+    code: str = "NoSuchQueryLoggingConfig"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class NoSuchTrafficPolicy(ServiceException):
+    code: str = "NoSuchTrafficPolicy"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class NoSuchTrafficPolicyInstance(ServiceException):
+    code: str = "NoSuchTrafficPolicyInstance"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class NotAuthorizedException(ServiceException):
+    code: str = "NotAuthorizedException"
+    sender_fault: bool = False
+    status_code: int = 401
     message: Optional[ErrorMessage]
 
 
 class PriorRequestNotComplete(ServiceException):
+    code: str = "PriorRequestNotComplete"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class PublicZoneVPCAssociation(ServiceException):
+    code: str = "PublicZoneVPCAssociation"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class QueryLoggingConfigAlreadyExists(ServiceException):
+    code: str = "QueryLoggingConfigAlreadyExists"
+    sender_fault: bool = False
+    status_code: int = 409
     message: Optional[ErrorMessage]
 
 
 class ThrottlingException(ServiceException):
+    code: str = "ThrottlingException"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TooManyHealthChecks(ServiceException):
+    code: str = "TooManyHealthChecks"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TooManyHostedZones(ServiceException):
+    code: str = "TooManyHostedZones"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TooManyKeySigningKeys(ServiceException):
+    code: str = "TooManyKeySigningKeys"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TooManyTrafficPolicies(ServiceException):
+    code: str = "TooManyTrafficPolicies"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TooManyTrafficPolicyInstances(ServiceException):
+    code: str = "TooManyTrafficPolicyInstances"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TooManyTrafficPolicyVersionsForCurrentPolicy(ServiceException):
+    code: str = "TooManyTrafficPolicyVersionsForCurrentPolicy"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TooManyVPCAssociationAuthorizations(ServiceException):
+    code: str = "TooManyVPCAssociationAuthorizations"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TrafficPolicyAlreadyExists(ServiceException):
+    code: str = "TrafficPolicyAlreadyExists"
+    sender_fault: bool = False
+    status_code: int = 409
     message: Optional[ErrorMessage]
 
 
 class TrafficPolicyInUse(ServiceException):
+    code: str = "TrafficPolicyInUse"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TrafficPolicyInstanceAlreadyExists(ServiceException):
+    code: str = "TrafficPolicyInstanceAlreadyExists"
+    sender_fault: bool = False
+    status_code: int = 409
     message: Optional[ErrorMessage]
 
 
 class VPCAssociationAuthorizationNotFound(ServiceException):
+    code: str = "VPCAssociationAuthorizationNotFound"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class VPCAssociationNotFound(ServiceException):
+    code: str = "VPCAssociationNotFound"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
