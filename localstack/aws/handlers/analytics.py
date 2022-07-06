@@ -17,7 +17,7 @@ LOG = logging.getLogger(__name__)
 
 class ServiceRequestCounter:
 
-    aggregator: Optional[ServiceRequestAggregator] = None
+    aggregator: ServiceRequestAggregator
 
     def __init__(self, service_request_aggregator: ServiceRequestAggregator = None):
         self.aggregator = service_request_aggregator or ServiceRequestAggregator()
@@ -25,7 +25,7 @@ class ServiceRequestCounter:
         self._started = False
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
-        if response is None or context.service is None or context.operation is None:
+        if response is None or context.operation is None:
             return
         if config.DISABLE_EVENTS:
             return
@@ -38,7 +38,7 @@ class ServiceRequestCounter:
                     self.aggregator.start()
 
         err_type = self._get_err_type(context, response) if response.status_code >= 400 else None
-        service_name = context.service.service_name
+        service_name = context.operation.service_model.service_name
         operation_name = context.operation.name
 
         self.aggregator.add_request(

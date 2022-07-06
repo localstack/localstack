@@ -11,8 +11,8 @@ from localstack.utils.scheduler import Scheduler
 
 LOG = logging.getLogger(__name__)
 
-DEFAULT_FLUSH_INTERVAL_SECS = 10
-EVENT_NAME = "service_call_agg"
+DEFAULT_FLUSH_INTERVAL_SECS = 15
+EVENT_NAME = "aws_request_agg"
 OPTIONAL_FIELDS = ["err_type"]
 
 
