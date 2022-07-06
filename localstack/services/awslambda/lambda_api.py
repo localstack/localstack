@@ -2149,7 +2149,11 @@ def serve(port):
     from localstack.services import generic_proxy  # moved here to fix circular import errors
 
     # initialize the Lambda executor
-    LAMBDA_EXECUTOR.startup()
+    try:
+        LAMBDA_EXECUTOR.startup()
+    except Exception:
+        LOG.exception("Error while starting up lambda executor")
+        raise
     # print warnings for potentially incorrect config options
     validate_lambda_config()
 
