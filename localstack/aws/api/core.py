@@ -53,7 +53,7 @@ class CommonServiceException(ServiceException):
     """
 
     def __init__(self, code: str, message: str, status_code: int = 400, sender_fault: bool = False):
-        super().__init__(message)
+        super(CommonServiceException, self).__init__(message)
         self.code = code
         self.status_code = status_code
         self.sender_fault = sender_fault
@@ -78,7 +78,6 @@ class RequestContext:
     service_exception: Optional[ServiceException]
 
     def __init__(self) -> None:
-        super().__init__()
         self.service = None
         self.operation = None
         self.region = None
