@@ -164,7 +164,7 @@ def legacy_rules(request: Request) -> Optional[str]:
     ):
         return "apigateway"
 
-    if ".lambda-url." in request.path:
+    if ".lambda-url." in host:
         return "lambda"
 
     # DynamoDB shell URLs
