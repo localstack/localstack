@@ -12,6 +12,7 @@ from localstack.http import Response
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
 from ..chain import ExceptionHandler, Handler, HandlerChain
+from ..client import parse_response
 from ..protocol.parser import RequestParser, create_parser
 from ..protocol.serializer import create_serializer
 from ..protocol.service_router import determine_aws_service_name
@@ -187,6 +188,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
             )
             LOG.info(message)
             error = CommonServiceException("InternalFailure", message, status_code=501)
+            context.service_exception = error
 
         elif not isinstance(exception, ServiceException):
             if not self.handle_internal_failures:
@@ -218,6 +220,58 @@ class ServiceExceptionSerializer(ExceptionHandler):
             status_code = 501 if config.FAIL_FAST else 500
 
             error = CommonServiceException("InternalError", msg, status_code=status_code)
+            context.service_exception = error
 
         serializer = create_serializer(context.service)  # TODO: serializer cache
         return serializer.serialize_error_to_response(error, operation)
+
+
+class ServiceResponseParser(Handler):
+    """
+    This response handler makes sure that, if the current request in an AWS request,
+    that ``RequestContext.service_response`` is set to something sensible before other downstream response handlers
+    are called. When the Skeleton is invoked, this will mostly return immediately because the skeleton sets the
+    service response directly to what comes out of the provider. When responses come back from backends like Moto,
+    we may need to parse the raw HTTP response, since we sometimes proxy directly.
+
+    If the RequestContext.service_exception is set, then it will create a dictionary similar to that of botocore but
+    without the HTTPResponseMetadata, of the form::
+
+       {"Error": {"Code": "SomeServiceError", "Message": "oh noes"}
+    """
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        if not context.operation:
+            return
+
+        if context.service_response:
+            return
+
+        # if the handler chain set an exception, then we determine the service response from it
+        if context.service_exception:
+            # in this case we can easily construct the boto service response from the exception arguments
+            if isinstance(context.service_exception, CommonServiceException):
+                context.service_response = {
+                    "Error": {
+                        "Code": context.service_exception.code,
+                        "Message": context.service_exception.message,
+                    }
+                }
+                return
+
+            # in this case we need to parse it
+            elif isinstance(context.service_exception, ServiceException):
+                parsed = parse_response(context.operation, response)
+                parsed.pop("ResponseMetadata", None)
+                context.service_response = parsed
+                return
+
+            # this shouldn't happen, but we'll log a warning anyway
+            else:
+                LOG.warning("Cannot parse exception %s", context.service_exception)
+                return
+
+        # in this case we need to parse the raw response
+        parsed = parse_response(context.operation, response)
+        parsed.pop("ResponseMetadata", None)
+        context.service_response = parsed

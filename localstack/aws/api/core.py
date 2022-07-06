@@ -64,6 +64,8 @@ class RequestContext:
     region: Optional[str]
     account_id: Optional[str]
     service_request: Optional[ServiceRequest]
+    service_response: Optional[ServiceResponse]
+    service_exception: Optional[ServiceException]
 
     def __init__(self) -> None:
         super().__init__()
@@ -73,6 +75,8 @@ class RequestContext:
         self.account_id = None
         self.request = None
         self.service_request = None
+        self.service_response = None
+        self.service_exception = None
 
     @property
     def service_operation(self) -> Optional[ServiceOperation]:

@@ -168,6 +168,8 @@ class Skeleton:
         if isinstance(result, HttpResponse):
             return result
 
+        context.service_response = result
+
         # Serialize result dict to an HTTPResponse and return it
         return self.serializer.serialize_to_response(result, operation)
 
@@ -181,6 +183,8 @@ class Skeleton:
         :param exception: the exception that was raised
         :return: an HttpResponse object
         """
+        context.service_exception = exception
+
         return self.serializer.serialize_error_to_response(exception, context.operation)
 
     def on_not_implemented_error(self, context: RequestContext) -> HttpResponse:
@@ -202,4 +206,6 @@ class Skeleton:
         analytics.log.event(
             "services_notimplemented", payload={"s": service_name, "a": action_name}
         )
+        context.service_exception = error
+
         return serializer.serialize_error_to_response(error, operation)
