@@ -160,10 +160,6 @@ class ProvisionedConcurrencyStatusEnum(str):
 
 class Runtime(str):
     nodejs = "nodejs"
-    nodejs4_3 = "nodejs4.3"
-    nodejs6_10 = "nodejs6.10"
-    nodejs8_10 = "nodejs8.10"
-    nodejs10_x = "nodejs10.x"
     nodejs12_x = "nodejs12.x"
     nodejs14_x = "nodejs14.x"
     java8 = "java8"
@@ -179,7 +175,6 @@ class Runtime(str):
     dotnetcore2_1 = "dotnetcore2.1"
     dotnetcore3_1 = "dotnetcore3.1"
     dotnet6 = "dotnet6"
-    nodejs4_3_edge = "nodejs4.3-edge"
     go1_x = "go1.x"
     ruby2_5 = "ruby2.5"
     ruby2_7 = "ruby2.7"
