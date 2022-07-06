@@ -2146,21 +2146,21 @@ def validate_lambda_config():
 
 
 def serve(port):
-    from localstack.services import generic_proxy  # moved here to fix circular import errors
-
-    # initialize the Lambda executor
     try:
+        from localstack.services import generic_proxy  # moved here to fix circular import errors
+
+        # initialize the Lambda executor
         LAMBDA_EXECUTOR.startup()
+        # print warnings for potentially incorrect config options
+        validate_lambda_config()
+
+        # initialize/import plugins - TODO find better place to import plugins! (to be integrated into proper plugin model)
+        import localstack.contrib.thundra  # noqa
+
+        generic_proxy.serve_flask_app(app=app, port=port)
     except Exception:
-        LOG.exception("Error while starting up lambda executor")
+        LOG.exception("Error while starting up lambda service")
         raise
-    # print warnings for potentially incorrect config options
-    validate_lambda_config()
-
-    # initialize/import plugins - TODO find better place to import plugins! (to be integrated into proper plugin model)
-    import localstack.contrib.thundra  # noqa
-
-    generic_proxy.serve_flask_app(app=app, port=port)
 
 
 # Config listener
