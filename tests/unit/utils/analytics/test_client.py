@@ -1,12 +1,13 @@
 import datetime
-import json
 from queue import Queue
 
+from pytest_httpserver import HTTPServer
+
 from localstack import constants
-from localstack.utils import testutil
 from localstack.utils.analytics.client import AnalyticsClient
 from localstack.utils.analytics.events import Event, EventMetadata
 from localstack.utils.analytics.metadata import get_client_metadata, get_session_id
+from localstack.utils.sync import poll_condition
 
 
 def new_event(payload=None) -> Event:
@@ -17,40 +18,41 @@ def new_event(payload=None) -> Event:
     )
 
 
-def test_append_events():
+def test_append_events(httpserver: HTTPServer):
     request_data = Queue()
 
-    def handler(request, data):
-        request_data.put((request.__dict__, data))
+    httpserver.expect_request("/events").respond_with_data("", 200)
 
-    with testutil.http_server(handler) as url:
-        client = AnalyticsClient(url)
+    client = AnalyticsClient(httpserver.url_for("/"))
 
-        e1 = new_event({"val": 1})
-        e2 = new_event({"val": 2})
-        e3 = new_event({"val": 3})
+    e1 = new_event({"val": 1})
+    e2 = new_event({"val": 2})
+    e3 = new_event({"val": 3})
 
-        client.append_events([e1, e2])  # batch 1
-        client.append_events([e3])  # batch 2
+    client.append_events([e1, e2])  # batch 1
+    client.append_events([e3])  # batch 2
 
-        request1, data1 = request_data.get(timeout=2)
-        request2, data2 = request_data.get(timeout=2)
+    assert poll_condition(lambda: len(httpserver.log) >= 2, 10)
+
+    request1, _ = httpserver.log[0]
+    request2, _ = httpserver.log[1]
 
     assert request_data.qsize() == 0
 
     # assert that http request/payload is correct
-    assert request1["path"] == request2["path"] == "/events"
+    assert request1.path == "/events"
+    assert request2.path == "/events"
 
-    doc1 = json.loads(data1)
-    doc2 = json.loads(data2)
+    doc1 = request1.get_json(force=True)
+    doc2 = request2.get_json(force=True)
     assert isinstance(doc1["events"], list)
     assert len(doc1["events"]) == 2
     assert isinstance(doc2["events"], list)
     assert len(doc2["events"]) == 1
 
     # assert headers are set
-    assert request1["headers"]["Localstack-Session-Id"] == get_session_id()
-    assert request1["headers"]["User-Agent"] == f"localstack/{constants.VERSION}"
+    assert request1.headers["Localstack-Session-Id"] == get_session_id()
+    assert request1.headers["User-Agent"] == f"localstack/{constants.VERSION}"
 
     # assert content is correct
     e1 = doc1["events"][0]
@@ -70,17 +72,10 @@ def test_append_events():
     assert e3["payload"]["val"] == 3
 
 
-def test_start_session():
-    request_data = Queue()
+def test_start_session(httpserver):
+    httpserver.expect_request("/session", method="POST").respond_with_json({"track_events": True})
 
-    def handler(request, data):
-        request_data.put((request.__dict__, data))
-        return testutil.json_response({"track_events": True})
+    client = AnalyticsClient(httpserver.url_for("/"))
+    response = client.start_session(get_client_metadata())
 
-    with testutil.http_server(handler) as url:
-        client = AnalyticsClient(url)
-        response = client.start_session(get_client_metadata())
-        request, data = request_data.get(timeout=2)
-
-    assert request["path"] == "/session"
     assert response.track_events()
