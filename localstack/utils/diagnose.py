@@ -14,7 +14,6 @@ from localstack.utils.files import load_file
 DIAGNOSE_IMAGES = [
     "localstack/lambda:provided",
     "localstack/lambda:ruby2.7",
-    "localstack/lambda:ruby2.5",
     "localstack/lambda:nodejs14.x",
     "localstack/lambda:nodejs12.x",
     "localstack/lambda:java8",
@@ -30,7 +29,6 @@ DIAGNOSE_IMAGES = [
     "localstack/bigdata",
     "lambci/lambda:provided",
     "lambci/lambda:ruby2.7",
-    "lambci/lambda:ruby2.5",
     "lambci/lambda:nodejs14.x",
     "lambci/lambda:nodejs12.x",
     "lambci/lambda:java8",
