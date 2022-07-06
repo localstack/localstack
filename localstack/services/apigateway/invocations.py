@@ -13,7 +13,7 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_AUTHORIZATION
 from localstack.services.apigateway import helpers
-from localstack.services.apigateway.context import ApiInvocationContext, LambdaUrlInvocationContext
+from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     extract_path_params,
     extract_query_string_params,
@@ -242,14 +242,6 @@ def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
     except AuthorizationError as e:
         api_id = invocation_context.api_id
         return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
-
-
-def invoke_lambda_url_from_request(invocation_context: LambdaUrlInvocationContext):
-    try:
-        return LambdaProxyIntegration().invoke_lambda_url(invocation_context)
-    except Exception as e:
-        LOG.warning(f"Error invoking Lambda Url with Custom_id: {invocation_context.api_id}", e)
-        return make_error_response('{"message":"forbbiden"}', 500)
 
 
 def invoke_rest_api(invocation_context: ApiInvocationContext):
