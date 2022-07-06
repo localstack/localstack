@@ -20,8 +20,6 @@ DIAGNOSE_IMAGES = [
     "localstack/lambda:java11",
     "localstack/lambda:go1.x",
     "localstack/lambda:dotnetcore3.1",
-    "localstack/lambda:dotnetcore2.1",
-    "localstack/lambda:dotnetcore2.0",
     "localstack/lambda:python2.7",
     "localstack/lambda:python3.6",
     "localstack/lambda:python3.7",
