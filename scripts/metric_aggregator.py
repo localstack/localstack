@@ -79,10 +79,7 @@ def _generate_details_block(details_title: str, details: dict) -> str:
 
 def create_readable_report(file_name: str, metric_recorder_external: dict):
     output = "# Metric Collection Report of Integration Tests #\n\n"
-    output += (
-        "**__Disclaimer__**: naive calculation of test coverage - if operation is called at least once, it is considered as 'covered'.\n"
-        "Report only includes 'external' calls.\n\n"
-    )
+    output += "**__Disclaimer__**: naive calculation of test coverage - if operation is called at least once, it is considered as 'covered'.\n"
     for service in sorted(metric_recorder_external.keys()):
         output += f"## {service} ##\n"
         details = metric_recorder_external[service]
@@ -100,7 +97,6 @@ def create_readable_report(file_name: str, metric_recorder_external: dict):
         tmp = ""
         for operation in sorted(details.keys()):
             op_details = details[operation]
-            # TODO merge with internal recorded calls?
             if op_details.get("invoked", 0) > 0:
                 operation_tested += 1
                 tmp += f"{template_implemented_item}{operation}\n"
@@ -108,7 +104,6 @@ def create_readable_report(file_name: str, metric_recorder_external: dict):
                 tmp += f"{template_not_implemented_item}{operation}\n"
             if op_details.get("parameters"):
                 parameters = op_details.get("parameters")
-                parameters.pop("none", "")
                 if parameters:
                     tmp += _generate_details_block("parameters  hit", parameters)
             if op_details.get("errors"):
@@ -144,9 +139,8 @@ def main():
             f"Set target to '{collect_for_arch}' - will only aggregate for these test results. Raw collection of all files.\n"
         )
 
-    metric_recorder_internal = _init_service_metric_counter()
-    metric_recorder_external = copy.deepcopy(metric_recorder_internal)
-
+    # TODO: removed splitting of internal/external recorded calls, as some pro tests use 'internals' to connect to service
+    recorder = _init_service_metric_counter()
     pathlist = Path(base_dir).rglob("metric-report-raw-data-*.csv")
 
     metrics_path = os.path.join(base_dir, "metrics")
@@ -179,11 +173,6 @@ def main():
                     continue
                 if collect_for_arch and collect_for_arch not in str(path):
                     continue
-                recorder = (
-                    metric_recorder_internal
-                    if metric.origin == "internal"
-                    else metric_recorder_external
-                )
 
                 service = recorder[metric.service]
                 ops = service[metric.operation]
@@ -219,19 +208,11 @@ def main():
             metrics_path,
             f"metric-report-{dtime}{collect_for_arch}.json",
         ),
-        metric_recorder_external,
-    )
-    write_json(
-        os.path.join(
-            metrics_path,
-            f"metric-report-internal-calls-{dtime}{collect_for_arch}.json",
-        ),
-        metric_recorder_internal,
+        recorder,
     )
 
     filename = os.path.join(metrics_path, f"metric-report-{dtime}{collect_for_arch}.md")
-    # TODO also consider metric_recorder_internal for the report?
-    create_readable_report(filename, metric_recorder_external)
+    create_readable_report(filename, recorder)
 
 
 if __name__ == "__main__":
