@@ -134,12 +134,6 @@ class ApigatewayRouter:
             "/restapis/<api_id>/<stage>/_user_request_/<path:path>",
             endpoint=self.invoke_rest_api,
         )
-        self.router.add(
-            "/",
-            host="<lambda_url_id>.lambda-url.<regex('.*'):server>",
-            endpoint=self.invoke_lambda_url,
-            defaults={"path": ""},
-        )
 
     def invoke_rest_api(self, request: Request, **url_params: Dict[str, Any]) -> Response:
         if not get_api_region(url_params["api_id"]):
@@ -149,10 +143,3 @@ class ApigatewayRouter:
         if result is not None:
             return convert_response(result)
         raise NotFound()
-
-    def invoke_lambda_url(self, request: Request):
-        invocation_context = to_lambda_url_invocation_context(request)
-        result = invoke_rest_api_from_request(invocation_context)
-        if result is not None:
-            return result
-        return Response({"message": "null"})

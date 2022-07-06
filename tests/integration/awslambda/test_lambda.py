@@ -55,6 +55,7 @@ from localstack.utils.common import (
     new_tmp_dir,
     retry,
     run_safe,
+    safe_requests,
     save_file,
     short_uid,
     to_bytes,
@@ -2454,3 +2455,60 @@ class TestLambdaBehavior:
         assert get_invoke_init_type(lambda_client, func_name, "$LATEST") == "on-demand"
         # TODO: why is this flaky?
         # assert lambda_client.get_function(FunctionName=func_name, Qualifier='$LATEST')['Configuration']['RevisionId'] == lambda_client.get_function(FunctionName=func_name, Qualifier=first_ver['Version'])['Configuration']['RevisionId']
+
+
+class TestLambdaURL:
+    def test_lambda_url_invocation(self, lambda_client, create_lambda_function):
+        function_name = f"test-function-{short_uid()}"
+
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="lambda_url.handler",
+        )
+
+        url_config = lambda_client.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+
+        url = url_config["FunctionUrl"]
+        url += "/custom_path/?test_param=test_value"
+
+        result = safe_requests.post(
+            url, data=b"{'key':'value'}", headers={"User-Agent": "python-requests/testing"}
+        )
+
+        assert result.status_code == 200
+
+        content = json.loads(result.content)
+        assert "event" in content
+        assert "context" in content
+
+        event = content["event"]
+        context = content["context"]
+
+        assert "version" in event
+        assert "routeKey" in event
+        assert "rawPath" in event
+        assert "rawQueryString" in event
+        assert "headers" in event
+        assert "queryStringParameters" in event
+        assert "requestContext" in event
+        assert "body" in event
+        assert "isBase64Encoded" in event
+
+        assert "custom_path" in event["rawPath"]
+        assert event["queryStringParameters"]["test_param"] == "test_value"
+        assert event["body"] == to_str(base64.b64encode(b"{'key':'value'}"))
+        assert event["headers"]["User-Agent"] == "python-requests/testing"
+
+        assert "callbackWaitsForEmptyEventLoop" in context
+        assert "functionVersion" in context
+        assert "functionName" in context
+        assert "memoryLimitInMB" in context
+        assert "logGroupName" in context
+        assert "logStreamName" in context
+        assert "invokedFunctionArn" in context
+        assert "awsRequestId" in context

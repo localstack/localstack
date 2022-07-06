@@ -12,7 +12,7 @@ from requests import Response
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
-from localstack.services.apigateway.context import ApiInvocationContext, LambdaUrlInvocationContext
+from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     extract_path_params,
     extract_query_string_params,
@@ -237,11 +237,6 @@ class LambdaProxyIntegration(BackendIntegration):
 
         self.response_templates.render(invocation_context)
         return invocation_context.response
-
-    def invoke_lambda_url(self, invocation_context: LambdaUrlInvocationContext):
-        result = lambda_api.proccess_lambda_url_invocation(invocation_context)
-        response = self.lambda_result_to_response(result)
-        return response
 
 
 class MockIntegration(BackendIntegration):

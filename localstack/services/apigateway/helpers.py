@@ -44,7 +44,6 @@ PATH_REGEX_USER_REQUEST = (
 )
 # URL pattern for invocations
 HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(localhost.localstack.cloud|([^\.]+)\.amazonaws\.com)(.*)"
-HOST_REGEX_LAMBDA_URL = r"(?:.*://)?([a-zA-Z0-9-]+)\.lambda-url\.(localhost.localstack.cloud|([^\.]+)\.amazonaws\.com)(.*)"
 
 # regex path patterns
 PATH_REGEX_MAIN = r"^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?"
@@ -908,12 +907,6 @@ def get_api_region(api_id: str) -> Optional[str]:
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     """Extract API ID 'id123' from URLs like https://id123.execute-api.localhost.localstack.cloud:4566"""
     match = re.match(HOST_REGEX_EXECUTE_API, hostname)
-    return match.group(1)
-
-
-def extract_lambda_url_id_from_hostname_in_url(hostname: str) -> str:
-    """Extract API ID 'id123' from URLs like https://id123.lambda-url.localhost.localstack.cloud:4566"""
-    match = re.match(HOST_REGEX_LAMBDA_URL, hostname)
     return match.group(1)
 
 

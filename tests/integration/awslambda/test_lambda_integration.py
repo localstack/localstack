@@ -21,7 +21,7 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry, safe_requests, short_uid
-from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.strings import to_bytes
 from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 
@@ -32,7 +32,6 @@ from .test_lambda import (
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
-    TEST_LAMBDA_URL,
 )
 
 TEST_STAGE_NAME = "testing"
@@ -486,60 +485,6 @@ class TestLambdaHttpInvocation:
         assert result.status_code == 502
         assert result.headers.get("Content-Type") == "application/json"
         assert json.loads(result.content)["message"] == "Internal server error"
-
-    def test_invocation_with_url_config(self, lambda_client, create_lambda_function):        
-        function_name = f"test-function-{short_uid()}"
-
-        create_lambda_function(
-            func_name=function_name,
-            zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
-            runtime=LAMBDA_RUNTIME_NODEJS14X,
-            handler="lambda_url.handler",
-        )
-
-        url_config = lambda_client.create_function_url_config(
-            FunctionName=function_name,
-            AuthType="NONE",
-        )
-
-        url = url_config["FunctionUrl"]
-        url += "/?test_param=test_value"
-
-        result = safe_requests.post(
-            url, data=b"{'key':'value'}", headers={"User-Agent": "python-requests/testing"}
-        )
-
-        assert result.status_code == 200
-
-        content = json.loads(result.content)
-        assert "event" in content
-        assert "context" in content
-
-        event = content["event"]
-        context = content["context"]
-
-        assert "version" in event
-        assert "routeKey" in event
-        assert "rawPath" in event
-        assert "rawQueryString" in event
-        assert "headers" in event
-        assert "queryStringParameters" in event
-        assert "requestContext" in event
-        assert "body" in event
-        assert "isBase64Encoded" in event
-
-        assert event["queryStringParameters"]["test_param"] == "test_value"
-        assert event["body"] == to_str(base64.b64encode(b"{'key':'value'}"))
-        assert event["headers"]["User-Agent"] == "python-requests/testing"
-
-        assert "callbackWaitsForEmptyEventLoop" in context
-        assert "functionVersion" in context
-        assert "functionName" in context
-        assert "memoryLimitInMB" in context
-        assert "logGroupName" in context
-        assert "logStreamName" in context
-        assert "invokedFunctionArn" in context
-        assert "awsRequestId" in context
 
 
 class TestKinesisSource:

@@ -130,7 +130,7 @@ def custom_host_addressing_rules(host: str) -> Optional[str]:
         return "apigateway"
 
     if ".lambda-url." in host:
-        return "apigateway"
+        return "lambda"
 
 
 def custom_path_addressing_rules(path: str) -> Optional[str]:
@@ -165,7 +165,7 @@ def legacy_rules(request: Request) -> Optional[str]:
         return "apigateway"
 
     if ".lambda-url." in request.path:
-        return "apigateway"
+        return "lambda"
 
     # DynamoDB shell URLs
     if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
