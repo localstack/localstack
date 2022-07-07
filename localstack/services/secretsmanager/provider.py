@@ -12,7 +12,6 @@ from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend, secretsmanager_backends
 from moto.secretsmanager.responses import SecretsManagerResponse
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceResponse, handler
 from localstack.aws.api.secretsmanager import (
     CancelRotateSecretRequest,
@@ -556,12 +555,12 @@ def backend_rotate_secret(
     return secret.to_short_dict()
 
 
-def secretsmanager_models_secret_arn(region, secret_id):
+def secretsmanager_models_secret_arn(account_id, region, secret_id):
     k = f"{region}_{secret_id}"
     if k not in SECRET_ARN_STORAGE:
         id_string = short_uid()[:6]
         arn = aws_stack.secretsmanager_secret_arn(
-            secret_id, account_id=get_aws_account_id(), region_name=region, random_suffix=id_string
+            secret_id, account_id=account_id, region_name=region, random_suffix=id_string
         )
         SECRET_ARN_STORAGE[k] = arn
     return SECRET_ARN_STORAGE[k]

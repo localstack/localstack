@@ -4,14 +4,13 @@ from datetime import datetime
 from typing import Dict, List
 from urllib.parse import quote
 
-from moto.iam.models import AWSManagedPolicy, InlinePolicy, Policy
+from moto.core import BaseBackend
+from moto.iam.models import AWSManagedPolicy, IAMBackend, InlinePolicy, Policy
 from moto.iam.models import Role as MotoRole
-from moto.iam.models import aws_managed_policies, filter_items_with_path_prefix
-from moto.iam.models import iam_backend as moto_iam_backend
+from moto.iam.models import filter_items_with_path_prefix, iam_backends
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.responses import IamResponse
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.iam import (
     ActionNameListType,
@@ -90,6 +89,10 @@ ADDITIONAL_MANAGED_POLICIES = {
 }
 
 
+def get_iam_backend(context: RequestContext) -> BaseBackend:
+    return iam_backends[context.account_id]["global"]
+
+
 class IamProvider(IamApi):
     def __init__(self):
         apply_patches()
@@ -129,10 +132,9 @@ class IamProvider(IamApi):
         max_items: maxItemsType = None,
         marker: markerType = None,
     ) -> SimulatePolicyResponse:
-        policy = moto_iam_backend.get_policy(policy_source_arn)
-        policy_version = moto_iam_backend.get_policy_version(
-            policy_source_arn, policy.default_version_id
-        )
+        backend = get_iam_backend(context)
+        policy = backend.get_policy(policy_source_arn)
+        policy_version = backend.get_policy_version(policy_source_arn, policy.default_version_id)
         try:
             policy_statements = json.loads(policy_version.document).get("Statement", [])
         except Exception:
@@ -150,16 +152,18 @@ class IamProvider(IamApi):
         return response
 
     def delete_policy(self, context: RequestContext, policy_arn: arnType) -> None:
-        if moto_iam_backend.managed_policies.get(policy_arn):
-            moto_iam_backend.managed_policies.pop(policy_arn, None)
+        backend = get_iam_backend(context)
+        if backend.managed_policies.get(policy_arn):
+            backend.managed_policies.pop(policy_arn, None)
         else:
             raise NoSuchEntityException("Policy {0} was not found.".format(policy_arn))
 
     def detach_role_policy(
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType
     ) -> None:
+        backend = get_iam_backend(context)
         try:
-            role = moto_iam_backend.get_role(role_name)
+            role = backend.get_role(role_name)
             policy = role.managed_policies[policy_arn]
             policy.detach_from(role)
         except KeyError:
@@ -193,7 +197,8 @@ class IamProvider(IamApi):
         marker: markerType = None,
         max_items: maxItemsType = None,
     ) -> ListRolesResponse:
-        moto_roles = moto_iam_backend.roles.values()
+        backend = get_iam_backend(context)
+        moto_roles = backend.roles.values()
         if path_prefix:
             moto_roles = filter_items_with_path_prefix(path_prefix, moto_roles)
         moto_roles = sorted(moto_roles, key=lambda role: role.id)
@@ -219,10 +224,11 @@ class IamProvider(IamApi):
         new_group_name: groupNameType = None,
     ) -> None:
         new_group_name = new_group_name or group_name
-        group = moto_iam_backend.get_group(group_name)
+        backend = get_iam_backend(context)
+        group = backend.get_group(group_name)
         group.path = new_path
         group.name = new_group_name
-        moto_iam_backend.groups[new_group_name] = moto_iam_backend.groups.pop(group_name)
+        backend.groups[new_group_name] = backend.groups.pop(group_name)
 
     def list_instance_profile_tags(
         self,
@@ -231,7 +237,8 @@ class IamProvider(IamApi):
         marker: markerType = None,
         max_items: maxItemsType = None,
     ) -> ListInstanceProfileTagsResponse:
-        profile = moto_iam_backend.get_instance_profile(instance_profile_name)
+        backend = get_iam_backend(context)
+        profile = backend.get_instance_profile(instance_profile_name)
         response = ListInstanceProfileTagsResponse()
         response["Tags"] = [Tag(Key=k, Value=v) for k, v in profile.tags.items()]
         return response
@@ -242,7 +249,8 @@ class IamProvider(IamApi):
         instance_profile_name: instanceProfileNameType,
         tags: tagListType,
     ) -> None:
-        profile = moto_iam_backend.get_instance_profile(instance_profile_name)
+        backend = get_iam_backend(context)
+        profile = backend.get_instance_profile(instance_profile_name)
         value_by_key = {tag["Key"]: tag["Value"] for tag in tags}
         profile.tags.update(value_by_key)
 
@@ -252,7 +260,8 @@ class IamProvider(IamApi):
         instance_profile_name: instanceProfileNameType,
         tag_keys: tagKeyListType,
     ) -> None:
-        profile = moto_iam_backend.get_instance_profile(instance_profile_name)
+        backend = get_iam_backend(context)
+        profile = backend.get_instance_profile(instance_profile_name)
         for tag in tag_keys:
             profile.tags.pop(tag, None)
 
@@ -279,7 +288,8 @@ class IamProvider(IamApi):
         )
         path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{aws_service_name}"
         role_name = f"r-{short_uid()}"
-        role = moto_iam_backend.create_role(
+        backend = get_iam_backend(context)
+        role = backend.create_role(
             role_name=role_name,
             assume_role_policy_document=policy_doc,
             path=path,
@@ -289,7 +299,7 @@ class IamProvider(IamApi):
             max_session_duration=3600,
         )
         role.service_linked_role_arn = "arn:aws:iam::{0}:role/aws-service-role/{1}/{2}".format(
-            get_aws_account_id(), aws_service_name, role.name
+            context.account_id, aws_service_name, role.name
         )
 
         res_role = self.moto_role_to_role_type(role)
@@ -299,7 +309,8 @@ class IamProvider(IamApi):
         self, context: RequestContext, role_name: roleNameType
     ) -> DeleteServiceLinkedRoleResponse:
         # TODO: test
-        moto_iam_backend.delete_role(role_name)
+        backend = get_iam_backend(context)
+        backend.delete_role(role_name)
         return DeleteServiceLinkedRoleResponse(DeletionTaskId=short_uid())
 
     def get_service_linked_role_deletion_status(
@@ -429,10 +440,15 @@ def apply_patches():
     MotoRole.arn = moto_role_arn
 
     # Add missing managed polices
-
-    aws_managed_policies.extend(
-        [AWSManagedPolicy.from_data(k, v) for k, v in ADDITIONAL_MANAGED_POLICIES.items()]
-    )
+    @patch(IAMBackend.__init__)
+    def add_attributes(__init__, self, region_name, account_id):
+        __init__(self, region_name, account_id)
+        self.aws_managed_policies.extend(
+            [
+                AWSManagedPolicy.from_data(name, self.account_id, d)
+                for name, d in ADDITIONAL_MANAGED_POLICIES.items()
+            ]
+        )
 
     if "Principal" not in VALID_STATEMENT_ELEMENTS:
         VALID_STATEMENT_ELEMENTS.append("Principal")
@@ -456,10 +472,10 @@ def apply_patches():
         user_name = re.match(regex, result, flags=flags).group(2)
         # replace default user id/name in response
 
-        user = moto_iam_backend.users.get(user_name)
+        user = self.backend.users.get(user_name)
         if not user:
             return result
-        tags = moto_iam_backend.tagger.list_tags_for_resource(user.arn)
+        tags = self.backend.tagger.list_tags_for_resource(user.arn)
         if tags and "<Tags>" not in result:
             tags_str = "".join(
                 [
@@ -474,9 +490,16 @@ def apply_patches():
 
     @patch(Policy.__init__)
     def policy__init__(
-        fn, self, name, default_version_id=None, description=None, document=None, **kwargs
+        fn,
+        self,
+        name,
+        account_id,
+        default_version_id=None,
+        description=None,
+        document=None,
+        **kwargs,
     ):
-        fn(self, name, default_version_id, description, document, **kwargs)
+        fn(self, name, account_id, default_version_id, description, document, **kwargs)
         self.document = document
 
     # patch unapply_policy

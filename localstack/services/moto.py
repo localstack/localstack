@@ -13,7 +13,6 @@ from werkzeug.routing import Map, Rule
 
 from localstack import __version__ as localstack_version
 from localstack import config
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import (
     CommonServiceException,
     HttpRequest,
@@ -125,9 +124,6 @@ def dispatch_to_moto(context: RequestContext) -> MotoResponse:
 
     # this is where we skip the HTTP roundtrip between the moto server and the boto client
     dispatch = get_dispatcher(service.service_name, request.path)
-
-    # TODO@viren temporory hack. This is to be refactored when account ID no longer lives in global TLS
-    request.headers.add("x-moto-account-id", get_aws_account_id())
 
     try:
         return dispatch(request, request.url, request.headers)

@@ -48,7 +48,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_events: InputLogEvents,
         sequence_token: SequenceToken = None,
     ) -> PutLogEventsResponse:
-        logs_backend = logs_backends[aws_stack.get_region()]
+        logs_backend = logs_backends[context.account_id][aws_stack.get_region()]
         metric_filters = logs_backend.filters.metric_filters
         for metric_filter in metric_filters:
             pattern = metric_filter.get("filterPattern", "")

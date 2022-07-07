@@ -45,3 +45,6 @@ class AccountIdEnricher(Handler):
             context.account_id = account_id_from_header
         else:
             context.account_id = get_account_id_from_access_key_id(access_key_id)
+
+        # Make Moto use the same Account ID as LocalStack
+        context.request.headers.add("x-moto-account-id", context.account_id)
