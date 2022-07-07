@@ -793,13 +793,6 @@ class CreateFunctionUrlConfigResponse(TypedDict, total=False):
     CreationTime: Timestamp
 
 
-class CreateFunctionUrlConfigRequest(ServiceRequest):
-    FunctionName: FunctionName
-    Qualifier: Optional[str]
-    AuthType: AuthType
-    Cors: Optional[str]
-
-
 class DeleteAliasRequest(ServiceRequest):
     FunctionName: FunctionName
     Name: Alias
@@ -969,14 +962,6 @@ class FunctionEventInvokeConfig(TypedDict, total=False):
     MaximumRetryAttempts: Optional[MaximumRetryAttempts]
     MaximumEventAgeInSeconds: Optional[MaximumEventAgeInSeconds]
     DestinationConfig: Optional[DestinationConfig]
-
-
-class FunctionUrlConfig(TypedDict, total=False):
-    FunctionUrl: FunctionUrl
-    FunctionArn: NameSpacedFunctionArn
-    AuthType: AuthType
-    Cors: Cors
-    CreationTime: Timestamp
 
 
 FunctionEventInvokeConfigList = List[FunctionEventInvokeConfig]
@@ -1638,17 +1623,6 @@ class LambdaApi:
         architectures: ArchitecturesList = None,
         ephemeral_storage: EphemeralStorage = None,
     ) -> FunctionConfiguration:
-        raise NotImplementedError
-
-    @handler("CreateFunctionUrlConfig")
-    def create_function_url_config(
-        self,
-        contest: RequestContext,
-        function_name: FunctionName,
-        auth_type: AuthType,
-        qualifier: Qualifier = None,
-        cors: Cors = None,
-    ) -> FunctionUrlConfig:
         raise NotImplementedError
 
     @handler("CreateFunctionUrlConfig")

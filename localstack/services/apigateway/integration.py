@@ -143,7 +143,7 @@ class LambdaProxyIntegration(BackendIntegration):
             response.headers["Content-Length"] = str(len(response.content))
 
     @classmethod
-    def lambda_result_to_response(cls, result):
+    def lambda_result_to_response(cls, result) -> LambdaResponse:
         response = LambdaResponse()
         response.headers.update({"content-type": "application/json"})
         parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))

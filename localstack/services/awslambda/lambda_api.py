@@ -26,6 +26,8 @@ from localstack.constants import (
     LAMBDA_TEST_ROLE,
     LOCALHOST_HOSTNAME,
 )
+from localstack.http import Request
+from localstack.http import Response as HttpResponse
 from localstack.services.apigateway.integration import LambdaProxyIntegration
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
@@ -50,6 +52,7 @@ from localstack.services.awslambda.lambda_utils import (
     get_zip_bytes,
     multi_value_dict_for_list,
 )
+from localstack.services.edge import ROUTER
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
 from localstack.utils.aws import aws_stack
@@ -119,7 +122,6 @@ BATCH_SIZE_RANGES = {
 }
 
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+00:00"
-HOST_REGEX_LAMBDA_URL = r"(?:.*://)?([a-zA-Z0-9-]+)\.lambda-url\.(localhost.localstack.cloud|([^\.]+)\.amazonaws\.com)(.*)"
 
 app = Flask(APP_NAME)
 
@@ -1132,12 +1134,6 @@ def delete_lambda_function(function_name: str) -> Dict[None, None]:
     return {}
 
 
-def extract_lambda_url_id_from_host(hostname: str) -> str:
-    """Extract API ID 'id123' from URLs like https://id123.lambda-url.localhost.localstack.cloud:4566"""
-    match = re.match(HOST_REGEX_LAMBDA_URL, hostname)
-    return match.group(1)
-
-
 def get_lambda_url_config(api_id):
     lambda_backend = LambdaRegion.get()
     url_configs = lambda_backend.url_configs.values()
@@ -1184,33 +1180,49 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
     }
 
 
-def handle_lambda_url_invocation(host_url: str, path: str, data: bytes, headers: dict, method: str):
-    api_id = extract_lambda_url_id_from_host(host_url)
+def handle_lambda_url_invocation(request: Request, **url_params: Dict[str, Any]) -> HttpResponse:
+    api_id = url_params["api_id"]
+    response = Response(headers={"Content-type": "application/json"})
     try:
         lambda_url_config = get_lambda_url_config(api_id)
     except IndexError as e:
-        LOG.warning(f"Lambda URL ({api_id}) not found", e)
-        return Response('{"Message": null}', 403, {"Content-type": "application/json"})
+        LOG.warning(f"Lambda URL ({api_id}) not found: {e}")
+        response.set_json({"Message": None})
+        response.status = "403"
+        return response
 
-    event = event_for_lambda_url(api_id, path, data, headers, method)
+    event = event_for_lambda_url(
+        api_id, request.full_path, request.data, dict(request.headers), request.method
+    )
 
     try:
         result = proccess_lambda_url_invocation(lambda_url_config, event)
     except Exception as e:
-        LOG.warning(f"Lambda URL ({api_id}) failed during execution", e)
-        return Response(
-            '{"Message": "lambda function failed during execution"}',
-            403,
-            {"Content-type": "application/json"},
-        )
+        LOG.warning(f"Lambda URL ({api_id}) failed during execution: {e}")
+
+        response.set_json({"Message": "lambda function failed during execution"})
+        response.status = "403"
+        return response
 
     integration_response = LambdaProxyIntegration.lambda_result_to_response(result)
-    response = Response(
-        integration_response._content,
-        status=integration_response.status_code,
-        headers=integration_response.headers,
-    )
+    response.set_data(integration_response._content)
+    response.headers.update(integration_response.headers)
+    response.status_code = integration_response.status_code
     return response
+
+
+ROUTER.add(
+    "/",
+    host="<api_id>.lambda-url.<regex('.*'):server>",
+    endpoint=handle_lambda_url_invocation,
+    defaults={"path": ""},
+)
+ROUTER.add(
+    "/<path:path>",
+    host="<api_id>.lambda-url.<regex('.*'):server>",
+    endpoint=handle_lambda_url_invocation,
+    defaults={"path": ""},
+)
 
 
 # ------------
@@ -2364,17 +2376,6 @@ def update_code_signing_config(arn):
     }
 
     return Response(json.dumps(result), status=200)
-
-
-@app.route("/", defaults={"path": ""})
-@app.route("/<path:path>")
-@app.route("/", methods=["GET", "POST", "PUT", "HEAD", "OPTIONS", "PATCH", "DELETE"])
-def main_route():
-    if ".lambda-url." in request.host_url:
-        return handle_lambda_url_invocation(
-            request.host_url, request.full_path, request.data, dict(request.headers), request.method
-        )
-    return Response(status=404)
 
 
 def validate_lambda_config():
