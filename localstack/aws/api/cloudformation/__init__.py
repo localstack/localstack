@@ -152,6 +152,13 @@ Value = str
 Version = str
 
 
+class AccountFilterType(str):
+    NONE = "NONE"
+    INTERSECTION = "INTERSECTION"
+    DIFFERENCE = "DIFFERENCE"
+    UNION = "UNION"
+
+
 class AccountGateStatus(str):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
@@ -961,6 +968,7 @@ class DeploymentTargets(TypedDict, total=False):
     Accounts: Optional[AccountList]
     AccountsUrl: Optional[AccountsUrl]
     OrganizationalUnitIds: Optional[OrganizationalUnitIdList]
+    AccountFilterType: Optional[AccountFilterType]
 
 
 class CreateStackInstancesInput(ServiceRequest):
