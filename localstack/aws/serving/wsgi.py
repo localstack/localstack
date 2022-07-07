@@ -41,7 +41,7 @@ class WsgiGateway:
         if "asgi.headers" in environ:
             # restores raw headers from ASGI scope, which allows dashes in header keys
             # see https://github.com/pallets/werkzeug/issues/940
-            request.headers = Headers(environ["asgi.headers"].raw_items())
+            request.headers = Headers(environ["asgi.headers"])
         else:
             # by default, werkzeug requests from environ are immutable
             request.headers = Headers(request.headers)
