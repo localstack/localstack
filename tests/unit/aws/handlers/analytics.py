@@ -4,6 +4,7 @@ import pytest
 
 from localstack import config
 from localstack.aws.api import RequestContext
+from localstack.aws.chain import HandlerChain
 from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.handlers.analytics import ServiceRequestCounter
 from localstack.http import Response
@@ -18,28 +19,28 @@ def enable_analytics(monkeypatch):
 class TestServiceRequestCounter:
     def test_starts_aggregator_after_first_call(self):
         aggregator = MagicMock()
-        chain = MagicMock()
 
         counter = ServiceRequestCounter(service_request_aggregator=aggregator)
         aggregator.start.assert_not_called()
 
         context = create_aws_request_context("s3", "ListBuckets")
-        counter(chain, context, Response())
+        chain = HandlerChain([counter])
+        chain.handle(context, Response())
 
         aggregator.start.assert_called_once()
 
         context = create_aws_request_context("s3", "ListBuckets")
-        counter(chain, context, Response())
+        chain = HandlerChain([counter])
+        chain.handle(context, Response())
 
         aggregator.start.assert_called_once()
 
     def test_ignores_requests_without_service(self):
         aggregator = MagicMock()
-        chain = MagicMock()
-
         counter = ServiceRequestCounter(service_request_aggregator=aggregator)
 
-        counter(chain, RequestContext(), Response())
+        chain = HandlerChain([counter])
+        chain.handle(RequestContext(), Response())
 
         aggregator.start.assert_not_called()
         aggregator.add_request.assert_not_called()
@@ -48,12 +49,10 @@ class TestServiceRequestCounter:
         monkeypatch.setattr(config, "DISABLE_EVENTS", True)
 
         aggregator = MagicMock()
-        chain = MagicMock()
-
         counter = ServiceRequestCounter(service_request_aggregator=aggregator)
 
-        counter(
-            chain,
+        chain = HandlerChain([counter])
+        chain.handle(
             create_aws_request_context("s3", "ListBuckets"),
             Response(),
         )
@@ -63,12 +62,10 @@ class TestServiceRequestCounter:
 
     def test_calls_aggregator(self):
         aggregator = MagicMock()
-        chain = MagicMock()
-
         counter = ServiceRequestCounter(service_request_aggregator=aggregator)
 
-        counter(
-            chain,
+        chain = HandlerChain([counter])
+        chain.handle(
             create_aws_request_context("s3", "ListBuckets"),
             Response(),
         )
@@ -87,12 +84,10 @@ class TestServiceRequestCounter:
 
     def test_parses_error_correctly(self):
         aggregator = MagicMock()
-        chain = MagicMock()
-
         counter = ServiceRequestCounter(service_request_aggregator=aggregator)
 
-        counter(
-            chain,
+        chain = HandlerChain([counter])
+        chain.handle(
             create_aws_request_context("opensearch", "DescribeDomain", {"DomainName": "foobar"}),
             Response(
                 b'{"__type": "ResourceNotFoundException", "message": "Domain not found: foobar"}',
@@ -112,12 +107,10 @@ class TestServiceRequestCounter:
 
     def test_invalid_error_behaves_like_botocore(self):
         aggregator = MagicMock()
-        chain = MagicMock()
-
         counter = ServiceRequestCounter(service_request_aggregator=aggregator)
 
-        counter(
-            chain,
+        chain = HandlerChain([counter])
+        chain.handle(
             create_aws_request_context("opensearch", "DescribeDomain", {"DomainName": "foobar"}),
             Response(b'{"__type": "ResourceN}', 404),
         )
