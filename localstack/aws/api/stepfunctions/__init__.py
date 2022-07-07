@@ -125,99 +125,171 @@ class SyncExecutionStatus(str):
 
 
 class ActivityDoesNotExist(ServiceException):
+    code: str = "ActivityDoesNotExist"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class ActivityLimitExceeded(ServiceException):
+    code: str = "ActivityLimitExceeded"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class ActivityWorkerLimitExceeded(ServiceException):
+    code: str = "ActivityWorkerLimitExceeded"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class ExecutionAlreadyExists(ServiceException):
+    code: str = "ExecutionAlreadyExists"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class ExecutionDoesNotExist(ServiceException):
+    code: str = "ExecutionDoesNotExist"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class ExecutionLimitExceeded(ServiceException):
+    code: str = "ExecutionLimitExceeded"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidArn(ServiceException):
+    code: str = "InvalidArn"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidDefinition(ServiceException):
+    code: str = "InvalidDefinition"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidExecutionInput(ServiceException):
+    code: str = "InvalidExecutionInput"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidLoggingConfiguration(ServiceException):
+    code: str = "InvalidLoggingConfiguration"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidName(ServiceException):
+    code: str = "InvalidName"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidOutput(ServiceException):
+    code: str = "InvalidOutput"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidToken(ServiceException):
+    code: str = "InvalidToken"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidTracingConfiguration(ServiceException):
+    code: str = "InvalidTracingConfiguration"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class MissingRequiredParameter(ServiceException):
+    code: str = "MissingRequiredParameter"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class ResourceNotFound(ServiceException):
+    code: str = "ResourceNotFound"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
     resourceName: Optional[Arn]
 
 
 class StateMachineAlreadyExists(ServiceException):
+    code: str = "StateMachineAlreadyExists"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class StateMachineDeleting(ServiceException):
+    code: str = "StateMachineDeleting"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class StateMachineDoesNotExist(ServiceException):
+    code: str = "StateMachineDoesNotExist"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class StateMachineLimitExceeded(ServiceException):
+    code: str = "StateMachineLimitExceeded"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class StateMachineTypeNotSupported(ServiceException):
+    code: str = "StateMachineTypeNotSupported"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TaskDoesNotExist(ServiceException):
+    code: str = "TaskDoesNotExist"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TaskTimedOut(ServiceException):
+    code: str = "TaskTimedOut"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class TooManyTags(ServiceException):
+    code: str = "TooManyTags"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[ErrorMessage]
     resourceName: Optional[Arn]
 

@@ -12,6 +12,7 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 Action = str
 AdditionalVersion = str
 Alias = str
+AllowCredentials = bool
 Arn = str
 BatchSize = int
 BisectBatchOnFunctionError = bool
@@ -24,11 +25,15 @@ Enabled = bool
 Endpoint = str
 EnvironmentVariableName = str
 EnvironmentVariableValue = str
+EphemeralStorageSize = int
 EventSourceToken = str
 FileSystemArn = str
 FunctionArn = str
 FunctionName = str
+FunctionUrl = str
+FunctionUrlQualifier = str
 Handler = str
+Header = str
 HttpStatus = int
 Integer = int
 KMSKeyArn = str
@@ -41,7 +46,9 @@ LayerVersionArn = str
 LicenseInfo = str
 LocalMountPath = str
 MasterRegion = str
+MaxAge = int
 MaxFunctionEventInvokeConfigListItems = int
+MaxItems = int
 MaxLayerListItems = int
 MaxListItems = int
 MaxProvisionedConcurrencyConfigListItems = int
@@ -51,15 +58,18 @@ MaximumRecordAgeInSeconds = int
 MaximumRetryAttempts = int
 MaximumRetryAttemptsEventSourceMapping = int
 MemorySize = int
+Method = str
 NameSpacedFunctionArn = str
 NamespacedFunctionName = str
 NamespacedStatementId = str
 NonNegativeInteger = int
 OrganizationId = str
+Origin = str
 ParallelizationFactor = int
 Pattern = str
 PositiveInteger = int
 Principal = str
+PrincipalOrgID = str
 Qualifier = str
 Queue = str
 ReservedConcurrentExecutions = int
@@ -111,6 +121,11 @@ class EventSourcePosition(str):
 
 class FunctionResponseType(str):
     ReportBatchItemFailures = "ReportBatchItemFailures"
+
+
+class FunctionUrlAuthType(str):
+    NONE = "NONE"
+    AWS_IAM = "AWS_IAM"
 
 
 class FunctionVersion(str):
@@ -166,6 +181,7 @@ class Runtime(str):
     nodejs10_x = "nodejs10.x"
     nodejs12_x = "nodejs12.x"
     nodejs14_x = "nodejs14.x"
+    nodejs16_x = "nodejs16.x"
     java8 = "java8"
     java8_al2 = "java8.al2"
     java11 = "java11"
@@ -237,167 +253,266 @@ class TracingMode(str):
 
 
 class CodeSigningConfigNotFoundException(ServiceException):
+    code: str = "CodeSigningConfigNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 404
     Type: Optional[String]
     Message: Optional[String]
 
 
 class CodeStorageExceededException(ServiceException):
+    code: str = "CodeStorageExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
     Type: Optional[String]
     message: Optional[String]
 
 
 class CodeVerificationFailedException(ServiceException):
+    code: str = "CodeVerificationFailedException"
+    sender_fault: bool = False
+    status_code: int = 400
     Type: Optional[String]
     Message: Optional[String]
 
 
 class EC2AccessDeniedException(ServiceException):
+    code: str = "EC2AccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class EC2ThrottledException(ServiceException):
+    code: str = "EC2ThrottledException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class EC2UnexpectedException(ServiceException):
+    code: str = "EC2UnexpectedException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
     EC2ErrorCode: Optional[String]
 
 
 class EFSIOException(ServiceException):
+    code: str = "EFSIOException"
+    sender_fault: bool = False
+    status_code: int = 410
     Type: Optional[String]
     Message: Optional[String]
 
 
 class EFSMountConnectivityException(ServiceException):
+    code: str = "EFSMountConnectivityException"
+    sender_fault: bool = False
+    status_code: int = 408
     Type: Optional[String]
     Message: Optional[String]
 
 
 class EFSMountFailureException(ServiceException):
+    code: str = "EFSMountFailureException"
+    sender_fault: bool = False
+    status_code: int = 403
     Type: Optional[String]
     Message: Optional[String]
 
 
 class EFSMountTimeoutException(ServiceException):
+    code: str = "EFSMountTimeoutException"
+    sender_fault: bool = False
+    status_code: int = 408
     Type: Optional[String]
     Message: Optional[String]
 
 
 class ENILimitReachedException(ServiceException):
+    code: str = "ENILimitReachedException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class InvalidCodeSignatureException(ServiceException):
+    code: str = "InvalidCodeSignatureException"
+    sender_fault: bool = False
+    status_code: int = 400
     Type: Optional[String]
     Message: Optional[String]
 
 
 class InvalidParameterValueException(ServiceException):
+    code: str = "InvalidParameterValueException"
+    sender_fault: bool = False
+    status_code: int = 400
     Type: Optional[String]
     message: Optional[String]
 
 
 class InvalidRequestContentException(ServiceException):
+    code: str = "InvalidRequestContentException"
+    sender_fault: bool = False
+    status_code: int = 400
     Type: Optional[String]
     message: Optional[String]
 
 
 class InvalidRuntimeException(ServiceException):
+    code: str = "InvalidRuntimeException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class InvalidSecurityGroupIDException(ServiceException):
+    code: str = "InvalidSecurityGroupIDException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class InvalidSubnetIDException(ServiceException):
+    code: str = "InvalidSubnetIDException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class InvalidZipFileException(ServiceException):
+    code: str = "InvalidZipFileException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class KMSAccessDeniedException(ServiceException):
+    code: str = "KMSAccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class KMSDisabledException(ServiceException):
+    code: str = "KMSDisabledException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class KMSInvalidStateException(ServiceException):
+    code: str = "KMSInvalidStateException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class KMSNotFoundException(ServiceException):
+    code: str = "KMSNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class PolicyLengthExceededException(ServiceException):
+    code: str = "PolicyLengthExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
     Type: Optional[String]
     message: Optional[String]
 
 
 class PreconditionFailedException(ServiceException):
+    code: str = "PreconditionFailedException"
+    sender_fault: bool = False
+    status_code: int = 412
     Type: Optional[String]
     message: Optional[String]
 
 
 class ProvisionedConcurrencyConfigNotFoundException(ServiceException):
+    code: str = "ProvisionedConcurrencyConfigNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 404
     Type: Optional[String]
     message: Optional[String]
 
 
 class RequestTooLargeException(ServiceException):
+    code: str = "RequestTooLargeException"
+    sender_fault: bool = False
+    status_code: int = 413
     Type: Optional[String]
     message: Optional[String]
 
 
 class ResourceConflictException(ServiceException):
+    code: str = "ResourceConflictException"
+    sender_fault: bool = False
+    status_code: int = 409
     Type: Optional[String]
     message: Optional[String]
 
 
 class ResourceInUseException(ServiceException):
+    code: str = "ResourceInUseException"
+    sender_fault: bool = False
+    status_code: int = 400
     Type: Optional[String]
     Message: Optional[String]
 
 
 class ResourceNotFoundException(ServiceException):
+    code: str = "ResourceNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 404
     Type: Optional[String]
     Message: Optional[String]
 
 
 class ResourceNotReadyException(ServiceException):
+    code: str = "ResourceNotReadyException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     message: Optional[String]
 
 
 class ServiceException(ServiceException):
+    code: str = "ServiceException"
+    sender_fault: bool = False
+    status_code: int = 500
     Type: Optional[String]
     Message: Optional[String]
 
 
 class SubnetIPAddressLimitReachedException(ServiceException):
+    code: str = "SubnetIPAddressLimitReachedException"
+    sender_fault: bool = False
+    status_code: int = 502
     Type: Optional[String]
     Message: Optional[String]
 
 
 class TooManyRequestsException(ServiceException):
+    code: str = "TooManyRequestsException"
+    sender_fault: bool = False
+    status_code: int = 429
     retryAfterSeconds: Optional[String]
     Type: Optional[String]
     message: Optional[String]
@@ -405,6 +520,9 @@ class TooManyRequestsException(ServiceException):
 
 
 class UnsupportedMediaTypeException(ServiceException):
+    code: str = "UnsupportedMediaTypeException"
+    sender_fault: bool = False
+    status_code: int = 415
     Type: Optional[String]
     message: Optional[String]
 
@@ -453,6 +571,8 @@ class AddPermissionRequest(ServiceRequest):
     EventSourceToken: Optional[EventSourceToken]
     Qualifier: Optional[Qualifier]
     RevisionId: Optional[String]
+    PrincipalOrgID: Optional[PrincipalOrgID]
+    FunctionUrlAuthType: Optional[FunctionUrlAuthType]
 
 
 class AddPermissionResponse(TypedDict, total=False):
@@ -476,6 +596,8 @@ class AliasConfiguration(TypedDict, total=False):
 
 
 AliasList = List[AliasConfiguration]
+AllowMethodsList = List[Method]
+AllowOriginsList = List[Origin]
 SigningProfileVersionArns = List[Arn]
 
 
@@ -508,6 +630,18 @@ CompatibleRuntimes = List[Runtime]
 
 class Concurrency(TypedDict, total=False):
     ReservedConcurrentExecutions: Optional[ReservedConcurrentExecutions]
+
+
+HeadersList = List[Header]
+
+
+class Cors(TypedDict, total=False):
+    AllowCredentials: Optional[AllowCredentials]
+    AllowHeaders: Optional[HeadersList]
+    AllowMethods: Optional[AllowMethodsList]
+    AllowOrigins: Optional[AllowOriginsList]
+    ExposeHeaders: Optional[HeadersList]
+    MaxAge: Optional[MaxAge]
 
 
 class CreateAliasRequest(ServiceRequest):
@@ -596,6 +730,10 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
 
 
+class EphemeralStorage(TypedDict, total=False):
+    Size: EphemeralStorageSize
+
+
 StringList = List[String]
 
 
@@ -669,6 +807,22 @@ class CreateFunctionRequest(ServiceRequest):
     ImageConfig: Optional[ImageConfig]
     CodeSigningConfigArn: Optional[CodeSigningConfigArn]
     Architectures: Optional[ArchitecturesList]
+    EphemeralStorage: Optional[EphemeralStorage]
+
+
+class CreateFunctionUrlConfigRequest(ServiceRequest):
+    FunctionName: FunctionName
+    Qualifier: Optional[FunctionUrlQualifier]
+    AuthType: FunctionUrlAuthType
+    Cors: Optional[Cors]
+
+
+class CreateFunctionUrlConfigResponse(TypedDict, total=False):
+    FunctionUrl: FunctionUrl
+    FunctionArn: FunctionArn
+    AuthType: FunctionUrlAuthType
+    Cors: Optional[Cors]
+    CreationTime: Timestamp
 
 
 class DeleteAliasRequest(ServiceRequest):
@@ -704,6 +858,11 @@ class DeleteFunctionEventInvokeConfigRequest(ServiceRequest):
 class DeleteFunctionRequest(ServiceRequest):
     FunctionName: FunctionName
     Qualifier: Optional[Qualifier]
+
+
+class DeleteFunctionUrlConfigRequest(ServiceRequest):
+    FunctionName: FunctionName
+    Qualifier: Optional[FunctionUrlQualifier]
 
 
 class DeleteLayerVersionRequest(ServiceRequest):
@@ -826,6 +985,7 @@ class FunctionConfiguration(TypedDict, total=False):
     SigningProfileVersionArn: Optional[Arn]
     SigningJobArn: Optional[Arn]
     Architectures: Optional[ArchitecturesList]
+    EphemeralStorage: Optional[EphemeralStorage]
 
 
 class FunctionEventInvokeConfig(TypedDict, total=False):
@@ -838,6 +998,18 @@ class FunctionEventInvokeConfig(TypedDict, total=False):
 
 FunctionEventInvokeConfigList = List[FunctionEventInvokeConfig]
 FunctionList = List[FunctionConfiguration]
+
+
+class FunctionUrlConfig(TypedDict, total=False):
+    FunctionUrl: FunctionUrl
+    FunctionArn: FunctionArn
+    CreationTime: Timestamp
+    LastModifiedTime: Timestamp
+    Cors: Optional[Cors]
+    AuthType: FunctionUrlAuthType
+
+
+FunctionUrlConfigList = List[FunctionUrlConfig]
 
 
 class GetAccountSettingsRequest(ServiceRequest):
@@ -903,6 +1075,20 @@ class GetFunctionResponse(TypedDict, total=False):
     Code: Optional[FunctionCodeLocation]
     Tags: Optional[Tags]
     Concurrency: Optional[Concurrency]
+
+
+class GetFunctionUrlConfigRequest(ServiceRequest):
+    FunctionName: FunctionName
+    Qualifier: Optional[FunctionUrlQualifier]
+
+
+class GetFunctionUrlConfigResponse(TypedDict, total=False):
+    FunctionUrl: FunctionUrl
+    FunctionArn: FunctionArn
+    AuthType: FunctionUrlAuthType
+    Cors: Optional[Cors]
+    CreationTime: Timestamp
+    LastModifiedTime: Timestamp
 
 
 class GetLayerVersionByArnRequest(ServiceRequest):
@@ -1065,6 +1251,17 @@ class ListFunctionEventInvokeConfigsRequest(ServiceRequest):
 
 class ListFunctionEventInvokeConfigsResponse(TypedDict, total=False):
     FunctionEventInvokeConfigs: Optional[FunctionEventInvokeConfigList]
+    NextMarker: Optional[String]
+
+
+class ListFunctionUrlConfigsRequest(ServiceRequest):
+    FunctionName: FunctionName
+    Marker: Optional[String]
+    MaxItems: Optional[MaxItems]
+
+
+class ListFunctionUrlConfigsResponse(TypedDict, total=False):
+    FunctionUrlConfigs: FunctionUrlConfigList
     NextMarker: Optional[String]
 
 
@@ -1319,6 +1516,7 @@ class UpdateFunctionConfigurationRequest(ServiceRequest):
     Layers: Optional[LayerList]
     FileSystemConfigs: Optional[FileSystemConfigList]
     ImageConfig: Optional[ImageConfig]
+    EphemeralStorage: Optional[EphemeralStorage]
 
 
 class UpdateFunctionEventInvokeConfigRequest(ServiceRequest):
@@ -1327,6 +1525,22 @@ class UpdateFunctionEventInvokeConfigRequest(ServiceRequest):
     MaximumRetryAttempts: Optional[MaximumRetryAttempts]
     MaximumEventAgeInSeconds: Optional[MaximumEventAgeInSeconds]
     DestinationConfig: Optional[DestinationConfig]
+
+
+class UpdateFunctionUrlConfigRequest(ServiceRequest):
+    FunctionName: FunctionName
+    Qualifier: Optional[FunctionUrlQualifier]
+    AuthType: Optional[FunctionUrlAuthType]
+    Cors: Optional[Cors]
+
+
+class UpdateFunctionUrlConfigResponse(TypedDict, total=False):
+    FunctionUrl: FunctionUrl
+    FunctionArn: FunctionArn
+    AuthType: FunctionUrlAuthType
+    Cors: Optional[Cors]
+    CreationTime: Timestamp
+    LastModifiedTime: Timestamp
 
 
 class LambdaApi:
@@ -1361,6 +1575,8 @@ class LambdaApi:
         event_source_token: EventSourceToken = None,
         qualifier: Qualifier = None,
         revision_id: String = None,
+        principal_org_id: PrincipalOrgID = None,
+        function_url_auth_type: FunctionUrlAuthType = None,
     ) -> AddPermissionResponse:
         raise NotImplementedError
 
@@ -1437,7 +1653,19 @@ class LambdaApi:
         image_config: ImageConfig = None,
         code_signing_config_arn: CodeSigningConfigArn = None,
         architectures: ArchitecturesList = None,
+        ephemeral_storage: EphemeralStorage = None,
     ) -> FunctionConfiguration:
+        raise NotImplementedError
+
+    @handler("CreateFunctionUrlConfig")
+    def create_function_url_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        auth_type: FunctionUrlAuthType,
+        qualifier: FunctionUrlQualifier = None,
+        cors: Cors = None,
+    ) -> CreateFunctionUrlConfigResponse:
         raise NotImplementedError
 
     @handler("DeleteAlias")
@@ -1479,6 +1707,15 @@ class LambdaApi:
     @handler("DeleteFunctionEventInvokeConfig")
     def delete_function_event_invoke_config(
         self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteFunctionUrlConfig")
+    def delete_function_url_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: FunctionUrlQualifier = None,
     ) -> None:
         raise NotImplementedError
 
@@ -1553,6 +1790,15 @@ class LambdaApi:
     def get_function_event_invoke_config(
         self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
     ) -> FunctionEventInvokeConfig:
+        raise NotImplementedError
+
+    @handler("GetFunctionUrlConfig")
+    def get_function_url_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: FunctionUrlQualifier = None,
+    ) -> GetFunctionUrlConfigResponse:
         raise NotImplementedError
 
     @handler("GetLayerVersion")
@@ -1646,6 +1892,16 @@ class LambdaApi:
         marker: String = None,
         max_items: MaxFunctionEventInvokeConfigListItems = None,
     ) -> ListFunctionEventInvokeConfigsResponse:
+        raise NotImplementedError
+
+    @handler("ListFunctionUrlConfigs")
+    def list_function_url_configs(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        marker: String = None,
+        max_items: MaxItems = None,
+    ) -> ListFunctionUrlConfigsResponse:
         raise NotImplementedError
 
     @handler("ListFunctions")
@@ -1894,6 +2150,7 @@ class LambdaApi:
         layers: LayerList = None,
         file_system_configs: FileSystemConfigList = None,
         image_config: ImageConfig = None,
+        ephemeral_storage: EphemeralStorage = None,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -1907,4 +2164,15 @@ class LambdaApi:
         maximum_event_age_in_seconds: MaximumEventAgeInSeconds = None,
         destination_config: DestinationConfig = None,
     ) -> FunctionEventInvokeConfig:
+        raise NotImplementedError
+
+    @handler("UpdateFunctionUrlConfig")
+    def update_function_url_config(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: FunctionUrlQualifier = None,
+        auth_type: FunctionUrlAuthType = None,
+        cors: Cors = None,
+    ) -> UpdateFunctionUrlConfigResponse:
         raise NotImplementedError

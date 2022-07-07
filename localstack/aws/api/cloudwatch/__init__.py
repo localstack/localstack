@@ -185,7 +185,9 @@ class StatusCode(str):
 
 
 class ConcurrentModificationException(ServiceException):
-    pass
+    code: str = "ConcurrentModificationException"
+    sender_fault: bool = True
+    status_code: int = 429
 
 
 class DashboardValidationMessage(TypedDict, total=False):
@@ -197,51 +199,86 @@ DashboardValidationMessages = List[DashboardValidationMessage]
 
 
 class DashboardInvalidInputError(ServiceException):
+    code: str = "InvalidParameterInput"
+    sender_fault: bool = True
+    status_code: int = 400
     message: Optional[DashboardErrorMessage]
     dashboardValidationMessages: Optional[DashboardValidationMessages]
 
 
 class DashboardNotFoundError(ServiceException):
+    code: str = "ResourceNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
     message: Optional[DashboardErrorMessage]
 
 
 class InternalServiceFault(ServiceException):
+    code: str = "InternalServiceError"
+    sender_fault: bool = False
+    status_code: int = 500
     Message: Optional[FaultDescription]
 
 
 class InvalidFormatFault(ServiceException):
+    code: str = "InvalidFormat"
+    sender_fault: bool = True
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidNextToken(ServiceException):
+    code: str = "InvalidNextToken"
+    sender_fault: bool = True
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class InvalidParameterCombinationException(ServiceException):
+    code: str = "InvalidParameterCombination"
+    sender_fault: bool = True
+    status_code: int = 400
     message: Optional[AwsQueryErrorMessage]
 
 
 class InvalidParameterValueException(ServiceException):
+    code: str = "InvalidParameterValue"
+    sender_fault: bool = True
+    status_code: int = 400
     message: Optional[AwsQueryErrorMessage]
 
 
 class LimitExceededException(ServiceException):
-    pass
+    code: str = "LimitExceededException"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class LimitExceededFault(ServiceException):
+    code: str = "LimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
     message: Optional[ErrorMessage]
 
 
 class MissingRequiredParameterException(ServiceException):
+    code: str = "MissingParameter"
+    sender_fault: bool = True
+    status_code: int = 400
     message: Optional[AwsQueryErrorMessage]
 
 
 class ResourceNotFound(ServiceException):
+    code: str = "ResourceNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
     message: Optional[ErrorMessage]
 
 
 class ResourceNotFoundException(ServiceException):
+    code: str = "ResourceNotFoundException"
+    sender_fault: bool = True
+    status_code: int = 404
     ResourceType: Optional[ResourceType]
     ResourceId: Optional[ResourceId]
 

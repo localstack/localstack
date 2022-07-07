@@ -183,143 +183,235 @@ class VerificationStatus(str):
 
 
 class AccountSendingPausedException(ServiceException):
-    pass
+    code: str = "AccountSendingPausedException"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class AlreadyExistsException(ServiceException):
+    code: str = "AlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
     Name: Optional[RuleOrRuleSetName]
 
 
 class CannotDeleteException(ServiceException):
+    code: str = "CannotDelete"
+    sender_fault: bool = True
+    status_code: int = 400
     Name: Optional[RuleOrRuleSetName]
 
 
 class ConfigurationSetAlreadyExistsException(ServiceException):
+    code: str = "ConfigurationSetAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
     ConfigurationSetName: Optional[ConfigurationSetName]
 
 
 class ConfigurationSetDoesNotExistException(ServiceException):
+    code: str = "ConfigurationSetDoesNotExist"
+    sender_fault: bool = True
+    status_code: int = 400
     ConfigurationSetName: Optional[ConfigurationSetName]
 
 
 class ConfigurationSetSendingPausedException(ServiceException):
+    code: str = "ConfigurationSetSendingPausedException"
+    sender_fault: bool = True
+    status_code: int = 400
     ConfigurationSetName: Optional[ConfigurationSetName]
 
 
 class CustomVerificationEmailInvalidContentException(ServiceException):
-    pass
+    code: str = "CustomVerificationEmailInvalidContent"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class CustomVerificationEmailTemplateAlreadyExistsException(ServiceException):
+    code: str = "CustomVerificationEmailTemplateAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
     CustomVerificationEmailTemplateName: Optional[TemplateName]
 
 
 class CustomVerificationEmailTemplateDoesNotExistException(ServiceException):
+    code: str = "CustomVerificationEmailTemplateDoesNotExist"
+    sender_fault: bool = True
+    status_code: int = 400
     CustomVerificationEmailTemplateName: Optional[TemplateName]
 
 
 class EventDestinationAlreadyExistsException(ServiceException):
+    code: str = "EventDestinationAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
     ConfigurationSetName: Optional[ConfigurationSetName]
     EventDestinationName: Optional[EventDestinationName]
 
 
 class EventDestinationDoesNotExistException(ServiceException):
+    code: str = "EventDestinationDoesNotExist"
+    sender_fault: bool = True
+    status_code: int = 400
     ConfigurationSetName: Optional[ConfigurationSetName]
     EventDestinationName: Optional[EventDestinationName]
 
 
 class FromEmailAddressNotVerifiedException(ServiceException):
+    code: str = "FromEmailAddressNotVerified"
+    sender_fault: bool = True
+    status_code: int = 400
     FromEmailAddress: Optional[FromAddress]
 
 
 class InvalidCloudWatchDestinationException(ServiceException):
+    code: str = "InvalidCloudWatchDestination"
+    sender_fault: bool = True
+    status_code: int = 400
     ConfigurationSetName: Optional[ConfigurationSetName]
     EventDestinationName: Optional[EventDestinationName]
 
 
 class InvalidConfigurationSetException(ServiceException):
-    pass
+    code: str = "InvalidConfigurationSet"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidDeliveryOptionsException(ServiceException):
-    pass
+    code: str = "InvalidDeliveryOptions"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidFirehoseDestinationException(ServiceException):
+    code: str = "InvalidFirehoseDestination"
+    sender_fault: bool = True
+    status_code: int = 400
     ConfigurationSetName: Optional[ConfigurationSetName]
     EventDestinationName: Optional[EventDestinationName]
 
 
 class InvalidLambdaFunctionException(ServiceException):
+    code: str = "InvalidLambdaFunction"
+    sender_fault: bool = True
+    status_code: int = 400
     FunctionArn: Optional[AmazonResourceName]
 
 
 class InvalidPolicyException(ServiceException):
-    pass
+    code: str = "InvalidPolicy"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidRenderingParameterException(ServiceException):
+    code: str = "InvalidRenderingParameter"
+    sender_fault: bool = True
+    status_code: int = 400
     TemplateName: Optional[TemplateName]
 
 
 class InvalidS3ConfigurationException(ServiceException):
+    code: str = "InvalidS3Configuration"
+    sender_fault: bool = True
+    status_code: int = 400
     Bucket: Optional[S3BucketName]
 
 
 class InvalidSNSDestinationException(ServiceException):
+    code: str = "InvalidSNSDestination"
+    sender_fault: bool = True
+    status_code: int = 400
     ConfigurationSetName: Optional[ConfigurationSetName]
     EventDestinationName: Optional[EventDestinationName]
 
 
 class InvalidSnsTopicException(ServiceException):
+    code: str = "InvalidSnsTopic"
+    sender_fault: bool = True
+    status_code: int = 400
     Topic: Optional[AmazonResourceName]
 
 
 class InvalidTemplateException(ServiceException):
+    code: str = "InvalidTemplate"
+    sender_fault: bool = True
+    status_code: int = 400
     TemplateName: Optional[TemplateName]
 
 
 class InvalidTrackingOptionsException(ServiceException):
-    pass
+    code: str = "InvalidTrackingOptions"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class LimitExceededException(ServiceException):
-    pass
+    code: str = "LimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class MailFromDomainNotVerifiedException(ServiceException):
-    pass
+    code: str = "MailFromDomainNotVerifiedException"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class MessageRejected(ServiceException):
-    pass
+    code: str = "MessageRejected"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class MissingRenderingAttributeException(ServiceException):
+    code: str = "MissingRenderingAttribute"
+    sender_fault: bool = True
+    status_code: int = 400
     TemplateName: Optional[TemplateName]
 
 
 class ProductionAccessNotGrantedException(ServiceException):
-    pass
+    code: str = "ProductionAccessNotGranted"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class RuleDoesNotExistException(ServiceException):
+    code: str = "RuleDoesNotExist"
+    sender_fault: bool = True
+    status_code: int = 400
     Name: Optional[RuleOrRuleSetName]
 
 
 class RuleSetDoesNotExistException(ServiceException):
+    code: str = "RuleSetDoesNotExist"
+    sender_fault: bool = True
+    status_code: int = 400
     Name: Optional[RuleOrRuleSetName]
 
 
 class TemplateDoesNotExistException(ServiceException):
+    code: str = "TemplateDoesNotExist"
+    sender_fault: bool = True
+    status_code: int = 400
     TemplateName: Optional[TemplateName]
 
 
 class TrackingOptionsAlreadyExistsException(ServiceException):
+    code: str = "TrackingOptionsAlreadyExistsException"
+    sender_fault: bool = True
+    status_code: int = 400
     ConfigurationSetName: Optional[ConfigurationSetName]
 
 
 class TrackingOptionsDoesNotExistException(ServiceException):
+    code: str = "TrackingOptionsDoesNotExistException"
+    sender_fault: bool = True
+    status_code: int = 400
     ConfigurationSetName: Optional[ConfigurationSetName]
 
 

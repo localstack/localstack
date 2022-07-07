@@ -201,507 +201,759 @@ class UsageLimitPeriod(str):
 
 
 class AccessToClusterDeniedFault(ServiceException):
-    pass
+    code: str = "AccessToClusterDenied"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class AccessToSnapshotDeniedFault(ServiceException):
-    pass
+    code: str = "AccessToSnapshotDenied"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class AuthenticationProfileAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "AuthenticationProfileAlreadyExistsFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class AuthenticationProfileNotFoundFault(ServiceException):
-    pass
+    code: str = "AuthenticationProfileNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class AuthenticationProfileQuotaExceededFault(ServiceException):
-    pass
+    code: str = "AuthenticationProfileQuotaExceededFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class AuthorizationAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "AuthorizationAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class AuthorizationNotFoundFault(ServiceException):
-    pass
+    code: str = "AuthorizationNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class AuthorizationQuotaExceededFault(ServiceException):
-    pass
+    code: str = "AuthorizationQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class BatchDeleteRequestSizeExceededFault(ServiceException):
-    pass
+    code: str = "BatchDeleteRequestSizeExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class BatchModifyClusterSnapshotsLimitExceededFault(ServiceException):
-    pass
+    code: str = "BatchModifyClusterSnapshotsLimitExceededFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class BucketNotFoundFault(ServiceException):
-    pass
+    code: str = "BucketNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "ClusterAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterNotFoundFault(ServiceException):
-    pass
+    code: str = "ClusterNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ClusterOnLatestRevisionFault(ServiceException):
-    pass
+    code: str = "ClusterOnLatestRevision"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterParameterGroupAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "ClusterParameterGroupAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterParameterGroupNotFoundFault(ServiceException):
-    pass
+    code: str = "ClusterParameterGroupNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ClusterParameterGroupQuotaExceededFault(ServiceException):
-    pass
+    code: str = "ClusterParameterGroupQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterQuotaExceededFault(ServiceException):
-    pass
+    code: str = "ClusterQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterSecurityGroupAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "ClusterSecurityGroupAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterSecurityGroupNotFoundFault(ServiceException):
-    pass
+    code: str = "ClusterSecurityGroupNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ClusterSecurityGroupQuotaExceededFault(ServiceException):
-    pass
+    code: str = "QuotaExceeded.ClusterSecurityGroup"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterSnapshotAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "ClusterSnapshotAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterSnapshotNotFoundFault(ServiceException):
-    pass
+    code: str = "ClusterSnapshotNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ClusterSnapshotQuotaExceededFault(ServiceException):
-    pass
+    code: str = "ClusterSnapshotQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterSubnetGroupAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "ClusterSubnetGroupAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterSubnetGroupNotFoundFault(ServiceException):
-    pass
+    code: str = "ClusterSubnetGroupNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterSubnetGroupQuotaExceededFault(ServiceException):
-    pass
+    code: str = "ClusterSubnetGroupQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ClusterSubnetQuotaExceededFault(ServiceException):
-    pass
+    code: str = "ClusterSubnetQuotaExceededFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class CopyToRegionDisabledFault(ServiceException):
-    pass
+    code: str = "CopyToRegionDisabledFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class DependentServiceRequestThrottlingFault(ServiceException):
-    pass
+    code: str = "DependentServiceRequestThrottlingFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class DependentServiceUnavailableFault(ServiceException):
-    pass
+    code: str = "DependentServiceUnavailableFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class EndpointAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "EndpointAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class EndpointAuthorizationAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "EndpointAuthorizationAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class EndpointAuthorizationNotFoundFault(ServiceException):
-    pass
+    code: str = "EndpointAuthorizationNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class EndpointAuthorizationsPerClusterLimitExceededFault(ServiceException):
-    pass
+    code: str = "EndpointAuthorizationsPerClusterLimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class EndpointNotFoundFault(ServiceException):
-    pass
+    code: str = "EndpointNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class EndpointsPerAuthorizationLimitExceededFault(ServiceException):
-    pass
+    code: str = "EndpointsPerAuthorizationLimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class EndpointsPerClusterLimitExceededFault(ServiceException):
-    pass
+    code: str = "EndpointsPerClusterLimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class EventSubscriptionQuotaExceededFault(ServiceException):
-    pass
+    code: str = "EventSubscriptionQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class HsmClientCertificateAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "HsmClientCertificateAlreadyExistsFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class HsmClientCertificateNotFoundFault(ServiceException):
-    pass
+    code: str = "HsmClientCertificateNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class HsmClientCertificateQuotaExceededFault(ServiceException):
-    pass
+    code: str = "HsmClientCertificateQuotaExceededFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class HsmConfigurationAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "HsmConfigurationAlreadyExistsFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class HsmConfigurationNotFoundFault(ServiceException):
-    pass
+    code: str = "HsmConfigurationNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class HsmConfigurationQuotaExceededFault(ServiceException):
-    pass
+    code: str = "HsmConfigurationQuotaExceededFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InProgressTableRestoreQuotaExceededFault(ServiceException):
-    pass
+    code: str = "InProgressTableRestoreQuotaExceededFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class IncompatibleOrderableOptions(ServiceException):
-    pass
+    code: str = "IncompatibleOrderableOptions"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InsufficientClusterCapacityFault(ServiceException):
-    pass
+    code: str = "InsufficientClusterCapacity"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InsufficientS3BucketPolicyFault(ServiceException):
-    pass
+    code: str = "InsufficientS3BucketPolicyFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidAuthenticationProfileRequestFault(ServiceException):
-    pass
+    code: str = "InvalidAuthenticationProfileRequestFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidAuthorizationStateFault(ServiceException):
-    pass
+    code: str = "InvalidAuthorizationState"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidClusterParameterGroupStateFault(ServiceException):
-    pass
+    code: str = "InvalidClusterParameterGroupState"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidClusterSecurityGroupStateFault(ServiceException):
-    pass
+    code: str = "InvalidClusterSecurityGroupState"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidClusterSnapshotScheduleStateFault(ServiceException):
-    pass
+    code: str = "InvalidClusterSnapshotScheduleState"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidClusterSnapshotStateFault(ServiceException):
-    pass
+    code: str = "InvalidClusterSnapshotState"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidClusterStateFault(ServiceException):
-    pass
+    code: str = "InvalidClusterState"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidClusterSubnetGroupStateFault(ServiceException):
-    pass
+    code: str = "InvalidClusterSubnetGroupStateFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidClusterSubnetStateFault(ServiceException):
-    pass
+    code: str = "InvalidClusterSubnetStateFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidClusterTrackFault(ServiceException):
-    pass
+    code: str = "InvalidClusterTrack"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidDataShareFault(ServiceException):
-    pass
+    code: str = "InvalidDataShareFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidElasticIpFault(ServiceException):
-    pass
+    code: str = "InvalidElasticIpFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidEndpointStateFault(ServiceException):
-    pass
+    code: str = "InvalidEndpointState"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidHsmClientCertificateStateFault(ServiceException):
-    pass
+    code: str = "InvalidHsmClientCertificateStateFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidHsmConfigurationStateFault(ServiceException):
-    pass
+    code: str = "InvalidHsmConfigurationStateFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidNamespaceFault(ServiceException):
-    pass
+    code: str = "InvalidNamespaceFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidReservedNodeStateFault(ServiceException):
-    pass
+    code: str = "InvalidReservedNodeState"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidRestoreFault(ServiceException):
-    pass
+    code: str = "InvalidRestore"
+    sender_fault: bool = True
+    status_code: int = 406
 
 
 class InvalidRetentionPeriodFault(ServiceException):
-    pass
+    code: str = "InvalidRetentionPeriodFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidS3BucketNameFault(ServiceException):
-    pass
+    code: str = "InvalidS3BucketNameFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidS3KeyPrefixFault(ServiceException):
-    pass
+    code: str = "InvalidS3KeyPrefixFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidScheduleFault(ServiceException):
-    pass
+    code: str = "InvalidSchedule"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidScheduledActionFault(ServiceException):
-    pass
+    code: str = "InvalidScheduledAction"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidSnapshotCopyGrantStateFault(ServiceException):
-    pass
+    code: str = "InvalidSnapshotCopyGrantStateFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidSubnet(ServiceException):
-    pass
+    code: str = "InvalidSubnet"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidSubscriptionStateFault(ServiceException):
-    pass
+    code: str = "InvalidSubscriptionStateFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidTableRestoreArgumentFault(ServiceException):
-    pass
+    code: str = "InvalidTableRestoreArgument"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidTagFault(ServiceException):
-    pass
+    code: str = "InvalidTagFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidUsageLimitFault(ServiceException):
-    pass
+    code: str = "InvalidUsageLimit"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class InvalidVPCNetworkStateFault(ServiceException):
-    pass
+    code: str = "InvalidVPCNetworkStateFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class LimitExceededFault(ServiceException):
-    pass
+    code: str = "LimitExceededFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class NumberOfNodesPerClusterLimitExceededFault(ServiceException):
-    pass
+    code: str = "NumberOfNodesPerClusterLimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class NumberOfNodesQuotaExceededFault(ServiceException):
-    pass
+    code: str = "NumberOfNodesQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class PartnerNotFoundFault(ServiceException):
-    pass
+    code: str = "PartnerNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ReservedNodeAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "ReservedNodeAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ReservedNodeAlreadyMigratedFault(ServiceException):
-    pass
+    code: str = "ReservedNodeAlreadyMigrated"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ReservedNodeExchangeNotFoundFault(ServiceException):
-    pass
+    code: str = "ReservedNodeExchangeNotFond"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ReservedNodeNotFoundFault(ServiceException):
-    pass
+    code: str = "ReservedNodeNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ReservedNodeOfferingNotFoundFault(ServiceException):
-    pass
+    code: str = "ReservedNodeOfferingNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ReservedNodeQuotaExceededFault(ServiceException):
-    pass
+    code: str = "ReservedNodeQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ResizeNotFoundFault(ServiceException):
-    pass
+    code: str = "ResizeNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ResourceNotFoundFault(ServiceException):
-    pass
+    code: str = "ResourceNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class SNSInvalidTopicFault(ServiceException):
-    pass
+    code: str = "SNSInvalidTopic"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SNSNoAuthorizationFault(ServiceException):
-    pass
+    code: str = "SNSNoAuthorization"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SNSTopicArnNotFoundFault(ServiceException):
-    pass
+    code: str = "SNSTopicArnNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class ScheduleDefinitionTypeUnsupportedFault(ServiceException):
-    pass
+    code: str = "ScheduleDefinitionTypeUnsupported"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ScheduledActionAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "ScheduledActionAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ScheduledActionNotFoundFault(ServiceException):
-    pass
+    code: str = "ScheduledActionNotFound"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ScheduledActionQuotaExceededFault(ServiceException):
-    pass
+    code: str = "ScheduledActionQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class ScheduledActionTypeUnsupportedFault(ServiceException):
-    pass
+    code: str = "ScheduledActionTypeUnsupported"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SnapshotCopyAlreadyDisabledFault(ServiceException):
-    pass
+    code: str = "SnapshotCopyAlreadyDisabledFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SnapshotCopyAlreadyEnabledFault(ServiceException):
-    pass
+    code: str = "SnapshotCopyAlreadyEnabledFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SnapshotCopyDisabledFault(ServiceException):
-    pass
+    code: str = "SnapshotCopyDisabledFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SnapshotCopyGrantAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "SnapshotCopyGrantAlreadyExistsFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SnapshotCopyGrantNotFoundFault(ServiceException):
-    pass
+    code: str = "SnapshotCopyGrantNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SnapshotCopyGrantQuotaExceededFault(ServiceException):
-    pass
+    code: str = "SnapshotCopyGrantQuotaExceededFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SnapshotScheduleAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "SnapshotScheduleAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SnapshotScheduleNotFoundFault(ServiceException):
-    pass
+    code: str = "SnapshotScheduleNotFound"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SnapshotScheduleQuotaExceededFault(ServiceException):
-    pass
+    code: str = "SnapshotScheduleQuotaExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SnapshotScheduleUpdateInProgressFault(ServiceException):
-    pass
+    code: str = "SnapshotScheduleUpdateInProgress"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SourceNotFoundFault(ServiceException):
-    pass
+    code: str = "SourceNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class SubnetAlreadyInUse(ServiceException):
-    pass
+    code: str = "SubnetAlreadyInUse"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SubscriptionAlreadyExistFault(ServiceException):
-    pass
+    code: str = "SubscriptionAlreadyExist"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class SubscriptionCategoryNotFoundFault(ServiceException):
-    pass
+    code: str = "SubscriptionCategoryNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class SubscriptionEventIdNotFoundFault(ServiceException):
-    pass
+    code: str = "SubscriptionEventIdNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class SubscriptionNotFoundFault(ServiceException):
-    pass
+    code: str = "SubscriptionNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class SubscriptionSeverityNotFoundFault(ServiceException):
-    pass
+    code: str = "SubscriptionSeverityNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class TableLimitExceededFault(ServiceException):
-    pass
+    code: str = "TableLimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class TableRestoreNotFoundFault(ServiceException):
-    pass
+    code: str = "TableRestoreNotFoundFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class TagLimitExceededFault(ServiceException):
-    pass
+    code: str = "TagLimitExceededFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class UnauthorizedOperation(ServiceException):
-    pass
+    code: str = "UnauthorizedOperation"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class UnauthorizedPartnerIntegrationFault(ServiceException):
-    pass
+    code: str = "UnauthorizedPartnerIntegration"
+    sender_fault: bool = True
+    status_code: int = 401
 
 
 class UnknownSnapshotCopyRegionFault(ServiceException):
-    pass
+    code: str = "UnknownSnapshotCopyRegionFault"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class UnsupportedOperationFault(ServiceException):
-    pass
+    code: str = "UnsupportedOperation"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class UnsupportedOptionFault(ServiceException):
-    pass
+    code: str = "UnsupportedOptionFault"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class UsageLimitAlreadyExistsFault(ServiceException):
-    pass
+    code: str = "UsageLimitAlreadyExists"
+    sender_fault: bool = True
+    status_code: int = 400
 
 
 class UsageLimitNotFoundFault(ServiceException):
-    pass
+    code: str = "UsageLimitNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class AcceptReservedNodeExchangeInputMessage(ServiceRequest):

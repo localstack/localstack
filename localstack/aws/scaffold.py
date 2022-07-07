@@ -138,7 +138,12 @@ class ShapeNode:
         if doc:
             self.print_shape_doc(output, self.shape)
 
-        if not self.shape.members:
+        if self.is_exception:
+            error_spec = self.shape.metadata.get("error", {})
+            output.write(f'    code: str = "{error_spec.get("code", self.shape.name)}"\n')
+            output.write(f'    sender_fault: bool = {error_spec.get("senderFault", False)}\n')
+            output.write(f'    status_code: int = {error_spec.get("httpStatusCode", 400)}\n')
+        elif not self.shape.members:
             output.write("    pass\n")
 
         for k, v in self.shape.members.items():

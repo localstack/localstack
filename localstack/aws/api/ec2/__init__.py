@@ -2242,11 +2242,6 @@ class SpotInstanceType(str):
     persistent = "persistent"
 
 
-class SpreadLevel(str):
-    host = "host"
-    rack = "rack"
-
-
 class State(str):
     PendingAcceptance = "PendingAcceptance"
     Pending = "Pending"
@@ -6239,7 +6234,6 @@ class CreatePlacementGroupRequest(ServiceRequest):
     Strategy: Optional[PlacementStrategy]
     PartitionCount: Optional[Integer]
     TagSpecifications: Optional[TagSpecificationList]
-    SpreadLevel: Optional[SpreadLevel]
 
 
 class PlacementGroup(TypedDict, total=False):
@@ -6250,7 +6244,6 @@ class PlacementGroup(TypedDict, total=False):
     GroupId: Optional[String]
     Tags: Optional[TagList]
     GroupArn: Optional[String]
-    SpreadLevel: Optional[SpreadLevel]
 
 
 class CreatePlacementGroupResult(TypedDict, total=False):
@@ -16277,7 +16270,6 @@ class Ec2Api:
         strategy: PlacementStrategy = None,
         partition_count: Integer = None,
         tag_specifications: TagSpecificationList = None,
-        spread_level: SpreadLevel = None,
     ) -> CreatePlacementGroupResult:
         raise NotImplementedError
 

@@ -169,33 +169,54 @@ class VpcLinkStatus(str):
 
 
 class BadRequestException(ServiceException):
+    code: str = "BadRequestException"
+    sender_fault: bool = False
+    status_code: int = 400
     message: Optional[String]
 
 
 class ConflictException(ServiceException):
+    code: str = "ConflictException"
+    sender_fault: bool = False
+    status_code: int = 409
     message: Optional[String]
 
 
 class LimitExceededException(ServiceException):
+    code: str = "LimitExceededException"
+    sender_fault: bool = False
+    status_code: int = 429
     retryAfterSeconds: Optional[String]
     message: Optional[String]
 
 
 class NotFoundException(ServiceException):
+    code: str = "NotFoundException"
+    sender_fault: bool = False
+    status_code: int = 404
     message: Optional[String]
 
 
 class ServiceUnavailableException(ServiceException):
+    code: str = "ServiceUnavailableException"
+    sender_fault: bool = False
+    status_code: int = 503
     retryAfterSeconds: Optional[String]
     message: Optional[String]
 
 
 class TooManyRequestsException(ServiceException):
+    code: str = "TooManyRequestsException"
+    sender_fault: bool = False
+    status_code: int = 429
     retryAfterSeconds: Optional[String]
     message: Optional[String]
 
 
 class UnauthorizedException(ServiceException):
+    code: str = "UnauthorizedException"
+    sender_fault: bool = False
+    status_code: int = 401
     message: Optional[String]
 
 
