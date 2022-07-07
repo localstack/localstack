@@ -16,7 +16,6 @@ LOG = logging.getLogger(__name__)
 
 
 class ServiceRequestCounter:
-
     aggregator: ServiceRequestAggregator
 
     def __init__(self, service_request_aggregator: ServiceRequestAggregator = None):
@@ -52,14 +51,15 @@ class ServiceRequestCounter:
 
     def _get_err_type(self, context: RequestContext, response: Response) -> Optional[str]:
         """
-        Attempts to parse and return the error type from the response body, e.g. ResourceInUseException.
-
-        TODO: we need this type of logic frequently, so we should make sure the parsed response is re-usable by
-         multiple handlers, either by storing it in the context or the chain.
+        Attempts to re-use the existing service_response, or parse and return the error type from the response body,
+        e.g. ``ResourceInUseException``.
         """
         try:
-            parsed_response = parse_response(context.operation, response)
-            return parsed_response["Error"]["Code"]
+            if context.service_exception:
+                return context.service_exception.code
+
+            response = parse_response(context.operation, response)
+            return response["Error"]["Code"]
         except Exception:
             if config.DEBUG_ANALYTICS:
                 LOG.exception("error parsing error response")

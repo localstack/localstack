@@ -4,7 +4,7 @@ import traceback
 from functools import lru_cache
 from typing import Any, Dict, Optional, Union
 
-from botocore.model import ServiceModel
+from botocore.model import OperationModel, ServiceModel
 
 from localstack import config
 from localstack.http import Response
@@ -12,6 +12,7 @@ from localstack.http import Response
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
 from ..chain import ExceptionHandler, Handler, HandlerChain
+from ..client import parse_response
 from ..protocol.parser import RequestParser, create_parser
 from ..protocol.serializer import create_serializer
 from ..protocol.service_router import determine_aws_service_name
@@ -187,6 +188,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
             )
             LOG.info(message)
             error = CommonServiceException("InternalFailure", message, status_code=501)
+            context.service_exception = error
 
         elif not isinstance(exception, ServiceException):
             if not self.handle_internal_failures:
@@ -218,6 +220,71 @@ class ServiceExceptionSerializer(ExceptionHandler):
             status_code = 501 if config.FAIL_FAST else 500
 
             error = CommonServiceException("InternalError", msg, status_code=status_code)
+            context.service_exception = error
 
         serializer = create_serializer(context.service)  # TODO: serializer cache
         return serializer.serialize_error_to_response(error, operation)
+
+
+class ServiceResponseParser(Handler):
+    """
+    This response handler makes sure that, if the current request in an AWS request, that either ``service_response``
+    or ``service_exception`` of ``RequestContext`` is set to something sensible before other downstream response
+    handlers are called. When the Skeleton invokes an ASF-native provider, this will mostly return immediately
+    because the skeleton sets the service response directly to what comes out of the provider. When responses come
+    back from backends like Moto, we may need to parse the raw HTTP response, since we sometimes proxy directly. If
+    the ``service_response`` is an error, then we parse the response and create an appropriate exception from the
+    error response. If ``service_exception`` is set, then we also try to make sure the exception attributes like
+    code, sender_fault, and message have values.
+    """
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        if not context.operation:
+            return
+
+        if context.service_response:
+            return
+
+        if exception := context.service_exception:
+            if isinstance(exception, ServiceException):
+                try:
+                    exception.code
+                except AttributeError:
+                    # FIXME: we should set the exception attributes in the scaffold when we generate the exceptions.
+                    #  this is a workaround for now, since we are not doing that yet, and the attributes may be unset.
+                    self._set_exception_attributes(context.operation, exception)
+                return
+            # this shouldn't happen, but we'll log a warning anyway
+            else:
+                LOG.warning("Cannot parse exception %s", context.service_exception)
+                return
+
+        if response.content_length is None:
+            # cannot/should not parse streaming responses
+            context.service_response = {}
+            return
+
+        # in this case we need to parse the raw response
+        parsed = parse_response(context.operation, response)
+        parsed.pop("ResponseMetadata", None)
+
+        if response.status_code >= 400:
+            error = parsed["Error"]
+            context.service_exception = CommonServiceException(
+                code=error.get("Code", f"'{response.status_code}'"),
+                status_code=response.status_code,
+                message=error.get("Message", ""),
+                sender_fault=error.get("Type") == "Sender",
+            )
+        else:
+            context.service_response = parsed
+
+    @staticmethod
+    def _set_exception_attributes(operation: OperationModel, error: ServiceException):
+        """Sets the code, sender_fault, and status_code attributes of the ServiceException from the shape."""
+        error_shape_name = error.__class__.__name__
+        shape = operation.service_model.shape_for(error_shape_name)
+        error_spec = shape.metadata.get("error", {})
+        error.code = error_spec.get("code", shape.name)
+        error.sender_fault = error_spec.get("senderFault", False)
+        error.status_code = error_spec.get("httpStatusCode", 400)
