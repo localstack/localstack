@@ -1,0 +1,325 @@
+import csv
+import logging
+from typing import TypedDict
+
+import botocore.config
+import click
+from botocore.exceptions import (
+    ClientError,
+    ConnectTimeoutError,
+    EndpointConnectionError,
+    ReadTimeoutError,
+)
+from botocore.parsers import ResponseParserError
+
+from localstack.aws.mocking import generate_request
+from localstack.aws.spec import ServiceCatalog
+from localstack.utils.aws import aws_stack
+
+logging.basicConfig(level=logging.INFO)
+service_models = ServiceCatalog()
+
+STATUS_TIMEOUT_ERROR = 901
+STATUS_PARSING_ERROR = 902
+STATUS_CONNECTION_ERROR = 903
+
+# TODO: generate these via a script in PRO
+# generate with e.g. http http://localhost:4566/health | jq ".services | keys[]" | pbcopy
+latest_services_pro = [
+    "acm",
+    "amplify",
+    "apigateway",
+    "apigatewaymanagementapi",
+    "apigatewayv2",
+    "appconfig",
+    "application-autoscaling",
+    "appsync",
+    "athena",
+    "autoscaling",
+    "azure",
+    "backup",
+    "batch",
+    "ce",
+    "cloudformation",
+    "cloudfront",
+    "cloudtrail",
+    "cloudwatch",
+    "codecommit",
+    "cognito-identity",
+    "cognito-idp",
+    "config",
+    "docdb",
+    "dynamodb",
+    "dynamodbstreams",
+    "ec2",
+    "ecr",
+    "ecs",
+    "efs",
+    "eks",
+    "elasticache",
+    "elasticbeanstalk",
+    "elb",
+    "elbv2",
+    "emr",
+    "es",
+    "events",
+    "firehose",
+    "glacier",
+    "glue",
+    "iam",
+    "iot",
+    "iot-data",
+    "iotanalytics",
+    "iotwireless",
+    "kafka",
+    "kinesis",
+    "kinesisanalytics",
+    "kinesisanalyticsv2",
+    "kms",
+    "lakeformation",
+    "lambda",
+    "logs",
+    "mediastore",
+    "mediastore-data",
+    "mwaa",
+    "neptune",
+    "opensearch",
+    "organizations",
+    "qldb",
+    "qldb-session",
+    "rds",
+    "rds-data",
+    "redshift",
+    "redshift-data",
+    "resource-groups",
+    "resourcegroupstaggingapi",
+    "route53",
+    "route53resolver",
+    "s3",
+    "s3control",
+    "sagemaker",
+    "secretsmanager",
+    "serverlessrepo",
+    "servicediscovery",
+    "ses",
+    "sesv2",
+    "sns",
+    "sqs",
+    "ssm",
+    "stepfunctions",
+    "sts",
+    "support",
+    "swf",
+    "timestream-query",
+    "timestream-write",
+    "transfer",
+    "xray",
+]
+exclude_services = {"azure"}
+latest_services_pro = [s for s in latest_services_pro if s not in exclude_services]
+latest_services_pro.sort()
+
+
+class RowEntry(TypedDict, total=False):
+    service: str
+    operation: str
+    status_code: int
+    error_code: str
+    error_message: str
+    is_implemented: bool
+
+
+def simulate_call(service: str, op: str) -> RowEntry:
+    """generates a mock request based on the service and operation model and sends it to the API"""
+    client = aws_stack.create_external_boto_client(
+        service,
+        config=botocore.config.Config(
+            parameter_validation=False,
+            retries={"max_attempts": 0, "total_max_attempts": 1},
+            connect_timeout=1,
+            read_timeout=1,
+        ),
+    )
+
+    service_model = service_models.get(service)
+    op_model = service_model.operation_model(op)
+    parameters = generate_request(op_model)  # should be generate_parameters I guess
+
+    result = RowEntry(service=service, operation=op, status_code=0)
+    logging.debug(parameters)
+    try:
+        response = client._make_api_call(op, parameters)
+        result["status_code"] = response["ResponseMetadata"]["HTTPStatusCode"]
+    except ClientError as ce:
+        result["status_code"] = ce.response["ResponseMetadata"]["HTTPStatusCode"]
+        result["error_code"] = ce.response.get("Error", {}).get("Code", "Unknown?")
+        result["error_message"] = ce.response.get("Error", {}).get("Message", "Unknown?")
+    except (ReadTimeoutError, ConnectTimeoutError):
+        logging.warning("Reached timeout. Assuming it is implemented.")
+        result["status_code"] = STATUS_TIMEOUT_ERROR
+    except EndpointConnectionError:
+        # TODO: investigate further;for now assuming not implemented
+        logging.warning("Connection failed. Assuming it is not implemented.")
+        result["status_code"] = STATUS_CONNECTION_ERROR
+    except ResponseParserError:
+        # TODO: this is actually a bit tricky and might have to be handled on a service by service basis again
+        logging.warning("Parsing issue. Assuming it is implemented.")
+        result["status_code"] = STATUS_PARSING_ERROR
+    except Exception as e:
+        logging.exception(e)
+    return result
+
+
+def map_to_notimplemented(row: RowEntry) -> bool:
+    """
+    Some simple heuristics to check the API responses and classify them into implemented/notimplemented
+
+    Ideally they all should behave the same way when receiving requests for not yet implemented endpoints
+    (501 with a "not yet implemented" message)
+
+    :param row: the RowEntry
+    :return: True if we assume it is not implemented, False otherwise
+    """
+
+    if row["status_code"] in [STATUS_TIMEOUT_ERROR, STATUS_PARSING_ERROR]:
+        # parsing or timeout issue, interpreted as implemented until there's a better heuristic
+        return False
+    if row["status_code"] == STATUS_CONNECTION_ERROR:
+        # affected services:
+        # lakeformation, GetQueryStat
+        # lakeformation, GetQueryStatistics
+        # lakeformation, GetWorkUnitResults
+        # lakeformation, GetWorkUnits
+        # lakeformation, StartQueryPlanning
+        # servicediscovery, DiscoverInstances
+        # stepfunctions, StartSyncExecution
+        return True
+    if row["service"] == "dynamodb" and row.get("error_code") == "UnknownOperationException":
+        return True
+    if row["service"] == "lambda" and row["status_code"] == 404 and row.get("error_code") == "404":
+        return True
+    if (
+        row["service"] == "apigateway"
+        and row["status_code"] == 404
+        and row.get("error_code") == "404"
+        and row.get("error_message") is not None
+        and "The requested URL was not found on the server" in row.get("error_message", "")
+    ):
+        return True
+    if (
+        row["service"] == "apigatewayv2"
+        and row["status_code"] == 501
+        and row.get("error_message") is not None
+        and "not yet implemented" in row.get("error_message", "")
+    ):
+        return True
+    if row.get("error_message") is not None and "not yet implemented" in row.get(
+        "error_message", ""
+    ):
+        return True
+    if row["status_code"] == 501:
+        return True
+    return False
+
+
+def run_script(services: list[str]):
+    """send requests against all APIs"""
+    with (
+        open("implementation_coverage_full.csv", "w") as csvfile,
+        open("implementation_coverage_aggregated.csv", "w") as aggregatefile,
+    ):
+        full_w = csv.DictWriter(
+            csvfile,
+            fieldnames=[
+                "service",
+                "operation",
+                "status_code",
+                "error_code",
+                "error_message",
+                "is_implemented",
+            ],
+        )
+        aggregated_w = csv.DictWriter(
+            aggregatefile,
+            fieldnames=["service", "operation", "implemented_count", "full_count", "percentage"],
+        )
+
+        full_w.writeheader()
+        aggregated_w.writeheader()
+
+        responses = {}
+        for service_name in services:
+            service = service_models.get(service_name)
+            for op_name in service.operation_names:
+                # here's the important part (the actual service call!)
+                response = simulate_call(service_name, op_name)
+
+                responses.setdefault(service_name, {})[op_name] = response
+                is_implemented = str(not map_to_notimplemented(response))
+                full_w.writerow(response | {"is_implemented": is_implemented})
+
+            # calculate aggregate for service
+            all_count = len(responses[service_name].values())
+            implemented_count = len(
+                [r for r in responses[service_name].values() if not map_to_notimplemented(r)]
+            )
+            implemented_percentage = implemented_count / all_count
+
+            aggregated_w.writerow(
+                {
+                    "service": response["service"],
+                    "operation": response["operation"],
+                    "implemented_count": implemented_count,
+                    "full_count": all_count,
+                    "percentage": f"{implemented_percentage * 100:.1f}",
+                }
+            )
+
+
+def calculate_percentages():
+    aggregate = {}
+
+    implemented_aggregate = {}
+    aggregate_list = []
+
+    with open("./output-notimplemented.csv", "r") as fd:
+        reader = csv.DictReader(fd, fieldnames=["service", "operation", "implemented"])
+        for line in reader:
+            if line["implemented"] == "implemented":
+                continue
+            aggregate.setdefault(line["service"], {}).setdefault(line["operation"], line)
+
+        for service in aggregate.keys():
+            vals = aggregate[service].values()
+            all_count = len(vals)
+            implemented_count = len([v for v in vals if v["implemented"] == "True"])
+            implemented_aggregate[service] = implemented_count / all_count
+            aggregate_list.append(
+                {
+                    "service": service,
+                    "count": all_count,
+                    "implemented": implemented_count,
+                    "percentage": implemented_count / all_count,
+                }
+            )
+
+    aggregate_list.sort(key=lambda k: k["percentage"])
+
+    with open("implementation_coverage_aggregated.csv", "w") as csv_fd:
+        writer = csv.DictWriter(
+            csv_fd, fieldnames=["service", "percentage", "implemented", "count"]
+        )
+        writer.writeheader()
+
+        for agg in aggregate_list:
+            agg["percentage"] = f"{agg['percentage'] * 100:.1f}"
+            writer.writerow(agg)
+
+
+@click.command()
+def main():
+    run_script(latest_services_pro)
+
+
+if __name__ == "__main__":
+    main()

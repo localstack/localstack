@@ -6,6 +6,7 @@ from datetime import date, datetime
 from functools import lru_cache, singledispatch
 from typing import Dict, List, Optional, Set, Tuple, Union, cast
 
+import botocore
 import networkx
 import rstr
 from botocore.model import ListShape, MapShape, OperationModel, Shape, StringShape, StructureShape
@@ -13,6 +14,7 @@ from botocore.model import ListShape, MapShape, OperationModel, Shape, StringSha
 from localstack.aws.api import RequestContext, ServiceRequest, ServiceResponse
 from localstack.aws.skeleton import DispatchTable, ServiceRequestDispatcher, Skeleton
 from localstack.aws.spec import load_service
+from localstack.utils.sync import retry
 
 LOG = logging.getLogger(__name__)
 
@@ -260,30 +262,45 @@ def generate_arn(shape: StringShape):
     if not shape.metadata:
         return "arn:aws:ec2:us-east-1:1234567890123:instance/i-abcde0123456789f"
 
-    # some custom hacks
-    if shape.name in custom_arns:
-        return custom_arns[shape.name]
+    def _generate_arn():
+        # some custom hacks
+        if shape.name in custom_arns:
+            return custom_arns[shape.name]
 
-    max_len = shape.metadata.get("max") or math.inf
-    min_len = shape.metadata.get("min") or 0
+        max_len = shape.metadata.get("max") or math.inf
+        min_len = shape.metadata.get("min") or 0
 
-    pattern = shape.metadata.get("pattern")
-    if pattern:
-        # FIXME: also conforming to length may be difficult
-        pattern = sanitize_arn_pattern(pattern)
-        arn = rstr.xeger(pattern)
-    else:
-        arn = "arn:aws:ec2:us-east-1:1234567890123:instance/i-abcde0123456789f"
+        pattern = shape.metadata.get("pattern")
+        if pattern:
+            # FIXME: also conforming to length may be difficult
+            pattern = sanitize_arn_pattern(pattern)
+            arn = rstr.xeger(pattern)
+        else:
+            arn = "arn:aws:ec2:us-east-1:1234567890123:instance/i-abcde0123456789f"
 
-    if len(arn) > max_len:
-        arn = arn[:max_len]
+        # if there's a value set for the region, replace with a randomly picked region
+        # TODO: splitting the ARNs here by ":" sometimes fails for some reason (e.g. or dynamodb for some reason)
+        arn_parts = arn.split(":")
+        if len(arn_parts) >= 4:
+            region = arn_parts[3]
+            if region:
+                # TODO: check service in ARN and try to get the actual region for the service
+                regions = botocore.session.Session().get_available_regions("lambda")
+                picked_region = random.choice(regions)
+                arn_parts[3] = picked_region
+                arn = ":".join(arn_parts)
 
-    if len(arn) < min_len or len(arn) > max_len:
-        raise ValueError(
-            f"generated arn {arn} for shape {shape.name} does not match constraints {shape.metadata}"
-        )
+        if len(arn) > max_len:
+            arn = arn[:max_len]
 
-    return arn
+        if len(arn) < min_len or len(arn) > max_len:
+            raise ValueError(
+                f"generated arn {arn} for shape {shape.name} does not match constraints {shape.metadata}"
+            )
+
+        return arn
+
+    return retry(_generate_arn, retries=10, sleep_before=0, sleep=0)
 
 
 custom_strings = {"DailyTime": "12:10", "WeeklyTime": "1:12:10"}
