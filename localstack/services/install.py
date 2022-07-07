@@ -28,6 +28,7 @@ from localstack.constants import (
     ELASTICSEARCH_DELETE_MODULES,
     ELASTICSEARCH_PLUGIN_LIST,
     KMS_URL_PATTERN,
+    LIBSQLITE_AARCH64_URL,
     LOCALSTACK_MAVEN_VERSION,
     MODULE_MAIN_PATH,
     OPENSEARCH_DEFAULT_VERSION,
@@ -49,7 +50,7 @@ from localstack.utils.files import (
 )
 from localstack.utils.functions import run_safe
 from localstack.utils.http import download
-from localstack.utils.platform import get_arch, is_windows
+from localstack.utils.platform import get_arch, is_mac_os, is_windows
 from localstack.utils.run import run
 from localstack.utils.sync import retry
 from localstack.utils.threads import parallelize
@@ -542,6 +543,14 @@ def install_dynamodb_local():
         # download and extract archive
         tmp_archive = os.path.join(tempfile.gettempdir(), "localstack.ddb.zip")
         download_and_extract_with_retry(DYNAMODB_JAR_URL, tmp_archive, INSTALL_DIR_DDB)
+
+    # download additional libs for Mac M1 (for local dev mode)
+    if is_mac_os() and get_arch() == "arm64":
+        target_path = os.path.join(
+            INSTALL_DIR_DDB, "DynamoDBLocal_lib", "libsqlite4java-osx-aarch64.dylib"
+        )
+        if not file_exists_not_empty(target_path):
+            download(LIBSQLITE_AARCH64_URL, target_path)
 
     # fix logging configuration for DynamoDBLocal
     log4j2_config = """<Configuration status="WARN">
