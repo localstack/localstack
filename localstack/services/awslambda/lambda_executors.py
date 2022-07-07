@@ -909,6 +909,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             self.start_idle_container_destroyer_interval()
 
     def cleanup(self, arn: str = None):
+        LOG.debug("Cleaning up docker-reuse executor. Set arn: %s", arn)
         if arn:
             self.function_invoke_times.pop(arn, None)
             return self.destroy_docker_container(arn)
@@ -1097,6 +1098,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         Stops and/or removes all lambda docker containers for localstack.
         :return: None
         """
+        LOG.debug("Destroying all running docker-reuse lambda containers")
         with self.docker_container_lock:
             container_names = self.get_all_container_names()
 
