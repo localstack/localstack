@@ -4,7 +4,7 @@ import threading
 import time
 
 from localstack.aws.api import RequestContext
-from localstack.aws.api.awslambda import (
+from localstack.aws.api.lambda_ import (
     Architecture,
     ArchitecturesList,
     Blob,

@@ -447,6 +447,9 @@ def generate_code(service_name: str, doc: bool = False) -> str:
 
 def create_code_directory(service_name: str, code: str, base_path: str):
     service_name = service_name.replace("-", "_")
+    # handle service names which are reserved keywords in python (f.e. lambda)
+    if is_keyword(service_name):
+        service_name += "_"
     path = Path(base_path, service_name)
 
     if not path.exists():
@@ -470,7 +473,7 @@ def upgrade(path: str, doc: bool = False):
     Execute the code generation for all existing APIs.
     """
     services = [
-        d.name.replace("_", "-")
+        d.name.rstrip("_").replace("_", "-")
         for d in Path(path).iterdir()
         if d.is_dir() and not d.name.startswith("__")
     ]
