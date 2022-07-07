@@ -32,6 +32,18 @@ class TestServiceResponseHandler:
         service_response_handler_chain.handle(context, http_response)
         assert context.service_response == backend_response
 
+    def test_parse_response_with_streaming_response(self, service_response_handler_chain):
+        context = create_aws_request_context("s3", "GetObject", {"Bucket": "foo", "Key": "bar.bin"})
+        backend_response = {"Body": b"\x00\x01foo", "ContentType": "application/octet-stream"}
+        http_response = create_serializer(context.service).serialize_to_response(
+            backend_response, context.operation
+        )
+
+        service_response_handler_chain.handle(context, http_response)
+        assert context.service_response["ContentLength"] == 5
+        assert context.service_response["ContentType"] == "application/octet-stream"
+        assert context.service_response["Body"].read() == b"\x00\x01foo"
+
     def test_common_service_exception(self, service_response_handler_chain):
         context = create_aws_request_context("opensearch", "CreateDomain", {"DomainName": "foobar"})
         context.service_exception = CommonServiceException(

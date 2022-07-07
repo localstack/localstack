@@ -259,7 +259,7 @@ class ServiceResponseParser(Handler):
                 LOG.warning("Cannot parse exception %s", context.service_exception)
                 return
 
-        if response.content_length is None:
+        if response.content_length is None or context.operation.has_event_stream_output:
             # cannot/should not parse streaming responses
             context.service_response = {}
             return
