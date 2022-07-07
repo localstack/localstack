@@ -16,6 +16,7 @@ def collect_operations():
             yield service.service_name, op_name
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize(
     "service, op",
     collect_operations(),
@@ -32,6 +33,7 @@ def test_request_generator(service, op):
     assert context.request.headers
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize(
     "service, op",
     collect_operations(),
@@ -54,6 +56,7 @@ def test_response_generator(service, op):
     assert parsed_response
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize(
     "service, op",
     collect_operations(),
