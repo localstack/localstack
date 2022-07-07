@@ -52,17 +52,21 @@ description: >
 
 def main(path_to_implementation_details: str, path_to_raw_metrics: str):
     coverage = {}
-    with open(f"{path_to_implementation_details}/implementation-coverage.csv", mode="r") as file:
+    with open(
+        f"{path_to_implementation_details}/implementation_coverage_aggregated.csv", mode="r"
+    ) as file:
         csv_reader = csv.DictReader(file)
         for row in csv_reader:
             coverage[row["service"]] = row["percentage"]
 
     impl_details = {}
-    with open(f"{path_to_implementation_details}/output-implemented.csv", mode="r") as file:
+    with open(
+        f"{path_to_implementation_details}/implementation_coverage_full.csv", mode="r"
+    ) as file:
         csv_reader = csv.DictReader(file)
         for row in csv_reader:
             service = impl_details.setdefault(row["service"], {})
-            service[row["operation"]] = True if row["implemented"] == "True" else False
+            service[row["operation"]] = True if row["is_implemented"] == "True" else False
 
     recorded_metrics = aggregate_recorded_raw_data(base_dir=path_to_raw_metrics)
     create_metric_coverage_docs(
