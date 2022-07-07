@@ -12,7 +12,6 @@ if t.TYPE_CHECKING:
     from _typeshed import WSGIApplication, WSGIEnvironment
     from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, HTTPScope, Scope
 
-
 LOG = logging.getLogger(__name__)
 
 
@@ -72,8 +71,18 @@ def populate_wsgi_environment(environ: "WSGIEnvironment", scope: "HTTPScope"):
     environ["wsgi.multiprocess"] = False
     environ["wsgi.run_once"] = False
 
-    # custom key to allow downstream applications to circumvent WSGI header processing
-    environ["asgi.headers"] = scope.get("headers")
+    # asgi.headers: a custom key to allow downstream applications to circumvent WSGI header processing. we try to map
+    # asgi.headers to a List[Tuple[byte, byte]]. in our case the headers typically come from hypercorn which uses
+    # h11/h2 as protocol library. in the case of h2, the headers will be simply a List[Tuple[byte, byte]],
+    # and in the case of h11, it will be a Headers object that we can extract the list of raw headers from.
+    headers = scope.get("headers")
+    environ["asgi.headers"] = headers
+    if not isinstance(headers, list):
+        try:
+            # these are h11 headers from which we extract the raw list
+            environ["asgi.headers"] = headers.raw_items()
+        except AttributeError:
+            environ["asgi.headers"] = headers
 
 
 async def to_async_generator(
