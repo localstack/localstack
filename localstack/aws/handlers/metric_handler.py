@@ -2,10 +2,8 @@ import copy
 import logging
 from typing import List, Optional
 
-from botocore.parsers import create_parser as create_response_parser
-
 from localstack import config
-from localstack.aws.api import RequestContext, ServiceRequest, ServiceResponse
+from localstack.aws.api import RequestContext, ServiceRequest
 from localstack.aws.chain import HandlerChain
 from localstack.http import Response
 from localstack.utils.aws.aws_stack import is_internal_call_context
@@ -14,20 +12,26 @@ LOG = logging.getLogger(__name__)
 
 
 class MetricHandlerItem:
+    """
+    MetricHandlerItem to reference and update requests by the MetricHandler
+    """
+
     request_id: str
     request_context: RequestContext
     request_after_parse: Optional[ServiceRequest]
-    caught_exception: Optional[str]
 
     def __init__(self, request_contex: RequestContext) -> None:
         super().__init__()
         self.request_id = str(hash(request_contex))
         self.request_context = request_contex
         self.request_after_parse = None
-        self.caught_exception_name = None
 
 
 class Metric:
+    """
+    Data object to store relevant information for a metric entry in the raw-data collection (csv)
+    """
+
     service: str
     operation: str
     headers: str
@@ -148,19 +152,7 @@ class MetricHandler:
         # parameters might get changed when dispatched to the service - we use the params stored in request_after_parse
         parameters = ",".join(item.request_after_parse or "")
 
-        if response.status_code >= 300 and not item.caught_exception_name:
-            try:
-                parsed_response = self._parse_error_response(context, response)
-                if parsed_response.get("Error"):
-                    item.caught_exception_name = parsed_response["Error"].get("Code")
-            except Exception:
-                LOG.exception("Error parsing response")
-
-        response_data = (
-            response.data.decode("utf-8")
-            if response.status_code >= 300 and not item.caught_exception_name
-            else ""
-        )
+        response_data = response.data.decode("utf-8") if response.status_code >= 300 else ""
 
         MetricHandler.metric_data.append(
             Metric(
@@ -170,24 +162,12 @@ class MetricHandler:
                 parameters=parameters,
                 response_code=response.status_code,
                 response_data=response_data,
-                exception=item.caught_exception_name,
+                exception=context.service_exception.__class__.__name__
+                if context.service_exception
+                else "",
                 origin="internal" if is_internal else "external",
             )
         )
 
         # cleanup
         del self.metrics_handler_items[context]
-
-    def _parse_error_response(self, context: RequestContext, response: Response) -> ServiceResponse:
-        operation_model = context.operation
-        response_dict = {  # this is what botocore.endpoint.convert_to_response_dict normally does
-            "headers": dict(response.headers.items()),  # boto doesn't like werkzeug headers
-            "status_code": response.status_code,
-            "body": response.data,
-            "context": {
-                "operation_name": operation_model.name,
-            },
-        }
-
-        parser = create_response_parser(context.service.protocol)
-        return parser.parse(response_dict, operation_model.output_shape)

@@ -51,7 +51,6 @@ class LocalstackAwsGateway(Gateway):
         # exception handlers in the chain
         self.exception_handlers.extend(
             [
-                metric_collector.record_exception,
                 handlers.log_exception,
                 handlers.handle_service_exception,
                 handlers.handle_internal_failure,
