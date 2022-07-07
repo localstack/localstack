@@ -104,11 +104,6 @@ class Architecture(str):
     arm64 = "arm64"
 
 
-class AuthType(str):
-    NONE = "NONE"
-    AWS_IAM = "AWS_IAM"
-
-
 class CodeSigningPolicy(str):
     Warn = "Warn"
     Enforce = "Enforce"
@@ -603,13 +598,16 @@ class Concurrency(TypedDict, total=False):
     ReservedConcurrentExecutions: Optional[ReservedConcurrentExecutions]
 
 
+HeadersList = List[Header]
+
+
 class Cors(TypedDict, total=False):
-    AllowCredentials: bool
-    AllowHeaders: List[str]
-    AllowMethods: List[str]
-    AllowOrigins: List[str]
-    ExposeHeaders: List[str]
-    MaxAge: int
+    AllowCredentials: Optional[AllowCredentials]
+    AllowHeaders: Optional[HeadersList]
+    AllowMethods: Optional[AllowMethodsList]
+    AllowOrigins: Optional[AllowOriginsList]
+    ExposeHeaders: Optional[HeadersList]
+    MaxAge: Optional[MaxAge]
 
 
 class CreateAliasRequest(ServiceRequest):
