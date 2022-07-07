@@ -1,11 +1,20 @@
+import functools
 import os
-from typing import Dict
+from typing import Callable, Dict, TypeVar
 
 import boto3
+from botocore.awsrequest import AWSPreparedRequest, AWSResponse
+from botocore.client import BaseClient
+from botocore.compat import HTTPHeaders
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.aws.api import RequestContext
+from localstack.aws.forwarder import create_http_request
+from localstack.aws.protocol.parser import create_parser
+from localstack.aws.proxy import get_account_id_from_request
+from localstack.aws.spec import load_service
 from localstack.utils.aws import aws_stack
 from localstack.utils.sync import poll_condition
 
@@ -78,3 +87,76 @@ def create_client_with_keys(
         if os.environ.get("TEST_TARGET") != "AWS_CLOUD"
         else None,
     )
+
+
+def create_request_context(
+    service_name: str, operation_name: str, region: str, aws_request: AWSPreparedRequest
+) -> RequestContext:
+    context = RequestContext()
+    context.service = load_service(service_name)
+    context.operation = context.service.operation_model(operation_name=operation_name)
+    context.region = region
+    if hasattr(aws_request.body, "read"):
+        aws_request.body = aws_request.body.read()
+    context.request = create_http_request(aws_request)
+    parser = create_parser(context.service)
+    _, instance = parser.parse(context.request)
+    context.service_request = instance
+    context.account_id = get_account_id_from_request(context.request)
+    return context
+
+
+class _RequestContextClient:
+    _client: BaseClient
+
+    def __init__(self, client: BaseClient):
+        self._client = client
+
+    def __getattr__(self, item):
+        target = getattr(self._client, item)
+        if not isinstance(target, Callable):
+            return target
+
+        @functools.wraps(target)
+        def wrapper_method(*args, **kwargs):
+            service_name = self._client.meta.service_model.service_name
+            operation_name = self._client.meta.method_to_api_mapping[item]
+            region = self._client.meta.region_name
+            prepared_request = None
+
+            def event_handler(request: AWSPreparedRequest, **_):
+                nonlocal prepared_request
+                prepared_request = request
+                # we need to return an AWS Response here
+                aws_response = AWSResponse(
+                    url=request.url, status_code=200, headers=HTTPHeaders(), raw=None
+                )
+                aws_response._content = b""
+                return aws_response
+
+            self._client.meta.events.register(
+                f"before-send.{service_name}.{operation_name}", handler=event_handler
+            )
+            try:
+                target(*args, **kwargs)
+            except Exception:
+                pass
+            self._client.meta.events.unregister(
+                f"before-send.{service_name}.{operation_name}", handler=event_handler
+            )
+
+            return create_request_context(
+                service_name=service_name,
+                operation_name=operation_name,
+                region=region,
+                aws_request=prepared_request,
+            )
+
+        return wrapper_method
+
+
+T = TypeVar("T", bound=BaseClient)
+
+
+def RequestContextClient(client: T) -> T:
+    return _RequestContextClient(client)  # noqa
