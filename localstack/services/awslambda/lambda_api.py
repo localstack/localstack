@@ -1182,7 +1182,7 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
 
 def handle_lambda_url_invocation(request: Request, **url_params: Dict[str, Any]) -> HttpResponse:
     api_id = url_params["api_id"]
-    response = Response(headers={"Content-type": "application/json"})
+    response = HttpResponse(headers={"Content-type": "application/json"})
     try:
         lambda_url_config = get_lambda_url_config(api_id)
     except IndexError as e:
