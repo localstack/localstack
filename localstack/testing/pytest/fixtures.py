@@ -705,8 +705,6 @@ def kms_create_key(kms_client):
     key_ids = []
 
     def _create_key(**kwargs):
-        if "Policy" not in kwargs:
-            kwargs["Policy"] = f"policy-{short_uid()}"
         if "Description" not in kwargs:
             kwargs["Description"] = f"test description - {short_uid()}"
         if "KeyUsage" not in kwargs:
@@ -730,11 +728,13 @@ def kms_key(kms_create_key):
 
 
 @pytest.fixture
-def kms_grant_and_key(kms_client, kms_key):
+def kms_grant_and_key(kms_client, kms_key, sts_client):
+    user_arn = sts_client.get_caller_identity()["Arn"]
+
     return [
         kms_client.create_grant(
             KeyId=kms_key["KeyId"],
-            GranteePrincipal="arn:aws:iam::000000000000:role/test",
+            GranteePrincipal=user_arn,
             Operations=["Decrypt", "Encrypt"],
         ),
         kms_key,

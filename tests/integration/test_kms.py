@@ -9,22 +9,25 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
-from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid
 
 
 class TestKMS:
-    def test_create_key(self, kms_client):
+    @pytest.fixture(scope="class")
+    def user_arn(self, sts_client):
+        return sts_client.get_caller_identity()["Arn"]
+
+    @pytest.mark.aws_validated
+    def test_create_key(self, kms_client, sts_client):
+        account_id = sts_client.get_caller_identity()["Account"]
+        region = sts_client.meta.region_name
 
         response = kms_client.list_keys()
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         keys_before = response["Keys"]
 
-        response = kms_client.create_key(
-            Policy="policy1", Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
-        )
+        response = kms_client.create_key(Description="test key 123", KeyUsage="ENCRYPT_DECRYPT")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         key_id = response["KeyMetadata"]["KeyId"]
 
@@ -33,31 +36,35 @@ class TestKMS:
 
         response = kms_client.describe_key(KeyId=key_id)["KeyMetadata"]
         assert response["KeyId"] == key_id
-        assert ":%s:" % config.DEFAULT_REGION in response["Arn"]
-        assert ":%s:" % TEST_AWS_ACCOUNT_ID in response["Arn"]
+        assert f":{region}:" in response["Arn"]
+        assert f":{account_id}:" in response["Arn"]
 
-    def test_create_grant_with_invalid_key(self, kms_client):
+    @pytest.mark.aws_validated
+    def test_create_grant_with_invalid_key(self, kms_client, user_arn):
+
         with pytest.raises(botocore.exceptions.ClientError):
             kms_client.create_grant(
                 KeyId="invalid",
-                GranteePrincipal="arn:aws:iam::000000000000:role/test",
+                GranteePrincipal=user_arn,
                 Operations=["Decrypt", "Encrypt"],
             )
 
+    @pytest.mark.aws_validated
     def test_list_grants_with_invalid_key(self, kms_client):
         with pytest.raises(botocore.exceptions.ClientError):
             kms_client.list_grants(
                 KeyId="invalid",
             )
 
-    def test_create_grant_with_valid_key(self, kms_client, kms_key):
+    @pytest.mark.aws_validated
+    def test_create_grant_with_valid_key(self, kms_client, kms_key, user_arn):
         key_id = kms_key["KeyId"]
 
         grants_before = kms_client.list_grants(KeyId=key_id)["Grants"]
 
         grant = kms_client.create_grant(
             KeyId=key_id,
-            GranteePrincipal="arn:aws:iam::000000000000:role/test",
+            GranteePrincipal=user_arn,
             Operations=["Decrypt", "Encrypt"],
         )
         assert "GrantId" in grant
@@ -66,6 +73,7 @@ class TestKMS:
         grants_after = kms_client.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) + 1
 
+    @pytest.mark.aws_validated
     def test_revoke_grant(self, kms_client, kms_grant_and_key):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
@@ -76,6 +84,7 @@ class TestKMS:
         grants_after = kms_client.list_grants(KeyId=key_id)["Grants"]
         assert len(grants_after) == len(grants_before) - 1
 
+    @pytest.mark.aws_validated
     def test_retire_grant(self, kms_client, kms_grant_and_key):
         grant = kms_grant_and_key[0]
         key_id = kms_grant_and_key[1]["KeyId"]
@@ -116,10 +125,10 @@ class TestKMS:
         assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
 
     @pytest.mark.parametrize("key_type", ["rsa", "ecc"])
-    def test_sign(self, kms_client, key_type):
+    def test_sign(self, kms_client, key_type, kms_create_key):
         key_spec = "RSA_2048" if key_type == "rsa" else "ECC_NIST_P256"
-        result = kms_client.create_key(KeyUsage="SIGN_VERIFY", KeySpec=key_spec)
-        key_id = result["KeyMetadata"]["KeyId"]
+        result = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec=key_spec)
+        key_id = result["KeyId"]
 
         message = b"test message 123 !%$@"
         algo = "RSASSA_PSS_SHA_256" if key_type == "rsa" else "ECDSA_SHA_384"
@@ -144,14 +153,11 @@ class TestKMS:
         with pytest.raises(InvalidSignature):
             _verify(result["Signature"] + b"foobar")
 
-    def test_get_and_list_sign_key(self, kms_client):
-        response = kms_client.create_key(
-            Description="test key 123",
-            KeyUsage="SIGN_VERIFY",
-            CustomerMasterKeySpec="ECC_NIST_P256",
-        )
+    @pytest.mark.aws_validated
+    def test_get_and_list_sign_key(self, kms_client, kms_create_key):
+        response = kms_create_key(KeyUsage="SIGN_VERIFY", CustomerMasterKeySpec="ECC_NIST_P256")
 
-        key_id = response["KeyMetadata"]["KeyId"]
+        key_id = response["KeyId"]
         describe_response = kms_client.describe_key(KeyId=key_id)["KeyMetadata"]
         assert describe_response["KeyId"] == key_id
 
@@ -164,9 +170,8 @@ class TestKMS:
 
         assert found is True
 
-    def test_import_key(self, kms_client):
-        # create key
-        key_id = kms_client.create_key()["KeyMetadata"]["KeyId"]
+    def test_import_key(self, kms_client, kms_key):
+        key_id = kms_key["KeyId"]
 
         # get key import params
         params = kms_client.get_parameters_for_import(
@@ -201,6 +206,7 @@ class TestKMS:
         )
         assert api_decrypted["Plaintext"] == plaintext
 
+    @pytest.mark.aws_validated
     def test_list_aliases_of_key(self, kms_client, kms_create_key):
         aliased_key = kms_create_key()
         comparison_key = kms_create_key()
