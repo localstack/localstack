@@ -7,9 +7,7 @@ route53resolver:
     - TestAccRoute53ResolverFirewallRule_block
     - TestAccRoute53ResolverFirewallRule_blockOverride
     - TestAccRoute53ResolverFirewallRule_disappears
-    - TestAccRoute53ResolverFirewallRuleGroup_basic
-    - TestAccRoute53ResolverFirewallRuleGroup_disappears
-    - TestAccRoute53ResolverFirewallRuleGroup_tags
+    - TestAccRoute53ResolverFirewallRuleGroup
     - TestAccRoute53ResolverFirewallDomainList
 s3:
     - TestAccS3ObjectCopy
