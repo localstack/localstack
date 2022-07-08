@@ -38,6 +38,7 @@ from localstack.aws.api.kms import (
     InvalidGrantTokenException,
     KeyIdType,
     KmsApi,
+    KMSInvalidStateException,
     LimitType,
     ListAliasesResponse,
     ListGrantsRequest,
@@ -49,7 +50,7 @@ from localstack.aws.api.kms import (
     PrincipalIdType,
     SigningAlgorithmSpec,
     SignResponse,
-    WrappingKeySpec, KMSInvalidStateException,
+    WrappingKeySpec,
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
@@ -456,7 +457,9 @@ class KmsProvider(KmsApi):
         elif import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_256:
             decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA256()), hashes.SHA256(), None)
         else:
-            raise KMSInvalidStateException(f"Unsupported padding, requested wrapping algorithm:'{import_state.wrapping_algo}'")
+            raise KMSInvalidStateException(
+                f"Unsupported padding, requested wrapping algorithm:'{import_state.wrapping_algo}'"
+            )
 
         key_material = import_state.key_obj.decrypt(encrypted_key_material, decrypt_padding)
         key_obj.key_material = key_material
