@@ -3,6 +3,8 @@ import logging
 from moto.awslambda import models as moto_awslambda_models
 
 from localstack import config
+from localstack.services.awslambda.lambda_api import handle_lambda_url_invocation
+from localstack.services.edge import ROUTER
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
 from localstack.utils.platform import is_linux
@@ -18,6 +20,19 @@ PATCHES_APPLIED = "LAMBDA_PATCHED"
 def start_lambda(port=None, asynchronous=False):
     from localstack.services.awslambda import lambda_api, lambda_utils
     from localstack.services.infra import start_local_api
+
+    ROUTER.add(
+        "/",
+        host="<api_id>.lambda-url.<regex('.*'):server>",
+        endpoint=handle_lambda_url_invocation,
+        defaults={"path": ""},
+    )
+    ROUTER.add(
+        "/<path:path>",
+        host="<api_id>.lambda-url.<regex('.*'):server>",
+        endpoint=handle_lambda_url_invocation,
+        defaults={"path": ""},
+    )
 
     # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
     if "docker" in lambda_utils.get_executor_mode() and not config.is_in_docker and not is_linux():

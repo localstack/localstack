@@ -28,7 +28,6 @@ from localstack.constants import (
 )
 from localstack.http import Request
 from localstack.http import Response as HttpResponse
-from localstack.services.apigateway.integration import LambdaProxyIntegration
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -52,9 +51,9 @@ from localstack.services.awslambda.lambda_utils import (
     get_zip_bytes,
     multi_value_dict_for_list,
 )
-from localstack.services.edge import ROUTER
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
+from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
@@ -1204,25 +1203,34 @@ def handle_lambda_url_invocation(request: Request, **url_params: Dict[str, Any])
         response.status = "403"
         return response
 
-    integration_response = LambdaProxyIntegration.lambda_result_to_response(result)
-    response.set_data(integration_response._content)
-    response.headers.update(integration_response.headers)
-    response.status_code = integration_response.status_code
+    response = lambda_result_to_response(result)
     return response
 
 
-ROUTER.add(
-    "/",
-    host="<api_id>.lambda-url.<regex('.*'):server>",
-    endpoint=handle_lambda_url_invocation,
-    defaults={"path": ""},
-)
-ROUTER.add(
-    "/<path:path>",
-    host="<api_id>.lambda-url.<regex('.*'):server>",
-    endpoint=handle_lambda_url_invocation,
-    defaults={"path": ""},
-)
+def lambda_result_to_response(result: str):
+    parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
+    parsed_result = common.json_safe(parsed_result)
+    parsed_result = {} if parsed_result is None else parsed_result
+    parsed_headers = parsed_result.get("headers", {})
+    response = HttpResponse()
+
+    if parsed_headers is not None:
+        response.headers.update(parsed_headers)
+    try:
+        result_body = parsed_result.get("body")
+        if isinstance(result_body, dict):
+            response.set_data(json.dumps(result_body))
+        else:
+            body_bytes = to_bytes(to_str(result_body or ""))
+            if parsed_result.get("isBase64Encoded", False):
+                body_bytes = base64.b64decode(body_bytes)
+            response.set_data(body_bytes)
+    except Exception as e:
+        LOG.warning("Couldn't set Lambda response content: %s", e)
+        response._content = "{}"
+        response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
+
+    return response
 
 
 # ------------

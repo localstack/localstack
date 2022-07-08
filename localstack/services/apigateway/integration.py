@@ -19,14 +19,12 @@ from localstack.services.apigateway.helpers import (
     get_event_request_context,
 )
 from localstack.services.awslambda import lambda_api
-from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import LambdaResponse, flask_to_requests_response
+from localstack.utils.aws.aws_responses import flask_to_requests_response
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
-from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -229,7 +227,7 @@ class LambdaProxyIntegration(BackendIntegration):
         elif isinstance(result, Response):
             response = result
         else:
-            response = self.lambda_result_to_response(result)
+            response = lambda_api.lambda_result_to_response(result)
 
         # apply custom response template
         self.update_content_length(response)
