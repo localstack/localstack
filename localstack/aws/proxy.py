@@ -26,6 +26,14 @@ def get_region(request: Request) -> str:
     return extract_region_from_headers(request.headers)
 
 
+def get_account_id_from_request(request: Request) -> str:
+    access_key_id = (
+        extract_access_key_id_from_auth_header(request.headers) or TEST_AWS_ACCESS_KEY_ID
+    )
+    set_ctx_aws_access_key_id(access_key_id)
+    return get_account_id_from_access_key_id(access_key_id)
+
+
 class AwsApiListener(ProxyListenerAdapter):
     service: ServiceModel
 
@@ -42,15 +50,8 @@ class AwsApiListener(ProxyListenerAdapter):
         context.service = self.service
         context.request = request
         context.region = get_region(request)
-        context.account_id = self.get_account_id_from_request(request)
+        context.account_id = get_account_id_from_request(request)
         return context
-
-    def get_account_id_from_request(self, request: Request) -> str:
-        access_key_id = (
-            extract_access_key_id_from_auth_header(request.headers) or TEST_AWS_ACCESS_KEY_ID
-        )
-        set_ctx_aws_access_key_id(access_key_id)
-        return get_account_id_from_access_key_id(access_key_id)
 
 
 def _raise_not_implemented_error(*args, **kwargs):
