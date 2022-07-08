@@ -1213,6 +1213,7 @@ def lambda_result_to_response(result: str):
     parsed_result = {} if parsed_result is None else parsed_result
     parsed_headers = parsed_result.get("headers", {})
     response = HttpResponse()
+    response.headers.update({"Content-Type": "application/json"})
 
     if parsed_headers is not None:
         response.headers.update(parsed_headers)
