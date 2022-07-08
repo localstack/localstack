@@ -57,8 +57,6 @@ jobs:
       with:
         path: ./.venv/
         key: ${{ runner.os }}-venv-${{ hashFiles('**/setup.cfg') }}
-        restore-keys: |
-          ${{ runner.os }}-venv-
 
     - name: Install system dependencies
       run: |
@@ -92,8 +90,6 @@ jobs:
           ~/go/pkg/mod
           ~/.cache/go-build
         key: ${{ runner.os }}-go-${{ hashFiles('**/terraform-provider-aws/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
 
     - name: Run Test Cases
       run: |
