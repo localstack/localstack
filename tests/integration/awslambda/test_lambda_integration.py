@@ -481,6 +481,8 @@ class TestLambdaHttpInvocation:
         result = safe_requests.get(url)
 
         assert result.status_code == 502
+        assert result.headers.get("Content-Type") == "application/json"
+        assert json.loads(result.content)["message"] == "Internal server error"
 
 
 class TestKinesisSource:

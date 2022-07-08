@@ -382,7 +382,6 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 response = result
             else:
                 response = LambdaResponse()
-                response.headers.update({"content-type": "application/json"})
 
                 parsed_result = (
                     result if isinstance(result, dict) else json.loads(str(result or "{}"))
