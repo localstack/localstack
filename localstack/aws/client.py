@@ -1,6 +1,7 @@
 """Utils to process AWS requests as a client."""
 import io
 import logging
+from typing import Iterable
 
 from botocore.model import OperationModel
 from botocore.parsers import create_parser as create_response_parser
@@ -19,6 +20,7 @@ class _ResponseStream(io.RawIOBase):
     """
 
     def __init__(self, response: Response):
+        self.response = response
         self.iterator = response.iter_encoded()
         self._buf = None
 
@@ -34,6 +36,30 @@ class _ResponseStream(io.RawIOBase):
             return len(output)
         except StopIteration:
             return 0  # indicate EOF
+
+    def __str__(self):
+        length = self.response.content_length
+        if length is None:
+            length = "unknown"
+
+        return f"Bytes({length})"
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class _RawStream:
+    """This is a compatibility adapter for the raw_stream attribute passed to botocore's EventStream."""
+
+    def __init__(self, response: Response):
+        self.response = response
+        self.iterator = response.iter_encoded()
+
+    def stream(self) -> Iterable[bytes]:
+        return self.iterator
+
+    def close(self):
+        pass
 
 
 def parse_response(operation: OperationModel, response: Response) -> ServiceResponse:
@@ -57,13 +83,8 @@ def parse_response(operation: OperationModel, response: Response) -> ServiceResp
     if response_dict["status_code"] >= 300:
         response_dict["body"] = response.data
     elif operation.has_event_stream_output:
-        # TODO
-        LOG.warning(
-            "don't know how to parse an event stream output for %s.%s",
-            operation.service_model.service_name,
-            operation.name,
-        )
-        response_dict["body"] = response.data
+        # TODO test this
+        response_dict["body"] = _RawStream(response)
     elif operation.has_streaming_output:
         # for s3.GetObject for example, the Body attribute is actually a stream, not the raw bytes value
         response_dict["body"] = _ResponseStream(response)
