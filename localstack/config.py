@@ -920,13 +920,20 @@ def edge_ports_info():
     return result
 
 
-# set log levels
+def is_trace_logging_enabled():
+    if LS_LOG:
+        log_level = str(LS_LOG).upper()
+        return log_level.lower() in TRACE_LOG_LEVELS
+    return False
+
+
+# set log levels immediately, but will be overwritten later by setup_logging
 if DEBUG:
     logging.getLogger("").setLevel(logging.DEBUG)
     logging.getLogger("localstack").setLevel(logging.DEBUG)
 
 LOG = logging.getLogger(__name__)
-if LS_LOG in TRACE_LOG_LEVELS:
+if is_trace_logging_enabled():
     load_end_time = time.time()
     LOG.debug(
         "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)

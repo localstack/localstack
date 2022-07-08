@@ -13,10 +13,12 @@ def serve_gateway(bind_address, port, use_ssl, asynchronous=False):
     from localstack.aws.app import LocalstackAwsGateway
     from localstack.aws.serving.asgi import AsgiGateway
     from localstack.http.hypercorn import HypercornServer
+    from localstack.logging.setup import setup_hypercorn_logger
     from localstack.services.generic_proxy import GenericProxy, install_predefined_cert_if_available
 
     # build server config
     config = Config()
+    setup_hypercorn_logger(config)
 
     if isinstance(bind_address, str):
         bind_address = [bind_address]

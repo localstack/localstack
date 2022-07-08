@@ -8,12 +8,16 @@ from .gateway import Gateway
 from .handlers.fallback import EmptyResponseHandler
 from .handlers.service import ServiceRequestRouter
 
-LOG = logging.getLogger(__name__)
+LOG = logging.getLogger("localstack.gateway")
 
 
 class LocalstackAwsGateway(Gateway):
     def __init__(self, service_manager: ServiceManager = None) -> None:
         super().__init__()
+
+        # setup logging
+        handlers.log_exception.logger = LOG
+        handlers.log_response.logger = LOG
 
         # basic server components
         self.service_manager = service_manager or ServicePluginManager()

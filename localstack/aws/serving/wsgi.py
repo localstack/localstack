@@ -1,5 +1,4 @@
 import logging
-import threading
 from typing import TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
@@ -31,8 +30,7 @@ class WsgiGateway:
     ) -> Iterable[bytes]:
         # create request from environment
         LOG.debug(
-            "[%s] %s %s%s",
-            threading.current_thread().name,
+            "%s %s%s",
             environ["REQUEST_METHOD"],
             environ.get("HTTP_HOST"),
             environ["RAW_URI"],
