@@ -167,7 +167,7 @@ class Route53ResolverProvider(Route53ResolverApi):
     ) -> GetFirewallDomainListResponse:
         """Get the details of a Firewall Domain List."""
         region_details = Route53ResolverBackend.get()
-        firewall_domain_list: FirewallDomainList = region_details.get_firewall_domain(
+        firewall_domain_list: FirewallDomainList = region_details.get_firewall_domain_list(
             firewall_domain_list_id
         )
         return GetFirewallDomainListResponse(FirewallDomainList=firewall_domain_list)
@@ -193,7 +193,7 @@ class Route53ResolverProvider(Route53ResolverApi):
     ) -> UpdateFirewallDomainsResponse:
         """Update the domains in a Firewall Domain List."""
         region_details = Route53ResolverBackend.get()
-        firewall_domain_list: FirewallDomainList = region_details.get_firewall_domain_lists(
+        firewall_domain_list: FirewallDomainList = region_details.get_firewall_domain_list(
             firewall_domain_list_id
         )
         firewall_domains = region_details.get_firewall_domain(firewall_domain_list_id)
