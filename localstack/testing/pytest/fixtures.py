@@ -1416,7 +1416,7 @@ def pytest_configure(config: Config):
 
 
 @pytest.hookimpl
-def pytest_collection_modifyitems(config: Config, items: list[Item]):
+def pytest_collection_modifyitems(config: Config, items: List[Item]):
     only_localstack = pytest.mark.skipif(
         os.environ.get("TEST_TARGET") == "AWS_CLOUD",
         reason="test only applicable if run against localstack",

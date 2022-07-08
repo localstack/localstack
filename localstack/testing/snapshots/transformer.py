@@ -2,7 +2,7 @@ import copy
 import logging
 import re
 from re import Pattern
-from typing import Callable, Optional, Protocol
+from typing import Callable, Dict, List, Optional, Protocol
 
 from jsonpath_ng.ext import parse
 
@@ -15,9 +15,9 @@ GlobalReplacementFn = Callable[[str], str]
 
 
 class TransformContext:
-    _cache: dict
-    replacements: list[GlobalReplacementFn]
-    scoped_tokens: dict[str, int]
+    _cache: Dict
+    replacements: List[GlobalReplacementFn]
+    scoped_tokens: Dict[str, int]
 
     def __init__(self):
         self.replacements = []
@@ -25,7 +25,7 @@ class TransformContext:
         self._cache = {}
 
     @property
-    def serialized_replacements(self) -> list[GlobalReplacementFn]:  # TODO: naming
+    def serialized_replacements(self) -> List[GlobalReplacementFn]:  # TODO: naming
         return self.replacements
 
     def register_serialized_replacement(self, fn: GlobalReplacementFn):  # TODO: naming

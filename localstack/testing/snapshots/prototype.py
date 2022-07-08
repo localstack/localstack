@@ -4,7 +4,7 @@ from datetime import datetime
 from json import JSONDecodeError
 from pathlib import Path
 from re import Pattern
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from botocore.response import StreamingBody
 from deepdiff import DeepDiff
@@ -49,16 +49,16 @@ class SnapshotSession:
     it assumes that a single snapshot file is only being written to sequentially
     """
 
-    results: list[SnapshotMatchResult]
-    recorded_state: dict[str, dict]  # previously persisted state
-    observed_state: dict[str, dict]  # current state from match calls
+    results: List[SnapshotMatchResult]
+    recorded_state: Dict[str, dict]  # previously persisted state
+    observed_state: Dict[str, dict]  # current state from match calls
 
-    called_keys: set[str]
-    transformers: list[(Transformer, int)]  # (transformer, priority)
+    called_keys: Set[str]
+    transformers: List[(Transformer, int)]  # (transformer, priority)
 
     transform: TransformerUtility
 
-    skip_verification_paths: list[str]
+    skip_verification_paths: List[str]
 
     def __init__(
         self,
@@ -83,7 +83,7 @@ class SnapshotSession:
         self.transform = TransformerUtility
 
     def add_transformers_list(
-        self, transformer_list: list[Transformer], priority: Optional[int] = 0
+        self, transformer_list: List[Transformer], priority: Optional[int] = 0
     ):
         for transformer in transformer_list:
             self.transformers.append((transformer, priority))  # TODO
@@ -147,7 +147,7 @@ class SnapshotSession:
         return True
 
     def _assert_all(
-        self, verify: bool = True, skip_verification_paths: list[str] = []
+        self, verify: bool = True, skip_verification_paths: List[str] = []
     ) -> List[SnapshotMatchResult]:
         """use after all match calls to get a combined diff"""
         results = []

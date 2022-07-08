@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 from unittest.mock import patch
 
 from pytest import fixture, mark
@@ -10,8 +10,8 @@ from localstack.services.generic_proxy import RegionBackend
 @fixture
 def sample_region_backend():
     class SampleRegionBackend(RegionBackend):
-        CLASS_ATTR: list[Any] = []
-        instance_attr: list[Any]
+        CLASS_ATTR: List[Any] = []
+        instance_attr: List[Any]
 
         def __init__(self):
             self.instance_attr = []

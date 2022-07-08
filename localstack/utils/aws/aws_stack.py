@@ -901,7 +901,7 @@ def kinesis_stream_name(kinesis_arn):
 
 def mock_aws_request_headers(
     service="dynamodb", region_name=None, access_key=None, internal=False
-) -> dict[str, str]:
+) -> Dict[str, str]:
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
         ctype = APPLICATION_AMZ_JSON_1_1
