@@ -80,6 +80,8 @@ def _init_service_metric_counter() -> Dict:
             for op in service.operation_names:
                 attributes = {}
                 attributes["invoked"] = 0
+                attributes["aws_validated"] = False
+                attributes["snapshot"] = False
                 if hasattr(service.operation_model(op).input_shape, "members"):
                     params = {}
                     for n in service.operation_model(op).input_shape.members:
@@ -168,6 +170,10 @@ def aggregate_recorded_raw_data(
                             break
 
                 ops["invoked"] += 1
+                if metric.snapshot:
+                    ops["snapshot"] = True  # TODO snapshot currently includes also "skip_verify"
+                if metric.aws_validated:
+                    ops["aws_validated"] = True
                 if not metric.parameters:
                     params = ops.setdefault("parameters", {})
                     params["_none_"] = params.get("_none_", 0) + 1
