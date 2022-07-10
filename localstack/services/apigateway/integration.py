@@ -19,12 +19,14 @@ from localstack.services.apigateway.helpers import (
     get_event_request_context,
 )
 from localstack.services.awslambda import lambda_api
+from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import flask_to_requests_response
+from localstack.utils.aws.aws_responses import LambdaResponse, flask_to_requests_response
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
+from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -227,7 +229,39 @@ class LambdaProxyIntegration(BackendIntegration):
         elif isinstance(result, Response):
             response = result
         else:
-            response = lambda_api.lambda_result_to_response(result)
+            response = LambdaResponse()
+            response.headers.update({"content-type": "application/json"})
+            parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
+            parsed_result = common.json_safe(parsed_result)
+            parsed_result = {} if parsed_result is None else parsed_result
+
+            keys = parsed_result.keys()
+
+            if not ("statusCode" in keys and "body" in keys):
+                LOG.warning(
+                    'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
+                )
+                response.status_code = 502
+                response._content = json.dumps({"message": "Internal server error"})
+                return response
+
+            response.status_code = int(parsed_result.get("statusCode", 200))
+            parsed_headers = parsed_result.get("headers", {})
+            if parsed_headers is not None:
+                response.headers.update(parsed_headers)
+            try:
+                result_body = parsed_result.get("body")
+                if isinstance(result_body, dict):
+                    response._content = json.dumps(result_body)
+                else:
+                    body_bytes = to_bytes(to_str(result_body or ""))
+                    if parsed_result.get("isBase64Encoded", False):
+                        body_bytes = base64.b64decode(body_bytes)
+                    response._content = body_bytes
+            except Exception as e:
+                LOG.warning("Couldn't set Lambda response content: %s", e)
+                response._content = "{}"
+            response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
 
         # apply custom response template
         self.update_content_length(response)

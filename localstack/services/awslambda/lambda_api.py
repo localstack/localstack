@@ -1187,7 +1187,7 @@ def handle_lambda_url_invocation(request: Request, **url_params: Dict[str, Any])
     except IndexError as e:
         LOG.warning(f"Lambda URL ({api_id}) not found: {e}")
         response.set_json({"Message": None})
-        response.status = "403"
+        response.status = "404"
         return response
 
     event = event_for_lambda_url(
@@ -1208,12 +1208,13 @@ def handle_lambda_url_invocation(request: Request, **url_params: Dict[str, Any])
 
 
 def lambda_result_to_response(result: str):
+    response = HttpResponse()
+    response.headers.update({"Content-Type": "application/json"})
+
     parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
     parsed_result = common.json_safe(parsed_result)
     parsed_result = {} if parsed_result is None else parsed_result
     parsed_headers = parsed_result.get("headers", {})
-    response = HttpResponse()
-    response.headers.update({"Content-Type": "application/json"})
 
     if parsed_headers is not None:
         response.headers.update(parsed_headers)
@@ -1229,7 +1230,6 @@ def lambda_result_to_response(result: str):
     except Exception as e:
         LOG.warning("Couldn't set Lambda response content: %s", e)
         response._content = "{}"
-        response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
 
     return response
 
