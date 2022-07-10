@@ -1530,8 +1530,9 @@ def create_url_config(function):
             "ResourceConflictException",
         )
 
-    custom_id = md5(arn)
-    url = f"http://{custom_id}.lambda-url.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+    custom_id = short_uid()
+    region = LambdaRegion.get_current_request_region()
+    url = f"http://{region}.{custom_id}.lambda-url.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
 
     data = json.loads(to_str(request.data))
     cors = data.get("Cors", {})

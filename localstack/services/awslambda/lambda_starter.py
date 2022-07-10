@@ -23,13 +23,13 @@ def start_lambda(port=None, asynchronous=False):
 
     ROUTER.add(
         "/",
-        host="<api_id>.lambda-url.<regex('.*'):server>",
+        host="<regex('([a-z0-9-]+\\.)?'):region><api_id>.lambda-url.<regex('.*'):server>",
         endpoint=handle_lambda_url_invocation,
         defaults={"path": ""},
     )
     ROUTER.add(
         "/<path:path>",
-        host="<api_id>.lambda-url.<regex('.*'):server>",
+        host="<regex('([a-z0-9-]+\\.)?'):region><api_id>.lambda-url.<regex('.*'):server>",
         endpoint=handle_lambda_url_invocation,
         defaults={"path": ""},
     )
