@@ -60,8 +60,6 @@ from localstack.services.awslambda.invocation.lambda_util import (
     function_name_regex,
     qualified_lambda_arn,
 )
-from localstack.services.awslambda.lambda_api import handle_lambda_url_invocation
-from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_bytes, to_str
 
@@ -76,21 +74,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def __init__(self) -> None:
         self.lambda_service = LambdaService()
         self.lock = threading.RLock()
-
-    def on_before_start(self):
-        ROUTER.add(
-            "/",
-            host="<api_id>.lambda-url.<regex('.*'):server>",
-            endpoint=handle_lambda_url_invocation,
-            defaults={"path": ""},
-        )
-        ROUTER.add(
-            "/<path:path>",
-            host="<api_id>.lambda-url.<regex('.*'):server>",
-            endpoint=handle_lambda_url_invocation,
-            defaults={"path": ""},
-        )
-        return super().on_before_start()
 
     def on_before_stop(self) -> None:
         self.lambda_service.stop()
