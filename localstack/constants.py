@@ -82,6 +82,9 @@ INTERNAL_RESOURCE_PATH = "/_localstack"
 # environment variable name to tag local test runs
 ENV_INTERNAL_TEST_RUN = "LOCALSTACK_INTERNAL_TEST_RUN"
 
+# environment variable name to tag collect metrics during a test run
+ENV_INTERNAL_TEST_COLLECT_METRIC = "LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC"
+
 # environment variable that flags whether pro was activated. do not use for security purposes!
 ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
 

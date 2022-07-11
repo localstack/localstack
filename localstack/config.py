@@ -16,6 +16,7 @@ from localstack.constants import (
     DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
     DEFAULT_VOLUME_DIR,
+    ENV_INTERNAL_TEST_COLLECT_METRIC,
     ENV_INTERNAL_TEST_RUN,
     FALSE_STRINGS,
     LOCALHOST,
@@ -785,6 +786,11 @@ CONFIG_ENV_VARS = [
 def is_local_test_mode() -> bool:
     """Returns True if we are running in the context of our local integration tests."""
     return is_env_true(ENV_INTERNAL_TEST_RUN)
+
+
+def is_collect_metrics_mode() -> bool:
+    """Returns True if metric collection is enabled."""
+    return is_env_true(ENV_INTERNAL_TEST_COLLECT_METRIC)
 
 
 def collect_config_items() -> List[Tuple[str, Any]]:
