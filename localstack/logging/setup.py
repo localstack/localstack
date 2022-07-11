@@ -105,10 +105,12 @@ def setup_hypercorn_logger(hypercorn_config) -> None:
 
     :param hypercorn_config: a hypercorn.Config object
     """
-    if logger := hypercorn_config.log.access_logger:
+    logger = hypercorn_config.log.access_logger
+    if logger:
         logger.handlers[0].addFilter(AddFormattedAttributes())
         logger.handlers[0].setFormatter(DefaultFormatter())
 
-    if logger := hypercorn_config.log.error_logger:
+    logger = hypercorn_config.log.error_logger
+    if logger:
         logger.handlers[0].addFilter(AddFormattedAttributes())
         logger.handlers[0].setFormatter(DefaultFormatter())
