@@ -200,7 +200,7 @@ class CmdDockerClient(ContainerClient):
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
         container_list = []
-        if cmd_result:
+        if cmd_result and cmd_result != '[]':
             container_list = [json.loads(line) for line in cmd_result.splitlines()]
         result = []
         for container in container_list:
