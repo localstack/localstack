@@ -1167,7 +1167,7 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
         "routeKey": "$default",
         "rawPath": rawPath,
         "rawQueryString": rawQueryString,
-        "headers": headers,
+        "headers": {k.lower(): v for k, v in headers.items()},
         "queryStringParameters": queryStringParameters,
         "requestContext": requestContext,
         "body": base64.b64encode(data).decode(),

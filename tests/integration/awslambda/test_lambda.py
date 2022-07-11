@@ -637,6 +637,7 @@ class TestLambdaAPI:
         )
         snapshot.match("policy_after_2_add", policy_response)
 
+    @pytest.mark.aws_validated
     def test_url_config_lifecycle(self, lambda_client, create_lambda_function):
         function_name = f"test-function-{short_uid()}"
 
@@ -671,8 +672,10 @@ class TestLambdaAPI:
         assert url_config_created["AuthType"] == url_config_obtained["AuthType"]
         assert url_config_created["FunctionUrl"] == url_config_obtained["FunctionUrl"]
         assert url_config_created["FunctionArn"] == url_config_obtained["FunctionArn"]
-        assert url_config_created["Cors"] == url_config_obtained["Cors"]
         assert url_config_created["CreationTime"] == url_config_obtained["CreationTime"]
+
+        if "Cors" in url_config_obtained:
+            assert url_config_created["Cors"] == url_config_obtained["Cors"]
 
         url_config_updated = lambda_client.update_function_url_config(
             FunctionName=function_name,
@@ -2458,6 +2461,7 @@ class TestLambdaBehavior:
 
 
 class TestLambdaURL:
+    @pytest.mark.aws_validated
     def test_lambda_url_invocation(self, lambda_client, create_lambda_function):
         function_name = f"test-function-{short_uid()}"
 
@@ -2471,6 +2475,14 @@ class TestLambdaURL:
         url_config = lambda_client.create_function_url_config(
             FunctionName=function_name,
             AuthType="NONE",
+        )
+
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
         )
 
         url = url_config["FunctionUrl"]
@@ -2501,4 +2513,4 @@ class TestLambdaURL:
         assert "custom_path" in event["rawPath"]
         assert event["queryStringParameters"]["test_param"] == "test_value"
         assert event["body"] == to_str(base64.b64encode(b"{'key':'value'}"))
-        assert event["headers"]["User-Agent"] == "python-requests/testing"
+        assert event["headers"].get("user-agent") == "python-requests/testing"
