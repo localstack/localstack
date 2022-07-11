@@ -1,5 +1,3 @@
-import logging
-
 from localstack.aws import handlers
 from localstack.aws.handlers.metric_handler import MetricHandler
 from localstack.aws.handlers.service_plugin import ServiceLoader
@@ -8,8 +6,6 @@ from localstack.services.plugins import SERVICE_PLUGINS, ServiceManager, Service
 from .gateway import Gateway
 from .handlers.fallback import EmptyResponseHandler
 from .handlers.service import ServiceRequestRouter
-
-LOG = logging.getLogger("localstack.gateway")
 
 
 class LocalstackAwsGateway(Gateway):

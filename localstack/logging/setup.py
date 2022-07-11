@@ -34,6 +34,16 @@ trace_internal_log_levels = {
 }
 
 
+def setup_logging_for_cli(log_level=logging.INFO):
+    logging.basicConfig(level=log_level)
+
+    # set log levels of loggers
+    logging.root.setLevel(log_level)
+    logging.getLogger("localstack").setLevel(log_level)
+    for logger, level in default_log_levels.items():
+        logging.getLogger(logger).setLevel(level)
+
+
 def get_log_level_from_config():
     # overriding the log level if LS_LOG has been set
     if config.LS_LOG:
