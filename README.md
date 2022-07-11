@@ -1,3 +1,4 @@
+<a href="https://github.com/localstack/localstack/issues/6398"><img src="./.github/images/v1-release.svg"></a>
 <p align="center">
   <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-header.png" alt="LocalStack - A fully functional local cloud stack">
 </p>
