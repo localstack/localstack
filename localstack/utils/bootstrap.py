@@ -6,7 +6,6 @@ import shlex
 import signal
 import threading
 import time
-import warnings
 from functools import wraps
 from typing import Dict, Iterable, List, Optional, Set
 
@@ -31,13 +30,7 @@ from localstack.utils.serving import Server
 from localstack.utils.sync import poll_condition
 from localstack.utils.tail import FileListener
 
-# set up logger
-LOG = logging.getLogger(os.path.basename(__file__))
-
-
-# log format strings
-LOG_FORMAT = "%(asctime)s.%(msecs)03d:%(levelname)s:%(name)s: %(message)s"
-LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
+LOG = logging.getLogger(__name__)
 
 # maps from API names to list of other API names that they depend on
 API_DEPENDENCIES = {
@@ -167,55 +160,11 @@ def get_server_version() -> str:
     return container_version
 
 
-def setup_logging(log_level=None):
-    """Determine and set log level"""
+def setup_logging():
+    """Determine and set log level. The singleton factory makes sure the logging is only set up once."""
+    from localstack.logging.setup import setup_logging_from_config
 
-    # log level set by DEBUG env variable
-    log_level = log_level or (logging.DEBUG if config.DEBUG else logging.INFO)
-
-    # overriding the log level if LS_LOG has been set
-    if config.LS_LOG:
-        log_level = str(config.LS_LOG).upper()
-        if log_level.lower() in constants.TRACE_LOG_LEVELS:
-            log_level = "DEBUG"
-        log_level = logging._nameToLevel[log_level]
-        logging.getLogger("").setLevel(log_level)
-        logging.getLogger("localstack").setLevel(log_level)
-
-    logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
-
-    # set up werkzeug logger
-
-    class WerkzeugLogFilter(logging.Filter):
-        def filter(self, record):
-            return record.name != "werkzeug"
-
-    root_handlers = logging.getLogger().handlers
-    if len(root_handlers) > 0:
-        root_handlers[0].addFilter(WerkzeugLogFilter())
-        if config.DEBUG:
-            format = "%(asctime)s:API: %(message)s"
-            handler = logging.StreamHandler()
-            handler.setLevel(logging.INFO)
-            handler.setFormatter(logging.Formatter(format))
-            logging.getLogger("werkzeug").addHandler(handler)
-
-    # disable some logs and warnings
-    warnings.filterwarnings("ignore")
-    logging.captureWarnings(True)
-    logging.getLogger("asyncio").setLevel(logging.INFO)
-    logging.getLogger("boto3").setLevel(logging.INFO)
-    logging.getLogger("botocore").setLevel(logging.ERROR)
-    logging.getLogger("docker").setLevel(logging.WARNING)
-    logging.getLogger("elasticsearch").setLevel(logging.ERROR)
-    logging.getLogger("hpack").setLevel(logging.ERROR)
-    logging.getLogger("moto").setLevel(logging.WARNING)
-    logging.getLogger("requests").setLevel(logging.WARNING)
-    logging.getLogger("s3transfer").setLevel(logging.INFO)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    if config.LS_LOG != constants.LS_LOG_TRACE_INTERNAL:
-        # disable werkzeug API logs, unless detailed internal trace logging is enabled
-        logging.getLogger("werkzeug").setLevel(logging.WARNING)
+    setup_logging_from_config()
 
 
 # --------------

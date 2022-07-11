@@ -42,7 +42,7 @@ class _ResponseStream(io.RawIOBase):
         if length is None:
             length = "unknown"
 
-        return f"Bytes({length})"
+        return f"StreamedBytes({length})"
 
     def __repr__(self):
         return self.__str__()

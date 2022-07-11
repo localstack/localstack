@@ -19,7 +19,7 @@ class AsgiGateway:
     ) -> None:
         self.gateway = gateway
 
-        self.executor = ThreadPoolExecutor(threads, thread_name_prefix="asgi-gw")
+        self.executor = ThreadPoolExecutor(threads, thread_name_prefix="asgi_gw")
         self.wsgi = ASGIAdapter(WsgiGateway(gateway), event_loop=event_loop, executor=self.executor)
 
     async def __call__(self, scope, receive, send) -> None:

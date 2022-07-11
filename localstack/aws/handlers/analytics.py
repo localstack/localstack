@@ -11,6 +11,7 @@ from localstack.utils.analytics.service_request_aggregator import (
     ServiceRequestAggregator,
     ServiceRequestInfo,
 )
+from localstack.utils.aws.aws_stack import is_internal_call_context
 
 LOG = logging.getLogger(__name__)
 
@@ -27,6 +28,9 @@ class ServiceRequestCounter:
         if response is None or context.operation is None:
             return
         if config.DISABLE_EVENTS:
+            return
+        if is_internal_call_context(context.request.headers):
+            # don't count internal requests
             return
 
         # this condition will only be true only for the first call, so it makes sense to not acquire the lock every time
