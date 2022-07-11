@@ -90,12 +90,11 @@ class ResponseLogger:
             # log an AWS response
             if context.service_exception:
                 aws_logger.info(
-                    "AWS %s.%s => %d (%s))",
+                    "AWS %s.%s => %d (%s)",
                     context.service.service_name,
                     context.operation.name,
                     response.status_code,
                     context.service_exception.code,
-                    # request
                     extra={
                         # request
                         "input_type": context.operation.input_shape.name
