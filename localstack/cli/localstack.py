@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import sys
 from typing import Dict, List, Optional
@@ -31,12 +32,12 @@ def create_with_plugins() -> LocalstackCli:
 
 
 def _setup_cli_debug():
-    from localstack.utils.bootstrap import setup_logging
+    from localstack.logging.setup import setup_logging_for_cli
 
     config.DEBUG = True
     os.environ["DEBUG"] = "1"
 
-    setup_logging()
+    setup_logging_for_cli(logging.DEBUG if config.DEBUG else logging.INFO)
 
 
 @click.group(name="localstack", help="The LocalStack Command Line Interface (CLI)")
