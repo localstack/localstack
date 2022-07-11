@@ -2487,7 +2487,6 @@ class TestLambdaURL:
         assert "context" in content
 
         event = content["event"]
-        context = content["context"]
 
         assert "version" in event
         assert "routeKey" in event
@@ -2503,12 +2502,3 @@ class TestLambdaURL:
         assert event["queryStringParameters"]["test_param"] == "test_value"
         assert event["body"] == to_str(base64.b64encode(b"{'key':'value'}"))
         assert event["headers"]["User-Agent"] == "python-requests/testing"
-
-        assert "callbackWaitsForEmptyEventLoop" in context
-        assert "functionVersion" in context
-        assert "functionName" in context
-        assert "memoryLimitInMB" in context
-        assert "logGroupName" in context
-        assert "logStreamName" in context
-        assert "invokedFunctionArn" in context
-        assert "awsRequestId" in context
