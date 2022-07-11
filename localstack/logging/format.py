@@ -1,6 +1,9 @@
 """Tools for formatting localstack logs."""
 import logging
 from functools import lru_cache
+from typing import Dict
+
+from localstack.utils.numbers import format_bytes
 
 MAX_THREAD_NAME_LEN = 12
 MAX_NAME_LEN = 26
@@ -22,8 +25,8 @@ class DefaultFormatter(logging.Formatter):
     A formatter that uses ``LOG_FORMAT`` and ``LOG_DATE_FORMAT``.
     """
 
-    def __init__(self):
-        super(DefaultFormatter, self).__init__(fmt=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+    def __init__(self, fmt=LOG_FORMAT, datefmt=LOG_DATE_FORMAT):
+        super(DefaultFormatter, self).__init__(fmt=fmt, datefmt=datefmt)
 
 
 class AddFormattedAttributes(logging.Filter):
@@ -100,3 +103,40 @@ def compress_logger_name(name: str, length: int) -> str:
 
     new_parts.reverse()
     return ".".join(new_parts)
+
+
+class TraceLoggingFormatter(logging.Formatter):
+    aws_trace_log_format = (
+        LOG_FORMAT
+        + "; %(input_type)s(%(input)s, headers=%(request_headers)s); %(output_type)s(%(output)s, headers=%(response_headers)s)"
+    )
+
+    def __init__(self):
+        super().__init__(fmt=self.aws_trace_log_format, datefmt=LOG_DATE_FORMAT)
+
+
+class AwsTraceLoggingFormatter(TraceLoggingFormatter):
+    bytes_length_display_threshold = 512
+
+    def __init__(self):
+        super().__init__()
+
+    def _copy_service_dict(self, service_dict: Dict) -> Dict:
+        if not isinstance(service_dict, Dict):
+            return service_dict
+        result = {}
+        for key, value in service_dict.items():
+            if isinstance(value, dict):
+                result[key] = self._copy_service_dict(value)
+            elif isinstance(value, bytes) and len(value) > self.bytes_length_display_threshold:
+                result[key] = f"Bytes({format_bytes(len(value))})"
+            elif isinstance(value, list):
+                result[key] = [self._copy_service_dict(item) for item in value]
+            else:
+                result[key] = value
+        return result
+
+    def format(self, record: logging.LogRecord) -> str:
+        record.input = self._copy_service_dict(record.input)
+        record.output = self._copy_service_dict(record.output)
+        return super().format(record=record)

@@ -162,9 +162,9 @@ def get_server_version() -> str:
 
 def setup_logging():
     """Determine and set log level. The singleton factory makes sure the logging is only set up once."""
-    from localstack.logging.setup import get_log_level_from_config, setup_logging
+    from localstack.logging.setup import setup_logging_from_config
 
-    setup_logging(get_log_level_from_config())
+    setup_logging_from_config()
 
 
 # --------------
