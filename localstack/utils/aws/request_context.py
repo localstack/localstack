@@ -27,30 +27,7 @@ THREAD_LOCAL = threading.local()
 
 MARKER_APIGW_REQUEST_REGION = "__apigw_request_region__"
 
-AVAILABLE_REGIONS = [
-    "us-east-2",
-    "us-east-1",
-    "us-west-1",
-    "us-west-2",
-    "af-south-1",
-    "ap-east-1",
-    "ap-southeast-3",
-    "ap-south-1",
-    "ap-northeast-3",
-    "ap-northeast-2",
-    "ap-southeast-1",
-    "ap-southeast-2",
-    "ap-northeast-1",
-    "ca-central-1",
-    "eu-central-1",
-    "eu-west-1",
-    "eu-west-2",
-    "eu-south-1",
-    "eu-west-3",
-    "eu-north-1",
-    "me-south-1",
-    "sa-east-1",
-]
+AWS_REGION_REGEX = r"(us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\d"
 
 
 def get_proxy_request_for_thread():
@@ -90,10 +67,8 @@ def extract_region_from_auth_header(headers):
 
 def extract_region_from_host_header(headers):
     host = headers.get("Host") or ""
-    for region in AVAILABLE_REGIONS:
-        if region in host:
-            return region
-    return
+    region = re.search(AWS_REGION_REGEX, host, flags=re.IGNORECASE)
+    return region.group()
 
 
 def extract_region_from_headers(headers):
