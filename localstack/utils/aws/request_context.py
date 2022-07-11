@@ -68,7 +68,7 @@ def extract_region_from_auth_header(headers):
 def extract_region_from_host_header(headers):
     host = headers.get("Host") or ""
     region = re.search(AWS_REGION_REGEX, host, flags=re.IGNORECASE)
-    return region.group()
+    return region.group() if region else None
 
 
 def extract_region_from_headers(headers):

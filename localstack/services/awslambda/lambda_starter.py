@@ -31,7 +31,6 @@ def start_lambda(port=None, asynchronous=False):
         "/<path:path>",
         host="<regex('([a-z0-9-]+\\.)?'):region><api_id>.lambda-url.<regex('.*'):server>",
         endpoint=handle_lambda_url_invocation,
-        defaults={"path": ""},
     )
 
     # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR

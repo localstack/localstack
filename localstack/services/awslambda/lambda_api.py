@@ -21,11 +21,7 @@ from flask import Flask, Response, jsonify, request
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import (
-    APPLICATION_JSON,
-    LAMBDA_TEST_ROLE,
-    LOCALHOST_HOSTNAME,
-)
+from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
 from localstack.http import Request
 from localstack.http import Response as HttpResponse
 from localstack.services.awslambda import lambda_executors
