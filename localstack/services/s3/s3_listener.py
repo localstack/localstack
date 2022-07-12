@@ -16,12 +16,11 @@ import dateutil.parser
 import xmltodict
 from botocore.client import ClientError
 from moto.s3.exceptions import InvalidFilterRuleName, MissingBucket
-from moto.s3.models import FakeBucket, s3_backends
+from moto.s3.models import FakeBucket
 from pytz import timezone
 from requests.models import Request, Response
 
 from localstack import config, constants
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.s3 import multipart_content
@@ -33,6 +32,7 @@ from localstack.services.s3.s3_utils import (
     extract_bucket_name,
     extract_key_name,
     get_forwarded_for_host,
+    get_s3_backend,
     is_expired,
     is_object_download_request,
     is_static_website,
@@ -170,7 +170,7 @@ class BackendState:
     def get_bucket(bucket_name: str) -> FakeBucket:
         bucket_name = normalize_bucket_name(bucket_name)
         # TODO@viren does this have any impact on presigned URLs?
-        backend = s3_backends[get_aws_account_id()]["global"]
+        backend = get_s3_backend()
         bucket = backend.buckets.get(bucket_name)
         if not bucket:
             # note: adding a switch here to be able to handle both, moto's MissingBucket with the
@@ -506,7 +506,7 @@ def set_request_payment(bucket_name, payer):
             response._content = body
             return response
 
-    backend = s3_backends[get_aws_account_id()]["global"]
+    backend = get_s3_backend()
     backend.buckets[bucket_name].payer = payer["RequestPaymentConfiguration"]["Payer"]
     response.status_code = 200
     return response

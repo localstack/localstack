@@ -8,8 +8,8 @@ from typing import Dict, Final, Optional, Union
 
 from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
-from moto.secretsmanager import models as secretsmanager_models
-from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend, secretsmanager_backends
+from moto.secretsmanager import utils as secretsmanager_utils
+from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
 from moto.secretsmanager.responses import SecretsManagerResponse
 
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceResponse, handler
@@ -380,7 +380,7 @@ def response_update_secret(_, self):
     secret_binary = self._get_param("SecretBinary")
     client_request_token = self._get_param("ClientRequestToken")
     kms_key_id = self._get_param("KmsKeyId")
-    return secretsmanager_backends[self.region].update_secret(
+    return self.backend.update_secret(
         secret_id=secret_id,
         description=description,
         secret_string=secret_string,
@@ -555,7 +555,7 @@ def backend_rotate_secret(
     return secret.to_short_dict()
 
 
-def secretsmanager_models_secret_arn(account_id, region, secret_id):
+def _secret_arn(account_id, region, secret_id):
     k = f"{region}_{secret_id}"
     if k not in SECRET_ARN_STORAGE:
         id_string = short_uid()[:6]
@@ -583,7 +583,7 @@ def get_resource_policy_model(self, secret_id):
 
 def get_resource_policy_response(self):
     secret_id = self._get_param("SecretId")
-    return secretsmanager_backends[self.region].get_resource_policy(secret_id=secret_id)
+    return self.backend.get_resource_policy(secret_id=secret_id)
 
 
 def delete_resource_policy_model(self, secret_id):
@@ -601,7 +601,7 @@ def delete_resource_policy_model(self, secret_id):
 
 def delete_resource_policy_response(self):
     secret_id = self._get_param("SecretId")
-    return secretsmanager_backends[self.region].delete_resource_policy(secret_id=secret_id)
+    return self.backend.delete_resource_policy(secret_id=secret_id)
 
 
 def put_resource_policy_model(self, secret_id, resource_policy):
@@ -623,13 +623,13 @@ def put_resource_policy_model(self, secret_id, resource_policy):
 def put_resource_policy_response(self):
     secret_id = self._get_param("SecretId")
     resource_policy = self._get_param("ResourcePolicy")
-    return secretsmanager_backends[self.region].put_resource_policy(
+    return self.backend.put_resource_policy(
         secret_id=secret_id, resource_policy=json.loads(resource_policy)
     )
 
 
 def apply_patches():
-    secretsmanager_models.secret_arn = secretsmanager_models_secret_arn
+    secretsmanager_utils.secret_arn = _secret_arn
     setattr(SecretsManagerBackend, "get_resource_policy", get_resource_policy_model)
     setattr(SecretsManagerResponse, "get_resource_policy", get_resource_policy_response)
 
