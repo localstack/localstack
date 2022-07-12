@@ -6,14 +6,22 @@ from pathlib import Path
 from scripts.metric_aggregator import aggregate_recorded_raw_data
 
 DOCS_HEADER = """---
-title: "LocalStack Metric Coverage"
-linkTitle: "LocalStack Metric Coverage"
+title: "LocalStack Coverage"
+linkTitle: "LocalStack Coverage"
 weight: 100
 description: >
-  Overview of the implemented AWS APIs and integration test coverage in LocalStack
+  Overview of the implemented AWS APIs in LocalStack
 ---
 \n\n
 """
+
+TABLE_HEADER = """
+  <thead>
+    <tr>
+      <th>Operation</th>
+      <th style="text-align:right">Implemented</th>
+    </tr>
+  </thead>"""
 
 
 def create_simplified_metrics(metrics: dict, impl_details: dict):
@@ -21,7 +29,8 @@ def create_simplified_metrics(metrics: dict, impl_details: dict):
     for service in metrics:
         simplified_metric[service] = {}
         details = metrics[service]
-        del metrics[service]["service_attributes"]
+        if "service_attributes" in metrics[service]:
+            del metrics[service]["service_attributes"]
         for operation in sorted(details.keys()):
             op_details = details[operation]
             if impl_details[service].get(operation) is None:
@@ -46,37 +55,74 @@ def create_metric_coverage_docs(file_name: str, metrics: dict, impl_details: dic
         os.remove(file_name)
 
     output = DOCS_HEADER
-    header = """
-| Operation                              | Implemented |
-| -------------------------------------- | ----------: |
-"""
+    output += '<div class="coverage-report">\n\n'
+    header = f"<table>{TABLE_HEADER}\n"
     for service in sorted(simplified_metrics.keys()):
         output += f"## {service} ##\n\n"
         output += header
+        output += "  <tbody>\n"
         details = simplified_metrics[service]
 
-        # implemented_ops = {
-        #     operation[0]: operation[1]
-        #     for operation in details.items()
-        #     if operation[1]["implemented"]
-        # }
-        # other_ops = {
-        #     operation[0]: operation[1]
-        #     for operation in details.items()
-        #     if not operation[1]["implemented"]
-        # }
+        implemented_ops = {
+            operation[0]: operation[1]
+            for operation in details.items()
+            if operation[1]["implemented"]
+        }
 
-        for operation in sorted(details.items(), key=lambda x: (x[1]["implemented"] < 1, x[0])):
-            # print(f"{service}.{operation[0]}: {operation[1]['implemented']}")
-            tested_indicator = "✨" if operation[1]["tested"] else ""
-            trailing_spaces = 38 - len(operation[0]) - len(tested_indicator)
-            implemented = "✅" if operation[1]["implemented"] else "-"
-            output += f"| {operation[0]} {tested_indicator}{' ' * trailing_spaces}| {implemented}         |\n"
+        tested_indicator = ' <a href="#misc" title="covered by our integration test suite">✨</a>'
+        for operation in sorted(implemented_ops.keys()):
+            tested = ""
+            if implemented_ops.get(operation).get("tested"):
+                tested = tested_indicator
+            output += (
+                "    <tr>\n"
+                f"      <td>{operation}{tested}</td>\n"
+                '       <td style="text-align:right">✅</td>\n'
+                "    </tr>\n"
+            )
+        output += "  </tbody>\n"
+        other_ops = {
+            operation[0]: operation[1]
+            for operation in details.items()
+            if not operation[1]["implemented"]
+        }
+        if other_ops:
+            output += (
+                "  <tbody>"
+                "    <tr>\n"
+                f"""      <td><a data-toggle="collapse" href=".{service.lower()}-notimplemented">Show missing</a></td>\n"""
+                '      <td style="text-align:right"></td>\n'
+                "    </tr>\n"
+                "  </tbody>\n"
+                f"""  <tbody class="collapse {service.lower()}-notimplemented"> """
+            )
+            for operation in sorted(other_ops.keys()):
+                output += (
+                    "    <tr>\n"
+                    f"      <td>{operation}</td>\n"
+                    '       <td style="text-align:right">-</td>\n'
+                    "    </tr>\n"
+                )
+            output += "  </tbody>\n"
 
-        output += "\n\n"
+        # for operation in sorted(details.items(), key=lambda x: (x[1]["implemented"] < 1, x[0])):
+        #     # print(f"{service}.{operation[0]}: {operation[1]['implemented']}")
+        #     tested_indicator = "✨" if operation[1]["tested"] else ""
+        #     trailing_spaces = 38 - len(operation[0]) - len(tested_indicator)
+        #     implemented = "✅" if operation[1]["implemented"] else "-"
+        #     output += f"| {operation[0]} {tested_indicator}{' ' * trailing_spaces}| {implemented}         |\n"
+
+        output += " </table>\n\n"
         with open(file_name, "a") as fd:
             fd.write(f"{output}\n")
             output = ""
+
+    with open(file_name, "a") as fd:
+        fd.write(f"{output}\n")
+        fd.write(
+            "## Misc ##\n\n" "Endpoints marked with ✨ are covered by our integration test suite."
+        )
+        fd.write("\n\n</div>")
 
 
 def create_metric_coverage_docs_internal(
@@ -103,6 +149,11 @@ def create_metric_coverage_docs_internal(
         details = metrics[service]
         for operation in sorted(details.keys()):
             op_details = details[operation]
+            if impl_details[service].get(operation) is None:
+                print(
+                    f"------> WARNING: {service}.{operation} does not have implementation details"
+                )
+                continue
             implemented = yes_indicator if impl_details[service][operation] else no_indicator
             tested = yes_indicator if op_details.get("invoked", 0) > 0 else no_indicator
 
@@ -135,8 +186,8 @@ def main(path_to_implementation_details: str, path_to_raw_metrics: str):
             service[row["operation"]] = True if row["is_implemented"] == "True" else False
 
     recorded_metrics = aggregate_recorded_raw_data(base_dir=path_to_raw_metrics)
-    # create_metric_coverage_docs(
-    #     file_name=path_to_raw_metrics + "/metric-coverage.md",
+    # create_metric_coverage_docs_internal(
+    #     file_name=path_to_raw_metrics + "/metric-coverage_internal.md",
     #     metrics=recorded_metrics,
     #     impl_details=impl_details,
     #     coverage=coverage,
