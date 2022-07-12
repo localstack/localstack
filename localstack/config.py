@@ -815,6 +815,26 @@ def collect_config_items() -> List[Tuple[str, Any]]:
     return result
 
 
+def is_trace_logging_enabled():
+    if LS_LOG:
+        log_level = str(LS_LOG).upper()
+        return log_level.lower() in TRACE_LOG_LEVELS
+    return False
+
+
+# set log levels immediately, but will be overwritten later by setup_logging
+if DEBUG:
+    logging.getLogger("").setLevel(logging.DEBUG)
+    logging.getLogger("localstack").setLevel(logging.DEBUG)
+
+LOG = logging.getLogger(__name__)
+if is_trace_logging_enabled():
+    load_end_time = time.time()
+    LOG.debug(
+        "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
+    )
+
+
 def parse_service_ports() -> Dict[str, int]:
     """Parses the environment variable $SERVICES with a comma-separated list of services
     and (optional) ports they should run on: 'service1:port1,service2,service3:port3'"""
@@ -922,26 +942,6 @@ def edge_ports_info():
         result = "port %s" % EDGE_PORT
     result = "%s %s" % (get_protocol(), result)
     return result
-
-
-def is_trace_logging_enabled():
-    if LS_LOG:
-        log_level = str(LS_LOG).upper()
-        return log_level.lower() in TRACE_LOG_LEVELS
-    return False
-
-
-# set log levels immediately, but will be overwritten later by setup_logging
-if DEBUG:
-    logging.getLogger("").setLevel(logging.DEBUG)
-    logging.getLogger("localstack").setLevel(logging.DEBUG)
-
-LOG = logging.getLogger(__name__)
-if is_trace_logging_enabled():
-    load_end_time = time.time()
-    LOG.debug(
-        "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
-    )
 
 
 class ServiceProviderConfig(Mapping[str, str]):
