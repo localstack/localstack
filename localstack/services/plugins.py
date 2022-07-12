@@ -13,7 +13,7 @@ from werkzeug import Request
 
 from localstack import config
 from localstack.config import ServiceProviderConfig
-from localstack.utils.bootstrap import get_enabled_apis, is_api_enabled, log_duration
+from localstack.utils.bootstrap import get_enabled_apis, log_duration
 from localstack.utils.functions import call_safe
 from localstack.utils.net import wait_for_port_status
 from localstack.utils.sync import poll_condition
@@ -214,10 +214,7 @@ class Service:
         return self.plugin_name
 
     def is_enabled(self):
-        if self.default_active:
-            return True
-
-        return is_api_enabled(self.name())
+        return True
 
 
 class ServiceState(Enum):

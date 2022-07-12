@@ -105,7 +105,6 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder
@@ -1213,9 +1212,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def delete_all_event_source_mappings(self, table_arn):
         if table_arn:
-            # fix start dynamodb service without lambda
-            if not is_api_enabled("lambda"):
-                return
 
             lambda_client = aws_stack.connect_to_service("lambda")
             result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)

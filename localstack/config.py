@@ -819,6 +819,9 @@ def parse_service_ports() -> Dict[str, int]:
     """Parses the environment variable $SERVICES with a comma-separated list of services
     and (optional) ports they should run on: 'service1:port1,service2,service3:port3'"""
     service_ports = os.environ.get("SERVICES", "").strip()
+    if service_ports and not EAGER_SERVICE_LOADING:
+        LOG.warning("SERVICES variable is ignored if EAGER_SERVICE_LOADING=0.")
+        service_ports = None  # TODO remove logic once we clear up the service ports stuff
     if not service_ports:
         return DEFAULT_SERVICE_PORTS
     result = {}
@@ -842,11 +845,6 @@ def parse_service_ports() -> Dict[str, int]:
             port_number = 0
         result[service] = port_number
     return result
-
-
-# TODO: leaving temporarily for patch compatibilty - remove!
-def populate_configs(service_ports=None):
-    pass
 
 
 # TODO: use functools cache, instead of global variable here

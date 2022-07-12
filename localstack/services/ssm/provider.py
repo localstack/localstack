@@ -21,7 +21,6 @@ from localstack.aws.api.ssm import (
 )
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.utils.aws import aws_stack
-from localstack.utils.bootstrap import is_api_enabled
 
 PARAM_PREFIX_SECRETSMANAGER = "/aws/reference/secretsmanager"
 
@@ -95,8 +94,6 @@ class SsmProvider(SsmApi, ABC):
     @staticmethod
     def _notify_event_subscribers(name: ParameterName, operation: str):
         """Publish an EventBridge event to notify subscribers of changes."""
-        if not is_api_enabled("events"):
-            return
         events = aws_stack.connect_to_service("events")
         detail = {"name": name, "operation": operation}
         event = {
