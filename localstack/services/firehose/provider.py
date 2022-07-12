@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Dict, List
 import re
 from functools import partial
-
+from collections import defaultdict
 import requests
 
 from localstack.aws.accounts import get_aws_account_id
@@ -655,17 +655,23 @@ class FirehoseProvider(FirehoseApi):
         bucket = s3_bucket_name(s3_destination_description["BucketARN"])
         original_prefix = s3_destination_description.get("Prefix", "")
 
-        s3 = connect_to_resource("s3")
+        batched_records = defaultdict(list)
         for r in records:
             metadata = r["kinesisRecordMetadata"]
             prefix = re.sub("!{partitionKeyFromQuery:(\w+)}", partial(self._replace_prefix_dynamic_partitions, metadata),original_prefix)
+            batched_records[prefix].append(r)
+
+        
+        s3 = connect_to_resource("s3")
+        for prefix in batched_records:
             obj_path = self._get_s3_object_path(stream_name, prefix)
-            batched_data = b"".join([base64.b64decode(r.get("Data") or r.get("data"))])
+            batched_data = b"".join([base64.b64decode(r.get("Data") or r.get("data")) for r in batched_records[prefix]])
+            
             try:
                 LOG.debug("Publishing to S3 destination: %s. Data: %s", bucket, batched_data)
                 s3.Object(bucket, obj_path).put(Body=batched_data)
             except Exception as e:
-                LOG.exception(f"Unable to put record {r} to s3 bucket.")
+                LOG.exception(f"Unable to put record {batched_data} to s3 bucket.")
                 raise e
 
 
