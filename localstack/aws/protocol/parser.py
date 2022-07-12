@@ -233,6 +233,10 @@ class RequestParser(abc.ABC):
             if location == "header":
                 header_name = shape.serialization.get("name")
                 payload = request.headers.get(header_name)
+                if shape.type_name == "list":
+                    # headers may contain a comma separated list of values (e.g., the ObjectAttributes member in
+                    # s3.GetObjectAttributes), so we prepare it here for the handler, which will be `_parse_list`.
+                    payload = payload.split(",")
             elif location == "headers":
                 payload = self._parse_header_map(shape, request.headers)
                 # shapes with the location trait "headers" only contain strings and are not further processed
