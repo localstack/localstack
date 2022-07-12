@@ -67,7 +67,7 @@ class TestParseServicePorts:
         assert result == config.DEFAULT_SERVICE_PORTS
 
     def test_with_service_subset(self):
-        with temporary_env({"SERVICES": "s3,sqs"}):
+        with temporary_env({"SERVICES": "s3,sqs", "EAGER_SERVICE_LOADING": "1"}):
             result = config.parse_service_ports()
 
         assert len(result) == 2
@@ -77,7 +77,7 @@ class TestParseServicePorts:
         assert result["sqs"] == 4566
 
     def test_custom_service_default_port(self):
-        with temporary_env({"SERVICES": "foobar"}):
+        with temporary_env({"SERVICES": "foobar", "EAGER_SERVICE_LOADING": "1"}):
             result = config.parse_service_ports()
 
         assert len(result) == 1
@@ -87,7 +87,9 @@ class TestParseServicePorts:
         assert result["foobar"] == 0
 
     def test_custom_port_mapping(self):
-        with temporary_env({"SERVICES": "foobar", "FOOBAR_PORT": "1234"}):
+        with temporary_env(
+            {"SERVICES": "foobar", "FOOBAR_PORT": "1234", "EAGER_SERVICE_LOADING": "1"}
+        ):
             result = config.parse_service_ports()
 
         assert len(result) == 1
@@ -96,7 +98,9 @@ class TestParseServicePorts:
         assert result["foobar"] == 1234
 
     def test_custom_illegal_port_mapping(self):
-        with temporary_env({"SERVICES": "foobar", "FOOBAR_PORT": "asdf"}):
+        with temporary_env(
+            {"SERVICES": "foobar", "FOOBAR_PORT": "asdf", "EAGER_SERVICE_LOADING": "1"}
+        ):
             result = config.parse_service_ports()
 
         assert len(result) == 1
@@ -106,7 +110,7 @@ class TestParseServicePorts:
         assert result["foobar"] == 0
 
     def test_custom_port_mapping_in_services_env(self):
-        with temporary_env({"SERVICES": "foobar:1235"}):
+        with temporary_env({"SERVICES": "foobar:1235", "EAGER_SERVICE_LOADING": "1"}):
             result = config.parse_service_ports()
 
         assert len(result) == 1

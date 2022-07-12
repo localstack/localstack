@@ -815,10 +815,33 @@ def collect_config_items() -> List[Tuple[str, Any]]:
     return result
 
 
+def is_trace_logging_enabled():
+    if LS_LOG:
+        log_level = str(LS_LOG).upper()
+        return log_level.lower() in TRACE_LOG_LEVELS
+    return False
+
+
+# set log levels immediately, but will be overwritten later by setup_logging
+if DEBUG:
+    logging.getLogger("").setLevel(logging.DEBUG)
+    logging.getLogger("localstack").setLevel(logging.DEBUG)
+
+LOG = logging.getLogger(__name__)
+if is_trace_logging_enabled():
+    load_end_time = time.time()
+    LOG.debug(
+        "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
+    )
+
+
 def parse_service_ports() -> Dict[str, int]:
     """Parses the environment variable $SERVICES with a comma-separated list of services
     and (optional) ports they should run on: 'service1:port1,service2,service3:port3'"""
     service_ports = os.environ.get("SERVICES", "").strip()
+    if service_ports and not is_env_true("EAGER_SERVICE_LOADING"):
+        LOG.warning("SERVICES variable is ignored if EAGER_SERVICE_LOADING=0.")
+        service_ports = None  # TODO remove logic once we clear up the service ports stuff
     if not service_ports:
         return DEFAULT_SERVICE_PORTS
     result = {}
@@ -842,11 +865,6 @@ def parse_service_ports() -> Dict[str, int]:
             port_number = 0
         result[service] = port_number
     return result
-
-
-# TODO: leaving temporarily for patch compatibilty - remove!
-def populate_configs(service_ports=None):
-    pass
 
 
 # TODO: use functools cache, instead of global variable here
@@ -924,26 +942,6 @@ def edge_ports_info():
         result = "port %s" % EDGE_PORT
     result = "%s %s" % (get_protocol(), result)
     return result
-
-
-def is_trace_logging_enabled():
-    if LS_LOG:
-        log_level = str(LS_LOG).upper()
-        return log_level.lower() in TRACE_LOG_LEVELS
-    return False
-
-
-# set log levels immediately, but will be overwritten later by setup_logging
-if DEBUG:
-    logging.getLogger("").setLevel(logging.DEBUG)
-    logging.getLogger("localstack").setLevel(logging.DEBUG)
-
-LOG = logging.getLogger(__name__)
-if is_trace_logging_enabled():
-    load_end_time = time.time()
-    LOG.debug(
-        "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
-    )
 
 
 class ServiceProviderConfig(Mapping[str, str]):

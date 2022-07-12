@@ -8,7 +8,6 @@ from flask import Response
 from localstack import config
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import to_str
 from localstack.utils.time import now_utc
 
@@ -69,8 +68,6 @@ def store_cloudwatch_logs(
     start_time=None,
     auto_create_group: Optional[bool] = True,
 ):
-    if not is_api_enabled("logs"):
-        return
     start_time = start_time or int(time.time() * 1000)
     logs_client = aws_stack.connect_to_service("logs")
     log_output = to_str(log_output)

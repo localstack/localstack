@@ -21,43 +21,35 @@ from localstack.services.generic_proxy import (
 )
 from localstack.services.messages import Request, Response
 from localstack.utils.aws import aws_stack
-from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.common import get_free_tcp_port, short_uid, to_str
 from localstack.utils.xml import strip_xmlns
 
 
 class TestEdgeAPI:
-    @pytest.mark.skipif(not is_api_enabled("kinesis"), reason="kinesis not enabled")
     def test_invoke_kinesis(self):
         edge_url = config.get_edge_url()
         self._invoke_kinesis_via_edge(edge_url)
 
-    @pytest.mark.skipif(not is_api_enabled("dynamodbstreams"), reason="dynamodbstreams not enabled")
     def test_invoke_dynamodb(self):
         edge_url = config.get_edge_url()
         self._invoke_dynamodb_via_edge_go_sdk(edge_url)
 
-    @pytest.mark.skipif(not is_api_enabled("dynamodbstreams"), reason="dynamodbstreams not enabled")
     def test_invoke_dynamodbstreams(self):
         edge_url = config.get_edge_url()
         self._invoke_dynamodbstreams_via_edge(edge_url)
 
-    @pytest.mark.skipif(not is_api_enabled("firehose"), reason="firehose not enabled")
     def test_invoke_firehose(self):
         edge_url = config.get_edge_url()
         self._invoke_firehose_via_edge(edge_url)
 
-    @pytest.mark.skipif(not is_api_enabled("stepfunctions"), reason="stepfunctions not enabled")
     def test_invoke_stepfunctions(self):
         edge_url = config.get_edge_url()
         self._invoke_stepfunctions_via_edge(edge_url)
 
-    @pytest.mark.skipif(not is_api_enabled("s3"), reason="s3 not enabled")
     def test_invoke_s3(self):
         edge_url = config.get_edge_url()
         self._invoke_s3_via_edge(edge_url)
 
-    @pytest.mark.skipif(not is_api_enabled("s3"), reason="s3 not enabled")
     @pytest.mark.xfail(
         condition=not config.LEGACY_EDGE_PROXY, reason="failing with new HTTP gateway (only in CI)"
     )
