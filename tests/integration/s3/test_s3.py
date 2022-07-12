@@ -182,6 +182,17 @@ class TestS3:
         assert error["Code"] == "NoSuchBucket"
         assert error["Message"] == "The specified bucket does not exist"
 
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="currently not implemented in moto, see https://github.com/localstack/localstack/issues/6422"
+    )
+    def test_get_object_attributes_object_size(self, s3_client, s3_bucket):
+        s3_client.put_object(Bucket=s3_bucket, Key="data.txt", Body=b"69\n420\n")
+        response = s3_client.get_object_attributes(
+            Bucket=s3_bucket, Key="data.txt", ObjectAttributes=["ObjectSize"]
+        )
+        assert response["ObjectSize"] == 7
+
 
 class TestS3PresignedUrl:
     """

@@ -1015,6 +1015,18 @@ def test_restxml_headers_parsing():
     )
 
 
+def test_restxml_header_list_parsing():
+    """Tests that list attributes that are encoded into headers are parsed correctly."""
+    _botocore_parser_integration_test(
+        service="s3",
+        action="GetObjectAttributes",
+        Bucket="test-bucket",
+        Key="/test-key",
+        # ObjectAttributesList is a list of strings with location:"header"
+        ObjectAttributes=["ObjectSize", "StorageClass"],
+    )
+
+
 def test_restxml_header_date_parsing():
     """Test the parsing of a map with the location trait 'headers'."""
     _botocore_parser_integration_test(
