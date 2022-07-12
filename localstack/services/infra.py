@@ -495,8 +495,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
                     LOG.debug("%s", e)
                 except Exception:
                     LOG.exception("could not load service plugin %s", api)
-            else:
-                LOG.debug("Api %s not present in SERVICES variable, skipping eager loading...", api)
 
     @log_duration()
     def start_runtime_components():
