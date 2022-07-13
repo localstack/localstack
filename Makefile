@@ -12,7 +12,8 @@ MAIN_CONTAINER_NAME ?= localstack_main
 ECR_REGISTRY := 242369466814.dkr.ecr.us-east-2.amazonaws.com
 REPOSITORY := ${ECR_REGISTRY}/localstack
 GIT_SHA ?= $(shell git rev-parse --short HEAD)
-PROVI_IMAGE_NAME := ${REPOSITORY}:${GIT_SHA}
+ARCH := $(shell arch)
+PROVI_IMAGE_NAME := ${REPOSITORY}:${GIT_SHA}-${ARCH}
 
 MAJOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f1)
 MINOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f2)
