@@ -6,8 +6,6 @@ from typing import Any, Type, TypeVar, Union
 
 from boto3 import Session
 
-from localstack.utils.strings import snake_to_camel_case
-
 BaseStoreType = TypeVar("BaseStoreType", bound="BaseStore")
 
 
@@ -18,17 +16,16 @@ class CrossRegionAttribute:
 
     def __init__(self, name: str, default: Union[Callable, int, float, str, bool, None]):
         self.name = name
-
-        if isinstance(default, Callable):
-            self.default_value = default()
-        else:
-            self.default_value = default
+        self.default = default
 
     def __get__(self, obj: "BaseStore", objtype=None) -> Any:
         self._check_region_store_association(obj)
 
         if self.name not in obj._global.keys():
-            obj._global[self.name] = self.default_value
+            if isinstance(self.default, Callable):
+                obj._global[self.name] = self.default()
+            else:
+                obj._global[self.name] = self.default
 
         return obj._global[self.name]
 
@@ -39,8 +36,8 @@ class CrossRegionAttribute:
 
     def _check_region_store_association(self, obj):
         if not hasattr(obj, "_global"):
-            # This will happen if a Store is instantiated outside of a RegionStore
-            raise ValueError(
+            # Raise if a Store is instantiated outside of a RegionStore
+            raise AttributeError(
                 "Could not resolve cross-region attribute because there is no associated RegionStore"
             )
 
@@ -53,11 +50,12 @@ class BaseStore:
 
     def __repr__(self):
         try:
-            repr_templ = "<{name} object for {account_id} in {region_name}>"
+            repr_templ = "<{name} object for {service_name} at {account_id}/{region_name}>"
             return repr_templ.format(
-                name=snake_to_camel_case(self.service_name + "_store"),
-                account_id=self.account_id,
-                region_name=self.region_name,
+                name=self.__class__.__name__,
+                service_name=self._service_name,
+                account_id=self._account_id,
+                region_name=self._region_name,
             )
         except AttributeError:
             return super().__repr__()
@@ -82,18 +80,22 @@ class RegionStore(dict):
         if region_name in self.keys():
             return super().__getitem__(region_name)
 
-        if region_name not in self.keys() and region_name in self.valid_regions:
-            store_obj = self.store()
+        if region_name not in self.valid_regions:
+            # Tip: Try using a valid region or valid service name
+            raise ValueError(
+                f"'{region_name}' is not a valid AWS region name for {self.service_name}"
+            )
 
-            store_obj._global = self._global
-            store_obj.service_name = self.service_name
-            store_obj.account_id = self.account_id
-            store_obj.region_name = region_name
+        store_obj = self.store()
 
-            super().__setitem__(region_name, store_obj)
-            return super().__getitem__(region_name)
+        store_obj._global = self._global
+        store_obj._service_name = self.service_name
+        store_obj._account_id = self.account_id
+        store_obj._region_name = region_name
 
-        raise ValueError(f"'{region_name}' is not a valid AWS region name")
+        self[region_name] = store_obj
+
+        return super().__getitem__(region_name)
 
 
 class AccountRegionStore(dict):
