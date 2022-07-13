@@ -6,7 +6,9 @@ import time
 import uuid
 from datetime import datetime
 from typing import Dict, List
-
+import re
+from functools import partial
+from collections import defaultdict
 import requests
 
 from localstack.aws.accounts import get_aws_account_id
@@ -585,6 +587,22 @@ class FirehoseProvider(FirehoseApi):
                     "subsequenceNumber": "",
                 }
 
+    def _get_metadata_extraction_queries(self, query_value) -> List[Dict]:
+        query_value = query_value[1:len(query_value) - 1]
+        queries = query_value.split(',')
+        results = []
+        for query in queries:
+            key_val = query.split(':')
+            if len(key_val) != 2:
+                continue
+            if ' // ' in key_val[1]:
+                value_default = key_val[1][1:len(key_val[1]) - 1].split(' // ')
+                results.append({ 'name': key_val[0], 'value': value_default[0][1:len(value_default[0])], 'default': value_default[1][1:len(value_default[1]) - 1] })
+            else:
+                results.append({ 'name': key_val[0], 'value': key_val[1][1:len(key_val[1])] })
+        return results
+
+
     def _preprocess_records(self, processor: Dict, records: List[Record]) -> List[Dict]:
         """Preprocess the list of records by calling the given processor (e.g., Lamnda function)."""
         proc_type = processor.get("Type")
@@ -607,9 +625,26 @@ class FirehoseProvider(FirehoseApi):
             result = response.get("Payload").read()
             result = json.loads(to_str(result))
             records = result.get("records", []) if result else []
+        elif proc_type == "MetadataExtraction":
+            if "MetadataExtractionQuery" in parameters:
+                extractions = self._get_metadata_extraction_queries(parameters["MetadataExtractionQuery"])
+                for record in records:
+                    if "data" in record:
+                        data = record["data"]
+                    if "Data" in record:
+                        data = record["Data"]
+                    data = json.loads(base64.b64decode(data))
+                    for extraction in extractions:
+                        if extraction["value"] in data:
+                            record["kinesisRecordMetadata"][extraction["name"]] = data[extraction["value"]]
+                        elif "default" in extraction:
+                            record["kinesisRecordMetadata"][extraction["name"]] = extraction["default"]
         else:
             LOG.warning("Unsupported Firehose processor type '%s'", proc_type)
         return records
+
+    def _replace_prefix_dynamic_partitions(self, metadata, groups):
+        return metadata[''.join(list(groups.group(1)))]
 
     def _put_records_to_s3_bucket(
         self,
@@ -618,18 +653,27 @@ class FirehoseProvider(FirehoseApi):
         s3_destination_description: S3DestinationDescription,
     ):
         bucket = s3_bucket_name(s3_destination_description["BucketARN"])
-        prefix = s3_destination_description.get("Prefix", "")
+        original_prefix = s3_destination_description.get("Prefix", "")
 
+        batched_records = defaultdict(list)
+        for r in records:
+            metadata = r["kinesisRecordMetadata"]
+            prefix = re.sub("!{partitionKeyFromQuery:(\w+)}", partial(self._replace_prefix_dynamic_partitions, metadata),original_prefix)
+            batched_records[prefix].append(r)
+
+        
         s3 = connect_to_resource("s3")
-        batched_data = b"".join([base64.b64decode(r.get("Data") or r.get("data")) for r in records])
+        for prefix in batched_records:
+            obj_path = self._get_s3_object_path(stream_name, prefix)
+            batched_data = b"".join([base64.b64decode(r.get("Data") or r.get("data")) for r in batched_records[prefix]])
+            
+            try:
+                LOG.debug("Publishing to S3 destination: %s. Data: %s", bucket, batched_data)
+                s3.Object(bucket, obj_path).put(Body=batched_data)
+            except Exception as e:
+                LOG.exception(f"Unable to put record {batched_data} to s3 bucket.")
+                raise e
 
-        obj_path = self._get_s3_object_path(stream_name, prefix)
-        try:
-            LOG.debug("Publishing to S3 destination: %s. Data: %s", bucket, batched_data)
-            s3.Object(bucket, obj_path).put(Body=batched_data)
-        except Exception as e:
-            LOG.exception(f"Unable to put records {records} to s3 bucket.")
-            raise e
 
     def _get_s3_object_path(self, stream_name, prefix):
         # See https://aws.amazon.com/kinesis/data-firehose/faqs/#Data_delivery
