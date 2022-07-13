@@ -66,10 +66,13 @@ class RegionStore(dict):
     Encapsulation for stores across all regions for a specific AWS account ID.
     """
 
-    def __init__(self, service_name: str, store: Type[BaseStoreType], account_id: str):
+    def __init__(
+        self, service_name: str, store: Type[BaseStoreType], account_id: str, validate: bool = True
+    ):
         self.store = store
         self.account_id = account_id
         self.service_name = service_name
+        self.validate = validate
 
         self.valid_regions = Session().get_available_regions(service_name)
 
@@ -80,7 +83,7 @@ class RegionStore(dict):
         if region_name in self.keys():
             return super().__getitem__(region_name)
 
-        if region_name not in self.valid_regions:
+        if self.validate and region_name not in self.valid_regions:
             # Tip: Try using a valid region or valid service name
             raise ValueError(
                 f"'{region_name}' is not a valid AWS region name for {self.service_name}"
@@ -103,16 +106,25 @@ class AccountRegionStore(dict):
     Encapsulation for all stores for all AWS account IDs.
     """
 
-    def __init__(self, service_name: str, store: Type[BaseStoreType]):
+    def __init__(self, service_name: str, store: Type[BaseStoreType], validate: bool = True):
+        """
+        :param service_name: Name of the service
+        :param store: Class definition of the Store
+        :param validate: Whether to raise if invalid region names or account IDs are used during subscription
+        """
         self.service_name = service_name
         self.store = store
+        self.validate = validate
 
     def __getitem__(self, account_id: str) -> RegionStore:
-        if not re.match(r"\d{12}", account_id):
+        if self.validate and not re.match(r"\d{12}", account_id):
             raise ValueError(f"'{account_id}' is not a valid AWS account ID")
 
         if account_id not in self.keys():
             self[account_id] = RegionStore(
-                service_name=self.service_name, store=self.store, account_id=account_id
+                service_name=self.service_name,
+                store=self.store,
+                account_id=account_id,
+                validate=self.validate,
             )
         return super().__getitem__(account_id)

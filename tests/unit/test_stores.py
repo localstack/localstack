@@ -15,7 +15,7 @@ def sample_stores():
         def __init__(self):
             self.region_specific_attr = []
 
-    return AccountRegionStore("ses", SampleStore)
+    return AccountRegionStore("zzz", SampleStore, validate=False)
 
 
 @mark.xfail(not MULTI_ACCOUNTS, reason="Multi-accounts feature must be enabled in env config")
