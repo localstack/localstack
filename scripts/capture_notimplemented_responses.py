@@ -366,8 +366,6 @@ def calculate_percentages():
 
 @click.command()
 def main():
-    # run_script(["xray"])
-    # run_script(["xray"])
     run_script(latest_services_pro)
 
 
