@@ -6,6 +6,7 @@ from localstack import config
 from localstack.services.awslambda.lambda_api import handle_lambda_url_invocation
 from localstack.services.edge import ROUTER
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.patch import patch
 from localstack.utils.platform import is_linux
 from localstack.utils.strings import to_bytes
@@ -23,13 +24,13 @@ def start_lambda(port=None, asynchronous=False):
 
     ROUTER.add(
         "/",
-        host="<regex('([a-z0-9-]+\\.)?'):region><api_id>.lambda-url.<regex('.*'):server>",
+        host=f"<api_id>.lambda-url.<regex('{AWS_REGION_REGEX}'):region>.<regex('.*'):server>",
         endpoint=handle_lambda_url_invocation,
         defaults={"path": ""},
     )
     ROUTER.add(
         "/<path:path>",
-        host="<regex('([a-z0-9-]+\\.)?'):region><api_id>.lambda-url.<regex('.*'):server>",
+        host=f"<api_id>.lambda-url.<regex('{AWS_REGION_REGEX}'):region>.<regex('.*'):server>",
         endpoint=handle_lambda_url_invocation,
     )
 

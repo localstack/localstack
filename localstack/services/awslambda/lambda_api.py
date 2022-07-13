@@ -1129,8 +1129,8 @@ def delete_lambda_function(function_name: str) -> Dict[None, None]:
     return {}
 
 
-def get_lambda_url_config(api_id):
-    lambda_backend = LambdaRegion.get()
+def get_lambda_url_config(api_id, region=None):
+    lambda_backend = LambdaRegion.get(region)
     url_configs = lambda_backend.url_configs.values()
     lambda_url_configs = [config for config in url_configs if config.get("CustomId") == api_id]
     return lambda_url_configs[0]
@@ -1175,11 +1175,12 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
     }
 
 
-def handle_lambda_url_invocation(request: Request, **url_params: Dict[str, Any]) -> HttpResponse:
-    api_id = url_params["api_id"]
+def handle_lambda_url_invocation(
+    request: Request, api_id: str, region: str, **url_params: Dict[str, str]
+) -> HttpResponse:
     response = HttpResponse(headers={"Content-type": "application/json"})
     try:
-        lambda_url_config = get_lambda_url_config(api_id)
+        lambda_url_config = get_lambda_url_config(api_id, region)
     except IndexError as e:
         LOG.warning(f"Lambda URL ({api_id}) not found: {e}")
         response.set_json({"Message": None})
@@ -1528,7 +1529,7 @@ def create_url_config(function):
 
     custom_id = short_uid()
     region = LambdaRegion.get_current_request_region()
-    url = f"http://{region}.{custom_id}.lambda-url.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+    url = f"http://{custom_id}.lambda-url.{region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
 
     data = json.loads(to_str(request.data))
     cors = data.get("Cors", {})

@@ -65,12 +65,6 @@ def extract_region_from_auth_header(headers):
     return region
 
 
-def extract_region_from_host_header(headers):
-    host = headers.get("Host") or ""
-    region = re.search(AWS_REGION_REGEX, host, flags=re.IGNORECASE)
-    return region.group() if region else None
-
-
 def extract_region_from_headers(headers):
     region = headers.get(MARKER_APIGW_REQUEST_REGION)
     # Fix region lookup for certain requests, e.g., API gateway invocations
@@ -80,10 +74,6 @@ def extract_region_from_headers(headers):
         return region
 
     region = extract_region_from_auth_header(headers)
-
-    if not region:
-        # try to obtain region from host
-        region = extract_region_from_host_header(headers)
 
     if not region:
         # fall back to local region
