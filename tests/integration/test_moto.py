@@ -3,7 +3,7 @@ import pytest
 from localstack import config
 from localstack.aws.api import ServiceException, handler
 from localstack.services import moto
-from localstack.services.moto import MotoFallbackDispatcher, get_dispatcher
+from localstack.services.moto import MotoFallbackDispatcher
 from localstack.utils.common import short_uid, to_str
 
 
@@ -222,11 +222,6 @@ def test_moto_fallback_dispatcher():
     response = _dispatch("ListQueues", None)
     assert len(provider.calls) == 1
     assert len([url for url in response["QueueUrls"] if qname in url])
-
-
-def test_get_dispatcher_for_path_with_optional_slashes():
-    assert get_dispatcher("route53", "/2013-04-01/hostedzone/BOR36Z3H458JKS9/rrset/")
-    assert get_dispatcher("route53", "/2013-04-01/hostedzone/BOR36Z3H458JKS9/rrset")
 
 
 def test_request_with_response_header_location_fields():
