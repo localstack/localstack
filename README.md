@@ -1,6 +1,6 @@
 <a href="https://github.com/localstack/localstack/issues/6398"><img src="https://raw.githubusercontent.com/localstack/localstack/master/.github/images/v1-release.svg"></a>
 <p align="center">
-  <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-header.png" alt="LocalStack - A fully functional local cloud stack">
+  <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
 </p>
 
 <p align="center">
@@ -136,7 +136,7 @@ To use LocalStack with a graphical user interface, you can use the following UI 
 
 ## Change Log
 
-Please refer to [`CHANGELOG.md`](CHANGELOG.md) to see the complete list of changes for each release.
+Please refer to [GitHub releases](https://github.com/localstack/localstack/releases) to see the complete list of changes for each release.
 
 ## Contributing
 
