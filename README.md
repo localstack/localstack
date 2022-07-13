@@ -47,7 +47,7 @@ LocalStack also provides additional features to make your life as a cloud develo
 
 ## Requirements
 
-* `python` (Python 3.6 up to 3.10 supported)
+* `python` (Python 3.7 up to 3.10 supported)
 * `pip` (Python package manager)
 * `Docker`
 
@@ -76,7 +76,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 0.14.3
+ 💻 LocalStack CLI 1.0.0
 
 [20:22:20] starting LocalStack in Docker mode 🐳
 [20:22:21] detaching
@@ -186,7 +186,7 @@ You can also support this project by becoming a sponsor on [Open Collective](htt
 
 ## License
 
-Copyright (c) 2017-2021 LocalStack maintainers and contributors.
+Copyright (c) 2017-2022 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
