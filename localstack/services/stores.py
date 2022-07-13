@@ -1,4 +1,30 @@
-"""Base class and utilities for provider stores."""
+"""
+Base class and utilities for provider stores.
+
+These are analoguos to Moto's BackendDict and provide storage for AWS service providers.
+
+By convention, Stores are to be defined in `models` submodule of the service
+by subclassing BaseStore e.g. `localstack.services.sqs.models.SqsStore`
+Also by convention, cross-region attributes are declared in CAPITAL_CASE
+
+    class SqsStore(BaseStore):
+        queues: Dict[str, SqsQueue]
+        DELETED: CrossRegionAttribute(default=dict)  # type: Dict[str, float]
+
+        def __init__(self):
+            self.queues = {}
+
+Stores are then wrapped in AccountRegionStore and declared as a singleton
+
+    sqs_stores = AccountRegionStore('sqs', SqsStore)
+
+Access patterns are as follows
+
+    account_id = '001122334455'
+    sqs_stores[account_id]  # -> RegionStore
+    sqs_stores[account_id]['ap-south-1']  # -> SqsStore
+    sqs_stores[account_id]['ap-south-1'].queues  # -> {}
+"""
 
 import re
 from collections.abc import Callable
@@ -12,11 +38,20 @@ BaseStoreType = TypeVar("BaseStoreType", bound="BaseStore")
 class CrossRegionAttribute:
     """
     Descriptor protocol for marking attributes in stores as shared across all regions.
+
+    It makes use of the `_global` dict in RegionStore where all cross-region data
+    is stored.
     """
 
-    def __init__(self, name: str, default: Union[Callable, int, float, str, bool, None]):
-        self.name = name
+    def __init__(self, default: Union[Callable, int, float, str, bool, None]):
+        """
+        :param default: The default value assigned to the cross-region attribute.
+            This must be a scalar or a callable otherwise.
+        """
         self.default = default
+
+    def __set_name__(self, owner, name):
+        self.name = name
 
     def __get__(self, obj: "BaseStore", objtype=None) -> Any:
         self._check_region_store_association(obj)
@@ -45,7 +80,6 @@ class CrossRegionAttribute:
 class BaseStore:
     """
     Base class for defining stores for LocalStack providers.
-    Stores represent in-memory storage for all data associated with an AWS service.
     """
 
     def __repr__(self):

@@ -9,7 +9,7 @@ from localstack.services.stores import AccountRegionStore, BaseStore, CrossRegio
 @fixture
 def sample_stores():
     class SampleStore(BaseStore):
-        CROSS_REGION_ATTR = CrossRegionAttribute("CROSS_REGION_ATTR", default=list)
+        CROSS_REGION_ATTR = CrossRegionAttribute(default=list)
         region_specific_attr: list[Any]
 
         def __init__(self):
