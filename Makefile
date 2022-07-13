@@ -9,6 +9,11 @@ TEST_PATH ?= .
 PYTEST_LOGLEVEL ?=
 MAIN_CONTAINER_NAME ?= localstack_main
 
+ECR_REGISTRY := 242369466814.dkr.ecr.us-east-2.amazonaws.com
+REPOSITORY := ${ECR_REGISTRY}/localstack
+GIT_SHA ?= $(shell git rev-parse --short HEAD)
+PROVI_IMAGE_NAME := ${REPOSITORY}:${GIT_SHA}
+
 MAJOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f1)
 MINOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f2)
 PATCH_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f3)
@@ -110,6 +115,13 @@ docker-build: 			  ## Build Docker image
 docker-build-light: 	  ## Build Light Docker image
 	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=light --load" \
 	  TAG=$(IMAGE_NAME_LIGHT) docker-build
+
+docker/provi-login:
+	aws --profile=provi-production ecr get-login-password --region us-east-2 \
+	| docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+docker-provi-deploy:
+	make DOCKER_BUILD_FLAGS="--push" TAG=$(PROVI_IMAGE_NAME) docker-build
 
 docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
 	# Make sure to prepare your environment for cross-platform docker builds! (see doc/developer_guides/README.md)
