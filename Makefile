@@ -124,6 +124,12 @@ docker/provi-login:
 docker-provi-deploy:
 	make DOCKER_BUILD_FLAGS="--push" TAG=$(PROVI_IMAGE_NAME) docker-build
 
+docker-create-manifest:
+	docker manifest create ${REPOSITORY}:latest \
+		${REPOSITORY}:${GIT_SHA}-arm64 \
+		${REPOSITORY}:${GIT_SHA}-i386 && \
+	docker manifest push ${REPOSITORY}:latest
+
 docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
 	# Make sure to prepare your environment for cross-platform docker builds! (see doc/developer_guides/README.md)
 	# Multi-Platform builds cannot be loaded to the docker daemon from buildx, so we can't add "--load".
