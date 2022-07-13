@@ -39,10 +39,11 @@ def create_simplified_metrics(metrics: dict, impl_details: dict):
                 )
                 continue
             simplified_metric[service][operation] = {
-                "implemented": True if impl_details[service][operation] else False,
+                "implemented": impl_details[service][operation]["implemented"],
                 "tested": True if op_details.get("invoked", 0) > 0 else False,
-                "aws_validated": True if op_details["aws_validated"] else False,
-                "snapshot": True if op_details["snapshot"] else False,
+                "aws_validated": op_details["aws_validated"],
+                "snapshot": op_details["snapshot"],
+                "pro": impl_details[service][operation]["pro"],
             }
 
     return simplified_metric
@@ -72,11 +73,14 @@ def create_metric_coverage_docs(file_name: str, metrics: dict, impl_details: dic
         tested_indicator = ' <a href="#misc" title="covered by our integration test suite">✨</a>'
         for operation in sorted(implemented_ops.keys()):
             tested = ""
+            pro_info = ""
             if implemented_ops.get(operation).get("tested"):
                 tested = tested_indicator
+            if implemented_ops.get(operation).get("pro"):
+                pro_info = " (Pro) "
             output += (
                 "    <tr>\n"
-                f"      <td>{operation}{tested}</td>\n"
+                f"      <td>{operation}{pro_info}{tested}</td>\n"
                 '       <td style="text-align:right">✅</td>\n'
                 "    </tr>\n"
             )
@@ -168,22 +172,35 @@ def create_metric_coverage_docs_internal(
 
 
 def main(path_to_implementation_details: str, path_to_raw_metrics: str):
-    coverage = {}
-    with open(
-        f"{path_to_implementation_details}/implementation_coverage_aggregated.csv", mode="r"
-    ) as file:
-        csv_reader = csv.DictReader(file)
-        for row in csv_reader:
-            coverage[row["service"]] = row["percentage"]
+    # coverage = {}
+    # with open(
+    #     f"{path_to_implementation_details}/implementation_coverage_aggregated.csv", mode="r"
+    # ) as file:
+    #     csv_reader = csv.DictReader(file)
+    #     for row in csv_reader:
+    #         coverage[row["service"]] = row["percentage"]
 
     impl_details = {}
     with open(
-        f"{path_to_implementation_details}/implementation_coverage_full.csv", mode="r"
+        f"{path_to_implementation_details}/community/implementation_coverage_full.csv", mode="r"
     ) as file:
         csv_reader = csv.DictReader(file)
         for row in csv_reader:
             service = impl_details.setdefault(row["service"], {})
-            service[row["operation"]] = True if row["is_implemented"] == "True" else False
+            service[row["operation"]] = {
+                "implemented": True if row["is_implemented"] == "True" else False,
+                "pro": False,
+            }
+    with open(
+        f"{path_to_implementation_details}/pro/implementation_coverage_full.csv", mode="r"
+    ) as file:
+        csv_reader = csv.DictReader(file)
+        for row in csv_reader:
+            service = impl_details[row["service"]]
+            details = service[row["operation"]]
+            if not details["implemented"] and row["is_implemented"] == "True":
+                details["implemented"] = True
+                details["pro"] = True
 
     recorded_metrics = aggregate_recorded_raw_data(base_dir=path_to_raw_metrics)
     # create_metric_coverage_docs_internal(
@@ -193,7 +210,7 @@ def main(path_to_implementation_details: str, path_to_raw_metrics: str):
     #     coverage=coverage,
     # )
     create_metric_coverage_docs(
-        file_name=path_to_raw_metrics + "/metric-coverage.md",
+        file_name=path_to_raw_metrics + "/coverage.md",
         metrics=recorded_metrics,
         impl_details=impl_details,
     )
