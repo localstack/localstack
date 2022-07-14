@@ -427,6 +427,7 @@ class TestDynamoDB:
 
         # items which are being used to put in the table
         item1 = {PARTITION_KEY: "id1", "data": "foobar"}
+        item1b = {PARTITION_KEY: "id1", "data": "barfoo"}
         item2 = {PARTITION_KEY: "id2", "data": "foobar"}
 
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
@@ -439,6 +440,13 @@ class TestDynamoDB:
         # now the same data is present so when we pass return values as 'ALL_OLD'
         # it should give us attributes
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert response["Attributes"] == item1
+        assert "ConsumedCapacity" not in response
+        assert "ItemCollectionMetrics" not in response
+        # now a previous version of data is present, so when we pass return
+        # values as 'ALL_OLD' it should give us the old attributes
+        response = table.put_item(Item=item1b, ReturnValues="ALL_OLD")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert response["Attributes"] == item1
         assert "ConsumedCapacity" not in response
