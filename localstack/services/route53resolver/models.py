@@ -16,71 +16,83 @@ class Route53ResolverBackend(RegionBackend):
         self.firewall_rules = {}
         self.firewall_rule_group_associations = {}
 
-    def get_firewall_rule_group(self, id):
-        firewall_rule_group = self.firewall_rule_groups.get(id)
-        if not firewall_rule_group:
-            raise ResourceNotFoundException(
-                f"Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
-            )
-        return firewall_rule_group
 
-    def delete_firewall_rule_group(self, id):
-        # if firewall_rule_groups doesn't exist it will throw an error
-        firewall_rule_group = self.get_firewall_rule_group(id)
-        self.firewall_rule_groups.pop(id)
-        return firewall_rule_group
-
-    def get_firewall_rule_group_association(self, id):
-        firewall_rule_group_association = self.firewall_rule_group_associations.get(id)
-        if not firewall_rule_group_association:
-            raise ResourceNotFoundException(
-                f"[RSLVR-02025] Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
-            )
-        return self.firewall_rule_group_associations.get(id)
-
-    def delete_firewall_rule_group_association(self, id):
-        # if firewall_rule_group_associations doesn't exist it will throw an error
-        firewall_rule_group_associations = self.get_firewall_rule_group_association(id)
-        self.firewall_rule_group_associations.pop(id)
-        return firewall_rule_group_associations
-
-    def get_firewall_domain(self, id):
-        # firewall_domain can return none
-        firewall_domain = self.firewall_domains.get(id)
-        return firewall_domain
-
-    def delete_firewall_domain(self, id):
-        # if firewall_domains doesn't exist it will throw an error
-        firewall_domain = self.get_firewall_domain(id)
-        self.firewall_domains.pop(id)
-        return firewall_domain
-
-    def get_firewall_domain_list(self, id):
-        firewall_domain_list = self.firewall_domain_lists.get(id)
-        if not firewall_domain_list:
-            raise ResourceNotFoundException(
-                f"Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
-            )
-        return firewall_domain_list
-
-    def delete_firewall_domain_list(self, id):
-        # if firewall_domain_lists doesn't exist it will throw an error
-        firewall_domain_list = self.get_firewall_domain_list(id)
-        self.firewall_domain_lists.pop(id)
-        return firewall_domain_list
-
-    def get_firewall_rule(self, firewall_rule_group_id, firewall_domain_list_id):
-        firewall_rule = self.firewall_rules.get(firewall_rule_group_id, {}).get(
-            firewall_domain_list_id
+## helper functions for the backend
+def get_firewall_rule_group(id):
+    region_details = Route53ResolverBackend.get()
+    firewall_rule_group = region_details.firewall_rule_groups.get(id)
+    if not firewall_rule_group:
+        raise ResourceNotFoundException(
+            f"Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
         )
-        if not firewall_rule:
-            raise ResourceNotFoundException(
-                f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '{aws_stack.get_trace_id()}'"
-            )
-        return firewall_rule
+    return firewall_rule_group
 
-    def delete_firewall_rule(self, firewall_rule_group_id, firewall_domain_list_id):
-        # if firewall_rules doesn't exist it will throw an error
-        firewall_rule = self.get_firewall_rule(firewall_rule_group_id, firewall_domain_list_id)
-        self.firewall_rules.get(firewall_rule_group_id, {}).pop(firewall_domain_list_id)
-        return firewall_rule
+def delete_firewall_rule_group(id):
+    # if firewall_rule_groups doesn't exist it will throw an error
+    region_details = Route53ResolverBackend.get()
+    firewall_rule_group = region_details.get_firewall_rule_group(id)
+    region_details.firewall_rule_groups.pop(id)
+    return firewall_rule_group
+
+def get_firewall_rule_group_association(id):
+    region_details = Route53ResolverBackend.get()
+    firewall_rule_group_association = region_details.firewall_rule_group_associations.get(id)
+    if not firewall_rule_group_association:
+        raise ResourceNotFoundException(
+            f"[RSLVR-02025] Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+        )
+    return region_details.firewall_rule_group_associations.get(id)
+
+def delete_firewall_rule_group_association(id):
+    # if firewall_rule_group_associations doesn't exist it will throw an error
+    region_details = Route53ResolverBackend.get()
+    firewall_rule_group_associations = region_details.get_firewall_rule_group_association(id)
+    region_details.firewall_rule_group_associations.pop(id)
+    return firewall_rule_group_associations
+
+def get_firewall_domain(id):
+    # firewall_domain can return none
+    region_details = Route53ResolverBackend.get()
+    firewall_domain = region_details.firewall_domains.get(id)
+    return firewall_domain
+
+def delete_firewall_domain(id):
+    # if firewall_domains doesn't exist it will throw an error
+    region_details = Route53ResolverBackend.get()
+    firewall_domain = region_details.get_firewall_domain(id)
+    region_details.firewall_domains.pop(id)
+    return firewall_domain
+
+def get_firewall_domain_list(id):
+    region_details = Route53ResolverBackend.get()
+    firewall_domain_list = region_details.firewall_domain_lists.get(id)
+    if not firewall_domain_list:
+        raise ResourceNotFoundException(
+            f"Can't find the resource with ID '{id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+        )
+    return firewall_domain_list
+
+def delete_firewall_domain_list(id):
+    # if firewall_domain_lists doesn't exist it will throw an error
+    region_details = Route53ResolverBackend.get()
+    firewall_domain_list = region_details.get_firewall_domain_list(id)
+    region_details.firewall_domain_lists.pop(id)
+    return firewall_domain_list
+
+def get_firewall_rule(firewall_rule_group_id, firewall_domain_list_id):
+    region_details = Route53ResolverBackend.get()
+    firewall_rule = region_details.firewall_rules.get(firewall_rule_group_id, {}).get(
+        firewall_domain_list_id
+    )
+    if not firewall_rule:
+        raise ResourceNotFoundException(
+            f"Can't find the resource with ID '{firewall_rule_group_id}'. Trace Id: '{aws_stack.get_trace_id()}'"
+        )
+    return firewall_rule
+
+def delete_firewall_rule(firewall_rule_group_id, firewall_domain_list_id):
+    # if firewall_rules doesn't exist it will throw an error
+    region_details = Route53ResolverBackend.get()
+    firewall_rule = region_details.get_firewall_rule(firewall_rule_group_id, firewall_domain_list_id)
+    region_details.firewall_rules.get(firewall_rule_group_id, {}).pop(firewall_domain_list_id)
+    return firewall_rule
