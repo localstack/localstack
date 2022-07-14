@@ -1,18 +1,15 @@
 """
 Base class and utilities for provider stores.
 
-These are analoguos to Moto's BackendDict and provide storage for AWS service providers.
+Stores provide storage for AWS service providers and are analogous to Moto's BackendDict.
 
 By convention, Stores are to be defined in `models` submodule of the service
 by subclassing BaseStore e.g. `localstack.services.sqs.models.SqsStore`
 Also by convention, cross-region attributes are declared in CAPITAL_CASE
 
     class SqsStore(BaseStore):
-        queues: Dict[str, SqsQueue]
-        DELETED: CrossRegionAttribute(default=dict)  # type: Dict[str, float]
-
-        def __init__(self):
-            self.queues = {}
+        queues =  LocalAttribute(default=dict)        # type: Dict[str, SqsQueue]
+        DELETED = CrossRegionAttribute(default=dict)  # type: Dict[str, float]
 
 Stores are then wrapped in AccountRegionStore and declared as a singleton
 
@@ -35,9 +32,38 @@ from boto3 import Session
 BaseStoreType = TypeVar("BaseStoreType", bound="BaseStore")
 
 
+class LocalAttribute:
+    """
+    Descriptor protocol for marking store attributes as local to a region.
+    """
+
+    def __init__(self, default: Union[Callable, int, float, str, bool, None]):
+        """
+        :param default: Default value assigned to the local attribute. Must be a scalar
+            or a callable.
+        """
+        self.default = default
+
+    def __set_name__(self, owner, name):
+        self.name = "_" + name
+
+    def __get__(self, obj: BaseStoreType, objtype=None) -> Any:
+        if not hasattr(obj, self.name):
+            if isinstance(self.default, Callable):
+                value = self.default()
+            else:
+                value = self.default
+            setattr(obj, self.name, value)
+
+        return getattr(obj, self.name)
+
+    def __set__(self, obj: BaseStoreType, value: Any):
+        setattr(obj, self.name, value)
+
+
 class CrossRegionAttribute:
     """
-    Descriptor protocol for marking attributes in stores as shared across all regions.
+    Descriptor protocol for marking store attributes as shared across all regions.
 
     It makes use of the `_global` dict in RegionStore where all cross-region data
     is stored.
@@ -46,14 +72,14 @@ class CrossRegionAttribute:
     def __init__(self, default: Union[Callable, int, float, str, bool, None]):
         """
         :param default: The default value assigned to the cross-region attribute.
-            This must be a scalar or a callable otherwise.
+            This must be a scalar or a callable.
         """
         self.default = default
 
     def __set_name__(self, owner, name):
         self.name = name
 
-    def __get__(self, obj: "BaseStore", objtype=None) -> Any:
+    def __get__(self, obj: BaseStoreType, objtype=None) -> Any:
         self._check_region_store_association(obj)
 
         if self.name not in obj._global.keys():
@@ -64,7 +90,7 @@ class CrossRegionAttribute:
 
         return obj._global[self.name]
 
-    def __set__(self, obj: "BaseStore", value: Any):
+    def __set__(self, obj: BaseStoreType, value: Any):
         self._check_region_store_association(obj)
 
         obj._global[self.name] = value

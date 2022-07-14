@@ -1,19 +1,19 @@
-from typing import Any
-
 from pytest import fixture, mark
 
 from localstack.config import MULTI_ACCOUNTS
-from localstack.services.stores import AccountRegionStore, BaseStore, CrossRegionAttribute
+from localstack.services.stores import (
+    AccountRegionStore,
+    BaseStore,
+    CrossRegionAttribute,
+    LocalAttribute,
+)
 
 
 @fixture
 def sample_stores():
     class SampleStore(BaseStore):
         CROSS_REGION_ATTR = CrossRegionAttribute(default=list)
-        region_specific_attr: list[Any]
-
-        def __init__(self):
-            self.region_specific_attr = []
+        region_specific_attr = LocalAttribute(default=list)
 
     return AccountRegionStore("zzz", SampleStore, validate=False)
 
