@@ -10,6 +10,11 @@ import pytest
 import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
+
+from tests.integration.apigateway_fixtures import create_rest_api, create_rest_resource, create_rest_resource_method, \
+    create_rest_api_integration, api_invoke_url
+
+from localstack.utils.aws.aws_stack import create_api_gateway
 from moto.apigateway.models import APIGatewayBackend
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
@@ -29,7 +34,7 @@ from localstack.services.awslambda.lambda_api import add_event_source, use_docke
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS12X,
     LAMBDA_RUNTIME_NODEJS14X,
-    LAMBDA_RUNTIME_PYTHON36,
+    LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_PYTHON39,
 )
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
@@ -278,6 +283,49 @@ class TestAPIGateway:
         messages = aws_stack.sqs_receive_message(queue_name)["Messages"]
         assert 1 == len(messages)
         assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
+
+    def test_api_gateway_lambda_integration(self, apigateway_client, create_lambda_function):
+        """
+        API gateway to lambda integration test returns a response with the same body as the lambda function input.
+        """
+        fn_name = f"test-{short_uid()}"
+        create_lambda_function(
+            func_name=fn_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=LAMBDA_RUNTIME_PYTHON39,
+        )
+        lambda_arn = aws_stack.lambda_function_arn(fn_name)
+
+        api_id, _, root = create_rest_api(apigateway_client, name="aws lambda api")
+        resource_id, _ = create_rest_resource(
+            apigateway_client, restApiId=api_id, parentId=root, pathPart="test"
+        )
+
+        # create method and integration
+        create_rest_resource_method(
+            apigateway_client,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        create_rest_api_integration(
+            apigateway_client,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            integrationHttpMethod="GET",
+            type="AWS",
+            uri=f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path//2015-03-31/functions/{lambda_arn}/invocations",
+        )
+
+        url = api_invoke_url(api_id=api_id, stage="local", path="/test")
+        response = requests.get(url)
+        body = response.json()
+
+        # authorizer contains an object that does not contain the authorizer type ('lambda', 'sns')
+        assert body.get("requestContext").get("authorizer") == {'context': {}, 'identity': {}}
+
 
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
     def test_api_gateway_http_integrations(self, int_type, monkeypatch):
