@@ -10,11 +10,6 @@ import pytest
 import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
-
-from tests.integration.apigateway_fixtures import create_rest_api, create_rest_resource, create_rest_resource_method, \
-    create_rest_api_integration, api_invoke_url
-
-from localstack.utils.aws.aws_stack import create_api_gateway
 from moto.apigateway.models import APIGatewayBackend
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
@@ -34,7 +29,8 @@ from localstack.services.awslambda.lambda_api import add_event_source, use_docke
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS12X,
     LAMBDA_RUNTIME_NODEJS14X,
-    LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_PYTHON39,
+    LAMBDA_RUNTIME_PYTHON36,
+    LAMBDA_RUNTIME_PYTHON39,
 )
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
@@ -43,6 +39,13 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
+from tests.integration.apigateway_fixtures import (
+    api_invoke_url,
+    create_rest_api,
+    create_rest_api_integration,
+    create_rest_resource,
+    create_rest_resource_method,
+)
 from tests.integration.awslambda.test_lambda_integration import TEST_STAGE_NAME
 
 from ..unit.test_apigateway import load_test_resource
@@ -324,8 +327,7 @@ class TestAPIGateway:
         body = response.json()
 
         # authorizer contains an object that does not contain the authorizer type ('lambda', 'sns')
-        assert body.get("requestContext").get("authorizer") == {'context': {}, 'identity': {}}
-
+        assert body.get("requestContext").get("authorizer") == {"context": {}, "identity": {}}
 
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
     def test_api_gateway_http_integrations(self, int_type, monkeypatch):
