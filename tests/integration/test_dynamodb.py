@@ -432,24 +432,38 @@ class TestDynamoDB:
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
         # there is no data present in the table already so even if return values
         # is set to 'ALL_OLD' as there is no data it will not return any data.
-        assert not response.get("Attributes")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert "Attributes" not in response
+        assert "ConsumedCapacity" not in response
+        assert "ItemCollectionMetrics" not in response
         # now the same data is present so when we pass return values as 'ALL_OLD'
         # it should give us attributes
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
-        assert response.get("Attributes")
-        assert item1.get("id") == response.get("Attributes").get("id")
-        assert item1.get("data") == response.get("Attributes").get("data")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert response["Attributes"] == item1
+        assert "ConsumedCapacity" not in response
+        assert "ItemCollectionMetrics" not in response
 
         response = table.put_item(Item=item2)
         # we do not have any same item as item2 already so when we add this by default
         # return values is set to None so no Attribute values should be returned
-        assert not response.get("Attributes")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert "Attributes" not in response
+        assert "ConsumedCapacity" not in response
+        assert "ItemCollectionMetrics" not in response
 
         response = table.put_item(Item=item2)
         # in this case we already have item2 in the table so on this request
         # it should not return any data as return values is set to None so no
         # Attribute values should be returned
-        assert not response.get("Attributes")
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert "Attributes" not in response
+        assert "ConsumedCapacity" not in response
+        assert "ItemCollectionMetrics" not in response
+
+        # cleanup
+        table.delete()
+
 
     @pytest.mark.aws_validated
     def test_empty_and_binary_values(self, dynamodb, dynamodb_client):
