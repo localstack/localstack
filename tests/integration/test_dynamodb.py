@@ -472,7 +472,6 @@ class TestDynamoDB:
         # cleanup
         table.delete()
 
-
     @pytest.mark.aws_validated
     def test_empty_and_binary_values(self, dynamodb, dynamodb_client):
         aws_stack.create_dynamodb_table(
