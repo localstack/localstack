@@ -62,17 +62,16 @@ from localstack.services.route53resolver.models import (
     get_firewall_rule_group,
     get_firewall_rule_group_association,
 )
-from localstack.utils.aws import aws_stack
-from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.patch import patch
-
-from .utils import (
+from localstack.services.route53resolver.utils import (
     get_route53_resolver_firewall_domain_list_id,
     get_route53_resolver_firewall_rule_group_association_id,
     get_route53_resolver_firewall_rule_group_id,
     validate_mutation_protection,
     validate_priority,
 )
+from localstack.utils.aws import aws_stack
+from localstack.utils.collections import select_from_typed_dict
+from localstack.utils.patch import patch
 
 
 class Route53ResolverProvider(Route53ResolverApi):
