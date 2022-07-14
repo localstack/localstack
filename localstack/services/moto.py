@@ -9,6 +9,7 @@ from moto.backends import get_backend as get_moto_backend
 from moto.core.exceptions import RESTError
 from moto.core.utils import BackendDict
 from moto.moto_server.utilities import RegexConverter
+from werkzeug.exceptions import NotFound
 from werkzeug.routing import Map, Rule
 
 from localstack import __version__ as localstack_version
@@ -139,7 +140,12 @@ def get_dispatcher(service: str, path: str) -> MotoDispatcher:
         return rule.endpoint
 
     matcher = url_map.bind(config.LOCALSTACK_HOSTNAME)
-    endpoint, _ = matcher.match(path_info=path)
+    try:
+        endpoint, _ = matcher.match(path_info=path)
+    except NotFound as e:
+        raise NotImplementedError(
+            f"No moto route for service {service} on path {path} found."
+        ) from e
     return endpoint
 
 
