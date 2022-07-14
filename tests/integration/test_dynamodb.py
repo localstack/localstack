@@ -421,9 +421,25 @@ class TestDynamoDB:
         # clean up
         delete_table(table_name)
 
-    def test_return_values_in_put_item(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+    @pytest.mark.aws_validated
+    def test_return_values_in_put_item(self, dynamodb, dynamodb_client):
+        aws_stack.create_dynamodb_table(
+            TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY, client=dynamodb_client
+        )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
+
+        # validates the response against your optionally expected response.
+        # It checks that the response doesn't contain `Attributes`,
+        # `ConsumedCapacity` and `ItemCollectionMetrics` unless they are expected.
+        def validate_response(response, expected={}):
+            should_not_contain = {
+                "Attributes",
+                "ConsumedCapacity",
+                "ItemCollectionMetrics",
+            } - expected.keys()
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+            assert expected.items() <= response.items()
+            assert response.keys().isdisjoint(should_not_contain)
 
         # items which are being used to put in the table
         item1 = {PARTITION_KEY: "id1", "data": "foobar"}
@@ -433,41 +449,27 @@ class TestDynamoDB:
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
         # there is no data present in the table already so even if return values
         # is set to 'ALL_OLD' as there is no data it will not return any data.
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert "Attributes" not in response
-        assert "ConsumedCapacity" not in response
-        assert "ItemCollectionMetrics" not in response
+        validate_response(response)
         # now the same data is present so when we pass return values as 'ALL_OLD'
         # it should give us attributes
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert response["Attributes"] == item1
-        assert "ConsumedCapacity" not in response
-        assert "ItemCollectionMetrics" not in response
+        validate_response(response, expected={"Attributes": item1})
+
         # now a previous version of data is present, so when we pass return
         # values as 'ALL_OLD' it should give us the old attributes
         response = table.put_item(Item=item1b, ReturnValues="ALL_OLD")
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert response["Attributes"] == item1
-        assert "ConsumedCapacity" not in response
-        assert "ItemCollectionMetrics" not in response
+        validate_response(response, expected={"Attributes": item1})
 
         response = table.put_item(Item=item2)
         # we do not have any same item as item2 already so when we add this by default
         # return values is set to None so no Attribute values should be returned
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert "Attributes" not in response
-        assert "ConsumedCapacity" not in response
-        assert "ItemCollectionMetrics" not in response
+        validate_response(response)
 
         response = table.put_item(Item=item2)
         # in this case we already have item2 in the table so on this request
         # it should not return any data as return values is set to None so no
         # Attribute values should be returned
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert "Attributes" not in response
-        assert "ConsumedCapacity" not in response
-        assert "ItemCollectionMetrics" not in response
+        validate_response(response)
 
         # cleanup
         table.delete()
