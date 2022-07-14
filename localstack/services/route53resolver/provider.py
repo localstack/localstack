@@ -50,7 +50,18 @@ from localstack.aws.api.route53resolver import (
     UpdateFirewallRuleResponse,
     ValidationException,
 )
-from localstack.services.route53resolver.models import Route53ResolverBackend, delete_firewall_domain, delete_firewall_domain_list, delete_firewall_rule, delete_firewall_rule_group, delete_firewall_rule_group_association, get_firewall_domain, get_firewall_domain_list, get_firewall_rule, get_firewall_rule_group, get_firewall_rule_group_association
+from localstack.services.route53resolver.models import (
+    Route53ResolverBackend,
+    delete_firewall_domain_list,
+    delete_firewall_rule,
+    delete_firewall_rule_group,
+    delete_firewall_rule_group_association,
+    get_firewall_domain,
+    get_firewall_domain_list,
+    get_firewall_rule,
+    get_firewall_rule_group,
+    get_firewall_rule_group_association,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.patch import patch
@@ -150,7 +161,9 @@ class Route53ResolverProvider(Route53ResolverApi):
         self, context: RequestContext, firewall_domain_list_id: ResourceId
     ) -> DeleteFirewallDomainListResponse:
         """Delete a Firewall Domain List."""
-        firewall_domain_list: FirewallDomainList = delete_firewall_domain_list(firewall_domain_list_id)
+        firewall_domain_list: FirewallDomainList = delete_firewall_domain_list(
+            firewall_domain_list_id
+        )
         return DeleteFirewallDomainListResponse(FirewallDomainList=firewall_domain_list)
 
     def get_firewall_domain_list(
@@ -279,7 +292,9 @@ class Route53ResolverProvider(Route53ResolverApi):
         firewall_domain_list_id: ResourceId,
     ) -> DeleteFirewallRuleResponse:
         """Delete a firewall rule"""
-        firewall_rule: FirewallRule = delete_firewall_rule(firewall_rule_group_id, firewall_domain_list_id)
+        firewall_rule: FirewallRule = delete_firewall_rule(
+            firewall_rule_group_id, firewall_domain_list_id
+        )
         return DeleteFirewallRuleResponse(
             FirewallRule=firewall_rule,
         )
@@ -321,7 +336,9 @@ class Route53ResolverProvider(Route53ResolverApi):
         name: Name = None,
     ) -> UpdateFirewallRuleResponse:
         """Updates a firewall rule"""
-        firewall_rule: FirewallRule = get_firewall_rule(firewall_rule_group_id, firewall_domain_list_id)
+        firewall_rule: FirewallRule = get_firewall_rule(
+            firewall_rule_group_id, firewall_domain_list_id
+        )
 
         if priority:
             firewall_rule["Priority"] = priority
@@ -396,7 +413,9 @@ class Route53ResolverProvider(Route53ResolverApi):
         self, context: RequestContext, firewall_rule_group_association_id: ResourceId
     ) -> DisassociateFirewallRuleGroupResponse:
         """Disassociate a DNS Firewall rule group from a VPC."""
-        firewall_rule_group_association: FirewallRuleGroupAssociation = delete_firewall_rule_group_association(firewall_rule_group_association_id)
+        firewall_rule_group_association: FirewallRuleGroupAssociation = (
+            delete_firewall_rule_group_association(firewall_rule_group_association_id)
+        )
         return DisassociateFirewallRuleGroupResponse(
             FirewallRuleGroupAssociation=firewall_rule_group_association
         )
@@ -405,8 +424,9 @@ class Route53ResolverProvider(Route53ResolverApi):
         self, context: RequestContext, firewall_rule_group_association_id: ResourceId
     ) -> GetFirewallRuleGroupAssociationResponse:
         """Returns the Firewall Rule Group Association that you specified."""
-        firewall_rule_group_association: FirewallRuleGroupAssociation = get_firewall_rule_group_association(firewall_rule_group_association_id)
-        region_details = Route53ResolverBackend.get()
+        firewall_rule_group_association: FirewallRuleGroupAssociation = (
+            get_firewall_rule_group_association(firewall_rule_group_association_id)
+        )
         return GetFirewallRuleGroupAssociationResponse(
             FirewallRuleGroupAssociation=firewall_rule_group_association
         )
@@ -420,12 +440,11 @@ class Route53ResolverProvider(Route53ResolverApi):
         name: Name = None,
     ) -> UpdateFirewallRuleGroupAssociationResponse:
         """Updates the specified Firewall Rule Group Association."""
-        region_details = Route53ResolverBackend.get()
         validate_priority(priority=priority)
         validate_mutation_protection(mutation_protection=mutation_protection)
 
-        firewall_rule_group_association = region_details.get_firewall_rule_group_association(
-            firewall_rule_group_association_id
+        firewall_rule_group_association: FirewallRuleGroupAssociation = (
+            get_firewall_rule_group_association(firewall_rule_group_association_id)
         )
 
         if priority:

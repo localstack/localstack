@@ -27,12 +27,14 @@ def get_firewall_rule_group(id):
         )
     return firewall_rule_group
 
+
 def delete_firewall_rule_group(id):
     # if firewall_rule_groups doesn't exist it will throw an error
     region_details = Route53ResolverBackend.get()
     firewall_rule_group = region_details.get_firewall_rule_group(id)
     region_details.firewall_rule_groups.pop(id)
     return firewall_rule_group
+
 
 def get_firewall_rule_group_association(id):
     region_details = Route53ResolverBackend.get()
@@ -43,6 +45,7 @@ def get_firewall_rule_group_association(id):
         )
     return region_details.firewall_rule_group_associations.get(id)
 
+
 def delete_firewall_rule_group_association(id):
     # if firewall_rule_group_associations doesn't exist it will throw an error
     region_details = Route53ResolverBackend.get()
@@ -50,18 +53,13 @@ def delete_firewall_rule_group_association(id):
     region_details.firewall_rule_group_associations.pop(id)
     return firewall_rule_group_associations
 
+
 def get_firewall_domain(id):
     # firewall_domain can return none
     region_details = Route53ResolverBackend.get()
     firewall_domain = region_details.firewall_domains.get(id)
     return firewall_domain
 
-def delete_firewall_domain(id):
-    # if firewall_domains doesn't exist it will throw an error
-    region_details = Route53ResolverBackend.get()
-    firewall_domain = region_details.get_firewall_domain(id)
-    region_details.firewall_domains.pop(id)
-    return firewall_domain
 
 def get_firewall_domain_list(id):
     region_details = Route53ResolverBackend.get()
@@ -72,12 +70,14 @@ def get_firewall_domain_list(id):
         )
     return firewall_domain_list
 
+
 def delete_firewall_domain_list(id):
     # if firewall_domain_lists doesn't exist it will throw an error
     region_details = Route53ResolverBackend.get()
     firewall_domain_list = region_details.get_firewall_domain_list(id)
     region_details.firewall_domain_lists.pop(id)
     return firewall_domain_list
+
 
 def get_firewall_rule(firewall_rule_group_id, firewall_domain_list_id):
     region_details = Route53ResolverBackend.get()
@@ -90,9 +90,12 @@ def get_firewall_rule(firewall_rule_group_id, firewall_domain_list_id):
         )
     return firewall_rule
 
+
 def delete_firewall_rule(firewall_rule_group_id, firewall_domain_list_id):
     # if firewall_rules doesn't exist it will throw an error
     region_details = Route53ResolverBackend.get()
-    firewall_rule = region_details.get_firewall_rule(firewall_rule_group_id, firewall_domain_list_id)
+    firewall_rule = region_details.get_firewall_rule(
+        firewall_rule_group_id, firewall_domain_list_id
+    )
     region_details.firewall_rules.get(firewall_rule_group_id, {}).pop(firewall_domain_list_id)
     return firewall_rule
