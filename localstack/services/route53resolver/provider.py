@@ -193,7 +193,7 @@ class Route53ResolverProvider(Route53ResolverApi):
     ) -> UpdateFirewallDomainsResponse:
         """Update the domains in a Firewall Domain List."""
         region_details = Route53ResolverBackend.get()
-        firewall_domain_list: FirewallDomainList = region_details.get_firewall_domain_list(
+        firewall_domain_list: FirewallDomainList = get_firewall_domain_list(
             firewall_domain_list_id
         )
 
