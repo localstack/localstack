@@ -451,7 +451,7 @@ class TestDynamoDB:
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
         # there is no data present in the table already so even if return values
         # is set to 'ALL_OLD' as there is no data it will not return any data.
-        validate_response(response)
+        _validate_response(response)
         # now the same data is present so when we pass return values as 'ALL_OLD'
         # it should give us attributes
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
