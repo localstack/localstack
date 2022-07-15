@@ -471,7 +471,7 @@ class TestDynamoDB:
         # in this case we already have item2 in the table so on this request
         # it should not return any data as return values is set to None so no
         # Attribute values should be returned
-        validate_response(response)
+        _validate_response(response)
 
         # cleanup
         table.delete()
