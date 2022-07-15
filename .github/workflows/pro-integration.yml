@@ -187,12 +187,10 @@ jobs:
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
-          python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml \
-            -k test_lambda_streams_batch_and_transactions \
-            ../localstack/tests/integration/
+          python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
       - name: Run Lambda Tests for lambda executor docker
         env:
-          DEBUG: 1
+          DEBUG: 0
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "docker"
           LOCALSTACK_API_KEY: "test"
@@ -202,7 +200,6 @@ jobs:
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker' \
-            -k test_lambda_streams_batch_and_transactions \
             ../localstack/tests/integration/awslambda/ \
             ../localstack/tests/integration/test_integration.py \
             ../localstack/tests/integration/test_apigateway.py
@@ -218,7 +215,6 @@ jobs:
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse' \
-            -k test_lambda_streams_batch_and_transactions \
             ../localstack/tests/integration/awslambda/ \
             ../localstack/tests/integration/test_integration.py \
             ../localstack/tests/integration/test_apigateway.py
