@@ -455,7 +455,7 @@ class TestDynamoDB:
         # now the same data is present so when we pass return values as 'ALL_OLD'
         # it should give us attributes
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
-        validate_response(response, expected={"Attributes": item1})
+        _validate_response(response, expected={"Attributes": item1})
 
         # now a previous version of data is present, so when we pass return
         # values as 'ALL_OLD' it should give us the old attributes
