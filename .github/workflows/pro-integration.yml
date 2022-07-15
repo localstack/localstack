@@ -173,7 +173,6 @@ jobs:
           source .venv/bin/activate
           bin/test_localstack_pro.sh
       - name: Run community integration tests
-        if: ${{ false }}
         env:
           DEBUG: 1
           DNS_ADDRESS: 0
@@ -182,19 +181,22 @@ jobs:
           AWS_SECRET_ACCESS_KEY: "test"
           AWS_ACCESS_KEY_ID: "test"
           AWS_DEFAULT_REGION: "us-east-1"
+          HOST_TMP_FOLDER: /tmp/localstack
           PYTEST_LOGLEVEL: debug
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
-          python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
+          python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml \
+            -k test_lambda_streams_batch_and_transactions \
+            ../localstack/tests/integration/
       - name: Run Lambda Tests for lambda executor docker
-        if: ${{ false }}
         env:
-          DEBUG: 0
+          DEBUG: 1
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "docker"
           LOCALSTACK_API_KEY: "test"
+          HOST_TMP_FOLDER: /tmp/localstack
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
