@@ -167,10 +167,7 @@ class LambdaProxyIntegration(BackendIntegration):
             func_arn = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
 
         if invocation_context.authorizer_type:
-            authorizer_context = {
-                invocation_context.authorizer_type: invocation_context.auth_context
-            }
-            invocation_context.context["authorizer"] = authorizer_context
+            invocation_context.context["authorizer"] = invocation_context.auth_context
 
         payload = self.request_templates.render(invocation_context)
 
@@ -203,7 +200,6 @@ class LambdaProxyIntegration(BackendIntegration):
             parsed_result = {} if parsed_result is None else parsed_result
 
             keys = parsed_result.keys()
-
             if not ("statusCode" in keys and "body" in keys):
                 LOG.warning(
                     'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'

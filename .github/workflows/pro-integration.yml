@@ -181,6 +181,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: "test"
           AWS_ACCESS_KEY_ID: "test"
           AWS_DEFAULT_REGION: "us-east-1"
+          HOST_TMP_FOLDER: /tmp/localstack
           PYTEST_LOGLEVEL: debug
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
@@ -193,6 +194,7 @@ jobs:
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "docker"
           LOCALSTACK_API_KEY: "test"
+          HOST_TMP_FOLDER: /tmp/localstack
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
@@ -203,10 +205,11 @@ jobs:
             ../localstack/tests/integration/test_apigateway.py
       - name: Run Lambda Tests for lambda executor docker-reuse
         env:
-          DEBUG: 0
+          DEBUG: 1
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "docker-reuse"
           LOCALSTACK_API_KEY: "test"
+          HOST_TMP_FOLDER: /tmp/localstack
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
