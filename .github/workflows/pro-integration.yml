@@ -210,6 +210,7 @@ jobs:
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "docker-reuse"
           LOCALSTACK_API_KEY: "test"
+          HOST_TMP_FOLDER: /tmp/localstack
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
