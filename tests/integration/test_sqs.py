@@ -1444,6 +1444,34 @@ class TestSqsProvider:
             assert message["MessageId"] == sent_messages[i]["MessageId"]
             sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
 
+    @pytest.mark.aws_validated
+    def test_fifo_content_based_message_deduplication_arrives_once(
+        self, sqs_client, sqs_create_queue
+    ):
+        # created for https://github.com/localstack/localstack/issues/6327
+        queue_url = sqs_create_queue(
+            QueueName=f"test-queue-{short_uid()}.fifo",
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+        )
+        item = '{"foo": "bar"}'
+        group = "group-1"
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=item, MessageGroupId=group)
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=item, MessageGroupId=group)
+
+        # first receive has the item
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=2
+        )
+        assert len(response["Messages"]) == 1
+        assert response["Messages"][0]["Body"] == item
+
+        # second doesn't since the message has the same content
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=1
+        )
+        assert response.get("Messages", []) == []
+
     @pytest.mark.xfail(
         reason="localstack allows queue names with slashes, but this should be deprecated"
     )

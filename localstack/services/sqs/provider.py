@@ -581,7 +581,7 @@ class FifoQueue(SqsQueue):
             self.visible.put_nowait(qm)
             if not original_message_group:
                 self.deduplication[message_group_id] = {}
-            self.deduplication[message_group_id][message_deduplication_id] = qm
+            self.deduplication[message_group_id][dedup_id] = qm
 
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):
