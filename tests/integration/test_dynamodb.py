@@ -428,10 +428,12 @@ class TestDynamoDB:
         )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
-        # validates the response against your optionally expected response.
-        # It checks that the response doesn't contain `Attributes`,
-        # `ConsumedCapacity` and `ItemCollectionMetrics` unless they are expected.
-        def validate_response(response, expected={}):
+        def _validate_response(response, expected: Dict = {}):
+        """ 
+        Validates the response against the optionally expected one.
+        It checks that the response doesn't contain `Attributes`,
+        `ConsumedCapacity` and `ItemCollectionMetrics` unless they are expected.
+        """
             should_not_contain = {
                 "Attributes",
                 "ConsumedCapacity",
