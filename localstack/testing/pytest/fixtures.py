@@ -704,6 +704,23 @@ def wait_for_stream_ready(kinesis_client):
     return _wait_for_stream_ready
 
 
+@pytest.fixture
+def wait_for_delivery_stream_ready(firehose_client):
+    def _wait_for_stream_ready(delivery_stream_name: str):
+        def is_stream_ready():
+            describe_stream_response = firehose_client.describe_delivery_stream(
+                DeliveryStreamName=delivery_stream_name
+            )
+            return (
+                describe_stream_response["DeliveryStreamDescription"]["DeliveryStreamStatus"]
+                == "ACTIVE"
+            )
+
+        poll_condition(is_stream_ready)
+
+    return _wait_for_stream_ready
+
+
 @pytest.fixture()
 def kms_create_key(kms_client):
     key_ids = []
