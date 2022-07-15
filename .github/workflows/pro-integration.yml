@@ -210,6 +210,7 @@ jobs:
           LOCALSTACK_API_KEY: "test"
           HOST_TMP_FOLDER: /tmp/localstack
         run: |
+          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse' \
             -k test_lambda_streams_batch_and_transactions \
