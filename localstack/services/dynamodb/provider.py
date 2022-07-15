@@ -535,7 +535,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             existing_item = ItemFinder.find_existing_item(put_item_input)
 
         # forward request to backend
-        self.fix_return_consumed_capacity(put_item_input)
         result = self.forward_request(context, put_item_input)
 
         # Get stream specifications details for the table
@@ -573,7 +572,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             existing_item = ItemFinder.find_existing_item(delete_item_input)
 
         # forward request to backend
-        self.fix_return_consumed_capacity(delete_item_input)
         result = self.forward_request(context, delete_item_input)
 
         # determine and forward stream record
@@ -611,7 +609,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             existing_item = ItemFinder.find_existing_item(update_item_input)
 
         # forward request to backend
-        self.fix_return_consumed_capacity(update_item_input)
         result = self.forward_request(context, update_item_input)
 
         # construct and forward stream record
@@ -1037,15 +1034,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             r"Credential=([^/]+/[^/]+)/local(host)?/",
             rf"Credential=\1/{aws_stack.get_local_region()}/",
         )
-
-    def fix_return_consumed_capacity(self, request_dict):
-        # Fix incorrect values if ReturnValues==ALL_OLD and ReturnConsumedCapacity is
-        # empty, see https://github.com/localstack/localstack/issues/2049
-        return_values_all = (request_dict.get("ReturnValues") == "ALL_OLD") or (
-            not request_dict.get("ReturnValues")
-        )
-        if return_values_all and not request_dict.get("ReturnConsumedCapacity"):
-            request_dict["ReturnConsumedCapacity"] = "TOTAL"
 
     def fix_consumed_capacity(self, request: Dict, result: Dict):
         # make sure we append 'ConsumedCapacity', which is properly
