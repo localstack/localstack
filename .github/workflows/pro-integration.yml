@@ -144,13 +144,13 @@ jobs:
           key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/localstack/services/install.py', 'localstack/setup.cfg', 'localstack/localstack/constants.py') }}
       - name: Install Python Dependencies for LocalStack Pro
         run: make install
-      - name: Cache LocalStack community dependencies (venv, infra)
+      - name: Cache LocalStack community dependencies (venv, static libs)
         uses: actions/cache@v2
         id: os-cache
         with:
           path: |
             localstack/.venv
-            localstack/localstack/infra
+            localstack/.filesystem/usr/lib/localstack
           key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/localstack/services/install.py', 'localstack/setup.cfg', 'localstack/localstack/constants.py') }}
       - name: Install Dependencies for LocalStack Community # lambda tests look for libraries in this virtualenv
         working-directory: localstack
@@ -181,9 +181,10 @@ jobs:
           AWS_SECRET_ACCESS_KEY: "test"
           AWS_ACCESS_KEY_ID: "test"
           AWS_DEFAULT_REGION: "us-east-1"
-          HOST_TMP_FOLDER: /tmp/localstack
           PYTEST_LOGLEVEL: debug
         run: |
+          # Remove the host tmp folder (might contain remnant files with different permissions)
+          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
           python -m pytest --capture=no --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml ../localstack/tests/integration/
       - name: Run Lambda Tests for lambda executor docker
@@ -192,8 +193,9 @@ jobs:
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "docker"
           LOCALSTACK_API_KEY: "test"
-          HOST_TMP_FOLDER: /tmp/localstack
         run: |
+          # Remove the host tmp folder (might contain remnant files with different permissions)
+          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker' \
             ../localstack/tests/integration/awslambda/ \
@@ -205,8 +207,9 @@ jobs:
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "docker-reuse"
           LOCALSTACK_API_KEY: "test"
-          HOST_TMP_FOLDER: /tmp/localstack
         run: |
+          # Remove the host tmp folder (might contain remnant files with different permissions)
+          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           source .venv/bin/activate
           python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse' \
             ../localstack/tests/integration/awslambda/ \
