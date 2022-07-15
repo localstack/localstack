@@ -465,7 +465,7 @@ class TestDynamoDB:
         response = table.put_item(Item=item2)
         # we do not have any same item as item2 already so when we add this by default
         # return values is set to None so no Attribute values should be returned
-        validate_response(response)
+        _validate_response(response)
 
         response = table.put_item(Item=item2)
         # in this case we already have item2 in the table so on this request
