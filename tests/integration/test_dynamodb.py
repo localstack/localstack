@@ -428,12 +428,12 @@ class TestDynamoDB:
         )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
-        def _validate_response(response, expected: Dict = {}):
-        """ 
-        Validates the response against the optionally expected one.
-        It checks that the response doesn't contain `Attributes`,
-        `ConsumedCapacity` and `ItemCollectionMetrics` unless they are expected.
-        """
+        def _validate_response(response, expected: dict = {}):
+            """
+            Validates the response against the optionally expected one.
+            It checks that the response doesn't contain `Attributes`,
+            `ConsumedCapacity` and `ItemCollectionMetrics` unless they are expected.
+            """
             should_not_contain = {
                 "Attributes",
                 "ConsumedCapacity",
@@ -460,7 +460,7 @@ class TestDynamoDB:
         # now a previous version of data is present, so when we pass return
         # values as 'ALL_OLD' it should give us the old attributes
         response = table.put_item(Item=item1b, ReturnValues="ALL_OLD")
-        validate_response(response, expected={"Attributes": item1})
+        _validate_response(response, expected={"Attributes": item1})
 
         response = table.put_item(Item=item2)
         # we do not have any same item as item2 already so when we add this by default
