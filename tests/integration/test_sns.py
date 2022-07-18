@@ -2204,43 +2204,40 @@ class TestSNSProvider:
         bucket_name = f"test-bucket-{short_uid()}"
         topic_name = f"test_topic_{short_uid()}"
 
-        subscription_role_arn = f"arn:aws:iam::{get_aws_account_id()}:role/{role_name}"
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "s3.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                },
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "firehose.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                },
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "sns.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                },
+            ],
+        }
+
+        role = create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
+
+        iam_client.attach_role_policy(
+            RoleName=role_name,
+            PolicyArn="arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess",
+        )
+
+        iam_client.attach_role_policy(
+            RoleName=role_name, PolicyArn="arn:aws:iam::aws:policy/AmazonS3FullAccess"
+        )
+        subscription_role_arn = role["Role"]["Arn"]
+
         if is_aws_cloud():
-            trust_policy = {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Principal": {"Service": "s3.amazonaws.com"},
-                        "Action": "sts:AssumeRole",
-                    },
-                    {
-                        "Effect": "Allow",
-                        "Principal": {"Service": "firehose.amazonaws.com"},
-                        "Action": "sts:AssumeRole",
-                    },
-                    {
-                        "Effect": "Allow",
-                        "Principal": {"Service": "sns.amazonaws.com"},
-                        "Action": "sts:AssumeRole",
-                    },
-                ],
-            }
-
-            role = create_role(
-                RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy)
-            )
-
-            iam_client.attach_role_policy(
-                RoleName=role_name,
-                PolicyArn="arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess",
-            )
-
-            iam_client.attach_role_policy(
-                RoleName=role_name, PolicyArn="arn:aws:iam::aws:policy/AmazonS3FullAccess"
-            )
-            subscription_role_arn = role["Role"]["Arn"]
-            # if used instantly, permissions are not complete
             time.sleep(10)
 
         s3_create_bucket(Bucket=bucket_name)
@@ -2251,6 +2248,7 @@ class TestSNSProvider:
             S3DestinationConfiguration={
                 "RoleARN": subscription_role_arn,
                 "BucketARN": f"arn:aws:s3:::{bucket_name}",
+                "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 60},
             },
         )
 
@@ -2288,6 +2286,13 @@ class TestSNSProvider:
 
             assert message == sns_message["Message"]
 
-        retry(validate_content, retries=10, sleep_before=0, sleep=1.5)
+        retries = 5
+        sleep = 1
+        sleep_before = 0
+        if is_aws_cloud():
+            retries = 25
+            sleep = 10
+            sleep_before = 10
 
+        retry(validate_content, retries=retries, sleep_before=sleep_before, sleep=sleep)
         firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
