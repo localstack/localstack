@@ -1036,7 +1036,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             image_name=container_config.image_name,
             remove=container_config.remove,
             interactive=container_config.interactive,
-            detach=container_config.detach,
             name=container_config.name,
             entrypoint=container_config.entrypoint,
             command=container_config.command,
