@@ -392,6 +392,21 @@ class ResourceType(str):
     AWS_GuardDuty_Detector = "AWS::GuardDuty::Detector"
     AWS_EMR_SecurityConfiguration = "AWS::EMR::SecurityConfiguration"
     AWS_SageMaker_CodeRepository = "AWS::SageMaker::CodeRepository"
+    AWS_Route53Resolver_ResolverEndpoint = "AWS::Route53Resolver::ResolverEndpoint"
+    AWS_Route53Resolver_ResolverRule = "AWS::Route53Resolver::ResolverRule"
+    AWS_Route53Resolver_ResolverRuleAssociation = "AWS::Route53Resolver::ResolverRuleAssociation"
+    AWS_DMS_ReplicationSubnetGroup = "AWS::DMS::ReplicationSubnetGroup"
+    AWS_DMS_EventSubscription = "AWS::DMS::EventSubscription"
+    AWS_MSK_Cluster = "AWS::MSK::Cluster"
+    AWS_StepFunctions_Activity = "AWS::StepFunctions::Activity"
+    AWS_WorkSpaces_Workspace = "AWS::WorkSpaces::Workspace"
+    AWS_WorkSpaces_ConnectionAlias = "AWS::WorkSpaces::ConnectionAlias"
+    AWS_SageMaker_Model = "AWS::SageMaker::Model"
+    AWS_ElasticLoadBalancingV2_Listener = "AWS::ElasticLoadBalancingV2::Listener"
+    AWS_StepFunctions_StateMachine = "AWS::StepFunctions::StateMachine"
+    AWS_Batch_JobQueue = "AWS::Batch::JobQueue"
+    AWS_Batch_ComputeEnvironment = "AWS::Batch::ComputeEnvironment"
+    AWS_AccessAnalyzer_Analyzer = "AWS::AccessAnalyzer::Analyzer"
 
 
 class ResourceValueType(str):
