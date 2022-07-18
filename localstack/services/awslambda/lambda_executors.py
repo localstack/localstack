@@ -1596,15 +1596,18 @@ class Util:
                         f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for lambda code mounting to work"
                     )
 
-                relative_path = path.removeprefix(DEFAULT_VOLUME_DIR)
-                if relative_path == path:
+                if not path.startswith(f"{DEFAULT_VOLUME_DIR}/") and path != DEFAULT_VOLUME_DIR:
                     # We should be able to replace something here.
                     # if this warning is printed, the usage of this function is probably wrong.
-                    # Please check for missing slashes after DEFAULT_VOLUME_DIR etc.
+                    # Please check if the target path is indeed prefixed by /var/lib/localstack
+                    # if this happens, mounts may fail
                     LOG.warning(
-                        "Error while performing automatic host path replacement for path %s to source %s"
+                        "Error while performing automatic host path replacement for path '%s' to source '%s'",
+                        path,
+                        volume.source,
                     )
                 else:
+                    relative_path = path.removeprefix(DEFAULT_VOLUME_DIR)
                     result = volume.source + relative_path
                     return result
             else:

@@ -1148,7 +1148,8 @@ class TestLambdaUtils:
             )
             result = Util.get_host_path_for_path_in_docker("/var/lib/localstack/some/test/file")
             get_volume.assert_called_once()
-            assert result == r"C:\Users\localstack\volume\mount\some\test\file"
+            # this path style is kinda weird, but windows will accept it - no need for manual conversion of / to \
+            assert result == r"C:\Users\localstack\volume\mount/some/test/file"
 
     def test_host_path_for_path_in_docker_linux(self):
         with mock.patch(
@@ -1181,3 +1182,21 @@ class TestLambdaUtils:
             result = Util.get_host_path_for_path_in_docker("/var/lib/localstack")
             get_volume.assert_called_once()
             assert result == "/home/some-user/.cache/localstack/volume"
+
+    def test_host_path_for_path_in_docker_linux_wrong_path(self):
+        with mock.patch(
+            "localstack.services.awslambda.lambda_executors.get_default_volume_dir_mount"
+        ) as get_volume, mock.patch("localstack.config.is_in_docker", True):
+            get_volume.return_value = VolumeInfo(
+                type="bind",
+                source="/home/some-user/.cache/localstack/volume",
+                destination="/var/lib/localstack",
+                mode="rw",
+                rw=True,
+                propagation="rprivate",
+            )
+            result = Util.get_host_path_for_path_in_docker("/var/lib/localstacktest")
+            get_volume.assert_called_once()
+            assert result == "/var/lib/localstacktest"
+            result = Util.get_host_path_for_path_in_docker("/etc/some/path")
+            assert result == "/etc/some/path"
