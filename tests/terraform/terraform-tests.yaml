@@ -30,5 +30,4 @@ ec2:
     - TestAccVPC_disabledDNSSupport
     - TestAccVPC_classicLinkOptionSet
     - TestAccVPC_classicLinkDNSSupportOptionSet
-    - TestAccVPC_assignGeneratedIPv6CIDRBlock
     - TestAccVPC_IPAMIPv4BasicExplicitCIDR
