@@ -120,6 +120,18 @@ class BaseStore:
         except AttributeError:
             return super().__repr__()
 
+    def reset(self):
+        """Clear all store data."""
+        store_attrs = [attr for attr in self.__dict__.keys() if attr[0] == "_" and attr[1] != "_"]
+        for attr in store_attrs:
+            # reset the cross-region attributes
+            if attr == "_global":
+                self._global.clear()
+
+            # reset the local attributes
+            elif attr[0] == "_" and attr[1] != "_":
+                delattr(self, attr)
+
 
 class RegionStore(dict):
     """
@@ -160,6 +172,11 @@ class RegionStore(dict):
 
         return super().__getitem__(region_name)
 
+    def reset(self):
+        """Clear all store data."""
+        for store_instance in self.values():
+            store_instance.reset()
+
 
 class AccountRegionStore(dict):
     """
@@ -168,7 +185,7 @@ class AccountRegionStore(dict):
 
     def __init__(self, service_name: str, store: Type[BaseStoreType], validate: bool = True):
         """
-        :param service_name: Name of the service
+        :param service_name: Name of the service. Must be a valid service defined in botocore.
         :param store: Class definition of the Store
         :param validate: Whether to raise if invalid region names or account IDs are used during subscription
         """
@@ -188,3 +205,8 @@ class AccountRegionStore(dict):
                 validate=self.validate,
             )
         return super().__getitem__(account_id)
+
+    def reset(self):
+        """Clear all store data."""
+        for region_store_instance in self.values():
+            region_store_instance.reset()
