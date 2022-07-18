@@ -1596,10 +1596,8 @@ class Util:
                         f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for lambda code mounting to work"
                     )
 
-                result, subs = re.subn(
-                    r"^%s/(.*)$" % DEFAULT_VOLUME_DIR, r"%s/\1" % volume.source, path
-                )
-                if subs == 0:
+                relative_path = path.removeprefix(DEFAULT_VOLUME_DIR)
+                if relative_path == path:
                     # We should be able to replace something here.
                     # if this warning is printed, the usage of this function is probably wrong.
                     # Please check for missing slashes after DEFAULT_VOLUME_DIR etc.
@@ -1607,6 +1605,7 @@ class Util:
                         "Error while performing automatic host path replacement for path %s to source %s"
                     )
                 else:
+                    result = volume.source + relative_path
                     return result
             else:
                 raise ValueError(f"No volume mounted to {DEFAULT_VOLUME_DIR}")
