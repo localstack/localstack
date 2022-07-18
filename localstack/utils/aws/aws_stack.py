@@ -1313,5 +1313,12 @@ def get_route53_resolver_firewall_domain_list_arn(
     return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
 
 
+def get_route53_resolver_firewall_rule_group_associations_arn(
+    id: str, account_id: str = None, region_name: str = None
+):
+    pattern = "arn:aws:route53resolver:%s:%s:firewall-rule-group-association/%s"
+    return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
+
+
 def get_trace_id():
     return f"1-{get_random_hex(8)}-{get_random_hex(24)}"
