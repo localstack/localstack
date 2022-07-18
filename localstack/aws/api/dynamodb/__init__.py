@@ -313,182 +313,156 @@ class BackupInUseException(ServiceException):
     code: str = "BackupInUseException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class BackupNotFoundException(ServiceException):
     code: str = "BackupNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ConditionalCheckFailedException(ServiceException):
     code: str = "ConditionalCheckFailedException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ContinuousBackupsUnavailableException(ServiceException):
     code: str = "ContinuousBackupsUnavailableException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class DuplicateItemException(ServiceException):
     code: str = "DuplicateItemException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ExportConflictException(ServiceException):
     code: str = "ExportConflictException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ExportNotFoundException(ServiceException):
     code: str = "ExportNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class GlobalTableAlreadyExistsException(ServiceException):
     code: str = "GlobalTableAlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class GlobalTableNotFoundException(ServiceException):
     code: str = "GlobalTableNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class IdempotentParameterMismatchException(ServiceException):
     code: str = "IdempotentParameterMismatchException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class IndexNotFoundException(ServiceException):
     code: str = "IndexNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class InternalServerError(ServiceException):
     code: str = "InternalServerError"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class InvalidExportTimeException(ServiceException):
     code: str = "InvalidExportTimeException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class InvalidRestoreTimeException(ServiceException):
     code: str = "InvalidRestoreTimeException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ItemCollectionSizeLimitExceededException(ServiceException):
     code: str = "ItemCollectionSizeLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class LimitExceededException(ServiceException):
     code: str = "LimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class PointInTimeRecoveryUnavailableException(ServiceException):
     code: str = "PointInTimeRecoveryUnavailableException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ProvisionedThroughputExceededException(ServiceException):
     code: str = "ProvisionedThroughputExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ReplicaAlreadyExistsException(ServiceException):
     code: str = "ReplicaAlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ReplicaNotFoundException(ServiceException):
     code: str = "ReplicaNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class RequestLimitExceeded(ServiceException):
     code: str = "RequestLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ResourceInUseException(ServiceException):
     code: str = "ResourceInUseException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class TableAlreadyExistsException(ServiceException):
     code: str = "TableAlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class TableInUseException(ServiceException):
     code: str = "TableInUseException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class TableNotFoundException(ServiceException):
     code: str = "TableNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class AttributeValue(TypedDict, total=False):
@@ -526,7 +500,6 @@ class TransactionCanceledException(ServiceException):
     code: str = "TransactionCanceledException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
     CancellationReasons: Optional[CancellationReasonList]
 
 
@@ -534,14 +507,12 @@ class TransactionConflictException(ServiceException):
     code: str = "TransactionConflictException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class TransactionInProgressException(ServiceException):
     code: str = "TransactionInProgressException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 Date = datetime

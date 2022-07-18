@@ -172,14 +172,12 @@ class BadRequestException(ServiceException):
     code: str = "BadRequestException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ConflictException(ServiceException):
     code: str = "ConflictException"
     sender_fault: bool = False
     status_code: int = 409
-    message: Optional[String]
 
 
 class LimitExceededException(ServiceException):
@@ -187,14 +185,12 @@ class LimitExceededException(ServiceException):
     sender_fault: bool = False
     status_code: int = 429
     retryAfterSeconds: Optional[String]
-    message: Optional[String]
 
 
 class NotFoundException(ServiceException):
     code: str = "NotFoundException"
     sender_fault: bool = False
     status_code: int = 404
-    message: Optional[String]
 
 
 class ServiceUnavailableException(ServiceException):
@@ -202,7 +198,6 @@ class ServiceUnavailableException(ServiceException):
     sender_fault: bool = False
     status_code: int = 503
     retryAfterSeconds: Optional[String]
-    message: Optional[String]
 
 
 class TooManyRequestsException(ServiceException):
@@ -210,14 +205,12 @@ class TooManyRequestsException(ServiceException):
     sender_fault: bool = False
     status_code: int = 429
     retryAfterSeconds: Optional[String]
-    message: Optional[String]
 
 
 class UnauthorizedException(ServiceException):
     code: str = "UnauthorizedException"
     sender_fault: bool = False
     status_code: int = 401
-    message: Optional[String]
 
 
 class AccessLogSettings(TypedDict, total=False):

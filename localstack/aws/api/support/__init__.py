@@ -47,63 +47,54 @@ class AttachmentIdNotFound(ServiceException):
     code: str = "AttachmentIdNotFound"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class AttachmentLimitExceeded(ServiceException):
     code: str = "AttachmentLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class AttachmentSetExpired(ServiceException):
     code: str = "AttachmentSetExpired"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class AttachmentSetIdNotFound(ServiceException):
     code: str = "AttachmentSetIdNotFound"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class AttachmentSetSizeLimitExceeded(ServiceException):
     code: str = "AttachmentSetSizeLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class CaseCreationLimitExceeded(ServiceException):
     code: str = "CaseCreationLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class CaseIdNotFound(ServiceException):
     code: str = "CaseIdNotFound"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class DescribeAttachmentLimitExceeded(ServiceException):
     code: str = "DescribeAttachmentLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class InternalServerError(ServiceException):
     code: str = "InternalServerError"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 Data = bytes

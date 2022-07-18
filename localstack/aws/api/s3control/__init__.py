@@ -297,7 +297,6 @@ class BadRequestException(ServiceException):
     code: str = "BadRequestException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class BucketAlreadyExists(ServiceException):
@@ -316,63 +315,54 @@ class IdempotencyException(ServiceException):
     code: str = "IdempotencyException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class InternalServiceException(ServiceException):
     code: str = "InternalServiceException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class InvalidNextTokenException(ServiceException):
     code: str = "InvalidNextTokenException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class InvalidRequestException(ServiceException):
     code: str = "InvalidRequestException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class JobStatusException(ServiceException):
     code: str = "JobStatusException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class NoSuchPublicAccessBlockConfiguration(ServiceException):
     code: str = "NoSuchPublicAccessBlockConfiguration"
     sender_fault: bool = False
     status_code: int = 404
-    Message: Optional[NoSuchPublicAccessBlockConfigurationMessage]
 
 
 class NotFoundException(ServiceException):
     code: str = "NotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class TooManyRequestsException(ServiceException):
     code: str = "TooManyRequestsException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class TooManyTagsException(ServiceException):
     code: str = "TooManyTagsException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class AbortIncompleteMultipartUpload(TypedDict, total=False):
