@@ -188,9 +188,11 @@ def cmd_logs(follow: bool):
 
     if not DOCKER_CLIENT.is_container_running(container_name):
         console.print("localstack container not running")
-        with open(logfile) as fd:
-            for line in fd:
-                console.print(line.rstrip("\n\r"))
+        if os.path.exists(logfile):
+            console.print("printing logs from previous run")
+            with open(logfile) as fd:
+                for line in fd:
+                    click.echo(line, nl=False)
         sys.exit(1)
 
     if follow:
