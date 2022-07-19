@@ -2,12 +2,7 @@
 import logging
 
 from localstack.aws.api import RequestContext, handler
-from localstack.aws.api.apigateway import (
-    CreateRestApiRequest,
-    RestApi,
-    TestInvokeMethodRequest,
-    TestInvokeMethodResponse,
-)
+from localstack.aws.api.apigateway import TestInvokeMethodRequest, TestInvokeMethodResponse
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.provider import ApigatewayProvider
 from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
