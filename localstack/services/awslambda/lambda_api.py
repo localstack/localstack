@@ -25,6 +25,7 @@ from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
+from localstack.services.awslambda.invocation.lambda_util import function_name_from_arn
 from localstack.services.awslambda.lambda_executors import InvocationResult, LambdaContext
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
@@ -1014,6 +1015,8 @@ def get_lambda_policy(function, qualifier=None):
 
 def get_lambda_policy_name(resource_name: str, qualifier: str = None) -> str:
     qualifier = qualifier or "latest"
+    if ":function:" in resource_name:
+        resource_name = function_name_from_arn(resource_name)
     return LAMBDA_POLICY_NAME_PATTERN.format(name=resource_name, qualifier=qualifier)
 
 
