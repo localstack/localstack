@@ -12,7 +12,7 @@ from localstack.http import Response
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
 from ..chain import ExceptionHandler, Handler, HandlerChain
-from ..client import parse_response
+from ..client import parse_response, parse_service_exception
 from ..protocol.parser import RequestParser, create_parser
 from ..protocol.serializer import create_serializer
 from ..protocol.service_router import determine_aws_service_name
@@ -265,17 +265,9 @@ class ServiceResponseParser(Handler):
             return
 
         # in this case we need to parse the raw response
-        parsed = parse_response(context.operation, response)
-        parsed.pop("ResponseMetadata", None)
-
-        if response.status_code >= 400:
-            error = parsed["Error"]
-            context.service_exception = CommonServiceException(
-                code=error.get("Code", f"'{response.status_code}'"),
-                status_code=response.status_code,
-                message=error.get("Message", ""),
-                sender_fault=error.get("Type") == "Sender",
-            )
+        parsed = parse_response(context.operation, response, include_response_metadata=False)
+        if service_exception := parse_service_exception(response, parsed):
+            context.service_exception = service_exception
         else:
             context.service_response = parsed
 

@@ -6,7 +6,7 @@ from werkzeug.datastructures import Headers
 from werkzeug.test import EnvironBuilder
 
 from .client import HttpClient, SimpleRequestsClient
-from .request import restore_payload
+from .request import restore_payload, set_environment_headers
 
 
 def forward(
@@ -40,7 +40,7 @@ class Proxy:
         request: Request,
         forward_path: str = None,
         headers: Union[Headers, Mapping[str, str]] = None,
-    ):
+    ) -> Response:
         """
         Uses the client to forward the given request according to the proxy's configuration.
 
@@ -113,6 +113,8 @@ def _copy_request(
     :param headers: optional headers to overwrite
     :return: a new request with slightly modified underlying environment but the same data stream
     """
+    # ensure that the headers in the env are set on the environment
+    set_environment_headers(request.environ, request.headers)
     builder = EnvironBuilder.from_environ(request.environ)
 
     if base_url:

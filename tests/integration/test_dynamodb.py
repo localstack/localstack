@@ -996,6 +996,45 @@ class TestDynamoDB:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    def test_transaction_write_canceled(self, dynamodb_client):
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        table_name = "table_%s" % short_uid()
+
+        # create table
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+
+        # put item in table - INSERT event
+        dynamodb.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
+
+        # provoke a TransactionCanceledException by adding a condition which is not met
+        with pytest.raises(Exception) as ctx:
+            dynamodb_client.transact_write_items(
+                TransactItems=[
+                    {
+                        "ConditionCheck": {
+                            "TableName": table_name,
+                            "ConditionExpression": "attribute_not_exists(Username)",
+                            "Key": {"Username": {"S": "Fred"}},
+                        }
+                    },
+                    {"Delete": {"TableName": table_name, "Key": {"Username": {"S": "Fred"}}}},
+                    {"Delete": {"TableName": table_name, "Key": {"Username": {"S": "Bert"}}}},
+                ]
+            )
+        # Make sure the exception contains the cancellation reasons
+        assert ctx.match("TransactionCanceledException")
+        assert hasattr(ctx.value, "response")
+        assert "CancellationReasons" in ctx.value.response
+        assert {
+            "Code": "ConditionalCheckFailed",
+            "Message": "The conditional request failed.",
+        } in ctx.value.response["CancellationReasons"]
+
     def test_transaction_write_binary_data(
         self, dynamodb_client, dynamodb_create_table_with_parameters
     ):

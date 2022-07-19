@@ -1,13 +1,14 @@
 """Utils to process AWS requests as a client."""
 import io
 import logging
-from typing import Iterable
+from typing import Dict, Iterable, Optional
 
 from botocore.model import OperationModel
+from botocore.parsers import ResponseParser
 from botocore.parsers import create_parser as create_response_parser
 from werkzeug import Response
 
-from localstack.aws.api import ServiceResponse
+from localstack.aws.api import CommonServiceException, ServiceException, ServiceResponse
 
 LOG = logging.getLogger(__name__)
 
@@ -62,13 +63,38 @@ class _RawStream:
         pass
 
 
-def parse_response(operation: OperationModel, response: Response) -> ServiceResponse:
+def _add_modeled_error_fields(
+    response_dict: Dict,
+    parsed_response: Dict,
+    operation_model: OperationModel,
+    parser: ResponseParser,
+):
+    """
+    This function adds additional error shape members (other than message, code, and type) to an already parsed error
+    response dict.
+    Port of botocore's Endpoint#_add_modeled_error_fields.
+    """
+    error_code = parsed_response.get("Error", {}).get("Code")
+    if error_code is None:
+        return
+    service_model = operation_model.service_model
+    error_shape = service_model.shape_for_error_code(error_code)
+    if error_shape is None:
+        return
+    modeled_parse = parser.parse(response_dict, error_shape)
+    parsed_response.update(modeled_parse)
+
+
+def parse_response(
+    operation: OperationModel, response: Response, include_response_metadata: bool = True
+) -> ServiceResponse:
     """
     Parses an HTTP Response object into an AWS response object using botocore. It does this by adapting the
     procedure of ``botocore.endpoint.convert_to_response_dict`` to work with Werkzeug's server-side response object.
 
     :param operation: the operation of the original request
     :param response: the HTTP response object containing the response of the operation
+    :param include_response_metadata: True if the ResponseMetadata (typical for boto response dicts) should be included
     :return: a parsed dictionary as it is returned by botocore
     """
     # this is what botocore.endpoint.convert_to_response_dict normally does
@@ -80,7 +106,7 @@ def parse_response(operation: OperationModel, response: Response) -> ServiceResp
         },
     }
 
-    if response_dict["status_code"] >= 300:
+    if response_dict["status_code"] >= 301:
         response_dict["body"] = response.data
     elif operation.has_event_stream_output:
         # TODO test this
@@ -92,4 +118,51 @@ def parse_response(operation: OperationModel, response: Response) -> ServiceResp
         response_dict["body"] = response.data
 
     parser = create_response_parser(operation.service_model.protocol)
-    return parser.parse(response_dict, operation.output_shape)
+    parsed_response = parser.parse(response_dict, operation.output_shape)
+
+    if response.status_code >= 301:
+        # Add possible additional error shape members
+        _add_modeled_error_fields(response_dict, parsed_response, operation, parser)
+
+    if not include_response_metadata:
+        parsed_response.pop("ResponseMetadata", None)
+
+    return parsed_response
+
+
+def parse_service_exception(
+    response: Response, parsed_response: Dict
+) -> Optional[ServiceException]:
+    """
+    Creates a ServiceException from a parsed response (one that botocore would return).
+    It does not automatically raise the exception (see #raise_service_exception).
+    :param response: Un-parsed response
+    :param parsed_response: Parsed response
+    :return: ServiceException or None (if it's not an error response)
+    """
+    if response.status_code < 301 or "Error" not in parsed_response:
+        return None
+    error = parsed_response["Error"]
+    service_exception = CommonServiceException(
+        code=error.get("Code", f"'{response.status_code}'"),
+        status_code=response.status_code,
+        message=error.get("Message", ""),
+        sender_fault=error.get("Type") == "Sender",
+    )
+    # Add all additional fields in the parsed response as members of the exception
+    for key, value in parsed_response.items():
+        if key.lower() not in ["code", "message", "type"] and not hasattr(service_exception, key):
+            setattr(service_exception, key, value)
+    return service_exception
+
+
+def raise_service_exception(response: Response, parsed_response: Dict) -> None:
+    """
+    Creates and raises a ServiceException from a parsed response (one that botocore would return).
+    :param response: Un-parsed response
+    :param parsed_response: Parsed response
+    :raise ServiceException: If the response is an error response
+    :return: None if the response is not an error response
+    """
+    if service_exception := parse_service_exception(response, parsed_response):
+        raise service_exception

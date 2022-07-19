@@ -88,20 +88,12 @@ from typing import Any, Iterable, Iterator, Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
 from boto.utils import ISO8601
-from botocore.model import (
-    ListShape,
-    MapShape,
-    NoShapeFoundError,
-    OperationModel,
-    ServiceModel,
-    Shape,
-    StructureShape,
-)
+from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
 from moto.core.utils import gen_amzn_requestid_long
 
-from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
+from localstack.aws.api import HttpResponse, ServiceException
 from localstack.utils.common import to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -214,33 +206,11 @@ class ResponseSerializer(abc.ABC):
         """
         # TODO implement streaming error serialization
         serialized_response = self._create_default_response(operation_model)
-        if isinstance(error, CommonServiceException):
-            # Not all possible exceptions are contained in the service's specification.
-            # Therefore, service implementations can also throw a "CommonServiceException" to raise arbitrary /
-            # non-specified exceptions (where the developer needs to define the data which would usually be taken from
-            # the specification, like the "Code").
-            # These exceptions cannot have additional members (due to the missing spec).
-            shape = None
-        else:
-            # It's not a CommonServiceException, the exception is being serialized based on the specification
-
-            # The shape name is equal to the class name (since the classes are generated from the shape's name)
-            error_shape_name = error.__class__.__name__
-            # Lookup the corresponding error shape in the operation model
-            try:
-                shape = operation_model.service_model.shape_for(error_shape_name)
-                if not shape.metadata.get("exception", False):
-                    raise ProtocolSerializerError(
-                        f"The given error ({error_shape_name}) corresponds to a non-exception"
-                        f"shape."
-                    )
-            except NoShapeFoundError as e:
-
-                raise ProtocolSerializerError(
-                    f"Error to serialize ({error_shape_name}) neither is a CommonServiceException, nor is its error "
-                    f"shape contained in the service's specification ({operation_model.service_model.service_name})."
-                ) from e
-
+        if not error or not isinstance(error, ServiceException):
+            raise ProtocolSerializerError(
+                f"Error to serialize ({error.__class__.__name__ if error else None}) is not a ServiceException."
+            )
+        shape = operation_model.service_model.shape_for_error_code(error.code)
         serialized_response.status_code = error.status_code
 
         self._serialize_error(error, serialized_response, shape, operation_model)
