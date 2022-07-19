@@ -14,6 +14,8 @@ from localstack.aws.api.ec2 import (
     CurrencyCodeValues,
     DescribeAvailabilityZonesRequest,
     DescribeAvailabilityZonesResult,
+    DescribeDhcpOptionsRequest,
+    DescribeDhcpOptionsResult,
     DescribeReservedInstancesOfferingsRequest,
     DescribeReservedInstancesOfferingsResult,
     DescribeReservedInstancesRequest,
@@ -254,6 +256,14 @@ class Ec2Provider(Ec2Api, ABC):
                     if attr_name not in subnet:
                         subnet[attr_name] = getattr(subnet_obj, attr)
         return result
+
+    @handler("DescribeDhcpOptions", expand=False)
+    def describe_dhcp_options(
+        self,
+        context: RequestContext,
+        request: DescribeDhcpOptionsRequest,
+    ) -> DescribeDhcpOptionsResult:
+        return call_moto(context)
 
 
 @patch(SubnetBackend.modify_subnet_attribute)
