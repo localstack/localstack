@@ -44,7 +44,6 @@ from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
-    API_REGIONS,
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_USER_REQUEST,
     APIGatewayRegion,
@@ -57,7 +56,6 @@ from localstack.services.apigateway.patches import apply_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import event_publisher
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.collections import PaginatedList, ensure_list
 from localstack.utils.json import parse_json_or_yaml
@@ -112,14 +110,6 @@ class ApigatewayApiListener(AwsApiListener):
             and response.status_code == 404
         ):
             return requests_response({"position": "1", "items": []})
-
-        # keep track of API regions for faster lookup later on
-        # TODO - to be removed - see comment for API_REGIONS variable
-        if method == "POST" and path == "/restapis":
-            content = json.loads(to_str(response.content))
-            api_id = content["id"]
-            region = aws_stack.extract_region_from_auth_header(headers)
-            API_REGIONS[api_id] = region
 
 
 class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):

@@ -8,7 +8,6 @@ from localstack.aws.api.apigateway import (
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
 )
-from localstack.services.apigateway.helpers import API_REGIONS
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.provider import ApigatewayProvider
 from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
@@ -33,11 +32,6 @@ class AsfApigatewayProvider(ApigatewayProvider):
     def on_after_init(self):
         super(AsfApigatewayProvider, self).on_after_init()
         self.router.register_routes()
-
-    def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
-        result: RestApi = super().create_rest_api(context, request)
-        API_REGIONS[result["id"]] = context.region
-        return result
 
     @handler("TestInvokeMethod", expand=False)
     def test_invoke_method(
