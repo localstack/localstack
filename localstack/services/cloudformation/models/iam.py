@@ -1,6 +1,8 @@
 import json
 import logging
 
+from botocore.exceptions import ClientError
+
 from localstack.services.awslambda.lambda_api import IAM_POLICY_VERSION
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -161,6 +163,52 @@ class IAMUser(GenericBaseModel):
                     "parameters": ["UserName"],
                 },
             ],
+        }
+
+
+class IAMAccessKey(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::IAM::AccessKey"
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("AccessKeyId")
+
+    def get_resource_name(self):
+        return self.props.get("AccessKeyId")
+
+    def fetch_state(self, stack_name, resources):
+        user_name = self.resolve_refs_recursively(stack_name, self.props.get("UserName"), resources)
+        keys = aws_stack.connect_to_service("iam").get_access_key(UserName=user_name)[
+            "AccessKeyMetadata"
+        ]
+
+        access_key_id = self.resolve_refs_recursively(
+            stack_name, self.props.get("AccessKeyId"), resources
+        )
+        return [key for key in keys if key["AccessKeyId"] == access_key_id][0]
+
+    @staticmethod
+    def get_deploy_templates():
+        def _delete(resource_id, resources, resource_type, func, stack_name):
+            iam_client = aws_stack.connect_to_service("iam")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            user_name = props["UserName"]
+            access_key_id = props["AccessKeyId"]
+
+            try:
+                iam_client.delete_access_key(UserName=user_name, AccessKeyId=access_key_id)
+            except ClientError as err:
+                if "NotSuchEntity" not in err.response["Error"]["Code"]:
+                    raise
+
+        return {
+            "create": {
+                "function": "create_access_key",
+                "parameters": ["UserName", "Serial", "Status"],
+            },
+            "delete": {"function": _delete},
         }
 
 
