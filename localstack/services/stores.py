@@ -11,14 +11,14 @@ Also by convention, cross-region attributes are declared in CAPITAL_CASE
         queues =  LocalAttribute(default=dict)        # type: Dict[str, SqsQueue]
         DELETED = CrossRegionAttribute(default=dict)  # type: Dict[str, float]
 
-Stores are then wrapped in AccountRegionStore and declared as a singleton
+Stores are then wrapped in AccountRegionBundle
 
-    sqs_stores = AccountRegionStore('sqs', SqsStore)
+    sqs_stores = AccountRegionBundle('sqs', SqsStore)
 
 Access patterns are as follows
 
     account_id = '001122334455'
-    sqs_stores[account_id]  # -> RegionStore
+    sqs_stores[account_id]  # -> RegionBundle
     sqs_stores[account_id]['ap-south-1']  # -> SqsStore
     sqs_stores[account_id]['ap-south-1'].queues  # -> {}
 """
@@ -29,7 +29,14 @@ from typing import Any, Type, TypeVar, Union
 
 from boto3 import Session
 
+LOCAL_ATTR_PREFIX = "attr_"
+
 BaseStoreType = TypeVar("BaseStoreType", bound="BaseStore")
+
+
+#
+# Descriptor protocol classes
+#
 
 
 class LocalAttribute:
@@ -45,7 +52,7 @@ class LocalAttribute:
         self.default = default
 
     def __set_name__(self, owner, name):
-        self.name = "_" + name
+        self.name = LOCAL_ATTR_PREFIX + name
 
     def __get__(self, obj: BaseStoreType, objtype=None) -> Any:
         if not hasattr(obj, self.name):
@@ -64,9 +71,6 @@ class LocalAttribute:
 class CrossRegionAttribute:
     """
     Descriptor protocol for marking store attributes as shared across all regions.
-
-    It makes use of the `_global` dict in RegionStore where all cross-region data
-    is stored.
     """
 
     def __init__(self, default: Union[Callable, int, float, str, bool, None]):
@@ -97,10 +101,15 @@ class CrossRegionAttribute:
 
     def _check_region_store_association(self, obj):
         if not hasattr(obj, "_global"):
-            # Raise if a Store is instantiated outside of a RegionStore
+            # Raise if a Store is instantiated outside of a RegionBundle
             raise AttributeError(
-                "Could not resolve cross-region attribute because there is no associated RegionStore"
+                "Could not resolve cross-region attribute because there is no associated RegionBundle"
             )
+
+
+#
+# Base models
+#
 
 
 class BaseStore:
@@ -120,20 +129,13 @@ class BaseStore:
         except AttributeError:
             return super().__repr__()
 
-    def reset(self):
-        """Clear all store data."""
-        store_attrs = [attr for attr in self.__dict__.keys() if attr[0] == "_" and attr[1] != "_"]
-        for attr in store_attrs:
-            # reset the cross-region attributes
-            if attr == "_global":
-                self._global.clear()
 
-            # reset the local attributes
-            elif attr[0] == "_" and attr[1] != "_":
-                delattr(self, attr)
+#
+# Encapsulations
+#
 
 
-class RegionStore(dict):
+class RegionBundle(dict):
     """
     Encapsulation for stores across all regions for a specific AWS account ID.
     """
@@ -174,11 +176,19 @@ class RegionStore(dict):
 
     def reset(self):
         """Clear all store data."""
-        for store_instance in self.values():
-            store_instance.reset()
+        for store_inst in self.values():
+            attrs = list(store_inst.__dict__.keys())
+            for attr in attrs:
+                # reset the cross-region attributes
+                if attr == "_global":
+                    store_inst._global.clear()
+
+                # reset the local attributes
+                elif attr.startswith(LOCAL_ATTR_PREFIX):
+                    delattr(store_inst, attr)
 
 
-class AccountRegionStore(dict):
+class AccountRegionBundle(dict):
     """
     Encapsulation for all stores for all AWS account IDs.
     """
@@ -193,12 +203,12 @@ class AccountRegionStore(dict):
         self.store = store
         self.validate = validate
 
-    def __getitem__(self, account_id: str) -> RegionStore:
+    def __getitem__(self, account_id: str) -> RegionBundle:
         if self.validate and not re.match(r"\d{12}", account_id):
             raise ValueError(f"'{account_id}' is not a valid AWS account ID")
 
         if account_id not in self.keys():
-            self[account_id] = RegionStore(
+            self[account_id] = RegionBundle(
                 service_name=self.service_name,
                 store=self.store,
                 account_id=account_id,
@@ -208,5 +218,5 @@ class AccountRegionStore(dict):
 
     def reset(self):
         """Clear all store data."""
-        for region_store_instance in self.values():
-            region_store_instance.reset()
+        for region_bundle in self.values():
+            region_bundle.reset()
