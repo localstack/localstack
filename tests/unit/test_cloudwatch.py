@@ -252,7 +252,10 @@ def run_and_assert_calculate_alarm_state(
         if expected_calls != 0:
             expected_calls = [
                 call.set_alarm_state(
-                    AlarmName="test-alarm", StateValue=expected_state, StateReason=ANY
+                    AlarmName="test-alarm",
+                    StateValue=expected_state,
+                    StateReason=ANY,
+                    StateReasonData=ANY,
                 )
             ]
             mock_client.assert_has_calls(expected_calls)

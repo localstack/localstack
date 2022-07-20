@@ -1,0 +1,308 @@
+{
+  "tests/integration/test_cloudwatch.py::TestCloudwatch::test_enable_disable_alarm_actions": {
+    "recorded-date": "20-07-2022, 15:35:33",
+    "recorded-content": {
+      "cloudwatch_sns_subscription": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<topic_arn>:<SubscriptionArn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "ActionsEnabled": true,
+            "OKActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "InsufficientDataActions": [],
+            "StateValue": "INSUFFICIENT_DATA",
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateUpdatedTimestamp": "timestamp",
+            "MetricName": "my-metric101",
+            "Namespace": "test/enable",
+            "Statistic": "Average",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "Period": 10,
+            "Unit": "Seconds",
+            "EvaluationPeriods": 2,
+            "Threshold": 2.0,
+            "ComparisonOperator": "GreaterThanThreshold",
+            "TreatMissingData": "breaching"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "alarm-1-describe": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "ActionsEnabled": true,
+            "OKActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "InsufficientDataActions": [],
+            "StateValue": "ALARM",
+            "StateReason": "Threshold Crossed: no datapoints were received for 2 periods and 2 missing datapoints were treated as [Breaching].",
+            "StateReasonData": {
+              "version": "1.0",
+              "queryDate": "date",
+              "unit": "Seconds",
+              "statistic": "Average",
+              "period": 10,
+              "recentDatapoints": [],
+              "threshold": 2.0,
+              "evaluatedDatapoints": [
+                {
+                  "timestamp": "date"
+                },
+                {
+                  "timestamp": "date"
+                }
+              ]
+            },
+            "StateUpdatedTimestamp": "timestamp",
+            "MetricName": "my-metric101",
+            "Namespace": "test/enable",
+            "Statistic": "Average",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "Period": 10,
+            "Unit": "Seconds",
+            "EvaluationPeriods": 2,
+            "Threshold": 2.0,
+            "ComparisonOperator": "GreaterThanThreshold",
+            "TreatMissingData": "breaching"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "alarm-1-sqs-msg": {
+        "AlarmName": "<alarm-name:1>",
+        "AlarmDescription": "testing cloudwatch alarms",
+        "AWSAccountId": "111111111111",
+        "AlarmConfigurationUpdatedTimestamp": "date",
+        "NewStateValue": "ALARM",
+        "NewStateReason": "Threshold Crossed: no datapoints were received for 2 periods and 2 missing datapoints were treated as [Breaching].",
+        "StateChangeTime": "date",
+        "Region": "US East (N. Virginia)",
+        "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "OldStateValue": "INSUFFICIENT_DATA",
+        "OKActions": [
+          "arn:aws:sns:<region>:111111111111:<topic_arn>"
+        ],
+        "AlarmActions": [
+          "arn:aws:sns:<region>:111111111111:<topic_arn>"
+        ],
+        "InsufficientDataActions": [],
+        "Trigger": {
+          "MetricName": "my-metric101",
+          "Namespace": "test/enable",
+          "StatisticType": "Statistic",
+          "Statistic": "AVERAGE",
+          "Unit": "Seconds",
+          "Dimensions": [
+            {
+              "value": "abc",
+              "name": "InstanceId"
+            }
+          ],
+          "Period": 10,
+          "EvaluationPeriods": 2,
+          "ComparisonOperator": "GreaterThanThreshold",
+          "Threshold": 2.0,
+          "TreatMissingData": "breaching",
+          "EvaluateLowSampleCountPercentile": ""
+        }
+      },
+      "describe_alarm_disabled": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "ActionsEnabled": false,
+            "OKActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "InsufficientDataActions": [],
+            "StateValue": "OK",
+            "StateReason": "test",
+            "StateUpdatedTimestamp": "timestamp",
+            "MetricName": "my-metric101",
+            "Namespace": "test/enable",
+            "Statistic": "Average",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "Period": 10,
+            "Unit": "Seconds",
+            "EvaluationPeriods": 2,
+            "Threshold": 2.0,
+            "ComparisonOperator": "GreaterThanThreshold",
+            "TreatMissingData": "breaching"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "alarm-2-action-disabled-describe": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "ActionsEnabled": false,
+            "OKActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "InsufficientDataActions": [],
+            "StateValue": "ALARM",
+            "StateReason": "Threshold Crossed: no datapoints were received for 2 periods and 2 missing datapoints were treated as [Breaching].",
+            "StateReasonData": {
+              "version": "1.0",
+              "queryDate": "date",
+              "unit": "Seconds",
+              "statistic": "Average",
+              "period": 10,
+              "recentDatapoints": [],
+              "threshold": 2.0,
+              "evaluatedDatapoints": [
+                {
+                  "timestamp": "date"
+                },
+                {
+                  "timestamp": "date"
+                }
+              ]
+            },
+            "StateUpdatedTimestamp": "timestamp",
+            "MetricName": "my-metric101",
+            "Namespace": "test/enable",
+            "Statistic": "Average",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "Period": 10,
+            "Unit": "Seconds",
+            "EvaluationPeriods": 2,
+            "Threshold": 2.0,
+            "ComparisonOperator": "GreaterThanThreshold",
+            "TreatMissingData": "breaching"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_alarm_enabled": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "ActionsEnabled": true,
+            "OKActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmActions": [
+              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "InsufficientDataActions": [],
+            "StateValue": "ALARM",
+            "StateReason": "Threshold Crossed: no datapoints were received for 2 periods and 2 missing datapoints were treated as [Breaching].",
+            "StateReasonData": {
+              "version": "1.0",
+              "queryDate": "date",
+              "unit": "Seconds",
+              "statistic": "Average",
+              "period": 10,
+              "recentDatapoints": [],
+              "threshold": 2.0,
+              "evaluatedDatapoints": [
+                {
+                  "timestamp": "date"
+                },
+                {
+                  "timestamp": "date"
+                }
+              ]
+            },
+            "StateUpdatedTimestamp": "timestamp",
+            "MetricName": "my-metric101",
+            "Namespace": "test/enable",
+            "Statistic": "Average",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "Period": 10,
+            "Unit": "Seconds",
+            "EvaluationPeriods": 2,
+            "Threshold": 2.0,
+            "ComparisonOperator": "GreaterThanThreshold",
+            "TreatMissingData": "breaching"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

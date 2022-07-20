@@ -1,3 +1,4 @@
+import json
 import logging
 import math
 import threading
@@ -28,8 +29,8 @@ STATE_ALARM = "ALARM"
 STATE_OK = "OK"
 STATE_INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 DEFAULT_REASON = "Alarm Evaluation"
-THRESHOLD_CROSSED = "Threshold crossed"
-THRESHOLD_OK = "Threshold ok"
+THRESHOLD_CROSSED = "Threshold Crossed"
+THRESHOLD_OK = "Threshold OK"
 INSUFFICIENT_DATA = "Insufficient Data"
 
 
@@ -221,6 +222,7 @@ def collect_metric_data(alarm_details: MetricAlarm, client: "CloudWatchClient") 
     :return: list with data points
     """
     metric_values = []
+
     evaluation_periods = alarm_details["EvaluationPeriods"]
     period = alarm_details["Period"]
 
@@ -253,6 +255,7 @@ def update_alarm_state(
     current_state: str,
     desired_state: str,
     reason: str = DEFAULT_REASON,
+    state_reason_data: dict = None,
 ) -> None:
     """Updates the alarm state, if the current_state is different than the desired_state
 
@@ -261,10 +264,16 @@ def update_alarm_state(
     :param current_state: the state the alarm is currently in
     :param desired_state: the state the alarm should have after updating
     :param reason: reason why the state is set, will be used to for set_alarm_state
+    :param state_reason_data: data associated with the state change, optional
     """
     if current_state == desired_state:
         return
-    client.set_alarm_state(AlarmName=alarm_name, StateValue=desired_state, StateReason=reason)
+    client.set_alarm_state(
+        AlarmName=alarm_name,
+        StateValue=desired_state,
+        StateReason=reason,
+        StateReasonData=json.dumps(state_reason_data),
+    )
 
 
 def calculate_alarm_state(alarm_arn: str) -> None:
@@ -276,7 +285,20 @@ def calculate_alarm_state(alarm_arn: str) -> None:
     alarm_details = get_metric_alarm_details_for_alarm_arn(alarm_arn)
     client = get_cloudwatch_client_for_region_of_alarm(alarm_arn)
 
+    query_date = datetime.utcnow().strftime(format="%Y-%m-%dT%H:%M:%S+0000")
     metric_values = collect_metric_data(alarm_details, client)
+
+    state_reason_data = {
+        "version": "1.0",
+        "queryDate": query_date,
+        "period": alarm_details["Period"],
+        "recentDatapoints": [v for v in metric_values if v],
+        "threshold": alarm_details["Threshold"],
+    }
+    if alarm_details.get("Statistic"):
+        state_reason_data["statistic"] = alarm_details["Statistic"]
+    if alarm_details.get("Unit"):
+        state_reason_data["unit"] = alarm_details["Unit"]
 
     alarm_name = alarm_details["AlarmName"]
     alarm_state = alarm_details["StateValue"]
@@ -284,13 +306,19 @@ def calculate_alarm_state(alarm_arn: str) -> None:
 
     empty_datapoints = metric_values.count(None)
     if empty_datapoints == len(metric_values):
+        evaluation_periods = alarm_details["EvaluationPeriods"]
+        details_msg = (
+            f"no datapoints were received for {evaluation_periods} periods and "
+            f"{evaluation_periods} missing datapoints were treated as [{treat_missing_data.capitalize()}]."
+        )
         if treat_missing_data == "missing":
             update_alarm_state(
                 client,
                 alarm_name,
                 alarm_state,
                 STATE_INSUFFICIENT_DATA,
-                f"{INSUFFICIENT_DATA}: empty datapoints",
+                f"{INSUFFICIENT_DATA}: {details_msg}",
+                state_reason_data=state_reason_data,
             )
         elif treat_missing_data == "breaching":
             update_alarm_state(
@@ -298,7 +326,8 @@ def calculate_alarm_state(alarm_arn: str) -> None:
                 alarm_name,
                 alarm_state,
                 STATE_ALARM,
-                f"{THRESHOLD_CROSSED}: empty datapoints - treated as breaching",
+                f"{THRESHOLD_CROSSED}: {details_msg}",
+                state_reason_data=state_reason_data,
             )
         elif treat_missing_data == "notBreaching":
             update_alarm_state(
@@ -306,7 +335,8 @@ def calculate_alarm_state(alarm_arn: str) -> None:
                 alarm_name,
                 alarm_state,
                 STATE_OK,
-                f"{THRESHOLD_OK}: empty datapoints - treated as notBreaching",
+                f"{THRESHOLD_OK}: {details_msg}",
+                state_reason_data=state_reason_data,
             )
         # 'ignore': keep the same state
         return
@@ -319,6 +349,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
                 alarm_state,
                 STATE_ALARM,
                 f"{THRESHOLD_CROSSED}: premature alarm for missing datapoints",
+                state_reason_data=state_reason_data,
             )
         # for 'ignore' the state should be retained
         return
@@ -337,6 +368,20 @@ def calculate_alarm_state(alarm_arn: str) -> None:
         collected_datapoints.append(None)
 
     if is_threshold_exceeded(collected_datapoints, alarm_details):
-        update_alarm_state(client, alarm_name, alarm_state, STATE_ALARM, THRESHOLD_CROSSED)
+        update_alarm_state(
+            client,
+            alarm_name,
+            alarm_state,
+            STATE_ALARM,
+            THRESHOLD_CROSSED,
+            state_reason_data=state_reason_data,
+        )
     else:
-        update_alarm_state(client, alarm_name, alarm_state, STATE_OK, THRESHOLD_OK)
+        update_alarm_state(
+            client,
+            alarm_name,
+            alarm_state,
+            STATE_OK,
+            THRESHOLD_OK,
+            state_reason_data=state_reason_data,
+        )

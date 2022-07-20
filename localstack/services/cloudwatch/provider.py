@@ -5,11 +5,14 @@ from xml.sax.saxutils import escape
 from moto.cloudwatch import cloudwatch_backends
 from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
     AlarmNames,
     AmazonResourceName,
     CloudwatchApi,
+    DescribeAlarmsInput,
+    DescribeAlarmsOutput,
     ListTagsForResourceOutput,
     PutCompositeAlarmInput,
     PutMetricAlarmInput,
@@ -20,7 +23,7 @@ from localstack.aws.api.cloudwatch import (
 )
 from localstack.http import Request
 from localstack.services import moto
-from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
+from localstack.services.cloudwatch.alarm_scheduler import STATE_INSUFFICIENT_DATA, AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
@@ -30,13 +33,19 @@ from localstack.utils.tagging import TaggingService
 from localstack.utils.threads import start_worker_thread
 
 PATH_GET_RAW_METRICS = "/cloudwatch/metrics/raw"
+MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
 
 LOG = logging.getLogger(__name__)
 
 
 @patch(target=FakeAlarm.update_state)
 def update_state(target, self, reason, reason_data, state_value):
-    old_state = self.state_value
+    if reason_data is None:
+        reason_data = ""
+    if self.state_reason == MOTO_INITIAL_UNCHECKED_REASON:
+        old_state = STATE_INSUFFICIENT_DATA
+    else:
+        old_state = self.state_value
     target(self, reason, reason_data, state_value)
 
     # check the state and trigger required actions
@@ -125,6 +134,7 @@ def put_metric_alarm(
 
 def create_message_response_update_state(alarm, old_state):
     response = {
+        "AWSAccountId": get_aws_account_id(),
         "OldStateValue": old_state,
         "AlarmName": alarm.name,
         "AlarmDescription": alarm.description or "",
@@ -134,9 +144,9 @@ def create_message_response_update_state(alarm, old_state):
         "StateChangeTime": alarm.state_updated_timestamp,
         "Region": alarm.region_name,
         "AlarmArn": alarm.alarm_arn,
-        "OKActions": alarm.ok_actions or "",
-        "AlarmActions": alarm.alarm_actions or "",
-        "InsufficientDataActions": alarm.insufficient_data_actions or "",
+        "OKActions": alarm.ok_actions or [],
+        "AlarmActions": alarm.alarm_actions or [],
+        "InsufficientDataActions": alarm.insufficient_data_actions or [],
     }
 
     # collect trigger details
@@ -175,6 +185,25 @@ def create_message_response_update_state(alarm, old_state):
 class ValidationError(CommonServiceException):
     def __init__(self, message: str):
         super().__init__("ValidationError", message, 400, True)
+
+
+def _set_alarm_actions(context, alarm_names, enabled):
+    backend = cloudwatch_backends[context.region]
+    for name in alarm_names:
+        alarm = backend.alarms.get(name)
+        if alarm:
+            alarm.actions_enabled = enabled
+
+
+def _cleanup_describe_output(alarm):
+    reason_data = alarm.get("StateReasonData")
+    if reason_data is not None and reason_data in ("{}", ""):
+        alarm.pop("StateReasonData")
+    if (
+        alarm.get("StateReason", "") == MOTO_INITIAL_UNCHECKED_REASON
+        and alarm.get("StateValue") != STATE_INSUFFICIENT_DATA
+    ):
+        alarm["StateValue"] = STATE_INSUFFICIENT_DATA
 
 
 class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
@@ -326,3 +355,24 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         LOG.warning(
             "Composite Alarms configuration is not yet supported, alarm state will not be evaluated"
         )
+
+    @handler("EnableAlarmActions")
+    def enable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+        _set_alarm_actions(context, alarm_names, enabled=True)
+
+    @handler("DisableAlarmActions")
+    def disable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+        _set_alarm_actions(context, alarm_names, enabled=False)
+
+    @handler("DescribeAlarms", expand=False)
+    def describe_alarms(
+        self, context: RequestContext, request: DescribeAlarmsInput
+    ) -> DescribeAlarmsOutput:
+        response = moto.call_moto(context)
+
+        for c in response["CompositeAlarms"]:
+            _cleanup_describe_output(c)
+        for m in response["MetricAlarms"]:
+            _cleanup_describe_output(m)
+
+        return response
