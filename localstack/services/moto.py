@@ -67,7 +67,7 @@ def call_moto_with_request(
         region=context.region,
     )
 
-    local_context.request.headers.extend(context.request.headers)
+    local_context.request.headers.update(context.request.headers)
 
     return call_moto(local_context)
 

@@ -98,6 +98,9 @@ def dummy_wsgi_environment(
 
 
 def set_environment_headers(environ: "WSGIEnvironment", headers: Union[Dict, Headers]):
+    # Collect all the headers to set
+    # (this might be is accessing the environment, this needs to be done before removing the items from the env)
+    new_headers = {}
     for k, v in headers.items():
         name = k.upper().replace("-", "_")
 
@@ -105,15 +108,19 @@ def set_environment_headers(environ: "WSGIEnvironment", headers: Union[Dict, Hea
             name = f"HTTP_{name}"
 
         val = v
-        if (
-            name in environ
-            and environ[name] != val
-            and not environ[name].startswith(f"{val},")
-            and not environ[name].endswith(f",{val}")
-        ):
-            val = environ[name] + "," + val
+        if name in new_headers:
+            val = new_headers[name] + "," + val
 
-        environ[name] = val
+        new_headers[name] = val
+
+    # Clear the HTTP headers in the env
+    header_keys = [name for name in environ if name.startswith("HTTP_")]
+    for name in header_keys:
+        environ.pop(name, None)
+
+    # Set the new headers in the env
+    for k, v in new_headers.items():
+        environ[k] = v
 
 
 class Request(WerkzeugRequest):

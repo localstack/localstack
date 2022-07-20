@@ -74,7 +74,7 @@ def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> Service
                 parameters=service_request,
                 region=context.region,
             )
-            local_context.request.headers.extend(context.request.headers)
+            local_context.request.headers.update(context.request.headers)
             context = local_context
         return forward_request(context, forward_url_getter)
 
