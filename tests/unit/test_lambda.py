@@ -6,7 +6,6 @@ import time
 import unittest
 
 import mock
-import pytest
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id

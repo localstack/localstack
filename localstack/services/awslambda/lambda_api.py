@@ -516,6 +516,13 @@ def run_lambda(
 ) -> InvocationResult:
     if context is None:
         context = {}
+
+    # Ensure that the service provider has been initialized. This is required to ensure all lifecycle hooks
+    # (e.g., persistence) have been executed when the run_lambda(..) function gets called (e.g., from API GW).
+    if not hasattr(run_lambda, "_provider_initialized"):
+        aws_stack.connect_to_service("lambda").list_functions()
+        run_lambda._provider_initialized = True
+
     region_name = func_arn.split(":")[3]
     region = LambdaRegion.get(region_name)
     if suppress_output:
