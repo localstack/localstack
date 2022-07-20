@@ -98,6 +98,20 @@ class CmdDockerClient(ContainerClient):
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 ) from e
 
+    def restart_container(self, container_name: str, timeout: int = 10) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["restart", "--time", str(timeout), container_name]
+        LOG.debug("Restarting container with cmd %s", cmd)
+        try:
+            run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in to_str(e.stdout):
+                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                ) from e
+
     def pause_container(self, container_name: str) -> None:
         cmd = self._docker_cmd()
         cmd += ["pause", container_name]
