@@ -244,13 +244,16 @@ ci-pro-smoke-tests:
 	awslocal cloudtrail list-trails
 	awslocal cognito-idp list-user-pools --max-results 10
 	awslocal docdb describe-db-clusters
+	awslocal ecr describe-repositories
 	awslocal ecs list-clusters
 	awslocal emr list-clusters
+	awslocal elasticache describe-cache-clusters
 	awslocal glue get-databases
 	awslocal iot list-things
 	awslocal kafka list-clusters
 	awslocal lambda list-layers
 	awslocal mediastore list-containers
+	awslocal mwaa list-environments
 	awslocal qldb list-ledgers
 	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup --db-cluster-parameter-group-name mydbclusterparametergroup
 	awslocal rds describe-db-instances

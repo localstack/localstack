@@ -45,7 +45,7 @@ def set_ctx_aws_access_key_id(access_key_id: str):
 @hooks.on_infra_start()
 def patch_get_account_id():
     """Patch Moto's account ID resolver with our own."""
-    import moto
+    import moto.core
 
     moto.core.models.account_id_resolver = get_aws_account_id
 

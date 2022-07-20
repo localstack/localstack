@@ -10,6 +10,7 @@ import mock
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
+from localstack.services.awslambda.lambda_api import get_lambda_policy_name
 from localstack.services.awslambda.lambda_executors import OutputLog, Util
 from localstack.services.awslambda.lambda_utils import API_PATH_ROOT
 from localstack.utils.aws import aws_stack
@@ -1200,3 +1201,10 @@ class TestLambdaUtils:
             assert result == "/var/lib/localstacktest"
             result = Util.get_host_path_for_path_in_docker("/etc/some/path")
             assert result == "/etc/some/path"
+
+    def test_lambda_policy_name(self):
+        func_name = "lambda1"
+        policy_name1 = get_lambda_policy_name(func_name)
+        policy_name2 = get_lambda_policy_name(lambda_api.func_arn(func_name))
+        assert func_name in policy_name1
+        assert policy_name1 == policy_name2
