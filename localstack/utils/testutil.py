@@ -133,6 +133,54 @@ def delete_lambda_function(name, region_name: str = None):
     client.delete_function(FunctionName=name)
 
 
+def create_zip_file(file_path, zip_file=None, get_content=False, content_root=None, mode="w"):
+    """
+    Creates a zipfile to the designated file_path.
+
+    By default, a new zip file is created but the mode parameter can be used to append to an existing zip file
+    """
+    base_dir = file_path
+    if not os.path.isdir(file_path):
+        base_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
+        shutil.copy(file_path, base_dir)
+        TMP_FILES.append(base_dir)
+    tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
+    full_zip_file = zip_file
+    if not full_zip_file:
+        zip_file_name = "archive.zip"
+        full_zip_file = os.path.join(tmp_dir, zip_file_name)
+    # special case where target folder is empty -> create empty zip file
+    if is_empty_dir(base_dir):
+        # see https://stackoverflow.com/questions/25195495/how-to-create-an-empty-zip-file#25195628
+        content = (
+            b"PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        )
+        if get_content:
+            return content
+        save_file(full_zip_file, content)
+        return full_zip_file
+
+    # create zip file
+    if is_debian():
+        # todo: extend CLI with the new parameters
+        create_zip_file_cli(source_path=file_path, base_dir=base_dir, zip_file=full_zip_file)
+    else:
+        create_zip_file_python(
+            source_path=file_path,
+            base_dir=base_dir,
+            zip_file=full_zip_file,
+            content_root=content_root,
+            mode=mode,
+        )
+    if not get_content:
+        TMP_FILES.append(tmp_dir)
+        return full_zip_file
+    with open(full_zip_file, "rb") as file_obj:
+        zip_file_content = file_obj.read()
+    rm_dir(tmp_dir)
+    return zip_file_content
+
+
 def create_lambda_function(
     func_name,
     zip_file=None,
@@ -694,51 +742,3 @@ def response_arn_matches_partition(client, response_arn: str) -> bool:
         == boto3.session.Session().get_partition_for_region(parsed_arn["region"])
         and client.meta.partition == parsed_arn["partition"]
     )
-
-
-def create_zip_file(file_path, zip_file=None, get_content=False, content_root=None, mode="w"):
-    """
-    Creates a zipfile to the designated file_path.
-
-    By default, a new zip file is created but the mode parameter can be used to append to an existing zip file
-    """
-    base_dir = file_path
-    if not os.path.isdir(file_path):
-        base_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
-        shutil.copy(file_path, base_dir)
-        TMP_FILES.append(base_dir)
-    tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
-    full_zip_file = zip_file
-    if not full_zip_file:
-        zip_file_name = "archive.zip"
-        full_zip_file = os.path.join(tmp_dir, zip_file_name)
-    # special case where target folder is empty -> create empty zip file
-    if is_empty_dir(base_dir):
-        # see https://stackoverflow.com/questions/25195495/how-to-create-an-empty-zip-file#25195628
-        content = (
-            b"PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-        )
-        if get_content:
-            return content
-        save_file(full_zip_file, content)
-        return full_zip_file
-
-    # create zip file
-    if is_debian():
-        # todo: extend CLI with the new parameters
-        create_zip_file_cli(source_path=file_path, base_dir=base_dir, zip_file=full_zip_file)
-    else:
-        create_zip_file_python(
-            source_path=file_path,
-            base_dir=base_dir,
-            zip_file=full_zip_file,
-            content_root=content_root,
-            mode=mode,
-        )
-    if not get_content:
-        TMP_FILES.append(tmp_dir)
-        return full_zip_file
-    with open(full_zip_file, "rb") as file_obj:
-        zip_file_content = file_obj.read()
-    rm_dir(tmp_dir)
-    return zip_file_content
