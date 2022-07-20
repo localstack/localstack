@@ -7,7 +7,6 @@ import re
 import shutil
 import tempfile
 import time
-import zipfile
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -24,6 +23,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
+from localstack.utils.archives import create_zip_file_cli, create_zip_file_python
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import ensure_list
 from localstack.utils.files import (
@@ -131,26 +131,6 @@ def create_lambda_archive(
 def delete_lambda_function(name, region_name: str = None):
     client = aws_stack.connect_to_service("lambda", region_name=region_name)
     client.delete_function(FunctionName=name)
-
-
-def create_zip_file_cli(source_path, base_dir, zip_file):
-    # Using the native zip command can be an order of magnitude faster on Travis-CI
-    source = "*" if source_path == base_dir else os.path.basename(source_path)
-    command = "cd %s; zip -r %s %s" % (base_dir, zip_file, source)
-    run(command)
-
-
-def create_zip_file_python(source_path, base_dir, zip_file, mode="w", content_root=None):
-    with zipfile.ZipFile(zip_file, mode) as zip_file:
-        for root, dirs, files in os.walk(base_dir):
-            for name in files:
-                full_name = os.path.join(root, name)
-                relative = os.path.relpath(root, start=base_dir)
-                if content_root:
-                    dest = os.path.join(content_root, relative, name)
-                else:
-                    dest = os.path.join(relative, name)
-                zip_file.write(full_name, dest)
 
 
 def create_zip_file(file_path, zip_file=None, get_content=False, content_root=None, mode="w"):
