@@ -1310,24 +1310,45 @@ def create_secret(secretsmanager_client):
         secretsmanager_client.delete_secret(SecretId=item)
 
 
+# TODO Figure out how to make cert creation tests pass against AWS.
+#
+# We would like to have localstack tests to pass not just against localstack, but also against AWS to make sure
+# our emulation is correct. Unfortunately, with certificate creation there are some issues.
+#
+# In AWS newly created ACM certificates have to be validated either by email or by DNS. The latter is
+# by adding some CNAME records as requested by ASW in response to a certificate request.
+# For testing purposes the DNS one seems to be easier, at least as long as DNS is handled by Region53 AWS DNS service.
+#
+# The other possible option is to use IAM certificates instead of ACM ones. Those just have to be uploaded from files
+# created by openssl etc. Not sure if there are other issues after that.
+#
+# The third option might be having in AWS some certificates created in advance - so they do not require validation
+# and can be easily used in tests. The issie with such an approach is that for AppSync, for example, in order to
+# register a domain name (https://docs.aws.amazon.com/appsync/latest/APIReference/API_CreateDomainName.html),
+# the domain name in the API request has to match the domain name used in certificate creation. Which means that with
+# pre-created certificates we would have to use specific domain names instead of random ones.
 @pytest.fixture
-def acm_request_certificate(acm_client):
+def acm_request_certificate():
     certificate_arns = []
 
     def factory(**kwargs) -> str:
         if "DomainName" not in kwargs:
             kwargs["DomainName"] = f"test-domain-{short_uid()}.localhost.localstack.cloud"
 
+        region_name = kwargs.pop("region_name", None)
+        acm_client = _client("acm", region_name)
+
         response = acm_client.request_certificate(**kwargs)
         created_certificate_arn = response["CertificateArn"]
-        certificate_arns.append(created_certificate_arn)
+        certificate_arns.append((created_certificate_arn, region_name))
         return created_certificate_arn
 
     yield factory
 
     # cleanup
-    for certificate_arn in certificate_arns:
+    for certificate_arn, region_name in certificate_arns:
         try:
+            acm_client = _client("acm", region_name)
             acm_client.delete_certificate(CertificateArn=certificate_arn)
         except Exception as e:
             LOG.debug("error cleaning up certificate %s: %s", certificate_arn, e)
