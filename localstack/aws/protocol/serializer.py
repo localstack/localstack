@@ -88,20 +88,12 @@ from typing import Any, Iterable, Iterator, Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
 from boto.utils import ISO8601
-from botocore.model import (
-    ListShape,
-    MapShape,
-    NoShapeFoundError,
-    OperationModel,
-    ServiceModel,
-    Shape,
-    StructureShape,
-)
+from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
 from moto.core.utils import gen_amzn_requestid_long
 
-from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
+from localstack.aws.api import HttpResponse, ServiceException
 from localstack.utils.common import to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -214,51 +206,14 @@ class ResponseSerializer(abc.ABC):
         """
         # TODO implement streaming error serialization
         serialized_response = self._create_default_response(operation_model)
-        if isinstance(error, CommonServiceException):
-            # Not all possible exceptions are contained in the service's specification.
-            # Therefore, service implementations can also throw a "CommonServiceException" to raise arbitrary /
-            # non-specified exceptions (where the developer needs to define the data which would usually be taken from
-            # the specification, like the "Code").
-            code = error.code
-            sender_fault = error.sender_fault
-            status_code = error.status_code
-            shape = None
-        else:
-            # It's not a CommonServiceException, the exception is being serialized based on the specification
+        if not error or not isinstance(error, ServiceException):
+            raise ProtocolSerializerError(
+                f"Error to serialize ({error.__class__.__name__ if error else None}) is not a ServiceException."
+            )
+        shape = operation_model.service_model.shape_for_error_code(error.code)
+        serialized_response.status_code = error.status_code
 
-            # The shape name is equal to the class name (since the classes are generated from the shape's name)
-            error_shape_name = error.__class__.__name__
-            # Lookup the corresponding error shape in the operation model
-            try:
-                shape = operation_model.service_model.shape_for(error_shape_name)
-                if not shape.metadata.get("exception", False):
-                    raise ProtocolSerializerError(
-                        f"The given error ({error_shape_name}) corresponds to a non-exception"
-                        f"shape."
-                    )
-            except NoShapeFoundError as e:
-                raise ProtocolSerializerError(
-                    f"Error to serialize ({error_shape_name}) neither is a CommonServiceException, nor is its error "
-                    f"shape contained in the service's specification ({operation_model.service_model.service_name})."
-                ) from e
-
-            error_spec = shape.metadata.get("error", {})
-            status_code = error_spec.get("httpStatusCode")
-
-            # If the code is not explicitly set, it's typically the shape's name
-            code = error_spec.get("code", shape.name)
-
-            # The senderFault is only set if the "senderFault" is true
-            # (there are no examples which show otherwise)
-            sender_fault = error_spec.get("senderFault")
-
-        # Some specifications do not contain the httpStatusCode field.
-        # These errors typically have the http status code 400.
-        serialized_response.status_code = status_code or 400
-
-        self._serialize_error(
-            error, code, sender_fault, serialized_response, shape, operation_model
-        )
+        self._serialize_error(error, serialized_response, shape, operation_model)
         serialized_response = self._prepare_additional_traits_in_response(
             serialized_response, operation_model
         )
@@ -290,10 +245,8 @@ class ResponseSerializer(abc.ABC):
     def _serialize_error(
         self,
         error: ServiceException,
-        code: str,
-        sender_fault: bool,
         response: HttpResponse,
-        shape: Shape,
+        shape: StructureShape,
         operation_model: OperationModel,
     ) -> None:
         raise NotImplementedError
@@ -539,13 +492,10 @@ class BaseXMLResponseSerializer(ResponseSerializer):
     def _serialize_error(
         self,
         error: ServiceException,
-        code: str,
-        sender_fault: bool,
         response: HttpResponse,
-        shape: Shape,
+        shape: StructureShape,
         operation_model: OperationModel,
     ) -> None:
-        # TODO handle error shapes with members
         # Check if we need to add a namespace
         attr = (
             {"xmlns": operation_model.metadata.get("xmlNamespace")}
@@ -553,21 +503,43 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             else {}
         )
         root = ETree.Element("ErrorResponse", attr)
+
         error_tag = ETree.SubElement(root, "Error")
-        self._add_error_tags(code, error, error_tag, sender_fault)
+        self._add_error_tags(error, error_tag)
         request_id = ETree.SubElement(root, "RequestId")
         request_id.text = gen_amzn_requestid_long()
+
+        if shape:
+            params = {}
+            for member in shape.members:
+                if hasattr(error, member):
+                    params[member] = getattr(error, member)
+                elif member.lower() in ["code", "message", "type"] and hasattr(
+                    error, member.lower()
+                ):
+                    # Default error message fields can sometimes have different casing in the specs
+                    params[member] = getattr(error, member.lower())
+
+            # If there is an error shape with members which should be set, they need to be added to the node
+            if params:
+                # Serialize the remaining params
+                root_name = shape.serialization.get("name", shape.name)
+                pseudo_root = ETree.Element("")
+                self._serialize(shape, params, pseudo_root, root_name)
+                real_root = list(pseudo_root)[0]
+                # Add the child elements to the already created root error element
+                for child in list(real_root):
+                    root.append(child)
+
         response.set_response(self._encode_payload(self._xml_to_string(root)))
 
-    def _add_error_tags(
-        self, code: str, error: ServiceException, error_tag: ETree.Element, sender_fault: bool
-    ) -> None:
+    def _add_error_tags(self, error: ServiceException, error_tag: ETree.Element) -> None:
         code_tag = ETree.SubElement(error_tag, "Code")
-        code_tag.text = code
+        code_tag.text = error.code
         message = self._get_error_message(error)
         if message:
             self._default_serialize(error_tag, message, None, "Message")
-        if sender_fault:
+        if error.sender_fault:
             # The sender fault is either not set or "Sender"
             self._default_serialize(error_tag, "Sender", None, "Type")
 
@@ -941,10 +913,8 @@ class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSeria
     def _serialize_error(
         self,
         error: ServiceException,
-        code: str,
-        sender_fault: bool,
         response: HttpResponse,
-        shape: Shape,
+        shape: StructureShape,
         operation_model: OperationModel,
     ) -> None:
         # It wouldn't be a spec if there wouldn't be any exceptions.
@@ -956,12 +926,12 @@ class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSeria
                 else None
             )
             root = ETree.Element("Error", attr)
-            self._add_error_tags(code, error, root, sender_fault)
+            self._add_error_tags(error, root)
             request_id = ETree.SubElement(root, "RequestId")
             request_id.text = gen_amzn_requestid_long()
             response.set_response(self._encode_payload(self._xml_to_string(root)))
         else:
-            super()._serialize_error(error, code, sender_fault, response, shape, operation_model)
+            super()._serialize_error(error, response, shape, operation_model)
 
 
 class QueryResponseSerializer(BaseXMLResponseSerializer):
@@ -1038,10 +1008,8 @@ class EC2ResponseSerializer(QueryResponseSerializer):
     def _serialize_error(
         self,
         error: ServiceException,
-        code: str,
-        sender_fault: bool,
         response: HttpResponse,
-        shape: Shape,
+        shape: StructureShape,
         operation_model: OperationModel,
     ) -> None:
         # EC2 errors look like:
@@ -1063,7 +1031,7 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         )
         root = ETree.Element("Errors", attr)
         error_tag = ETree.SubElement(root, "Error")
-        self._add_error_tags(code, error, error_tag, sender_fault)
+        self._add_error_tags(error, error_tag)
         request_id = ETree.SubElement(root, "RequestID")
         request_id.text = gen_amzn_requestid_long()
         response.set_response(self._encode_payload(self._xml_to_string(root)))
@@ -1098,22 +1066,32 @@ class JSONResponseSerializer(ResponseSerializer):
     def _serialize_error(
         self,
         error: ServiceException,
-        code: str,
-        sender_fault: bool,
         response: HttpResponse,
-        shape: Shape,
+        shape: StructureShape,
         operation_model: OperationModel,
     ) -> None:
-        # TODO handle error shapes with members
         # TODO implement different service-specific serializer configurations
         #   - currently we set both, the `__type` member as well as the `X-Amzn-Errortype` header
         #   - the specification defines that it's either the __type field OR the header
         #     (https://awslabs.github.io/smithy/1.0/spec/aws/aws-json-1_1-protocol.html#operation-error-serialization)
-        body = {"__type": code}
-        response.headers["X-Amzn-Errortype"] = code
+        body = {"__type": error.code}
+        response.headers["X-Amzn-Errortype"] = error.code
         message = self._get_error_message(error)
         if message is not None:
             body["message"] = message
+
+        if shape:
+            remaining_params = {}
+            for member in shape.members:
+                if hasattr(error, member):
+                    remaining_params[member] = getattr(error, member)
+                elif member.lower() in ["code", "message", "type"] and hasattr(
+                    error, member.lower()
+                ):
+                    # Default error message fields can sometimes have different casing in the specs
+                    remaining_params[member] = getattr(error, member.lower())
+            self._serialize(body, remaining_params, shape)
+
         response.set_json(body)
 
     def _serialize_response(

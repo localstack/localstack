@@ -146,7 +146,17 @@ class ShapeNode:
         elif not self.shape.members:
             output.write("    pass\n")
 
-        for k, v in self.shape.members.items():
+        # Avoid generating members for the common error members:
+        # - The message will always be the exception message (first argument of the exception class init)
+        # - The code is already set above
+        # - The type is the sender_fault which is already set above
+        remaining_members = {
+            k: v
+            for k, v in self.shape.members.items()
+            if not self.is_exception or k.lower() not in ["message", "code", "type"]
+        }
+
+        for k, v in remaining_members.items():
             if k in self.shape.required_members:
                 if v.serialization.get("eventstream"):
                     output.write(f"    {k}: Iterator[{q}{to_valid_python_name(v.name)}{q}]\n")

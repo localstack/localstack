@@ -235,50 +235,42 @@ class ConcurrentModificationException(ServiceException):
     code: str = "ConcurrentModificationException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class InvalidArgumentException(ServiceException):
     code: str = "InvalidArgumentException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class InvalidKMSResourceException(ServiceException):
     code: str = "InvalidKMSResourceException"
     sender_fault: bool = False
     status_code: int = 400
-    code: Optional[ErrorCode]
-    message: Optional[ErrorMessage]
 
 
 class LimitExceededException(ServiceException):
     code: str = "LimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ResourceInUseException(ServiceException):
     code: str = "ResourceInUseException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ServiceUnavailableException(ServiceException):
     code: str = "ServiceUnavailableException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class AmazonopensearchserviceBufferingHints(TypedDict, total=False):

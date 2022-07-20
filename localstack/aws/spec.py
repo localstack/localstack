@@ -1,9 +1,9 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, List, Optional
+from typing import Dict, Generator, List, Optional, Tuple
 
 from botocore.loaders import create_loader
-from botocore.model import ServiceModel
+from botocore.model import OperationModel, ServiceModel
 
 loader = create_loader()
 
@@ -20,6 +20,18 @@ def load_service(service: ServiceName, version: str = None, model_type="service-
     """
     service_description = loader.load_service_model(service, model_type, version)
     return ServiceModel(service_description, service)
+
+
+def iterate_service_operations() -> Generator[Tuple[ServiceModel, OperationModel], None, None]:
+    """
+    Returns one record per operation in the AWS service spec, where the first item is the service model the operation
+    belongs to, and the second is the operation model.
+
+    :return: an iterable
+    """
+    for service in list_services():
+        for op_name in service.operation_names:
+            yield service, service.operation_model(op_name)
 
 
 class ServiceCatalog:

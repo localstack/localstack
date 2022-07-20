@@ -346,7 +346,6 @@ class BaseException(ServiceException):
     code: str = "BaseException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ConflictException(ServiceException):

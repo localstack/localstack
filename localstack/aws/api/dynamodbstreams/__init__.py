@@ -61,35 +61,30 @@ class ExpiredIteratorException(ServiceException):
     code: str = "ExpiredIteratorException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class InternalServerError(ServiceException):
     code: str = "InternalServerError"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class LimitExceededException(ServiceException):
     code: str = "LimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class TrimmedDataAccessException(ServiceException):
     code: str = "TrimmedDataAccessException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class AttributeValue(TypedDict, total=False):

@@ -54,56 +54,48 @@ class ExpiredTokenException(ServiceException):
     code: str = "ExpiredTokenException"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[expiredIdentityTokenMessage]
 
 
 class IDPCommunicationErrorException(ServiceException):
     code: str = "IDPCommunicationError"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[idpCommunicationErrorMessage]
 
 
 class IDPRejectedClaimException(ServiceException):
     code: str = "IDPRejectedClaim"
     sender_fault: bool = True
     status_code: int = 403
-    message: Optional[idpRejectedClaimMessage]
 
 
 class InvalidAuthorizationMessageException(ServiceException):
     code: str = "InvalidAuthorizationMessageException"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[invalidAuthorizationMessage]
 
 
 class InvalidIdentityTokenException(ServiceException):
     code: str = "InvalidIdentityToken"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[invalidIdentityTokenMessage]
 
 
 class MalformedPolicyDocumentException(ServiceException):
     code: str = "MalformedPolicyDocument"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[malformedPolicyDocumentMessage]
 
 
 class PackedPolicyTooLargeException(ServiceException):
     code: str = "PackedPolicyTooLarge"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[packedPolicyTooLargeMessage]
 
 
 class RegionDisabledException(ServiceException):
     code: str = "RegionDisabledException"
     sender_fault: bool = True
     status_code: int = 403
-    message: Optional[regionDisabledMessage]
 
 
 tagKeyListType = List[tagKeyType]

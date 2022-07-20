@@ -51,42 +51,36 @@ class ConcurrentModificationException(ServiceException):
     code: str = "ConcurrentModificationException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class ConstraintViolationException(ServiceException):
     code: str = "ConstraintViolationException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class InternalServiceException(ServiceException):
     code: str = "InternalServiceException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class InvalidParameterException(ServiceException):
     code: str = "InvalidParameterException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class PaginationTokenExpiredException(ServiceException):
     code: str = "PaginationTokenExpiredException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 class ThrottledException(ServiceException):
     code: str = "ThrottledException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ExceptionMessage]
 
 
 TagKeyList = List[TagKey]

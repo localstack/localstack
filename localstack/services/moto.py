@@ -17,22 +17,16 @@ from localstack import config
 from localstack.aws.api import (
     CommonServiceException,
     HttpRequest,
-    HttpResponse,
     RequestContext,
     ServiceRequest,
     ServiceResponse,
 )
-from localstack.aws.client import parse_response
-from localstack.aws.forwarder import (
-    ForwardingFallbackDispatcher,
-    HttpBackendResponse,
-    create_aws_request_context,
-)
+from localstack.aws.client import parse_response, raise_service_exception
+from localstack.aws.forwarder import ForwardingFallbackDispatcher, create_aws_request_context
 from localstack.aws.skeleton import DispatchTable
 from localstack.http import Response
 
-MotoResponse = HttpBackendResponse
-MotoDispatcher = Callable[[HttpRequest, str, dict], MotoResponse]
+MotoDispatcher = Callable[[HttpRequest, str, dict], Response]
 
 user_agent = f"Localstack/{localstack_version} Python/{sys.version.split(' ')[0]}"
 
@@ -43,24 +37,15 @@ def call_moto(context: RequestContext, include_response_metadata=False) -> Servi
 
     :param context: the request context
     :param include_response_metadata: whether to include botocore's "ResponseMetadata" attribute
-    :return: a serialized AWS ServiceResponse (same as boto3 would return)
+    :return: an AWS ServiceResponse (same as a service provider would return)
+    :raises ServiceException: if moto returned an error response
     """
     status, headers, content = dispatch_to_moto(context)
+    response = Response(content, status, headers)
+    parsed_response = parse_response(context.operation, response, include_response_metadata)
+    raise_service_exception(response, parsed_response)
 
-    response = parse_response(context.operation, Response(content, status, headers))
-
-    if status >= 301:
-        error = response["Error"]
-        raise CommonServiceException(
-            code=error.get("Code", "UnknownError"),
-            status_code=status,
-            message=error.get("Message", ""),
-        )
-
-    if not include_response_metadata:
-        response.pop("ResponseMetadata", None)
-
-    return response
+    return parsed_response
 
 
 def call_moto_with_request(
@@ -73,7 +58,7 @@ def call_moto_with_request(
 
     :param context: the original request context
     :param service_request: the dictionary containing the service request parameters
-    :return: a serialized AWS ServiceResponse (same as boto3 would return)
+    :return: an ASF ServiceResponse (same as a service provider would return)
     """
     local_context = create_aws_request_context(
         service_name=context.service.service_name,
@@ -82,23 +67,23 @@ def call_moto_with_request(
         region=context.region,
     )
 
-    local_context.request.headers.extend(context.request.headers)
+    local_context.request.headers.update(context.request.headers)
 
     return call_moto(local_context)
 
 
-def proxy_moto(context: RequestContext, service_request: ServiceRequest = None) -> HttpResponse:
+def proxy_moto(context: RequestContext, service_request: ServiceRequest = None) -> Response:
     """
     Similar to ``call``, only that ``proxy`` does not parse the HTTP response into a ServiceResponse, but instead
     returns directly the HTTP response. This can be useful to pass through moto's response directly to the client.
 
     :param context: the request context
     :param service_request: currently not being used, added to satisfy ServiceRequestHandler contract
-    :return: the HttpResponse from moto
+    :return: the Response from moto
     """
     status, headers, content = dispatch_to_moto(context)
 
-    return HttpResponse(response=content, status=status, headers=headers)
+    return Response(response=content, status=status, headers=headers)
 
 
 def MotoFallbackDispatcher(provider: object) -> DispatchTable:
@@ -113,7 +98,7 @@ def MotoFallbackDispatcher(provider: object) -> DispatchTable:
     return ForwardingFallbackDispatcher(provider, proxy_moto)
 
 
-def dispatch_to_moto(context: RequestContext) -> MotoResponse:
+def dispatch_to_moto(context: RequestContext) -> Response:
     """
     Internal method to dispatch the request to moto without changing moto's dispatcher output.
     :param context: the request context

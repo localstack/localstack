@@ -78,17 +78,7 @@ def dummy_wsgi_environment(
         environ["REMOTE_ADDR"] = remote_addr
 
     if headers:
-        for k, v in headers.items():
-            name = k.upper().replace("-", "_")
-
-            if name not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
-                name = f"HTTP_{name}"
-
-            val = v
-            if name in environ:
-                val = environ[name] + "," + val
-
-            environ[name] = val
+        set_environment_headers(environ, headers)
 
     if "CONTENT_LENGTH" not in environ:
         # try to determine content length from body
@@ -105,6 +95,32 @@ def dummy_wsgi_environment(
     environ["wsgi.run_once"] = False
 
     return environ
+
+
+def set_environment_headers(environ: "WSGIEnvironment", headers: Union[Dict, Headers]):
+    # Collect all the headers to set
+    # (this might be is accessing the environment, this needs to be done before removing the items from the env)
+    new_headers = {}
+    for k, v in headers.items():
+        name = k.upper().replace("-", "_")
+
+        if name not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
+            name = f"HTTP_{name}"
+
+        val = v
+        if name in new_headers:
+            val = new_headers[name] + "," + val
+
+        new_headers[name] = val
+
+    # Clear the HTTP headers in the env
+    header_keys = [name for name in environ if name.startswith("HTTP_")]
+    for name in header_keys:
+        environ.pop(name, None)
+
+    # Set the new headers in the env
+    for k, v in new_headers.items():
+        environ[k] = v
 
 
 class Request(WerkzeugRequest):
