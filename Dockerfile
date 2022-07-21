@@ -260,6 +260,9 @@ ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
 ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
 
+# clean up some libs (e.g., Maven should be no longer required after "make init" has completed)
+RUN rm -rf /usr/share/maven
+
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678
 

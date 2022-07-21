@@ -502,7 +502,7 @@ def install_stepfunctions_local():
         patch_url = f"{SFN_PATCH_URL_PREFIX}/{patch_class}"
         add_file_to_jar(patch_class, patch_url, target_jar=INSTALL_PATH_STEPFUNCTIONS_JAR)
 
-    # special case for Manifest file - extract first, replace content, then update in JAR file
+    # add additional classpath entries to JAR manifest file
     classpath = " ".join([os.path.basename(jar) for jar in JAR_URLS])
     update_jar_manifest(
         "StepFunctionsLocal.jar",
@@ -599,7 +599,8 @@ def update_jar_manifest(jar_file_name: str, parent_dir: str, search: str, replac
     if replace not in manifest:
         manifest = manifest.replace(search, replace, 1)
         save_file(manifest_file, manifest)
-        run(["zip", "-u", jar_file_name, manifest_file_path], cwd=parent_dir)
+        run(["zip", jar_file_name, manifest_file_path], cwd=parent_dir)
+    rm_rf(manifest_file)
 
 
 def install_amazon_kinesis_client_libs():
