@@ -1,14 +1,16 @@
 """Utils to process AWS requests as a client."""
 import io
 import logging
+from datetime import datetime
 from typing import Dict, Iterable, Optional
 
 from botocore.model import OperationModel
-from botocore.parsers import ResponseParser
-from botocore.parsers import create_parser as create_response_parser
+from botocore.parsers import ResponseParser, ResponseParserFactory
 from werkzeug import Response
 
 from localstack.aws.api import CommonServiceException, ServiceException, ServiceResponse
+from localstack.runtime import hooks
+from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
 
@@ -85,6 +87,38 @@ def _add_modeled_error_fields(
     parsed_response.update(modeled_parse)
 
 
+def _cbor_timestamp_parser(value):
+    return datetime.fromtimestamp(value / 1000)
+
+
+def _cbor_blob_parser(value):
+    return bytes(value)
+
+
+@hooks.on_infra_start()
+def _patch_botocore_json_parser():
+    from botocore.parsers import BaseJSONParser
+
+    @patch(BaseJSONParser._parse_body_as_json)
+    def _parse_body_as_json(fn, self, body_contents):
+        """
+        botocore does not support CBOR encoded response parsing. Since we use the botocore parsers
+        to parse responses from external backends (like kinesalite), we need to patch botocore to
+        try CBOR decoding in case the JSON decoding fails.
+        """
+        try:
+            return fn(self, body_contents)
+        except UnicodeDecodeError as json_exception:
+            import cbor2
+
+            try:
+                LOG.debug("botocore failed decoding JSON. Trying to decode as CBOR.")
+                return cbor2.loads(body_contents)
+            except Exception as cbor_exception:
+                LOG.debug("CBOR fallback decoding failed.")
+                raise cbor_exception from json_exception
+
+
 def parse_response(
     operation: OperationModel, response: Response, include_response_metadata: bool = True
 ) -> ServiceResponse:
@@ -117,7 +151,14 @@ def parse_response(
     else:
         response_dict["body"] = response.data
 
-    parser = create_response_parser(operation.service_model.protocol)
+    factory = ResponseParserFactory()
+    if response.content_type and response.content_type.startswith("application/x-amz-cbor"):
+        # botocore cannot handle CBOR encoded responses (because it never sends them), we need to modify the parser
+        factory.set_parser_defaults(
+            timestamp_parser=_cbor_timestamp_parser, blob_parser=_cbor_blob_parser
+        )
+
+    parser = factory.create_parser(operation.service_model.protocol)
     parsed_response = parser.parse(response_dict, operation.output_shape)
 
     if response.status_code >= 301:
