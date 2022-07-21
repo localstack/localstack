@@ -4,7 +4,7 @@ import os
 import tarfile
 import zipfile
 from subprocess import Popen
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 from .run import is_command_available, run
 from .strings import truncate
@@ -74,14 +74,20 @@ def untar(path: str, target_dir: str):
         tar.extractall(path=target_dir)
 
 
-def create_zip_file_cli(source_path, base_dir, zip_file):
-    # Using the native zip command can be an order of magnitude faster on Travis-CI
-    source = "*" if source_path == base_dir else os.path.basename(source_path)
-    command = "cd %s; zip -r %s %s" % (base_dir, zip_file, source)
-    run(command)
+def create_zip_file_cli(source_path: str, base_dir: str, zip_file: str):
+    """
+    Creates a zip archive by using the native zip command. The native command can be an order of magnitude faster in CI
+    """
+    source = "." if source_path == base_dir else os.path.basename(source_path)
+    run(["zip", "-r", zip_file, source], cwd=base_dir)
 
 
-def create_zip_file_python(source_path, base_dir, zip_file, mode="w", content_root=None):
+def create_zip_file_python(
+    base_dir: str,
+    zip_file: str,
+    mode: Literal["r", "w", "x", "a"] = "w",
+    content_root: Optional[str] = None,
+):
     with zipfile.ZipFile(zip_file, mode) as zip_file:
         for root, dirs, files in os.walk(base_dir):
             for name in files:
