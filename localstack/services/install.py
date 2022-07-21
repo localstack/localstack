@@ -568,17 +568,16 @@ def install_dynamodb_local():
 
     # patch/update libraries with known CVEs
     replacements = {
-        os.path.join(
-            ddb_local_lib_dir, "jackson-databind-*.jar"
-        ): f"{MAVEN_REPO_URL}/com/fasterxml/jackson/core/jackson-databind/2.13.3/jackson-databind-2.13.3.jar"
+        "jackson-databind-*.jar": f"{MAVEN_REPO_URL}/com/fasterxml/jackson/core/jackson-databind/2.13.3/jackson-databind-2.13.3.jar",
+        "slf4j-ext-*.jar": f"{MAVEN_REPO_URL}/org/slf4j/slf4j-ext/1.8.0-beta4/slf4j-ext-1.8.0-beta4.jar",
     }
     for local, remote in replacements.items():
-        matches = glob.glob(local)
-        print(matches)
+        local_path = os.path.join(ddb_local_lib_dir, local)
+        matches = glob.glob(local_path)
         if not matches:
             continue
         os.remove(matches[0])
-        parent_dir = os.path.dirname(local)
+        parent_dir = os.path.dirname(local_path)
         download(remote, os.path.join(parent_dir, os.path.basename(remote)))
         # print("matches", matches)
 
