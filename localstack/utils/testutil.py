@@ -8,7 +8,12 @@ import shutil
 import tempfile
 import time
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import boto3
 import requests

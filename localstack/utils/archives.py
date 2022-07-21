@@ -4,7 +4,12 @@ import os
 import tarfile
 import zipfile
 from subprocess import Popen
-from typing import Literal, Optional, Union
+from typing import Optional, Union
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 from .run import is_command_available, run
 from .strings import truncate
