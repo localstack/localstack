@@ -17,6 +17,9 @@ from .strings import truncate
 LOG = logging.getLogger(__name__)
 
 
+StrPath = Union[str, os.PathLike]
+
+
 def is_zip_file(content):
     stream = io.BytesIO(content)
     return zipfile.is_zipfile(stream)
@@ -79,7 +82,7 @@ def untar(path: str, target_dir: str):
         tar.extractall(path=target_dir)
 
 
-def create_zip_file_cli(source_path: str, base_dir: str, zip_file: str):
+def create_zip_file_cli(source_path: StrPath, base_dir: StrPath, zip_file: StrPath):
     """
     Creates a zip archive by using the native zip command. The native command can be an order of magnitude faster in CI
     """
@@ -88,8 +91,8 @@ def create_zip_file_cli(source_path: str, base_dir: str, zip_file: str):
 
 
 def create_zip_file_python(
-    base_dir: str,
-    zip_file: str,
+    base_dir: StrPath,
+    zip_file: StrPath,
     mode: Literal["r", "w", "x", "a"] = "w",
     content_root: Optional[str] = None,
 ):
