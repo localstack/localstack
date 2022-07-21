@@ -573,19 +573,12 @@ def install_dynamodb_local():
         download(JAVASSIST_JAR_URL, JAVASSIST_JAR_PATH)
 
     # patch/update libraries with known CVEs
-    replacements = {
-        "jackson-databind-*.jar": f"{MAVEN_REPO_URL}/com/fasterxml/jackson/core/jackson-databind/2.13.3/jackson-databind-2.13.3.jar",
-        "slf4j-ext-*.jar": f"{MAVEN_REPO_URL}/org/slf4j/slf4j-ext/1.8.0-beta4/slf4j-ext-1.8.0-beta4.jar",
-    }
-    for local, remote in replacements.items():
-        local_path = os.path.join(ddb_local_lib_dir, local)
-        matches = glob.glob(local_path)
-        if not matches:
-            continue
-        os.remove(matches[0])
-        parent_dir = os.path.dirname(local_path)
-        download(remote, os.path.join(parent_dir, os.path.basename(remote)))
-        # print("matches", matches)
+    upgrade_jar_file(
+        ddb_local_lib_dir,
+        "jackson-databind-*.jar",
+        "com/fasterxml/jackson/core/jackson-databind:2.13.3",
+    )
+    upgrade_jar_file(ddb_local_lib_dir, "slf4j-ext-*.jar", "org/slf4j/slf4j-ext:1.8.0-beta4")
 
     # ensure that javassist.jar is in the manifest classpath
     update_jar_manifest(
@@ -610,7 +603,28 @@ def update_jar_manifest(
             manifest = manifest.replace(search, replace, 1)
         save_file(manifest_file, manifest)
         run(["zip", jar_file_name, manifest_file_path], cwd=parent_dir)
-    rm_rf(manifest_file)
+    os.remove(manifest_file)
+
+
+def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
+    """
+    Upgrade the matching Java JAR file in a local directory with the given Maven asset
+    :param base_dir: base directory to search the JAR file to replace in
+    :param file_glob: glob pattern for the JAR file to replace
+    :param maven_asset: name of Maven asset to download, in the form "<qualified_name>:<version>"
+    """
+
+    local_path = os.path.join(base_dir, file_glob)
+    matches = glob.glob(local_path)
+    if not matches:
+        return
+    for match in matches:
+        os.remove(match)
+    parent_dir = os.path.dirname(local_path)
+    maven_asset = maven_asset.replace(":", "/")
+    parts = maven_asset.split("/")
+    maven_asset_url = f"{MAVEN_REPO_URL}/{maven_asset}/{parts[-2]}-{parts[-1]}.jar"
+    download(maven_asset_url, os.path.join(parent_dir, os.path.basename(maven_asset_url)))
 
 
 def install_amazon_kinesis_client_libs():
@@ -621,6 +635,7 @@ def install_amazon_kinesis_client_libs():
         if not os.path.exists(tmp_archive):
             download(STS_JAR_URL, tmp_archive)
         shutil.copy(tmp_archive, INSTALL_DIR_KCL)
+
     # Compile Java files
     from localstack.utils.kinesis import kclipy_helper
 
@@ -634,6 +649,13 @@ def install_amazon_kinesis_client_libs():
         run(
             f'javac -source {JAVAC_TARGET_VERSION} -target {JAVAC_TARGET_VERSION} -cp "{classpath}" {java_files}'
         )
+
+    # patch/update libraries with known CVEs
+    upgrade_jar_file(
+        ".venv/lib/python3.10/site-packages/amazon_kclpy/jars",
+        "jackson-databind-*.jar",
+        "com/fasterxml/jackson/core/jackson-databind:2.13.3",
+    )
 
 
 def install_lambda_java_libs():
