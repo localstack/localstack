@@ -433,11 +433,34 @@ class TestCloudwatch:
             sns_client.unsubscribe(SubscriptionArn=subscription_ok["SubscriptionArn"])
             cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..evaluatedDatapoints",
+            "$..startDate",  # only sometimes visible? part of StateReasonData
+            "$..alarm-triggered-describe.MetricAlarms[0].StateReason",  # reason contains datapoint + date
+            "$..alarm-triggered-sqs-msg.NewStateReason",
+        ]
+    )
     def test_put_metric_alarm(
-        self, sns_client, cloudwatch_client, sqs_client, sns_create_topic, sqs_create_queue
+        self,
+        sns_client,
+        cloudwatch_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        snapshot,
     ):
         sns_topic_alarm = sns_create_topic()
         topic_arn_alarm = sns_topic_alarm["TopicArn"]
+
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+        snapshot.add_transformer(
+            snapshot.transform.regex(topic_arn_alarm.split(":")[-1], "<topic_arn>"), priority=2
+        )
+        # as we add metrics, we use a unique namespace to ensure the test runs on AWS
+        namespace = f"test-nsp-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(namespace, "<metric-namespace>"))
 
         sqs_queue = sqs_create_queue()
         arn_queue = sqs_client.get_queue_attributes(
@@ -450,7 +473,6 @@ class TestCloudwatch:
         )
         metric_name = "my-metric1"
         dimension = [{"Name": "InstanceId", "Value": "abc"}]
-        namespace = "test/nsp"
         alarm_name = f"test-alarm-{short_uid()}"
 
         try:
@@ -493,7 +515,8 @@ class TestCloudwatch:
                 ComparisonOperator="GreaterThanThreshold",
                 TreatMissingData="notBreaching",
             )
-
+            response = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
+            snapshot.match("describe-alarm", response)
             retry(
                 _check_alarm_triggered,
                 retries=60,
@@ -504,6 +527,8 @@ class TestCloudwatch:
                 sqs_queue=sqs_queue,
                 alarm_name=alarm_name,
                 cloudwatch_client=cloudwatch_client,
+                snapshot=snapshot,
+                identifier="alarm-triggered",
             )
 
             # missing are treated as not breaching, so we should reach OK state again
@@ -517,6 +542,8 @@ class TestCloudwatch:
                 sqs_queue=sqs_queue,
                 alarm_name=alarm_name,
                 cloudwatch_client=cloudwatch_client,
+                snapshot=snapshot,
+                identifier="ok-triggered",
             )
 
         finally:
@@ -524,7 +551,80 @@ class TestCloudwatch:
             cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Region", "$..evaluatedDatapoints"])
+    @pytest.mark.skip_snapshot_verify(paths=["$..evaluatedDatapoints"])
+    def test_breaching_alarm_actions(
+        self,
+        sns_client,
+        cloudwatch_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        snapshot,
+    ):
+        sns_topic_alarm = sns_create_topic()
+        topic_arn_alarm = sns_topic_alarm["TopicArn"]
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+        snapshot.add_transformer(
+            snapshot.transform.regex(topic_arn_alarm.split(":")[-1], "<topic_arn>"), priority=2
+        )
+
+        sqs_queue = sqs_create_queue()
+        arn_queue = sqs_client.get_queue_attributes(
+            QueueUrl=sqs_queue, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        # required for AWS:
+        sqs_client.set_queue_attributes(
+            QueueUrl=sqs_queue,
+            Attributes={"Policy": get_sqs_policy(arn_queue, topic_arn_alarm)},
+        )
+        metric_name = "my-metric101"
+        dimension = [{"Name": "InstanceId", "Value": "abc"}]
+        namespace = "test/breaching-alarm"
+        alarm_name = f"test-alarm-{short_uid()}"
+
+        try:
+            subscription = sns_client.subscribe(
+                TopicArn=topic_arn_alarm, Protocol="sqs", Endpoint=arn_queue
+            )
+            snapshot.match("cloudwatch_sns_subscription", subscription)
+            cloudwatch_client.put_metric_alarm(
+                AlarmName=alarm_name,
+                AlarmDescription="testing cloudwatch alarms",
+                MetricName=metric_name,
+                Namespace=namespace,
+                Period=10,
+                Threshold=2,
+                Dimensions=dimension,
+                Unit="Seconds",
+                Statistic="Average",
+                OKActions=[topic_arn_alarm],
+                AlarmActions=[topic_arn_alarm],
+                EvaluationPeriods=2,
+                ComparisonOperator="GreaterThanThreshold",
+                TreatMissingData="breaching",
+            )
+            response = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
+            assert response["MetricAlarms"][0]["ActionsEnabled"]
+
+            retry(
+                _check_alarm_triggered,
+                retries=80,
+                sleep=3.0,
+                sleep_before=5,
+                expected_state="ALARM",
+                sqs_client=sqs_client,
+                sqs_queue=sqs_queue,
+                alarm_name=alarm_name,
+                cloudwatch_client=cloudwatch_client,
+                snapshot=snapshot,
+                identifier="alarm-1",
+            )
+
+        finally:
+            sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
+            cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
+
+    @pytest.mark.aws_validated
     def test_enable_disable_alarm_actions(
         self,
         sns_client,
@@ -574,12 +674,15 @@ class TestCloudwatch:
                 AlarmActions=[topic_arn_alarm],
                 EvaluationPeriods=2,
                 ComparisonOperator="GreaterThanThreshold",
-                TreatMissingData="breaching",
+                TreatMissingData="ignore",
             )
             response = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
             assert response["MetricAlarms"][0]["ActionsEnabled"]
             snapshot.match("describe_alarm", response)
 
+            cloudwatch_client.set_alarm_state(
+                AlarmName=alarm_name, StateValue="ALARM", StateReason="testing alarm"
+            )
             retry(
                 _check_alarm_triggered,
                 retries=80,
@@ -591,13 +694,13 @@ class TestCloudwatch:
                 alarm_name=alarm_name,
                 cloudwatch_client=cloudwatch_client,
                 snapshot=snapshot,
-                identifier="alarm-1",
+                identifier="alarm-state",
             )
 
             # disable alarm action
             cloudwatch_client.disable_alarm_actions(AlarmNames=[alarm_name])
             cloudwatch_client.set_alarm_state(
-                AlarmName=alarm_name, StateValue="OK", StateReason="test"
+                AlarmName=alarm_name, StateValue="OK", StateReason="testing OK state"
             )
 
             response = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
@@ -609,15 +712,12 @@ class TestCloudwatch:
                 retries=80,
                 sleep=3.0,
                 sleep_before=5,
-                expected_state="ALARM",
+                expected_state="OK",
                 alarm_name=alarm_name,
                 cloudwatch_client=cloudwatch_client,
                 snapshot=snapshot,
-                identifier="alarm-2-action-disabled",
+                identifier="ok-state-action-disabled",
             )
-            response = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
-            assert response["MetricAlarms"][0]["StateValue"] == "ALARM"
-            assert not response["MetricAlarms"][0]["ActionsEnabled"]
 
             # enable alarm action
             cloudwatch_client.enable_alarm_actions(AlarmNames=[alarm_name])

@@ -188,6 +188,7 @@ class TransformerUtility:
         return [
             TransformerUtility.key_value("AlarmName"),
             KeyValueBasedTransformer(_resource_name_transformer, "SubscriptionArn"),
+            TransformerUtility.key_value("Region", "region-name-full"),
         ]
 
     # TODO add example

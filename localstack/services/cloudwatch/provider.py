@@ -142,7 +142,9 @@ def create_message_response_update_state(alarm, old_state):
         "NewStateValue": alarm.state_value,
         "NewStateReason": alarm.state_reason,
         "StateChangeTime": alarm.state_updated_timestamp,
-        "Region": alarm.region_name,
+        # the long-name for 'region' should be used - as we don't have it, we use the short name
+        # which needs to be slightly changed to make snapshot tests work
+        "Region": alarm.region_name.replace("-", " ").capitalize(),
         "AlarmArn": alarm.alarm_arn,
         "OKActions": alarm.ok_actions or [],
         "AlarmActions": alarm.alarm_actions or [],

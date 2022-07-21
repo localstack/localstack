@@ -30,7 +30,6 @@ STATE_OK = "OK"
 STATE_INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 DEFAULT_REASON = "Alarm Evaluation"
 THRESHOLD_CROSSED = "Threshold Crossed"
-THRESHOLD_OK = "Threshold OK"
 INSUFFICIENT_DATA = "Insufficient Data"
 
 
@@ -308,8 +307,8 @@ def calculate_alarm_state(alarm_arn: str) -> None:
     if empty_datapoints == len(metric_values):
         evaluation_periods = alarm_details["EvaluationPeriods"]
         details_msg = (
-            f"no datapoints were received for {evaluation_periods} periods and "
-            f"{evaluation_periods} missing datapoints were treated as [{treat_missing_data.capitalize()}]."
+            f"no datapoints were received for {evaluation_periods} period{'s' if evaluation_periods > 1 else ''} and "
+            f"{evaluation_periods} missing datapoint{'s were' if evaluation_periods > 1 else ' was'} treated as"
         )
         if treat_missing_data == "missing":
             update_alarm_state(
@@ -317,7 +316,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
                 alarm_name,
                 alarm_state,
                 STATE_INSUFFICIENT_DATA,
-                f"{INSUFFICIENT_DATA}: {details_msg}",
+                f"{INSUFFICIENT_DATA}: {details_msg} [{treat_missing_data.capitalize()}].",
                 state_reason_data=state_reason_data,
             )
         elif treat_missing_data == "breaching":
@@ -326,7 +325,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
                 alarm_name,
                 alarm_state,
                 STATE_ALARM,
-                f"{THRESHOLD_CROSSED}: {details_msg}",
+                f"{THRESHOLD_CROSSED}: {details_msg} [{treat_missing_data.capitalize()}].",
                 state_reason_data=state_reason_data,
             )
         elif treat_missing_data == "notBreaching":
@@ -335,7 +334,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
                 alarm_name,
                 alarm_state,
                 STATE_OK,
-                f"{THRESHOLD_OK}: {details_msg}",
+                f"{THRESHOLD_CROSSED}: {details_msg} [NonBreaching].",
                 state_reason_data=state_reason_data,
             )
         # 'ignore': keep the same state
@@ -382,6 +381,6 @@ def calculate_alarm_state(alarm_arn: str) -> None:
             alarm_name,
             alarm_state,
             STATE_OK,
-            THRESHOLD_OK,
+            THRESHOLD_CROSSED,
             state_reason_data=state_reason_data,
         )
