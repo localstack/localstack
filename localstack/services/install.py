@@ -12,7 +12,7 @@ import tempfile
 import threading
 import time
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 
 import requests
 import semver
@@ -510,6 +510,12 @@ def install_stepfunctions_local():
         "Class-Path: . ",
         f"Class-Path: {classpath} . ",
     )
+    update_jar_manifest(
+        "StepFunctionsLocal.jar",
+        INSTALL_DIR_STEPFUNCTIONS,
+        re.compile("Main-Class: .+"),
+        "Main-Class: cloud.localstack.StepFunctionsStarter",
+    )
 
     # download additional jar libs
     for jar_url in JAR_URLS:
@@ -590,13 +596,18 @@ def install_dynamodb_local():
     )
 
 
-def update_jar_manifest(jar_file_name: str, parent_dir: str, search: str, replace: str):
+def update_jar_manifest(
+    jar_file_name: str, parent_dir: str, search: Union[str, re.Pattern], replace: str
+):
     manifest_file_path = "META-INF/MANIFEST.MF"
     run(["unzip", "-o", jar_file_name, manifest_file_path], cwd=parent_dir)
     manifest_file = os.path.join(parent_dir, manifest_file_path)
     manifest = load_file(manifest_file)
     if replace not in manifest:
-        manifest = manifest.replace(search, replace, 1)
+        if isinstance(search, re.Pattern):
+            manifest = search.sub(replace, manifest, 1)
+        else:
+            manifest = manifest.replace(search, replace, 1)
         save_file(manifest_file, manifest)
         run(["zip", jar_file_name, manifest_file_path], cwd=parent_dir)
     rm_rf(manifest_file)
