@@ -180,12 +180,19 @@ def cmd_stop():
 )
 @publish_invocation
 def cmd_logs(follow: bool):
+    from localstack.utils.bootstrap import LocalstackContainer
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     container_name = config.MAIN_CONTAINER_NAME
+    logfile = LocalstackContainer(container_name).logfile
 
     if not DOCKER_CLIENT.is_container_running(container_name):
         console.print("localstack container not running")
+        if os.path.exists(logfile):
+            console.print("printing logs from previous run")
+            with open(logfile) as fd:
+                for line in fd:
+                    click.echo(line, nl=False)
         sys.exit(1)
 
     if follow:
