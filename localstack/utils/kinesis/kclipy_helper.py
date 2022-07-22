@@ -107,21 +107,18 @@ def create_config_file(
     if not credentialsProvider:
         credentialsProvider = "DefaultAWSCredentialsProviderChain"
     region_name = region_name or aws_stack.get_region()
-    content = """
-        executableName = %s
-        streamName = %s
-        applicationName = %s
-        AWSCredentialsProvider = %s
-        processingLanguage = python/2.7
+    content = f"""
+        executableName = {executableName}
+        streamName = {streamName}
+        applicationName = {applicationName}
+        AWSCredentialsProvider = {credentialsProvider}
+        kinesisCredentialsProvider = {credentialsProvider}
+        dynamoDBCredentialsProvider = {credentialsProvider}
+        cloudWatchCredentialsProvider = {credentialsProvider}
+        # processingLanguage = python/2.7
         parentShardPollIntervalMillis = 2000
-        regionName = %s
-    """ % (
-        executableName,
-        streamName,
-        applicationName,
-        credentialsProvider,
-        region_name,
-    )
+        regionName = {region_name}
+    """
     # optional properties
     for key, value in kwargs.items():
         content += """
