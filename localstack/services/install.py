@@ -650,13 +650,6 @@ def install_amazon_kinesis_client_libs():
             f'javac -source {JAVAC_TARGET_VERSION} -target {JAVAC_TARGET_VERSION} -cp "{classpath}" {java_files}'
         )
 
-    # patch/update libraries with known CVEs
-    upgrade_jar_file(
-        ".venv/lib/python3.10/site-packages/amazon_kclpy/jars",
-        "jackson-databind-*.jar",
-        "com/fasterxml/jackson/core/jackson-databind:2.13.3",
-    )
-
 
 def install_lambda_java_libs():
     # install LocalStack "fat" JAR file (contains all dependencies)
