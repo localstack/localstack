@@ -32,7 +32,6 @@ from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON, TEST_LA
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = "test_source_stream"
 TEST_TABLE_NAME = "test_stream_table"
-TEST_FIREHOSE_NAME = "test_firehose"
 TEST_BUCKET_NAME = lambda_integration.TEST_BUCKET_NAME
 TEST_TOPIC_NAME = "test_topic"
 TEST_TAGS = [{"Key": "MyTag", "Value": "Value"}]
@@ -53,6 +52,7 @@ def handler(event, *args):
 """
 
 
+# TODO: migrate to pytest
 class IntegrationTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -82,12 +82,13 @@ class IntegrationTest(unittest.TestCase):
     def test_firehose_s3(self):
         s3_resource = aws_stack.connect_to_resource("s3")
         firehose = aws_stack.create_external_boto_client("firehose")
+        stream_name = f"fh-stream-{short_uid()}"
 
         s3_prefix = "/testdata"
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
         # create Firehose stream
         stream = firehose.create_delivery_stream(
-            DeliveryStreamName=TEST_FIREHOSE_NAME,
+            DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
                 "BucketARN": aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
@@ -96,16 +97,14 @@ class IntegrationTest(unittest.TestCase):
             Tags=TEST_TAGS,
         )
         self.assertTrue(stream)
-        self.assertIn(TEST_FIREHOSE_NAME, firehose.list_delivery_streams()["DeliveryStreamNames"])
-        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=TEST_FIREHOSE_NAME)
+        self.assertIn(stream_name, firehose.list_delivery_streams()["DeliveryStreamNames"])
+        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         self.assertEqual(TEST_TAGS, tags["Tags"])
         # create target S3 bucket
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
 
         # put records
-        firehose.put_record(
-            DeliveryStreamName=TEST_FIREHOSE_NAME, Record={"Data": to_bytes(test_data)}
-        )
+        firehose.put_record(DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)})
         # check records in target bucket
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
@@ -114,15 +113,19 @@ class IntegrationTest(unittest.TestCase):
         for key in all_objects.keys():
             self.assertRegex(key, r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*")
 
+        # clean up
+        firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
+
     def test_firehose_extended_s3(self):
         s3_resource = aws_stack.connect_to_resource("s3")
         firehose = aws_stack.create_external_boto_client("firehose")
+        stream_name = f"fh-stream-{short_uid()}"
 
         s3_prefix = "/testdata2"
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
         # create Firehose stream
         stream = firehose.create_delivery_stream(
-            DeliveryStreamName=TEST_FIREHOSE_NAME,
+            DeliveryStreamName=stream_name,
             ExtendedS3DestinationConfiguration={
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
                 "BucketARN": aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
@@ -131,16 +134,14 @@ class IntegrationTest(unittest.TestCase):
             Tags=TEST_TAGS,
         )
         self.assertTrue(stream)
-        self.assertIn(TEST_FIREHOSE_NAME, firehose.list_delivery_streams()["DeliveryStreamNames"])
-        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=TEST_FIREHOSE_NAME)
+        self.assertIn(stream_name, firehose.list_delivery_streams()["DeliveryStreamNames"])
+        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         self.assertEqual(TEST_TAGS, tags["Tags"])
 
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
 
         # put records
-        firehose.put_record(
-            DeliveryStreamName=TEST_FIREHOSE_NAME, Record={"Data": to_bytes(test_data)}
-        )
+        firehose.put_record(DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)})
         # check records in target bucket
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
@@ -149,10 +150,14 @@ class IntegrationTest(unittest.TestCase):
         for key in all_objects.keys():
             self.assertRegex(key, r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*")
 
+        # clean up
+        firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
+
     def test_firehose_kinesis_to_s3(self):
         kinesis = aws_stack.create_external_boto_client("kinesis")
         s3_resource = aws_stack.connect_to_resource("s3")
         firehose = aws_stack.create_external_boto_client("firehose")
+        stream_name = f"fh-stream-{short_uid()}"
 
         aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
 
@@ -166,7 +171,7 @@ class IntegrationTest(unittest.TestCase):
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
                 "KinesisStreamARN": aws_stack.kinesis_stream_arn(TEST_STREAM_NAME),
             },
-            DeliveryStreamName=TEST_FIREHOSE_NAME,
+            DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
                 "BucketARN": aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
@@ -174,7 +179,14 @@ class IntegrationTest(unittest.TestCase):
             },
         )
         self.assertTrue(stream)
-        self.assertIn(TEST_FIREHOSE_NAME, firehose.list_delivery_streams()["DeliveryStreamNames"])
+        self.assertIn(stream_name, firehose.list_delivery_streams()["DeliveryStreamNames"])
+
+        # wait for stream to become ACTIVE
+        def _assert_active():
+            stream_info = firehose.describe_delivery_stream(DeliveryStreamName=stream_name)
+            assert stream_info["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
+
+        retry(_assert_active, sleep=1, retries=15)
 
         # create target S3 bucket
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
@@ -184,11 +196,15 @@ class IntegrationTest(unittest.TestCase):
             Data=to_bytes(test_data), PartitionKey="testId", StreamName=TEST_STREAM_NAME
         )
 
-        time.sleep(3)
-
         # check records in target bucket
-        all_objects = testutil.list_all_s3_objects()
-        testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+        def _assert_objects_created():
+            all_objects = testutil.list_all_s3_objects()
+            testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+
+        retry(_assert_objects_created, sleep=1, retries=4)
+
+        # clean up
+        firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
 
     def test_lambda_streams_batch_and_transactions(self):
         ddb_lease_table_suffix = "-kclapp2"
