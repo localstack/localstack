@@ -3,7 +3,6 @@ import os
 
 import pytest
 
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
@@ -170,10 +169,6 @@ class TestS3NotificationsToLambda:
             data=presigned_post["fields"],
             files={"file": b"by post method 1"},
         )
-
-        # this method should not trigger the s3 notification
-        presigned_post["fields"]["file"] = b"by post method 2"
-        requests.post(presigned_post["url"], data=presigned_post["fields"])
 
         table = dynamodb_resource.Table(table_name)
 
