@@ -4,8 +4,7 @@ import os
 import re
 import time
 import unittest
-
-import mock
+from unittest import mock
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
