@@ -234,7 +234,7 @@ class FirehoseProvider(FirehoseApi):
             if not kinesis_stream_source_configuration:
                 raise InvalidArgumentException("Missing delivery stream configuration")
             kinesis_stream_arn = kinesis_stream_source_configuration["KinesisStreamARN"]
-            kinesis_stream_name = kinesis_stream_arn.split("/")[1]
+            kinesis_stream_name = kinesis_stream_arn.split(":stream/")[1]
 
             def _startup():
                 stream["DeliveryStreamStatus"] = DeliveryStreamStatus.CREATING
