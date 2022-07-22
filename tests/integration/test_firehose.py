@@ -201,7 +201,9 @@ class TestFirehoseIntegration:
 
             # wait for delivery stream to be ready
             def check_stream_state():
-                stream = firehose_client.describe_delivery_stream(DeliveryStreamName=stream_name)
+                stream = firehose_client.describe_delivery_stream(
+                    DeliveryStreamName=delivery_stream_name
+                )
                 assert stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
             assert poll_condition(check_stream_state, 30, 1)
@@ -312,7 +314,9 @@ class TestFirehoseIntegration:
 
             # wait for delivery stream to be ready
             def check_stream_state():
-                stream = firehose_client.describe_delivery_stream(DeliveryStreamName=stream_name)
+                stream = firehose_client.describe_delivery_stream(
+                    DeliveryStreamName=delivery_stream_name
+                )
                 assert stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
             assert poll_condition(check_stream_state, 30, 1)

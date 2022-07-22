@@ -185,7 +185,7 @@ class TestIntegration:
             stream_info = firehose.describe_delivery_stream(DeliveryStreamName=stream_name)
             assert stream_info["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
-        retry(_assert_active, sleep=1, retries=15)
+        retry(_assert_active, sleep=1, retries=30)
 
         # create target S3 bucket
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
