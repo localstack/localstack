@@ -91,7 +91,7 @@ class TestS3NotificationsToLambda:
             assert event["eventSource"] == "aws:s3"
             assert event["eventName"] == "ObjectCreated:Put"
             assert event["s3"]["bucket"]["name"] == bucket_name
-            assert event["s3"]["object"]["eTag"] == etag.strip('"')
+            assert event["s3"]["object"]["eTag"].strip('"') == etag.strip('"')
 
         retry(check_table, retries=5, sleep=1)
 
