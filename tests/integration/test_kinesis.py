@@ -336,4 +336,4 @@ class TestKinesisPythonClient:
         def check_events():
             assert num_events_kinesis == len(result)
 
-        retry(check_events, retries=4, sleep=2)
+        retry(check_events, retries=10, sleep=2)

@@ -84,7 +84,7 @@ def get_kcl_app_command(java, multi_lang_daemon_class, properties, paths=None):
     if paths is None:
         paths = []
     logging_config = os.path.join(get_dir_of_file(__file__), "java", "logging.properties")
-    sys_props = '"-Djava.util.logging.config.file=%s"' % logging_config
+    sys_props = f'-Djava.util.logging.config.file="{logging_config}" -Daws.cborEnabled=false'
     return "{java} -cp {cp} {sys_props} {daemon} {props}".format(
         java=java,
         cp=get_kcl_classpath(properties, paths),
@@ -115,16 +115,15 @@ def create_config_file(
         kinesisCredentialsProvider = {credentialsProvider}
         dynamoDBCredentialsProvider = {credentialsProvider}
         cloudWatchCredentialsProvider = {credentialsProvider}
-        # processingLanguage = python/2.7
+        processingLanguage = python/3.10
+        shardSyncIntervalMillis = 2000
         parentShardPollIntervalMillis = 2000
+        idleTimeBetweenReadsInMillis = 1000
+        timeoutInSeconds = 60
         regionName = {region_name}
     """
     # optional properties
     for key, value in kwargs.items():
-        content += """
-            %s = %s""" % (
-            key,
-            value,
-        )
+        content += f"\n{key} = {value}"
     content = content.replace("    ", "")
     save_file(config_file, content)
