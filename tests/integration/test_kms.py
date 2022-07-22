@@ -234,6 +234,7 @@ class TestKMS:
                 for alias_list_entry in response["Aliases"]:
                     if alias_list_entry["AliasName"] == alias_name:
                         return alias_list_entry["AliasArn"]
+            return None
 
         key_metadata = kms_create_key()
         key_arn = key_metadata["Arn"]
