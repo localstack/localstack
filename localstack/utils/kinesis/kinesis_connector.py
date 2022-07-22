@@ -6,7 +6,6 @@ import re
 import subprocess
 import tempfile
 import threading
-import time
 from urllib.parse import urlparse
 
 from amazon_kclpy import kcl
@@ -30,7 +29,6 @@ LOG_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.log")
 DEFAULT_DDB_LEASE_TABLE_SUFFIX = "-kclapp"
 
 # define Java class names
-# MULTI_LANG_DAEMON_CLASS = "cloud.localstack.KinesisStarter"
 MULTI_LANG_DAEMON_CLASS = "software.amazon.kinesis.multilang.MultiLangDaemon"
 
 # set up log levels
@@ -382,10 +380,6 @@ def start_kcl_client_process(
     kwargs = {"metricsLevel": "NONE", "initialPositionInStream": "LATEST"}
     # set parameters for local connection
     if aws_stack.is_local_env(env):
-        # kwargs["kinesisEndpoint"] = f"{LOCALHOST}:{config.service_port('kinesis')}"
-        # kwargs["dynamodbEndpoint"] = f"{LOCALHOST}:{config.service_port('dynamodb')}"
-        # kwargs["kinesisProtocol"] = config.get_protocol()
-        # kwargs["dynamodbProtocol"] = config.get_protocol()
         kwargs["kinesisEndpoint"] = config.get_edge_url()
         kwargs["dynamoDBEndpoint"] = config.get_edge_url()
         kwargs["disableCertChecking"] = "true"
