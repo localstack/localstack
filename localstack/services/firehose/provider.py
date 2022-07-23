@@ -97,6 +97,7 @@ from localstack.utils.common import (
     truncate,
 )
 from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.run import run_for_max_seconds
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
@@ -232,16 +233,27 @@ class FirehoseProvider(FirehoseApi):
         if delivery_stream_type == DeliveryStreamType.KinesisStreamAsSource:
             if not kinesis_stream_source_configuration:
                 raise InvalidArgumentException("Missing delivery stream configuration")
-            kinesis_stream_name = kinesis_stream_source_configuration["KinesisStreamARN"].split(
-                "/"
-            )[1]
-            kinesis_connector.listen_to_kinesis(
-                stream_name=kinesis_stream_name,
-                fh_d_stream=delivery_stream_name,
-                listener_func=self._process_records,
-                wait_until_started=True,
-                ddb_lease_table_suffix="-firehose",
-            )
+            kinesis_stream_arn = kinesis_stream_source_configuration["KinesisStreamARN"]
+            kinesis_stream_name = kinesis_stream_arn.split(":stream/")[1]
+
+            def _startup():
+                stream["DeliveryStreamStatus"] = DeliveryStreamStatus.CREATING
+                try:
+                    kinesis_connector.listen_to_kinesis(
+                        stream_name=kinesis_stream_name,
+                        fh_d_stream=delivery_stream_name,
+                        listener_func=self._process_records,
+                        wait_until_started=True,
+                        ddb_lease_table_suffix="-firehose",
+                    )
+                    stream["DeliveryStreamStatus"] = DeliveryStreamStatus.ACTIVE
+                except Exception as e:
+                    LOG.warning(
+                        "Unable to create Firehose delivery stream %s: %s", delivery_stream_name, e
+                    )
+                    stream["DeliveryStreamStatus"] = DeliveryStreamStatus.CREATING_FAILED
+
+            run_for_max_seconds(25, _startup)
         return CreateDeliveryStreamOutput(DeliveryStreamARN=stream["DeliveryStreamARN"])
 
     def delete_delivery_stream(

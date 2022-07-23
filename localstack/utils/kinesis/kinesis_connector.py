@@ -2,7 +2,6 @@
 
 import logging
 import os
-import queue
 import re
 import subprocess
 import tempfile
@@ -10,6 +9,7 @@ import threading
 from urllib.parse import urlparse
 
 from amazon_kclpy import kcl
+from amazon_kclpy.v2 import processor
 
 from localstack import config
 from localstack.constants import LOCALHOST, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
@@ -29,7 +29,7 @@ LOG_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.log")
 DEFAULT_DDB_LEASE_TABLE_SUFFIX = "-kclapp"
 
 # define Java class names
-MULTI_LANG_DAEMON_CLASS = "cloud.localstack.KinesisStarter"
+MULTI_LANG_DAEMON_CLASS = "software.amazon.kinesis.multilang.MultiLangDaemon"
 
 # set up log levels
 logging.SEVERE = 60
@@ -58,23 +58,25 @@ CHECKPOINT_SLEEP_SECS = 5
 CHECKPOINT_FREQ_SECS = 60
 
 
-class KinesisProcessor(kcl.RecordProcessorBase):
+class KinesisProcessor(processor.RecordProcessorBase):
     def __init__(self, log_file=None, processor_func=None, auto_checkpoint=True):
         self.log_file = log_file
         self.processor_func = processor_func
         self.shard_id = None
-        self.checkpointer = None
         self.auto_checkpoint = auto_checkpoint
         self.last_checkpoint_time = 0
         self._largest_seq = (None, None)
 
-    def initialize(self, shard_id):
+    def initialize(self, initialize_input):
+        self.shard_id = initialize_input.shard_id
         if self.log_file:
-            self.log("initialize '%s'" % (shard_id))
-        self.shard_id = shard_id
+            self.log(f"initialize '{self.shard_id}'")
+        self.shard_id = initialize_input.shard_id
 
-    def process_records(self, records, checkpointer):
+    def process_records(self, process_records_input):
         if self.processor_func:
+            records = process_records_input.records
+            checkpointer = process_records_input.checkpointer
             self.processor_func(records=records, checkpointer=checkpointer, shard_id=self.shard_id)
             for record in records:
                 seq = int(record.sequence_number)
@@ -87,12 +89,11 @@ class KinesisProcessor(kcl.RecordProcessorBase):
                     self.checkpoint(checkpointer, str(self._largest_seq[0]), self._largest_seq[1])
                     self.last_checkpoint_time = time_now
 
-    def shutdown(self, checkpointer, reason):
+    def shutdown_requested(self, shutdown_requested_input):
         if self.log_file:
             self.log("Shutdown processor for shard '%s'" % self.shard_id)
-        self.checkpointer = checkpointer
-        if reason == "TERMINATE":
-            self.checkpoint(checkpointer)
+        if shutdown_requested_input.action == "TERMINATE":
+            self.checkpoint(shutdown_requested_input.checkpointer)
 
     def checkpoint(self, checkpointer, sequence_number=None, sub_sequence_number=None):
         def do_checkpoint():
@@ -114,9 +115,8 @@ class KinesisProcessor(kcl.RecordProcessorBase):
         )
 
     def log(self, s):
-        s = "%s\n" % s
         if self.log_file:
-            save_file(self.log_file, s, append=True)
+            save_file(self.log_file, f"{s}\n", append=True)
 
     @staticmethod
     def run_processor(log_file=None, processor_func=None):
@@ -130,7 +130,7 @@ class KinesisProcessorThread(ShellCommandThread):
         env_vars = params["env_vars"]
         cmd = kclipy_helper.get_kcl_app_command("java", MULTI_LANG_DAEMON_CLASS, props_file)
         if not params["log_file"]:
-            params["log_file"] = "%s.log" % props_file
+            params["log_file"] = f"{props_file}.log"
             TMP_FILES.append(params["log_file"])
         env = aws_stack.get_environment()
         quiet = aws_stack.is_local_env(env)
@@ -250,14 +250,14 @@ class KclStartedLogListener(KclLogListener):
         super(KclStartedLogListener, self).__init__(regex=regex)
         # Semaphore.acquire does not provide timeout parameter, so we
         # use a Queue here which provides the required functionality
-        self.sync_init = queue.Queue(0)
-        self.sync_take_shard = queue.Queue(0)
+        self.sync_init = threading.Event()
+        self.sync_take_shard = threading.Event()
 
     def update(self, log_line):
         if re.match(self.regex_init, log_line):
-            self.sync_init.put(1, block=False)
+            self.sync_init.set()
         if re.match(self.regex_take_shard, log_line):
-            self.sync_take_shard.put(1, block=False)
+            self.sync_take_shard.set()
 
 
 # construct a stream info hash
@@ -380,10 +380,8 @@ def start_kcl_client_process(
     kwargs = {"metricsLevel": "NONE", "initialPositionInStream": "LATEST"}
     # set parameters for local connection
     if aws_stack.is_local_env(env):
-        kwargs["kinesisEndpoint"] = f"{LOCALHOST}:{config.service_port('kinesis')}"
-        kwargs["dynamodbEndpoint"] = f"{LOCALHOST}:{config.service_port('dynamodb')}"
-        kwargs["kinesisProtocol"] = config.get_protocol()
-        kwargs["dynamodbProtocol"] = config.get_protocol()
+        kwargs["kinesisEndpoint"] = config.get_edge_url(protocol="http")
+        kwargs["dynamoDBEndpoint"] = config.get_edge_url(protocol="http")
         kwargs["disableCertChecking"] = "true"
     kwargs.update(configs)
     # create config file
@@ -407,7 +405,7 @@ def start_kcl_client_process(
 def generate_processor_script(events_file, log_file=None):
     script_file = os.path.join(tempfile.gettempdir(), "kclipy.%s.processor.py" % short_uid())
     if log_file:
-        log_file = "'%s'" % log_file
+        log_file = f"'{log_file}'"
     else:
         log_file = "None"
     content = """#!/usr/bin/env python
@@ -537,12 +535,12 @@ def listen_to_kinesis(
     if wait_until_started:
         # Wait at most 90 seconds for initialization. Note that creating the DDB table can take quite a bit
         try:
-            listener.sync_init.get(block=True, timeout=90)
+            listener.sync_init.wait(timeout=90)
         except Exception:
             raise Exception("Timeout when waiting for KCL initialization.")
         # wait at most 30 seconds for shard lease notification
         try:
-            listener.sync_take_shard.get(block=True, timeout=30)
+            listener.sync_take_shard.wait(timeout=30)
         except Exception:
             # this merely means that there is no shard available to take. Do nothing.
             pass
