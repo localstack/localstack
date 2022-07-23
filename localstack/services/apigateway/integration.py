@@ -8,6 +8,7 @@ from typing import Any, Dict, Union
 from urllib.parse import quote_plus, unquote_plus
 
 from flask import Response as FlaskResponse
+from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from requests import Response
 
 from localstack import config
@@ -22,12 +23,12 @@ from localstack.services.apigateway.helpers import (
 from localstack.services.awslambda import lambda_api
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import LambdaResponse, flask_to_requests_response
+from localstack.utils.aws.aws_responses import LambdaResponse, flask_to_requests_response, requests_response
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
-from localstack.utils.strings import to_bytes
+from localstack.utils.strings import to_bytes, camel_to_snake_case
 
 LOG = logging.getLogger(__name__)
 
@@ -36,6 +37,25 @@ class PassthroughBehavior(Enum):
     WHEN_NO_MATCH = "WHEN_NO_MATCH"
     WHEN_NO_TEMPLATES = "WHEN_NO_TEMPLATES"
     NEVER = "NEVER"
+
+
+class IntegrationSubtypes(Enum):
+    def __new__(cls, value: str, implemented: bool):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.implemented = implemented
+        return obj
+
+    EVENTBRIDGE_PUTEVENTS = "EventBridge-PutEvents", False
+    SQS_SENDMESSAGE = "SQS-SendMessage", False
+    SQS_RECEIVESMESSAGE = "SQS-ReceiveMessage", False
+    SQS_DELETEMESSAGE = "SQS-DeleteMessage", False
+    SQS_PURGEQUEUE = "SQS-PurgeQueue", False
+    APPCONFIG_GETCONFIGURATION = "AppConfig-GetConfiguration", False
+    KINESIS_PUTRECORD = "Kinesis-PutRecord", False
+    STEPFUNCTIONS_STARTEXECUTION = "StepFunctions-StartExecution", True
+    STEPFUNCTIONS_STARTSYNCEXECUTION = "StepFunctions-StartSyncExecution", False
+    STEPFUNCTIONS_STOPEXECUTION = "StepFunctions-StopExecution", False
 
 
 class MappingTemplates:
@@ -357,11 +377,10 @@ class MockIntegration(BackendIntegration):
         try:
             self.check_passthrough_behavior(passthrough_behavior, request_template)
         except MappingTemplates.UnsupportedMediaType:
-            http_status = HTTPStatus(415)
             return MockIntegration._create_response(
-                http_status.value,
+                HTTPStatus.UNSUPPORTED_MEDIA_TYPE.value,
                 headers={"Content-Type": APPLICATION_JSON},
-                data=json.dumps({"message": f"{http_status.phrase}"}),
+                data=json.dumps({"message": f"{HTTPStatus.UNSUPPORTED_MEDIA_TYPE.phrase}"}),
             )
 
         # request template rendering
@@ -391,6 +410,62 @@ class MockIntegration(BackendIntegration):
         response = self.apply_response_parameters(invocation_context, response)
         if not invocation_context.headers.get(HEADER_CONTENT_TYPE):
             invocation_context.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
+        return response
+
+
+class StepFunctionIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        uri = invocation_context.integration.get("uri") or invocation_context.integration.get("integrationUri") or ""
+        action = uri.split("/")[-1]
+
+        if APPLICATION_JSON in invocation_context.integration.get("requestTemplates", {}):
+            request_templates = RequestTemplates()
+            payload = request_templates.render(invocation_context)
+            payload = json.loads(payload)
+        else:
+            payload = json.loads(invocation_context.data)
+
+        client = aws_stack.connect_to_service("stepfunctions")
+        if isinstance(payload.get("input"), dict):
+            payload["input"] = json.dumps(payload["input"])
+
+        # Hot fix since step functions local package responses: Unsupported Operation: 'StartSyncExecution'
+        method_name = (
+            camel_to_snake_case(action) if action != "StartSyncExecution" else "start_execution"
+        )
+
+        try:
+            method = getattr(client, method_name)
+        except AttributeError:
+            msg = f"Invalid step function action: {method_name}"
+            LOG.error(msg)
+            return StepFunctionIntegration._create_response(
+                HTTPStatus.BAD_REQUEST.value,
+                headers={"Content-Type": APPLICATION_JSON},
+                data=json.dumps({"message": msg}),
+            )
+
+        result = method(**payload)
+        result = json_safe({k: result[k] for k in result if k not in "ResponseMetadata"})
+        response = StepFunctionIntegration._create_response(HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=result)
+        if action == "StartSyncExecution":
+            # poll for the execution result and return it
+            result = await_sfn_execution_result(result["executionArn"])
+            result_status = result.get("status")
+            if result_status != "SUCCEEDED":
+                return StepFunctionIntegration._create_response(
+                    HTTPStatus.INTERNAL_SERVER_ERROR.value,
+                    headers={"Content-Type": APPLICATION_JSON},
+                    data=json.dumps({"message": "StepFunctions execution %s failed with status '%s'"
+                                                % (result["executionArn"], result_status)}),
+                )
+
+            result = json_safe(result)
+            response = requests_response(content=result)
+
+        # apply response templates
+        invocation_context.response = response
+        response._content = self.response_templates.render(invocation_context)
         return response
 
 
