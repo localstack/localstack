@@ -12,7 +12,7 @@ import tempfile
 import threading
 import time
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 
 import requests
 import semver
@@ -30,6 +30,7 @@ from localstack.constants import (
     KMS_URL_PATTERN,
     LIBSQLITE_AARCH64_URL,
     LOCALSTACK_MAVEN_VERSION,
+    MAVEN_REPO_URL,
     MODULE_MAIN_PATH,
     OPENSEARCH_DEFAULT_VERSION,
     OPENSEARCH_PLUGIN_LIST,
@@ -73,10 +74,9 @@ INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, "kinesalite", "cli.js")
 
-MAVEN_REPO = "https://repo1.maven.org/maven2"
 URL_LOCALSTACK_FAT_JAR = (
-    MAVEN_REPO + "/cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
-).format(v=LOCALSTACK_MAVEN_VERSION)
+    "{mvn}/cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
+).format(v=LOCALSTACK_MAVEN_VERSION, mvn=MAVEN_REPO_URL)
 
 MARKER_FILE_LIGHT_VERSION = f"{dirs.static_libs}/.light-version"
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
@@ -105,12 +105,12 @@ DDB_PATCH_URL_PREFIX = (
 )
 DDB_AGENT_JAR_URL = f"{DDB_PATCH_URL_PREFIX}/target/ddb-local-loader-0.1.jar"
 DDB_AGENT_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "ddb-local-loader-0.1.jar")
-JAVASSIST_JAR_URL = f"{MAVEN_REPO}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
+JAVASSIST_JAR_URL = f"{MAVEN_REPO_URL}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
 JAVASSIST_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "javassist.jar")
 
 # additional JAR libs required for multi-region and persistence (PRO only) support
-URL_ASPECTJRT = f"{MAVEN_REPO}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
-URL_ASPECTJWEAVER = f"{MAVEN_REPO}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
+URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
+URL_ASPECTJWEAVER = f"{MAVEN_REPO_URL}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
 JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
 
 # kinesis-mock version
@@ -502,20 +502,20 @@ def install_stepfunctions_local():
         patch_url = f"{SFN_PATCH_URL_PREFIX}/{patch_class}"
         add_file_to_jar(patch_class, patch_url, target_jar=INSTALL_PATH_STEPFUNCTIONS_JAR)
 
-    # special case for Manifest file - extract first, replace content, then update in JAR file
-    manifest_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "META-INF", "MANIFEST.MF")
-    if not os.path.exists(manifest_file):
-        content = run(["unzip", "-p", INSTALL_PATH_STEPFUNCTIONS_JAR, "META-INF/MANIFEST.MF"])
-        content = re.sub(
-            "Main-Class: .+", "Main-Class: cloud.localstack.StepFunctionsStarter", content
-        )
-        classpath = " ".join([os.path.basename(jar) for jar in JAR_URLS])
-        content = re.sub(r"Class-Path: \. ", f"Class-Path: {classpath} . ", content)
-        save_file(manifest_file, content)
-        run(
-            ["zip", INSTALL_PATH_STEPFUNCTIONS_JAR, "META-INF/MANIFEST.MF"],
-            cwd=INSTALL_DIR_STEPFUNCTIONS,
-        )
+    # add additional classpath entries to JAR manifest file
+    classpath = " ".join([os.path.basename(jar) for jar in JAR_URLS])
+    update_jar_manifest(
+        "StepFunctionsLocal.jar",
+        INSTALL_DIR_STEPFUNCTIONS,
+        "Class-Path: . ",
+        f"Class-Path: {classpath} . ",
+    )
+    update_jar_manifest(
+        "StepFunctionsLocal.jar",
+        INSTALL_DIR_STEPFUNCTIONS,
+        re.compile("Main-Class: .+"),
+        "Main-Class: cloud.localstack.StepFunctionsStarter",
+    )
 
     # download additional jar libs
     for jar_url in JAR_URLS:
@@ -545,10 +545,9 @@ def install_dynamodb_local():
         download_and_extract_with_retry(DYNAMODB_JAR_URL, tmp_archive, INSTALL_DIR_DDB)
 
     # download additional libs for Mac M1 (for local dev mode)
+    ddb_local_lib_dir = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal_lib")
     if is_mac_os() and get_arch() == "arm64":
-        target_path = os.path.join(
-            INSTALL_DIR_DDB, "DynamoDBLocal_lib", "libsqlite4java-osx-aarch64.dylib"
-        )
+        target_path = os.path.join(ddb_local_lib_dir, "libsqlite4java-osx-aarch64.dylib")
         if not file_exists_not_empty(target_path):
             download(LIBSQLITE_AARCH64_URL, target_path)
 
@@ -572,14 +571,60 @@ def install_dynamodb_local():
         download(DDB_AGENT_JAR_URL, DDB_AGENT_JAR_PATH)
     if not os.path.exists(JAVASSIST_JAR_PATH):
         download(JAVASSIST_JAR_URL, JAVASSIST_JAR_PATH)
+
+    # patch/update libraries with known CVEs
+    upgrade_jar_file(
+        ddb_local_lib_dir,
+        "jackson-databind-*.jar",
+        "com/fasterxml/jackson/core/jackson-databind:2.13.3",
+    )
+    upgrade_jar_file(ddb_local_lib_dir, "slf4j-ext-*.jar", "org/slf4j/slf4j-ext:1.8.0-beta4")
+
     # ensure that javassist.jar is in the manifest classpath
-    run(["unzip", "-o", "DynamoDBLocal.jar", "META-INF/MANIFEST.MF"], cwd=INSTALL_DIR_DDB)
-    manifest_file = os.path.join(INSTALL_DIR_DDB, "META-INF", "MANIFEST.MF")
+    update_jar_manifest(
+        "DynamoDBLocal.jar", INSTALL_DIR_DDB, "Class-Path:", "Class-Path: javassist.jar"
+    )
+    update_jar_manifest(
+        "DynamoDBLocal.jar", INSTALL_DIR_DDB, "databind-2.12.3.jar", "databind-2.13.3.jar"
+    )
+
+
+def update_jar_manifest(
+    jar_file_name: str, parent_dir: str, search: Union[str, re.Pattern], replace: str
+):
+    manifest_file_path = "META-INF/MANIFEST.MF"
+    run(["unzip", "-o", jar_file_name, manifest_file_path], cwd=parent_dir)
+    manifest_file = os.path.join(parent_dir, manifest_file_path)
     manifest = load_file(manifest_file)
-    if "javassist.jar" not in manifest:
-        manifest = manifest.replace("Class-Path:", "Class-Path: javassist.jar", 1)
+    if replace not in manifest:
+        if isinstance(search, re.Pattern):
+            manifest = search.sub(replace, manifest, 1)
+        else:
+            manifest = manifest.replace(search, replace, 1)
         save_file(manifest_file, manifest)
-        run(["zip", "-u", "DynamoDBLocal.jar", "META-INF/MANIFEST.MF"], cwd=INSTALL_DIR_DDB)
+        run(["zip", jar_file_name, manifest_file_path], cwd=parent_dir)
+    os.remove(manifest_file)
+
+
+def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
+    """
+    Upgrade the matching Java JAR file in a local directory with the given Maven asset
+    :param base_dir: base directory to search the JAR file to replace in
+    :param file_glob: glob pattern for the JAR file to replace
+    :param maven_asset: name of Maven asset to download, in the form "<qualified_name>:<version>"
+    """
+
+    local_path = os.path.join(base_dir, file_glob)
+    matches = glob.glob(local_path)
+    if not matches:
+        return
+    for match in matches:
+        os.remove(match)
+    parent_dir = os.path.dirname(local_path)
+    maven_asset = maven_asset.replace(":", "/")
+    parts = maven_asset.split("/")
+    maven_asset_url = f"{MAVEN_REPO_URL}/{maven_asset}/{parts[-2]}-{parts[-1]}.jar"
+    download(maven_asset_url, os.path.join(parent_dir, os.path.basename(maven_asset_url)))
 
 
 def install_amazon_kinesis_client_libs():
@@ -590,6 +635,7 @@ def install_amazon_kinesis_client_libs():
         if not os.path.exists(tmp_archive):
             download(STS_JAR_URL, tmp_archive)
         shutil.copy(tmp_archive, INSTALL_DIR_KCL)
+
     # Compile Java files
     from localstack.utils.kinesis import kclipy_helper
 
