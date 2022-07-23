@@ -201,7 +201,10 @@ class CmdDockerClient(ContainerClient):
             ) from e
         container_list = []
         if cmd_result:
-            container_list = [json.loads(line) for line in cmd_result.splitlines()]
+            if cmd_result[0] == "[":
+                container_list = json.loads(cmd_result)
+            else:
+                container_list = [json.loads(line) for line in cmd_result.splitlines()]
         result = []
         for container in container_list:
             result.append(
