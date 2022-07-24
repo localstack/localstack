@@ -10,6 +10,11 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 import boto3
 import requests
 
@@ -133,7 +138,13 @@ def delete_lambda_function(name, region_name: str = None):
     client.delete_function(FunctionName=name)
 
 
-def create_zip_file(file_path, zip_file=None, get_content=False, content_root=None, mode="w"):
+def create_zip_file(
+    file_path: str,
+    zip_file: str = None,
+    get_content: bool = False,
+    content_root: str = None,
+    mode: Literal["r", "w", "x", "a"] = "w",
+):
     """
     Creates a zipfile to the designated file_path.
 
@@ -166,11 +177,7 @@ def create_zip_file(file_path, zip_file=None, get_content=False, content_root=No
         create_zip_file_cli(source_path=file_path, base_dir=base_dir, zip_file=full_zip_file)
     else:
         create_zip_file_python(
-            source_path=file_path,
-            base_dir=base_dir,
-            zip_file=full_zip_file,
-            content_root=content_root,
-            mode=mode,
+            base_dir=base_dir, zip_file=full_zip_file, mode=mode, content_root=content_root
         )
     if not get_content:
         TMP_FILES.append(tmp_dir)
