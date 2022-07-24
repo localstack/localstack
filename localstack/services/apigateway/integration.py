@@ -8,7 +8,6 @@ from typing import Any, Dict, Union
 from urllib.parse import quote_plus, unquote_plus
 
 from flask import Response as FlaskResponse
-from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from requests import Response
 
 from localstack import config
@@ -21,14 +20,19 @@ from localstack.services.apigateway.helpers import (
     get_event_request_context,
 )
 from localstack.services.awslambda import lambda_api
+from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import LambdaResponse, flask_to_requests_response, requests_response
+from localstack.utils.aws.aws_responses import (
+    LambdaResponse,
+    flask_to_requests_response,
+    requests_response,
+)
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
-from localstack.utils.strings import to_bytes, camel_to_snake_case
+from localstack.utils.strings import camel_to_snake_case, to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -37,25 +41,6 @@ class PassthroughBehavior(Enum):
     WHEN_NO_MATCH = "WHEN_NO_MATCH"
     WHEN_NO_TEMPLATES = "WHEN_NO_TEMPLATES"
     NEVER = "NEVER"
-
-
-class IntegrationSubtypes(Enum):
-    def __new__(cls, value: str, implemented: bool):
-        obj = object.__new__(cls)
-        obj._value_ = value
-        obj.implemented = implemented
-        return obj
-
-    EVENTBRIDGE_PUTEVENTS = "EventBridge-PutEvents", False
-    SQS_SENDMESSAGE = "SQS-SendMessage", False
-    SQS_RECEIVESMESSAGE = "SQS-ReceiveMessage", False
-    SQS_DELETEMESSAGE = "SQS-DeleteMessage", False
-    SQS_PURGEQUEUE = "SQS-PurgeQueue", False
-    APPCONFIG_GETCONFIGURATION = "AppConfig-GetConfiguration", False
-    KINESIS_PUTRECORD = "Kinesis-PutRecord", False
-    STEPFUNCTIONS_STARTEXECUTION = "StepFunctions-StartExecution", True
-    STEPFUNCTIONS_STARTSYNCEXECUTION = "StepFunctions-StartSyncExecution", False
-    STEPFUNCTIONS_STOPEXECUTION = "StepFunctions-StopExecution", False
 
 
 class MappingTemplates:
@@ -92,6 +77,40 @@ class MappingTemplates:
     @staticmethod
     def get_passthrough_behavior(passthrough_behaviour: str):
         return getattr(PassthroughBehavior, passthrough_behaviour, None)
+
+
+class IntegrationSubtypes(Enum):
+    def __new__(cls, value: str, implemented: bool):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.implemented = implemented
+        return obj
+
+    def invoke(self, api_context: ApiInvocationContext):
+        if not self.implemented:
+            raise NotImplementedError(f"Integration subtype {self._value_} is not implemented")
+
+        match self.value:
+            case IntegrationSubtypes.STEPFUNCTIONS_STARTEXECUTION.value:
+                api_context.integration["uri"] = "StartExecution"
+                return StepFunctionIntegration().invoke(api_context)
+            case IntegrationSubtypes.STEPFUNCTIONS_STARTSYNCEXECUTION.value:
+                api_context.integration["uri"] = "StartSyncExecution"
+                return StepFunctionIntegration().invoke(api_context)
+            case IntegrationSubtypes.STEPFUNCTIONS_STOPEXECUTION.value:
+                api_context.integration["uri"] = "StopExecution"
+                return StepFunctionIntegration().invoke(api_context)
+
+    EVENTBRIDGE_PUTEVENTS = "EventBridge-PutEvents", False
+    SQS_SENDMESSAGE = "SQS-SendMessage", False
+    SQS_RECEIVESMESSAGE = "SQS-ReceiveMessage", False
+    SQS_DELETEMESSAGE = "SQS-DeleteMessage", False
+    SQS_PURGEQUEUE = "SQS-PurgeQueue", False
+    APPCONFIG_GETCONFIGURATION = "AppConfig-GetConfiguration", False
+    KINESIS_PUTRECORD = "Kinesis-PutRecord", False
+    STEPFUNCTIONS_STARTEXECUTION = "StepFunctions-StartExecution", True
+    STEPFUNCTIONS_STARTSYNCEXECUTION = "StepFunctions-StartSyncExecution", False
+    STEPFUNCTIONS_STOPEXECUTION = "StepFunctions-StopExecution", False
 
 
 class BackendIntegration(ABC):
@@ -415,7 +434,11 @@ class MockIntegration(BackendIntegration):
 
 class StepFunctionIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
-        uri = invocation_context.integration.get("uri") or invocation_context.integration.get("integrationUri") or ""
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
         action = uri.split("/")[-1]
 
         if APPLICATION_JSON in invocation_context.integration.get("requestTemplates", {}):
@@ -447,7 +470,9 @@ class StepFunctionIntegration(BackendIntegration):
 
         result = method(**payload)
         result = json_safe({k: result[k] for k in result if k not in "ResponseMetadata"})
-        response = StepFunctionIntegration._create_response(HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=result)
+        response = StepFunctionIntegration._create_response(
+            HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=result
+        )
         if action == "StartSyncExecution":
             # poll for the execution result and return it
             result = await_sfn_execution_result(result["executionArn"])
@@ -456,8 +481,12 @@ class StepFunctionIntegration(BackendIntegration):
                 return StepFunctionIntegration._create_response(
                     HTTPStatus.INTERNAL_SERVER_ERROR.value,
                     headers={"Content-Type": APPLICATION_JSON},
-                    data=json.dumps({"message": "StepFunctions execution %s failed with status '%s'"
-                                                % (result["executionArn"], result_status)}),
+                    data=json.dumps(
+                        {
+                            "message": "StepFunctions execution %s failed with status '%s'"
+                            % (result["executionArn"], result_status)
+                        }
+                    ),
                 )
 
             result = json_safe(result)

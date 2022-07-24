@@ -26,14 +26,13 @@ from localstack.services.apigateway.integration import (
     RequestTemplates,
     ResponseTemplates,
     SnsIntegration,
-    VtlTemplate, StepFunctionIntegration,
+    StepFunctionIntegration,
+    VtlTemplate,
 )
 from localstack.services.kinesis import kinesis_listener
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import request_response_stream, requests_response
-from localstack.utils.common import camel_to_snake_case, json_safe
-
 # set up logger
 from localstack.utils.http import add_query_params_to_url
 
