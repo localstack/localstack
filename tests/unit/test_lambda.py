@@ -343,7 +343,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_create_disabled_event_source_mapping(self):
         createResponse = self.client.post(
-            "{0}/event-source-mappings/".format(API_PATH_ROOT),
+            f"{API_PATH_ROOT}/event-source-mappings/",
             data=json.dumps(
                 {
                     "FunctionName": "test-lambda-function",
