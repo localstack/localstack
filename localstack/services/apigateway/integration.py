@@ -442,8 +442,7 @@ class StepFunctionIntegration(BackendIntegration):
         action = uri.split("/")[-1]
 
         if APPLICATION_JSON in invocation_context.integration.get("requestTemplates", {}):
-            request_templates = RequestTemplates()
-            payload = request_templates.render(invocation_context)
+            payload = self.request_templates.render(invocation_context)
             payload = json.loads(payload)
         else:
             payload = json.loads(invocation_context.data)
