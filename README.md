@@ -98,7 +98,7 @@ You can query the status of respective services on LocalStack by running:
 ...
 ```
 
-To use SQS, a fully managed distributed message queuing service, on LocalStack run:
+To use SQS, a fully managed distributed message queuing service, on LocalStack, run:
 
 ```shell
 % awslocal sqs create-queue --queue-name sample-queue
