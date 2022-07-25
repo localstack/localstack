@@ -2,15 +2,14 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   SAM template for Lambda fn Event-filtering with DynamoDB Streams
 
-Transform:
-- AWS::Serverless-2016-10-31
+Transform: AWS::Serverless-2016-10-31
 
 Resources:
   TriggerFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: {{ function_name }}
-      InlineCode: exports.handler = async (event, context) => {return "{{ lambda_return_value }}"}
+      InlineCode: exports.handler = async (event, context) => { console.log(JSON.stringify(event))}
       Handler: index.handler
       Runtime: nodejs14.x
       MemorySize: 128
@@ -26,11 +25,11 @@ Resources:
             Stream:
               !GetAtt DynamoDBTable.StreamArn
             StartingPosition: TRIM_HORIZON
-            BatchSize: 100
+            BatchSize: 1
             FilterCriteria:
               Filters:
                   # Filter pattern
-                - Pattern: {{ event_filter }}
+                - Pattern: '{{ event_filter }}'
 
   DynamoDBTable:
     Type: AWS::DynamoDB::Table

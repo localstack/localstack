@@ -131,7 +131,7 @@ def test_lambda_w_dynamodb_event_filter(
         # put item the second time: MODIFY and lambda should not be called
         dynamodb_client.put_item(TableName=table_name, Item=item_to_put)
         retry(assert_single_lambda_call, retries=10)
-        
+
     finally:
         # cleanup
         cleanup_stacks([stack_name])
