@@ -240,6 +240,32 @@ class TestKinesis:
             result["Records"][0], attrs
         )
 
+    def test_get_records_empty_stream(
+        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+    ):
+        stream_name = "test-%s" % short_uid()
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name)
+
+        # empty get records with JSON encoding
+        iterator = get_shard_iterator(stream_name, kinesis_client)
+        json_response = kinesis_client.get_records(ShardIterator=iterator)
+        json_records = json_response.get("Records")
+        assert 0 == len(json_records)
+
+        # empty get records with CBOR encoding
+        url = config.get_edge_url()
+        headers = aws_stack.mock_aws_request_headers("kinesis")
+        headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
+        headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
+        data = cbor2.dumps({"ShardIterator": iterator})
+        cbor_response = requests.post(url, data, headers=headers)
+        assert 200 == cbor_response.status_code
+        cbor_records_content = cbor2.loads(cbor_response.content)
+        cbor_records = cbor_records_content.get("Records")
+        assert 0 == len(cbor_records)
+
     def test_record_lifecycle_data_integrity(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
     ):
