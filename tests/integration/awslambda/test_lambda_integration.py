@@ -425,36 +425,41 @@ class TestDynamoDBEventSourceMapping:
     @pytest.mark.parametrize(
         "item_to_put1, item_to_put2, filter, calls",
         [
+            # Test with no filter, and two times same entry (aka MODIFY)
             (
                 {"id": {"S": "test123"}},
                 None,
                 None,
                 2,
-            ),  # Test with no filter, and two times same entry (aka MODIFY)
+            ),
+            # Test with filter, and two times same entry (aka MODIFY)
             (
                 {"id": {"S": "test123"}},
                 None,
                 {"eventName": ["INSERT"]},
                 1,
-            ),  # Test with filter, and two times same entry (aka MODIFY)
+            ),
+            # Test with OR filter, and two times same entry (aka MODIFY)
             (
                 {"id": {"S": "test123"}},
                 None,
                 {"eventName": ["INSERT", "MODIFY"]},
                 2,
-            ),  # Test with OR filter, and two times same entry (aka MODIFY)
+            ),
+            # Test with 2 filters (AND), and two times same entry (aka MODIFY)
             (
                 {"id": {"S": "test123"}},
                 None,
                 {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]},
                 1,
-            ),  # Test with 2 filters (AND), and two times same entry (aka MODIFY)
+            ),
+            # Test exists filter
             (
                 {"id": {"S": "test123"}},
                 {"id": {"S": "test1234"}, "presentKey": {"S": "test123"}},
                 {"dynamodb": {"NewImage": {"presentKey": [{"exists": False}]}}},
                 1,
-            ),  # Test exists filter
+            ),
             # numeric filters
             (
                 {"id": {"S": "test123"}, "numericFilter": {"N": "123"}},
@@ -520,26 +525,31 @@ class TestDynamoDBEventSourceMapping:
             _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
             dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
 
-            def assert_events():
+            def assert_single_lambda_call():
                 events = get_lambda_log_events(function_name)
                 assert len(events) == 1
 
-            retry(assert_events, retries=10)
+            retry(assert_single_lambda_call, retries=10)
 
-            # putting the same item a second time is a 'MODIFY' request
+            # Following lines are relevant if variables are set via parametrize
             if item_to_put2:
+                # putting a new item (item_to_put2) a second time is a 'INSERT' request
                 dynamodb_client.put_item(TableName=table_name, Item=item_to_put2)
             else:
+                # putting the same item (item_to_put1) a second time is a 'MODIFY' request
                 dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
+            # depending on the parametrize values the filter (and the items to put) the lambda might be called multiple times
             if calls > 1:
 
-                def assert_events2():
+                def assert_events_called_multiple():
                     events = get_lambda_log_events(function_name)
                     assert len(events) == calls
 
-                retry(assert_events2, retries=10)
+                # lambda was called a second time, so new records should be found
+                retry(assert_events_called_multiple, retries=10)
             else:
-                retry(assert_events, retries=10)
+                # lambda wasn't called a second time, so no new records should be found
+                retry(assert_single_lambda_call, retries=10)
 
         finally:
             if event_source_uuid:
