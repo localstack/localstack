@@ -98,7 +98,7 @@ def test_update_lambda_inline_code(
 
 
 def test_lambda_w_dynamodb_event_filter(
-    cfn_client, dynamodb_client, lambda_client, is_stack_created, cleanup_stacks
+    cfn_client, dynamodb_client, is_stack_created, cleanup_stacks
 ):
     stack_name = f"stack-{short_uid()}"
     function_name = f"test-fn-{short_uid()}"
