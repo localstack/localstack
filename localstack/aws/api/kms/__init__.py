@@ -55,6 +55,7 @@ class ConnectionErrorCodeType(str):
     USER_NOT_FOUND = "USER_NOT_FOUND"
     USER_LOGGED_IN = "USER_LOGGED_IN"
     SUBNET_NOT_FOUND = "SUBNET_NOT_FOUND"
+    INSUFFICIENT_FREE_ADDRESSES_IN_SUBNET = "INSUFFICIENT_FREE_ADDRESSES_IN_SUBNET"
 
 
 class ConnectionStateType(str):
@@ -78,6 +79,7 @@ class CustomerMasterKeySpec(str):
     HMAC_256 = "HMAC_256"
     HMAC_384 = "HMAC_384"
     HMAC_512 = "HMAC_512"
+    SM2 = "SM2"
 
 
 class DataKeyPairSpec(str):
@@ -88,6 +90,7 @@ class DataKeyPairSpec(str):
     ECC_NIST_P384 = "ECC_NIST_P384"
     ECC_NIST_P521 = "ECC_NIST_P521"
     ECC_SECG_P256K1 = "ECC_SECG_P256K1"
+    SM2 = "SM2"
 
 
 class DataKeySpec(str):
@@ -99,6 +102,7 @@ class EncryptionAlgorithmSpec(str):
     SYMMETRIC_DEFAULT = "SYMMETRIC_DEFAULT"
     RSAES_OAEP_SHA_1 = "RSAES_OAEP_SHA_1"
     RSAES_OAEP_SHA_256 = "RSAES_OAEP_SHA_256"
+    SM2PKE = "SM2PKE"
 
 
 class ExpirationModelType(str):
@@ -143,6 +147,7 @@ class KeySpec(str):
     HMAC_256 = "HMAC_256"
     HMAC_384 = "HMAC_384"
     HMAC_512 = "HMAC_512"
+    SM2 = "SM2"
 
 
 class KeyState(str):
@@ -195,6 +200,7 @@ class SigningAlgorithmSpec(str):
     ECDSA_SHA_256 = "ECDSA_SHA_256"
     ECDSA_SHA_384 = "ECDSA_SHA_384"
     ECDSA_SHA_512 = "ECDSA_SHA_512"
+    SM2DSA = "SM2DSA"
 
 
 class WrappingKeySpec(str):
@@ -445,9 +451,9 @@ class CreateAliasRequest(ServiceRequest):
 
 class CreateCustomKeyStoreRequest(ServiceRequest):
     CustomKeyStoreName: CustomKeyStoreNameType
-    CloudHsmClusterId: CloudHsmClusterIdType
-    TrustAnchorCertificate: TrustAnchorCertificateType
-    KeyStorePassword: KeyStorePasswordType
+    CloudHsmClusterId: Optional[CloudHsmClusterIdType]
+    TrustAnchorCertificate: Optional[TrustAnchorCertificateType]
+    KeyStorePassword: Optional[KeyStorePasswordType]
 
 
 class CreateCustomKeyStoreResponse(TypedDict, total=False):
@@ -1064,9 +1070,9 @@ class KmsApi:
         self,
         context: RequestContext,
         custom_key_store_name: CustomKeyStoreNameType,
-        cloud_hsm_cluster_id: CloudHsmClusterIdType,
-        trust_anchor_certificate: TrustAnchorCertificateType,
-        key_store_password: KeyStorePasswordType,
+        cloud_hsm_cluster_id: CloudHsmClusterIdType = None,
+        trust_anchor_certificate: TrustAnchorCertificateType = None,
+        key_store_password: KeyStorePasswordType = None,
     ) -> CreateCustomKeyStoreResponse:
         raise NotImplementedError
 
