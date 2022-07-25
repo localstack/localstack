@@ -335,8 +335,7 @@ def parse_and_apply_numeric_filter(record_value: Dict, numeric_filter: List[Unio
             LOG.warn(
                 f"Could not convert filter value {numeric_filter[idx + 1]} to a valid number value for filtering"
             )
-        finally:
-            return True
+    return True
 
 
 def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]):
