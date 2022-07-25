@@ -311,37 +311,32 @@ def parse_and_apply_numeric_filter(record_value: Dict, numeric_filter: List[Unio
     if len(numeric_filter) % 2 > 0:
         LOG.warn("Invalid numeric lambda filter given")
         return True
-    all_comparisons = []
     try:
         # record_value is a dynamo DB entry in following form { datatype : value}
         record_value = float(record_value.get("N"))
     except (ValueError, TypeError):
         LOG.warn(f"Could not convert Record {record_value} to a valid number value for filtering")
         return True
+
     for idx in range(0, len(numeric_filter), 2):
 
         try:
-            if numeric_filter[idx] == ">" and record_value > float(numeric_filter[idx + 1]):
-                all_comparisons.append(True)
-                continue
-            if numeric_filter[idx] == ">=" and record_value >= float(numeric_filter[idx + 1]):
-                all_comparisons.append(True)
-                continue
-            if numeric_filter[idx] == "=" and record_value == float(numeric_filter[idx + 1]):
-                all_comparisons.append(True)
-                continue
-            if numeric_filter[idx] == "<" and record_value < float(numeric_filter[idx + 1]):
-                all_comparisons.append(True)
-                continue
-            if numeric_filter[idx] == "<=" and record_value <= float(numeric_filter[idx + 1]):
-                all_comparisons.append(True)
-                continue
-            all_comparisons.append(False)
+            if numeric_filter[idx] == ">" and not (record_value > float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == ">=" and not (record_value >= float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == "=" and not (record_value == float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == "<" and not (record_value < float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == "<=" and not (record_value <= float(numeric_filter[idx + 1])):
+                return False
         except ValueError:
             LOG.warn(
                 f"Could not convert filter value {numeric_filter[idx + 1]} to a valid number value for filtering"
             )
-    return all(all_comparisons)
+        finally:
+            return True
 
 
 def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]):
@@ -371,31 +366,25 @@ def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]):
     for key, value in filter_rule.items():
         # check if rule exists in event
         record_value = record.get(key.lower(), record.get(key))
-        if record_value is None:
+        append_record = False
+        if record_value is not None:
+            # check if filter rule value is a list (leaf of rule tree) or a dict (rescursively call function)
+            if isinstance(value, list):
+                if len(value) > 0:
+                    if isinstance(value[0], (str, int)):
+                        append_record = record_value in value
+                    if isinstance(value[0], dict):
+                        append_record = verify_dict_filter(record_value, value[0])
+                else:
+                    LOG.warn(f"Empty lambda filter: {key}")
+            if isinstance(value, dict):
+                append_record = filter_stream_record(value, record_value)
+        else:
             # special case 'exists'
             if isinstance(value, list) and len(value) > 0:
-                if not value[0].get("exists", True):
-                    filter_results.append(True)
-                    continue
-            filter_results.append(False)
-            continue
+                append_record = not value[0].get("exists", True)
 
-        # check if filter rule value is a list (leaf of rule tree) or a dict (rescursively call function)
-        if isinstance(value, list):
-            if len(value) > 0:
-                if isinstance(value[0], (str, int)):
-                    filter_results.append(record_value in value)
-                    continue
-                if isinstance(value[0], dict):
-                    filter_results.append(verify_dict_filter(record_value, value[0]))
-                    continue
-            else:
-                LOG.warn(f"Empty lambda filter: {key}")
-        if isinstance(value, dict):
-            filter_results.append(filter_stream_record(value, record_value))
-            continue
-
-        filter_results.append(False)
+        filter_results.append(append_record)
     return all(filter_results)
 
 
