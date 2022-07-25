@@ -1,0 +1,17 @@
+Parameters:
+  UserName:
+    Type: String
+
+Resources:
+  User:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: 
+        Ref: UserName
+
+  Credentials:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: 
+        Ref: UserName
+    DependsOn: User
