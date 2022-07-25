@@ -184,7 +184,7 @@ class ProxyListenerKinesis(ProxyListener):
             return response
         elif action == "GetRecords":
             sdk_v2 = self.is_sdk_v2_request(headers)
-            results, encoding_type = self.decode_content(response.content, True)
+            results, encoding_type = self.decode_content(response.content or "{}", True)
 
             records = results.get("Records", [])
             if not records:
@@ -225,7 +225,7 @@ class ProxyListenerKinesis(ProxyListener):
             return response
 
         if response.status_code >= 400:
-            response_body = self.decode_content(response.content)
+            response_body = self.decode_content(response.content or "{}")
             if (
                 response_body
                 and response_body.get("__type")
