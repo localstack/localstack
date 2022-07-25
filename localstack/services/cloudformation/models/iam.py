@@ -174,19 +174,17 @@ class IAMAccessKey(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("AccessKeyId")
 
-    def get_resource_name(self):
-        return self.props.get("AccessKeyId")
-
     def fetch_state(self, stack_name, resources):
         user_name = self.resolve_refs_recursively(stack_name, self.props.get("UserName"), resources)
-        keys = aws_stack.connect_to_service("iam").get_access_key(UserName=user_name)[
+        keys = aws_stack.connect_to_service("iam").list_access_keys(UserName=user_name)[
             "AccessKeyMetadata"
         ]
 
         access_key_id = self.resolve_refs_recursively(
             stack_name, self.props.get("AccessKeyId"), resources
         )
-        return [key for key in keys if key["AccessKeyId"] == access_key_id][0]
+        key = [key for key in keys if key["AccessKeyId"] == access_key_id][0]
+        return key
 
     @staticmethod
     def get_deploy_templates():
