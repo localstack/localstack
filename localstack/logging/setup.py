@@ -86,7 +86,7 @@ def setup_logging(log_level=logging.INFO) -> None:
     log_handler = create_default_handler(log_level)
 
     # replace any existing handlers
-    logging.basicConfig(level=log_level, handlers=[log_handler], force=True)
+    logging.basicConfig(level=log_level, handlers=[log_handler])
 
     # disable some logs and warnings
     warnings.filterwarnings("ignore")
