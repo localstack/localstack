@@ -1,9 +1,44 @@
 import os.path
 
 import pytest
+import requests
 
 from localstack import constants
+from localstack.services.apigateway.helpers import path_based_url
 from localstack.utils.common import short_uid
+from localstack.utils.run import to_str
+
+TEST_TEMPLATE_1 = """
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  IntegrationUri:
+    Type: String
+Resources:
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      Name: !Ref ApiName
+      DefinitionBody:
+        swagger: 2.0
+        info:
+          version: "1.0"
+          title: "Public API"
+        basePath: /base
+        schemes:
+        - "https"
+        x-amazon-apigateway-binary-media-types:
+        - "*/*"
+        paths:
+          /test:
+            post:
+              responses: {}
+              x-amazon-apigateway-integration:
+                uri: !Ref IntegrationUri
+                httpMethod: "POST"
+                type: "http_proxy"
+"""
 
 
 def test_cfn_apigateway_aws_integration(
@@ -55,6 +90,31 @@ def test_cfn_apigateway_aws_integration(
     ]
     assert len(mappings) == 1
     assert mappings[0] == "(none)"
+
+
+def test_cfn_apigateway_swagger_import(tmp_http_server, deploy_cfn_template, apigateway_client):
+    api_name = f"rest-api-{short_uid()}"
+    test_port, invocations, proxy = tmp_http_server
+
+    deploy_cfn_template(
+        template=TEST_TEMPLATE_1,
+        parameters={"ApiName": api_name, "IntegrationUri": f"http://localhost:{test_port}"},
+    )
+
+    # get API details
+    apis = [api for api in apigateway_client.get_rest_apis()["items"] if api["name"] == api_name]
+    assert len(apis) == 1
+    api_id = apis[0]["id"]
+
+    # invoke API endpoint
+    url = path_based_url(api_id, stage_name="dev", path="/base/test")
+    result = requests.post(url, data="test 123")
+    assert result.ok
+
+    # assert that integration endpoint is being called
+    assert len(invocations) == 1
+    assert invocations[0]["method"] == "POST"
+    assert to_str(invocations[0]["data"]) == "test 123"
 
 
 @pytest.mark.only_localstack

@@ -346,7 +346,7 @@ def find_api_subentity_by_id(api_id, entity_id, map_name):
     return ([a for a in auth_list if a["id"] == entity_id] or [None])[0]
 
 
-def path_based_url(api_id, stage_name, path):
+def path_based_url(api_id: str, stage_name: str, path: str) -> str:
     """Return URL for inbound API gateway for given API ID, stage name, and path"""
     pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
         config.service_url("apigateway"),
@@ -638,7 +638,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                         authorizers.update({security_scheme_name: authorizer})
                     return authorizer
 
-    def get_or_create_path(path):
+    def get_or_create_path(path: str):
         parts = path.rstrip("/").replace("//", "/").split("/")
         parent_id = ""
         if len(parts) > 1:
@@ -653,7 +653,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
             return existing[0]
         return add_path(path, parts, parent_id=parent_id)
 
-    def add_path(path, parts, parent_id=""):
+    def add_path(path: str, parts: List[str], parent_id=""):
         child_id = create_resource_id()
         path = path or "/"
         resource = Resource(
@@ -664,7 +664,10 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
             parent_id=parent_id,
         )
 
-        for method, method_schema in resolved_schema["paths"].get(path, {}).items():
+        paths_dict = resolved_schema["paths"]
+        relative_path = path.removeprefix(base_path)
+        method_paths = paths_dict.get(relative_path, {})
+        for method, method_schema in method_paths.items():
             method = method.upper()
 
             method_integration = method_schema.get("x-amazon-apigateway-integration", {})
