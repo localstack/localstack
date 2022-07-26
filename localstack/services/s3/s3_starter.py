@@ -345,7 +345,7 @@ def apply_patches():
             template = self.response_template(S3_ALL_MULTIPARTS)
             return template.render(bucket_name=bucket_name, uploads=multiparts)
 
-    @patch(s3_models.s3_backend.copy_object)
+    @patch(s3_models.S3Backend.copy_object)
     def copy_object(
         self,
         fn,
