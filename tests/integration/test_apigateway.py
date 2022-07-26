@@ -1210,14 +1210,18 @@ class TestAPIGateway:
             # when the api key is passed as part of the header
             assert 200 == response.status_code
 
-    def test_import_rest_api(self):
+    @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
+    def test_import_rest_api(self, base_path_type):
         rest_api_name = f"restapi-{short_uid()}"
 
         client = aws_stack.create_external_boto_client("apigateway")
         rest_api_id = client.create_rest_api(name=rest_api_name)["id"]
 
         spec_file = load_file(TEST_SWAGGER_FILE_JSON)
-        rs = client.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
+        api_params = {"basepath": base_path_type}
+        rs = client.put_rest_api(
+            restApiId=rest_api_id, body=spec_file, mode="overwrite", parameters=api_params
+        )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
         resources = client.get_resources(restApiId=rest_api_id)
@@ -1227,20 +1231,24 @@ class TestAPIGateway:
                 assert method.get("authorizerId") is not None
 
         spec_file = load_file(TEST_SWAGGER_FILE_YAML)
-        rs = client.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
+        rs = client.put_rest_api(
+            restApiId=rest_api_id, body=spec_file, mode="overwrite", parameters=api_params
+        )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
         rs = client.get_resources(restApiId=rest_api_id)
-        assert 2 == len(rs["items"])  # should contain 2 resources (including the root resource)
+        expected_resources = 2 if base_path_type == "ignore" else 3
+        assert len(rs["items"]) == expected_resources
 
-        resource = [res for res in rs["items"] if res["path"] == "/test"][0]
+        abs_path = "/test" if base_path_type == "ignore" else "/base/test"
+        resource = [res for res in rs["items"] if res["path"] == abs_path][0]
         assert "GET" in resource["resourceMethods"]
         assert "requestParameters" in resource["resourceMethods"]["GET"]
         assert {"integration.request.header.X-Amz-Invocation-Type": "'Event'"} == resource[
             "resourceMethods"
         ]["GET"]["requestParameters"]
 
-        url = path_based_url(api_id=rest_api_id, stage_name="dev", path="/test")
+        url = path_based_url(api_id=rest_api_id, stage_name="dev", path=abs_path)
         response = requests.get(url)
         assert 200 == response.status_code
 
@@ -1248,7 +1256,7 @@ class TestAPIGateway:
         client.delete_rest_api(restApiId=rest_api_id)
 
         spec_file = load_file(TEST_IMPORT_REST_API_FILE)
-        rs = client.import_rest_api(body=spec_file)
+        rs = client.import_rest_api(body=spec_file, parameters=api_params)
         assert 201 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
         rest_api_id = rs["id"]

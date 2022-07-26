@@ -32,7 +32,7 @@ def test_http_integration(apigateway_client):
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
 
-    response = apigateway_client.put_integration(
+    apigateway_client.put_integration(
         restApiId=api_id,
         resourceId=root_id,
         httpMethod="GET",

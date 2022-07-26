@@ -1,17 +1,20 @@
+import json
 import os.path
 
 import pytest
 import requests
 
 from localstack import constants
-from localstack.services.apigateway.helpers import path_based_url
 from localstack.utils.common import short_uid
 from localstack.utils.run import to_str
+from tests.integration.apigateway_fixtures import api_invoke_url
 
 TEST_TEMPLATE_1 = """
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Parameters:
+  ApiName:
+    Type: String
   IntegrationUri:
     Type: String
 Resources:
@@ -92,13 +95,14 @@ def test_cfn_apigateway_aws_integration(
     assert mappings[0] == "(none)"
 
 
-def test_cfn_apigateway_swagger_import(tmp_http_server, deploy_cfn_template, apigateway_client):
+@pytest.mark.skip_offline
+@pytest.mark.aws_validated
+def test_cfn_apigateway_swagger_import(deploy_cfn_template, apigateway_client):
     api_name = f"rest-api-{short_uid()}"
-    test_port, invocations, proxy = tmp_http_server
-
+    int_uri = "http://httpbin.org/post"
     deploy_cfn_template(
         template=TEST_TEMPLATE_1,
-        parameters={"ApiName": api_name, "IntegrationUri": f"http://localhost:{test_port}"},
+        parameters={"ApiName": api_name, "IntegrationUri": int_uri},
     )
 
     # get API details
@@ -106,15 +110,15 @@ def test_cfn_apigateway_swagger_import(tmp_http_server, deploy_cfn_template, api
     assert len(apis) == 1
     api_id = apis[0]["id"]
 
-    # invoke API endpoint
-    url = path_based_url(api_id, stage_name="dev", path="/base/test")
+    # construct API endpoint URL
+    url = api_invoke_url(api_id, stage="dev", path="/test")
+
+    # invoke API endpoint, assert results
     result = requests.post(url, data="test 123")
     assert result.ok
-
-    # assert that integration endpoint is being called
-    assert len(invocations) == 1
-    assert invocations[0]["method"] == "POST"
-    assert to_str(invocations[0]["data"]) == "test 123"
+    content = json.loads(to_str(result.content))
+    assert content["data"] == "test 123"
+    assert content["url"].endswith("/post")
 
 
 @pytest.mark.only_localstack

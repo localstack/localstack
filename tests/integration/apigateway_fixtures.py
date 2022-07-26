@@ -2,6 +2,8 @@ from enum import Enum
 from typing import Dict
 
 from localstack.services.apigateway.helpers import host_based_url, path_based_url
+from localstack.testing.aws.util import is_aws_cloud
+from localstack.utils.aws import aws_stack
 
 
 def assert_response_is_200(response: Dict) -> bool:
@@ -144,6 +146,8 @@ def delete_cognito_user_pool_client(cognito_idp, **kwargs):
 #
 # Common utilities
 #
+
+
 class UrlType(Enum):
     HOST_BASED = 0
     PATH_BASED = 1
@@ -152,7 +156,9 @@ class UrlType(Enum):
 def api_invoke_url(
     api_id: str, stage: str = "", path: str = "/", url_type: UrlType = UrlType.HOST_BASED
 ):
+    if is_aws_cloud():
+        stage = f"/{stage}" if stage else ""
+        return f"https://{api_id}.execute-api.{aws_stack.get_boto3_region()}.amazonaws.com{stage}{path}"
     if url_type == UrlType.HOST_BASED:
         return host_based_url(api_id, stage_name=stage, path=path)
-    else:
-        return path_based_url(api_id, stage_name=stage, path=path)
+    return path_based_url(api_id, stage_name=stage, path=path)

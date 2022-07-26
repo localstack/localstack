@@ -125,8 +125,12 @@ class GatewayRestAPI(GenericBaseModel):
             )
             body = props.get("Body")
             if body:
+                # the default behavior for imports via CFn is basepath=ignore (validated against AWS)
+                api_params = {"basepath": "ignore"}
                 body = json.dumps(body) if isinstance(body, dict) else body
-                client.put_rest_api(restApiId=result["id"], body=to_bytes(body))
+                client.put_rest_api(
+                    restApiId=result["id"], body=to_bytes(body), parameters=api_params
+                )
 
         return {
             "create": {"function": _create},

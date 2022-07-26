@@ -729,8 +729,15 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
         for name, model in definitions.items():
             rest_api.add_model(name=name, schema=model, content_type=APPLICATION_JSON)
 
+    # determine base path
     basepath_mode = (query_params.get("basepath") or ["prepend"])[0]
-    base_path = (resolved_schema.get("basePath") or "") if basepath_mode == "prepend" else ""
+    base_path = ""
+    if basepath_mode == "prepend":
+        base_path = resolved_schema.get("basePath") or ""
+    if basepath_mode == "split":
+        base_path = (resolved_schema.get("basePath") or "").strip("/").split("/")[0]
+        base_path = f"/{base_path}" if base_path else ""
+
     for path in resolved_schema.get("paths", {}):
         get_or_create_path(base_path + path)
 
