@@ -151,21 +151,17 @@ def test_iam_username_defaultname(deploy_cfn_template, iam_client, snapshot):
     get_iam_user = iam_client.get_user(UserName=user_name)
     snapshot.match("get_iam_user", get_iam_user)
 
+
 @pytest.mark.aws_validated
-def test_iam_user_access_key(deploy_cfn_template, iam_client):    
+def test_iam_user_access_key(deploy_cfn_template, iam_client):
     user_name = f"user-{short_uid()}"
 
     deploy_cfn_template(
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../templates/iam_access_key.yaml"
-        ),
-        parameters={"UserName": user_name}
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/iam_access_key.yaml"),
+        parameters={"UserName": user_name},
     )
 
-    keys = iam_client.list_access_keys(UserName=user_name)['AccessKeyMetadata']
-    
-    import pprint
-    pprint.pprint(keys)
-    
+    keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
+
     assert len(keys) == 1
-    assert keys[0]['UserName'] == user_name
+    assert keys[0]["UserName"] == user_name
