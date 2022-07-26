@@ -4,7 +4,8 @@ import os
 from datetime import date, datetime, time
 from typing import Any, Dict, Optional
 
-from moto.ses import ses_backend
+from moto.ses import ses_backends
+from moto.ses.models import SESBackend
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
@@ -123,6 +124,10 @@ def register_ses_api_resource():
         _EMAILS_ENDPOINT_REGISTERED = True
 
 
+def ses_global_backend() -> SESBackend:
+    return ses_backends["global"]
+
+
 class SesProvider(SesApi, ServiceLifecycleHook):
 
     #
@@ -153,7 +158,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     def list_templates(
         self, context: RequestContext, next_token: NextToken = None, max_items: MaxItems = None
     ) -> ListTemplatesResponse:
-        for template in ses_backend.list_templates():
+        for template in ses_global_backend().list_templates():
             if isinstance(template["Timestamp"], (date, datetime)):
                 template["Timestamp"] = timestamp_millis(template["Timestamp"])
         return call_moto(context)
@@ -162,8 +167,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     def delete_template(
         self, context: RequestContext, template_name: TemplateName
     ) -> DeleteTemplateResponse:
-        if template_name in ses_backend.templates:
-            del ses_backend.templates[template_name]
+        if template_name in ses_global_backend().templates:
+            del ses_global_backend().templates[template_name]
         return DeleteTemplateResponse()
 
     @handler("GetIdentityVerificationAttributes")
@@ -269,7 +274,9 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 LOGGER.warning("Source not specified. Rejecting message.")
                 raise MessageRejected()
 
-        message = ses_backend.send_raw_email(source, destinations, raw_data, context.region)
+        message = ses_global_backend().send_raw_email(
+            source, destinations, raw_data, context.region
+        )
 
         save_for_retrospection(
             message.id, context.region, Source=source, Destination=destinations, RawData=raw_data

@@ -2,12 +2,12 @@ import datetime
 import unittest
 
 import pytz
-from moto.s3 import models as s3_models
 from requests.models import Response
 
 from localstack.constants import LOCALHOST, S3_VIRTUAL_HOSTNAME
 from localstack.services.infra import patch_instance_tracker_meta
 from localstack.services.s3 import multipart_content, s3_listener, s3_starter, s3_utils
+from localstack.services.s3.s3_listener import s3_global_backend
 from localstack.services.s3.s3_utils import get_key_from_s3_url
 
 
@@ -425,7 +425,7 @@ class S3BackendTest(unittest.TestCase):
         patch_instance_tracker_meta()
 
     def test_key_instances_before_removing(self):
-        s3_backend = s3_models.S3Backend()
+        s3_backend = s3_global_backend()
 
         bucket_name = "test"
         region = "us-east-1"
@@ -443,7 +443,7 @@ class S3BackendTest(unittest.TestCase):
         self.assertNotIn(key, key.instances or [])
 
     def test_no_bucket_in_instances(self):
-        s3_backend = s3_models.S3Backend()
+        s3_backend = s3_global_backend()
 
         bucket_name = "test"
         region = "us-east-1"
