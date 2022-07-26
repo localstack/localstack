@@ -103,7 +103,7 @@ class IntegrationSubtypes(Enum):
 
     EVENTBRIDGE_PUTEVENTS = "EventBridge-PutEvents", False
     SQS_SENDMESSAGE = "SQS-SendMessage", False
-    SQS_RECEIVESMESSAGE = "SQS-ReceiveMessage", False
+    SQS_RECEIVEMESSAGE = "SQS-ReceiveMessage", False
     SQS_DELETEMESSAGE = "SQS-DeleteMessage", False
     SQS_PURGEQUEUE = "SQS-PurgeQueue", False
     APPCONFIG_GETCONFIGURATION = "AppConfig-GetConfiguration", False
