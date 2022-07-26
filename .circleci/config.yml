@@ -30,6 +30,9 @@ jobs:
           name: Setup environment
           command: |
             make install
+            # TODO remove
+            . .venv/bin/activate; pip uninstall -y moto-ext || true
+            . .venv/bin/activate; pip install "git+https://github.com/localstack/moto.git@localstack-2022-07-26#egg=moto-ext"
             mkdir -p target/reports
             mkdir -p target/coverage
       - save_cache:
