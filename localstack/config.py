@@ -110,10 +110,15 @@ class Directories:
         """
         defaults = Directories.defaults()
 
+        # only set CONTAINER_VAR_LIBS_FOLDER/CONTAINER_CACHE_FOLDER inside the container to redirect var_libs/cache to
+        # another directory to avoid override by host mount
+        var_libs = os.environ.get("CONTAINER_VAR_LIBS_FOLDER", "").strip() or defaults.var_libs
+        cache = os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or defaults.cache
+
         return Directories(
             static_libs=defaults.static_libs,
-            var_libs=defaults.var_libs,
-            cache=defaults.cache,
+            var_libs=var_libs,
+            cache=cache,
             tmp=defaults.tmp,
             functions=defaults.functions,
             data=defaults.data if PERSISTENCE else os.path.join(defaults.tmp, "state"),
