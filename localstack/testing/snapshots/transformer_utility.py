@@ -22,7 +22,7 @@ PATTERN_ARN_CHANGESET = re.compile(
 PATTERN_LOGSTREAM_ID: Pattern[str] = re.compile(
     # r"\d{4}/\d{2}/\d{2}/\[((\$LATEST)|\d+)\][0-9a-f]{32}" # TODO - this was originally included
     # but some responses from LS look like this: 2022/5/30/[$LATEST]20b0964ab88b01c1 -> might not be correct on LS?
-    r"\d{4}/\d{1,2}/\d{1,2}/\[((\$LATEST)|\d+)\][0-9a-f]{16,32}"
+    r"\d{4}/\d{1,2}/\d{1,2}/\[((\$LATEST)|\d+)\][0-9a-f]{8,32}"
 )
 
 
