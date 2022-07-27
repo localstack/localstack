@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import base64
 import json
 import os
@@ -10,7 +11,7 @@ import pytest
 import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
-from moto.apigateway.models import APIGatewayBackend
+from moto.apigateway import apigateway_backends
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
@@ -1885,7 +1886,7 @@ def test_import_swagger_api(apigateway_client):
     api_spec = load_test_resource("openapi.swagger.json")
     api_spec_dict = json.loads(api_spec)
 
-    backend = APIGatewayBackend(region_name="eu-west-1")
+    backend = apigateway_backends["eu-west-1"]
     api_model = backend.create_rest_api(name="", description="")
 
     imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})

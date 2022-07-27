@@ -213,7 +213,8 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
     if not context.stage:
         return {}
 
-    api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=context.region_name)
+    region_name = get_api_region(context.api_id)
+    api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
         return response.get("variables")
@@ -897,9 +898,10 @@ def set_api_id_stage_invocation_path(
 
 def get_api_region(api_id: str) -> Optional[str]:
     """Return the region name for the given REST API ID"""
-    for region_name, region in apigateway_backends.items():
-        if api_id in region.apis:
-            return region_name
+    for account_id, account in apigateway_backends.items():
+        for region_name, region in account.items():
+            if api_id in region.apis:
+                return region_name
 
 
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
