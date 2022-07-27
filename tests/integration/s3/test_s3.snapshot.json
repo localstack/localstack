@@ -250,5 +250,123 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_and_get_object_with_hash_prefix": {
+    "recorded-date": "26-07-2022, 15:37:04",
+    "recorded-content": {
+      "put-object": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "ETag": "\"39d0d586a701e199389d954f2d592720\""
+      },
+      "get-object": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "AcceptRanges": "bytes",
+        "LastModified": "datetime",
+        "ContentLength": 8,
+        "ETag": "\"39d0d586a701e199389d954f2d592720\"",
+        "ContentType": "binary/octet-stream",
+        "Metadata": {},
+        "Body": ""
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_object_tagging_empty_list": {
+    "recorded-date": "09-08-2022, 15:20:21",
+    "recorded-content": {
+      "created-object-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "TagSet": []
+      },
+      "updated-object-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "TagSet": [
+          {
+            "Key": "tag1",
+            "Value": "tag1"
+          }
+        ]
+      },
+      "deleted-object-tags": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "TagSet": []
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_get_object_attributes": {
+    "recorded-date": "09-08-2022, 15:35:20",
+    "recorded-content": {
+      "object-attrs": {
+        "ETag": "e92499db864217242396e8ef766079a9",
+        "LastModified": "datetime",
+        "ObjectSize": 7,
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_head_object_fields": {
+    "recorded-date": "09-08-2022, 16:38:09",
+    "recorded-content": {
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e8dc4081b13434b45189a720b77b6818\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_get_object_after_deleted_in_versioned_bucket": {
+    "recorded-date": "09-08-2022, 17:23:32",
+    "recorded-content": {
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "abcdefgh",
+        "ContentLength": 8,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e8dc4081b13434b45189a720b77b6818\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "VersionId": "dHbAQTgztqVidv2H01dsECtk0x7LN0CJ",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-after-delete": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "my-key",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

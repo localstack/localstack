@@ -1,3 +1,4 @@
+import json
 import time
 
 import pytest
@@ -201,6 +202,150 @@ class TestS3:
             Bucket=s3_bucket, Key="data.txt", ObjectAttributes=["ObjectSize"]
         )
         assert response["ObjectSize"] == 7
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="currently not implemented in moto, see https://github.com/localstack/localstack/issues/6217"
+    )
+    # see also https://github.com/localstack/localstack/issues/6422
+    # todo: see XML issue?
+    def test_get_object_attributes(self, s3_client, s3_bucket, snapshot):
+        s3_client.put_object(Bucket=s3_bucket, Key="data.txt", Body=b"69\n420\n")
+        response = s3_client.get_object_attributes(
+            Bucket=s3_bucket,
+            Key="data.txt",
+            ObjectAttributes=["StorageClass", "ETag", "ObjectSize"],
+        )
+        snapshot.match("object-attrs", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage"])
+    def test_put_and_get_object_with_hash_prefix(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        key_name = "#key-with-hash-prefix"
+        content = b"test 123"
+        response = s3_client.put_object(Bucket=s3_bucket, Key=key_name, Body=content)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("put-object", response)
+
+        response = s3_client.get_object(Bucket=s3_bucket, Key=key_name)
+        snapshot.match("get-object", response)
+        assert response["Body"].read() == content
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="error message is different in current implementation")
+    def test_invalid_range_error(self, s3_client, s3_bucket):
+        key = "my-key"
+        s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
+
+        with pytest.raises(ClientError) as e:
+            s3_client.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1024-4096")
+
+        e.match("InvalidRange")
+        e.match("The requested range is not satisfiable")
+
+    @pytest.mark.aws_validated
+    def test_range_key_not_exists(self, s3_client, s3_bucket):
+        key = "my-key"
+        with pytest.raises(ClientError) as e:
+            s3_client.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1024-4096")
+
+        e.match("NoSuchKey")
+        e.match("The specified key does not exist.")
+
+    @pytest.mark.aws_validated
+    def test_create_bucket_via_host_name(self, s3_vhost_client):
+        # todo check redirection (happens in AWS because of region name), should it happen in LS?
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#VirtualHostingBackwardsCompatibility
+        bucket_name = "test-%s" % short_uid()
+        try:
+            response = s3_vhost_client.create_bucket(
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"LocationConstraint": "eu-central-1"},
+            )
+            assert "Location" in response
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+            response = s3_vhost_client.get_bucket_location(Bucket=bucket_name)
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+            assert response["LocationConstraint"] == "eu-central-1"
+        finally:
+            s3_vhost_client.delete_bucket(Bucket=bucket_name)
+
+    @pytest.mark.aws_validated
+    def test_put_and_get_bucket_policy(self, s3_client, s3_bucket):
+        # put bucket policy
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "s3:GetObject",
+                    "Effect": "Allow",
+                    "Resource": f"arn:aws:s3:::{s3_bucket}/*",
+                    "Principal": {"AWS": "*"},
+                }
+            ],
+        }
+        response = s3_client.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+
+        # retrieve and check policy config
+        saved_policy = s3_client.get_bucket_policy(Bucket=s3_bucket)["Policy"]
+        assert policy == json.loads(saved_policy)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5769")
+    def test_put_object_tagging_empty_list(self, s3_client, s3_bucket, snapshot):
+        key = "my-key"
+        s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
+
+        object_tags = s3_client.get_object_tagging(Bucket=s3_bucket, Key=key)
+        snapshot.match("created-object-tags", object_tags)
+
+        tag_set = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
+        s3_client.put_object_tagging(Bucket=s3_bucket, Key=key, Tagging=tag_set)
+
+        object_tags = s3_client.get_object_tagging(Bucket=s3_bucket, Key=key)
+        snapshot.match("updated-object-tags", object_tags)
+
+        s3_client.put_object_tagging(Bucket=s3_bucket, Key=key, Tagging={"TagSet": []})
+
+        object_tags = s3_client.get_object_tagging(Bucket=s3_bucket, Key=key)
+        snapshot.match("deleted-object-tags", object_tags)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/6218")
+    def test_head_object_fields(self, s3_client, s3_bucket, snapshot):
+        key = "my-key"
+        s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
+
+        response = s3_client.head_object(Bucket=s3_bucket, Key=key)
+        # missing AcceptRanges field
+        # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html
+        # https://stackoverflow.com/questions/58541696/s3-not-returning-accept-ranges-header
+        # https://www.keycdn.com/support/frequently-asked-questions#is-byte-range-not-working-in-combination-with-s3
+
+        snapshot.match("head-object", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/6553")
+    def test_get_object_after_deleted_in_versioned_bucket(
+        self, s3_client, s3_bucket, s3_resource, snapshot
+    ):
+        bucket = s3_resource.Bucket(s3_bucket)
+        bucket.Versioning().enable()
+
+        key = "my-key"
+        s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
+
+        s3_obj = s3_client.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-object", s3_obj)
+
+        s3_client.delete_object(Bucket=s3_bucket, Key=key)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.get_object(Bucket=s3_bucket, Key=key)
+
+        snapshot.match("get-object-after-delete", e.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])

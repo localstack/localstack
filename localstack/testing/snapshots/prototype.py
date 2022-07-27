@@ -249,6 +249,11 @@ class SnapshotSession:
                     ordered_dict[key] = [self._order_dict(entry) for entry in val]
                 else:
                     ordered_dict[key] = val
+
+            # put the ResponseMetadata back at the end of the response
+            if "ResponseMetadata" in ordered_dict:
+                ordered_dict["ResponseMetadata"] = ordered_dict.pop("ResponseMetadata")
+
             return ordered_dict
         else:
             return response

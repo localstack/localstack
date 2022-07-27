@@ -155,6 +155,7 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("Name", value_replacement="bucket-name"),
+            TransformerUtility.key_value("VersionId"),
             TransformerUtility.jsonpath(
                 jsonpath="$..Owner.DisplayName",
                 value_replacement="<display-name>",
