@@ -212,9 +212,13 @@ def get_partition(region_name: str = None):
 def get_local_region():
     global LOCAL_REGION
     if LOCAL_REGION is None:
-        session = boto3.session.Session()
-        LOCAL_REGION = session.region_name or ""
+        LOCAL_REGION = get_boto3_region() or ""
     return config.DEFAULT_REGION or LOCAL_REGION
+
+
+def get_boto3_region() -> str:
+    """Return the region name, as determined from the environment when creating a new boto3 session"""
+    return boto3.session.Session().region_name
 
 
 def is_internal_call_context(headers):
