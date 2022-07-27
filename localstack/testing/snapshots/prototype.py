@@ -142,7 +142,7 @@ class SnapshotSession:
             key
         ] = obj  # TODO: track them separately since the transformation is now done *just* before asserting
 
-        if not self.update and not self.recorded_state or not self.recorded_state.get(key):
+        if not self.update and (not self.recorded_state or not self.recorded_state.get(key)):
             raise Exception("Please run the test first with --snapshot-update")
 
         # TODO: we should return something meaningful here
