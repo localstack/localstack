@@ -638,12 +638,12 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                         authorizers.update({security_scheme_name: authorizer})
                     return authorizer
 
-    def get_or_create_path(path: str):
-        parts = path.rstrip("/").replace("//", "/").split("/")
+    def get_or_create_path(abs_path: str, base_path: str):
+        parts = abs_path.rstrip("/").replace("//", "/").split("/")
         parent_id = ""
         if len(parts) > 1:
             parent_path = "/".join(parts[:-1])
-            parent = get_or_create_path(parent_path)
+            parent = get_or_create_path(parent_path, base_path=base_path)
             parent_id = parent.id
         if existing := [
             r
@@ -651,11 +651,14 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
             if r.path_part == (parts[-1] or "/") and (r.parent_id or "") == (parent_id or "")
         ]:
             return existing[0]
-        return add_path(path, parts, parent_id=parent_id)
 
-    def add_path(path: str, parts: List[str], parent_id=""):
+        # construct relative path (without base path), then add method resources for this path
+        rel_path = abs_path.removeprefix(base_path)
+        return add_path_methods(rel_path, parts, parent_id=parent_id)
+
+    def add_path_methods(rel_path: str, parts: List[str], parent_id=""):
         child_id = create_resource_id()
-        path = path or "/"
+        rel_path = rel_path or "/"
         resource = Resource(
             resource_id=child_id,
             region_name=rest_api.region_name,
@@ -665,8 +668,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
         )
 
         paths_dict = resolved_schema["paths"]
-        relative_path = path.removeprefix(base_path)
-        method_paths = paths_dict.get(relative_path, {})
+        method_paths = paths_dict.get(rel_path, {})
         for method, method_schema in method_paths.items():
             method = method.upper()
 
@@ -739,7 +741,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
         base_path = f"/{base_path}" if base_path else ""
 
     for path in resolved_schema.get("paths", {}):
-        get_or_create_path(base_path + path)
+        get_or_create_path(base_path + path, base_path=base_path)
 
     policy = resolved_schema.get("x-amazon-apigateway-policy")
     if policy:
