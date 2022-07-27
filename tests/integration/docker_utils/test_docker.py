@@ -122,6 +122,9 @@ class TestDockerClient:
             docker_client.unpause_container(container_id)
             assert DockerContainerStatus.UP == docker_client.get_container_status(container_name)
 
+            docker_client.restart_container(container_id)
+            assert docker_client.get_container_status(container_name) == DockerContainerStatus.UP
+
             docker_client.stop_container(container_id)
             assert DockerContainerStatus.DOWN == docker_client.get_container_status(container_name)
         finally:
@@ -270,6 +273,10 @@ class TestDockerClient:
     def test_stop_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchContainer):
             docker_client.stop_container("this_container_does_not_exist")
+
+    def test_restart_non_existing_container(self, docker_client: ContainerClient):
+        with pytest.raises(NoSuchContainer):
+            docker_client.restart_container("this_container_does_not_exist")
 
     def test_pause_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchContainer):
@@ -1011,6 +1018,8 @@ class TestDockerClient:
     def test_is_container_running(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         name = dummy_container.container_name
+        assert docker_client.is_container_running(name)
+        docker_client.restart_container(name)
         assert docker_client.is_container_running(name)
         docker_client.stop_container(name)
         assert not docker_client.is_container_running(name)

@@ -422,6 +422,13 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def restart_container(self, container_name: str, timeout: int = 10):
+        """Restarts a container with the given name.
+        :param container_name: Container identifier
+        :param timeout: Seconds to wait for stop before killing the container
+        """
+
+    @abstractmethod
     def pause_container(self, container_name: str):
         """Pauses a container with the given name."""
 
