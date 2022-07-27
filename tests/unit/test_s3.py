@@ -9,6 +9,7 @@ from localstack.services.infra import patch_instance_tracker_meta
 from localstack.services.s3 import multipart_content, s3_listener, s3_starter, s3_utils
 from localstack.services.s3.s3_listener import s3_global_backend
 from localstack.services.s3.s3_utils import get_key_from_s3_url
+from localstack.utils.strings import short_uid
 
 
 class S3ListenerTest(unittest.TestCase):
@@ -445,7 +446,7 @@ class S3BackendTest(unittest.TestCase):
     def test_no_bucket_in_instances(self):
         s3_backend = s3_global_backend()
 
-        bucket_name = "test"
+        bucket_name = f"b-{short_uid()}"
         region = "us-east-1"
 
         s3_backend.create_bucket(bucket_name, region)

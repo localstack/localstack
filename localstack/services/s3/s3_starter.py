@@ -116,7 +116,7 @@ def apply_patches():
     @patch(s3_responses.S3Response._bucket_response_head)
     def _bucket_response_head(fn, self, bucket_name, *args, **kwargs):
         code, headers, body = fn(self, bucket_name, *args, **kwargs)
-        bucket = s3_models.S3Backend.get_bucket(bucket_name)
+        bucket = s3_global_backend().get_bucket(bucket_name)
         headers["x-amz-bucket-region"] = bucket.region_name
         return code, headers, body
 
