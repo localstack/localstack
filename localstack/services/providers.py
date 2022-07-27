@@ -171,6 +171,7 @@ def kinesis_asf():
         lifecycle_hook=listener.provider,
     )
 
+
 @aws_provider()
 def kms():
     if config.KMS_PROVIDER == "local-kms":
