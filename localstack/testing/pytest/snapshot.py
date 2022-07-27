@@ -31,6 +31,7 @@ def pytest_configure(config: Config):
 def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
     parser.addoption("--snapshot-update", action="store_true")
     parser.addoption("--snapshot-skip-all", action="store_true")
+    parser.addoption("--snapshot-verify", action="store_true")
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -87,7 +88,7 @@ def fixture_snapshot(request: SubRequest, account_id, region):
     )
     sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=2)
     sm.add_transformer(RegexTransformer(region, "<region>"), priority=2)
-    sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER)
+    sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER, priority=2)
 
     yield sm
 
