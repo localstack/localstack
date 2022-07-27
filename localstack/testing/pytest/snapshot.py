@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 from typing import Optional
 
@@ -18,8 +17,6 @@ from localstack.testing.pytest.fixtures import (  # TODO(!) fix. shouldn't impor
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import SNAPSHOT_BASIC_TRANSFORMER
-
-LOG = logging.getLogger(__name__)
 
 
 @pytest.hookimpl
