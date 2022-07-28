@@ -8,7 +8,7 @@ from typing import Callable, Optional, Protocol
 from jsonpath_ng.ext import parse
 
 SNAPSHOT_LOGGER = logging.getLogger(__name__)
-SNAPSHOT_LOGGER.setLevel(logging.DEBUG if os.environ.get("SNAPSHOT_DEBUG") else logging.WARNING)
+SNAPSHOT_LOGGER.setLevel(logging.DEBUG if os.environ.get("DEBUG_SNAPSHOT") else logging.WARNING)
 
 # Types
 

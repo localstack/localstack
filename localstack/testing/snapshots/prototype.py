@@ -20,7 +20,7 @@ from localstack.testing.snapshots.transformer import (
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 
 SNAPSHOT_LOGGER = logging.getLogger(__name__)
-SNAPSHOT_LOGGER.setLevel(logging.DEBUG if os.environ.get("SNAPSHOT_DEBUG") else logging.WARNING)
+SNAPSHOT_LOGGER.setLevel(logging.DEBUG if os.environ.get("DEBUG_SNAPSHOT") else logging.WARNING)
 
 
 class SnapshotMatchResult:
