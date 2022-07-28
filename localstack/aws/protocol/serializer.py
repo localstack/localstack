@@ -1029,8 +1029,9 @@ class EC2ResponseSerializer(QueryResponseSerializer):
             if "xmlNamespace" in operation_model.metadata
             else None
         )
-        root = ETree.Element("Errors", attr)
-        error_tag = ETree.SubElement(root, "Error")
+        root = ETree.Element("Response", attr)
+        errors_tag = ETree.SubElement(root, "Errors")
+        error_tag = ETree.SubElement(errors_tag, "Error")
         self._add_error_tags(error, error_tag)
         request_id = ETree.SubElement(root, "RequestID")
         request_id.text = gen_amzn_requestid_long()

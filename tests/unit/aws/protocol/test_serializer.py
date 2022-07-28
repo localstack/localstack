@@ -3,6 +3,7 @@ import io
 import re
 from datetime import datetime
 from typing import Any, Dict, Iterator, Optional
+from xml.etree import ElementTree
 
 import pytest
 from botocore.endpoint import convert_to_response_dict
@@ -1121,6 +1122,23 @@ def test_ec2_protocol_custom_error_serialization():
         400,
         "Different payload, same token?!",
     )
+
+
+def test_ec2_protocol_errors_have_response_root_element():
+    exception = CommonServiceException(
+        "InvalidSubnetID.NotFound", "The subnet ID 'vpc-test' does not exist"
+    )
+    service = load_service("ec2")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("DescribeSubnets")
+    )
+    body = serialized_response.data
+    parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
+    parser.feed(body)
+    root = parser.close()
+    # The root tag contains a possible namespace, f.e. {http://ec2.amazonaws.com/doc/2016-11-15}Response.
+    assert re.sub(r"^{.*}", "", root.tag) == "Response"
 
 
 def test_restxml_without_output_shape():

@@ -175,7 +175,7 @@ def parse_service_exception(
     response: Response, parsed_response: Dict
 ) -> Optional[ServiceException]:
     """
-    Creates a ServiceException from a parsed response (one that botocore would return).
+    Creates a ServiceException (one ASF can handle) from a parsed response (one that botocore would return).
     It does not automatically raise the exception (see #raise_service_exception).
     :param response: Un-parsed response
     :param parsed_response: Parsed response
@@ -192,7 +192,9 @@ def parse_service_exception(
     )
     # Add all additional fields in the parsed response as members of the exception
     for key, value in parsed_response.items():
-        if key.lower() not in ["code", "message", "type"] and not hasattr(service_exception, key):
+        if key.lower() not in ["code", "message", "type", "error"] and not hasattr(
+            service_exception, key
+        ):
             setattr(service_exception, key, value)
     return service_exception
 
