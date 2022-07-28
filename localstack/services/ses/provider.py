@@ -40,7 +40,7 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
-from localstack.utils.time import timestamp_millis
+from localstack.utils.time import timestamp, timestamp_millis
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
     mkdir(ses_dir)
     path = os.path.join(ses_dir, id + ".json")
 
-    email = {"Id": id, "Region": region, **kwargs}
+    email = {"Id": id, "Timestamp": timestamp(), "Region": region, **kwargs}
 
     EMAILS[id] = email
 
