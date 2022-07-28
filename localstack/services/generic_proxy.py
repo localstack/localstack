@@ -120,8 +120,8 @@ ALLOWED_CORS_ORIGINS = [
     f"http://localhost.localstack.cloud:{config.EDGE_PORT}",
     "https://localhost",
     "https://localhost.localstack.cloud",
-    # for requests from Electron apps, e.g., DynamoDB NoSQL Workbench
-    "file://",
+    "file://", # for requests from Electron apps, e.g., DynamoDB NoSQL Workbench
+    "app://.", # for requests from Electron apps, e.g., Commandeer
 ]
 if EXTRA_CORS_ALLOWED_ORIGINS:
     ALLOWED_CORS_ORIGINS += EXTRA_CORS_ALLOWED_ORIGINS.split(",")
