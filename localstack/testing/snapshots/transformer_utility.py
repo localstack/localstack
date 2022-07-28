@@ -180,6 +180,17 @@ class TransformerUtility:
             ),
         ]
 
+    @staticmethod
+    def cloudwatch_api():
+        """
+        :return: array with Transformers, for cloudwatch api.
+        """
+        return [
+            TransformerUtility.key_value("AlarmName"),
+            KeyValueBasedTransformer(_resource_name_transformer, "SubscriptionArn"),
+            TransformerUtility.key_value("Region", "region-name-full"),
+        ]
+
     # TODO add example
     # @staticmethod
     # def custom(fn: Callable[[dict], dict]) -> Transformer:
