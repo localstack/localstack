@@ -16,7 +16,7 @@ from localstack.services.apigateway.helpers import (
     extract_query_string_params,
     get_resource_for_path,
 )
-from localstack.services.apigateway.integration import (
+from localstack.services.apigateway.templates import (
     RequestTemplates,
     ResponseTemplates,
     VelocityUtilApiGateway,
