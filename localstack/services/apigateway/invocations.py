@@ -23,10 +23,12 @@ from localstack.services.apigateway.integration import (
     LambdaIntegration,
     LambdaProxyIntegration,
     MockIntegration,
-    RequestTemplates,
-    ResponseTemplates,
     SnsIntegration,
     StepFunctionIntegration,
+)
+from localstack.services.apigateway.templates import (
+    RequestTemplates,
+    ResponseTemplates,
     VtlTemplate,
 )
 from localstack.services.kinesis import kinesis_listener
