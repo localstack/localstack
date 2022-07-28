@@ -617,13 +617,18 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
     matches = glob.glob(local_path)
     if not matches:
         return
-    for match in matches:
-        os.remove(match)
     parent_dir = os.path.dirname(local_path)
     maven_asset = maven_asset.replace(":", "/")
     parts = maven_asset.split("/")
     maven_asset_url = f"{MAVEN_REPO_URL}/{maven_asset}/{parts[-2]}-{parts[-1]}.jar"
-    download(maven_asset_url, os.path.join(parent_dir, os.path.basename(maven_asset_url)))
+    maven_asset_target_path = os.path.join(parent_dir, os.path.basename(maven_asset_url))
+
+    # only remove files which won't be replaced with the same file
+    old_jars = [match for match in matches if match != maven_asset_target_path]
+    if old_jars:
+        for old_jar in old_jars:
+            os.remove(old_jar)
+        download(maven_asset_url, os.path.join(parent_dir, os.path.basename(maven_asset_url)))
 
 
 def install_amazon_kinesis_client_libs():
