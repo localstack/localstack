@@ -1420,7 +1420,9 @@ class TestNodeJSRuntimes:
         retry(assert_events, retries=10)
 
     @parametrize_node_runtimes
-    @pytest.mark.skip_snapshot_verify(paths=["$..LogResult"])
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..LogResult", "$..Payload.headers", "$..Payload.isBase64Encoded"]
+    )
     def test_invoke_nodejs_lambda_with_payload_containing_quotes(
         self, lambda_client, create_lambda_function, runtime, logs_client, snapshot
     ):

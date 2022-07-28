@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from datetime import datetime
 from json import JSONDecodeError
 from pathlib import Path
@@ -18,7 +19,8 @@ from localstack.testing.snapshots.transformer import (
 )
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 
-LOG = logging.getLogger(__name__)
+SNAPSHOT_LOGGER = logging.getLogger(__name__)
+SNAPSHOT_LOGGER.setLevel(logging.DEBUG if os.environ.get("DEBUG_SNAPSHOT") else logging.WARNING)
 
 
 class SnapshotMatchResult:
@@ -111,7 +113,7 @@ class SnapshotSession:
                     state_to_dump = json.dumps(full_state, indent=2)
                     fd.write(state_to_dump)
                 except Exception as e:
-                    LOG.exception(e)
+                    SNAPSHOT_LOGGER.exception(e)
 
     def _load_state(self) -> dict:
         try:
@@ -140,23 +142,31 @@ class SnapshotSession:
             key
         ] = obj  # TODO: track them separately since the transformation is now done *just* before asserting
 
-        if not self.update and not self.recorded_state.get(key):
+        if not self.update and (not self.recorded_state or not self.recorded_state.get(key)):
             raise Exception("Please run the test first with --snapshot-update")
 
         # TODO: we should return something meaningful here
         return True
 
     def _assert_all(
-        self, verify: bool = True, skip_verification_paths: list[str] = []
+        self, verify_test_case: bool = True, skip_verification_paths: list[str] = []
     ) -> List[SnapshotMatchResult]:
         """use after all match calls to get a combined diff"""
         results = []
 
-        # TODO future work: verify will be enabled by default, can only be disabled here
-        if self.verify and not verify and not skip_verification_paths:
-            self.verify = verify
+        if not self.verify:
+            SNAPSHOT_LOGGER.warning("Snapshot verification disabled.")
+            return results
+
+        if self.verify and not verify_test_case and not skip_verification_paths:
+            self.verify = False
+            SNAPSHOT_LOGGER.warning("Snapshot verification disabled for this test case.")
 
         self.skip_verification_paths = skip_verification_paths
+        if skip_verification_paths:
+            SNAPSHOT_LOGGER.warning(
+                f"Snapshot verification disabled for paths: {skip_verification_paths}"
+            )
 
         if self.update:
             self.observed_state = self._transform(self.observed_state)
@@ -164,6 +174,12 @@ class SnapshotSession:
 
         # TODO: separate these states
         a_all = self.recorded_state
+        if not a_all and not self.update:
+            SNAPSHOT_LOGGER.warning(
+                "There is no recorded state yet. Snapshot verification skipped."
+            )
+            return results
+
         self._remove_skip_verification_paths(a_all)
         self.observed_state = b_all = self._transform(self.observed_state)
 
@@ -218,7 +234,7 @@ class SnapshotSession:
         try:
             tmp = json.loads(tmp)
         except JSONDecodeError:
-            LOG.error(f"could not decode json-string:\n{tmp}")
+            SNAPSHOT_LOGGER.error(f"could not decode json-string:\n{tmp}")
             return {}
 
         return tmp
