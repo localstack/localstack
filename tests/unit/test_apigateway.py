@@ -16,15 +16,15 @@ from localstack.services.apigateway.helpers import (
     extract_query_string_params,
     get_resource_for_path,
 )
-from localstack.services.apigateway.templates import (
-    RequestTemplates,
-    ResponseTemplates,
-    VelocityUtilApiGateway,
-)
 from localstack.services.apigateway.invocations import (
     ApiInvocationContext,
     RequestValidator,
     apply_request_parameters,
+)
+from localstack.services.apigateway.templates import (
+    RequestTemplates,
+    ResponseTemplates,
+    VelocityUtilApiGateway,
 )
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
