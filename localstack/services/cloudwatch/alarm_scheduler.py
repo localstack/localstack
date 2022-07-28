@@ -5,7 +5,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, List
 
-from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery
+from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery, StateValue
 from localstack.utils.aws import aws_stack
 from localstack.utils.scheduler import Scheduler
 
@@ -25,9 +25,6 @@ COMPARISON_OPS = {
     "LessThanOrEqualToThreshold": (lambda value, threshold: value <= threshold),
 }
 
-STATE_ALARM = "ALARM"
-STATE_OK = "OK"
-STATE_INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 DEFAULT_REASON = "Alarm Evaluation"
 THRESHOLD_CROSSED = "Threshold Crossed"
 INSUFFICIENT_DATA = "Insufficient Data"
@@ -291,7 +288,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
         "version": "1.0",
         "queryDate": query_date,
         "period": alarm_details["Period"],
-        "recentDatapoints": [v for v in metric_values if v],
+        "recentDatapoints": [v for v in metric_values if v is not None],
         "threshold": alarm_details["Threshold"],
     }
     if alarm_details.get("Statistic"):
@@ -315,7 +312,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
                 client,
                 alarm_name,
                 alarm_state,
-                STATE_INSUFFICIENT_DATA,
+                StateValue.INSUFFICIENT_DATA,
                 f"{INSUFFICIENT_DATA}: {details_msg} [{treat_missing_data.capitalize()}].",
                 state_reason_data=state_reason_data,
             )
@@ -324,7 +321,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
                 client,
                 alarm_name,
                 alarm_state,
-                STATE_ALARM,
+                StateValue.ALARM,
                 f"{THRESHOLD_CROSSED}: {details_msg} [{treat_missing_data.capitalize()}].",
                 state_reason_data=state_reason_data,
             )
@@ -333,7 +330,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
                 client,
                 alarm_name,
                 alarm_state,
-                STATE_OK,
+                StateValue.OK,
                 f"{THRESHOLD_CROSSED}: {details_msg} [NonBreaching].",
                 state_reason_data=state_reason_data,
             )
@@ -346,7 +343,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
                 client,
                 alarm_name,
                 alarm_state,
-                STATE_ALARM,
+                StateValue.ALARM,
                 f"{THRESHOLD_CROSSED}: premature alarm for missing datapoints",
                 state_reason_data=state_reason_data,
             )
@@ -371,7 +368,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
             client,
             alarm_name,
             alarm_state,
-            STATE_ALARM,
+            StateValue.ALARM,
             THRESHOLD_CROSSED,
             state_reason_data=state_reason_data,
         )
@@ -380,7 +377,7 @@ def calculate_alarm_state(alarm_arn: str) -> None:
             client,
             alarm_name,
             alarm_state,
-            STATE_OK,
+            StateValue.OK,
             THRESHOLD_CROSSED,
             state_reason_data=state_reason_data,
         )

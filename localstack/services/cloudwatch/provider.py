@@ -16,6 +16,7 @@ from localstack.aws.api.cloudwatch import (
     ListTagsForResourceOutput,
     PutCompositeAlarmInput,
     PutMetricAlarmInput,
+    StateValue,
     TagKeyList,
     TagList,
     TagResourceOutput,
@@ -23,7 +24,7 @@ from localstack.aws.api.cloudwatch import (
 )
 from localstack.http import Request
 from localstack.services import moto
-from localstack.services.cloudwatch.alarm_scheduler import STATE_INSUFFICIENT_DATA, AlarmScheduler
+from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
@@ -43,7 +44,7 @@ def update_state(target, self, reason, reason_data, state_value):
     if reason_data is None:
         reason_data = ""
     if self.state_reason == MOTO_INITIAL_UNCHECKED_REASON:
-        old_state = STATE_INSUFFICIENT_DATA
+        old_state = StateValue.INSUFFICIENT_DATA
     else:
         old_state = self.state_value
     target(self, reason, reason_data, state_value)
@@ -203,9 +204,9 @@ def _cleanup_describe_output(alarm):
         alarm.pop("StateReasonData")
     if (
         alarm.get("StateReason", "") == MOTO_INITIAL_UNCHECKED_REASON
-        and alarm.get("StateValue") != STATE_INSUFFICIENT_DATA
+        and alarm.get("StateValue") != StateValue.INSUFFICIENT_DATA
     ):
-        alarm["StateValue"] = STATE_INSUFFICIENT_DATA
+        alarm["StateValue"] = StateValue.INSUFFICIENT_DATA
 
 
 class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
