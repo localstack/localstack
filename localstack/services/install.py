@@ -614,16 +614,20 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
     """
 
     local_path = os.path.join(base_dir, file_glob)
+    parent_dir = os.path.dirname(local_path)
+    maven_asset = maven_asset.replace(":", "/")
+    parts = maven_asset.split("/")
+    maven_asset_url = f"{MAVEN_REPO_URL}/{maven_asset}/{parts[-2]}-{parts[-1]}.jar"
+    target_file = os.path.join(parent_dir, os.path.basename(maven_asset_url))
+    if os.path.exists(target_file):
+        # avoid re-downloading the newer JAR version if it already exists locally
+        return
     matches = glob.glob(local_path)
     if not matches:
         return
     for match in matches:
         os.remove(match)
-    parent_dir = os.path.dirname(local_path)
-    maven_asset = maven_asset.replace(":", "/")
-    parts = maven_asset.split("/")
-    maven_asset_url = f"{MAVEN_REPO_URL}/{maven_asset}/{parts[-2]}-{parts[-1]}.jar"
-    download(maven_asset_url, os.path.join(parent_dir, os.path.basename(maven_asset_url)))
+    download(maven_asset_url, target_file)
 
 
 def install_amazon_kinesis_client_libs():
