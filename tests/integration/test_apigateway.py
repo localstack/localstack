@@ -10,6 +10,8 @@ import pytest
 import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
+
+from localstack.config import get_edge_url
 from moto.apigateway.models import APIGatewayBackend
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
@@ -23,7 +25,7 @@ from localstack.services.apigateway.helpers import (
     get_resource_for_path,
     get_rest_api_paths,
     import_api_from_openapi_spec,
-    path_based_url,
+    path_based_url, host_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source, use_docker
 from localstack.services.awslambda.lambda_utils import (
@@ -44,7 +46,8 @@ from tests.integration.apigateway_fixtures import (
     create_rest_api,
     create_rest_api_integration,
     create_rest_resource,
-    create_rest_resource_method,
+    create_rest_resource_method, delete_rest_api, _client, create_rest_api_integration_response,
+    create_rest_api_method_response,
 )
 from tests.integration.awslambda.test_lambda_integration import TEST_STAGE_NAME
 
@@ -78,7 +81,6 @@ TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "files", "pets.json")
 TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "files", "petstore-swagger.json")
 TEST_IMPORT_MOCK_INTEGRATION = os.path.join(THIS_FOLDER, "files", "openapi-mock.json")
 TEST_IMPORT_REST_API_ASYNC_LAMBDA = os.path.join(THIS_FOLDER, "files", "api_definition.yaml")
-
 
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
     "ApiGatewayLambdaProxyIntegrationTestResult",
@@ -1982,3 +1984,162 @@ def test_apigateway_rust_lambda(
         assert result.text == f"Hello, {first_name}!"
     finally:
         apigateway_client.delete_rest_api(restApiId=rest_api_id)
+
+
+def test_apigw_call_api_with_aws_endpoint_url():
+    headers = aws_stack.mock_aws_request_headers("apigateway")
+    headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
+    url = f"{get_edge_url()}/apikeys?includeValues=true&name=test%40example.org"
+    response = requests.get(url, headers=headers)
+    assert response.ok
+    content = json.loads(to_str(response.content))
+    assert isinstance(content.get("item"), list)
+
+
+@pytest.mark.parametrize("method", ["GET", "ANY"])
+@pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
+def test_rest_api_multi_region(method, url_function):
+    apigateway_client_eu = _client("apigateway", region_name="eu-west-1")
+    apigateway_client_us = _client("apigateway", region_name="us-west-1")
+
+    api_eu_id, _, root_resource_eu_id = create_rest_api(
+        apigateway_client_eu, name="test-eu-region"
+    )
+    api_us_id, _, root_resource_us_id = create_rest_api(
+        apigateway_client_us, name="test-us-region"
+    )
+
+    resource_eu_id, _ = create_rest_resource(
+        apigateway_client_eu, restApiId=api_eu_id, parentId=root_resource_eu_id, pathPart="demo"
+    )
+    resource_us_id, _ = create_rest_resource(
+        apigateway_client_us, restApiId=api_us_id, parentId=root_resource_us_id, pathPart="demo"
+    )
+
+    create_rest_resource_method(
+        apigateway_client_eu,
+        restApiId=api_eu_id,
+        resourceId=resource_eu_id,
+        httpMethod=method,
+        authorizationType="None",
+    )
+    create_rest_resource_method(
+        apigateway_client_us,
+        restApiId=api_us_id,
+        resourceId=resource_us_id,
+        httpMethod=method,
+        authorizationType="None",
+    )
+
+    lambda_name = f"lambda-{short_uid()}"
+    testutil.create_lambda_function(
+        handler_file=TEST_LAMBDA_NODEJS,
+        func_name=lambda_name,
+        runtime=LAMBDA_RUNTIME_NODEJS14X,
+        region_name="eu-west-1",
+    )
+    testutil.create_lambda_function(
+        handler_file=TEST_LAMBDA_NODEJS,
+        func_name=lambda_name,
+        runtime=LAMBDA_RUNTIME_NODEJS14X,
+        region_name="us-west-1",
+    )
+    lambda_eu_arn = aws_stack.lambda_function_arn(lambda_name, region_name="eu-west-1")
+    uri_eu = aws_stack.apigateway_invocations_arn(lambda_eu_arn, region_name="eu-west-1")
+
+    integration_uri, _ = create_rest_api_integration(
+        apigateway_client_eu,
+        restApiId=api_eu_id,
+        resourceId=resource_eu_id,
+        httpMethod=method,
+        type="AWS_PROXY",
+        integrationHttpMethod=method,
+        uri=uri_eu,
+    )
+
+    lambda_us_arn = aws_stack.lambda_function_arn(lambda_name, region_name="us-west-1")
+    uri_us = aws_stack.apigateway_invocations_arn(lambda_us_arn, region_name="us-west-1")
+
+    integration_uri, _ = create_rest_api_integration(
+        apigateway_client_us,
+        restApiId=api_us_id,
+        resourceId=resource_us_id,
+        httpMethod=method,
+        type="AWS_PROXY",
+        integrationHttpMethod=method,
+        uri=uri_us,
+    )
+
+    # test valid authorization using bearer token
+    endpoint = url_function(api_eu_id, stage_name="local", path="/demo")
+    result = requests.get(endpoint, headers={}, verify=False)
+    assert result.status_code == 200
+    endpoint = url_function(api_us_id, stage_name="local", path="/demo")
+    result = requests.get(endpoint, headers={}, verify=False)
+    assert result.status_code == 200
+
+    delete_rest_api(apigateway_client_eu, restApiId=api_eu_id)
+    delete_rest_api(apigateway_client_us, restApiId=api_us_id)
+    testutil.delete_lambda_function(name=lambda_name, region_name="eu-west-1")
+    testutil.delete_lambda_function(name=lambda_name, region_name="us-west-1")
+
+
+@pytest.mark.parametrize("method", ["GET", "POST"])
+@pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
+@pytest.mark.parametrize(
+    "passthrough_behaviour", ["WHEN_NO_MATCH", "NEVER", "WHEN_NO_TEMPLATES"]
+)
+def test_mock_integration_response(
+        apigateway_client, method, url_function, passthrough_behaviour
+):
+    api_id, _, root_resource_id = create_rest_api(apigateway_client, name="mock-api")
+    resource_id, _ = create_rest_resource(
+        apigateway_client, restApiId=api_id, parentId=root_resource_id, pathPart="{id}"
+    )
+    create_rest_resource_method(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod=method,
+        authorizationType="NONE",
+    )
+    integration_uri, _ = create_rest_api_integration(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod=method,
+        type="MOCK",
+        integrationHttpMethod=method,
+        passthroughBehavior=passthrough_behaviour,
+        requestTemplates={"application/json": '{"statusCode":200}'},
+    )
+    status_code = create_rest_api_method_response(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod=method,
+        statusCode="200",
+        responseModels={"application/json": "Empty"},
+    )
+    create_rest_api_integration_response(
+        apigateway_client,
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod=method,
+        statusCode=status_code,
+        responseTemplates={
+            "application/json": '{"statusCode": 200, "id": $input.params().path.id}'
+        },
+    )
+
+    endpoint = url_function(api_id, stage_name="local", path="/42")
+    result = requests.request(
+        method,
+        endpoint,
+        headers={"Content-Type": "application/json"},
+        verify=False,
+    )
+    assert result.status_code == 200
+    assert to_str(result.content) == '{"statusCode": 200, "id": 42}'
+
+    delete_rest_api(apigateway_client, restApiId=api_id)
