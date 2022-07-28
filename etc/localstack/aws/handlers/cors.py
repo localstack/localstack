@@ -81,7 +81,7 @@ ALLOWED_CORS_ORIGINS = [
     "https://localhost",
     "https://localhost.localstack.cloud",    
     "file://", # for requests from Electron apps, e.g., DynamoDB NoSQL Workbench
-    "app://.", # for requests from Electron app, e.g., Commandeer
+    "app://.", # for requests from Electron apps, e.g., Commandeer
 ]
 if EXTRA_CORS_ALLOWED_ORIGINS:
     ALLOWED_CORS_ORIGINS += EXTRA_CORS_ALLOWED_ORIGINS.split(",")
