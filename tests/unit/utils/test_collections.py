@@ -7,6 +7,7 @@ from localstack.utils.collections import (
     HashableList,
     ImmutableDict,
     ImmutableList,
+    PaginatedList,
     select_from_typed_dict,
 )
 
@@ -100,3 +101,33 @@ def test_hashable_list():
     with pytest.raises(Exception) as exc:
         l1[0] = "foo"
     exc.match("does not support item assignment")
+
+
+class TestPaginatedList:
+    def test_returns_everything_if_page_size_is_big_enough(self):
+        initial_list = [10, 11, 12, 13, 14, 15, 16]
+        paginated_list = PaginatedList(initial_list)
+        page, next_token = paginated_list.get_page(page_size=10)
+        assert page == initial_list
+        assert next_token is None
+
+    def test_returns_first_page_correctly(self):
+        initial_list = [10, 11, 12, 13, 14, 15, 16]
+        paginated_list = PaginatedList(initial_list)
+        page, next_token = paginated_list.get_page(page_size=3)
+        assert page == [10, 11, 12]
+        assert next_token == 3
+
+    def test_returns_second_page_correctly(self):
+        initial_list = [10, 11, 12, 13, 14, 15, 16]
+        paginated_list = PaginatedList(initial_list)
+        page, next_token = paginated_list.get_page(page_size=3, next_token=3)
+        assert page == [13, 14, 15]
+        assert next_token == 6
+
+    def test_returns_last_page_correctly(self):
+        initial_list = [10, 11, 12, 13, 14, 15, 16]
+        paginated_list = PaginatedList(initial_list)
+        page, next_token = paginated_list.get_page(page_size=3, next_token=6)
+        assert page == [16]
+        assert next_token is None

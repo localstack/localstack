@@ -104,7 +104,7 @@ class PaginatedList(List[_ListType]):
 
     def get_page(
         self,
-        token_generator: Callable[[_ListType], str],
+        token_generator: Optional[Callable[[_ListType], str]] = None,
         next_token: str = None,
         page_size: int = None,
         filter_function: Callable[[_ListType], bool] = None,
@@ -122,14 +122,22 @@ class PaginatedList(List[_ListType]):
 
         start_idx = 0
 
-        try:
-            start_item = next(item for item in result_list if token_generator(item) == next_token)
-            start_idx = result_list.index(start_item)
-        except StopIteration:
-            pass
+        if token_generator:
+            try:
+                start_item = next(
+                    item for item in result_list if token_generator(item) == next_token
+                )
+                start_idx = result_list.index(start_item)
+            except StopIteration:
+                pass
+        else:
+            start_idx = next_token or 0
 
         if start_idx + page_size < len(result_list):
-            next_token = token_generator(result_list[start_idx + page_size])
+            if token_generator:
+                next_token = token_generator(result_list[start_idx + page_size])
+            else:
+                next_token = start_idx + page_size
         else:
             next_token = None
 
