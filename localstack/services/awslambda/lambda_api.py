@@ -539,6 +539,14 @@ def run_lambda(
             result = not_found_error(msg="The resource specified in the request does not exist.")
             return InvocationResult(result)
 
+        if lambda_function.state != "Active":
+            result = error_response(
+                f"The operation cannot be performed at this time. The function is currently in the following state: {lambda_function.state}",
+                409,
+                "ResourceConflictException",
+            )
+            raise ClientError(result)
+
         context = LambdaContext(lambda_function, version, context)
         result = LAMBDA_EXECUTOR.execute(
             func_arn,
@@ -711,10 +719,15 @@ def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes = Non
 
 def set_function_code(lambda_function: LambdaFunction):
     def _set_and_configure():
-        do_set_function_code(lambda_function)
-        # initialize function code via plugins
-        for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
-            plugin.init_function_code(lambda_function)
+        try:
+            do_set_function_code(lambda_function)
+            # initialize function code via plugins
+            for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
+                plugin.init_function_code(lambda_function)
+            lambda_function.state = "Active"
+        except Exception:
+            lambda_function.state = "Failed"
+            raise
 
     # unzipping can take some time - limit the execution time to avoid client/network timeout issues
     run_for_max_seconds(config.LAMBDA_CODE_EXTRACT_TIME, _set_and_configure)
@@ -933,7 +946,7 @@ def format_func_details(
         "LastModified": format_timestamp(lambda_function.last_modified),
         "TracingConfig": lambda_function.tracing_config or {"Mode": "PassThrough"},
         "RevisionId": func_version.get("RevisionId"),
-        "State": "Active",
+        "State": lambda_function.state,
         "LastUpdateStatus": "Successful",
         "PackageType": lambda_function.package_type,
         "ImageConfig": getattr(lambda_function, "image_config", None),
@@ -1155,6 +1168,7 @@ def create_function():
         lambda_function.image_config = data.get("ImageConfig", {})
         lambda_function.tracing_config = data.get("TracingConfig", {})
         lambda_function.set_dead_letter_config(data)
+        lambda_function.state = "Pending"
         result = set_function_code(lambda_function)
         if isinstance(result, Response):
             del region.lambdas[arn]
@@ -1615,14 +1629,20 @@ def invoke_function(function):
         context = {"client_context": request.headers.get("X-Amz-Client-Context")}
 
         time_before = time.perf_counter()
-        result = run_lambda(
-            func_arn=arn,
-            event=data,
-            context=context,
-            asynchronous=False,
-            version=qualifier,
-        )
-        LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
+        try:
+            result = run_lambda(
+                func_arn=arn,
+                event=data,
+                context=context,
+                asynchronous=False,
+                version=qualifier,
+            )
+        except ClientError as e:
+            return e.get_response()
+        finally:
+            LOG.debug(
+                "Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000
+            )
         return _create_response(result)
     elif invocation_type == "Event":
         run_lambda(func_arn=arn, event=data, context={}, asynchronous=True, version=qualifier)
