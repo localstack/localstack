@@ -9,7 +9,11 @@ import requests
 from py._code.code import ExceptionInfo
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.secretsmanager import CreateSecretRequest, DeleteSecretRequest
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+from localstack.services.secretsmanager.provider import (
+    AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION,
+)
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
@@ -1709,3 +1713,36 @@ class TestSecretsManager:
         assert response["Name"] == secret_id
         assert response["ARN"] is not None
         assert response["DeletionDate"] is not None
+
+    def test_exp_raised_on_creation_of_seret_scheduled_for_deletion(self, sm_client):
+        create_secret_req: CreateSecretRequest = CreateSecretRequest(
+            Name=f"secret-{short_uid()}", SecretString=f"secretstr-{short_uid()}"
+        )
+        stage_deletion_req: DeleteSecretRequest = DeleteSecretRequest(
+            SecretId=create_secret_req["Name"], RecoveryWindowInDays=7
+        )
+
+        sm_client.create_secret(**create_secret_req)
+        sm_client.delete_secret(**stage_deletion_req)
+
+        with pytest.raises(Exception) as invalid_req_ex:
+            sm_client.create_secret(**create_secret_req)
+        assert invalid_req_ex.typename == "InvalidRequestException"
+        assert (
+            invalid_req_ex.value.response["Error"]["Message"]
+            == AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION
+        )
+
+    def test_can_recreate_delete_secret(self, sm_client):
+        create_secret_req: CreateSecretRequest = CreateSecretRequest(
+            Name=f"secret-{short_uid()}", SecretString=f"secretstr-{short_uid()}"
+        )
+        stage_deletion_req: DeleteSecretRequest = DeleteSecretRequest(
+            SecretId=create_secret_req["Name"], ForceDeleteWithoutRecovery=True
+        )
+
+        sm_client.create_secret(**create_secret_req)
+        sm_client.delete_secret(**stage_deletion_req)
+        sm_client.create_secret(**create_secret_req)
+
+        sm_client.delete_secret(**stage_deletion_req)

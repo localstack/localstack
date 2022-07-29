@@ -70,6 +70,12 @@ from localstack.utils.time import today_no_time
 AWSPREVIOUS: Final[str] = "AWSPREVIOUS"
 AWSPENDING: Final[str] = "AWSPENDING"
 AWSCURRENT: Final[str] = "AWSCURRENT"
+#
+# Error Messages.
+AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[str] = (
+    "An error occurred (InvalidRequestException) when calling the CreateSecret operation: "
+    "You can't create this secret because a secret with this name is already scheduled for deletion."
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -336,6 +342,18 @@ def moto_smb_get_secret_value(fn, self, secret_id, version_id, version_stage):
         )
 
     return res
+
+
+@patch(SecretsManagerBackend.create_secret)
+def moto_smb_create_secret(fn, self, name, *args, **kwargs):
+
+    # Creating a secret with a SecretId equal to one that is scheduled for
+    # deletion should raise an 'InvalidRequestException'.
+    secret: Optional[FakeSecret] = self.secrets.get(name, None)
+    if secret is not None and secret.deleted_date is not None:
+        raise InvalidRequestException(AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION)
+
+    return fn(self, name, *args, **kwargs)
 
 
 @patch(FakeSecret.to_dict)
