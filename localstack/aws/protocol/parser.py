@@ -60,10 +60,6 @@ to certain so-called "traits" in Smithy.
 The result of the parser methods are the operation model of the
 service's action which the request was aiming for, as well as the
 parsed parameters for the service's function invocation.
-
-**Experimental:** The parsers in this module are still experimental.
-When implementing services with these parsers, some edge cases might
-not work out-of-the-box.
 """
 import abc
 import base64
@@ -355,9 +351,6 @@ class QueryRequestParser(RequestParser):
     """
     The ``QueryRequestParser`` is responsible for parsing incoming requests for services which use the ``query``
     protocol. The requests for these services encode the majority of their parameters in the URL query string.
-
-    **Experimental:** This parser is still experimental.
-    When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
     @_handle_exceptions
@@ -518,12 +511,6 @@ class QueryRequestParser(RequestParser):
         return [r[1] for r in sorted(result)] if len(result) > 0 else None
 
     @staticmethod
-    def _get_first(node: Any) -> Any:
-        if isinstance(node, (list, tuple)):
-            return node[0]
-        return node
-
-    @staticmethod
     def _filter_node(name: str, node: dict) -> dict:
         """Filters the node dict for entries where the key starts with the given name."""
         filtered = {k[len(name) + 1 :]: v for k, v in node.items() if k.startswith(name)}
@@ -557,28 +544,6 @@ class BaseRestRequestParser(RequestParser):
         super().__init__(service)
         self.ignore_get_body_errors = False
         self._operation_router = RestServiceOperationRouter(service)
-
-    def _get_normalized_request_uri_length(self, operation_model: OperationModel) -> int:
-        """
-        Fings the length of the normalized request URI for the given operation model.
-        See #_get_normalized_request_uri for a description of the normalization.
-        """
-        return len(self._get_normalized_request_uri(operation_model))
-
-    def _get_normalized_request_uri(self, operation_model: OperationModel) -> str:
-        """
-        Fings the normalized request URI for the given operation model.
-        A normalized request URI has a static, common replacement for path parameter placeholders, starting with a
-        space character (which is the lowest non-control character in ASCII and is not expected to be present in a
-        service specification's request URI pattern).
-        This allows the resulting normalized request URIs to be sorted.
-        :param operation_model: to get the normalized request URI for.
-            This function expects that the given operation model has HTTP metadata!
-        :return: normalized request URI for the given operation model
-        """
-        request_uri: str = operation_model.http.get("requestUri")
-        # Make sure that all path parameter placeholders have the same name and length
-        return re.sub(r"{(.*?)}", " param", request_uri)
 
     @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
@@ -666,9 +631,6 @@ class RestXMLRequestParser(BaseRestRequestParser):
     """
     The ``RestXMLRequestParser`` is responsible for parsing incoming requests for services which use the ``rest-xml``
     protocol. The requests for these services encode the majority of their parameters as XML in the request body.
-
-    **Experimental:** This parser is still experimental.
-    When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
     def __init__(self, service_model: ServiceModel):
@@ -906,9 +868,6 @@ class JSONRequestParser(BaseJSONRequestParser):
     protocol.
     The requests for these services encode the majority of their parameters as JSON in the request body.
     The operation is defined in an HTTP header field.
-
-    **Experimental:** This parser is still experimental.
-    When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
     @_handle_exceptions
@@ -954,9 +913,6 @@ class RestJSONRequestParser(BaseRestRequestParser, BaseJSONRequestParser):
     protocol.
     The requests for these services encode the majority of their parameters as JSON in the request body.
     The operation is defined by the HTTP method and the path suffix.
-
-    **Experimental:** This parser is still experimental.
-    When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
     def _initial_body_parse(self, request: HttpRequest) -> dict:
@@ -970,9 +926,6 @@ class EC2RequestParser(QueryRequestParser):
     """
     The ``EC2RequestParser`` is responsible for parsing incoming requests for services which use the ``ec2``
     protocol (which only is EC2). Protocol is quite similar to the ``query`` protocol with some small differences.
-
-    **Experimental:** This parser is still experimental.
-    When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
     def _get_serialized_name(self, shape: Shape, default_name: str, node: dict) -> str:
@@ -1121,10 +1074,6 @@ class SQSRequestParser(QueryRequestParser):
 def create_parser(service: ServiceModel) -> RequestParser:
     """
     Creates the right parser for the given service model.
-
-    **Experimental:** The parsers in this module are still experimental.
-    When implementing services with these parsers, some edge cases might
-    not work out-of-the-box.
 
     :param service: to create the parser for
     :return: RequestParser which can handle the protocol of the service
