@@ -31,6 +31,7 @@ ec2:
     - TestAccVPC_classicLinkOptionSet
     - TestAccVPC_classicLinkDNSSupportOptionSet
     - TestAccVPC_IPAMIPv4BasicExplicitCIDR
+    - TestAccVPCSubnet_basic
     - TestAccVPCSubnet_DefaultTags_providerOnly
     - TestAccVPCSubnet_DefaultTags_updateToProviderOnly
     - TestAccVPCSubnet_DefaultTags_updateToResourceOnly
@@ -40,4 +41,3 @@ ec2:
     - TestAccVPCSubnet_defaultAndIgnoreTags
     - TestAccVPCSubnet_updateTagsKnownAtApply
     - TestAccVPCSubnet_ignoreTags
-    - TestAccVPCSubnet_customerOwnedIPv4Pool
