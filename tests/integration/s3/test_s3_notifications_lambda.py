@@ -3,9 +3,9 @@ import os
 
 import pytest
 
-from localstack.utils.common import retry
-from localstack.utils.common import safe_requests as requests
-from localstack.utils.common import short_uid
+from localstack.utils.http import safe_requests as requests
+from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
