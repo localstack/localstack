@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.utils.files import load_file
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import short_uid
 from tests.integration.test_apigateway import TEST_IMPORT_PETSTORE_SWAGGER
 
 
