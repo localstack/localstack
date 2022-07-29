@@ -3,6 +3,7 @@ import json
 import pytest
 import requests
 from botocore.exceptions import ClientError
+
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.utils.files import load_file
@@ -812,5 +813,3 @@ def test_export_oas3_openapi(apigateway_client):
     # optional keys
     optional_keys = ["paths"]
     assert all(k in spec_object.keys() for k in optional_keys)
-
-

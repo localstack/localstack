@@ -10,22 +10,22 @@ import pytest
 import xmltodict
 from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
-
-from localstack.config import get_edge_url
 from moto.apigateway.models import APIGatewayBackend
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.config import get_edge_url
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_REQUEST_URL, LOCALHOST_HOSTNAME
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
     get_resource_for_path,
     get_rest_api_paths,
+    host_based_url,
     import_api_from_openapi_spec,
-    path_based_url, host_based_url,
+    path_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source, use_docker
 from localstack.services.awslambda.lambda_utils import (
@@ -42,12 +42,15 @@ from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_fi
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
 from tests.integration.apigateway_fixtures import (
+    _client,
     api_invoke_url,
     create_rest_api,
     create_rest_api_integration,
-    create_rest_resource,
-    create_rest_resource_method, delete_rest_api, _client, create_rest_api_integration_response,
+    create_rest_api_integration_response,
     create_rest_api_method_response,
+    create_rest_resource,
+    create_rest_resource_method,
+    delete_rest_api,
 )
 from tests.integration.awslambda.test_lambda_integration import TEST_STAGE_NAME
 
@@ -81,6 +84,7 @@ TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "files", "pets.json")
 TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "files", "petstore-swagger.json")
 TEST_IMPORT_MOCK_INTEGRATION = os.path.join(THIS_FOLDER, "files", "openapi-mock.json")
 TEST_IMPORT_REST_API_ASYNC_LAMBDA = os.path.join(THIS_FOLDER, "files", "api_definition.yaml")
+
 
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
     "ApiGatewayLambdaProxyIntegrationTestResult",
@@ -2002,12 +2006,8 @@ def test_rest_api_multi_region(method, url_function):
     apigateway_client_eu = _client("apigateway", region_name="eu-west-1")
     apigateway_client_us = _client("apigateway", region_name="us-west-1")
 
-    api_eu_id, _, root_resource_eu_id = create_rest_api(
-        apigateway_client_eu, name="test-eu-region"
-    )
-    api_us_id, _, root_resource_us_id = create_rest_api(
-        apigateway_client_us, name="test-us-region"
-    )
+    api_eu_id, _, root_resource_eu_id = create_rest_api(apigateway_client_eu, name="test-eu-region")
+    api_us_id, _, root_resource_us_id = create_rest_api(apigateway_client_us, name="test-us-region")
 
     resource_eu_id, _ = create_rest_resource(
         apigateway_client_eu, restApiId=api_eu_id, parentId=root_resource_eu_id, pathPart="demo"
@@ -2086,12 +2086,8 @@ def test_rest_api_multi_region(method, url_function):
 
 @pytest.mark.parametrize("method", ["GET", "POST"])
 @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
-@pytest.mark.parametrize(
-    "passthrough_behaviour", ["WHEN_NO_MATCH", "NEVER", "WHEN_NO_TEMPLATES"]
-)
-def test_mock_integration_response(
-        apigateway_client, method, url_function, passthrough_behaviour
-):
+@pytest.mark.parametrize("passthrough_behaviour", ["WHEN_NO_MATCH", "NEVER", "WHEN_NO_TEMPLATES"])
+def test_mock_integration_response(apigateway_client, method, url_function, passthrough_behaviour):
     api_id, _, root_resource_id = create_rest_api(apigateway_client, name="mock-api")
     resource_id, _ = create_rest_resource(
         apigateway_client, restApiId=api_id, parentId=root_resource_id, pathPart="{id}"
@@ -2143,3 +2139,22 @@ def test_mock_integration_response(
     assert to_str(result.content) == '{"statusCode": 200, "id": 42}'
 
     delete_rest_api(apigateway_client, restApiId=api_id)
+
+
+def test_tag_api():
+    client = aws_stack.connect_to_service("apigateway")
+    api_name = f"api-{short_uid()}"
+    tags = {"foo": "bar"}
+
+    # add resource tags
+    result = client.create_rest_api(name=api_name)
+    api_id = result["id"]
+    api_arn = aws_stack.apigateway_restapi_arn(api_id=api_id)
+    client.tag_resource(resourceArn=api_arn, tags=tags)
+
+    # receive and assert tags
+    tags_saved = client.get_tags(resourceArn=api_arn)["tags"]
+    assert tags == tags_saved
+
+    # clean up
+    client.delete_rest_api(restApiId=api_id)
