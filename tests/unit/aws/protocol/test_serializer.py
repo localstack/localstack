@@ -1141,6 +1141,20 @@ def test_ec2_protocol_errors_have_response_root_element():
     assert re.sub(r"^{.*}", "", root.tag) == "Response"
 
 
+def test_restxml_s3_errors_have_error_root_element():
+    exception = CommonServiceException("NoSuchBucket", "The specified bucket does not exist")
+    service = load_service("s3")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("GetObject")
+    )
+    body = serialized_response.data
+    parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
+    parser.feed(body)
+    root = parser.close()
+    assert root.tag == "Error"
+
+
 def test_restxml_without_output_shape():
     _botocore_serializer_integration_test("cloudfront", "DeleteDistribution", {}, status_code=204)
 
