@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import TYPE_CHECKING, Dict, Mapping, Optional, Tuple, Union
+from typing import IO, TYPE_CHECKING, Dict, Mapping, Optional, Tuple, Union
 from urllib.parse import quote, unquote, urlencode
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ def dummy_wsgi_environment(
     method: str = "GET",
     path: str = "",
     headers: Optional[Union[Dict, Headers]] = None,
-    body: Optional[Union[bytes, str]] = None,
+    body: Optional[Union[bytes, str, IO[bytes]]] = None,
     scheme: str = "http",
     root_path: str = "/",
     query_string: Optional[str] = None,
@@ -52,11 +52,8 @@ def dummy_wsgi_environment(
         "SCRIPT_NAME": unquote(quote(root_path.rstrip("/")), "latin-1"),
         "PATH_INFO": unquote(quote(path), "latin-1"),
         "SERVER_PROTOCOL": "HTTP/1.1",
+        "QUERY_STRING": query_string or "",
     }
-
-    data = strings.to_bytes(body) if body else b""
-
-    environ["QUERY_STRING"] = query_string or ""
 
     if raw_uri:
         if query_string:
@@ -80,14 +77,19 @@ def dummy_wsgi_environment(
     if headers:
         set_environment_headers(environ, headers)
 
-    if "CONTENT_LENGTH" not in environ:
-        # try to determine content length from body
-        environ["CONTENT_LENGTH"] = str(len(data))
+    if not body or isinstance(body, (str, bytes)):
+        data = strings.to_bytes(body) if body else b""
+        wsgi_input = BytesIO(data)
+        if "CONTENT_LENGTH" not in environ:
+            # try to determine content length from body
+            environ["CONTENT_LENGTH"] = str(len(data))
+    else:
+        wsgi_input = body
 
     # WSGI environ keys
     environ["wsgi.version"] = (1, 0)
     environ["wsgi.url_scheme"] = scheme
-    environ["wsgi.input"] = BytesIO(data)
+    environ["wsgi.input"] = wsgi_input
     environ["wsgi.input_terminated"] = True
     environ["wsgi.errors"] = BytesIO()
     environ["wsgi.multithread"] = True

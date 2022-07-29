@@ -587,9 +587,12 @@ class BaseRestRequestParser(RequestParser):
                         body = body.decode(self.DEFAULT_ENCODING)
                     payload_parsed[payload_member_name] = body
             elif body_shape.type_name == "blob":
-                # Only set the value if it's not empty (the request's data is an empty binary by default)
-                if request.data:
-                    payload_parsed[payload_member_name] = request.data
+                # This control path is equivalent to operation.has_streaming_input (shape has a payload which is a blob)
+                # in which case we assume essentially an IO[bytes] to be passed. Since the payload can be optional, we
+                # only set the parameter if content_length=0, which indicates an empty request. If the content length is
+                # not set, it could be a streaming response.
+                if request.content_length != 0:
+                    payload_parsed[payload_member_name] = request._get_stream_for_parsing()
             else:
                 original_parsed = self._initial_body_parse(request)
                 payload_parsed[payload_member_name] = self._parse_shape(

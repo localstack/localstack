@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from io import BytesIO
 from urllib.parse import unquote, urlencode, urlsplit
 
 import pytest
@@ -840,7 +841,7 @@ def test_parse_appconfig_non_json_blob_payload():
         action="CreateHostedConfigurationVersion",
         ApplicationId="test-application-id",
         ConfigurationProfileId="test-configuration-profile-id",
-        Content=b"<html></html>",
+        Content=BytesIO(b"<html></html>"),
         ContentType="application/html",
     )
 
@@ -922,7 +923,11 @@ def test_restjson_operation_detection_with_query_suffix_in_requesturi():
     Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
     parameter, f.e. API Gateway's ImportRestApi: "/restapis?mode=import
     """
-    _botocore_parser_integration_test(service="apigateway", action="ImportRestApi", body=b"Test")
+    _botocore_parser_integration_test(
+        service="apigateway",
+        action="ImportRestApi",
+        body=BytesIO(b"Test"),
+    )
 
 
 def test_rest_url_parameter_with_dashes():
@@ -1041,7 +1046,7 @@ def test_s3_put_object_keys_with_slashes():
         Bucket="test-bucket",
         Key="/test-key",
         ContentLength=6,
-        Body=b"foobar",
+        Body=BytesIO(b"foobar"),
         Metadata={},
     )
 
@@ -1087,7 +1092,7 @@ def test_restxml_header_date_parsing():
         Bucket="test-bucket",
         Key="test-key",
         ContentLength=3,
-        Body=b"foo",
+        Body=BytesIO(b"foo"),
         Metadata={},
         Expires=datetime(2015, 1, 1, 0, 0, tzinfo=timezone.utc),
     )

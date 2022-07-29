@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import pytest
 
 from localstack import config
@@ -71,6 +73,50 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
     assert qname in sqs_backends[config.AWS_REGION_US_EAST_1].queues
     moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
     assert qname not in sqs_backends[config.AWS_REGION_US_EAST_1].queues
+
+
+@pytest.mark.parametrize("test_type", ["string", "bytes", "file_like"])
+def test_call_s3_with_streaming_trait(test_type, monkeypatch):
+    monkeypatch.setenv("MOTO_S3_CUSTOM_ENDPOINTS", "s3.localhost.localstack.cloud:4566")
+
+    bucket_name = f"bucket-{short_uid()}"
+    key_name = "foobared"
+
+    # create the bucket
+    moto.call_moto(moto.create_aws_request_context("s3", "CreateBucket", {"Bucket": bucket_name}))
+
+    # test the different input types for streaming payload
+    if test_type == "string":
+        body = "foobar"
+    elif test_type == "bytes":
+        body = b"foobar"
+    elif test_type == "file_like":
+        body = BytesIO(b"foobar")
+    else:
+        raise ValueError(test_type)
+
+    moto.call_moto(
+        moto.create_aws_request_context(
+            "s3", "PutObject", {"Bucket": bucket_name, "Key": key_name, "Body": body}
+        )
+    )
+
+    # check whether it was created/received correctly
+    response = moto.call_moto(
+        moto.create_aws_request_context("s3", "GetObject", {"Bucket": bucket_name, "Key": key_name})
+    )
+    assert hasattr(
+        response["Body"], "read"
+    ), f"expected Body to be readable, was {type(response['Body'])}"
+    assert response["Body"].read() == b"foobar"
+
+    # cleanup
+    moto.call_moto(
+        moto.create_aws_request_context(
+            "s3", "DeleteObject", {"Bucket": bucket_name, "Key": key_name}
+        )
+    )
+    moto.call_moto(moto.create_aws_request_context("s3", "DeleteBucket", {"Bucket": bucket_name}))
 
 
 def test_call_include_response_metadata():
