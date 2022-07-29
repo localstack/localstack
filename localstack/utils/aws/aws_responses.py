@@ -103,8 +103,10 @@ def to_xml(data: dict, memberize: bool = True) -> ET.Element:
                 _to_xml(curr_el, value)
         elif isinstance(data_rest, str):
             parent_el.text = data_rest
+        elif isinstance(data_rest, bool):
+            parent_el.text = str(data_rest).lower()
         elif any(
-            isinstance(data_rest, i) for i in [bool, str, int, float]
+            isinstance(data_rest, i) for i in [int, float]
         ):  # limit types for text serialization
             parent_el.text = str(data_rest)
         else:
