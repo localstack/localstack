@@ -1714,7 +1714,7 @@ class TestSecretsManager:
         assert response["ARN"] is not None
         assert response["DeletionDate"] is not None
 
-    def test_exp_raised_on_creation_of_seret_scheduled_for_deletion(self, sm_client):
+    def test_exp_raised_on_creation_of_secret_scheduled_for_deletion(self, sm_client):
         create_secret_req: CreateSecretRequest = CreateSecretRequest(
             Name=f"secret-{short_uid()}", SecretString=f"secretstr-{short_uid()}"
         )
