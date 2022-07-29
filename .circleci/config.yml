@@ -148,6 +148,7 @@ jobs:
           name: Test ASF Lambda provider
           environment:
             PROVIDER_OVERRIDE_LAMBDA: "asf"
+            LS_LOG: "trace"
             TEST_PATH: "tests/integration/awslambda/test_lambda_api.py"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/lambda_asf.xml -o junit_suite_name='lambda_asf'"
             COVERAGE_ARGS: "-p"
