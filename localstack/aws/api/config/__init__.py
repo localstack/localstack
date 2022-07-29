@@ -20,6 +20,7 @@ AwsRegion = str
 BaseResourceId = str
 Boolean = bool
 ChannelName = str
+ComplianceScore = str
 ConfigRuleName = str
 Configuration = str
 ConfigurationAggregatorArn = str
@@ -411,6 +412,15 @@ class ResourceType(str):
 
 class ResourceValueType(str):
     RESOURCE_ID = "RESOURCE_ID"
+
+
+class SortBy(str):
+    SCORE = "SCORE"
+
+
+class SortOrder(str):
+    ASCENDING = "ASCENDING"
+    DESCENDING = "DESCENDING"
 
 
 class ConformancePackTemplateValidationException(ServiceException):
@@ -1150,6 +1160,21 @@ class ConformancePackComplianceFilters(TypedDict, total=False):
 
 
 ConformancePackComplianceResourceIds = List[StringWithCharLimit256]
+LastUpdatedTime = datetime
+
+
+class ConformancePackComplianceScore(TypedDict, total=False):
+    Score: Optional[ComplianceScore]
+    ConformancePackName: Optional[ConformancePackName]
+    LastUpdatedTime: Optional[LastUpdatedTime]
+
+
+ConformancePackComplianceScores = List[ConformancePackComplianceScore]
+ConformancePackNameFilter = List[ConformancePackName]
+
+
+class ConformancePackComplianceScoresFilters(TypedDict, total=False):
+    ConformancePackNames: ConformancePackNameFilter
 
 
 class ConformancePackComplianceSummary(TypedDict, total=False):
@@ -2172,6 +2197,19 @@ class ListAggregateDiscoveredResourcesResponse(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class ListConformancePackComplianceScoresRequest(ServiceRequest):
+    Filters: Optional[ConformancePackComplianceScoresFilters]
+    SortOrder: Optional[SortOrder]
+    SortBy: Optional[SortBy]
+    Limit: Optional[PageSizeLimit]
+    NextToken: Optional[NextToken]
+
+
+class ListConformancePackComplianceScoresResponse(TypedDict, total=False):
+    NextToken: Optional[NextToken]
+    ConformancePackComplianceScores: ConformancePackComplianceScores
+
+
 ResourceIdList = List[ResourceId]
 
 
@@ -3020,6 +3058,18 @@ class ConfigApi:
         limit: Limit = None,
         next_token: NextToken = None,
     ) -> ListAggregateDiscoveredResourcesResponse:
+        raise NotImplementedError
+
+    @handler("ListConformancePackComplianceScores")
+    def list_conformance_pack_compliance_scores(
+        self,
+        context: RequestContext,
+        filters: ConformancePackComplianceScoresFilters = None,
+        sort_order: SortOrder = None,
+        sort_by: SortBy = None,
+        limit: PageSizeLimit = None,
+        next_token: NextToken = None,
+    ) -> ListConformancePackComplianceScoresResponse:
         raise NotImplementedError
 
     @handler("ListDiscoveredResources")

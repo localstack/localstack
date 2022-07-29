@@ -292,6 +292,7 @@ class VolumeType(str):
     standard = "standard"
     gp2 = "gp2"
     io1 = "io1"
+    gp3 = "gp3"
 
 
 class AccessDeniedException(ServiceException):
@@ -698,6 +699,7 @@ class EBSOptions(TypedDict, total=False):
     VolumeType: Optional[VolumeType]
     VolumeSize: Optional[IntegerClass]
     Iops: Optional[IntegerClass]
+    Throughput: Optional[IntegerClass]
 
 
 class ZoneAwarenessConfig(TypedDict, total=False):
