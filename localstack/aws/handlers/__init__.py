@@ -23,5 +23,6 @@ parse_service_response = service.ServiceResponseParser()
 # legacy compatibility handlers
 serve_edge_router_rules = legacy.EdgeRouterHandler()
 serve_default_listeners = legacy.DefaultListenerHandler()
+set_close_connection_header = legacy.set_close_connection_header
 pop_request_context = legacy.pop_request_context
 push_request_context = legacy.push_request_context
