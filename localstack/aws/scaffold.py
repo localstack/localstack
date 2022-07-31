@@ -1,6 +1,7 @@
 import io
 import keyword
 import re
+from multiprocessing import Pool
 from pathlib import Path
 from typing import Dict, List, Set
 
@@ -487,14 +488,20 @@ def upgrade(path: str, doc: bool = False):
         for d in Path(path).iterdir()
         if d.is_dir() and not d.name.startswith("__")
     ]
-    for service in services:
-        try:
-            code = generate_code(service, doc)
-        except UnknownServiceError:
-            click.echo(f"unknown service {service}! skipping...")
-            continue
-        create_code_directory(service, code, base_path=path)
+
+    with Pool() as pool:
+        pool.starmap(_do_generate_code, [(service, path, doc) for service in services])
+
     click.echo("done!")
+
+
+def _do_generate_code(service: str, path: str, doc: bool):
+    try:
+        code = generate_code(service, doc)
+    except UnknownServiceError:
+        click.echo(f"unknown service {service}! skipping...")
+        return
+    create_code_directory(service, code, base_path=path)
 
 
 if __name__ == "__main__":
