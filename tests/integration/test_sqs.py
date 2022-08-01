@@ -542,8 +542,66 @@ class TestSqsProvider:
         result = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in result
 
-    def test_update_message_visibility_timeout(self):
-        pass
+    @pytest.mark.aws_validated
+    def test_extend_message_visibility_timeout_set_in_queue(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "2"})
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="test")
+        response = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
+        receipt = response["Messages"][0]["ReceiptHandle"]
+
+        # update even if time expires
+        for _ in range(4):
+            time.sleep(1)
+            # we've waited a total of four seconds, although the visibility timeout is 2, so we are extending it
+            sqs_client.change_message_visibility(
+                QueueUrl=queue_url, ReceiptHandle=receipt, VisibilityTimeout=2
+            )
+            assert sqs_client.receive_message(QueueUrl=queue_url).get("Messages", []) == []
+
+        messages = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)["Messages"]
+        assert messages[0]["Body"] == "test"
+        assert len(messages) == 1
+
+    @pytest.mark.aws_validated
+    def test_receive_message_with_visibility_timeout_updates_timeout(
+        self, sqs_client, sqs_create_queue
+    ):
+        queue_url = sqs_create_queue()
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="test")
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=2, VisibilityTimeout=0
+        )
+        assert len(response["Messages"]) == 1
+
+        response = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=3)
+        assert len(response["Messages"]) == 1
+
+        response = sqs_client.receive_message(QueueUrl=queue_url)
+        assert response.get("Messages", []) == []
+
+    @pytest.mark.aws_validated
+    def test_terminate_visibility_timeout_after_receive(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="test")
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=2, VisibilityTimeout=0
+        )
+        receipt_1 = response["Messages"][0]["ReceiptHandle"]
+        assert len(response["Messages"]) == 1
+
+        response = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=3)
+        assert len(response["Messages"]) == 1
+
+        sqs_client.change_message_visibility(
+            QueueUrl=queue_url, ReceiptHandle=receipt_1, VisibilityTimeout=0
+        )
+        response = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert len(response["Messages"]) == 1
 
     def test_delete_message_batch_from_lambda(
         self, sqs_client, sqs_create_queue, lambda_client, create_lambda_function
