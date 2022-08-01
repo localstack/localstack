@@ -285,6 +285,7 @@ class SqsQueue:
             QueueAttributeName.QueueArn: self.arn,
             QueueAttributeName.ReceiveMessageWaitTimeSeconds: "0",
             QueueAttributeName.VisibilityTimeout: "30",
+            QueueAttributeName.SqsManagedSseEnabled: "false",
         }
 
     def update_last_modified(self, timestamp: int = None):
