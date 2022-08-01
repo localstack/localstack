@@ -2155,6 +2155,9 @@ class ResourceType(str):
     vpn_connection = "vpn-connection"
     vpn_gateway = "vpn-gateway"
     vpc_flow_log = "vpc-flow-log"
+    capacity_reservation_fleet = "capacity-reservation-fleet"
+    traffic_mirror_filter_rule = "traffic-mirror-filter-rule"
+    vpc_endpoint_connection_device_type = "vpc-endpoint-connection-device-type"
 
 
 class RootDeviceType(str):
