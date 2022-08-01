@@ -477,6 +477,7 @@ class TestSNSProvider:
 
     # todo: the message key is added to the error response body, but not in AWS
     # check with serializer?
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..message"])
     def test_tags(self, sns_client, sns_create_topic, snapshot):
 
