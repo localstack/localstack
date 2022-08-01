@@ -42,7 +42,9 @@ def create_simplified_metrics(metrics: dict, impl_details: dict):
                 "implemented": impl_details[service][operation]["implemented"],
                 "tested": True if op_details.get("invoked", 0) > 0 else False,
                 "aws_validated": op_details["aws_validated"],
-                "snapshot": op_details["snapshot"],
+                "snapshot": op_details[
+                    "snapshot"
+                ],  # TODO also consider 'snapshot_skipped_paths' once we use this in docs
                 "pro": impl_details[service][operation]["pro"],
             }
 

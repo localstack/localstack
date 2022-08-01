@@ -16,6 +16,76 @@ LOG = logging.getLogger(__name__)
 template_implemented_item = "- [X] "
 template_not_implemented_item = "- [ ] "
 
+template_implemented_html = '<input type="checkbox" disabled="disabled" checked="checked">'
+template_not_implemented_html = '<input type="checkbox" disabled="disabled">'
+
+SNAPSHOT = "📸"
+SNAPSHOT_SKIP_VERIFY = "🚫"
+AWS_VALIDATED = "✨"
+
+
+def _generate_details_block_html(details_title, details):
+    output = f"<li>  <details><summary>{details_title}</summary>\n\n"
+    for e, count in details.items():
+        if count > 0:
+            output += f"  {template_implemented_html}{e}</input><br/>\n"
+        else:
+            output += f"  {template_not_implemented_html}{e}</input><br/>\n"
+    output += "  </details></li>\n"
+    return output
+
+
+def create_simple_html_report(file_name, metrics):
+    output = "<html><h1> Metric Collection Report of Integration Tests </h1>\n\n"
+    output += "<div><b>Disclaimer</b>: naive calculation of test coverage - if operation is called at least once, it is considered as 'covered'.<br/>\n"
+    output += "&#x2728;: aws_validated or using the snapshot fixture<br/>\n"
+    output += "&#x1F4F8;: using the snapshot fixture without any skip_snapshot_verify<br/>\n"
+    output += "&#x1F6AB;: using the snapshot fixture but uses skip_snapshot_verify<br/></div>\n"
+
+    for service in sorted(metrics.keys()):
+        output += f"<h1> {service} </h1>\n<div>\n"
+        details = metrics[service]
+        if not details["service_attributes"]["pro"]:
+            output += "community<br/>\n"
+        elif not details["service_attributes"]["community"]:
+            output += "pro only<br/>\n"
+        else:
+            output += "community, and pro features<br/>\n"
+        del metrics[service]["service_attributes"]
+        output += "</div>\n"
+        operation_counter = len(details)
+        operation_tested = 0
+
+        tmp = ""
+        template_aws_validated = '<span title="AWS validated">&#x2728;</span>'
+        template_snapshot_verified = '<span title="Snapshot verified">&#x1F4F8;</span>'
+        template_snapshot_skipped = '<span title="Snapshot skipped">&#x1F6AB;</span>'
+
+        for operation in sorted(details.keys()):
+            op_details = details[operation]
+            if op_details.get("invoked", 0) > 0:
+                operation_tested += 1
+                aws_validated = f"{template_aws_validated if op_details.get('aws_validated') or op_details.get('snapshot') else ''}"
+                snapshot = f"{template_snapshot_verified if aws_validated and not op_details.get('snapshot_skipped_paths') else template_snapshot_skipped if aws_validated else ''}"
+                tmp += f"<p>{template_implemented_html}{operation} {aws_validated} {snapshot}</input>\n"
+            else:
+                tmp += f"<p>{template_not_implemented_html}{operation}</input>\n"
+
+            tmp += "<ul>"
+            if op_details.get("parameters"):
+                parameters = op_details.get("parameters")
+                if parameters:
+                    tmp += _generate_details_block_html("parameters  hit", parameters)
+            if op_details.get("errors"):
+                tmp += _generate_details_block_html("errors hit", op_details["errors"])
+            tmp += "</ul>"
+            tmp += "</p>"
+        output += f"<p><details><summary>{operation_tested/operation_counter*100:.2f}% test coverage</summary>\n\n{tmp}\n</details></p>\n"
+
+        with open(file_name, "a") as fd:
+            fd.write(f"{output}\n")
+            output = ""
+
 
 def _generate_details_block(details_title: str, details: dict) -> str:
     output = f"  <details><summary>{details_title}</summary>\n\n"
@@ -31,6 +101,10 @@ def _generate_details_block(details_title: str, details: dict) -> str:
 def create_readable_report(file_name: str, metrics: dict):
     output = "# Metric Collection Report of Integration Tests #\n\n"
     output += "**__Disclaimer__**: naive calculation of test coverage - if operation is called at least once, it is considered as 'covered'.\n"
+    output += f"{AWS_VALIDATED}: aws_validated or using the snapshot fixture\n"
+    output += f"{SNAPSHOT}: using the snapshot fixture without any skip_snapshot_verify\n"
+    output += f"{AWS_VALIDATED}: using the snapshot fixture but uses skip_snapshot_verify\n"
+
     for service in sorted(metrics.keys()):
         output += f"## {service} ##\n"
         details = metrics[service]
@@ -50,7 +124,9 @@ def create_readable_report(file_name: str, metrics: dict):
             op_details = details[operation]
             if op_details.get("invoked", 0) > 0:
                 operation_tested += 1
-                tmp += f"{template_implemented_item}{operation}\n"
+                aws_validated = f"{AWS_VALIDATED if op_details.get('aws_validated') or op_details.get('snapshot') else ''}"
+                snapshot = f"{SNAPSHOT if aws_validated and not op_details.get('snapshot_skipped_paths') else SNAPSHOT_SKIP_VERIFY if aws_validated else ''}"
+                tmp += f"{template_implemented_item}{operation} {aws_validated} {snapshot}\n"
             else:
                 tmp += f"{template_not_implemented_item}{operation}\n"
             if op_details.get("parameters"):
@@ -172,6 +248,7 @@ def aggregate_recorded_raw_data(
                 ops["invoked"] += 1
                 if metric.snapshot:
                     ops["snapshot"] = True  # TODO snapshot currently includes also "skip_verify"
+                    ops["snapshot_skipped_paths"] = metric.snapshot_skipped_paths or ""
                 if metric.aws_validated:
                     ops["aws_validated"] = True
                 if not metric.parameters:
@@ -228,8 +305,10 @@ def main():
         recorded_metrics,
     )
 
-    filename = os.path.join(metrics_path, f"metric-report-{dtime}{collect_for_arch}.md")
-    create_readable_report(filename, recorded_metrics)
+    # filename = os.path.join(metrics_path, f"metric-report-{dtime}{collect_for_arch}.md")
+    # create_readable_report(filename, recorded_metrics)
+    filename = os.path.join(metrics_path, f"metric-report-{dtime}{collect_for_arch}.html")
+    create_simple_html_report(filename, recorded_metrics)
 
 
 if __name__ == "__main__":
