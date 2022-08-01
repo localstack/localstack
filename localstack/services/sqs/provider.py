@@ -352,6 +352,9 @@ class SqsQueue:
             if standard_message not in self.inflight:
                 raise MessageNotInflight()
 
+            # we also have to update last_received, since that is used to calculate the visibility deadline.
+            # last_received is not actually used to indicate "true" receipts via receive_message, so this is safe.
+            standard_message.last_received = time.time()
             standard_message.visibility_timeout = visibility_timeout
 
             if visibility_timeout == 0:
