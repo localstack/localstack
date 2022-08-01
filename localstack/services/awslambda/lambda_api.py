@@ -63,7 +63,6 @@ from localstack.utils.common import (
     now_utc,
     parse_request_data,
     run,
-    run_for_max_seconds,
     safe_requests,
     save_file,
     short_uid,
@@ -78,6 +77,7 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.functions import run_safe
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.patch import patch
+from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
 
@@ -559,7 +559,8 @@ def run_lambda(
             lock_discriminator=lock_discriminator,
         )
         return result
-
+    except ClientError:
+        raise
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         response = {
@@ -718,7 +719,7 @@ def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes = Non
 
 
 def set_function_code(lambda_function: LambdaFunction):
-    def _set_and_configure():
+    def _set_and_configure(*args, **kwargs):
         try:
             do_set_function_code(lambda_function)
             # initialize function code via plugins
@@ -730,7 +731,7 @@ def set_function_code(lambda_function: LambdaFunction):
             raise
 
     # unzipping can take some time - limit the execution time to avoid client/network timeout issues
-    run_for_max_seconds(config.LAMBDA_CODE_EXTRACT_TIME, _set_and_configure)
+    start_worker_thread(_set_and_configure)
     return {"FunctionName": lambda_function.name()}
 
 
@@ -764,6 +765,8 @@ def store_and_get_lambda_code_archive(
     else:
         # override lambda archive with fresh code if we got an update
         save_file(archive_file, zip_file_content)
+    # remove content from code attribute, if present
+    lambda_function.code.pop("ZipFile", None)
     return lambda_cwd, archive_file, zip_file_content
 
 
@@ -1173,8 +1176,6 @@ def create_function():
         if isinstance(result, Response):
             del region.lambdas[arn]
             return result
-        # remove content from code attribute, if present
-        lambda_function.code.pop("ZipFile", None)
         # prepare result
         result.update(format_func_details(lambda_function))
         if data.get("Publish"):
@@ -1645,7 +1646,10 @@ def invoke_function(function):
             )
         return _create_response(result)
     elif invocation_type == "Event":
-        run_lambda(func_arn=arn, event=data, context={}, asynchronous=True, version=qualifier)
+        try:
+            run_lambda(func_arn=arn, event=data, context={}, asynchronous=True, version=qualifier)
+        except ClientError as e:
+            return e.get_response()
         return _create_response("", status_code=202)
     elif invocation_type == "DryRun":
         # Assume the dry run always passes.
