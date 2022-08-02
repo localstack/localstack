@@ -33,6 +33,16 @@ class ValidationException(CommonServiceException):
         super().__init__("ValidationException", message=message, sender_fault=True)
 
 
+class InvalidParameterNameException(ValidationException):
+    def __init__(self):
+        msg = (
+            'Parameter name: can\'t be prefixed with "ssm" (case-insensitive). '
+            "If formed as a path, it can consist of sub-paths divided by slash symbol; "
+            "each sub-path can be formed as a mix of letters, numbers and the following 3 symbols .-_"
+        )
+        super().__init__(msg)
+
+
 # TODO: check if _normalize_name(..) calls are still required here
 class SsmProvider(SsmApi, ABC):
     def get_parameters(
@@ -128,13 +138,8 @@ class SsmProvider(SsmApi, ABC):
     @staticmethod
     def _normalize_name(param_name: ParameterName, validate=False) -> ParameterName:
         if validate:
-            msg = (
-                'Parameter name: can\'t be prefixed with "ssm" (case-insensitive). '
-                "If formed as a path, it can consist of sub-paths divided by slash symbol; "
-                "each sub-path can be formed as a mix of letters, numbers and the following 3 symbols .-_"
-            )
             if "//" in param_name or ("/" in param_name and not param_name.startswith("/")):
-                raise ValidationException(msg)
+                raise InvalidParameterNameException()
         param_name = param_name.strip("/")
         param_name = param_name.replace("//", "/")
         if "/" in param_name:

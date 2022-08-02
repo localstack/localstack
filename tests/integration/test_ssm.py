@@ -40,7 +40,8 @@ class TestSSM:
         _assert(f"/{param_name}", f"/{param_name}", ssm_client)
 
     @pytest.mark.aws_validated
-    def test_hierarchical_parameter(self, ssm_client, create_parameter):
+    @pytest.mark.parametrize("param_name_pattern", ["/<param>//b//c", "<param>/b/c"])
+    def test_hierarchical_parameter(self, ssm_client, create_parameter, param_name_pattern):
         param_a = short_uid()
         create_parameter(
             Name=f"/{param_a}/b/c",
@@ -49,11 +50,11 @@ class TestSSM:
         )
 
         _assert(f"/{param_a}/b/c", f"/{param_a}/b/c", ssm_client)
-        for pname in [f"/{param_a}//b//c", f"{param_a}/b/c"]:
-            with pytest.raises(Exception) as exc:
-                _assert(pname, f"/{param_a}/b/c", ssm_client)
-            exc.match("ValidationException")
-            exc.match("sub-paths divided by slash symbol")
+        pname = param_name_pattern.replace("<param>", param_a)
+        with pytest.raises(Exception) as exc:
+            _assert(pname, f"/{param_a}/b/c", ssm_client)
+        exc.match("ValidationException")
+        exc.match("sub-paths divided by slash symbol")
 
     @pytest.mark.aws_validated
     def test_get_secret_parameter(self, ssm_client, create_secret):
