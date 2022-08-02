@@ -798,6 +798,25 @@ class TestLambdaBaseFeatures:
         result_data = json.loads(to_str(result_data))
         assert payload == result_data
 
+    def test_function_state(self, lambda_client, lambda_su_role):
+        """Tests if a lambda starts in state "Pending" but moves to "Active" at some point"""
+        function_name = f"test-function-{short_uid()}"
+        zip_file = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        response = lambda_client.create_function(
+            FunctionName=function_name,
+            Runtime="python3.9",
+            Role=lambda_su_role,
+            Code={"ZipFile": zip_file},
+        )
+        assert response["State"] == "Pending"
+
+        # lambda has to get active at some point
+        def _check_lambda_state():
+            response = lambda_client.get_function(FunctionName=function_name)
+            assert response["Configuration"]["State"] == "Active"
+
+        retry(_check_lambda_state)
+
 
 parametrize_python_runtimes = pytest.mark.parametrize(
     "runtime",
