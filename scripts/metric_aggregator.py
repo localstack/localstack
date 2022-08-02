@@ -249,10 +249,10 @@ def aggregate_recorded_raw_data(
                             break
 
                 ops["invoked"] += 1
-                if metric.snapshot:
+                if metric.snapshot == "True":
                     ops["snapshot"] = True  # TODO snapshot currently includes also "skip_verify"
                     ops["snapshot_skipped_paths"] = metric.snapshot_skipped_paths or ""
-                if metric.aws_validated:
+                if metric.aws_validated == "True":
                     ops["aws_validated"] = True
                 if not metric.parameters:
                     params = ops.setdefault("parameters", {})
