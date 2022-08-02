@@ -93,5 +93,9 @@ jobs:
 
     - name: Run Test Cases
       run: |
+        # DO NOT MERGE THIS
+        . .venv/bin/activate; pip uninstall -y moto-ext || true
+        . .venv/bin/activate; pip install "git+https://github.com/localstack/moto.git@localstack-2022-07-26#egg=moto-ext"
+        # DO NOT MERGE THIS
         cd terraform-provider-aws
         AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test TF_ACC=true go test ./internal/service/${{ matrix.service }}/ -v -timeout 60m -run ${{ steps.get-list.outputs.testlist }}
