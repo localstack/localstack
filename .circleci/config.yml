@@ -135,7 +135,6 @@ jobs:
             /tmp/workspace
           paths:
             - repo/target/coverage/
-            - repo/target/metric_reports/
       - store_test_results:
           path: target/reports/
 
@@ -253,6 +252,7 @@ jobs:
           paths:
             - repo/target/reports/
             - repo/target/coverage/
+            - repo/target/metric_reports
 
   report:
     executor: ubuntu-machine-amd64
