@@ -78,7 +78,13 @@ BUCKET_NAME_REGEX = (
 )
 
 # list of destination types for bucket notifications
-NOTIFICATION_DESTINATION_TYPES = ("Queue", "Topic", "CloudFunction", "LambdaFunction")
+NOTIFICATION_DESTINATION_TYPES = (
+    "Queue",
+    "Topic",
+    "CloudFunction",
+    "LambdaFunction",
+    "EventBridge",
+)
 
 # prefix for object metadata keys in headers and query params
 OBJECT_METADATA_KEY_PREFIX = "x-amz-meta-"
@@ -308,12 +314,19 @@ def send_notifications(method, bucket_name, object_path, version_id, headers, me
 
 
 def send_notification_for_subscriber(
-    notif, bucket_name, object_path, version_id, api_method, action, event_name, headers
+    notification: Dict,
+    bucket_name: str,
+    object_path: str,
+    version_id: str,
+    api_method: str,
+    action: str,
+    event_name: str,
+    headers,
 ):
     bucket_name = normalize_bucket_name(bucket_name)
 
-    if not event_type_matches(notif["Event"], action, api_method) or not filter_rules_match(
-        notif.get("Filter"), object_path
+    if not event_type_matches(notification["Event"], action, api_method) or not filter_rules_match(
+        notification.get("Filter"), object_path
     ):
         return
 
@@ -334,15 +347,15 @@ def send_notification_for_subscriber(
         etag=object_data.get("ETag", ""),
         file_size=object_data.get("ContentLength", 0),
         version_id=version_id,
-        config_id=notif["Id"],
+        config_id=notification["Id"],
     )
     message = json.dumps(message)
 
-    if notif.get("Queue"):
-        region = aws_stack.extract_region_from_arn(notif["Queue"])
+    if notification.get("Queue"):
+        region = aws_stack.extract_region_from_arn(notification["Queue"])
         sqs_client = aws_stack.connect_to_service("sqs", region_name=region)
         try:
-            queue_url = aws_stack.sqs_queue_url_for_arn(notif["Queue"])
+            queue_url = aws_stack.sqs_queue_url_for_arn(notification["Queue"])
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=message,
@@ -350,29 +363,23 @@ def send_notification_for_subscriber(
             )
         except Exception as e:
             LOGGER.warning(
-                'Unable to send notification for S3 bucket "%s" to SQS queue "%s": %s',
-                bucket_name,
-                notif["Queue"],
-                e,
+                f"Unable to send notification for S3 bucket \"{bucket_name}\" to SQS queue \"{notification['Queue']}\": {e}",
             )
-    if notif.get("Topic"):
-        region = aws_stack.extract_region_from_arn(notif["Topic"])
+    if notification.get("Topic"):
+        region = aws_stack.extract_region_from_arn(notification["Topic"])
         sns_client = aws_stack.connect_to_service("sns", region_name=region)
         try:
             sns_client.publish(
-                TopicArn=notif["Topic"],
+                TopicArn=notification["Topic"],
                 Message=message,
                 Subject="Amazon S3 Notification",
             )
         except Exception as e:
             LOGGER.warning(
-                'Unable to send notification for S3 bucket "%s" to SNS topic "%s": %s',
-                bucket_name,
-                notif["Topic"],
-                e,
+                f"Unable to send notification for S3 bucket \"{bucket_name}\" to SNS topic \"{notification['Topic']}\": {e}"
             )
     # CloudFunction and LambdaFunction are semantically identical
-    lambda_function_config = notif.get("CloudFunction") or notif.get("LambdaFunction")
+    lambda_function_config = notification.get("CloudFunction") or notification.get("LambdaFunction")
     if lambda_function_config:
         # make sure we don't run into a socket timeout
         region = aws_stack.extract_region_from_arn(lambda_function_config)
@@ -388,12 +395,49 @@ def send_notification_for_subscriber(
             )
         except Exception:
             LOGGER.warning(
-                'Unable to send notification for S3 bucket "%s" to Lambda function "%s".',
-                bucket_name,
-                lambda_function_config,
+                f'Unable to send notification for S3 bucket "{bucket_name}" to Lambda function "{lambda_function_config}".'
             )
 
-    if not filter(lambda x: notif.get(x), NOTIFICATION_DESTINATION_TYPES):
+    if "EventBridge" in notification:
+        s3api_client = aws_stack.connect_to_service("s3")
+        region = (
+            s3api_client.get_bucket_location(Bucket=bucket_name)["LocationConstraint"]
+            or config.DEFAULT_REGION
+        )
+        events_client = aws_stack.connect_to_service("events", region_name=region)
+        entry = {
+            "version": "0",
+            "id": "9ae3f115-3a54-38d4-6a51-ada40a316d3c",
+            "detail-type": "Object Created",
+            "source": "aws.s3",
+            "account": "074255357339",
+            "time": "2022-08-02T21:43:36Z",
+            "region": "us-east-1",
+            "resources": ["arn:aws:s3:::test-crist-bucket"],
+            "detail": {
+                "version": "0",
+                "bucket": {"name": "test-crist-bucket"},
+                "object": {
+                    "key": "test-key",
+                    "size": 4,
+                    "etag": "8d777f385d3dfec8815d20f7496026dc",
+                    "sequencer": "0062E99A88DC407460",
+                },
+                "request-id": "RKREYG1RN2X92YX6",
+                "requester": "074255357339",
+                "source-ip-address": "187.251.114.50",
+                "reason": "PutObject",
+            },
+        }
+
+        try:
+            events_client.put_events(Entries=[entry])
+        except Exception as e:
+            LOGGER.warning(
+                f'Unable to send notification for S3 bucket "{bucket_name}" to EventBridge', e
+            )
+
+    if not filter(lambda x: notification.get(x), NOTIFICATION_DESTINATION_TYPES):
         LOGGER.warning(
             "Neither of %s defined for S3 notification.", "/".join(NOTIFICATION_DESTINATION_TYPES)
         )
@@ -1227,11 +1271,16 @@ def handle_put_bucket_notification(bucket, data):
     parsed = strip_xmlns(xmltodict.parse(data))
     notif_config = parsed.get("NotificationConfiguration")
 
+    if "EventBridgeConfiguration" in notif_config:
+        notif_config.update(
+            {"EventBridgeConfiguration": {"Event": "s3:*", "EventBridgeEnabled": True}}
+        )
+
     notifications = BackendState.notification_configs(bucket)
     notifications.clear()
 
     for dest in NOTIFICATION_DESTINATION_TYPES:
-        config = notif_config.get("%sConfiguration" % dest)
+        config = notif_config.get(f"{dest}Configuration")
         configs = config if isinstance(config, list) else [config] if config else []
         for config in configs:
             events = config.get("Event")
