@@ -243,5 +243,106 @@
         }
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_create_queue_with_attributes": {
+    "recorded-date": "01-08-2022, 20:33:31",
+    "recorded-content": {
+      "get_queue_attributes": {
+        "Attributes": {
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "CreatedTimestamp": "timestamp",
+          "LastModifiedTimestamp": "timestamp",
+          "VisibilityTimeout": "20",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "604800",
+          "DelaySeconds": "0",
+          "ReceiveMessageWaitTimeSeconds": "10",
+          "SqsManagedSseEnabled": "false"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes": {
+    "recorded-date": "01-08-2022, 20:51:00",
+    "recorded-content": {
+      "get_queue_attributes": {
+        "Attributes": {
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "CreatedTimestamp": "timestamp",
+          "LastModifiedTimestamp": "timestamp",
+          "VisibilityTimeout": "20",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "604800",
+          "DelaySeconds": "0",
+          "ReceiveMessageWaitTimeSeconds": "10",
+          "SqsManagedSseEnabled": "false"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_updated_queue_attributes": {
+        "Attributes": {
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "CreatedTimestamp": "timestamp",
+          "LastModifiedTimestamp": "timestamp",
+          "VisibilityTimeout": "69",
+          "MaximumMessageSize": "2048",
+          "MessageRetentionPeriod": "604800",
+          "DelaySeconds": "420",
+          "ReceiveMessageWaitTimeSeconds": "10",
+          "SqsManagedSseEnabled": "false"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_sse_queue_attributes": {
+    "recorded-date": "01-08-2022, 21:14:43",
+    "recorded-content": {
+      "sse_kms_attributes": {
+        "Attributes": {
+          "KmsMasterKeyId": "testKeyId",
+          "KmsDataKeyReusePeriodSeconds": "6000",
+          "SqsManagedSseEnabled": "false"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sse_sqs_attributes": {
+        "Attributes": {
+          "SqsManagedSseEnabled": "true"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_sse_kms_and_sqs_are_mutually_exclusive": {
+    "recorded-date": "01-08-2022, 21:16:38",
+    "recorded-content": {
+      "error": "An error occurred (InvalidAttributeName) when calling the SetQueueAttributes operation: You can use one type of server-side encryption (SSE) at one time. You can either enable KMS SSE or SQS SSE."
+    }
   }
 }
