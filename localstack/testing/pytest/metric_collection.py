@@ -44,6 +44,7 @@ def pytest_runtest_teardown(item: "Item", nextitem: Optional["Item"]) -> None:
     xfail = False
     aws_validated = False
     snapshot = False
+    skipped = ""
 
     for _ in item.iter_markers(name="xfail"):
         xfail = True
@@ -51,11 +52,15 @@ def pytest_runtest_teardown(item: "Item", nextitem: Optional["Item"]) -> None:
         aws_validated = True
     if hasattr(item, "fixturenames") and "snapshot" in item.fixturenames:
         snapshot = True
+        for sk in item.iter_markers(name="skip_snapshot_verify"):
+            skipped = sk.kwargs.get("paths", "all")
+
     for metric in MetricHandler.metric_data:
         metric.xfail = xfail
         metric.aws_validated = aws_validated
         metric.snapshot = snapshot
         metric.node_id = node_id
+        metric.snapshot_skipped_paths = skipped
 
     with open(FNAME_RAW_DATA_CSV, "a") as fd:
         writer = csv.writer(fd)
