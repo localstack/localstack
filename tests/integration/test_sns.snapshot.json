@@ -56,5 +56,61 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_tags": {
+    "recorded-date": "01-08-2022, 17:10:09",
+    "recorded-content": {
+      "duplicate-key-error": {
+        "Error": {
+          "Type": "Sender",
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Duplicated keys are not allowed."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "list-created-tags": {
+        "Tags": [
+          {
+            "Key": "k1",
+            "Value": "v1"
+          },
+          {
+            "Key": "k2",
+            "Value": "v2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-delete-tags": {
+        "Tags": [
+          {
+            "Key": "k2",
+            "Value": "v2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-after-update-tags": {
+        "Tags": [
+          {
+            "Key": "k2",
+            "Value": "v2b"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -773,10 +773,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
     ) -> TagResourceResponse:
         # TODO: can this be used to tag any resource when using AWS?
+        # each tag key must be unique
+        # https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html#tag-best-practices
+        unique_tag_keys = {tag["Key"] for tag in tags}
+        if len(unique_tag_keys) < len(tags):
+            raise InvalidParameterException("Invalid parameter: Duplicated keys are not allowed.")
+
         call_moto(context)
         sns_backend = SNSBackend.get()
         existing_tags = sns_backend.sns_tags.get(resource_arn, [])
-        tags = [tag for idx, tag in enumerate(tags) if tag not in tags[:idx]]
 
         def existing_tag_index(item):
             for idx, tag in enumerate(existing_tags):
