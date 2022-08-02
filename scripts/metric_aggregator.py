@@ -286,7 +286,7 @@ def main():
 
     # TODO: removed splitting of internal/external recorded calls, as some pro tests use 'internals' to connect to service
 
-    metrics_path = os.path.join(base_dir, "metrics")
+    metrics_path = os.path.join(base_dir, "parity_metrics")
     Path(metrics_path).mkdir(parents=True, exist_ok=True)
     dtime = datetime.datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%s")
 
