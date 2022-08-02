@@ -1120,6 +1120,9 @@ def update_resource_details(stack, resource_id, details, action=None):
     if resource_type == "ApiGateway::RestApi":
         resource_props["id"] = details["id"]
 
+    if resource_type == "Athena::NamedQuery":
+        resource_props["NamedQueryId"] = details["NamedQueryId"]
+
     if resource_type == "KMS::Key":
         resource["PhysicalResourceId"] = details["KeyMetadata"]["KeyId"]
 
