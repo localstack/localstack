@@ -170,5 +170,605 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_unicode_chars": {
+    "recorded-date": "04-08-2022, 11:31:08",
+    "recorded-content": {
+      "received-message": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>",
+            "MD5OfBody": "84108d8422241e81df0d97db369175ed",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "\u00f6\u00a7a1\"_!?,. \u00a3$-",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<token:1>"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSSubscription::test_python_lambda_subscribe_sns_topic": {
+    "recorded-date": "04-08-2022, 11:32:56",
+    "recorded-content": {
+      "notification": {
+        "Type": "Notification",
+        "MessageId": "<uuid:1>",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Subject": "[Subject] Test subject",
+        "Message": "Hello world.",
+        "Timestamp": "date",
+        "SignatureVersion": "1",
+        "Signature": "<signature>",
+        "SigningCertUrl": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+        "UnsubscribeUrl": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<token:1>",
+        "MessageAttributes": {}
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_attribute_raw_subscribe": {
+    "recorded-date": "04-08-2022, 13:53:03",
+    "recorded-content": {
+      "subscription-attributes": {
+        "Attributes": {
+          "Owner": "111111111111",
+          "RawMessageDelivery": "true",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Protocol": "sqs",
+          "PendingConfirmation": "false",
+          "ConfirmationWasAuthenticated": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-response": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>",
+            "MD5OfBody": "fafb00f5732ab283681e124bf8747ed1",
+            "Body": "This is a test message",
+            "MD5OfMessageAttributes": "<m-d5-of-message-attributes:1>",
+            "MessageAttributes": {
+              "store": {
+                "BinaryValue": "b'\\x02\\x03\\x04'",
+                "DataType": "Binary"
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_with_invalid_protocol": {
+    "recorded-date": "04-08-2022, 14:02:25",
+    "recorded-content": {
+      "exception": {
+        "Error": {
+          "Type": "Sender",
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Amazon SNS does not support this protocol string: test-protocol"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_filter_policy": {
+    "recorded-date": "04-08-2022, 14:18:18",
+    "recorded-content": {
+      "subscription-attributes": {
+        "Attributes": {
+          "Owner": "111111111111",
+          "RawMessageDelivery": "false",
+          "FilterPolicy": {
+            "attr1": [
+              {
+                "numeric": [
+                  ">",
+                  0,
+                  "<=",
+                  100
+                ]
+              }
+            ]
+          },
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Protocol": "sqs",
+          "PendingConfirmation": "false",
+          "ConfirmationWasAuthenticated": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-0": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-1": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>",
+            "MD5OfBody": "<md5-hash>",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "This is a test message",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-2": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:2>",
+            "MD5OfBody": "<md5-hash>",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "This is a test message",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_exists_filter_policy": {
+    "recorded-date": "04-08-2022, 14:53:10",
+    "recorded-content": {
+      "subscription-attributes-policy-1": {
+        "Attributes": {
+          "Owner": "111111111111",
+          "RawMessageDelivery": "false",
+          "FilterPolicy": {
+            "store": [
+              {
+                "exists": true
+              }
+            ]
+          },
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Protocol": "sqs",
+          "PendingConfirmation": "false",
+          "ConfirmationWasAuthenticated": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-0": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-1": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>",
+            "MD5OfBody": "<md5-hash>",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "message-1",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+              "MessageAttributes": {
+                "def": {
+                  "Type": "Number",
+                  "Value": "99"
+                },
+                "store": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-2": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:2>",
+            "MD5OfBody": "<md5-hash>",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "message-1",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+              "MessageAttributes": {
+                "def": {
+                  "Type": "Number",
+                  "Value": "99"
+                },
+                "store": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscription-attributes-policy-2": {
+        "Attributes": {
+          "Owner": "111111111111",
+          "RawMessageDelivery": "false",
+          "FilterPolicy": {
+            "store": [
+              {
+                "exists": false
+              }
+            ]
+          },
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Protocol": "sqs",
+          "PendingConfirmation": "false",
+          "ConfirmationWasAuthenticated": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-3": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>",
+            "MD5OfBody": "<md5-hash>",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:4>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "message-3",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+              "MessageAttributes": {
+                "def": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-4": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:4>",
+            "MD5OfBody": "<md5-hash>",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:4>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "message-3",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+              "MessageAttributes": {
+                "def": {
+                  "Type": "Number",
+                  "Value": "99"
+                }
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_subscribe_sqs_queue": {
+    "recorded-date": "04-08-2022, 15:04:42",
+    "recorded-content": {
+      "subscription-attributes": {
+        "Attributes": {
+          "Owner": "111111111111",
+          "RawMessageDelivery": "false",
+          "FilterPolicy": {
+            "attr1": [
+              {
+                "numeric": [
+                  ">",
+                  0,
+                  "<=",
+                  100
+                ]
+              }
+            ]
+          },
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Protocol": "sqs",
+          "PendingConfirmation": "false",
+          "ConfirmationWasAuthenticated": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>",
+            "MD5OfBody": "<md5-hash>",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "This is a test message",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "99.12"
+                }
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_unknown_topic_publish": {
+    "recorded-date": "04-08-2022, 15:07:58",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Type": "Sender",
+          "Code": "NotFound",
+          "Message": "Topic does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_sqs_topic_subscription_confirmation": {
+    "recorded-date": "04-08-2022, 15:37:45",
+    "recorded-content": {
+      "subscription-attrs": {
+        "Owner": "111111111111",
+        "RawMessageDelivery": "false",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+        "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+        "Protocol": "sqs",
+        "PendingConfirmation": "false",
+        "ConfirmationWasAuthenticated": "true",
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_sns_topic_as_lambda_dead_letter_queue": {
+    "recorded-date": "04-08-2022, 16:15:53",
+    "recorded-content": {
+      "lambda-response-dlq-config": {
+        "TargetArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+      },
+      "messages": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>",
+            "MD5OfBody": "<md5-hash>",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": {
+                "Records": [
+                  {
+                    "EventSource": "aws:sns",
+                    "EventVersion": "1.0",
+                    "EventSubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+                    "Sns": {
+                      "Type": "Notification",
+                      "MessageId": "<uuid:3>",
+                      "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>",
+                      "Subject": null,
+                      "Message": {
+                        "raise_error": 1
+                      },
+                      "Timestamp": "date",
+                      "SignatureVersion": "1",
+                      "Signature": "<signature>",
+                      "SigningCertUrl": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+                      "UnsubscribeUrl": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+                      "MessageAttributes": {}
+                    }
+                  }
+                ]
+              },
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<token:1>",
+              "MessageAttributes": {
+                "RequestID": {
+                  "Type": "String",
+                  "Value": "<request-id:1>"
+                },
+                "ErrorCode": {
+                  "Type": "Number",
+                  "Value": "200"
+                },
+                "ErrorMessage": {
+                  "Type": "String",
+                  "Value": "Test exception (this is intentional)"
+                }
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_redrive_policy_lambda_subscription": {
+    "recorded-date": "04-08-2022, 16:22:25",
+    "recorded-content": {
+      "subscription-attributes": {
+        "Attributes": {
+          "Owner": "111111111111",
+          "RawMessageDelivery": "false",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+          "RedrivePolicy": {
+            "deadLetterTargetArn": "arn:aws:sqs:<region>:111111111111:<resource:3>"
+          },
+          "Protocol": "lambda",
+          "PendingConfirmation": "false",
+          "ConfirmationWasAuthenticated": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>",
+            "MD5OfBody": "<md5-hash>",
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:2>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Message": "test_redrive_policy",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:4>"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

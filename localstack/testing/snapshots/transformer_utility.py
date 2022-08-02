@@ -176,17 +176,41 @@ class TransformerUtility:
             TransformerUtility.key_value("SenderId"),
             TransformerUtility.jsonpath("$..MessageAttributes.RequestID.StringValue", "request-id"),
             KeyValueBasedTransformer(_resource_name_transformer, "resource"),
-            KeyValueBasedTransformer(_signing_cert_url_token_transformer, replacement="token"),
+        ]
+
+    @staticmethod
+    def sns_api():
+        """
+        :return: array with Transformers, for sns api.
+        """
+        return [
+            TransformerUtility.key_value(
+                "Signature", value_replacement="<signature>", reference_replacement=False
+            ),
+            # maybe need check why hashes are different
+            TransformerUtility.key_value(
+                "MD5OfMessageAttributes",
+                value_replacement="<md5-hash>",
+                reference_replacement=False,
+            ),
+            KeyValueBasedTransformer(_sns_unsubscribe_url_token_transformer, replacement="token"),
             KeyValueBasedTransformer(
                 _sns_pem_file_token_transformer, replacement="signing-cert-file"
             ),
-            # replaces the domain in "UnsubscribeURL"
-            TransformerUtility.regex(
-                re.compile(
-                    r"(?<=UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)"
-                ),
+            # replaces the domain in "UnsubscribeURL" URL (KeyValue won't work as it replaces reference, and if
+            # replace_reference is False, then it replaces the whole key
+            # this will be able to use a KeyValue based once we provide a certificate for message signing in SNS
+            # a match must be made case-insensitive because the key casing is different from lambda notifications
+            RegexTransformer(
+                r"(?<=(?i)UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)",
                 replacement="<unsubscribe-domain>",
-            ),
+            )
+            # TransformerUtility.regex(
+            #     re.compile(
+            #         r"(?<=(?i)UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)"
+            #     ),
+            #     replacement="<unsubscribe-domain>",
+            # ),
         ]
 
     @staticmethod
@@ -220,15 +244,15 @@ class TransformerUtility:
 
 
 def _sns_pem_file_token_transformer(key: str, val: str) -> str:
-    if isinstance(val, str) and key == "SigningCertURL":
+    if isinstance(val, str) and key.lower() == "SigningCertURL".lower():
         pattern = re.compile(r".*SimpleNotificationService-(.*)?\.pem")
         match = re.match(pattern, val)
         if match:
             return match.groups()[0]
 
 
-def _signing_cert_url_token_transformer(key: str, val: str) -> str:
-    if isinstance(val, str) and key == "UnsubscribeURL":
+def _sns_unsubscribe_url_token_transformer(key: str, val: str) -> str:
+    if isinstance(val, str) and key.lower() == "UnsubscribeURL".lower():
         pattern = re.compile(r".*(?<=\?Action=Unsubscribe&SubscriptionArn=).*:(.*)")
         match = re.match(pattern, val)
         if match:
