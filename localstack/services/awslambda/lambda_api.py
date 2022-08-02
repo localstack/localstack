@@ -77,7 +77,7 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.functions import run_safe
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.patch import patch
-from localstack.utils.threads import start_worker_thread
+from localstack.utils.run import run_for_max_seconds
 
 LOG = logging.getLogger(__name__)
 
@@ -737,7 +737,7 @@ def set_function_code(lambda_function: LambdaFunction):
             raise
 
     # unzipping can take some time - limit the execution time to avoid client/network timeout issues
-    start_worker_thread(_set_and_configure)
+    run_for_max_seconds(config.LAMBDA_CODE_EXTRACT_TIME, _set_and_configure)
     return {"FunctionName": lambda_function.name()}
 
 
@@ -829,8 +829,12 @@ def do_set_function_code(lambda_function: LambdaFunction):
         # Unzip the Lambda archive contents
 
         if get_unzipped_size(archive_file) >= FUNCTION_MAX_UNZIPPED_SIZE:
-            raise Exception(
-                f"An error occurred (InvalidParameterValueException) when calling the CreateFunction operation: Unzipped size must be smaller than {FUNCTION_MAX_UNZIPPED_SIZE} bytes"
+            raise ClientError(
+                error_response(
+                    f"Unzipped size must be smaller than {FUNCTION_MAX_UNZIPPED_SIZE} bytes",
+                    code=400,
+                    error_type="InvalidParameterValueException",
+                )
             )
 
         unzip(archive_file, lambda_cwd)

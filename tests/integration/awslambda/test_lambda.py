@@ -802,6 +802,10 @@ class TestLambdaBaseFeatures:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify  # skipped - the diff is too big
+    @pytest.mark.skipif(
+        os.environ.get("TEST_TARGET") != "AWS_CLOUD",
+        reason="Lambda function state pending for small lambdas not supported on localstack",
+    )
     def test_function_state(self, lambda_client, lambda_su_role, snapshot):
         """Tests if a lambda starts in state "Pending" but moves to "Active" at some point"""
         snapshot.add_transformer(snapshot.transform.lambda_api())

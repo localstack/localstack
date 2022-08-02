@@ -652,7 +652,7 @@ LAMBDA_FORWARD_URL = os.environ.get("LAMBDA_FORWARD_URL", "").strip()
 # Time in seconds to wait at max while extracting Lambda code.
 # By default, it is 25 seconds for limiting the execution time
 # to avoid client/network timeout issues
-LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
+LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 10)
 
 # whether lambdas should use stay open mode if executed in "docker-reuse" executor
 LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE")
