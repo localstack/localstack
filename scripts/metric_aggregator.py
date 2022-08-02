@@ -219,8 +219,11 @@ def aggregate_recorded_raw_data(
                         arch = "arm64"
                     elif "amd64" in str(path):
                         arch = "amd64"
-                    append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row), arch)
-
+                    # only aggregate all if we did not set a specific target to collect
+                    if not collect_for_arch:
+                        append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row), arch)
+                    elif collect_for_arch in str(path):
+                        append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row), arch)
                 metric: Metric = Metric(*row)
                 if metric.xfail == "True":
                     print(f"test {metric.node_id} marked as xfail")
