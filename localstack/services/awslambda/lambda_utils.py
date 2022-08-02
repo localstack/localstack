@@ -2,6 +2,7 @@ import base64
 import logging
 import os
 import re
+import tempfile
 import time
 from collections import defaultdict
 from functools import lru_cache
@@ -221,6 +222,17 @@ def get_record_from_event(event: Dict, key: str) -> Any:
         return event["Records"][0][key]
     except KeyError:
         return None
+
+
+def get_lambda_extraction_dir() -> str:
+    """
+    Get the directory a lambda is supposed to use as working directory (= the directory to extract the contents to)
+
+    :return: directory path
+    """
+    if config.LAMBDA_REMOTE_DOCKER:
+        return tempfile.gettempdir()
+    return config.dirs.tmp
 
 
 def get_zip_bytes(function_code):
