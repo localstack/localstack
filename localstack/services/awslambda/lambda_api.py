@@ -721,11 +721,17 @@ def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes = Non
 def set_function_code(lambda_function: LambdaFunction):
     def _set_and_configure(*args, **kwargs):
         try:
+            before = time.perf_counter()
             do_set_function_code(lambda_function)
             # initialize function code via plugins
             for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
                 plugin.init_function_code(lambda_function)
             lambda_function.state = "Active"
+            LOG.debug(
+                "Function code initialization for function '%s' complete. State => Active (in %.3fs)",
+                lambda_function.name(),
+                time.perf_counter() - before,
+            )
         except Exception:
             lambda_function.state = "Failed"
             raise

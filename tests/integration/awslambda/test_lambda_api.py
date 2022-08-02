@@ -86,6 +86,7 @@ def create_lambda_function_aws(
 @pytest.mark.snapshot
 @pytest.mark.aws_compatible
 class TestLambdaAsfApi:
+    @pytest.mark.skip_snapshot_verify
     def test_basic_invoke(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
