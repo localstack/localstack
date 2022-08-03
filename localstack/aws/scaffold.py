@@ -154,7 +154,7 @@ class ShapeNode:
         remaining_members = {
             k: v
             for k, v in self.shape.members.items()
-            if not self.is_exception or k.lower() not in ["message", "code", "type"]
+            if not self.is_exception or k.lower() not in ["message", "code"]
         }
 
         for k, v in remaining_members.items():
