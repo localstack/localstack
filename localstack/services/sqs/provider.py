@@ -169,6 +169,7 @@ class SqsMessage:
     receipt_handles: Set[str]
     last_received: Optional[float]
     first_received: Optional[float]
+    visibility_deadline: Optional[float]
     deleted: bool
     priority: float
     message_deduplication_id: str
@@ -209,11 +210,35 @@ class SqsMessage:
     def message_deduplication_id(self) -> Optional[str]:
         return self.message["Attributes"].get("MessageDeduplicationId")
 
+    def set_last_received(self, timestamp: float):
+        """
+        Sets the last received timestamp of the message to the given value, and updates the visibility deadline
+        accordingly.
+
+        :param timestamp: the last time the message was received
+        """
+        self.last_received = timestamp
+        self.visibility_deadline = timestamp + self.visibility_timeout
+
+    def update_visibility_timeout(self, timeout: int):
+        """
+        Sets the visibility timeout of the message to the given value, and updates the visibility deadline accordingly.
+
+        :param timeout: the timeout value in seconds
+        """
+        self.visibility_timeout = timeout
+        self.visibility_deadline = time.time() + timeout
+
     @property
-    def is_visible(self):
-        if self.last_received is None:
+    def is_visible(self) -> bool:
+        """
+        Returns false if the message has a visibility deadline that is in the future.
+
+        :return: whether the message is visibile or not.
+        """
+        if self.visibility_deadline is None:
             return True
-        if time.time() >= (self.last_received + self.visibility_timeout):
+        if time.time() >= self.visibility_deadline:
             return True
 
         return False
@@ -352,10 +377,7 @@ class SqsQueue:
             if standard_message not in self.inflight:
                 raise MessageNotInflight()
 
-            # we also have to update last_received, since that is used to calculate the visibility deadline.
-            # last_received is not actually used to indicate "true" receipts via receive_message, so this is safe.
-            standard_message.last_received = time.time()
-            standard_message.visibility_timeout = visibility_timeout
+            standard_message.update_visibility_timeout(visibility_timeout)
 
             if visibility_timeout == 0:
                 LOG.info(
@@ -433,7 +455,7 @@ class SqsQueue:
                     self.visibility_timeout if visibility_timeout is None else visibility_timeout
                 )
                 standard_message.receive_times += 1
-                standard_message.last_received = time.time()
+                standard_message.set_last_received(time.time())
                 if standard_message.first_received is None:
                     standard_message.first_received = standard_message.last_received
 
