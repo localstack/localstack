@@ -1637,57 +1637,43 @@ class ComparableBytesIterator(Iterator[bytes]):
         return super(ComparableBytesIterator, self).__eq__(other)
 
 
-@pytest.mark.parametrize("payload_type", ["bytes", "list", "file_like", "iterator"])
-def test_restxml_streaming_payload(payload_type):
-    """Tests an operation where the payload is can be streaming for rest-xml. We're testing four cases,
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "<foo-bar/>",
+        ComparableBytesList([b"<", b"foo-bar", b"/>"]),
+        ComparableBytesIO(b"<foo-bar/>"),
+        ComparableBytesIterator([b"<", b"foo-bar", b"/>"]),
+    ],
+    ids=["Literal", "List[byte]", "IO[byte]", "Iterator[byte]"],
+)
+def test_restxml_streaming_payload(payload):
+    """Tests an operation where the payload can be streaming for rest-xml. We're testing four cases,
     two non-streaming and two streaming: a literal, a list (that's treated specially by werkzeug), a file-like
     ``IO[bytes]`` object, and an iterator. Since the _botocore_serializer_integration_test does equality checks on
     parameters, and we're receiving different objects for streams, we wrap the payloads in custom classes that can be
     compared to strings."""
-
-    if payload_type == "bytes":
-        body = "<foo-bar/>"
-    elif payload_type == "list":
-        body = ComparableBytesList([b"<", b"foo-bar", b"/>"])
-        # if something is `Sized`, werkzeug does not treat it as streamable, it just encodes
-        assert len(body)
-    elif payload_type == "file_like":
-        # if this works, then the following also works: body = open('/path/to/file', 'rb')
-        body = ComparableBytesIO(b"<foo-bar/>")
-    elif payload_type == "iterator":
-        # this also verifies that serialization works for generators
-        body = ComparableBytesIterator([b"<", b"foo-bar", b"/>"])
-    else:
-        raise ValueError(payload_type)
-
     parameters = {
         "ContentLength": 10,
-        "Body": body,
+        "Body": payload,
         "ContentType": "text/xml",
         "Metadata": {},
     }
     _botocore_serializer_integration_test("s3", "GetObject", parameters)
 
 
-@pytest.mark.parametrize("payload_type", ["bytes", "list", "file_like", "iterator"])
-def test_restjson_streaming_payload(payload_type):
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '{"foo":"bar"}',
+        ComparableBytesList([b"{", b'"foo"', b":", b'"bar"', b"}"]),
+        ComparableBytesIO(b'{"foo":"bar"}'),
+        ComparableBytesIterator([b"{", b'"foo"', b":", b'"bar"', b"}"]),
+    ],
+    ids=["Literal", "List[byte]", "IO[byte]", "Iterator[byte]"],
+)
+def test_restjson_streaming_payload(payload):
     """See docs for ``test_restxml_streaming_payload``."""
-
-    if payload_type == "bytes":
-        payload = '{"foo":"bar"}'
-    elif payload_type == "list":
-        payload = ComparableBytesList([b"{", b'"foo"', b":", b'"bar"', b"}"])
-        # if something is `Sized`, werkzeug does not treat it as streamable, it just encodes
-        assert len(payload)
-    elif payload_type == "file_like":
-        # if this works, then the following also works: payload = open('/path/to/file', 'rb')
-        payload = ComparableBytesIO(b'{"foo":"bar"}')
-    elif payload_type == "iterator":
-        # this also verifies that serialization works for generators
-        payload = ComparableBytesIterator([b"{", b'"foo"', b":", b'"bar"', b"}"])
-    else:
-        raise ValueError(payload_type)
-
     _botocore_serializer_integration_test(
         "lambda",
         "Invoke",

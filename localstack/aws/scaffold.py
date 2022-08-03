@@ -1,8 +1,8 @@
 import io
 import keyword
 import re
-from multiprocessing import Pool
 from functools import cached_property
+from multiprocessing import Pool
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
