@@ -323,7 +323,21 @@ def route53_client() -> "Route53Client":
 
 
 @pytest.fixture
-def dynamodb_create_table_with_parameters(dynamodb_client):
+def dynamodb_wait_for_table_active(dynamodb_client):
+    def wait_for_table_active(table_name: str):
+        def wait():
+            return (
+                dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"]
+                == "ACTIVE"
+            )
+
+        poll_condition(wait, timeout=30)
+
+    return wait_for_table_active
+
+
+@pytest.fixture
+def dynamodb_create_table_with_parameters(dynamodb_client, dynamodb_wait_for_table_active):
     tables = []
 
     def factory(**kwargs):
@@ -339,20 +353,14 @@ def dynamodb_create_table_with_parameters(dynamodb_client):
     for table in tables:
         try:
             # table has to be in ACTIVE state before deletion
-            def wait_for_table_created():
-                return (
-                    dynamodb_client.describe_table(TableName=table)["Table"]["TableStatus"]
-                    == "ACTIVE"
-                )
-
-            poll_condition(wait_for_table_created, timeout=30)
+            dynamodb_wait_for_table_active(table)
             dynamodb_client.delete_table(TableName=table)
         except Exception as e:
             LOG.debug("error cleaning up table %s: %s", table, e)
 
 
 @pytest.fixture
-def dynamodb_create_table(dynamodb_client):
+def dynamodb_create_table(dynamodb_client, dynamodb_wait_for_table_active):
     # beware, this swallows exception in create_dynamodb_table utility function
     tables = []
 
@@ -373,13 +381,7 @@ def dynamodb_create_table(dynamodb_client):
     for table in tables:
         try:
             # table has to be in ACTIVE state before deletion
-            def wait_for_table_created():
-                return (
-                    dynamodb_client.describe_table(TableName=table)["Table"]["TableStatus"]
-                    == "ACTIVE"
-                )
-
-            poll_condition(wait_for_table_created, timeout=30)
+            dynamodb_wait_for_table_active(table)
             dynamodb_client.delete_table(TableName=table)
         except Exception as e:
             LOG.debug("error cleaning up table %s: %s", table, e)
