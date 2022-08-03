@@ -496,6 +496,45 @@ class TestSqsProvider:
         assert "Messages" in result
         assert len(result["Messages"]) == 1
 
+    @pytest.mark.only_localstack
+    def test_approximate_number_of_messages_delayed(self, sqs_client, sqs_queue):
+        # this test does not work against AWS in the same way, because AWS only has eventual consistency guarantees
+        # for the tested attributes that can take up to a minute to update.
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="ed")
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foo", DelaySeconds=2)
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="bar", DelaySeconds=2)
+
+        result = sqs_client.get_queue_attributes(
+            QueueUrl=sqs_queue,
+            AttributeNames=[
+                "ApproximateNumberOfMessages",
+                "ApproximateNumberOfMessagesNotVisible",
+                "ApproximateNumberOfMessagesDelayed",
+            ],
+        )
+        assert result["Attributes"] == {
+            "ApproximateNumberOfMessages": "1",
+            "ApproximateNumberOfMessagesNotVisible": "0",
+            "ApproximateNumberOfMessagesDelayed": "2",
+        }
+
+        def _assert():
+            _result = sqs_client.get_queue_attributes(
+                QueueUrl=sqs_queue,
+                AttributeNames=[
+                    "ApproximateNumberOfMessages",
+                    "ApproximateNumberOfMessagesNotVisible",
+                    "ApproximateNumberOfMessagesDelayed",
+                ],
+            )
+            assert _result["Attributes"] == {
+                "ApproximateNumberOfMessages": "3",
+                "ApproximateNumberOfMessagesNotVisible": "0",
+                "ApproximateNumberOfMessagesDelayed": "0",
+            }
+
+        retry(_assert)
+
     @pytest.mark.aws_validated
     def test_receive_after_visibility_timeout(self, sqs_client, sqs_create_queue):
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "1"})
@@ -810,6 +849,52 @@ class TestSqsProvider:
         receive_and_check_order()
         time.sleep(timeout + 1)
         receive_and_check_order()
+
+    @pytest.mark.aws_validated
+    def test_fifo_queue_send_message_with_delay_seconds_fails(
+        self, sqs_client, sqs_create_queue, snapshot
+    ):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+        )
+
+        with pytest.raises(ClientError) as e:
+            sqs_client.send_message(
+                QueueUrl=queue_url, MessageBody="message-1", MessageGroupId="1", DelaySeconds=2
+            )
+
+        snapshot.match("send_message", e.value)
+
+    @pytest.mark.aws_validated
+    def test_fifo_queue_send_message_with_delay_on_queue_works(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+                "DelaySeconds": "2",
+            },
+        )
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="message-1", MessageGroupId="1")
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="message-2", MessageGroupId="2")
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="message-3", MessageGroupId="3")
+
+        response = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert response.get("Messages", []) == []
+
+        messages = []
+
+        def _collect():
+            _response = sqs_client.receive_message(QueueUrl=queue_url)
+            messages.extend(_response.get("Messages", []))
+            assert len(messages) == 3
+
+        retry(_collect, sleep_before=2)  # let the delay expire first
+        assert messages[0]["Body"] == "message-1"
+        assert messages[1]["Body"] == "message-2"
+        assert messages[2]["Body"] == "message-3"
 
     @pytest.mark.aws_validated
     def test_list_queue_tags(self, sqs_client, sqs_create_queue):
@@ -1691,10 +1776,6 @@ class TestSqsProvider:
                 QueueUrl=queue_url, MessageBody=message_content, MessageDeduplicationId=dedup_id
             )
         e.match("MissingParameter")
-
-    def test_approximate_number_of_messages_delayed(self):
-        # TODO: test approximateNumberOfMessages once delayed Messages are properly counted
-        pass
 
     @pytest.mark.aws_validated
     def test_posting_to_queue_via_queue_name(self, sqs_client, sqs_create_queue):
