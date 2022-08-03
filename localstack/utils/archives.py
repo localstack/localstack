@@ -32,6 +32,7 @@ def get_unzipped_size(path: str):
 
 
 def unzip(path: str, target_dir: str, overwrite: bool = True) -> Optional[Union[str, Popen]]:
+    LOG.debug("Unzipping %s to %s", path, target_dir)
     from localstack.utils.platform import is_debian
 
     use_native_cmd = is_debian() or is_command_available("unzip")

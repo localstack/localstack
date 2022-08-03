@@ -710,13 +710,14 @@ def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes = Non
     latest_version = lambda_details.get_version(VERSION_LATEST)
     latest_version["CodeSize"] = len(zip_file_content)
     latest_version["CodeSha256"] = code_sha_256.decode("utf-8")
-    zip_dir = f"{config.dirs.tmp}/zipfile.{short_uid()}"
+    zip_dir_name = f"zipfile.{short_uid()}"
+    zip_dir = f"{config.dirs.tmp}/{zip_dir_name}"
     mkdir(zip_dir)
     tmp_file = f"{zip_dir}/{LAMBDA_ZIP_FILE_NAME}"
     save_file(tmp_file, zip_file_content)
     TMP_FILES.append(zip_dir)
     lambda_details.zip_dir = zip_dir
-    lambda_details.cwd = f"{get_lambda_extraction_dir()}/{LAMBDA_ZIP_FILE_NAME}"
+    lambda_details.cwd = f"{get_lambda_extraction_dir()}/{zip_dir_name}"
     mkdir(lambda_details.cwd)
     return zip_dir
 
