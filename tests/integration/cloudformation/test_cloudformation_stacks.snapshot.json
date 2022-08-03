@@ -1,0 +1,29 @@
+{
+  "tests/integration/cloudformation/test_cloudformation_stacks.py::test_stack_description_special_chars": {
+    "recorded-date": "03-08-2022, 13:35:51",
+    "recorded-content": {
+      "describe_stack": {
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackName": "<stack-name:1>",
+        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:2>",
+        "Description": "test <env>.test.net",
+        "CreationTime": "datetime",
+        "LastUpdatedTime": "datetime",
+        "RollbackConfiguration": {},
+        "StackStatus": "CREATE_COMPLETE",
+        "DisableRollback": false,
+        "NotificationARNs": [],
+        "Capabilities": [
+          "CAPABILITY_AUTO_EXPAND",
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "Tags": [],
+        "EnableTerminationProtection": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        }
+      }
+    }
+  }
+}

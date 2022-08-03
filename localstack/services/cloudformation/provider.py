@@ -131,6 +131,11 @@ class Stack:
         self.metadata["Parameters"] = self.metadata.get("Parameters") or []
         self.metadata["StackStatus"] = "CREATE_IN_PROGRESS"
         self.metadata["CreationTime"] = self.metadata.get("CreationTime") or timestamp_millis()
+        self.metadata["LastUpdatedTime"] = self.metadata["CreationTime"]
+        self.metadata.setdefault("Description", self.template.get("Description"))
+        self.metadata.setdefault("RollbackConfiguration", {})
+        self.metadata.setdefault("DisableRollback", False)
+        self.metadata.setdefault("EnableTerminationProtection", False)
         # maps resource id to resource state
         self._resource_states = {}
         # list of stack events
@@ -153,20 +158,29 @@ class Stack:
             "DeletionTime",
             "LastUpdatedTime",
             "ChangeSetId",
+            "RollbackConfiguration",
+            "DisableRollback",
+            "EnableTerminationProtection",
+            "DriftInformation",
         ]
         result = select_attributes(self.metadata, attrs)
         result["Tags"] = self.tags
-        result["Outputs"] = self.outputs_list()
-        result["Parameters"] = self.stack_parameters()
-        for attr in ["Capabilities", "Outputs", "Parameters", "Tags"]:
+        outputs = self.outputs_list()
+        if outputs:
+            result["Outputs"] = outputs
+        params = self.stack_parameters()
+        if params:
+            result["Parameters"] = params
+        if not result.get("DriftInformation"):
+            result["DriftInformation"] = {"StackDriftStatus": "NOT_CHECKED"}
+        for attr in ["Capabilities", "Tags", "NotificationARNs"]:
             result.setdefault(attr, [])
         return result
 
     def set_stack_status(self, status):
         self.metadata["StackStatus"] = status
-        self.metadata["StackStatusReason"] = "Deployment %s" % (
-            "failed" if "FAILED" in status else "succeeded"
-        )
+        if "FAILED" in status:
+            self.metadata["StackStatusReason"] = "Deployment failed"
         self.add_stack_event(self.stack_name, self.stack_id, status)
 
     def set_time_attribute(self, attribute, new_time=None):
@@ -857,9 +871,8 @@ class CloudformationProvider(CloudformationApi):
         template = template_preparer.parse_template(req_params["TemplateBody"])
         del req_params["TemplateBody"]  # TODO: stop mutating req_params
         template["StackName"] = stack_name
-        template[
-            "ChangeSetName"
-        ] = change_set_name  # TODO: validate with AWS what this is actually doing?
+        # TODO: validate with AWS what this is actually doing?
+        template["ChangeSetName"] = change_set_name
 
         if change_set_type == "UPDATE":
             # add changeset to existing stack
