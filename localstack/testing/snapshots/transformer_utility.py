@@ -235,6 +235,8 @@ def _resource_name_transformer(key: str, val: str) -> str:
             if res.startswith("<") and res.endswith(">"):
                 # value was already replaced
                 return None
+            if ":changeSet/" in val:
+                return val.split(":changeSet/")[-1]
             if "/" in res:
                 return res.split("/")[-1]
             if res.startswith("function:"):
