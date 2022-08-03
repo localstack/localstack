@@ -397,7 +397,7 @@ def process_apigateway_invocation(
         )
 
 
-def proccess_lambda_url_invocation(lambda_url_config, event):
+def process_lambda_url_invocation(lambda_url_config: dict, event: dict):
     inv_result = run_lambda(
         func_arn=lambda_url_config["FunctionArn"],
         event=event,
