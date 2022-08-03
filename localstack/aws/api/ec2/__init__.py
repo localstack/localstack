@@ -1585,7 +1585,6 @@ class InstanceType(str):
     c7g_8xlarge = "c7g.8xlarge"
     c7g_12xlarge = "c7g.12xlarge"
     c7g_16xlarge = "c7g.16xlarge"
-    mac2_metal = "mac2.metal"
 
 
 class InstanceTypeHypervisor(str):
