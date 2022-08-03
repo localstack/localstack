@@ -445,7 +445,7 @@ def send_notification_for_subscriber(
             events_client.put_events(Entries=[entry])
         except Exception as e:
             LOGGER.exception(
-                'Unable to send notification for S3 bucket "%s" to EventBridge', bucket_name
+                f'Unable to send notification for S3 bucket "{bucket_name}" to EventBridge', e
             )
 
     if not filter(lambda x: notification.get(x), NOTIFICATION_DESTINATION_TYPES):
