@@ -2,6 +2,7 @@ import json
 import logging
 import re
 from copy import deepcopy
+from typing import IO
 
 from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
@@ -650,12 +651,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def import_rest_api(
         self,
         context: RequestContext,
-        body: Blob,
+        body: IO[Blob],
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
     ) -> RestApi:
+        body_data = body.read()
 
-        openapi_spec = parse_json_or_yaml(to_str(body))
+        openapi_spec = parse_json_or_yaml(to_str(body_data))
         response = _call_moto(
             context,
             "CreateRestApi",
@@ -669,7 +671,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 restApiId=response.get("id"),
                 failOnWarnings=str_to_bool(fail_on_warnings) or False,
                 parameters=parameters or {},
-                body=body,
+                body=body_data,
             ),
         )
 

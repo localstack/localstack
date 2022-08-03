@@ -2,6 +2,7 @@ import base64
 import logging
 import threading
 import time
+from typing import IO
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.lambda_ import (
@@ -14,6 +15,7 @@ from localstack.aws.api.lambda_ import (
     Description,
     Environment,
     EnvironmentResponse,
+    EphemeralStorage,
     FileSystemConfigList,
     FunctionCode,
     FunctionCodeLocation,
@@ -123,6 +125,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         image_config: ImageConfig = None,  # TODO: ignored
         code_signing_config_arn: CodeSigningConfigArn = None,  # TODO: ignored
         architectures: ArchitecturesList = None,
+        ephemeral_storage: EphemeralStorage = None,  # TODO: ignored
     ) -> FunctionConfiguration:
         # TODO: initial validations
         if architectures and Architecture.arm64 in architectures:
@@ -203,7 +206,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         invocation_type: InvocationType = None,
         log_type: LogType = None,
         client_context: String = None,
-        payload: Blob = None,
+        payload: IO[Blob] = None,
         qualifier: Qualifier = None,
     ) -> InvocationResponse:
         LOG.debug("Lambda function got invoked! Params: %s", dict(locals()))
@@ -217,7 +220,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             function_arn_qualified=qualified_arn,
             invocation_type=invocation_type,
             client_context=client_context,
-            payload=payload,
+            payload=payload.read() if payload else None,
         )
         try:
             invocation_result = result.result()

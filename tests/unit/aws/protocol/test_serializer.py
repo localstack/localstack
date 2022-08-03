@@ -3,7 +3,8 @@ import io
 import json
 import re
 from datetime import datetime
-from typing import Any, Dict, Iterator, Optional
+from io import BytesIO
+from typing import Any, Dict, Iterator, List, Optional
 from xml.etree import ElementTree
 
 import pytest
@@ -13,6 +14,7 @@ from botocore.parsers import ResponseParser, create_parser
 from dateutil.tz import tzlocal, tzutc
 from requests.models import Response as RequestsResponse
 from urllib3 import HTTPResponse as UrlLibHttpResponse
+from werkzeug.wrappers import ResponseStream
 
 from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.api.dynamodb import (
@@ -1585,3 +1587,98 @@ def test_serializer_error_on_unknown_error():
     serializer._serialize_response = raise_error
     with pytest.raises(UnknownSerializerError):
         serializer.serialize_to_response({}, operation_model)
+
+
+class ComparableBytesIO(BytesIO):
+    """
+    BytesIO object that's treated like a value object when comparing it to other streams.
+    """
+
+    def __eq__(self, other):
+        if hasattr(other, "read"):
+            return other.read() == self.read()
+
+        if isinstance(other, ResponseStream):
+            return other.response.data == self.read()
+
+        return super(ComparableBytesIO, self).__eq__(other)
+
+
+class ComparableBytesList(list):
+    """
+    Makes a list of bytes comparable to strings.
+    """
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return b"".join(self) == other.encode("utf-8")
+
+        return super(ComparableBytesList, self).__eq__(other)
+
+
+class ComparableBytesIterator(Iterator[bytes]):
+    def __init__(self, bytes_list: List[bytes]):
+        self.gen = iter(bytes_list)
+        self.value = b"".join(bytes_list)
+
+    def __next__(self) -> bytes:
+        return next(self.gen)
+
+    def __iter__(self) -> Iterator[bytes]:
+        return self.gen
+
+    def __eq__(self, other):
+        if hasattr(other, "read"):
+            return other.read() == self.value
+
+        if isinstance(other, ResponseStream):
+            return other.response.data == self.value
+
+        return super(ComparableBytesIterator, self).__eq__(other)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "<foo-bar/>",
+        ComparableBytesList([b"<", b"foo-bar", b"/>"]),
+        ComparableBytesIO(b"<foo-bar/>"),
+        ComparableBytesIterator([b"<", b"foo-bar", b"/>"]),
+    ],
+    ids=["Literal", "List[byte]", "IO[byte]", "Iterator[byte]"],
+)
+def test_restxml_streaming_payload(payload):
+    """Tests an operation where the payload can be streaming for rest-xml. We're testing four cases,
+    two non-streaming and two streaming: a literal, a list (that's treated specially by werkzeug), a file-like
+    ``IO[bytes]`` object, and an iterator. Since the _botocore_serializer_integration_test does equality checks on
+    parameters, and we're receiving different objects for streams, we wrap the payloads in custom classes that can be
+    compared to strings."""
+    parameters = {
+        "ContentLength": 10,
+        "Body": payload,
+        "ContentType": "text/xml",
+        "Metadata": {},
+    }
+    _botocore_serializer_integration_test("s3", "GetObject", parameters)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '{"foo":"bar"}',
+        ComparableBytesList([b"{", b'"foo"', b":", b'"bar"', b"}"]),
+        ComparableBytesIO(b'{"foo":"bar"}'),
+        ComparableBytesIterator([b"{", b'"foo"', b":", b'"bar"', b"}"]),
+    ],
+    ids=["Literal", "List[byte]", "IO[byte]", "Iterator[byte]"],
+)
+def test_restjson_streaming_payload(payload):
+    """See docs for ``test_restxml_streaming_payload``."""
+    _botocore_serializer_integration_test(
+        "lambda",
+        "Invoke",
+        {
+            "StatusCode": 200,
+            "Payload": payload,
+        },
+    )

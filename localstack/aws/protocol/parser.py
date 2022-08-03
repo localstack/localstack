@@ -69,6 +69,7 @@ import re
 from abc import ABC
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
+from typing.io import IO
 from xml.etree import ElementTree as ETree
 
 import cbor2
@@ -587,9 +588,12 @@ class BaseRestRequestParser(RequestParser):
                         body = body.decode(self.DEFAULT_ENCODING)
                     payload_parsed[payload_member_name] = body
             elif body_shape.type_name == "blob":
-                # Only set the value if it's not empty (the request's data is an empty binary by default)
-                if request.data:
-                    payload_parsed[payload_member_name] = request.data
+                # This control path is equivalent to operation.has_streaming_input (shape has a payload which is a blob)
+                # in which case we assume essentially an IO[bytes] to be passed. Since the payload can be optional, we
+                # only set the parameter if content_length=0, which indicates an empty request. If the content length is
+                # not set, it could be a streaming response.
+                if request.content_length != 0:
+                    payload_parsed[payload_member_name] = self.create_input_stream(request)
             else:
                 original_parsed = self._initial_body_parse(request)
                 payload_parsed[payload_member_name] = self._parse_shape(
@@ -625,6 +629,18 @@ class BaseRestRequestParser(RequestParser):
     def _create_event_stream(self, request: HttpRequest, shape: Shape) -> Any:
         # TODO handle event streams
         raise NotImplementedError("_create_event_stream")
+
+    def create_input_stream(self, request: HttpRequest) -> IO[bytes]:
+        """
+        Returns an IO object that makes the payload of the HttpRequest available for streaming.
+
+        :param request: the http request
+        :return: the input stream that allows services to consume the request payload
+        """
+        # for now _get_stream_for_parsing seems to be a good compromise. it can be used even after `request.data` was
+        # previously called. however the reverse doesn't work. once the stream has been consumed, `request.data` will
+        # return b''
+        return request._get_stream_for_parsing()
 
 
 class RestXMLRequestParser(BaseRestRequestParser):
