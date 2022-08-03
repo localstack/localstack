@@ -3,6 +3,7 @@ import json
 import queue
 import random
 from base64 import b64encode
+from operator import itemgetter
 
 import pytest
 import requests
@@ -25,6 +26,7 @@ from localstack.utils.testutil import check_expected_lambda_log_events_length
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import (
     LAMBDA_RUNTIME_PYTHON36,
+    LAMBDA_RUNTIME_PYTHON37,
     TEST_LAMBDA_FUNCTION_PREFIX,
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_PYTHON,
@@ -36,6 +38,7 @@ PUBLICATION_RETRIES = 4
 
 
 class TestSNSSubscription:
+    @pytest.mark.aws_validated
     def test_python_lambda_subscribe_sns_topic(
         self,
         create_lambda_function,
@@ -56,7 +59,7 @@ class TestSNSSubscription:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
@@ -125,6 +128,7 @@ class TestSNSProvider:
         msg_received = msg_received["Message"]
         assert message == msg_received
 
+    @pytest.mark.aws_validated
     def test_subscribe_with_invalid_protocol(self, sns_client, sns_create_topic, sns_subscription):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -398,6 +402,7 @@ class TestSNSProvider:
         message_body = json.loads(message["Body"])
         assert message_body["MessageAttributes"]["attr1"]["Value"] == "99.12"
 
+    @pytest.mark.only_localstack
     def test_subscribe_platform_endpoint(
         self, sns_client, sqs_create_queue, sns_create_topic, sns_subscription
     ):
@@ -439,8 +444,13 @@ class TestSNSProvider:
         sns_client.delete_endpoint(EndpointArn=platform_arn)
         sns_client.delete_platform_application(PlatformApplicationArn=app_arn)
 
-    def test_unknown_topic_publish(self, sns_client):
-        fake_arn = "arn:aws:sns:us-east-1:123456789012:i_dont_exist"
+    @pytest.mark.aws_validated
+    def test_unknown_topic_publish(self, sns_client, sns_create_topic):
+        # create topic to get the basic arn structure
+        # otherwise you get InvalidClientTokenId exception because of account id
+        topic_arn = sns_create_topic()["TopicArn"]
+        # append to get an unknown topic
+        fake_arn = f"{topic_arn}-fake"
         message = "This is a test message"
 
         with pytest.raises(ClientError) as e:
@@ -450,6 +460,7 @@ class TestSNSProvider:
         assert e.value.response["Error"]["Message"] == "Topic does not exist"
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
 
+    @pytest.mark.only_localstack
     def test_publish_sms(self, sns_client):
         response = sns_client.publish(PhoneNumber="+33000000000", Message="This is a SMS")
         assert "MessageId" in response
@@ -464,43 +475,45 @@ class TestSNSProvider:
 
         assert ex.value.response["Error"]["Code"] == "InvalidClientTokenId"
 
-    def test_tags(self, sns_client, sns_create_topic):
+    # todo: the message key is added to the error response body, but not in AWS
+    # check with serializer?
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..message"])
+    def test_tags(self, sns_client, sns_create_topic, snapshot):
 
         topic_arn = sns_create_topic()["TopicArn"]
+        with pytest.raises(ClientError) as exc:
+            sns_client.tag_resource(
+                ResourceArn=topic_arn,
+                Tags=[
+                    {"Key": "k1", "Value": "v1"},
+                    {"Key": "k2", "Value": "v2"},
+                    {"Key": "k2", "Value": "v2"},
+                ],
+            )
+        snapshot.match("duplicate-key-error", exc.value.response)
+
         sns_client.tag_resource(
             ResourceArn=topic_arn,
             Tags=[
-                {"Key": "123", "Value": "abc"},
-                {"Key": "456", "Value": "def"},
-                {"Key": "456", "Value": "def"},
+                {"Key": "k1", "Value": "v1"},
+                {"Key": "k2", "Value": "v2"},
             ],
         )
 
         tags = sns_client.list_tags_for_resource(ResourceArn=topic_arn)
-        distinct_tags = [
-            tag for idx, tag in enumerate(tags["Tags"]) if tag not in tags["Tags"][:idx]
-        ]
-        # test for duplicate tags
-        assert len(tags["Tags"]) == len(distinct_tags)
-        assert len(tags["Tags"]) == 2
-        assert tags["Tags"][0]["Key"] == "123"
-        assert tags["Tags"][0]["Value"] == "abc"
-        assert tags["Tags"][1]["Key"] == "456"
-        assert tags["Tags"][1]["Value"] == "def"
+        # could not figure out the logic for tag order in AWS, so resorting to sorting it manually in place
+        tags["Tags"].sort(key=itemgetter("Key"))
+        snapshot.match("list-created-tags", tags)
 
-        sns_client.untag_resource(ResourceArn=topic_arn, TagKeys=["123"])
-
+        sns_client.untag_resource(ResourceArn=topic_arn, TagKeys=["k1"])
         tags = sns_client.list_tags_for_resource(ResourceArn=topic_arn)
-        assert len(tags["Tags"]) == 1
-        assert tags["Tags"][0]["Key"] == "456"
-        assert tags["Tags"][0]["Value"] == "def"
+        snapshot.match("list-after-delete-tags", tags)
 
-        sns_client.tag_resource(ResourceArn=topic_arn, Tags=[{"Key": "456", "Value": "pqr"}])
-
+        # test update tag
+        sns_client.tag_resource(ResourceArn=topic_arn, Tags=[{"Key": "k2", "Value": "v2b"}])
         tags = sns_client.list_tags_for_resource(ResourceArn=topic_arn)
-        assert len(tags["Tags"]) == 1
-        assert tags["Tags"][0]["Key"] == "456"
-        assert tags["Tags"][0]["Value"] == "pqr"
+        snapshot.match("list-after-update-tags", tags)
 
     def test_topic_subscription(self, sns_client, sns_create_topic, sns_subscription):
         topic_arn = sns_create_topic()["TopicArn"]

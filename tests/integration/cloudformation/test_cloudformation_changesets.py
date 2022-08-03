@@ -320,7 +320,6 @@ def test_execute_change_set(
     is_change_set_failed_and_unavailable,
     cleanup_changesets,
     cleanup_stacks,
-    snapshot,
 ):
     """check if executing a change set succeeds in creating/modifying the resources in changed"""
 

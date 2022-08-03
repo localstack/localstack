@@ -30,7 +30,7 @@ result_raw_multiple_members = {"a": {"b": ["c", "d"]}}
     [
         (
             result_raw,
-            "<member><ResourceChange><Replacement>False</Replacement><Scope><member>Tags</member></Scope></ResourceChange><Type>Resource</Type></member>",
+            "<member><ResourceChange><Replacement>false</Replacement><Scope><member>Tags</member></Scope></ResourceChange><Type>Resource</Type></member>",
         ),
         (result_raw_none_element, "<b />"),
         (result_raw_empty_list, "<b />"),

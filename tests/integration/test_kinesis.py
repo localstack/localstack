@@ -31,6 +31,19 @@ def get_shard_iterator(stream_name, kinesis_client):
 
 
 class TestKinesis:
+    @pytest.mark.aws_validated
+    def test_create_stream_without_shard_count(
+        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+    ):
+        stream_name = kinesis_create_stream()
+        wait_for_stream_ready(stream_name)
+        describe_stream = kinesis_client.describe_stream(StreamName=stream_name)
+        assert describe_stream
+        assert "StreamDescription" in describe_stream
+        assert "Shards" in describe_stream["StreamDescription"]
+        # By default, new streams have a shard count of 4
+        assert len(describe_stream["StreamDescription"]["Shards"]) == 4
+
     def test_stream_consumers(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready
     ):

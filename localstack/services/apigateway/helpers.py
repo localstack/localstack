@@ -213,10 +213,7 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
     if not context.stage:
         return {}
 
-    region_name = [
-        name for name, region in apigateway_backends.items() if context.api_id in region.apis
-    ][0]
-    api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
+    api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=context.region_name)
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
         return response.get("variables")

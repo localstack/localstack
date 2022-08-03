@@ -58,6 +58,7 @@ class Metric:
         "xfail",
         "aws_validated",
         "snapshot",
+        "snapshot_skipped_paths",
     ]
 
     def __init__(
@@ -74,6 +75,7 @@ class Metric:
         xfail: bool = False,
         aws_validated: bool = False,
         snapshot: bool = False,
+        snapshot_skipped_paths: str = "",
     ) -> None:
         self.service = service
         self.operation = operation
@@ -87,6 +89,7 @@ class Metric:
         self.xfail = xfail
         self.aws_validated = aws_validated
         self.snapshot = snapshot
+        self.snapshot_skipped_paths = snapshot_skipped_paths
 
     def __iter__(self):
         return iter(
@@ -103,6 +106,7 @@ class Metric:
                 self.xfail,
                 self.aws_validated,
                 self.snapshot,
+                self.snapshot_skipped_paths,
             ]
         )
 

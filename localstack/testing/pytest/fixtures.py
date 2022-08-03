@@ -672,8 +672,6 @@ def kinesis_create_stream(kinesis_client):
     def _create_stream(**kwargs):
         if "StreamName" not in kwargs:
             kwargs["StreamName"] = f"test-stream-{short_uid()}"
-        if "ShardCount" not in kwargs:
-            kwargs["ShardCount"] = 2
         kinesis_client.create_stream(**kwargs)
         stream_names.append(kwargs["StreamName"])
         return kwargs["StreamName"]

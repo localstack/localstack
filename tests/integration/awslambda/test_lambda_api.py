@@ -77,9 +77,10 @@ def create_lambda_function_aws(
             LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
 
-# 1. AWS mit --snapshot-update
-# 2. AWS mit --snapshot-verify
-# 3. localstack mit --snapshot-verify
+# 1. run test: AWS --snapshot-update
+# 2. (recommended) run test: AWS (to verify transformers and behavior)
+# 3. run test: localstack
+#    a) use marker skip_snapshot_verify(paths=[...]) to exclude paths that do not match yet
 
 
 @pytest.mark.snapshot
@@ -93,8 +94,10 @@ class TestLambdaAsfApi:
         fn_name = f"ls-fn-{short_uid()}"
         fn_name_2 = f"ls-fn-{short_uid()}"
 
-        # custom transformers
+        # custom transformers -> valid for the whole test
+        # doesn't matter if added before or after a "match"-instruction
         snapshot.add_transformer(snapshot.transform.lambda_api())
+
         # infra setup (& validations)
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
             response = create_lambda_function_aws(
@@ -119,6 +122,9 @@ class TestLambdaAsfApi:
             snapshot.match("lambda_create_fn_2", response)
 
         get_fn_result = lambda_client.get_function(FunctionName=fn_name)
+
+        # match -> registers they key and takes a dict as input
+        # actual assert happens later (pytest-hook)
         snapshot.match("lambda_get_fn", get_fn_result)
 
         get_fn_result_2 = lambda_client.get_function(FunctionName=fn_name_2)
