@@ -523,13 +523,10 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             params = {}
             # TODO add a possibility to serialize simple non-modelled errors (like S3 NoSuchBucket#BucketName)
             for member in shape.members:
-                if hasattr(error, member):
+                # XML protocols do not add modeled default fields to the root node
+                # (tested for cloudfront, route53, cloudwatch, iam)
+                if member.lower() not in ["code", "message"] and hasattr(error, member):
                     params[member] = getattr(error, member)
-                elif member.lower() in ["code", "message", "type"] and hasattr(
-                    error, member.lower()
-                ):
-                    # Default error message fields can sometimes have different casing in the specs
-                    params[member] = getattr(error, member.lower())
 
             # If there is an error shape with members which should be set, they need to be added to the node
             if params:
@@ -1036,15 +1033,13 @@ class JSONResponseSerializer(ResponseSerializer):
         shape: StructureShape,
         operation_model: OperationModel,
     ) -> None:
+        body = {}
+
         # TODO implement different service-specific serializer configurations
         #   - currently we set both, the `__type` member as well as the `X-Amzn-Errortype` header
         #   - the specification defines that it's either the __type field OR the header
-        #     (https://awslabs.github.io/smithy/1.0/spec/aws/aws-json-1_1-protocol.html#operation-error-serialization)
-        body = {"__type": error.code}
         response.headers["X-Amzn-Errortype"] = error.code
-        message = self._get_error_message(error)
-        if message is not None:
-            body["message"] = message
+        body["__type"] = error.code
 
         if shape:
             remaining_params = {}
@@ -1052,12 +1047,16 @@ class JSONResponseSerializer(ResponseSerializer):
             for member in shape.members:
                 if hasattr(error, member):
                     remaining_params[member] = getattr(error, member)
-                elif member.lower() in ["code", "message", "type"] and hasattr(
-                    error, member.lower()
-                ):
-                    # Default error message fields can sometimes have different casing in the specs
+                # Default error message fields can sometimes have different casing in the specs
+                elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
                     remaining_params[member] = getattr(error, member.lower())
             self._serialize(body, remaining_params, shape)
+
+        # Only set the message if it has not been set with the shape members
+        if "message" not in body and "Message" not in body:
+            message = self._get_error_message(error)
+            if message is not None:
+                body["message"] = message
 
         response.set_json(body)
 

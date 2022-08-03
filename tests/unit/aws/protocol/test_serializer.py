@@ -1,11 +1,13 @@
 import copy
 import io
+import json
 import re
 from datetime import datetime
 from typing import Any, Dict, Iterator, Optional
 from xml.etree import ElementTree
 
 import pytest
+from botocore.awsrequest import HeadersDict
 from botocore.endpoint import convert_to_response_dict
 from botocore.parsers import ResponseParser, create_parser
 from dateutil.tz import tzlocal, tzutc
@@ -18,6 +20,8 @@ from localstack.aws.api.dynamodb import (
     CancellationReason,
     TransactionCanceledException,
 )
+from localstack.aws.api.lambda_ import ResourceNotFoundException
+from localstack.aws.api.route53 import NoSuchHostedZone
 from localstack.aws.api.sns import VerificationException
 from localstack.aws.api.sqs import (
     InvalidMessageContents,
@@ -140,6 +144,11 @@ def _botocore_error_serializer_integration_test(
 
     # Use the parser from botocore to parse the serialized response
     response_dict = serialized_response.to_readonly_response_dict()
+
+    # botocore converts the headers to lower-case keys
+    # f.e. needed for x-amzn-errortype
+    response_dict["headers"] = HeadersDict(response_dict["headers"])
+
     response_parser: ResponseParser = create_parser(service.protocol)
     parsed_response = response_parser.parse(
         response_dict,
@@ -599,6 +608,20 @@ def test_json_protocol_error_serialization_with_additional_members():
     )
 
 
+def test_json_protocol_error_serialization_with_shaped_default_members_on_root():
+    exception = TransactionCanceledException("Exception message!")
+    service = load_service("dynamodb")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("ExecuteTransaction")
+    )
+    body = serialized_response.data
+    parsed_body = json.loads(body)
+    # assert Message with first character in upper-case as specified in the specs
+    assert "Message" in parsed_body
+    assert "message" not in parsed_body
+
+
 def test_rest_json_protocol_error_serialization_with_additional_members():
     class NotFoundException(ServiceException):
         code: str = "NotFoundException"
@@ -621,6 +644,24 @@ def test_rest_json_protocol_error_serialization_with_additional_members():
     )
 
 
+def test_rest_json_protocol_error_serialization_with_shaped_default_members_on_root():
+    exception = ResourceNotFoundException("Exception message!")
+    exception.Type = "User"
+    service = load_service("lambda")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("GetLayerVersion")
+    )
+    body = serialized_response.data
+    parsed_body = json.loads(body)
+    # assert Message and Type with first character in upper-case as specified in the specs
+    assert "Message" in parsed_body
+    assert "message" not in parsed_body
+    assert "Type" in parsed_body
+    assert parsed_body["Type"] == "User"
+    assert "type" not in parsed_body
+
+
 def test_query_protocol_error_serialization_with_additional_members():
     exception = VerificationException("Exception message!")
     status = "Status Exception Message Body"
@@ -635,6 +676,38 @@ def test_query_protocol_error_serialization_with_additional_members():
         Status=status,
         Message="Exception message!",
     )
+
+
+def test_query_protocol_error_serialization_with_default_members_not_on_root():
+    exception = VerificationException("Exception message!")
+    status = "Status Exception Message Body"
+    exception.Status = status
+    service = load_service("sns")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("VerifySMSSandboxPhoneNumber")
+    )
+    body = serialized_response.data
+    parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
+    parser.feed(body)
+    root = parser.close()
+    # The root tag contains a possible namespace, f.e. {http://ec2.amazonaws.com/doc/2016-11-15}Response.
+    assert len([child for child in root if "Message" in child.tag]) == 0
+
+
+def test_rest_xml_protocol_error_serialization_with_default_members_not_on_root():
+    exception = NoSuchHostedZone("Exception message!")
+    service = load_service("route53")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("DeleteHostedZone")
+    )
+    body = serialized_response.data
+    parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
+    parser.feed(body)
+    root = parser.close()
+    # The root tag contains a possible namespace, f.e. {http://ec2.amazonaws.com/doc/2016-11-15}Response.
+    assert len([child for child in root if "Message" in child.tag]) == 0
 
 
 def test_rest_xml_protocol_error_serialization_with_additional_members():
