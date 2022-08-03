@@ -77,18 +77,18 @@ class TestS3NotificationsToEventBridge:
         def _validate_messages():
             received = sqs_client.receive_message(QueueUrl=queue_url).get("Messages", [])
             for msg in received:
-                messages.update({msg["MessageId"]: msg})
+                event_message = json.loads(msg["Body"])
+                messages.update({event_message["detail-type"]: event_message})
             assert len(messages) == 2
-            messages_array = list(messages.values())
 
-            delete_event_message = json.loads(messages_array[0]["Body"])
-            create_event_message = json.loads(messages_array[1]["Body"])
-
-            assert delete_event_message["detail-type"] == "Object Deleted"
-            assert create_event_message["detail-type"] == "Object Created"
+            delete_event_message = messages.get("Object Deleted")
+            create_event_message = messages.get("Object Created")
 
             assert delete_event_message["source"] == "aws.s3"
             assert create_event_message["source"] == "aws.s3"
+
+            assert delete_event_message["detail"]["reason"] == "DeleteObject"
+            assert create_event_message["detail"]["reason"] == "PutObject"
 
             assert delete_event_message["detail"]["bucket"]["name"] == bucket_name
             assert create_event_message["detail"]["bucket"]["name"] == bucket_name

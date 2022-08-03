@@ -237,6 +237,7 @@ def get_event_message(
     version_id=None,
     file_size=0,
     config_id="testConfigRule",
+    source_ip="127.0.0.1",
 ):
     # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
     bucket_name = normalize_bucket_name(bucket_name)
@@ -249,9 +250,7 @@ def get_event_message(
                 "eventTime": timestamp_millis(),
                 "eventName": event_name,
                 "userIdentity": {"principalId": "AIDAJDPLRKLG7UEXAMPLE"},
-                "requestParameters": {
-                    "sourceIPAddress": "127.0.0.1"
-                },  # TODO determine real source IP
+                "requestParameters": {"sourceIPAddress": source_ip},
                 "responseElements": {
                     "x-amz-request-id": short_uid(),
                     "x-amz-id-2": "eftixk72aD6Ap51TnqcoF8eFidJG9Z/2",  # Amazon S3 host that processed the request
@@ -339,6 +338,8 @@ def send_notification_for_subscriber(
     except botocore.exceptions.ClientError:
         pass
 
+    source_ip = headers.get("X-Forwarded-For", "127.0.0.1").split(",")[0]
+
     # build event message
     message = get_event_message(
         event_name=event_name,
@@ -348,6 +349,7 @@ def send_notification_for_subscriber(
         file_size=object_data.get("ContentLength", 0),
         version_id=version_id,
         config_id=notification["Id"],
+        source_ip=source_ip,
     )
     message = json.dumps(message)
 
@@ -405,30 +407,39 @@ def send_notification_for_subscriber(
             or config.DEFAULT_REGION
         )
         events_client = aws_stack.connect_to_service("events", region_name=region)
+
         entry = {
-            "version": "0",
-            "id": "9ae3f115-3a54-38d4-6a51-ada40a316d3c",
-            "detail-type": "Object Created",
-            "source": "aws.s3",
-            "account": "074255357339",
-            "time": "2022-08-02T21:43:36Z",
-            "region": "us-east-1",
-            "resources": ["arn:aws:s3:::test-crist-bucket"],
-            "detail": {
-                "version": "0",
-                "bucket": {"name": "test-crist-bucket"},
+            "Source": "aws.s3",
+            "Resources": [f"arn:aws:s3:::{bucket_name}"],
+            "Detail": {
+                "version": version_id or "0",
+                "bucket": {"name": bucket_name},
                 "object": {
-                    "key": "test-key",
+                    "key": key,
                     "size": 4,
-                    "etag": "8d777f385d3dfec8815d20f7496026dc",
+                    "etag": object_data.get("ETag", ""),
                     "sequencer": "0062E99A88DC407460",
                 },
                 "request-id": "RKREYG1RN2X92YX6",
                 "requester": "074255357339",
-                "source-ip-address": "187.251.114.50",
-                "reason": "PutObject",
+                "source-ip-address": source_ip,
             },
         }
+
+        if action == "ObjectCreated":
+            entry["DetailType"] = "Object Created"
+            entry["Detail"]["reason"] = f"{api_method}Object"
+
+        if action == "ObjectRemoved":
+            entry["DetailType"] = "Object Deleted"
+            entry["Detail"]["reason"] = f"{api_method}Object"
+
+        if action == "ObjectTagging":
+            entry["DetailType"] = (
+                "Object Tags Added" if api_method == "Put" else "Object Tags Deleted"
+            )
+
+        entry["Detail"] = json.dumps(entry["Detail"])
 
         try:
             events_client.put_events(Entries=[entry])
