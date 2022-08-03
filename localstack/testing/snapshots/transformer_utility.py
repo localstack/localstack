@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 from typing import Optional, Pattern
 
+from localstack.aws.api.secretsmanager import CreateSecretResponse
 from localstack.testing.snapshots.transformer import (
     JsonpathTransformer,
     KeyValueBasedTransformer,
@@ -189,6 +190,19 @@ class TransformerUtility:
             TransformerUtility.key_value("AlarmName"),
             KeyValueBasedTransformer(_resource_name_transformer, "SubscriptionArn"),
             TransformerUtility.key_value("Region", "region-name-full"),
+        ]
+
+    @staticmethod
+    def secretsmanager_secret_id_arn(create_secret_res: CreateSecretResponse, index: int):
+        secret_id_repl = f"<SecretId-{index}idx>"
+        arn_part_repl = f"<ArnPart-{index}idx>"
+
+        secret_id: str = create_secret_res["Name"]
+        arn_part: str = "".join(create_secret_res["ARN"].rpartition("-")[-2:])
+
+        return [
+            RegexTransformer(arn_part, arn_part_repl),
+            RegexTransformer(secret_id, secret_id_repl),
         ]
 
     # TODO add example

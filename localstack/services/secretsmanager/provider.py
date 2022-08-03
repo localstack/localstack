@@ -72,10 +72,9 @@ AWSPENDING: Final[str] = "AWSPENDING"
 AWSCURRENT: Final[str] = "AWSCURRENT"
 #
 # Error Messages.
-AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[str] = (
-    "An error occurred (InvalidRequestException) when calling the CreateSecret operation: "
-    "You can't create this secret because a secret with this name is already scheduled for deletion."
-)
+AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[
+    str
+] = "You can't create this secret because a secret with this name is already scheduled for deletion."
 
 LOG = logging.getLogger(__name__)
 
@@ -169,8 +168,11 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def delete_secret(
         self, context: RequestContext, request: DeleteSecretRequest
     ) -> DeleteSecretResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return self._call_moto_with_request_secret_id(context, request)
+        secret_id: str = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        res = self._call_moto_with_request_secret_id(context, request)
+        delete_arn_binding_for(context.region, secret_id)
+        return res
 
     @handler("DescribeSecret", expand=False)
     def describe_secret(
@@ -574,8 +576,12 @@ def backend_rotate_secret(
     return secret.to_short_dict()
 
 
-def secretsmanager_models_secret_arn(region, secret_id):
-    k = f"{region}_{secret_id}"
+def get_arn_binding_key_for(region: str, secret_id: str) -> str:
+    return f"{region}_{secret_id}"
+
+
+def get_arn_binding_for(region, secret_id):
+    k = get_arn_binding_key_for(region, secret_id)
     if k not in SECRET_ARN_STORAGE:
         id_string = short_uid()[:6]
         arn = aws_stack.secretsmanager_secret_arn(
@@ -583,6 +589,12 @@ def secretsmanager_models_secret_arn(region, secret_id):
         )
         SECRET_ARN_STORAGE[k] = arn
     return SECRET_ARN_STORAGE[k]
+
+
+def delete_arn_binding_for(region: str, secret_id: str) -> None:
+    k = get_arn_binding_key_for(region, secret_id)
+    if k in SECRET_ARN_STORAGE:
+        del SECRET_ARN_STORAGE[k]
 
 
 # patching resource policy in moto
@@ -648,7 +660,7 @@ def put_resource_policy_response(self):
 
 
 def apply_patches():
-    secretsmanager_models.secret_arn = secretsmanager_models_secret_arn
+    secretsmanager_models.secret_arn = get_arn_binding_for
     setattr(SecretsManagerBackend, "get_resource_policy", get_resource_policy_model)
     setattr(SecretsManagerResponse, "get_resource_policy", get_resource_policy_response)
 
