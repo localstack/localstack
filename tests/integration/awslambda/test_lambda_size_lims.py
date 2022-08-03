@@ -2,6 +2,7 @@ import os
 from io import BytesIO
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.services.awslambda.lambda_api import LAMBDA_DEFAULT_HANDLER
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
@@ -38,7 +39,7 @@ class TestLambdaSizeLimits:
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
-        with pytest.raises(Exception) as e:
+        with pytest.raises(ClientError) as e:
             lambda_client.create_function(
                 FunctionName=function_name,
                 Runtime=LAMBDA_RUNTIME_PYTHON37,
@@ -47,6 +48,8 @@ class TestLambdaSizeLimits:
                 Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
                 Timeout=10,
             )
+        assert e
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
         e.match(
             r"An error occurred \(InvalidParameterValueException\) when calling the CreateFunction operation\: Unzipped size must be smaller than [0-9]* bytes"
         )
