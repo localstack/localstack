@@ -576,6 +576,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return CreateEndpointResponse(**result)
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
+        call_moto(context)
         sns_backend = SNSBackend.get()
 
         def should_be_kept(current_subscription, target_subscription_arn):
