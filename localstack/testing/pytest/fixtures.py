@@ -360,7 +360,7 @@ def dynamodb_create_table_with_parameters(dynamodb_client, dynamodb_wait_for_tab
 
 
 @pytest.fixture
-def dynamodb_create_table(dynamodb_client):
+def dynamodb_create_table(dynamodb_client, dynamodb_wait_for_table_active):
     # beware, this swallows exception in create_dynamodb_table utility function
     tables = []
 
