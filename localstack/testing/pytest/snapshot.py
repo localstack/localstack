@@ -82,9 +82,7 @@ def fixture_snapshot(request: SubRequest, account_id, region):
             request.fspath.dirname, f"{request.fspath.purebasename}.snapshot.json"
         ),
         scope_key=request.node.nodeid,
-        update=request.config.option.snapshot_update
-        if update_overwrite is None
-        else update_overwrite,
+        update=update_overwrite or request.config.option.snapshot_update,
         verify=False if request.config.option.snapshot_skip_all else True,
     )
     sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=2)

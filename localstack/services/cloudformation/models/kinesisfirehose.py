@@ -15,6 +15,9 @@ class FirehoseDeliveryStream(GenericBaseModel):
             DeliveryStreamName=stream_name
         )
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("DeliveryStreamName")
+
     @staticmethod
     def get_deploy_templates():
         return {

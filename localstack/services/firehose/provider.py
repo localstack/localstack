@@ -217,7 +217,6 @@ class FirehoseProvider(FirehoseApi):
             HasMoreDestinations=False,
             VersionId="1",
             CreateTimestamp=datetime.now(),
-            LastUpdateTimestamp=datetime.now(),
             Destinations=destinations,
             Source=convert_source_config_to_desc(kinesis_stream_source_configuration),
         )
