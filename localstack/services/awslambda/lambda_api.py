@@ -1614,8 +1614,7 @@ def delete_url_config(function):
     arn = q_arn or arn
 
     lambda_backend = LambdaRegion.get()
-    if arn in lambda_backend.url_configs.keys():
-        lambda_backend.url_configs.pop(arn)
+    lambda_backend.url_configs.pop(arn, None)
 
     return {}
 
