@@ -1582,16 +1582,14 @@ class TestSNSProvider:
         snapshot.add_transformer(snapshot.transform.sqs_api())
         # Need to skip the MD5OfBody/Signature, because it contains a timestamp
         snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                "$.json_encoded_delivery..Body.Signature",
+            snapshot.transform.key_value(
+                "Signature",
                 "<signature>",
                 reference_replacement=False,
             )
         )
         snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                "$.json_encoded_delivery..MD5OfBody", "<md5-hash>", reference_replacement=False
-            )
+            snapshot.transform.key_value("MD5OfBody", "<md5-hash>", reference_replacement=False)
         )
 
         topic_arn = sns_create_topic()["TopicArn"]
