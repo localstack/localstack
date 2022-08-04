@@ -5,9 +5,10 @@ and manipulate python collection (dicts, list, sets).
 
 import logging
 import re
-import sys
 from collections.abc import Mapping
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sized, Tuple, Type, TypeVar, Union
+
+import sys
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -406,7 +407,7 @@ def select_from_typed_dict(typed_dict: Type[TypedDict], obj: Dict):
     return select_attributes(obj, [*typed_dict.__required_keys__, *typed_dict.__optional_keys__])
 
 
-def sort_dict(structure: Dict | List) -> Dict | List:
+def sort_dict(structure: Union[Dict, List]) -> Union[Dict, List]:
     """Sorts all the keys in a dictionary-based structure"""
     if isinstance(structure, dict):
         return {k: sort_dict(v) for k, v in sorted(structure.items())}
