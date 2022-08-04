@@ -5,10 +5,9 @@ and manipulate python collection (dicts, list, sets).
 
 import logging
 import re
+import sys
 from collections.abc import Mapping
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sized, Tuple, Type, TypeVar, Union
-
-import sys
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
