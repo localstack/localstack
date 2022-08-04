@@ -25,9 +25,12 @@ Access patterns are as follows
 
 import re
 from collections.abc import Callable
-from typing import Any, Type, TypeVar, Union
+from typing import Any, Dict, Type, TypeVar, Union
 
 from boto3 import Session
+
+# Keeps track of all initialised store bundles
+STORES_DIRECTORY: Dict[str, "AccountRegionBundle"] = {}
 
 LOCAL_ATTR_PREFIX = "attr_"
 
@@ -202,6 +205,8 @@ class AccountRegionBundle(dict):
         self.service_name = service_name
         self.store = store
         self.validate = validate
+
+        STORES_DIRECTORY[self.service_name] = self
 
     def __getitem__(self, account_id: str) -> RegionBundle:
         if self.validate and not re.match(r"\d{12}", account_id):
