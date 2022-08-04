@@ -92,7 +92,7 @@ DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
 # see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteQueue.html
 RECENTLY_DELETED_TIMEOUT = 60
 
-IMMUTABLE_QUEUE_ATTRIBUTES = [
+INTERNAL_QUEUE_ATTRIBUTES = [
     # these attributes cannot be changed by set_queue_attributes and should
     # therefore be ignored when comparing queue attributes for create_queue
     QueueAttributeName.ApproximateNumberOfMessages,
@@ -1386,7 +1386,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue.validate_queue_attributes(attributes)
 
         for k, v in attributes.items():
-            if k in IMMUTABLE_QUEUE_ATTRIBUTES:
+            if k in INTERNAL_QUEUE_ATTRIBUTES:
                 raise InvalidAttributeName(f"Unknown Attribute {k}.")
             queue.attributes[k] = v
 
@@ -1480,7 +1480,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         valid = [k[1] for k in inspect.getmembers(QueueAttributeName)]
 
         for k in attributes.keys():
-            if k not in valid or k in IMMUTABLE_QUEUE_ATTRIBUTES:
+            if k not in valid or k in INTERNAL_QUEUE_ATTRIBUTES:
                 raise InvalidAttributeName(f"Unknown Attribute {k}.")
 
     def _validate_actions(self, actions: ActionNameList):
