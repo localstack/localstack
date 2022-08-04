@@ -84,6 +84,7 @@ from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.patch import patch
 from localstack.utils.run import run_for_max_seconds
 from localstack.utils.strings import md5
+from localstack.utils.time import TIMESTAMP_READABLE_FORMAT, mktime, timestamp
 
 LOG = logging.getLogger(__name__)
 
@@ -1143,6 +1144,11 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
         {} if not rawQueryString else dict(urllib.parse.parse_qsl(rawQueryString))
     )
 
+    now = datetime.utcnow()
+    readable = timestamp(time=now, format=TIMESTAMP_READABLE_FORMAT)
+    if not any(char in readable for char in ["+", "-"]):
+        readable += "+0000"
+
     requestContext = {
         "acountId": "anonymous",
         "apiId": api_id,
@@ -1158,8 +1164,8 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
         "requestId": short_uid(),
         "routeKey": "$default",
         "stage": "$default",
-        "time": datetime.utcnow().isoformat(),
-        "timeEpoch": datetime.utcnow().timestamp(),
+        "time": readable,
+        "timeEpoch": mktime(ts=now, millis=True),
     }
 
     return {
@@ -1192,7 +1198,7 @@ def handle_lambda_url_invocation(
     )
 
     try:
-        result = proccess_lambda_url_invocation(lambda_url_config, event)
+        result = process_lambda_url_invocation(lambda_url_config, event)
     except Exception as e:
         LOG.warning(f"Lambda URL ({api_id}) failed during execution: {e}")
 

@@ -5,6 +5,7 @@ from typing import Optional
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
 TIMESTAMP_FORMAT_TZ = "%Y-%m-%dT%H:%M:%SZ"
 TIMESTAMP_FORMAT_MICROS = "%Y-%m-%dT%H:%M:%S.%fZ"
+TIMESTAMP_READABLE_FORMAT = "%d/%b/%Y:%H:%M:%S %z"
 
 
 def isoformat_milliseconds(t) -> str:
@@ -33,7 +34,12 @@ def epoch_timestamp() -> float:
 
 
 def parse_timestamp(ts_str: str) -> datetime:
-    for ts_format in [TIMESTAMP_FORMAT, TIMESTAMP_FORMAT_TZ, TIMESTAMP_FORMAT_MICROS]:
+    for ts_format in [
+        TIMESTAMP_FORMAT,
+        TIMESTAMP_FORMAT_TZ,
+        TIMESTAMP_FORMAT_MICROS,
+        TIMESTAMP_READABLE_FORMAT,
+    ]:
         try:
             return datetime.strptime(ts_str, ts_format)
         except ValueError:
