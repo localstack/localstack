@@ -729,6 +729,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 if inner_item:
                     existing_items.append(ItemFinder.find_existing_item(inner_item))
 
+        client_token: str | None = transact_write_items_input.get("ClientRequestToken")
+        if client_token: # and token not expired
+            # set token and expiration date in the backend
+            pass
+
         # forward request to backend
         result = self.forward_request(context)
 

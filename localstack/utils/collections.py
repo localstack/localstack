@@ -404,3 +404,12 @@ def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
 def select_from_typed_dict(typed_dict: Type[TypedDict], obj: Dict):
     """Select a subset of attributes from a dictionary based on the keys of a given `TypedDict`"""
     return select_attributes(obj, [*typed_dict.__required_keys__, *typed_dict.__optional_keys__])
+
+
+def sort_dict(structure: Dict | List) -> Dict | List:
+    """Sorts all the keys in a dictionary-based structure"""
+    if isinstance(structure, dict):
+        return {k: sort_dict(v) for k, v in sorted(structure.items())}
+    if isinstance(structure, list):
+        return [sort_dict(v) for i, v in sorted(enumerate(structure))]
+    return structure
