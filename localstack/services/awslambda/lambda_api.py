@@ -83,7 +83,6 @@ from localstack.utils.functions import run_safe
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.patch import patch
 from localstack.utils.run import run_for_max_seconds
-from localstack.utils.strings import md5
 from localstack.utils.time import TIMESTAMP_READABLE_FORMAT, mktime, timestamp
 
 LOG = logging.getLogger(__name__)
@@ -1150,7 +1149,7 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
         readable += "+0000"
 
     requestContext = {
-        "acountId": "anonymous",
+        "accountId": "anonymous",
         "apiId": api_id,
         "domainName": headers.get("Host", ""),
         "domainPrefix": api_id,
@@ -1168,7 +1167,13 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
         "timeEpoch": mktime(ts=now, millis=True),
     }
 
-    return {
+    content_type = headers.get("Content-Type", "").lower()
+    content_type_is_text = any(text_type in content_type for text_type in ["text", "json", "xml"])
+
+    is_base64_encoded = not (data.isascii() and content_type_is_text) if data else False
+    body = base64.b64encode(data).decode() if is_base64_encoded else data
+
+    event = {
         "version": "2.0",
         "routeKey": "$default",
         "rawPath": rawPath,
@@ -1176,9 +1181,14 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
         "headers": {k.lower(): v for k, v in headers.items()},
         "queryStringParameters": queryStringParameters,
         "requestContext": requestContext,
-        "body": base64.b64encode(data).decode(),
-        "isBase64Encoded": True,
+        "body": body,
+        "isBase64Encoded": is_base64_encoded,
     }
+
+    if not data:
+        event.pop("body")
+
+    return event
 
 
 def handle_lambda_url_invocation(

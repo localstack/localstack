@@ -2511,6 +2511,20 @@ class TestLambdaURL:
         assert "isBase64Encoded" in event
 
         assert "custom_path" in event["rawPath"]
+        assert event["requestContext"]["accountId"] == "anonymous"
         assert event["queryStringParameters"]["test_param"] == "test_value"
+        assert event["headers"]["user-agent"] == "python-requests/testing"
+        assert event["headers"]["host"] in url
+
         assert event["body"] == to_str(base64.b64encode(b"{'key':'value'}"))
-        assert event["headers"].get("user-agent") == "python-requests/testing"
+        assert event["isBase64Encoded"] is True
+
+        result = safe_requests.post(url, data="text", headers={"Content-Type": "text/plain"})
+        event = json.loads(result.content)["event"]
+        assert event["body"] == "text"
+        assert event["isBase64Encoded"] is False
+
+        result = safe_requests.post(url)
+        event = json.loads(result.content)["event"]
+        assert "Body" not in event
+        assert event["isBase64Encoded"] is False
