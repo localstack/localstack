@@ -724,21 +724,21 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_redrive_policy_lambda_subscription": {
-    "recorded-date": "04-08-2022, 16:22:25",
+    "recorded-date": "04-08-2022, 17:05:46",
     "recorded-content": {
       "subscription-attributes": {
         "Attributes": {
-          "Owner": "111111111111",
-          "RawMessageDelivery": "false",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
-          "Endpoint": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
-          "RedrivePolicy": {
-            "deadLetterTargetArn": "arn:aws:sqs:<region>:111111111111:<resource:3>"
-          },
-          "Protocol": "lambda",
-          "PendingConfirmation": "false",
           "ConfirmationWasAuthenticated": "true",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:4>"
+          "Endpoint": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "lambda",
+          "RawMessageDelivery": "false",
+          "RedrivePolicy": {
+            "deadLetterTargetArn": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          },
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:3>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -754,13 +754,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:2>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
               "Message": "test_redrive_policy",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:4>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:3>"
             }
           }
         ],

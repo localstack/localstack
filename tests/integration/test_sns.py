@@ -42,6 +42,13 @@ def sns_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.sns_api())
 
 
+def _order_dict(response: dict) -> dict:
+    return {
+        key: _order_dict(val) if isinstance(val, dict) else val
+        for key, val in sorted(response.items(), key=itemgetter(0))
+    }
+
+
 class TestSNSSubscription:
     @pytest.mark.aws_validated
     def test_python_lambda_subscribe_sns_topic(
@@ -840,8 +847,7 @@ class TestSNSProvider:
             SubscriptionArn=subscription["SubscriptionArn"]
         )
         # todo: hacky fix for snapshot resource replacement
-
-        snapshot.match("subscription-attributes", response_attributes)
+        snapshot.match("subscription-attributes", _order_dict(response_attributes))
 
         lambda_client.delete_function(FunctionName=lambda_name)
 
@@ -857,7 +863,7 @@ class TestSNSProvider:
         ), f"invalid number of messages in DLQ response {response}"
         message = json.loads(response["Messages"][0]["Body"])
         assert message["Type"] == "Notification"
-        assert json.loads(message["Message"])["message"] == "test_redrive_policy"
+        assert message["Message"] == "test_redrive_policy"
 
     @pytest.mark.aws_validated
     def test_publish_with_empty_subject(self, sns_client, sns_create_topic):
