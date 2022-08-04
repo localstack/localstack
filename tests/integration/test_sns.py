@@ -16,8 +16,8 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import SNSBackend
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
-from localstack.utils.aws import aws_stack
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
@@ -25,7 +25,6 @@ from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import (
-    LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_PYTHON37,
     TEST_LAMBDA_FUNCTION_PREFIX,
     TEST_LAMBDA_LIBS,
@@ -475,8 +474,6 @@ class TestSNSProvider:
 
         assert ex.value.response["Error"]["Code"] == "InvalidClientTokenId"
 
-    # todo: the message key is added to the error response body, but not in AWS
-    # check with serializer?
     @pytest.mark.aws_validated
     def test_tags(self, sns_client, sns_create_topic, snapshot):
 
@@ -514,6 +511,7 @@ class TestSNSProvider:
         tags = sns_client.list_tags_for_resource(ResourceArn=topic_arn)
         snapshot.match("list-after-update-tags", tags)
 
+    @pytest.mark.only_localstack
     def test_topic_subscription(self, sns_client, sns_create_topic, sns_subscription):
         topic_arn = sns_create_topic()["TopicArn"]
         subscription = sns_subscription(
@@ -534,67 +532,99 @@ class TestSNSProvider:
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
+    @pytest.mark.aws_validated
     def test_sqs_topic_subscription_confirmation(
-        self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn, sns_subscription
+        self, sns_client, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription
     ):
         topic_arn = sns_create_topic()["TopicArn"]
-        queue_arn = sqs_queue_arn(sqs_create_queue())
-        subscription = sns_subscription(
-            TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn, ReturnSubscriptionArn=True
-        )
+        queue_url = sqs_create_queue()
+        subscription_attrs = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
         def check_subscription():
-            subscription_arn = subscription["SubscriptionArn"]
-            subscription_attrs = sns_client.get_subscription_attributes(
-                SubscriptionArn=subscription_arn
-            )
-            assert subscription_attrs["Attributes"]["PendingConfirmation"] == "false"
+            nonlocal subscription_attrs
+            if not subscription_attrs["PendingConfirmation"] == "false":
+                subscription_arn = subscription_attrs["SubscriptionArn"]
+                subscription_attrs = sns_client.get_subscription_attributes(
+                    SubscriptionArn=subscription_arn
+                )["Attributes"]
+            return subscription_attrs["PendingConfirmation"] == "false"
 
-        retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
+        # SQS subscriptions are auto confirmed if they are from the user and in the same region
+        assert poll_condition(check_subscription, timeout=5)
 
-    def test_dead_letter_queue(
+    @pytest.mark.aws_validated
+    def test_sns_topic_as_lambda_dead_letter_queue(
         self,
         sns_client,
         sqs_client,
+        lambda_client,
+        lambda_su_role,
+        create_lambda_function,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
-        create_lambda_function,
         sns_subscription,
+        sns_create_sqs_subscription,
     ):
-        lambda_name = f"test-{short_uid()}"
-        lambda_arn = aws_stack.lambda_function_arn(lambda_name)
-        topic_arn = sns_create_topic()["TopicArn"]
-        queue_name = f"test-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        # create an SNS topic that will be used as a DLQ by the lambda
+        dlq_topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
 
-        create_lambda_function(
-            func_name=lambda_name,
+        # sqs_subscription
+        sns_create_sqs_subscription(topic_arn=dlq_topic_arn, queue_url=queue_url)
+
+        # create an SNS topic that will be used to invoke the lambda
+        lambda_topic_arn = sns_create_topic()["TopicArn"]
+
+        function_name = f"{TEST_LAMBDA_FUNCTION_PREFIX}-{short_uid()}"
+        lambda_creation_response = create_lambda_function(
+            func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-            DeadLetterConfig={"TargetArn": queue_arn},
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=lambda_su_role,
+            DeadLetterConfig={"TargetArn": dlq_topic_arn},
         )
-        sns_subscription(TopicArn=topic_arn, Protocol="lambda", Endpoint=lambda_arn)
+        lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
+
+        # allow the SNS topic to invoke the lambda
+        permission_id = f"test-statement-{short_uid()}"
+        lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId=permission_id,
+            Action="lambda:InvokeFunction",
+            Principal="sns.amazonaws.com",
+            SourceArn=lambda_topic_arn,
+        )
+
+        # subscribe the lambda to the SNS topic: lambda_subscription
+        sns_subscription(
+            TopicArn=lambda_topic_arn,
+            Protocol="lambda",
+            Endpoint=lambda_arn,
+        )
 
         payload = {
             lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
         }
-        sns_client.publish(TopicArn=topic_arn, Message=json.dumps(payload))
+        sns_client.publish(TopicArn=lambda_topic_arn, Message=json.dumps(payload))
 
         def receive_dlq():
             result = sqs_client.receive_message(
                 QueueUrl=queue_url, MessageAttributeNames=["All"], VisibilityTimeout=0
             )
-            msg_attrs = result["Messages"][0]["MessageAttributes"]
             assert len(result["Messages"]) > 0
+            msg_body = json.loads(result["Messages"][0]["Body"])
+            msg_attrs = msg_body["MessageAttributes"]
             assert "RequestID" in msg_attrs
             assert "ErrorCode" in msg_attrs
             assert "ErrorMessage" in msg_attrs
 
-        retry(receive_dlq, retries=8, sleep=2)
+        # check that the SQS queue subscribed to the SNS topic used as DLQ received the error from the lambda
+        # on AWS, event retries can be quite delayed, so we have to wait up to 6 minutes here
+        # reduced retries when using localstack to avoid tests flaking
+        retries = 120 if is_aws_cloud() else 3
+        retry(receive_dlq, retries=retries, sleep=3)
 
+    @pytest.mark.only_localstack
     def test_redrive_policy_http_subscription(
         self,
         sns_client,
@@ -604,7 +634,6 @@ class TestSNSProvider:
         sqs_queue_arn,
         sns_subscription,
     ):
-        # self.unsubscribe_all_from_sns()
         dlq_name = f"dlq-{short_uid()}"
         dlq_url = sqs_create_queue(QueueName=dlq_name)
         dlq_arn = sqs_queue_arn(dlq_url)
@@ -648,28 +677,34 @@ class TestSNSProvider:
         assert message["Type"] == "Notification"
         assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
+    @pytest.mark.aws_validated
     def test_redrive_policy_lambda_subscription(
         self,
         sns_client,
         sns_create_topic,
         sqs_create_queue,
         sqs_queue_arn,
+        lambda_client,
         create_lambda_function,
+        lambda_su_role,
         sqs_client,
         sns_subscription,
+        sns_allow_topic_sqs_queue,
     ):
-        # self.unsubscribe_all_from_sns()
-        dlq_name = f"dlq-{short_uid()}"
-        dlq_url = sqs_create_queue(QueueName=dlq_name)
+        dlq_url = sqs_create_queue()
         dlq_arn = sqs_queue_arn(dlq_url)
         topic_arn = sns_create_topic()["TopicArn"]
+        sns_allow_topic_sqs_queue(
+            sqs_queue_url=dlq_url, sqs_queue_arn=dlq_arn, sns_topic_arn=topic_arn
+        )
 
         lambda_name = f"test-{short_uid()}"
         lambda_arn = create_lambda_function(
             func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=lambda_su_role,
         )["CreateFunctionResponse"]["FunctionArn"]
 
         subscription = sns_subscription(TopicArn=topic_arn, Protocol="lambda", Endpoint=lambda_arn)
@@ -679,7 +714,7 @@ class TestSNSProvider:
             AttributeName="RedrivePolicy",
             AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
         )
-        testutil.delete_lambda_function(lambda_name)
+        lambda_client.delete_function(FunctionName=lambda_name)
 
         sns_client.publish(
             TopicArn=topic_arn,
@@ -694,45 +729,7 @@ class TestSNSProvider:
         assert message["Type"] == "Notification"
         assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
-    def test_redrive_policy_queue_subscription(
-        self,
-        sns_client,
-        sns_create_topic,
-        sqs_create_queue,
-        sqs_queue_arn,
-        sqs_client,
-        sns_subscription,
-    ):
-        # self.unsubscribe_all_from_sns()
-        dlq_name = f"dlq-{short_uid()}"
-        dlq_url = sqs_create_queue(QueueName=dlq_name)
-        dlq_arn = sqs_queue_arn(dlq_url)
-
-        topic_arn = sns_create_topic()["TopicArn"]
-        invalid_queue_arn = aws_stack.sqs_queue_arn("invalid_queue")
-        # subscribe with an invalid queue ARN, to trigger event on DLQ below
-        subscription = sns_subscription(
-            TopicArn=topic_arn, Protocol="sqs", Endpoint=invalid_queue_arn
-        )
-
-        sns_client.set_subscription_attributes(
-            SubscriptionArn=subscription["SubscriptionArn"],
-            AttributeName="RedrivePolicy",
-            AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
-        )
-
-        sns_client.publish(
-            TopicArn=topic_arn, Message=json.dumps({"message": "test_redrive_policy"})
-        )
-
-        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
-        assert (
-            len(response["Messages"]) == 1
-        ), f"invalid number of messages in DLQ response {response}"
-        message = json.loads(response["Messages"][0]["Body"])
-        assert message["Type"] == "Notification"
-        assert json.loads(message["Message"])["message"] == "test_redrive_policy"
-
+    @pytest.mark.aws_validated
     def test_publish_with_empty_subject(self, sns_client, sns_create_topic):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -748,7 +745,9 @@ class TestSNSProvider:
             )
 
         assert e.value.response["Error"]["Code"] == "InvalidParameter"
+        assert e.value.response["Error"]["Message"] == "Invalid parameter: Subject"
 
+    # todo test with snapshot to aws validate it
     def test_create_topic_test_arn(self, sns_create_topic, sns_client):
         topic_name = f"topic-{short_uid()}"
         response = sns_create_topic(Name=topic_name)
@@ -757,120 +756,122 @@ class TestSNSProvider:
         assert topic_arn_params[4] == get_aws_account_id()
         assert topic_arn_params[5] == topic_name
 
+    @pytest.mark.aws_validated
     def test_publish_message_by_target_arn(
-        self, sns_client, sns_create_topic, create_lambda_function, sns_subscription
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
     ):
-        # self.unsubscribe_all_from_sns()
-
-        func_name = f"lambda-{short_uid()}"
+        # using an SQS subscription to test TopicArn/TargetArn as it is easier to check against AWS
         topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
-        lambda_arn = create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=func_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-        )["CreateFunctionResponse"]["FunctionArn"]
-        subscription_arn = sns_subscription(
-            TopicArn=topic_arn, Protocol="lambda", Endpoint=lambda_arn
-        )["SubscriptionArn"]
+        sns_client.publish(TopicArn=topic_arn, Message="test-msg-1")
 
-        sns_client.publish(TopicArn=topic_arn, Message="test_message_1", Subject="test subject")
-
-        # Lambda invoked 1 time
-        events = retry(
-            check_expected_lambda_log_events_length,
-            retries=3,
-            sleep=1,
-            function_name=func_name,
-            expected_length=1,
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            MessageAttributeNames=["All"],
+            VisibilityTimeout=0,
+            WaitTimeSeconds=4,
         )
 
-        message = events[0]["Records"][0]
-        assert message["EventSubscriptionArn"] == subscription_arn
+        assert len(response["Messages"]) == 1
+        message = response["Messages"][0]
+        msg_body = json.loads(message["Body"])
+        assert msg_body["Message"] == "test-msg-1"
 
-        sns_client.publish(TargetArn=topic_arn, Message="test_message_2", Subject="test subject")
+        sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
 
-        events = retry(
-            check_expected_lambda_log_events_length,
-            retries=3,
-            sleep=1,
-            function_name=func_name,
-            expected_length=2,
+        # publish with TargetArn instead of TopicArn
+        sns_client.publish(TargetArn=topic_arn, Message="test-msg-2")
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            MessageAttributeNames=["All"],
+            VisibilityTimeout=0,
+            WaitTimeSeconds=4,
         )
-        # Lambda invoked 1 more time
-        assert len(events) == 2
+        assert len(response["Messages"]) == 1
+        message = response["Messages"][0]
+        msg_body = json.loads(message["Body"])
+        assert msg_body["Message"] == "test-msg-2"
 
-        for event in events:
-            message = event["Records"][0]
-            assert message["EventSubscriptionArn"] == subscription_arn
-
-    def test_publish_message_after_subscribe_topic(
+    @pytest.mark.aws_validated
+    def test_publish_message_before_subscribe_topic(
         self,
         sns_client,
         sns_create_topic,
         sqs_client,
         sqs_create_queue,
-        sqs_queue_arn,
         sns_subscription,
+        sns_create_sqs_subscription,
     ):
-        # self.unsubscribe_all_from_sns()
-
         topic_arn = sns_create_topic()["TopicArn"]
-
         queue_url = sqs_create_queue()
-        queue_arn = sqs_queue_arn(queue_url)
 
         rs = sns_client.publish(
             TopicArn=topic_arn, Subject="test subject", Message="test_message_1"
         )
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
         message_subject = "sqs subject"
         message_body = "test_message_2"
 
         rs = sns_client.publish(TopicArn=topic_arn, Subject=message_subject, Message=message_body)
-        # time.sleep(100)
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
         message_id = rs["MessageId"]
 
-        def get_message(q_url):
-            resp = sqs_client.receive_message(QueueUrl=q_url, VisibilityTimeout=0)
-            return json.loads(resp["Messages"][0]["Body"])
-
-        message = retry(get_message, retries=3, sleep=2, q_url=queue_url)
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5
+        )
+        # nothing was subscribing to the topic, so the first message is lost
+        assert len(response["Messages"]) == 1
+        message = json.loads(response["Messages"][0]["Body"])
         assert message["MessageId"] == message_id
         assert message["Subject"] == message_subject
         assert message["Message"] == message_body
 
+    @pytest.mark.aws_validated
     def test_create_duplicate_topic_with_more_tags(self, sns_client, sns_create_topic):
         topic_name = f"test-{short_uid()}"
         sns_create_topic(Name=topic_name)
 
         with pytest.raises(ClientError) as e:
-            sns_client.create_topic(Name=topic_name, Tags=[{"Key": "456", "Value": "pqr"}])
+            sns_client.create_topic(Name=topic_name, Tags=[{"Key": "key1", "Value": "value1"}])
 
         assert e.value.response["Error"]["Code"] == "InvalidParameter"
-        assert e.value.response["Error"]["Message"] == "Topic already exists with different tags"
+        assert (
+            e.value.response["Error"]["Message"]
+            == "Invalid parameter: Tags Reason: Topic already exists with different tags"
+        )
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
+    @pytest.mark.aws_validated
     def test_create_duplicate_topic_check_idempotency(self, sns_create_topic):
         topic_name = f"test-{short_uid()}"
         tags = [{"Key": "a", "Value": "1"}, {"Key": "b", "Value": "2"}]
         kwargs = [
-            {"Tags": tags},  # to create topic with two tags
             {"Tags": tags},  # to create the same topic again with same tags
             {"Tags": [tags[0]]},  # to create the same topic again with one of the tags from above
             {"Tags": []},  # to create the same topic again with no tags
         ]
-        responses = []
-        for arg in kwargs:
-            responses.append(sns_create_topic(Name=topic_name, **arg))
-        # assert TopicArn is returned by all the above create_topic calls
-        for i in range(len(responses)):
-            assert "TopicArn" in responses[i]
 
+        # create topic with two tags
+        response = sns_create_topic(Name=topic_name, Tags=tags)
+        topic_arn = response["TopicArn"]
+
+        for arg in kwargs:
+            response = sns_create_topic(Name=topic_name, **arg)
+            # assert TopicArn returned by all the above create_topic calls is the same as the original
+            assert response["TopicArn"] == topic_arn
+
+    @pytest.mark.only_localstack
     @pytest.mark.skip(
         reason="Idempotency not supported in Moto backend. See bug https://github.com/spulec/moto/issues/2333"
     )
@@ -900,47 +901,49 @@ class TestSNSProvider:
         sns_client.delete_endpoint(EndpointArn=endpoint_arn)
         sns_client.delete_platform_application(PlatformApplicationArn=platform_arn)
 
+    @pytest.mark.aws_validated
     def test_publish_by_path_parameters(
         self,
         sns_create_topic,
         sns_client,
         sqs_client,
         sqs_create_queue,
-        sqs_queue_arn,
-        sns_subscription,
+        sns_create_sqs_subscription,
+        aws_http_client_factory,
     ):
-        topic_name = f"topic-{short_uid()}"
-        queue_name = f"queue-{short_uid()}"
-
         message = f"test message {short_uid()}"
-        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
-        base_url = config.get_edge_url()
-        path = "Action=Publish&Version=2010-03-31&TopicArn={}&Message={}".format(topic_arn, message)
+        client = aws_http_client_factory("sns", region="us-east-1")
 
-        queue_url = sqs_create_queue(QueueName=queue_name)
-        queue_arn = sqs_queue_arn(queue_url)
+        if is_aws_cloud():
+            endpoint_url = "https://sns.us-east-1.amazonaws.com"
+        else:
+            endpoint_url = config.get_edge_url()
 
-        subscription_arn = sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)[
-            "SubscriptionArn"
-        ]
-
-        r = requests.post(
-            url="{}/?{}".format(base_url, path),
-            headers=aws_stack.mock_aws_request_headers("sns"),
+        response = client.post(
+            endpoint_url,
+            params={
+                "Action": "Publish",
+                "Version": "2010-03-31",
+                "TopicArn": topic_arn,
+                "Message": message,
+            },
         )
-        assert r.status_code == 200
 
-        def get_notification(q_url):
-            resp = sqs_client.receive_message(QueueUrl=q_url)
-            return json.loads(resp["Messages"][0]["Body"])
+        assert response.status_code == 200
+        assert b"<PublishResponse" in response.content
 
-        notification = retry(get_notification, retries=3, sleep=2, q_url=queue_url)
-        assert notification["TopicArn"] == topic_arn
-        assert notification["Message"] == message
+        messages = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=5
+        )["Messages"]
+        msg_body = json.loads(messages[0]["Body"])
+        assert msg_body["TopicArn"] == topic_arn
+        assert msg_body["Message"] == message
 
-        sns_client.unsubscribe(SubscriptionArn=subscription_arn)
-
+    @pytest.mark.only_localstack
     def test_multiple_subscriptions_http_endpoint(
         self, sns_client, sns_create_topic, sns_subscription
     ):
@@ -987,6 +990,7 @@ class TestSNSProvider:
         for server in servers:
             server.stop()
 
+    @pytest.mark.only_localstack
     def test_publish_sms_endpoint(self, sns_client, sns_create_topic, sns_subscription):
         list_of_contacts = [
             f"+{random.randint(100000000, 9999999999)}",
@@ -1172,13 +1176,26 @@ class TestSNSProvider:
 
         retry(get_messages, retries=3, sleep=1)
 
+    @pytest.mark.aws_validated
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
-        self, sns_client, sns_create_topic, sqs_client, sqs_create_queue, sns_subscription
+        self,
+        sns_client,
+        sns_create_topic,
+        sqs_client,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
     ):
         topic_name = f"topic-{short_uid()}.fifo"
         queue_name = f"queue-{short_uid()}.fifo"
 
-        topic_arn = sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})["TopicArn"]
+        topic_arn = sns_create_topic(
+            Name=topic_name,
+            Attributes={
+                "FifoTopic": "true",
+                "ContentBasedDeduplication": "true",
+            },
+        )["TopicArn"]
+
         queue_url = sqs_create_queue(
             QueueName=queue_name,
             Attributes={
@@ -1187,12 +1204,15 @@ class TestSNSProvider:
             },
         )
 
-        sns_subscription(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_url,
-            Attributes={"RawMessageDelivery": "true"},
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="RawMessageDelivery",
+            AttributeValue="true",
         )
+
         message_group_id = "complexMessageGroupId"
         publish_batch_response = sns_client.publish_batch(
             TopicArn=topic_arn,
@@ -1238,11 +1258,12 @@ class TestSNSProvider:
                 MaxNumberOfMessages=10,
             )
             assert len(response["Messages"]) == 3
-            for message in response["Messages"]:
+            for msg_index, message in enumerate(response["Messages"]):
                 assert "Body" in message
                 assert message["Attributes"]["MessageGroupId"] == message_group_id
 
                 if message["Body"] == "Test Message with two attributes":
+                    assert msg_index == 0
                     assert len(message["MessageAttributes"]) == 2
                     assert message["MessageAttributes"]["attr1"] == {
                         "StringValue": "99.12",
@@ -1254,6 +1275,7 @@ class TestSNSProvider:
                     }
 
                 elif message["Body"] == "Test Message with one attribute":
+                    assert msg_index == 1
                     assert len(message["MessageAttributes"]) == 1
                     assert message["MessageAttributes"]["attr1"] == {
                         "StringValue": "19.12",
@@ -1261,12 +1283,22 @@ class TestSNSProvider:
                     }
 
                 elif message["Body"] == "Test Message without attribute":
+                    assert msg_index == 2
                     assert message.get("MessageAttributes") is None
 
         retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
+        # todo add test for deduplication
+        # https://docs.aws.amazon.com/cli/latest/reference/sns/publish-batch.html
+        # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
 
+    @pytest.mark.aws_validated
     def test_publish_batch_exceptions(
-        self, sns_client, sqs_client, sns_create_topic, sqs_create_queue, sns_subscription
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
     ):
         topic_name = f"topic-{short_uid()}.fifo"
         queue_name = f"queue-{short_uid()}.fifo"
@@ -1277,13 +1309,13 @@ class TestSNSProvider:
             Attributes={"FifoQueue": "true"},
         )
 
-        queue_arn = aws_stack.sqs_queue_arn(queue_url)
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
 
-        sns_subscription(
-            TopicArn=topic_arn,
-            Protocol="sqs",
-            Endpoint=queue_arn,
-            Attributes={"RawMessageDelivery": "true"},
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="RawMessageDelivery",
+            AttributeValue="true",
         )
 
         with pytest.raises(ClientError) as e:
@@ -1292,32 +1324,45 @@ class TestSNSProvider:
                 PublishBatchRequestEntries=[
                     {
                         "Id": "1",
-                        "Message": "Test Message with two attributes",
+                        "Message": "Test message without Group ID",
                     }
                 ],
             )
         assert e.value.response["Error"]["Code"] == "InvalidParameter"
+        assert (
+            e.value.response["Error"]["Message"]
+            == "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
+        )
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
         with pytest.raises(ClientError) as e:
             sns_client.publish_batch(
                 TopicArn=topic_arn,
                 PublishBatchRequestEntries=[
-                    {"Id": f"Id_{i}", "Message": f"message_{i}"} for i in range(11)
+                    {"Id": f"Id_{i}", "Message": "Too many messages"} for i in range(11)
                 ],
             )
         assert e.value.response["Error"]["Code"] == "TooManyEntriesInBatchRequest"
+        assert (
+            e.value.response["Error"]["Message"]
+            == "The batch request contains more entries than permissible."
+        )
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
         with pytest.raises(ClientError) as e:
             sns_client.publish_batch(
                 TopicArn=topic_arn,
                 PublishBatchRequestEntries=[
-                    {"Id": "1", "Message": f"message_{i}"} for i in range(2)
+                    {"Id": "1", "Message": "Messages with the same ID"} for i in range(2)
                 ],
             )
         assert e.value.response["Error"]["Code"] == "BatchEntryIdsNotDistinct"
+        assert (
+            e.value.response["Error"]["Message"]
+            == "Two or more batch entries in the request have the same Id."
+        )
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        # todo add test and implement behaviour for ContentBasedDeduplication or MessageDeduplicationId
 
     def add_xray_header(self, request, **kwargs):
         request.headers[
@@ -1358,6 +1403,7 @@ class TestSNSProvider:
             == "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
         )
 
+    @pytest.mark.aws_validated
     def test_create_topic_after_delete_with_new_tags(self, sns_create_topic, sns_client):
         topic_name = f"test-{short_uid()}"
         topic = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "pqr"}])
@@ -1366,47 +1412,64 @@ class TestSNSProvider:
         topic1 = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "abc"}])
         assert topic["TopicArn"] == topic1["TopicArn"]
 
-    def test_not_found_error_on_get_subscription_attributes(
+    @pytest.mark.aws_validated
+    def test_not_found_error_on_set_subscription_attributes(
         self, sns_client, sns_create_topic, sqs_create_queue, sqs_queue_arn, sns_subscription
     ):
 
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
-
         queue_arn = sqs_queue_arn(queue_url)
-
         subscription = sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        subscription_arn = subscription["SubscriptionArn"]
 
         subscription_attributes = sns_client.get_subscription_attributes(
-            SubscriptionArn=subscription["SubscriptionArn"]
-        )
+            SubscriptionArn=subscription_arn
+        )["Attributes"]
 
-        assert (
-            subscription_attributes.get("Attributes").get("SubscriptionArn")
-            == subscription["SubscriptionArn"]
-        )
+        assert subscription_attributes["SubscriptionArn"] == subscription_arn
 
-        sns_client.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
+        subscriptions_by_topic = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
+        assert len(subscriptions_by_topic["Subscriptions"]) == 1
 
-        with pytest.raises(ClientError) as e:
-            sns_client.get_subscription_attributes(SubscriptionArn=subscription["SubscriptionArn"])
+        sns_client.unsubscribe(SubscriptionArn=subscription_arn)
 
-        assert e.value.response["Error"]["Code"] == "NotFound"
-        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
+        def check_subscription_deleted():
+            try:
+                # AWS doesn't give NotFound error on GetSubscriptionAttributes for a while, might be cached
+                sns_client.set_subscription_attributes(
+                    SubscriptionArn=subscription_arn,
+                    AttributeName="RawMessageDelivery",
+                    AttributeValue="true",
+                )
+                raise Exception("Subscription is not deleted")
+            except ClientError as e:
+                assert e.response["Error"]["Code"] == "NotFound"
+                assert e.response["ResponseMetadata"]["HTTPStatusCode"] == 404
 
+        retry(check_subscription_deleted, retries=10, sleep_before=0.2, sleep=3)
+        subscriptions_by_topic = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
+        assert len(subscriptions_by_topic["Subscriptions"]) == 0
+
+    @pytest.mark.aws_validated
     def test_message_to_fifo_sqs(
         self,
         sns_client,
         sqs_client,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
-        sns_subscription,
+        sns_create_sqs_subscription,
     ):
         topic_name = f"topic-{short_uid()}.fifo"
         queue_name = f"queue-{short_uid()}.fifo"
 
-        topic_arn = sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})["TopicArn"]
+        topic_arn = sns_create_topic(
+            Name=topic_name,
+            Attributes={
+                "FifoTopic": "true",
+                "ContentBasedDeduplication": "true",  # todo: not enforced yet
+            },
+        )["TopicArn"]
         queue_url = sqs_create_queue(
             QueueName=queue_name,
             Attributes={
@@ -1414,30 +1477,28 @@ class TestSNSProvider:
                 "ContentBasedDeduplication": "true",
             },
         )
+        # todo check both ContentBasedDeduplication and MessageDeduplicationId when implemented
+        # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
 
-        queue_arn = sqs_queue_arn(queue_url)
-
-        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
         message = "Test"
         sns_client.publish(TopicArn=topic_arn, Message=message, MessageGroupId=short_uid())
 
-        def get_message():
-            received = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)[
-                "Messages"
-            ][0]["Body"]
-            assert json.loads(received)["Message"] == message
+        messages = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=10
+        )["Messages"]
+        msg_body = messages[0]["Body"]
+        assert json.loads(msg_body)["Message"] == message
 
-        retry(get_message, retries=10, sleep_before=0.15, sleep=1)
-
+    @pytest.mark.aws_validated
     def test_validations_for_fifo(
         self,
         sns_client,
         sqs_client,
         sns_create_topic,
         sqs_create_queue,
-        sqs_queue_arn,
-        sns_subscription,
+        sns_create_sqs_subscription,
     ):
         topic_name = f"topic-{short_uid()}"
         fifo_topic_name = f"topic-{short_uid()}.fifo"
@@ -1453,10 +1514,8 @@ class TestSNSProvider:
             QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"}
         )
 
-        fifo_queue_arn = sqs_queue_arn(fifo_queue_url)
-
         with pytest.raises(ClientError) as e:
-            sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=fifo_queue_arn)
+            sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=fifo_queue_url)
 
         assert e.match("standard SNS topic")
 
@@ -1465,25 +1524,48 @@ class TestSNSProvider:
 
         assert e.match("MessageGroupId")
 
+        with pytest.raises(ClientError) as e:
+            sns_client.publish(TopicArn=fifo_topic_arn, Message="test", MessageGroupId=short_uid())
+        # if ContentBasedDeduplication is not set at the topic level, it needs MessageDeduplicationId for each msg
+        assert e.match("MessageDeduplicationId")
+        assert e.match("ContentBasedDeduplication")
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish(
+                TopicArn=topic_arn, Message="test", MessageDeduplicationId=short_uid()
+            )
+        assert e.match("MessageDeduplicationId")
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish(TopicArn=topic_arn, Message="test", MessageGroupId=short_uid())
+        assert e.match("MessageGroupId")
+
+    @pytest.mark.aws_validated
     def test_empty_sns_message(
-        self, sns_client, sqs_client, sns_topic, sqs_queue, sqs_queue_arn, sns_subscription
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
     ):
-        topic_arn = sns_topic["Attributes"]["TopicArn"]
-        queue_arn = sqs_queue_arn(sqs_queue)
-        sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
         with pytest.raises(ClientError) as e:
             sns_client.publish(Message="", TopicArn=topic_arn)
         assert e.match("Empty message")
         assert (
             sqs_client.get_queue_attributes(
-                QueueUrl=sqs_queue, AttributeNames=["ApproximateNumberOfMessages"]
+                QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
             )["Attributes"]["ApproximateNumberOfMessages"]
             == "0"
         )
 
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     @pytest.mark.aws_validated
-    def test_dead_letter_queue_with_deleted_sqs_queue(
+    def test_redrive_policy_sqs_queue_subscription(
         self,
         sns_client,
         sqs_client,
@@ -1499,16 +1581,14 @@ class TestSNSProvider:
         snapshot.add_transformer(snapshot.transform.sqs_api())
         # Need to skip the MD5OfBody/Signature, because it contains a timestamp
         snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                "$.json_encoded_delivery..Body.Signature",
+            snapshot.transform.key_value(
+                "Signature",
                 "<signature>",
                 reference_replacement=False,
             )
         )
         snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                "$.json_encoded_delivery..MD5OfBody", "<md5-hash>", reference_replacement=False
-            )
+            snapshot.transform.key_value("MD5OfBody", "<md5-hash>", reference_replacement=False)
         )
 
         topic_arn = sns_create_topic()["TopicArn"]
@@ -1828,18 +1908,20 @@ class TestSNSProvider:
         # AWS doesn't send to the DLQ if the UnsubscribeConfirmation fails to be delivered
         assert "Messages" not in response
 
-    def test_publish_too_long_message(self, sns_client):
-        fake_arn = "arn:aws:sns:us-east-1:123456789012:i_dont_exist"
+    @pytest.mark.aws_validated
+    def test_publish_too_long_message(self, sns_client, sns_create_topic):
+        topic_arn = sns_create_topic()["TopicArn"]
         # simulate payload over 256kb
         message = "This is a test message" * 12000
 
         with pytest.raises(ClientError) as e:
-            sns_client.publish(TopicArn=fake_arn, Message=message)
+            sns_client.publish(TopicArn=topic_arn, Message=message)
 
         assert e.value.response["Error"]["Code"] == "InvalidParameter"
-        assert e.value.response["Error"]["Message"] == "Message too long"
+        assert e.value.response["Error"]["Message"] == "Invalid parameter: Message too long"
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
+    @pytest.mark.only_localstack  # needs real credentials for GCM/FCM
     def test_publish_to_gcm(self, sns_client):
         key = "mock_server_key"
         token = "mock_token"
