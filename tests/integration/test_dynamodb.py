@@ -2,11 +2,11 @@
 import json
 import re
 from datetime import datetime
+from time import sleep
 
 import pytest
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
-from time import sleep
 
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
@@ -14,6 +14,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.testutil import check_expected_lambda_log_events_length
+
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 from .test_kinesis import get_shard_iterator
 
@@ -1390,8 +1391,9 @@ class TestDynamoDB:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(response["StreamDescription"]["Shards"]) == 0
 
+    @pytest.mark.aws_validated
     def test_dynamodb_idempotent_writing(
-        self, dynamodb_create_table_with_parameters, dynamodb_client
+        self, dynamodb_create_table_with_parameters, dynamodb_client, dynamodb_wait_for_table_active
     ):
         table_name = f"ddb-table-{short_uid()}"
         dynamodb_create_table_with_parameters(
@@ -1406,6 +1408,7 @@ class TestDynamoDB:
             ],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
+        dynamodb_wait_for_table_active(table_name)
 
         _ = dynamodb_client.transact_write_items(
             ClientRequestToken="dedupe_token",

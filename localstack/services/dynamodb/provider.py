@@ -106,7 +106,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.collections import select_attributes
+from localstack.utils.collections import select_attributes, sort_dict
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder
 from localstack.utils.strings import long_uid, to_str
@@ -730,9 +730,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     existing_items.append(ItemFinder.find_existing_item(inner_item))
 
         client_token: str | None = transact_write_items_input.get("ClientRequestToken")
-        if client_token: # and token not expired
-            # set token and expiration date in the backend
-            pass
+
+        if client_token:
+            # we sort the payload since identical payload but with different order could cause
+            # IdempotentParameterMismatchException error if a client token is provided
+            sorted_dict = sort_dict(json.loads(context.request.data))
+            context.request.data = json.dumps(sorted_dict).encode("utf-8")
 
         # forward request to backend
         result = self.forward_request(context)
