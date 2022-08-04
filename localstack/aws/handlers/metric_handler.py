@@ -1,9 +1,8 @@
-import copy
 import logging
 from typing import List, Optional
 
 from localstack import config
-from localstack.aws.api import RequestContext, ServiceRequest
+from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.http import Response
 from localstack.utils.aws.aws_stack import is_internal_call_context
@@ -18,13 +17,13 @@ class MetricHandlerItem:
 
     request_id: str
     request_context: RequestContext
-    request_after_parse: Optional[ServiceRequest]
+    parameters_after_parse: Optional[List[str]]
 
     def __init__(self, request_contex: RequestContext) -> None:
         super().__init__()
         self.request_id = str(hash(request_contex))
         self.request_context = request_contex
-        self.request_after_parse = None
+        self.parameters_after_parse = None
 
 
 class Metric:
@@ -134,7 +133,9 @@ class MetricHandler:
         if not config.is_collect_metrics_mode():
             return
         item = self._get_metric_handler_item_for_context(context)
-        item.request_after_parse = copy.deepcopy(context.service_request)
+        item.parameters_after_parse = (
+            list(context.service_request.keys()) if context.service_request else []
+        )
 
     def record_exception(
         self, chain: HandlerChain, exception: Exception, context: RequestContext, response: Response
@@ -153,8 +154,9 @@ class MetricHandler:
         is_internal = is_internal_call_context(context.request.headers)
         item = self._get_metric_handler_item_for_context(context)
 
-        # parameters might get changed when dispatched to the service - we use the params stored in request_after_parse
-        parameters = ",".join(item.request_after_parse or "")
+        # parameters might get changed when dispatched to the service - we use the params stored in
+        # parameters_after_parse
+        parameters = ",".join(item.parameters_after_parse or [])
 
         response_data = response.data.decode("utf-8") if response.status_code >= 300 else ""
 

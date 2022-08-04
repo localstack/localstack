@@ -13,7 +13,6 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
-from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
@@ -346,10 +345,12 @@ class TestDynamoDB:
         # clean up
         delete_table(table_name)
 
-    def test_valid_local_secondary_index(self, dynamodb_client, dynamodb_create_table):
+    def test_valid_local_secondary_index(
+        self, dynamodb_client, dynamodb_create_table_with_parameters, dynamodb_wait_for_table_active
+    ):
         try:
             table_name = f"test-table-{short_uid()}"
-            dynamodb_client.create_table(
+            dynamodb_create_table_with_parameters(
                 TableName=table_name,
                 KeySchema=[
                     {"AttributeName": "PK", "KeyType": "HASH"},
@@ -374,13 +375,7 @@ class TestDynamoDB:
                 Tags=TEST_DDB_TAGS,
             )
 
-            def wait_for_table_created():
-                return (
-                    dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"]
-                    == "ACTIVE"
-                )
-
-            poll_condition(wait_for_table_created, timeout=30)
+            dynamodb_wait_for_table_active(table_name)
             item = {"SK": {"S": "hello"}, "LSI1SK": {"N": "123"}, "PK": {"S": "test one"}}
 
             dynamodb_client.put_item(TableName=table_name, Item=item)
@@ -996,20 +991,24 @@ class TestDynamoDB:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-    def test_transaction_write_canceled(self, dynamodb_client):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    @pytest.mark.aws_validated
+    def test_transaction_write_canceled(
+        self, dynamodb_create_table_with_parameters, dynamodb_wait_for_table_active, dynamodb_client
+    ):
         table_name = "table_%s" % short_uid()
 
         # create table
-        dynamodb.create_table(
+        dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
 
+        dynamodb_wait_for_table_active(table_name)
+
         # put item in table - INSERT event
-        dynamodb.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
+        dynamodb_client.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
 
         # provoke a TransactionCanceledException by adding a condition which is not met
         with pytest.raises(Exception) as ctx:
@@ -1022,18 +1021,30 @@ class TestDynamoDB:
                             "Key": {"Username": {"S": "Fred"}},
                         }
                     },
-                    {"Delete": {"TableName": table_name, "Key": {"Username": {"S": "Fred"}}}},
                     {"Delete": {"TableName": table_name, "Key": {"Username": {"S": "Bert"}}}},
                 ]
             )
         # Make sure the exception contains the cancellation reasons
         assert ctx.match("TransactionCanceledException")
+        assert (
+            str(ctx.value)
+            == "An error occurred (TransactionCanceledException) when calling the TransactWriteItems operation: "
+            "Transaction cancelled, please refer cancellation reasons for specific reasons "
+            "[ConditionalCheckFailed, None]"
+        )
         assert hasattr(ctx.value, "response")
         assert "CancellationReasons" in ctx.value.response
-        assert {
-            "Code": "ConditionalCheckFailed",
-            "Message": "The conditional request failed.",
-        } in ctx.value.response["CancellationReasons"]
+        conditional_check_failed = [
+            reason
+            for reason in ctx.value.response["CancellationReasons"]
+            if reason.get("Code") == "ConditionalCheckFailed"
+        ]
+        assert len(conditional_check_failed) == 1
+        assert "Message" in conditional_check_failed[0]
+        # dynamodb-local adds a trailing "." to the message, AWS does not
+        assert re.match(
+            r"^The conditional request failed\.?$", conditional_check_failed[0]["Message"]
+        )
 
     def test_transaction_write_binary_data(
         self, dynamodb_client, dynamodb_create_table_with_parameters

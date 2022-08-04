@@ -1027,6 +1027,7 @@ class TestLambdaAPI(unittest.TestCase):
         region.lambdas[arn].last_modified = self.LAST_MODIFIED
         region.lambdas[arn].role = self.ROLE
         region.lambdas[arn].memory_size = self.MEMORY_SIZE
+        region.lambdas[arn].state = "Active"
 
     def _update_function_code(self, function_name, tags=None):
         if tags is None:

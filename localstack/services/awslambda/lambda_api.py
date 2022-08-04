@@ -63,7 +63,6 @@ from localstack.utils.common import (
     now_utc,
     parse_request_data,
     run,
-    run_for_max_seconds,
     safe_requests,
     save_file,
     short_uid,
@@ -78,6 +77,7 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.functions import run_safe
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.patch import patch
+from localstack.utils.run import run_for_max_seconds
 
 LOG = logging.getLogger(__name__)
 
@@ -539,6 +539,14 @@ def run_lambda(
             result = not_found_error(msg="The resource specified in the request does not exist.")
             return InvocationResult(result)
 
+        if lambda_function.state != "Active":
+            result = error_response(
+                f"The operation cannot be performed at this time. The function is currently in the following state: {lambda_function.state}",
+                409,
+                "ResourceConflictException",
+            )
+            raise ClientError(result)
+
         context = LambdaContext(lambda_function, version, context)
         result = LAMBDA_EXECUTOR.execute(
             func_arn,
@@ -551,7 +559,8 @@ def run_lambda(
             lock_discriminator=lock_discriminator,
         )
         return result
-
+    except ClientError:
+        raise
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         response = {
@@ -710,11 +719,22 @@ def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes = Non
 
 
 def set_function_code(lambda_function: LambdaFunction):
-    def _set_and_configure():
-        do_set_function_code(lambda_function)
-        # initialize function code via plugins
-        for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
-            plugin.init_function_code(lambda_function)
+    def _set_and_configure(*args, **kwargs):
+        try:
+            before = time.perf_counter()
+            do_set_function_code(lambda_function)
+            # initialize function code via plugins
+            for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
+                plugin.init_function_code(lambda_function)
+            lambda_function.state = "Active"
+            LOG.debug(
+                "Function code initialization for function '%s' complete. State => Active (in %.3fs)",
+                lambda_function.name(),
+                time.perf_counter() - before,
+            )
+        except Exception:
+            lambda_function.state = "Failed"
+            raise
 
     # unzipping can take some time - limit the execution time to avoid client/network timeout issues
     run_for_max_seconds(config.LAMBDA_CODE_EXTRACT_TIME, _set_and_configure)
@@ -751,6 +771,8 @@ def store_and_get_lambda_code_archive(
     else:
         # override lambda archive with fresh code if we got an update
         save_file(archive_file, zip_file_content)
+    # remove content from code attribute, if present
+    lambda_function.code.pop("ZipFile", None)
     return lambda_cwd, archive_file, zip_file_content
 
 
@@ -807,8 +829,12 @@ def do_set_function_code(lambda_function: LambdaFunction):
         # Unzip the Lambda archive contents
 
         if get_unzipped_size(archive_file) >= FUNCTION_MAX_UNZIPPED_SIZE:
-            raise Exception(
-                f"An error occurred (InvalidParameterValueException) when calling the CreateFunction operation: Unzipped size must be smaller than {FUNCTION_MAX_UNZIPPED_SIZE} bytes"
+            raise ClientError(
+                error_response(
+                    f"Unzipped size must be smaller than {FUNCTION_MAX_UNZIPPED_SIZE} bytes",
+                    code=400,
+                    error_type="InvalidParameterValueException",
+                )
             )
 
         unzip(archive_file, lambda_cwd)
@@ -933,7 +959,7 @@ def format_func_details(
         "LastModified": format_timestamp(lambda_function.last_modified),
         "TracingConfig": lambda_function.tracing_config or {"Mode": "PassThrough"},
         "RevisionId": func_version.get("RevisionId"),
-        "State": "Active",
+        "State": lambda_function.state,
         "LastUpdateStatus": "Successful",
         "PackageType": lambda_function.package_type,
         "ImageConfig": getattr(lambda_function, "image_config", None),
@@ -1155,12 +1181,11 @@ def create_function():
         lambda_function.image_config = data.get("ImageConfig", {})
         lambda_function.tracing_config = data.get("TracingConfig", {})
         lambda_function.set_dead_letter_config(data)
+        lambda_function.state = "Pending"
         result = set_function_code(lambda_function)
         if isinstance(result, Response):
             del region.lambdas[arn]
             return result
-        # remove content from code attribute, if present
-        lambda_function.code.pop("ZipFile", None)
         # prepare result
         result.update(format_func_details(lambda_function))
         if data.get("Publish"):
@@ -1615,17 +1640,26 @@ def invoke_function(function):
         context = {"client_context": request.headers.get("X-Amz-Client-Context")}
 
         time_before = time.perf_counter()
-        result = run_lambda(
-            func_arn=arn,
-            event=data,
-            context=context,
-            asynchronous=False,
-            version=qualifier,
-        )
-        LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
+        try:
+            result = run_lambda(
+                func_arn=arn,
+                event=data,
+                context=context,
+                asynchronous=False,
+                version=qualifier,
+            )
+        except ClientError as e:
+            return e.get_response()
+        finally:
+            LOG.debug(
+                "Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000
+            )
         return _create_response(result)
     elif invocation_type == "Event":
-        run_lambda(func_arn=arn, event=data, context={}, asynchronous=True, version=qualifier)
+        try:
+            run_lambda(func_arn=arn, event=data, context={}, asynchronous=True, version=qualifier)
+        except ClientError as e:
+            return e.get_response()
         return _create_response("", status_code=202)
     elif invocation_type == "DryRun":
         # Assume the dry run always passes.

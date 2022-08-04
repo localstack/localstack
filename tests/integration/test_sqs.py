@@ -728,7 +728,6 @@ class TestSqsProvider:
         assert result.status_code == 200
         assert message_body in result.text
 
-    @pytest.mark.xfail
     @pytest.mark.aws_validated
     def test_fifo_messages_in_order_after_timeout(self, sqs_client, sqs_create_queue):
         # issue 4287

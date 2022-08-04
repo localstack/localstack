@@ -174,3 +174,22 @@ def test_stack_time_attributes(cfn_client, deploy_cfn_template):
         StackName=stack_name,
     )
     assert "DeletionTime" in cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]
+
+
+@pytest.mark.aws_validated
+def test_stack_description_special_chars(cfn_client, deploy_cfn_template, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    template = """
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'test <env>.test.net'
+Resources:
+  TestResource:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "100.30.20.0/20"
+    """
+
+    deployed = deploy_cfn_template(template=template)
+    response = cfn_client.describe_stacks(StackName=deployed.stack_id)["Stacks"][0]
+    snapshot.match("describe_stack", response)

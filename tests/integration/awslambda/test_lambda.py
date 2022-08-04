@@ -72,6 +72,8 @@ from localstack.utils.testutil import (
 from .functions import lambda_integration
 from .lambda_test_util import concurrency_update_done, get_invoke_init_type, update_done
 
+LOG = logging.getLogger(__name__)
+
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
@@ -797,6 +799,50 @@ class TestLambdaBaseFeatures:
         result_data = result["Payload"]
         result_data = json.loads(to_str(result_data))
         assert payload == result_data
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify  # skipped - the diff is too big
+    @pytest.mark.skipif(
+        os.environ.get("TEST_TARGET") != "AWS_CLOUD",
+        reason="Lambda function state pending for small lambdas not supported on localstack",
+    )
+    def test_function_state(self, lambda_client, lambda_su_role, snapshot):
+        """Tests if a lambda starts in state "Pending" but moves to "Active" at some point"""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        # necessary due to changing zip timestamps. We might need a reproducible archive method for this
+        snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
+        function_name = f"test-function-{short_uid()}"
+        zip_file = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+
+        try:
+
+            def create_function():
+                return lambda_client.create_function(
+                    FunctionName=function_name,
+                    Runtime="python3.9",
+                    Handler="handler.handler",
+                    Role=lambda_su_role,
+                    Code={"ZipFile": zip_file},
+                )
+
+            response = retry(create_function, sleep=3, retries=5)
+
+            snapshot.match("create-fn-response", response)
+            assert response["State"] == "Pending"
+
+            # lambda has to get active at some point
+            def _check_lambda_state():
+                response = lambda_client.get_function(FunctionName=function_name)
+                assert response["Configuration"]["State"] == "Active"
+                return response
+
+            response = retry(_check_lambda_state)
+            snapshot.match("get-fn-response", response)
+        finally:
+            try:
+                lambda_client.delete_function(FunctionName=function_name)
+            except Exception:
+                LOG.debug("Unable to delete function %s", function_name)
 
 
 parametrize_python_runtimes = pytest.mark.parametrize(
