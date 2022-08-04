@@ -1830,23 +1830,6 @@ class TestCloudFormation:
         test_tag = tags["Tags"]["test"]
         assert test_tag == aws_stack.ssm_parameter_arn("cdk-bootstrap/q123/version")
 
-    def test_firehose_stack_with_kinesis_as_source(self, deploy_cfn_template, firehose_client):
-        bucket_name = f"bucket-{short_uid()}"
-        stream_name = f"stream-{short_uid()}"
-        delivery_stream_name = f"delivery-stream-{short_uid()}"
-
-        deploy_cfn_template(
-            template_path=os.path.join(THIS_FOLDER, "templates", "firehose_kinesis_as_source.yaml"),
-            template_mapping={
-                "BucketName": bucket_name,
-                "StreamName": stream_name,
-                "DeliveryStreamName": delivery_stream_name,
-            },
-        )
-
-        response = firehose_client.describe_delivery_stream(DeliveryStreamName=delivery_stream_name)
-        assert delivery_stream_name == response["DeliveryStreamDescription"]["DeliveryStreamName"]
-
     def test_default_parameters_kinesis(self, deploy_cfn_template, kinesis_client):
         stack = deploy_cfn_template(
             template_path=os.path.join(THIS_FOLDER, "templates", "kinesis_default.yaml")

@@ -875,6 +875,7 @@ def deploy_cfn_template(
         template_path: Optional[str | os.PathLike] = None,
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
+        max_wait: Optional[int] = None,
     ) -> DeployResult:
         if is_update:
             assert stack_name
@@ -904,7 +905,8 @@ def deploy_cfn_template(
 
         assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        assert wait_until(is_change_set_finished(change_set_id), _max_wait=60)
+        # TODO: potentially poll for ExecutionStatus=ROLLBACK_COMPLETE here as well, to catch errors early on
+        assert wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
 
         outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 

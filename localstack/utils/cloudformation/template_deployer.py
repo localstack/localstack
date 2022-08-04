@@ -1057,8 +1057,6 @@ def determine_resource_physical_id(resource_id, stack=None, attribute=None):
         return resource_props.get("StageName")
     elif resource_type == "AppSync::DataSource":
         return resource_props.get("DataSourceArn")
-    elif resource_type == "KinesisFirehose::DeliveryStream":
-        return aws_stack.firehose_stream_arn(resource_props.get("DeliveryStreamName"))
     elif resource_type == "StepFunctions::StateMachine":
         return aws_stack.state_machine_arn(
             resource_props.get("StateMachineName")
