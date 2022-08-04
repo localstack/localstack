@@ -350,5 +350,12 @@
     "recorded-content": {
       "send_message": "An error occurred (InvalidParameterValue) when calling the SendMessage operation: Value 2 for parameter DelaySeconds is invalid. Reason: The request include parameter that is not valid for this queue type."
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_create_queue_with_different_attributes_raises_exception": {
+    "recorded-date": "04-08-2022, 17:27:47",
+    "recorded-content": {
+      "create_queue_01": "An error occurred (QueueAlreadyExists) when calling the CreateQueue operation: A queue already exists with the same name and a different value for attribute DelaySeconds",
+      "create_queue_02": "An error occurred (QueueAlreadyExists) when calling the CreateQueue operation: A queue already exists with the same name and a different value for attribute DelaySeconds"
+    }
   }
 }

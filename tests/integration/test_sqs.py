@@ -448,33 +448,72 @@ class TestSqsProvider:
         assert sqs_create_queue(QueueName=queue_name) == queue_url
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5938")
     def test_create_queue_with_different_attributes_raises_exception(
-        self, sqs_client, sqs_create_queue
+        self, sqs_client, sqs_create_queue, snapshot
     ):
         queue_name = f"queue-{short_uid()}"
 
-        sqs_create_queue(
+        # create queue with ReceiveMessageWaitTimeSeconds=2
+        queue_url = sqs_create_queue(
             QueueName=queue_name,
             Attributes={
-                "ReceiveMessageWaitTimeSeconds": "2",
+                "ReceiveMessageWaitTimeSeconds": "1",
+                "DelaySeconds": "1",
             },
         )
 
+        # try to create a queue without attributes works
+        assert queue_url == sqs_create_queue(QueueName=queue_name)
+
+        # try to create a queue with one attribute specified
+        assert queue_url == sqs_create_queue(QueueName=queue_name, Attributes={"DelaySeconds": "1"})
+
+        # try to create a queue with the same name but different ReceiveMessageWaitTimeSeconds value
         with pytest.raises(ClientError) as e:
             sqs_create_queue(
                 QueueName=queue_name,
                 Attributes={
                     "ReceiveMessageWaitTimeSeconds": "1",
+                    "DelaySeconds": "2",
                 },
             )
-        e.match("QueueAlreadyExists")
+        snapshot.match("create_queue_01", e.value)
 
-        assert (
-            e.value.response["Error"]["Message"]
-            == "A queue already exists with the same name and a different value for attribute "
-            "ReceiveMessageWaitTimeSeconds"
+        # update the attribute of the queue
+        sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"DelaySeconds": "2"})
+
+        # try again
+        assert queue_url == sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "ReceiveMessageWaitTimeSeconds": "1",
+                "DelaySeconds": "2",
+            },
         )
+
+        # try with the original request
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(
+                QueueName=queue_name,
+                Attributes={
+                    "ReceiveMessageWaitTimeSeconds": "1",
+                    "DelaySeconds": "1",
+                },
+            )
+        snapshot.match("create_queue_02", e.value)
+
+    @pytest.mark.aws_validated
+    def test_create_queue_after_internal_attributes_changes_works(
+        self, sqs_client, sqs_create_queue
+    ):
+        queue_name = f"queue-{short_uid()}"
+
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar-1", DelaySeconds=1)
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar-2")
+
+        assert queue_url == sqs_create_queue(QueueName=queue_name)
 
     @pytest.mark.aws_validated
     def test_create_and_update_queue_attributes(self, sqs_client, sqs_create_queue, snapshot):
