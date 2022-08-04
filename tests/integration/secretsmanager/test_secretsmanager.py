@@ -16,6 +16,7 @@ from localstack.aws.api.secretsmanager import (
     DeleteSecretResponse,
     DescribeSecretResponse,
     GetSecretValueResponse,
+    ListSecretsResponse,
     PutSecretValueResponse,
     UpdateSecretResponse,
 )
@@ -141,22 +142,34 @@ class TestSecretsManager:
         )
         snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
-    def test_call_lists_secrets_multiple_time(self, sm_client):
+    def test_call_lists_secrets_multiple_times(self, sm_client, snapshot):
         secret_name = f"s-{short_uid()}"
-        sm_client.create_secret(
-            Name=secret_name,
-            SecretString="my_secret",
-            Description="testing creation of secrets",
+        create_secret_rs_1: CreateSecretResponse = self._typed_response_of(
+            typ=CreateSecretResponse,
+            response=sm_client.create_secret(
+                Name=secret_name,
+                SecretString="my_secret",
+                Description="testing creation of secrets",
+            ),
         )
+        snapshot.add_transformers_list(
+            snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_1, 0)
+        )
+        snapshot.match("create_secret_rs_1", create_secret_rs_1)
 
         # call list_secrets multiple times
         for i in range(3):
-            rs = sm_client.list_secrets()
-            secrets = [secret for secret in rs["SecretList"] if secret["Name"] == secret_name]
-            assert 1 == len(secrets)
+            list_secrets_res = self._typed_response_of(
+                typ=ListSecretsResponse, response=sm_client.list_secrets()
+            )
+            snapshot.match(f"list_secrets_res_{i}", list_secrets_res)
 
         # clean up
-        sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        delete_secret_res_1: DeleteSecretResponse = self._typed_response_of(
+            typ=DeleteSecretResponse,
+            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        )
+        snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
     def test_create_multi_secrets(self, sm_client):
         secret_names = [short_uid(), short_uid(), short_uid()]
