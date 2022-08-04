@@ -9,9 +9,16 @@ import requests
 from py._code.code import ExceptionInfo
 
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.secretsmanager import (
+    CreateSecretRequest,
+    CreateSecretResponse,
+    DeleteSecretRequest,
+    DeleteSecretResponse,
+)
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
+from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
 from localstack.utils.time import today_no_time
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON_VERSION
@@ -1709,3 +1716,62 @@ class TestSecretsManager:
         assert response["Name"] == secret_id
         assert response["ARN"] is not None
         assert response["DeletionDate"] is not None
+
+    def test_exp_raised_on_creation_of_secret_scheduled_for_deletion(self, sm_client, snapshot):
+        create_secret_req: CreateSecretRequest = CreateSecretRequest(
+            Name=f"secret-{short_uid()}", SecretString=f"secretstr-{short_uid()}"
+        )
+        stage_deletion_req: DeleteSecretRequest = DeleteSecretRequest(
+            SecretId=create_secret_req["Name"], RecoveryWindowInDays=7
+        )
+
+        res = sm_client.create_secret(**create_secret_req)
+        create_secret_res: CreateSecretResponse = select_from_typed_dict(CreateSecretResponse, res)
+        snapshot.add_transformers_list(
+            snapshot.transform.secretsmanager_secret_id_arn(create_secret_res, 0)
+        )
+
+        res = sm_client.delete_secret(**stage_deletion_req)
+        delete_res: DeleteSecretResponse = select_from_typed_dict(DeleteSecretResponse, res)
+        snapshot.match("delete_res", delete_res)
+
+        with pytest.raises(Exception) as invalid_req_ex:
+            sm_client.create_secret(**create_secret_req)
+
+        ex_log: Dict = {"typename": invalid_req_ex.typename, "message": str(invalid_req_ex.value)}
+        snapshot.match("invalid_req_ex", ex_log)
+
+    def test_can_recreate_delete_secret(self, sm_client, snapshot):
+        # NOTE: AWS will behave as staged deletion for a small number of seconds (<10).
+        # We assume forced deletion is instantaneous, until the precise behaviour is understood.
+
+        create_secret_req: CreateSecretRequest = CreateSecretRequest(
+            Name=f"secret-{short_uid()}", SecretString=f"secretstr-{short_uid()}"
+        )
+        stage_deletion_req: DeleteSecretRequest = DeleteSecretRequest(
+            SecretId=create_secret_req["Name"], ForceDeleteWithoutRecovery=True
+        )
+
+        res = sm_client.create_secret(**create_secret_req)
+        create_secret_res_0: CreateSecretResponse = select_from_typed_dict(
+            CreateSecretResponse, res
+        )
+        snapshot.add_transformers_list(
+            snapshot.transform.secretsmanager_secret_id_arn(create_secret_res_0, 0)
+        )
+        snapshot.match("create_secret_res_0", create_secret_res_0)
+
+        res = sm_client.delete_secret(**stage_deletion_req)
+        delete_res_1: DeleteSecretResponse = select_from_typed_dict(DeleteSecretResponse, res)
+        snapshot.match("delete_res_1", delete_res_1)
+
+        res = sm_client.create_secret(**create_secret_req)
+        create_secret_res_1: CreateSecretResponse = select_from_typed_dict(
+            CreateSecretResponse, res
+        )
+        snapshot.add_transformers_list(
+            snapshot.transform.secretsmanager_secret_id_arn(create_secret_res_1, 1)
+        )
+        snapshot.match("create_secret_res_1", create_secret_res_1)
+
+        sm_client.delete_secret(**stage_deletion_req)
