@@ -3,6 +3,7 @@ import json
 import re
 from datetime import datetime
 from time import sleep
+from typing import Dict
 
 import pytest
 from boto3.dynamodb.conditions import Key
@@ -1410,30 +1411,22 @@ class TestDynamoDB:
         )
         dynamodb_wait_for_table_active(table_name)
 
-        _ = dynamodb_client.transact_write_items(
-            ClientRequestToken="dedupe_token",
-            TransactItems=[
-                {
-                    "Put": {
-                        "TableName": table_name,
-                        "Item": {"id": {"S": "id1"}, "name": {"S": "name1"}},
-                    }
-                },
-            ],
-        )
+        def _transact_write(_d: Dict):
+            response = dynamodb_client.transact_write_items(
+                ClientRequestToken="dedupe_token",
+                TransactItems=[
+                    {
+                        "Put": {
+                            "TableName": table_name,
+                            "Item": _d,
+                        }
+                    },
+                ],
+            )
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        response = dynamodb_client.transact_write_items(
-            ClientRequestToken="dedupe_token",
-            TransactItems=[
-                {
-                    "Put": {
-                        "TableName": table_name,
-                        "Item": {"name": {"S": "name1"}, "id": {"S": "id1"}},
-                    }
-                },
-            ],
-        )
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        _transact_write({"id": {"S": "id1"}, "name": {"S": "name1"}})
+        _transact_write({"name": {"S": "name1"}, "id": {"S": "id1"}})
 
 
 def delete_table(name):
