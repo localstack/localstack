@@ -14,6 +14,10 @@ from localstack.aws.api.secretsmanager import (
     CreateSecretResponse,
     DeleteSecretRequest,
     DeleteSecretResponse,
+    DescribeSecretResponse,
+    GetSecretValueResponse,
+    PutSecretValueResponse,
+    UpdateSecretResponse,
 )
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
@@ -45,74 +49,97 @@ class TestSecretsManager:
     def sm_client(self, secretsmanager_client):
         return secretsmanager_client
 
+    @staticmethod
+    def _snapshot_obj_of_exception(ex: ExceptionInfo) -> Dict:
+        return {"typename": ex.typename, "message": str(ex.value)}
+
+    @staticmethod
+    def _typed_response_of(typ: type, response: Dict) -> Dict:
+        return select_from_typed_dict(typ, response)
+
     @pytest.mark.parametrize(
         "secret_name, is_valid_partial_arn",
         [
-            (f"s-{short_uid()}", True),
+            ("s-c64bdc03", True),
             ("Valid/_+=.@-Name", True),
             ("Valid/_+=.@-Name-a1b2", True),
+            ("Valid/_+=.@-Name-a1b2c3-", True),
             ("Invalid/_+=.@-Name-a1b2c3", False),
-            ("Invalid/_+=.@-Name-a1b2c3-", False),
         ],
     )
     def test_create_and_update_secret(
-        self, sm_client, secret_name: str, is_valid_partial_arn: bool
+        self, sm_client, secret_name: str, is_valid_partial_arn: bool, snapshot
     ):
-        description = "testing creation of secrets"
-        rs = sm_client.create_secret(
-            Name=secret_name,
-            SecretString="my_secret",
-            Description=description,
+        description = "Testing secret creation."
+        create_secret_rs_1: CreateSecretResponse = self._typed_response_of(
+            typ=CreateSecretResponse,
+            response=sm_client.create_secret(
+                Name=secret_name,
+                SecretString="my_secret",
+                Description=description,
+            ),
         )
-        secret_arn = rs["ARN"]
-
+        snapshot.add_transformers_list(
+            snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_1, 0)
+        )
+        snapshot.match("create_secret_rs_1", create_secret_rs_1)
+        #
+        secret_arn = create_secret_rs_1["ARN"]
         assert len(secret_arn.rpartition("-")[-1]) == 6
 
-        rs = sm_client.get_secret_value(SecretId=secret_name)
-        assert rs["Name"] == secret_name
-        assert rs["SecretString"] == "my_secret"
-        assert rs["ARN"] == secret_arn
-        assert isinstance(rs["CreatedDate"], datetime)
+        get_secret_value_rs_1: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        snapshot.match("get_secret_value_rs_1", get_secret_value_rs_1)
 
-        rs = sm_client.describe_secret(SecretId=secret_name)
-        assert rs["Name"] == secret_name
-        assert rs["ARN"] == secret_arn
-        assert isinstance(rs["CreatedDate"], datetime)
-        assert rs["Description"] == description
+        describe_secret_rs_1: DescribeSecretResponse = self._typed_response_of(
+            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
+        )
+        snapshot.match("describe_secret_rs_1", describe_secret_rs_1)
 
-        rs = sm_client.get_secret_value(SecretId=secret_arn)
-        assert rs["Name"] == secret_name
-        assert rs["SecretString"] == "my_secret"
-        assert rs["ARN"] == secret_arn
-
-        rs = sm_client.get_secret_value(SecretId=secret_arn[:-6])
-        assert rs["Name"] == secret_name
-        assert rs["SecretString"] == "my_secret"
-        assert rs["ARN"] == secret_arn
+        get_secret_value_rs_2: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_arn)
+        )
+        snapshot.match("get_secret_value_rs_2", get_secret_value_rs_2)
 
         if is_valid_partial_arn:
-            rs = sm_client.get_secret_value(SecretId=secret_arn[:-7])
-            assert rs["Name"] == secret_name
-            assert rs["SecretString"] == "my_secret"
-            assert rs["ARN"] == secret_arn
+            get_secret_value_rs_3: GetSecretValueResponse = self._typed_response_of(
+                typ=GetSecretValueResponse,
+                response=sm_client.get_secret_value(SecretId=secret_arn[:-7]),
+            )
+            snapshot.match("get_secret_value_rs_3", get_secret_value_rs_3)
         else:
             with pytest.raises(Exception) as resource_not_found:
                 sm_client.get_secret_value(SecretId=secret_arn[:-7])
-            assert resource_not_found.typename == "ResourceNotFoundException"
+            resource_not_found_dict_1 = self._snapshot_obj_of_exception(resource_not_found)
+            snapshot.match("resource_not_found_dict_1", resource_not_found_dict_1)
 
-        sm_client.put_secret_value(SecretId=secret_name, SecretString="new_secret")
+        put_secret_value_rs_1: GetSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(SecretId=secret_name, SecretString="new_secret"),
+        )
+        snapshot.match("put_secret_value_rs_1", put_secret_value_rs_1)
 
-        rs = sm_client.get_secret_value(SecretId=secret_name)
-        assert rs["Name"] == secret_name
-        assert rs["SecretString"] == "new_secret"
+        get_secret_value_rs_4: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        snapshot.match("get_secret_value_rs_4", get_secret_value_rs_4)
 
         # update secret by ARN
-        rs = sm_client.update_secret(SecretId=secret_arn, KmsKeyId="test123", Description="d1")
-        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert rs["ARN"] == secret_arn
+        update_secret_res_1: UpdateSecretResponse = self._typed_response_of(
+            typ=UpdateSecretResponse,
+            response=sm_client.update_secret(
+                SecretId=secret_arn, SecretString="test123", Description="d1"
+            ),
+        )
+        snapshot.match("update_secret_res_1", update_secret_res_1)
 
         # clean up
-        sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        delete_secret_res_1: DeleteSecretResponse = self._typed_response_of(
+            typ=DeleteSecretResponse,
+            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        )
+        snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
     def test_call_lists_secrets_multiple_time(self, sm_client):
         secret_name = f"s-{short_uid()}"
@@ -1738,7 +1765,7 @@ class TestSecretsManager:
         with pytest.raises(Exception) as invalid_req_ex:
             sm_client.create_secret(**create_secret_req)
 
-        ex_log: Dict = {"typename": invalid_req_ex.typename, "message": str(invalid_req_ex.value)}
+        ex_log: Dict = self._snapshot_obj_of_exception(invalid_req_ex)
         snapshot.match("invalid_req_ex", ex_log)
 
     def test_can_recreate_delete_secret(self, sm_client, snapshot):
