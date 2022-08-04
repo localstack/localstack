@@ -344,5 +344,11 @@
     "recorded-content": {
       "error": "An error occurred (InvalidAttributeName) when calling the SetQueueAttributes operation: You can use one type of server-side encryption (SSE) at one time. You can either enable KMS SSE or SQS SSE."
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_delay_seconds_fails": {
+    "recorded-date": "03-08-2022, 18:36:23",
+    "recorded-content": {
+      "send_message": "An error occurred (InvalidParameterValue) when calling the SendMessage operation: Value 2 for parameter DelaySeconds is invalid. Reason: The request include parameter that is not valid for this queue type."
+    }
   }
 }
