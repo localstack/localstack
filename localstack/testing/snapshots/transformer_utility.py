@@ -262,6 +262,32 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def secretsmanager_api():
+        return [
+            KeyValueBasedTransformer(
+                lambda k, v: (
+                    k
+                    if (isinstance(k, str) and isinstance(v, list) and re.match(PATTERN_UUID, k))
+                    else None
+                ),
+                "version_uuid",
+            ),
+            KeyValueBasedTransformer(
+                lambda k, v: (
+                    v
+                    if (
+                        isinstance(k, str)
+                        and k == "VersionId"
+                        and isinstance(v, str)
+                        and re.match(PATTERN_UUID, v)
+                    )
+                    else None
+                ),
+                "version_uuid",
+            ),
+        ]
+
+    @staticmethod
     def secretsmanager_secret_id_arn(create_secret_res: CreateSecretResponse, index: int):
         secret_id_repl = f"<SecretId-{index}idx>"
         arn_part_repl = f"<ArnPart-{index}idx>"

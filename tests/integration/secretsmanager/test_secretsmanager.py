@@ -1,8 +1,9 @@
 import json
+import logging
 import os
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 import pytest
 import requests
@@ -18,16 +19,21 @@ from localstack.aws.api.secretsmanager import (
     GetSecretValueResponse,
     ListSecretsResponse,
     PutSecretValueResponse,
+    ResourceNotFoundException,
     UpdateSecretResponse,
 )
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36, ClientError
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import poll_condition
 from localstack.utils.time import today_no_time
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON_VERSION
 from tests.integration.secretsmanager.functions import lambda_rotate_secret
+
+LOG = logging.getLogger(__name__)
+
 
 RESOURCE_POLICY = {
     "Version": "2012-10-17",
@@ -58,6 +64,38 @@ class TestSecretsManager:
     def _typed_response_of(typ: type, response: Dict) -> Dict:
         return select_from_typed_dict(typ, response)
 
+    @staticmethod
+    def _wait_created_is_listed(client, secret_id: str):
+        def _is_secret_in_list():
+            lst: ListSecretsResponse = TestSecretsManager._typed_response_of(
+                typ=ListSecretsResponse, response=client.list_secrets()
+            )
+            secret_ids: Set[str] = {secret["Name"] for secret in lst.get("SecretList", [])}
+            return secret_id in secret_ids
+
+        success = poll_condition(condition=_is_secret_in_list, timeout=20, interval=2)
+        if not success:
+            LOG.warning(f"Timed out whilst awaiting for secret '{secret_id}' to become listable.")
+
+    @staticmethod
+    def _wait_force_deletion_completed(client, secret_id: str):
+        def _is_secret_deleted():
+            deleted = False
+            try:
+                client.describe_secret(SecretId=secret_id)
+            except Exception as ex:
+                if ex.response["Error"]["Code"] == "ResourceNotFoundException":
+                    deleted = True
+                else:
+                    raise ex
+            return deleted
+
+        success = poll_condition(condition=_is_secret_deleted, timeout=120, interval=30)
+        if not success:
+            LOG.warning(
+                f"Timed out whilst awaiting for force deletion of secret '{secret_id}' to complete."
+            )
+
     @pytest.mark.parametrize(
         "secret_name, is_valid_partial_arn",
         [
@@ -71,6 +109,8 @@ class TestSecretsManager:
     def test_create_and_update_secret(
         self, sm_client, secret_name: str, is_valid_partial_arn: bool, snapshot
     ):
+        snapshot.add_transformers_list(snapshot.transform.secretsmanager_api())
+
         description = "Testing secret creation."
         create_secret_rs_1: CreateSecretResponse = self._typed_response_of(
             typ=CreateSecretResponse,
@@ -143,6 +183,8 @@ class TestSecretsManager:
         snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
     def test_call_lists_secrets_multiple_times(self, sm_client, snapshot):
+        snapshot.add_transformers_list(snapshot.transform.secretsmanager_api())
+
         secret_name = f"s-{short_uid()}"
         create_secret_rs_1: CreateSecretResponse = self._typed_response_of(
             typ=CreateSecretResponse,
@@ -156,6 +198,8 @@ class TestSecretsManager:
             snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_1, 0)
         )
         snapshot.match("create_secret_rs_1", create_secret_rs_1)
+
+        self._wait_created_is_listed(sm_client, secret_id=secret_name)
 
         # call list_secrets multiple times
         for i in range(3):
@@ -171,31 +215,39 @@ class TestSecretsManager:
         )
         snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
-    def test_create_multi_secrets(self, sm_client):
-        secret_names = [short_uid(), short_uid(), short_uid()]
-        arns = []
-        for secret_name in secret_names:
-            rs = sm_client.create_secret(
-                Name=secret_name,
-                SecretString="my_secret_{}".format(secret_name),
-                Description="testing creation of secrets",
+    def test_create_multi_secrets(self, sm_client, snapshot):
+        snapshot.add_transformers_list(snapshot.transform.secretsmanager_api())
+
+        secret_names = [short_uid() for _ in range(3)]
+        for i, secret_name in enumerate(secret_names):
+            create_secret_rs_1: CreateSecretResponse = self._typed_response_of(
+                typ=CreateSecretResponse,
+                response=sm_client.create_secret(
+                    Name=secret_name,
+                    SecretString=f"my_secret_{secret_name}",
+                    Description="Testing secrets creation.",
+                ),
             )
-            arns.append(rs["ARN"])
+            snapshot.add_transformers_list(
+                snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_1, i)
+            )
 
-        rs = sm_client.list_secrets()
-        secrets = {
-            secret["Name"]: secret["ARN"]
-            for secret in rs["SecretList"]
-            if secret["Name"] in secret_names
-        }
+            self._wait_created_is_listed(sm_client, secret_name)
 
-        assert len(secrets.keys()) == len(secret_names)
-        for arn in arns:
-            assert arn in secrets.values()
+        list_secrets_res = self._typed_response_of(
+            typ=ListSecretsResponse, response=sm_client.list_secrets()
+        )
+        snapshot.match(f"list_secrets_res", list_secrets_res)
 
         # clean up
-        for secret_name in secret_names:
-            sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        for i, secret_name in enumerate(secret_names):
+            delete_secret_res: DeleteSecretResponse = self._typed_response_of(
+                typ=DeleteSecretResponse,
+                response=sm_client.delete_secret(
+                    SecretId=secret_name, ForceDeleteWithoutRecovery=True
+                ),
+            )
+            snapshot.match(f"delete_secret_res{i}", delete_secret_res)
 
     def test_get_random_exclude_characters_and_symbols(self, sm_client):
         random_password = sm_client.get_random_password(
@@ -1758,6 +1810,8 @@ class TestSecretsManager:
         assert response["DeletionDate"] is not None
 
     def test_exp_raised_on_creation_of_secret_scheduled_for_deletion(self, sm_client, snapshot):
+        snapshot.add_transformers_list(snapshot.transform.secretsmanager_api())
+
         create_secret_req: CreateSecretRequest = CreateSecretRequest(
             Name=f"secret-{short_uid()}", SecretString=f"secretstr-{short_uid()}"
         )
@@ -1784,6 +1838,7 @@ class TestSecretsManager:
     def test_can_recreate_delete_secret(self, sm_client, snapshot):
         # NOTE: AWS will behave as staged deletion for a small number of seconds (<10).
         # We assume forced deletion is instantaneous, until the precise behaviour is understood.
+        snapshot.add_transformers_list(snapshot.transform.secretsmanager_api())
 
         create_secret_req: CreateSecretRequest = CreateSecretRequest(
             Name=f"secret-{short_uid()}", SecretString=f"secretstr-{short_uid()}"
@@ -1804,6 +1859,8 @@ class TestSecretsManager:
         res = sm_client.delete_secret(**stage_deletion_req)
         delete_res_1: DeleteSecretResponse = select_from_typed_dict(DeleteSecretResponse, res)
         snapshot.match("delete_res_1", delete_res_1)
+
+        self._wait_force_deletion_completed(sm_client, stage_deletion_req["SecretId"])
 
         res = sm_client.create_secret(**create_secret_req)
         create_secret_res_1: CreateSecretResponse = select_from_typed_dict(
