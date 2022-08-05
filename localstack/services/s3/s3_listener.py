@@ -16,7 +16,7 @@ import dateutil.parser
 import xmltodict
 from botocore.client import ClientError
 from moto.s3.exceptions import InvalidFilterRuleName, MissingBucket
-from moto.s3.models import FakeBucket, s3_backend
+from moto.s3.models import FakeBucket, s3_backends
 from pytz import timezone
 from requests.models import Request, Response
 
@@ -167,7 +167,7 @@ class BackendState:
     @staticmethod
     def get_bucket(bucket_name: str) -> FakeBucket:
         bucket_name = normalize_bucket_name(bucket_name)
-        bucket = s3_backend.buckets.get(bucket_name)
+        bucket = s3_global_backend().buckets.get(bucket_name)
         if not bucket:
             # note: adding a switch here to be able to handle both, moto's MissingBucket with the
             # legacy edge proxy, as well as our custom CommonServiceException with the new Gateway.
@@ -175,6 +175,11 @@ class BackendState:
                 raise MissingBucket()
             raise NoSuchBucket()
         return bucket
+
+
+def s3_global_backend():
+    """Return the single/global backend used by moto"""
+    return s3_backends["global"]
 
 
 def event_type_matches(events, action, api_method):
@@ -502,7 +507,7 @@ def set_request_payment(bucket_name, payer):
             response._content = body
             return response
 
-    s3_backend.buckets[bucket_name].payer = payer["RequestPaymentConfiguration"]["Payer"]
+    s3_global_backend().buckets[bucket_name].payer = payer["RequestPaymentConfiguration"]["Payer"]
     response.status_code = 200
     return response
 

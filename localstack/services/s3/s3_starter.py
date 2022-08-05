@@ -13,6 +13,7 @@ from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
 from localstack.services.infra import start_moto_server
 from localstack.services.s3 import s3_listener, s3_utils
+from localstack.services.s3.s3_listener import s3_global_backend
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_free_tcp_port, wait_for_port_open
 from localstack.utils.generic.dict_utils import get_safe
@@ -99,45 +100,45 @@ def apply_patches():
             key.set_acl(acl)
 
     # patch S3Bucket.create_bucket(..)
-    @patch(s3_models.s3_backend.create_bucket)
-    def create_bucket(self, fn, bucket_name, region_name, *args, **kwargs):
+    @patch(s3_models.S3Backend.create_bucket)
+    def create_bucket(fn, self, bucket_name, region_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
-        return fn(bucket_name, region_name, *args, **kwargs)
+        return fn(self, bucket_name, region_name, *args, **kwargs)
 
     # patch S3Bucket.get_bucket(..)
-    @patch(s3_models.s3_backend.get_bucket)
-    def get_bucket(self, fn, bucket_name, *args, **kwargs):
+    @patch(s3_models.S3Backend.get_bucket)
+    def get_bucket(fn, self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
         if bucket_name == config.BUCKET_MARKER_LOCAL:
             return None
-        return fn(bucket_name, *args, **kwargs)
+        return fn(self, bucket_name, *args, **kwargs)
 
-    @patch(s3_responses.ResponseObject._bucket_response_head)
+    @patch(s3_responses.S3Response._bucket_response_head)
     def _bucket_response_head(fn, self, bucket_name, *args, **kwargs):
         code, headers, body = fn(self, bucket_name, *args, **kwargs)
-        bucket = s3_models.s3_backend.get_bucket(bucket_name)
+        bucket = s3_global_backend().get_bucket(bucket_name)
         headers["x-amz-bucket-region"] = bucket.region_name
         return code, headers, body
 
-    @patch(s3_responses.ResponseObject._bucket_response_get)
+    @patch(s3_responses.S3Response._bucket_response_get)
     def _bucket_response_get(fn, self, bucket_name, querystring, *args, **kwargs):
         result = fn(self, bucket_name, querystring, *args, **kwargs)
-        # for some reason in the "get-bucket-location" call, moto doesn't return a code, headers, body triple as a result
+        # for some reason in the "get-bucket-location" call, moto doesn't return a code/headers/body triple as a result
         if isinstance(result, tuple) and len(result) == 3:
             code, headers, body = result
-            bucket = s3_models.s3_backend.get_bucket(bucket_name)
+            bucket = s3_global_backend().get_bucket(bucket_name)
             headers["x-amz-bucket-region"] = bucket.region_name
         return result
 
     # patch S3Bucket.get_bucket(..)
-    @patch(s3_models.s3_backend.delete_bucket)
-    def delete_bucket(self, fn, bucket_name, *args, **kwargs):
+    @patch(s3_models.S3Backend.delete_bucket)
+    def delete_bucket(fn, self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
         try:
             s3_listener.remove_bucket_notification(bucket_name)
         except s3_listener.NoSuchBucket:
             raise MissingBucket()
-        return fn(bucket_name, *args, **kwargs)
+        return fn(self, bucket_name, *args, **kwargs)
 
     # patch _key_response_post(..)
     @patch(s3_responses.S3ResponseInstance._key_response_post)
@@ -237,9 +238,10 @@ def apply_patches():
     </DeleteResult>"""
 
     @patch(s3_responses.S3ResponseInstance._bucket_response_delete_keys, pass_target=False)
-    def s3_bucket_response_delete_keys(self, body, bucket_name, *args, **kwargs):
+    def s3_bucket_response_delete_keys(self, bucket_name, *args, **kwargs):
         template = self.response_template(s3_delete_keys_response_template)
-        elements = minidom.parseString(body).getElementsByTagName("Object")
+        elements = minidom.parseString(self.body).getElementsByTagName("Object")
+
         if len(elements) == 0:
             raise MalformedXML()
 
@@ -345,10 +347,10 @@ def apply_patches():
             template = self.response_template(S3_ALL_MULTIPARTS)
             return template.render(bucket_name=bucket_name, uploads=multiparts)
 
-    @patch(s3_models.s3_backend.copy_object)
+    @patch(s3_models.S3Backend.copy_object)
     def copy_object(
-        self,
         fn,
+        self,
         src_key,
         dest_bucket_name,
         dest_key_name,
@@ -356,6 +358,7 @@ def apply_patches():
         **kwargs,
     ):
         fn(
+            self,
             src_key,
             dest_bucket_name,
             dest_key_name,

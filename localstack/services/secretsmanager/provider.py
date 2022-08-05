@@ -472,7 +472,7 @@ def backend_rotate_secret(
     rotation_days = "AutomaticallyAfterDays"
 
     if not self._is_valid_identifier(secret_id):
-        raise SecretNotFoundException()
+        raise SecretNotFoundException(f"Unable to find secret '{secret_id}'")
 
     if self.secrets[secret_id].is_deleted():
         raise InvalidRequestException(
@@ -494,11 +494,11 @@ def backend_rotate_secret(
 
     rotation_func = None
     try:
-        lm_client = aws_stack.connect_to_service("lambda", region_name=self.region)
+        lm_client = aws_stack.connect_to_service("lambda", region_name=self.region_name)
         get_func_res = lm_client.get_function(FunctionName=rotation_lambda_arn)
         lm_spec = get_func_res["Configuration"]
         lm_spec["Code"] = {"ZipFile": str(short_uid())}
-        rotation_func = LambdaFunction(lm_spec, self.region)
+        rotation_func = LambdaFunction(lm_spec, self.region_name)
     except Exception:
         # Fall through to ResourceNotFoundException.
         pass

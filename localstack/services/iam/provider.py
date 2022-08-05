@@ -7,7 +7,7 @@ from urllib.parse import quote
 from moto.iam.models import AWSManagedPolicy, InlinePolicy, Policy
 from moto.iam.models import Role as MotoRole
 from moto.iam.models import aws_managed_policies, filter_items_with_path_prefix
-from moto.iam.models import iam_backend as moto_iam_backend
+from moto.iam.models import iam_backends as moto_iam_backends
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.responses import IamResponse
 
@@ -129,8 +129,8 @@ class IamProvider(IamApi):
         max_items: maxItemsType = None,
         marker: markerType = None,
     ) -> SimulatePolicyResponse:
-        policy = moto_iam_backend.get_policy(policy_source_arn)
-        policy_version = moto_iam_backend.get_policy_version(
+        policy = iam_global_backend().get_policy(policy_source_arn)
+        policy_version = iam_global_backend().get_policy_version(
             policy_source_arn, policy.default_version_id
         )
         try:
@@ -150,8 +150,8 @@ class IamProvider(IamApi):
         return response
 
     def delete_policy(self, context: RequestContext, policy_arn: arnType) -> None:
-        if moto_iam_backend.managed_policies.get(policy_arn):
-            moto_iam_backend.managed_policies.pop(policy_arn, None)
+        if iam_global_backend().managed_policies.get(policy_arn):
+            iam_global_backend().managed_policies.pop(policy_arn, None)
         else:
             raise NoSuchEntityException("Policy {0} was not found.".format(policy_arn))
 
@@ -159,7 +159,7 @@ class IamProvider(IamApi):
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType
     ) -> None:
         try:
-            role = moto_iam_backend.get_role(role_name)
+            role = iam_global_backend().get_role(role_name)
             policy = role.managed_policies[policy_arn]
             policy.detach_from(role)
         except KeyError:
@@ -193,7 +193,7 @@ class IamProvider(IamApi):
         marker: markerType = None,
         max_items: maxItemsType = None,
     ) -> ListRolesResponse:
-        moto_roles = moto_iam_backend.roles.values()
+        moto_roles = iam_global_backend().roles.values()
         if path_prefix:
             moto_roles = filter_items_with_path_prefix(path_prefix, moto_roles)
         moto_roles = sorted(moto_roles, key=lambda role: role.id)
@@ -219,10 +219,10 @@ class IamProvider(IamApi):
         new_group_name: groupNameType = None,
     ) -> None:
         new_group_name = new_group_name or group_name
-        group = moto_iam_backend.get_group(group_name)
+        group = iam_global_backend().get_group(group_name)
         group.path = new_path
         group.name = new_group_name
-        moto_iam_backend.groups[new_group_name] = moto_iam_backend.groups.pop(group_name)
+        iam_global_backend().groups[new_group_name] = iam_global_backend().groups.pop(group_name)
 
     def list_instance_profile_tags(
         self,
@@ -231,7 +231,7 @@ class IamProvider(IamApi):
         marker: markerType = None,
         max_items: maxItemsType = None,
     ) -> ListInstanceProfileTagsResponse:
-        profile = moto_iam_backend.get_instance_profile(instance_profile_name)
+        profile = iam_global_backend().get_instance_profile(instance_profile_name)
         response = ListInstanceProfileTagsResponse()
         response["Tags"] = [Tag(Key=k, Value=v) for k, v in profile.tags.items()]
         return response
@@ -242,7 +242,7 @@ class IamProvider(IamApi):
         instance_profile_name: instanceProfileNameType,
         tags: tagListType,
     ) -> None:
-        profile = moto_iam_backend.get_instance_profile(instance_profile_name)
+        profile = iam_global_backend().get_instance_profile(instance_profile_name)
         value_by_key = {tag["Key"]: tag["Value"] for tag in tags}
         profile.tags.update(value_by_key)
 
@@ -252,7 +252,7 @@ class IamProvider(IamApi):
         instance_profile_name: instanceProfileNameType,
         tag_keys: tagKeyListType,
     ) -> None:
-        profile = moto_iam_backend.get_instance_profile(instance_profile_name)
+        profile = iam_global_backend().get_instance_profile(instance_profile_name)
         for tag in tag_keys:
             profile.tags.pop(tag, None)
 
@@ -279,7 +279,7 @@ class IamProvider(IamApi):
         )
         path = f"{SERVICE_LINKED_ROLE_PATH_PREFIX}/{aws_service_name}"
         role_name = f"r-{short_uid()}"
-        role = moto_iam_backend.create_role(
+        role = iam_global_backend().create_role(
             role_name=role_name,
             assume_role_policy_document=policy_doc,
             path=path,
@@ -299,7 +299,7 @@ class IamProvider(IamApi):
         self, context: RequestContext, role_name: roleNameType
     ) -> DeleteServiceLinkedRoleResponse:
         # TODO: test
-        moto_iam_backend.delete_role(role_name)
+        iam_global_backend().delete_role(role_name)
         return DeleteServiceLinkedRoleResponse(DeletionTaskId=short_uid())
 
     def get_service_linked_role_deletion_status(
@@ -311,7 +311,7 @@ class IamProvider(IamApi):
     def put_user_permissions_boundary(
         self, context: RequestContext, user_name: userNameType, permissions_boundary: arnType
     ) -> None:
-        if user := moto_iam_backend.users.get(user_name):
+        if user := iam_global_backend().users.get(user_name):
             user.permissions_boundary = permissions_boundary
         else:
             raise NoSuchEntityException()
@@ -319,7 +319,7 @@ class IamProvider(IamApi):
     def delete_user_permissions_boundary(
         self, context: RequestContext, user_name: userNameType
     ) -> None:
-        if user := moto_iam_backend.users.get(user_name):
+        if user := iam_global_backend().users.get(user_name):
             if hasattr(user, "permissions_boundary"):
                 delattr(user, "permissions_boundary")
         else:
@@ -334,7 +334,7 @@ class IamProvider(IamApi):
         tags: tagListType = None,
     ) -> CreateUserResponse:
         response = call_moto(context=context)
-        user = moto_iam_backend.get_user(user_name)
+        user = iam_global_backend().get_user(user_name)
         if permissions_boundary:
             user.permissions_boundary = permissions_boundary
             response["User"]["PermissionsBoundary"] = AttachedPermissionsBoundary(
@@ -348,7 +348,7 @@ class IamProvider(IamApi):
     ) -> GetUserResponse:
         response = call_moto(context=context)
         moto_user_name = response["User"]["UserName"]
-        moto_user = moto_iam_backend.users.get(moto_user_name)
+        moto_user = iam_global_backend().users.get(moto_user_name)
         # if the user does not exist or is no user
         if not moto_user and not user_name:
             access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
@@ -418,6 +418,10 @@ class IamProvider(IamApi):
     #     return GetUserResponse(User=response_user)
 
 
+def iam_global_backend():
+    return moto_iam_backends["global"]
+
+
 def apply_patches():
     # support service linked roles
 
@@ -456,10 +460,10 @@ def apply_patches():
         user_name = re.match(regex, result, flags=flags).group(2)
         # replace default user id/name in response
 
-        user = moto_iam_backend.users.get(user_name)
+        user = iam_global_backend().users.get(user_name)
         if not user:
             return result
-        tags = moto_iam_backend.tagger.list_tags_for_resource(user.arn)
+        tags = iam_global_backend().tagger.list_tags_for_resource(user.arn)
         if tags and "<Tags>" not in result:
             tags_str = "".join(
                 [
