@@ -101,11 +101,11 @@ class SQSEventSourceListener(EventSourceListener):
         return res
 
     def _send_event_to_lambda(self, queue_arn, queue_url, lambda_arn, messages, region):
-        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
-            if error and not dlq_sent:
-                # Skip deleting messages from the queue in case of processing errors AND if
-                # the message has not yet been sent to a dead letter queue (DLQ).
-                # We'll pick them up and retry next time they become available on the queue.
+        def delete_messages(result, func_arn, event, error=None, **kwargs):
+            if error:
+                # Skip deleting messages from the queue in case of processing errors. We'll pick them up and retry
+                # next time they become visible in the queue. Redrive policies will be handled automatically by SQS
+                # on the next polling attempt.
                 return
 
             region_name = queue_arn.split(":")[3]
@@ -142,7 +142,6 @@ class SQSEventSourceListener(EventSourceListener):
 
         event = {"Records": records}
 
-        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
         res = run_lambda(
             func_arn=lambda_arn,
             event=event,
