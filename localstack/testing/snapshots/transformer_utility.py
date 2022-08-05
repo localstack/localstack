@@ -1,6 +1,7 @@
+import logging
 import re
 from datetime import datetime
-from typing import Optional, Pattern
+from typing import Dict, List, Optional, Pattern, Set, Union
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
 from localstack.testing.snapshots.transformer import (
@@ -8,7 +9,12 @@ from localstack.testing.snapshots.transformer import (
     KeyValueBasedTransformer,
     RegexTransformer,
     ResponseMetaDataTransformer,
+    TransformContext,
+    Transformer,
 )
+
+LOG = logging.getLogger(__name__)
+
 
 PATTERN_UUID = re.compile(
     r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
@@ -263,7 +269,31 @@ class TransformerUtility:
 
     @staticmethod
     def secretsmanager_api():
+        class DropUnsupportedEntries(Transformer):
+            # TODO: resolve all unsupported entries.
+            _DROP_KEYS: Set[str] = {"KmsKeyId", "KmsKeyIds"}
+
+            def _drop(self, input_data):
+                if isinstance(input_data, dict):
+                    res = dict()
+                    for k, v in input_data.items():
+                        if k not in self._DROP_KEYS:
+                            res[k] = self._drop(v)
+                        else:
+                            LOG.warning(
+                                f"Snapshot test for secretsmanager will ignore key entry {k} as it is unsupported."
+                            )
+                    return res
+                elif isinstance(input_data, list):
+                    return list(map(self._drop, input_data))
+                else:
+                    return input_data
+
+            def transform(self, input_data: Dict, *, ctx: TransformContext) -> Dict:
+                return self._drop(input_data)
+
         return [
+            DropUnsupportedEntries(),
             KeyValueBasedTransformer(
                 lambda k, v: (
                     k

@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import time
-from typing import Dict, Final, Optional, Set, Union
+from typing import Dict, Final, List, Optional, Set, Union
 
 from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
@@ -49,6 +49,7 @@ from localstack.aws.api.secretsmanager import (
     RotateSecretResponse,
     SecretIdType,
     SecretsmanagerApi,
+    SecretVersionsListEntry,
     StopReplicationToReplicaRequest,
     StopReplicationToReplicaResponse,
     TagResourceRequest,
@@ -358,6 +359,34 @@ def moto_smb_create_secret(fn, self, name, *args, **kwargs):
         raise InvalidRequestException(AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION)
 
     return fn(self, name, *args, **kwargs)
+
+
+@patch(SecretsManagerBackend.list_secret_version_ids)
+def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
+    if secret_id not in self.secrets:
+        raise SecretNotFoundException()
+
+    if self.secrets[secret_id].is_deleted():
+        raise InvalidRequestException(
+            "An error occurred (InvalidRequestException) when calling the UpdateSecret operation: "
+            "You can't perform this operation on the secret because it was marked for deletion."
+        )
+
+    secret = self.secrets[secret_id]
+
+    versions: List[SecretVersionsListEntry] = list()
+    for version_id, version in secret.versions.items():
+        entry = SecretVersionsListEntry(
+            CreatedDate=version["createdate"],
+            # LastAccessedDate=int(time.time()), TODO: last accessed date of versions is currently unsupported.
+            VersionId=version_id,
+            VersionStages=version["version_stages"],
+        )
+        versions.append(entry)
+
+    response = ListSecretVersionIdsResponse(ARN=secret.arn, Name=secret.name, Versions=versions)
+
+    return json.dumps(response)
 
 
 @patch(FakeSecret.to_dict)
