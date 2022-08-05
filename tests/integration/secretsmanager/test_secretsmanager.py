@@ -23,6 +23,7 @@ from localstack.aws.api.secretsmanager import (
     PutResourcePolicyResponse,
     PutSecretValueResponse,
     UpdateSecretResponse,
+    UpdateSecretVersionStageResponse,
 )
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
@@ -737,26 +738,49 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    def test_update_secret_version_stages_return_type(self, sm_client):
+    def test_update_secret_version_stages_return_type(self, sm_client, sm_snapshot):
         secret_name = f"s-{short_uid()}"
-        create = sm_client.create_secret(Name=secret_name, SecretString="Something1")
-        version_id_v0 = create["VersionId"]
-
-        put_pending_res = sm_client.put_secret_value(
-            SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
+        #
+        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
+            typ=CreateSecretResponse,
+            response=sm_client.create_secret(Name=secret_name, SecretString="Something1"),
         )
-        version_id_v1 = put_pending_res["VersionId"]
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
+        )
+        sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
+
+        version_id_v0: str = create_secret_rs_0["VersionId"]
+
+        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(
+                SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
+            ),
+        )
+        sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
+
+        version_id_v1 = put_secret_value_res_0["VersionId"]
         assert version_id_v1 != version_id_v0
 
-        upd_res = sm_client.update_secret_version_stage(
-            SecretId=secret_name,
-            RemoveFromVersionId=version_id_v0,
-            MoveToVersionId=version_id_v1,
-            VersionStage="AWSCURRENT",
+        update_secret_version_stage_res_0: UpdateSecretVersionStageResponse = (
+            self._typed_response_of(
+                typ=UpdateSecretVersionStageResponse,
+                response=sm_client.update_secret_version_stage(
+                    SecretId=secret_name,
+                    RemoveFromVersionId=version_id_v0,
+                    MoveToVersionId=version_id_v1,
+                    VersionStage="AWSCURRENT",
+                ),
+            )
         )
-        assert upd_res.keys() == {"Name", "ARN", "ResponseMetadata"}
-        assert upd_res["Name"] == create["Name"]
-        assert upd_res["ARN"] == create["ARN"]
+        sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
+
+        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
+            typ=DeleteSecretResponse,
+            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        )
+        sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     def test_update_secret_version_stages_current_previous(self, sm_client):
         secret_name = f"s-{short_uid()}"
