@@ -108,7 +108,7 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
-from localstack.utils.json import BytesEncoder
+from localstack.utils.json import BytesEncoder, canonical_json
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.threads import start_worker_thread
 
@@ -728,6 +728,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 inner_item = item.get(key)
                 if inner_item:
                     existing_items.append(ItemFinder.find_existing_item(inner_item))
+
+        client_token: str | None = transact_write_items_input.get("ClientRequestToken")
+
+        if client_token:
+            # we sort the payload since identical payload but with different order could cause
+            # IdempotentParameterMismatchException error if a client token is provided
+            context.request.data = to_bytes(canonical_json(json.loads(context.request.data)))
 
         # forward request to backend
         result = self.forward_request(context)
