@@ -4,7 +4,6 @@ import threading
 from typing import Optional
 
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
-from localstack.runtime import hooks
 
 # Thread local storage for keeping current request & account related info
 REQUEST_CTX_TLS = threading.local()
@@ -40,15 +39,3 @@ def get_ctx_aws_access_key_id() -> Optional[str]:
 
 def set_ctx_aws_access_key_id(access_key_id: str):
     REQUEST_CTX_TLS.access_key_id = access_key_id
-
-
-@hooks.on_infra_start()
-def patch_get_account_id():
-    """Patch Moto's account ID resolver with our own."""
-    import moto.core
-
-    moto.core.models.account_id_resolver = get_aws_account_id
-
-    # Note: Moto templates making use of this constant will not get access to
-    # account ID from the current context
-    moto.core.models.ACCOUNT_ID = moto.core.ACCOUNT_ID = get_aws_account_id()
