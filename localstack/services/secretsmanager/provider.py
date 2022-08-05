@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import time
-from typing import Dict, Final, Optional, Union
+from typing import Dict, Final, Optional, Set, Union
 
 from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
@@ -386,15 +386,37 @@ def backend_update_secret(
     description=None,
     **kwargs,
 ):
-    fn(self, secret_id, **kwargs)
-    secret = self.secrets[secret_id]
+    if secret_id not in self.secrets:
+        raise SecretNotFoundException()
 
-    # Fix missing update of secret description.
-    # Secret exists if this point is reached.
+    if self.secrets[secret_id].is_deleted():
+        raise InvalidRequestException(
+            "An error occurred (InvalidRequestException) when calling the UpdateSecret operation: "
+            "You can't perform this operation on the secret because it was marked for deletion."
+        )
+
+    secret = self.secrets[secret_id]
+    version_id_t0 = secret.default_version_id
+
+    requires_new_version: bool = any(
+        [kwargs.get("kms_key_id"), kwargs.get("secret_binary"), kwargs.get("secret_string")]
+    )
+    if requires_new_version:
+        fn(self, secret_id, **kwargs)
+
     if description is not None:
         secret.description = description
 
-    return secret.to_short_dict()
+    version_id_t1 = secret.default_version_id
+
+    resp: UpdateSecretResponse = UpdateSecretResponse()
+    resp["ARN"] = secret.arn
+    resp["Name"] = secret.name
+    #
+    if version_id_t0 != version_id_t1:
+        resp["VersionId"] = version_id_t1
+
+    return json.dumps(resp)
 
 
 @patch(SecretsManagerResponse.update_secret)

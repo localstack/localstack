@@ -660,32 +660,82 @@ class TestSecretsManager:
         assert "LastChangedDate" in res
         assert create_date < res["LastChangedDate"]
 
-    def test_update_secret_description(self, sm_client):
+    def test_update_secret_description(self, sm_client, sm_snapshot):
         secret_name = f"s-{short_uid()}"
         secret_string_v0 = "MySecretString"
-        sm_client.create_secret(Name=secret_name, SecretString=secret_string_v0)
+        #
+        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
+            typ=CreateSecretResponse,
+            response=sm_client.create_secret(Name=secret_name, SecretString=secret_string_v0),
+        )
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
+        )
+        sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        des = sm_client.describe_secret(SecretId=secret_name)
-        assert "Description" not in des
+        describe_secret_res_0: DescribeSecretResponse = self._typed_response_of(
+            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
+        )
+        sm_snapshot.match("describe_secret_res_0", describe_secret_res_0)
 
         description_v1 = "MyDescription"
-        sm_client.update_secret(SecretId=secret_name, Description=description_v1)
+        #
+        update_secret_res_0: UpdateSecretResponse = self._typed_response_of(
+            typ=UpdateSecretResponse,
+            response=sm_client.update_secret(SecretId=secret_name, Description=description_v1),
+        )
+        sm_snapshot.match("update_secret_res_0", update_secret_res_0)
 
-        des = sm_client.describe_secret(SecretId=secret_name)
-        assert des["Description"] == description_v1
+        describe_secret_res_1: DescribeSecretResponse = self._typed_response_of(
+            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
+        )
+        sm_snapshot.match("describe_secret_res_1", describe_secret_res_1)
 
         description_v2 = "MyNewDescription"
         secret_string_v1 = "MyNewSecretString"
-        sm_client.update_secret(
-            SecretId=secret_name, SecretString=secret_string_v1, Description=description_v2
+        #
+        update_secret_res_1: UpdateSecretResponse = self._typed_response_of(
+            typ=UpdateSecretResponse,
+            response=sm_client.update_secret(
+                SecretId=secret_name, SecretString=secret_string_v1, Description=description_v2
+            ),
         )
+        sm_snapshot.match("update_secret_res_1", update_secret_res_1)
 
-        des = sm_client.describe_secret(SecretId=secret_name)
-        assert des["Description"] == description_v2
+        describe_secret_res_2: DescribeSecretResponse = self._typed_response_of(
+            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
+        )
+        sm_snapshot.match("describe_secret_res_2", describe_secret_res_2)
 
-        sm_client.update_secret(SecretId=secret_name, SecretString=secret_string_v1 * 2)
-        des = sm_client.describe_secret(SecretId=secret_name)
-        assert des["Description"] == description_v2
+        update_secret_res_2: UpdateSecretResponse = self._typed_response_of(
+            typ=UpdateSecretResponse,
+            response=sm_client.update_secret(
+                SecretId=secret_name, SecretString=secret_string_v1 * 2
+            ),
+        )
+        sm_snapshot.match("update_secret_res_2", update_secret_res_2)
+
+        describe_secret_res_3: DescribeSecretResponse = self._typed_response_of(
+            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
+        )
+        sm_snapshot.match("describe_secret_res_3", describe_secret_res_3)
+
+        update_secret_res_3: UpdateSecretResponse = self._typed_response_of(
+            typ=UpdateSecretResponse,
+            response=sm_client.update_secret(SecretId=secret_name),
+        )
+        sm_snapshot.match("update_secret_res_3", update_secret_res_3)
+
+        describe_secret_res_4: DescribeSecretResponse = self._typed_response_of(
+            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
+        )
+        sm_snapshot.match("describe_secret_res_4", describe_secret_res_4)
+
+        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
+            typ=DeleteSecretResponse,
+            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        )
+        sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     def test_update_secret_version_stages_return_type(self, sm_client):
         secret_name = f"s-{short_uid()}"
