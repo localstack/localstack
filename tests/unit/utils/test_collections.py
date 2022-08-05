@@ -8,7 +8,6 @@ from localstack.utils.collections import (
     ImmutableDict,
     ImmutableList,
     select_from_typed_dict,
-    sort_dict,
 )
 
 
@@ -101,29 +100,3 @@ def test_hashable_list():
     with pytest.raises(Exception) as exc:
         l1[0] = "foo"
     exc.match("does not support item assignment")
-
-
-def test_sort_dict():
-    d1 = {
-        "TransactItems": [
-            {
-                "Put": {
-                    "TableName": "ddb-table-cdf34ea5",
-                    "Item": {"name": {"S": "name1"}, "id": {"S": "id1"}},
-                }
-            }
-        ]
-    }
-    d2 = {
-        "TransactItems": [
-            {
-                "Put": {
-                    "TableName": "ddb-table-cdf34ea5",
-                    "Item": {"id": {"S": "id1"}, "name": {"S": "name1"}},
-                }
-            }
-        ]
-    }
-    d1 = sort_dict(d1)
-    d2 = sort_dict(d2)
-    assert d1 == d2
