@@ -532,62 +532,62 @@ class TestSecretsManager:
         "secret_name", ["Inv Name", " Inv Name", " Inv*Name? ", " Inv *?!]Name\\-"]
     )
     @pytest.mark.aws_validated
-    def test_invalid_secret_name(self, sm_client, secret_name: str):
-        def check_validation_exception(exc_info: ExceptionInfo):
-            error = exc_info.value.response["Error"]
-            error_code = error["Code"]
-            error_msg = error["Message"]
-            assert error_code == "ValidationException"
-            assert (
-                error_msg
-                == "Invalid name. Must be a valid name containing alphanumeric characters, or any of the following: -/_+=.@!"
-            )
-
+    def test_invalid_secret_name(self, sm_client, secret_name: str, sm_snapshot):
         # The secret name can contain ASCII letters, numbers, and the following characters: /_+=.@-
         with pytest.raises(Exception) as validation_exception:
             sm_client.create_secret(Name=secret_name, SecretString="MySecretString")
-        check_validation_exception(validation_exception)
+        ex_log_1: Dict = self._snapshot_obj_of_exception(validation_exception)
+        sm_snapshot.match("ex_log_1", ex_log_1)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
-        check_validation_exception(validation_exception)
+        ex_log_2: Dict = self._snapshot_obj_of_exception(validation_exception)
+        sm_snapshot.match("ex_log_2", ex_log_2)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.describe_secret(SecretId=secret_name)
-        check_validation_exception(validation_exception)
+        ex_log_3: Dict = self._snapshot_obj_of_exception(validation_exception)
+        sm_snapshot.match("ex_log_3", ex_log_3)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.get_secret_value(SecretId=secret_name)
-        check_validation_exception(validation_exception)
+        ex_log_4: Dict = self._snapshot_obj_of_exception(validation_exception)
+        sm_snapshot.match("ex_log_4", ex_log_4)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.list_secret_version_ids(SecretId=secret_name, IncludeDeprecated=True)
-        check_validation_exception(validation_exception)
+        ex_log_5: Dict = self._snapshot_obj_of_exception(validation_exception)
+        sm_snapshot.match("ex_log_5", ex_log_5)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.put_secret_value(SecretId=secret_name, SecretString="MySecretString")
-        check_validation_exception(validation_exception)
+        ex_log_6: Dict = self._snapshot_obj_of_exception(validation_exception)
+        sm_snapshot.match("ex_log_6", ex_log_6)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.tag_resource(
                 SecretId=secret_name, Tags=[{"Key": "FirstTag", "Value": "SomeValue"}]
             )
-        check_validation_exception(validation_exception)
+        ex_log_7: Dict = self._snapshot_obj_of_exception(validation_exception)
+        sm_snapshot.match("ex_log_7", ex_log_7)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.untag_resource(SecretId=secret_name, TagKeys=["FirstTag"])
-        check_validation_exception(validation_exception)
+        ex_log_8: Dict = self._snapshot_obj_of_exception(validation_exception)
+        sm_snapshot.match("ex_log_8", ex_log_8)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.update_secret(SecretId=secret_name, Description="MyNewDescription")
-        check_validation_exception(validation_exception)
+        ex_log_9: Dict = self._snapshot_obj_of_exception(validation_exception)
+        sm_snapshot.match("ex_log_9", ex_log_9)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.validate_resource_policy(
                 SecretId=secret_name,
                 ResourcePolicy='{\n"Version":"2012-10-17",\n"Statement":[{\n"Effect":"Allow",\n"Principal":{\n"AWS":"arn:aws:iam::123456789012:root"\n},\n"Action":"secretsmanager:GetSecretValue",\n"Resource":"*"\n}]\n}',
             )
-        check_validation_exception(validation_exception)
+        ex_log_10: Dict = self._snapshot_obj_of_exception(validation_exception)
+        sm_snapshot.match("ex_log_10", ex_log_10)
 
     def test_last_accessed_date(self, sm_client):
         def last_accessed_scenario_1(fail_if_days_overlap: bool) -> bool:
