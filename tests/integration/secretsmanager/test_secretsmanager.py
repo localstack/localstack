@@ -428,82 +428,105 @@ class TestSecretsManager:
         assert "RotationRules" not in des
         assert "RotationLambdaARN" not in des
 
-    def test_put_secret_value_with_version_stages(self, sm_client):
+    def test_put_secret_value_with_version_stages(self, sm_client, sm_snapshot):
         secret_name = f"s-{short_uid()}"
-
         secret_string_v0: str = "secret_string_v0"
-        cr_v0_res = sm_client.create_secret(Name=secret_name, SecretString=secret_string_v0)
-        pv_v0_vid: str = cr_v0_res["VersionId"]
 
-        rs_get_curr = sm_client.get_secret_value(SecretId=secret_name)
-        assert rs_get_curr["SecretString"] == secret_string_v0
-        assert rs_get_curr["VersionStages"] == ["AWSCURRENT"]
+        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
+            typ=CreateSecretResponse,
+            response=sm_client.create_secret(Name=secret_name, SecretString=secret_string_v0),
+        )
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
+        )
+        sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
+
+        get_secret_value_res_0: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        sm_snapshot.match("get_secret_value_res_0", get_secret_value_res_0)
 
         secret_string_v1: str = "secret_string_v1"
-        version_stages_v1: ["str"] = ["SAMPLESTAGE1", "SAMPLESTAGE0"]
+        version_stages_v1: List[str] = ["SAMPLESTAGE1", "SAMPLESTAGE0"]
         pv_v1_vid: str = str(uuid.uuid4())
-        pv_v1_res = sm_client.put_secret_value(
-            SecretId=secret_name,
-            SecretString=secret_string_v1,
-            VersionStages=version_stages_v1,
-            ClientRequestToken=pv_v1_vid,
+        #
+        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(
+                SecretId=secret_name,
+                SecretString=secret_string_v1,
+                VersionStages=version_stages_v1,
+                ClientRequestToken=pv_v1_vid,
+            ),
         )
-        assert pv_v1_res["VersionId"] == pv_v1_vid
-        assert pv_v1_res["VersionStages"] == version_stages_v1
+        sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
-        rs_get_curr = sm_client.get_secret_value(SecretId=secret_name)
-        assert rs_get_curr["VersionId"] == pv_v0_vid
-        assert rs_get_curr["SecretString"] == secret_string_v0
-        assert rs_get_curr["VersionStages"] == ["AWSCURRENT"]
+        get_secret_value_res_1: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        sm_snapshot.match("get_secret_value_res_1", get_secret_value_res_1)
 
         secret_string_v2: str = "secret_string_v2"
         version_stages_v2: ["str"] = version_stages_v1
         pv_v2_vid: str = str(uuid.uuid4())
-        pv_v2_res = sm_client.put_secret_value(
-            SecretId=secret_name,
-            SecretString=secret_string_v2,
-            VersionStages=version_stages_v2,
-            ClientRequestToken=pv_v2_vid,
+        #
+        put_secret_value_res_2: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(
+                SecretId=secret_name,
+                SecretString=secret_string_v2,
+                VersionStages=version_stages_v2,
+                ClientRequestToken=pv_v2_vid,
+            ),
         )
-        assert pv_v2_res["VersionId"] == pv_v2_vid
-        assert pv_v2_res["VersionStages"] == version_stages_v2
+        sm_snapshot.match("put_secret_value_res_2", put_secret_value_res_2)
 
-        rs_get_curr = sm_client.get_secret_value(SecretId=secret_name)
-        assert rs_get_curr["VersionId"] == pv_v0_vid
-        assert rs_get_curr["SecretString"] == secret_string_v0
-        assert rs_get_curr["VersionStages"] == ["AWSCURRENT"]
+        get_secret_value_res_2: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
 
         secret_string_v3: str = "secret_string_v3"
         version_stages_v3: ["str"] = ["AWSPENDING"]
         pv_v3_vid: str = str(uuid.uuid4())
-        pv_v3_res = sm_client.put_secret_value(
-            SecretId=secret_name,
-            SecretString=secret_string_v3,
-            VersionStages=version_stages_v3,
-            ClientRequestToken=pv_v3_vid,
+        #
+        put_secret_value_res_3: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(
+                SecretId=secret_name,
+                SecretString=secret_string_v3,
+                VersionStages=version_stages_v3,
+                ClientRequestToken=pv_v3_vid,
+            ),
         )
-        assert pv_v3_res["VersionId"] == pv_v3_vid
-        assert pv_v3_res["VersionStages"] == version_stages_v3
+        sm_snapshot.match("put_secret_value_res_3", put_secret_value_res_3)
 
-        rs_get_curr = sm_client.get_secret_value(SecretId=secret_name)
-        assert rs_get_curr["VersionId"] == pv_v0_vid
-        assert rs_get_curr["SecretString"] == secret_string_v0
-        assert rs_get_curr["VersionStages"] == ["AWSCURRENT"]
+        get_secret_value_res_3: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        sm_snapshot.match("get_secret_value_res_3", get_secret_value_res_3)
 
         secret_string_v4: str = "secret_string_v4"
         pv_v4_vid: str = str(uuid.uuid4())
-        pv_v4_res = sm_client.put_secret_value(
-            SecretId=secret_name, SecretString=secret_string_v4, ClientRequestToken=pv_v4_vid
+        #
+        put_secret_value_res_4: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(
+                SecretId=secret_name, SecretString=secret_string_v4, ClientRequestToken=pv_v4_vid
+            ),
         )
-        assert pv_v4_res["VersionId"] == pv_v4_vid
-        assert pv_v4_res["VersionStages"] == ["AWSCURRENT"]
+        sm_snapshot.match("put_secret_value_res_4", put_secret_value_res_4)
 
-        rs_get_curr = sm_client.get_secret_value(SecretId=secret_name)
-        assert rs_get_curr["VersionId"] == pv_v4_vid
-        assert rs_get_curr["SecretString"] == secret_string_v4
-        assert rs_get_curr["VersionStages"] == ["AWSCURRENT"]
+        get_secret_value_res_4: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        sm_snapshot.match("get_secret_value_res_4", get_secret_value_res_4)
 
-        sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        delete_secret_res_1: DeleteSecretResponse = self._typed_response_of(
+            typ=DeleteSecretResponse,
+            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        )
+        sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
     @pytest.mark.parametrize(
         "secret_name", ["Inv Name", " Inv Name", " Inv*Name? ", " Inv *?!]Name\\-"]
