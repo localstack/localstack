@@ -170,6 +170,10 @@ jobs:
           DNS_ADDRESS: 0
           LOCALSTACK_API_KEY: "test"
         run: |
+          # DO NOT MERGE
+          . .venv/bin/activate; pip uninstall -y moto-ext || true
+          . .venv/bin/activate; pip install "git+https://github.com/localstack/moto.git@moto-v4#egg=moto-ext"
+          # DO NOT MERGE
           source .venv/bin/activate
           bin/test_localstack_pro.sh
       - name: Run community integration tests

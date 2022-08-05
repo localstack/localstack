@@ -39,6 +39,9 @@ install-basic: venv       ## Install basic dependencies for CLI usage into venv
 
 install-runtime: venv     ## Install dependencies for the localstack runtime into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime]"
+	# DO NOT MERGE
+	$(VENV_RUN); $(PIP_CMD) uninstall -y moto-ext; $(PIP_CMD) install $(PIP_OPTS) "git+https://github.com/localstack/moto.git@moto-v4#egg=moto-ext"
+	# DO NOT MERGE
 
 install-test: venv        ## Install requirements to run tests into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test]"
