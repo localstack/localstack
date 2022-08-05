@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import datetime
 from json import JSONDecodeError
+from operator import itemgetter
 from pathlib import Path
 from re import Pattern
 from typing import Dict, List, Optional
@@ -138,9 +139,10 @@ class SnapshotSession:
 
         self.called_keys.add(key)
 
-        self.observed_state[
-            key
-        ] = obj  # TODO: track them separately since the transformation is now done *just* before asserting
+        # order the obj to guarantee reference replacement works as expected
+        self.observed_state[key] = self._order_dict(
+            obj
+        )  # TODO: track them separately since the transformation is now done *just* before asserting
 
         if not self.update and (not self.recorded_state or not self.recorded_state.get(key)):
             raise Exception("Please run the test first with --snapshot-update")
@@ -217,7 +219,6 @@ class SnapshotSession:
     def _transform(self, tmp: dict) -> dict:
         """build a persistable state definition that can later be compared against"""
         self._transform_dict_to_parseable_values(tmp)
-
         if not self.update:
             self._remove_skip_verification_paths(tmp)
 
@@ -239,8 +240,13 @@ class SnapshotSession:
 
         return tmp
 
-    # LEGACY API
+    def _order_dict(self, response: dict) -> dict:
+        return {
+            key: self._order_dict(val) if isinstance(val, dict) else val
+            for key, val in sorted(response.items(), key=itemgetter(0))
+        }
 
+    # LEGACY API
     def register_replacement(self, pattern: Pattern[str], value: str):
         self.add_transformer(RegexTransformer(pattern, value))
 

@@ -2,6 +2,7 @@ import pytest
 
 from localstack.testing.snapshots import SnapshotSession
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
+from localstack.testing.snapshots.transformer_utility import _resource_name_transformer
 
 
 class TestSnapshotManager:
@@ -34,4 +35,49 @@ class TestSnapshotManager:
         )
         sm.recorded_state = {"key_a": {"aaa": "<A:1>", "bbb": "<A:1> hello"}}
         sm.match("key_a", {"aaa": "something", "bbb": "something hello"})
+        sm._assert_all()
+
+    def test_match_order_reference_replacement(self):
+        """tests if the reference-replacement works as expected, e.g., using alphabetical order of keys"""
+        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+
+        sm.add_transformer(KeyValueBasedTransformer(_resource_name_transformer, "resource"))
+
+        sm.recorded_state = {
+            "subscription-attributes": {
+                "Attributes": {
+                    "ConfirmationWasAuthenticated": "true",
+                    "Endpoint": "arn:aws:lambda:region:111111111111:function:<resource:1>",
+                    "Owner": "111111111111",
+                    "PendingConfirmation": "false",
+                    "Protocol": "lambda",
+                    "RawMessageDelivery": "false",
+                    "RedrivePolicy": {
+                        "deadLetterTargetArn": "arn:aws:sqs:region:111111111111:<resource:2>"
+                    },
+                    "SubscriptionArn": "arn:aws:sns:region:111111111111:<resource:4>:<resource:3>",
+                    "TopicArn": "arn:aws:sns:region:111111111111:<resource:4>",
+                },
+                "ResponseMetadata": {"HTTPHeaders": {}, "HTTPStatusCode": 200},
+            }
+        }
+        sm.match(
+            "subscription-attributes",
+            {
+                "Attributes": {
+                    "ConfirmationWasAuthenticated": "true",
+                    "Owner": "111111111111",
+                    "PendingConfirmation": "false",
+                    "Protocol": "lambda",
+                    "RawMessageDelivery": "false",
+                    "RedrivePolicy": {
+                        "deadLetterTargetArn": "arn:aws:sqs:region:111111111111:111112222233333"
+                    },
+                    "TopicArn": "arn:aws:sns:region:111111111111:rrrrrrrrrrrrrrrrr",
+                    "SubscriptionArn": "arn:aws:sns:region:111111111111:rrrrrrrrrrrrrrrrr:azazazazazazazaza",
+                    "Endpoint": "arn:aws:lambda:region:111111111111:function:aaaaabbbbb",
+                },
+                "ResponseMetadata": {"HTTPHeaders": {}, "HTTPStatusCode": 200},
+            },
+        )
         sm._assert_all()
