@@ -1,17 +1,35 @@
 import copy
 import io
+import json
 import re
 from datetime import datetime
-from typing import Iterator, Optional
+from io import BytesIO
+from typing import Any, Dict, Iterator, List, Optional
+from xml.etree import ElementTree
 
 import pytest
+from botocore.awsrequest import HeadersDict
 from botocore.endpoint import convert_to_response_dict
 from botocore.parsers import ResponseParser, create_parser
 from dateutil.tz import tzlocal, tzutc
 from requests.models import Response as RequestsResponse
 from urllib3 import HTTPResponse as UrlLibHttpResponse
+from werkzeug.wrappers import ResponseStream
 
 from localstack.aws.api import CommonServiceException, ServiceException
+from localstack.aws.api.dynamodb import (
+    AttributeValue,
+    CancellationReason,
+    TransactionCanceledException,
+)
+from localstack.aws.api.lambda_ import ResourceNotFoundException
+from localstack.aws.api.route53 import NoSuchHostedZone
+from localstack.aws.api.sns import VerificationException
+from localstack.aws.api.sqs import (
+    InvalidMessageContents,
+    ReceiptHandleIsInvalid,
+    UnsupportedOperation,
+)
 from localstack.aws.protocol.serializer import (
     ProtocolSerializerError,
     QueryResponseSerializer,
@@ -94,6 +112,7 @@ def _botocore_error_serializer_integration_test(
     status_code: int,
     message: Optional[str],
     is_sender_fault: bool = False,
+    **additional_error_fields: Dict[str, Any]
 ) -> dict:
     """
     Performs an integration test for the error serialization using botocore as parser.
@@ -111,6 +130,8 @@ def _botocore_error_serializer_integration_test(
                  "CloudFrontOriginAccessIdentityAlreadyExists")
     :param status_code: expected HTTP response status code
     :param message: expected error message
+    :param is_sender_fault: expected fault type is sender
+    :param additional_error_fields: additional fields which need to be present (for exception shapes with members)
     :return: boto-parsed serialized error response
     """
 
@@ -124,11 +145,21 @@ def _botocore_error_serializer_integration_test(
     )
 
     # Use the parser from botocore to parse the serialized response
+    response_dict = serialized_response.to_readonly_response_dict()
+
+    # botocore converts the headers to lower-case keys
+    # f.e. needed for x-amzn-errortype
+    response_dict["headers"] = HeadersDict(response_dict["headers"])
+
     response_parser: ResponseParser = create_parser(service.protocol)
     parsed_response = response_parser.parse(
-        serialized_response.to_readonly_response_dict(),
+        response_dict,
         service.operation_model(action).output_shape,
     )
+    # Add the modeled error shapes
+    error_shape = service.shape_for_error_code(exception.code)
+    modeled_parse = response_parser.parse(response_dict, error_shape)
+    parsed_response.update(modeled_parse)
 
     # Check if the result is equal to the initial response params
     assert "Error" in parsed_response
@@ -147,6 +178,10 @@ def _botocore_error_serializer_integration_test(
         assert type == "Sender"
     else:
         assert type is None
+    if additional_error_fields:
+        for key, value in additional_error_fields.items():
+            assert key in parsed_response
+            assert parsed_response[key] == value
     return parsed_response
 
 
@@ -378,12 +413,6 @@ def test_query_serializer_sqs_none_value_in_map():
 
 
 def test_query_protocol_error_serialization():
-    # Specific error of the SendMessage operation in SQS as the scaffold would generate it
-    class InvalidMessageContents(ServiceException):
-        """The message contains characters outside the allowed set."""
-
-        pass
-
     exception = InvalidMessageContents("Exception message!")
     _botocore_error_serializer_integration_test(
         "sqs", "SendMessage", exception, "InvalidMessageContents", 400, "Exception message!"
@@ -391,10 +420,6 @@ def test_query_protocol_error_serialization():
 
 
 def test_query_protocol_error_serialization_plain():
-    # Specific error of the ChangeMessageVisibility operation in SQS as the scaffold would generate it
-    class ReceiptHandleIsInvalid(ServiceException):
-        pass
-
     exception = ReceiptHandleIsInvalid(
         'The input receipt handle "garbage" is not a valid receipt handle.'
     )
@@ -447,10 +472,6 @@ def test_query_protocol_custom_error_serialization():
 
 
 def test_query_protocol_error_serialization_sender_fault():
-    # Specific exception thrown by SQS which defines the "Sender" fault
-    class UnsupportedOperation(ServiceException):
-        pass
-
     exception = UnsupportedOperation("Operation not supported.")
     _botocore_error_serializer_integration_test(
         "sqs",
@@ -472,7 +493,9 @@ def test_restxml_protocol_error_serialization_not_specified_for_operation():
     """
 
     class NoSuchBucket(ServiceException):
-        pass
+        code: str = "NoSuchBucket"
+        sender_fault: bool = False
+        status_code: int = 400
 
     exception = NoSuchBucket("Exception message!")
     _botocore_error_serializer_integration_test(
@@ -487,7 +510,9 @@ def test_restxml_protocol_error_serialization_not_specified_for_operation():
 
 def test_restxml_protocol_error_serialization():
     class CloudFrontOriginAccessIdentityAlreadyExists(ServiceException):
-        pass
+        code: str = "CloudFrontOriginAccessIdentityAlreadyExists"
+        sender_fault: bool = False
+        status_code: int = 409
 
     exception = CloudFrontOriginAccessIdentityAlreadyExists("Exception message!")
     _botocore_error_serializer_integration_test(
@@ -518,7 +543,9 @@ def test_restxml_protocol_custom_error_serialization():
 
 def test_json_protocol_error_serialization():
     class UserPoolTaggingException(ServiceException):
-        pass
+        code: str = "UserPoolTaggingException"
+        sender_fault: bool = False
+        status_code: int = 400
 
     exception = UserPoolTaggingException("Exception message!")
     response = _botocore_error_serializer_integration_test(
@@ -558,6 +585,153 @@ def test_json_protocol_custom_error_serialization():
     assert (
         response.get("ResponseMetadata", {}).get("HTTPHeaders", {}).get("x-amzn-errortype")
         == "APIAccessCensorship"
+    )
+
+
+def test_json_protocol_error_serialization_with_additional_members():
+    exception = TransactionCanceledException("Exception message!")
+    cancellation_reasons = [
+        CancellationReason(
+            Code="TestCancellationReasonCode",
+            Message="TestCancellationReasonMessage",
+            Item={"TestAttributeName": AttributeValue(S="TestAttributeValue")},
+        )
+    ]
+    exception.CancellationReasons = cancellation_reasons
+    _botocore_error_serializer_integration_test(
+        "dynamodb",
+        "ExecuteTransaction",
+        exception,
+        "TransactionCanceledException",
+        400,
+        "Exception message!",
+        CancellationReasons=cancellation_reasons,
+        Message="Exception message!",
+    )
+
+
+def test_json_protocol_error_serialization_with_shaped_default_members_on_root():
+    exception = TransactionCanceledException("Exception message!")
+    service = load_service("dynamodb")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("ExecuteTransaction")
+    )
+    body = serialized_response.data
+    parsed_body = json.loads(body)
+    # assert Message with first character in upper-case as specified in the specs
+    assert "Message" in parsed_body
+    assert "message" not in parsed_body
+
+
+def test_rest_json_protocol_error_serialization_with_additional_members():
+    class NotFoundException(ServiceException):
+        code: str = "NotFoundException"
+        sender_fault: bool = False
+        status_code: int = 404
+        ResourceType: str
+
+    exception = NotFoundException("Exception message!")
+    resource_type = "Resource Type Exception Message Body"
+    exception.ResourceType = resource_type
+    _botocore_error_serializer_integration_test(
+        "apigatewayv2",
+        "CreateApi",
+        exception,
+        "NotFoundException",
+        404,
+        "Exception message!",
+        ResourceType=resource_type,
+        Message="Exception message!",
+    )
+
+
+def test_rest_json_protocol_error_serialization_with_shaped_default_members_on_root():
+    exception = ResourceNotFoundException("Exception message!")
+    exception.Type = "User"
+    service = load_service("lambda")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("GetLayerVersion")
+    )
+    body = serialized_response.data
+    parsed_body = json.loads(body)
+    # assert Message and Type with first character in upper-case as specified in the specs
+    assert "Message" in parsed_body
+    assert "message" not in parsed_body
+    assert "Type" in parsed_body
+    assert parsed_body["Type"] == "User"
+    assert "type" not in parsed_body
+
+
+def test_query_protocol_error_serialization_with_additional_members():
+    exception = VerificationException("Exception message!")
+    status = "Status Exception Message Body"
+    exception.Status = status
+    _botocore_error_serializer_integration_test(
+        "sns",
+        "VerifySMSSandboxPhoneNumber",
+        exception,
+        "VerificationException",
+        400,
+        "Exception message!",
+        Status=status,
+        Message="Exception message!",
+    )
+
+
+def test_query_protocol_error_serialization_with_default_members_not_on_root():
+    exception = VerificationException("Exception message!")
+    status = "Status Exception Message Body"
+    exception.Status = status
+    service = load_service("sns")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("VerifySMSSandboxPhoneNumber")
+    )
+    body = serialized_response.data
+    parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
+    parser.feed(body)
+    root = parser.close()
+    # The root tag contains a possible namespace, f.e. {http://ec2.amazonaws.com/doc/2016-11-15}Response.
+    assert len([child for child in root if "Message" in child.tag]) == 0
+
+
+def test_rest_xml_protocol_error_serialization_with_default_members_not_on_root():
+    exception = NoSuchHostedZone("Exception message!")
+    service = load_service("route53")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("DeleteHostedZone")
+    )
+    body = serialized_response.data
+    parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
+    parser.feed(body)
+    root = parser.close()
+    # The root tag contains a possible namespace, f.e. {http://ec2.amazonaws.com/doc/2016-11-15}Response.
+    assert len([child for child in root if "Message" in child.tag]) == 0
+
+
+def test_rest_xml_protocol_error_serialization_with_additional_members():
+    class InvalidObjectState(ServiceException):
+        code: str = "InvalidObjectState"
+        sender_fault: bool = False
+        status_code: int = 400
+        StorageClass: str
+        AccessTier: str
+
+    exception = InvalidObjectState("Exception message!")
+    exception.AccessTier = "ARCHIVE_ACCESS"
+    exception.StorageClass = "STANDARD"
+    _botocore_error_serializer_integration_test(
+        "s3",
+        "GetObject",
+        exception,
+        "InvalidObjectState",
+        400,
+        "Exception message!",
+        AccessTier="ARCHIVE_ACCESS",
+        StorageClass="STANDARD",
     )
 
 
@@ -702,7 +876,9 @@ def test_json_serializer_date_serialization_with_botocore():
 
 def test_restjson_protocol_error_serialization():
     class ThrottledException(ServiceException):
-        pass
+        code: str = "ThrottledException"
+        sender_fault: bool = False
+        status_code: int = 429
 
     exception = ThrottledException("Exception message!")
     response = _botocore_error_serializer_integration_test(
@@ -1021,6 +1197,37 @@ def test_ec2_protocol_custom_error_serialization():
         400,
         "Different payload, same token?!",
     )
+
+
+def test_ec2_protocol_errors_have_response_root_element():
+    exception = CommonServiceException(
+        "InvalidSubnetID.NotFound", "The subnet ID 'vpc-test' does not exist"
+    )
+    service = load_service("ec2")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("DescribeSubnets")
+    )
+    body = serialized_response.data
+    parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
+    parser.feed(body)
+    root = parser.close()
+    # The root tag contains a possible namespace, f.e. {http://ec2.amazonaws.com/doc/2016-11-15}Response.
+    assert re.sub(r"^{.*}", "", root.tag) == "Response"
+
+
+def test_restxml_s3_errors_have_error_root_element():
+    exception = CommonServiceException("NoSuchBucket", "The specified bucket does not exist")
+    service = load_service("s3")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception, service.operation_model("GetObject")
+    )
+    body = serialized_response.data
+    parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
+    parser.feed(body)
+    root = parser.close()
+    assert root.tag == "Error"
 
 
 def test_restxml_without_output_shape():
@@ -1380,3 +1587,98 @@ def test_serializer_error_on_unknown_error():
     serializer._serialize_response = raise_error
     with pytest.raises(UnknownSerializerError):
         serializer.serialize_to_response({}, operation_model)
+
+
+class ComparableBytesIO(BytesIO):
+    """
+    BytesIO object that's treated like a value object when comparing it to other streams.
+    """
+
+    def __eq__(self, other):
+        if hasattr(other, "read"):
+            return other.read() == self.read()
+
+        if isinstance(other, ResponseStream):
+            return other.response.data == self.read()
+
+        return super(ComparableBytesIO, self).__eq__(other)
+
+
+class ComparableBytesList(list):
+    """
+    Makes a list of bytes comparable to strings.
+    """
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return b"".join(self) == other.encode("utf-8")
+
+        return super(ComparableBytesList, self).__eq__(other)
+
+
+class ComparableBytesIterator(Iterator[bytes]):
+    def __init__(self, bytes_list: List[bytes]):
+        self.gen = iter(bytes_list)
+        self.value = b"".join(bytes_list)
+
+    def __next__(self) -> bytes:
+        return next(self.gen)
+
+    def __iter__(self) -> Iterator[bytes]:
+        return self.gen
+
+    def __eq__(self, other):
+        if hasattr(other, "read"):
+            return other.read() == self.value
+
+        if isinstance(other, ResponseStream):
+            return other.response.data == self.value
+
+        return super(ComparableBytesIterator, self).__eq__(other)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "<foo-bar/>",
+        ComparableBytesList([b"<", b"foo-bar", b"/>"]),
+        ComparableBytesIO(b"<foo-bar/>"),
+        ComparableBytesIterator([b"<", b"foo-bar", b"/>"]),
+    ],
+    ids=["Literal", "List[byte]", "IO[byte]", "Iterator[byte]"],
+)
+def test_restxml_streaming_payload(payload):
+    """Tests an operation where the payload can be streaming for rest-xml. We're testing four cases,
+    two non-streaming and two streaming: a literal, a list (that's treated specially by werkzeug), a file-like
+    ``IO[bytes]`` object, and an iterator. Since the _botocore_serializer_integration_test does equality checks on
+    parameters, and we're receiving different objects for streams, we wrap the payloads in custom classes that can be
+    compared to strings."""
+    parameters = {
+        "ContentLength": 10,
+        "Body": payload,
+        "ContentType": "text/xml",
+        "Metadata": {},
+    }
+    _botocore_serializer_integration_test("s3", "GetObject", parameters)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '{"foo":"bar"}',
+        ComparableBytesList([b"{", b'"foo"', b":", b'"bar"', b"}"]),
+        ComparableBytesIO(b'{"foo":"bar"}'),
+        ComparableBytesIterator([b"{", b'"foo"', b":", b'"bar"', b"}"]),
+    ],
+    ids=["Literal", "List[byte]", "IO[byte]", "Iterator[byte]"],
+)
+def test_restjson_streaming_payload(payload):
+    """See docs for ``test_restxml_streaming_payload``."""
+    _botocore_serializer_integration_test(
+        "lambda",
+        "Invoke",
+        {
+            "StatusCode": 200,
+            "Payload": payload,
+        },
+    )

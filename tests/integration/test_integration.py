@@ -3,8 +3,8 @@
 import base64
 import json
 import logging
+import re
 import time
-import unittest
 from datetime import datetime, timedelta
 
 import pytest
@@ -32,7 +32,6 @@ from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON, TEST_LA
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = "test_source_stream"
 TEST_TABLE_NAME = "test_stream_table"
-TEST_FIREHOSE_NAME = "test_firehose"
 TEST_BUCKET_NAME = lambda_integration.TEST_BUCKET_NAME
 TEST_TOPIC_NAME = "test_topic"
 TEST_TAGS = [{"Key": "MyTag", "Value": "Value"}]
@@ -53,41 +52,42 @@ def handler(event, *args):
 """
 
 
-class IntegrationTest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Note: create scheduled Lambda here - assertions will be run in test_scheduled_lambda() below..
+@pytest.fixture(scope="class")
+def scheduled_test_lambda():
+    # Note: create scheduled Lambda here - assertions will be run in test_scheduled_lambda() below..
 
-        # create test Lambda
-        cls.scheduled_lambda_name = "scheduled-%s" % short_uid()
-        handler_file = new_tmp_file()
-        save_file(handler_file, TEST_HANDLER)
-        resp = testutil.create_lambda_function(
-            handler_file=handler_file, func_name=cls.scheduled_lambda_name
-        )
-        func_arn = resp["CreateFunctionResponse"]["FunctionArn"]
+    # create test Lambda
+    scheduled_lambda_name = "scheduled-%s" % short_uid()
+    handler_file = new_tmp_file()
+    save_file(handler_file, TEST_HANDLER)
+    resp = testutil.create_lambda_function(
+        handler_file=handler_file, func_name=scheduled_lambda_name
+    )
+    func_arn = resp["CreateFunctionResponse"]["FunctionArn"]
 
-        # create scheduled Lambda function
-        rule_name = "rule-%s" % short_uid()
-        events = aws_stack.create_external_boto_client("events")
-        events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
-        events.put_targets(
-            Rule=rule_name, Targets=[{"Id": "target-%s" % short_uid(), "Arn": func_arn}]
-        )
+    # create scheduled Lambda function
+    rule_name = "rule-%s" % short_uid()
+    events = aws_stack.create_external_boto_client("events")
+    events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
+    events.put_targets(Rule=rule_name, Targets=[{"Id": "target-%s" % short_uid(), "Arn": func_arn}])
 
-    @classmethod
-    def tearDownClass(cls):
-        testutil.delete_lambda_function(cls.scheduled_lambda_name)
+    yield scheduled_lambda_name
 
+    testutil.delete_lambda_function(scheduled_lambda_name)
+
+
+@pytest.mark.usefixtures("scheduled_test_lambda")
+class TestIntegration:
     def test_firehose_s3(self):
         s3_resource = aws_stack.connect_to_resource("s3")
         firehose = aws_stack.create_external_boto_client("firehose")
+        stream_name = f"fh-stream-{short_uid()}"
 
         s3_prefix = "/testdata"
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
         # create Firehose stream
         stream = firehose.create_delivery_stream(
-            DeliveryStreamName=TEST_FIREHOSE_NAME,
+            DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
                 "BucketARN": aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
@@ -95,34 +95,36 @@ class IntegrationTest(unittest.TestCase):
             },
             Tags=TEST_TAGS,
         )
-        self.assertTrue(stream)
-        self.assertIn(TEST_FIREHOSE_NAME, firehose.list_delivery_streams()["DeliveryStreamNames"])
-        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=TEST_FIREHOSE_NAME)
-        self.assertEqual(TEST_TAGS, tags["Tags"])
+        assert stream
+        assert stream_name in firehose.list_delivery_streams()["DeliveryStreamNames"]
+        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
+        assert TEST_TAGS == tags["Tags"]
         # create target S3 bucket
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
 
         # put records
-        firehose.put_record(
-            DeliveryStreamName=TEST_FIREHOSE_NAME, Record={"Data": to_bytes(test_data)}
-        )
+        firehose.put_record(DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)})
         # check records in target bucket
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
         # check file layout in target bucket
         all_objects = testutil.map_all_s3_objects(buckets=[TEST_BUCKET_NAME])
         for key in all_objects.keys():
-            self.assertRegex(key, r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*")
+            assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
+
+        # clean up
+        firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
 
     def test_firehose_extended_s3(self):
         s3_resource = aws_stack.connect_to_resource("s3")
         firehose = aws_stack.create_external_boto_client("firehose")
+        stream_name = f"fh-stream-{short_uid()}"
 
         s3_prefix = "/testdata2"
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
         # create Firehose stream
         stream = firehose.create_delivery_stream(
-            DeliveryStreamName=TEST_FIREHOSE_NAME,
+            DeliveryStreamName=stream_name,
             ExtendedS3DestinationConfiguration={
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
                 "BucketARN": aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
@@ -130,29 +132,31 @@ class IntegrationTest(unittest.TestCase):
             },
             Tags=TEST_TAGS,
         )
-        self.assertTrue(stream)
-        self.assertIn(TEST_FIREHOSE_NAME, firehose.list_delivery_streams()["DeliveryStreamNames"])
-        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=TEST_FIREHOSE_NAME)
-        self.assertEqual(TEST_TAGS, tags["Tags"])
+        assert stream
+        assert stream_name in firehose.list_delivery_streams()["DeliveryStreamNames"]
+        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
+        assert tags["Tags"] == TEST_TAGS
 
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
 
         # put records
-        firehose.put_record(
-            DeliveryStreamName=TEST_FIREHOSE_NAME, Record={"Data": to_bytes(test_data)}
-        )
+        firehose.put_record(DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)})
         # check records in target bucket
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
         # check file layout in target bucket
         all_objects = testutil.map_all_s3_objects(buckets=[TEST_BUCKET_NAME])
         for key in all_objects.keys():
-            self.assertRegex(key, r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*")
+            assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
+
+        # clean up
+        firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
 
     def test_firehose_kinesis_to_s3(self):
         kinesis = aws_stack.create_external_boto_client("kinesis")
         s3_resource = aws_stack.connect_to_resource("s3")
         firehose = aws_stack.create_external_boto_client("firehose")
+        stream_name = f"fh-stream-{short_uid()}"
 
         aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
 
@@ -166,15 +170,22 @@ class IntegrationTest(unittest.TestCase):
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
                 "KinesisStreamARN": aws_stack.kinesis_stream_arn(TEST_STREAM_NAME),
             },
-            DeliveryStreamName=TEST_FIREHOSE_NAME,
+            DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
                 "BucketARN": aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
                 "Prefix": s3_prefix,
             },
         )
-        self.assertTrue(stream)
-        self.assertIn(TEST_FIREHOSE_NAME, firehose.list_delivery_streams()["DeliveryStreamNames"])
+        assert stream
+        assert stream_name in firehose.list_delivery_streams()["DeliveryStreamNames"]
+
+        # wait for stream to become ACTIVE
+        def _assert_active():
+            stream_info = firehose.describe_delivery_stream(DeliveryStreamName=stream_name)
+            assert stream_info["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
+
+        retry(_assert_active, sleep=1, retries=30)
 
         # create target S3 bucket
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
@@ -184,11 +195,15 @@ class IntegrationTest(unittest.TestCase):
             Data=to_bytes(test_data), PartitionKey="testId", StreamName=TEST_STREAM_NAME
         )
 
-        time.sleep(3)
-
         # check records in target bucket
-        all_objects = testutil.list_all_s3_objects()
-        testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+        def _assert_objects_created():
+            all_objects = testutil.list_all_s3_objects()
+            testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+
+        retry(_assert_objects_created, sleep=1, retries=4)
+
+        # clean up
+        firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
 
     def test_lambda_streams_batch_and_transactions(self):
         ddb_lease_table_suffix = "-kclapp2"
@@ -235,7 +250,7 @@ class IntegrationTest(unittest.TestCase):
         for stream in streams["Streams"]:
             if stream["TableName"] == table_name:
                 ddb_event_source_arn = stream["StreamArn"]
-        self.assertTrue(ddb_event_source_arn)
+        assert ddb_event_source_arn
 
         # deploy test lambda connected to DynamoDB Stream
         testutil.create_lambda_function(
@@ -443,23 +458,23 @@ class IntegrationTest(unittest.TestCase):
                     num_events,
                 )
                 LOGGER.warning(msg)
-            self.assertEqual(num_events, len(events))
+            assert len(events) == num_events
             event_items = [json.loads(base64.b64decode(e["data"])) for e in events]
             # make sure the we have the right amount of expected event types
             inserts = [e for e in event_items if e.get("__action_type") == "INSERT"]
             modifies = [e for e in event_items if e.get("__action_type") == "MODIFY"]
             removes = [e for e in event_items if e.get("__action_type") == "REMOVE"]
-            self.assertEqual(num_insert, len(inserts))
-            self.assertEqual(num_modify, len(modifies))
-            self.assertEqual(num_delete, len(removes))
+            assert len(inserts) == num_insert
+            assert len(modifies) == num_modify
+            assert len(removes) == num_delete
 
             # assert that all inserts were received
 
             for i, event in enumerate(inserts):
-                self.assertNotIn("old_image", event)
+                assert "old_image" not in event
                 item_id = "testId%d" % i
                 matching = [i for i in inserts if i["new_image"]["id"] == item_id][0]
-                self.assertEqual({"id": item_id, "data": "foobar123"}, matching["new_image"])
+                assert matching["new_image"] == {"id": item_id, "data": "foobar123"}
 
             # assert that all updates were received
 
@@ -467,18 +482,12 @@ class IntegrationTest(unittest.TestCase):
                 def found(update):
                     for modif in modifies:
                         if modif["old_image"]["id"] == update["id"]:
-                            self.assertEqual(
-                                modif["old_image"],
-                                {"id": update["id"], "data": update["old"]},
-                            )
-                            self.assertEqual(
-                                modif["new_image"],
-                                {"id": update["id"], "data": update["new"]},
-                            )
+                            assert modif["old_image"] == {"id": update["id"], "data": update["old"]}
+                            assert modif["new_image"] == {"id": update["id"], "data": update["new"]}
                             return True
 
                 for update in expected_updates:
-                    self.assertTrue(found(update))
+                    assert found(update)
 
             updates1 = [
                 {"id": "testId6", "old": "foobar123", "new": "foobar123_updated1"},
@@ -504,10 +513,10 @@ class IntegrationTest(unittest.TestCase):
             # assert that all removes were received
 
             for i, event in enumerate(removes):
-                self.assertNotIn("new_image", event)
+                assert "new_image" not in event
                 item_id = "testId%d" % i
                 matching = [i for i in removes if i["old_image"]["id"] == item_id][0]
-                self.assertEqual({"id": item_id, "data": "foobar123"}, matching["old_image"])
+                assert matching["old_image"] == {"id": item_id, "data": "foobar123"}
 
         # this can take a long time in CI, make sure we give it enough time/retries
         retry(check_events, retries=30, sleep=4)
@@ -515,10 +524,10 @@ class IntegrationTest(unittest.TestCase):
         # clean up
         testutil.delete_lambda_function(lambda_ddb_name)
 
-    def test_scheduled_lambda(self):
+    def test_scheduled_lambda(self, scheduled_test_lambda):
         def check_invocation(*args):
-            log_events = get_lambda_logs(self.scheduled_lambda_name)
-            self.assertGreater(len(log_events), 0)
+            log_events = get_lambda_logs(scheduled_test_lambda)
+            assert log_events
 
         # wait for up to 1 min for invocations to get triggered
         retry(check_invocation, retries=14, sleep=5)

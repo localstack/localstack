@@ -26,7 +26,10 @@ class TestS3:
         snapshot.match("list_objects_v2", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Marker", "$..Prefix", "$..EncodingType"])
+    # TODO list-buckets contains other buckets when running in CI
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Marker", "$..Prefix", "$..EncodingType", "$..list-buckets.Buckets"]
+    )
     def test_delete_bucket_with_content(self, s3_client, s3_resource, s3_bucket, snapshot):
 
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -46,7 +49,7 @@ class TestS3:
         bucket.delete()
 
         resp = s3_client.list_buckets()
-        # TODO - this might fail if tests run in parallel
+        # TODO - this fails in the CI pipeline and is currently skipped from verification
         snapshot.match("list-buckets", resp)
         assert bucket_name not in [b["Name"] for b in resp["Buckets"]]
 
@@ -181,6 +184,17 @@ class TestS3:
         error = response["Error"]
         assert error["Code"] == "NoSuchBucket"
         assert error["Message"] == "The specified bucket does not exist"
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="currently not implemented in moto, see https://github.com/localstack/localstack/issues/6422"
+    )
+    def test_get_object_attributes_object_size(self, s3_client, s3_bucket):
+        s3_client.put_object(Bucket=s3_bucket, Key="data.txt", Body=b"69\n420\n")
+        response = s3_client.get_object_attributes(
+            Bucket=s3_bucket, Key="data.txt", ObjectAttributes=["ObjectSize"]
+        )
+        assert response["ObjectSize"] == 7
 
 
 class TestS3PresignedUrl:

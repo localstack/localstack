@@ -1,9 +1,11 @@
+from io import BytesIO
+
 import pytest
 
 from localstack import config
 from localstack.aws.api import ServiceException, handler
 from localstack.services import moto
-from localstack.services.moto import MotoFallbackDispatcher, get_dispatcher
+from localstack.services.moto import MotoFallbackDispatcher
 from localstack.utils.common import short_uid, to_str
 
 
@@ -71,6 +73,42 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
     assert qname in sqs_backends[config.AWS_REGION_US_EAST_1].queues
     moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
     assert qname not in sqs_backends[config.AWS_REGION_US_EAST_1].queues
+
+
+@pytest.mark.parametrize(
+    "payload", ["foobar", b"foobar", BytesIO(b"foobar")], ids=["str", "bytes", "IO[bytes]"]
+)
+def test_call_s3_with_streaming_trait(payload, monkeypatch):
+    monkeypatch.setenv("MOTO_S3_CUSTOM_ENDPOINTS", "s3.localhost.localstack.cloud:4566")
+
+    bucket_name = f"bucket-{short_uid()}"
+    key_name = "foobared"
+
+    # create the bucket
+    moto.call_moto(moto.create_aws_request_context("s3", "CreateBucket", {"Bucket": bucket_name}))
+
+    moto.call_moto(
+        moto.create_aws_request_context(
+            "s3", "PutObject", {"Bucket": bucket_name, "Key": key_name, "Body": payload}
+        )
+    )
+
+    # check whether it was created/received correctly
+    response = moto.call_moto(
+        moto.create_aws_request_context("s3", "GetObject", {"Bucket": bucket_name, "Key": key_name})
+    )
+    assert hasattr(
+        response["Body"], "read"
+    ), f"expected Body to be readable, was {type(response['Body'])}"
+    assert response["Body"].read() == b"foobar"
+
+    # cleanup
+    moto.call_moto(
+        moto.create_aws_request_context(
+            "s3", "DeleteObject", {"Bucket": bucket_name, "Key": key_name}
+        )
+    )
+    moto.call_moto(moto.create_aws_request_context("s3", "DeleteBucket", {"Bucket": bucket_name}))
 
 
 def test_call_include_response_metadata():
@@ -222,11 +260,6 @@ def test_moto_fallback_dispatcher():
     response = _dispatch("ListQueues", None)
     assert len(provider.calls) == 1
     assert len([url for url in response["QueueUrls"] if qname in url])
-
-
-def test_get_dispatcher_for_path_with_optional_slashes():
-    assert get_dispatcher("route53", "/2013-04-01/hostedzone/BOR36Z3H458JKS9/rrset/")
-    assert get_dispatcher("route53", "/2013-04-01/hostedzone/BOR36Z3H458JKS9/rrset")
 
 
 def test_request_with_response_header_location_fields():

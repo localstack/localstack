@@ -51,6 +51,7 @@ from localstack.aws.api.sqs import (
     QueueAttributeName,
     QueueDeletedRecently,
     QueueDoesNotExist,
+    QueueNameExists,
     ReceiptHandleIsInvalid,
     ReceiveMessageResult,
     SendMessageBatchRequestEntryList,
@@ -70,6 +71,7 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.common import long_uid, md5, now, start_thread
 from localstack.utils.run import FuncThread
+from localstack.utils.scheduler import Scheduler
 
 LOG = logging.getLogger(__name__)
 
@@ -89,6 +91,19 @@ DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
 # When you delete a queue, you must wait at least 60 seconds before creating a queue with the same name.
 # see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteQueue.html
 RECENTLY_DELETED_TIMEOUT = 60
+
+INTERNAL_QUEUE_ATTRIBUTES = [
+    # these attributes cannot be changed by set_queue_attributes and should
+    # therefore be ignored when comparing queue attributes for create_queue
+    QueueAttributeName.ApproximateNumberOfMessages,
+    QueueAttributeName.ApproximateNumberOfMessagesDelayed,
+    QueueAttributeName.ApproximateNumberOfMessagesNotVisible,
+    QueueAttributeName.ContentBasedDeduplication,
+    QueueAttributeName.CreatedTimestamp,
+    QueueAttributeName.FifoQueue,
+    QueueAttributeName.LastModifiedTimestamp,
+    QueueAttributeName.QueueArn,
+]
 
 
 class InvalidParameterValue(CommonServiceException):
@@ -164,11 +179,14 @@ class Permission(NamedTuple):
 
 class SqsMessage:
     message: Message
+    created: float
     visibility_timeout: int
     receive_times: int
+    delay_seconds: Optional[int]
     receipt_handles: Set[str]
     last_received: Optional[float]
     first_received: Optional[float]
+    visibility_deadline: Optional[float]
     deleted: bool
     priority: float
     message_deduplication_id: str
@@ -181,10 +199,12 @@ class SqsMessage:
         message_deduplication_id: str = None,
         message_group_id: str = None,
     ) -> None:
+        self.created = time.time()
         self.message = message
         self.receive_times = 0
         self.receipt_handles = set()
 
+        self.delay_seconds = None
         self.last_received = None
         self.first_received = None
         self.deleted = False
@@ -209,14 +229,44 @@ class SqsMessage:
     def message_deduplication_id(self) -> Optional[str]:
         return self.message["Attributes"].get("MessageDeduplicationId")
 
+    def set_last_received(self, timestamp: float):
+        """
+        Sets the last received timestamp of the message to the given value, and updates the visibility deadline
+        accordingly.
+
+        :param timestamp: the last time the message was received
+        """
+        self.last_received = timestamp
+        self.visibility_deadline = timestamp + self.visibility_timeout
+
+    def update_visibility_timeout(self, timeout: int):
+        """
+        Sets the visibility timeout of the message to the given value, and updates the visibility deadline accordingly.
+
+        :param timeout: the timeout value in seconds
+        """
+        self.visibility_timeout = timeout
+        self.visibility_deadline = time.time() + timeout
+
     @property
-    def is_visible(self):
-        if self.last_received is None:
+    def is_visible(self) -> bool:
+        """
+        Returns false if the message has a visibility deadline that is in the future.
+
+        :return: whether the message is visibile or not.
+        """
+        if self.visibility_deadline is None:
             return True
-        if time.time() >= (self.last_received + self.visibility_timeout):
+        if time.time() >= self.visibility_deadline:
             return True
 
         return False
+
+    @property
+    def is_delayed(self) -> bool:
+        if self.delay_seconds is None:
+            return False
+        return time.time() <= self.created + self.delay_seconds
 
     def __gt__(self, other):
         return self.priority > other.priority
@@ -249,6 +299,7 @@ class SqsQueue:
     purge_in_progress: bool
 
     visible: PriorityQueue
+    delayed: Set[SqsMessage]
     inflight: Set[SqsMessage]
     receipts: Dict[str, SqsMessage]
 
@@ -261,6 +312,7 @@ class SqsQueue:
         self.tags = tags or {}
 
         self.visible = PriorityQueue()
+        self.delayed = set()
         self.inflight = set()
         self.receipts = {}
 
@@ -276,7 +328,7 @@ class SqsQueue:
         return {
             QueueAttributeName.ApproximateNumberOfMessages: self.visible._qsize,
             QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: len(self.inflight),
-            QueueAttributeName.ApproximateNumberOfMessagesDelayed: "0",  # FIXME: this should also be callable
+            QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: len(self.delayed),
             QueueAttributeName.CreatedTimestamp: str(now()),
             QueueAttributeName.DelaySeconds: "0",
             QueueAttributeName.LastModifiedTimestamp: str(now()),
@@ -285,7 +337,19 @@ class SqsQueue:
             QueueAttributeName.QueueArn: self.arn,
             QueueAttributeName.ReceiveMessageWaitTimeSeconds: "0",
             QueueAttributeName.VisibilityTimeout: "30",
+            QueueAttributeName.SqsManagedSseEnabled: "false",
         }
+
+    def update_delay_seconds(self, value: int):
+        """
+        For standard queues, the per-queue delay setting is not retroactive—changing the setting doesn't affect the delay of messages already in the queue.
+        For FIFO queues, the per-queue delay setting is retroactive—changing the setting affects the delay of messages already in the queue.
+
+        https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-delay-queues.html
+
+        :param value: the number of seconds
+        """
+        self.attributes[QueueAttributeName.DelaySeconds] = str(value)
 
     def update_last_modified(self, timestamp: int = None):
         if timestamp is None:
@@ -327,6 +391,10 @@ class SqsQueue:
         return int(self.attributes[QueueAttributeName.VisibilityTimeout])
 
     @property
+    def delay_seconds(self) -> int:
+        return int(self.attributes[QueueAttributeName.DelaySeconds])
+
+    @property
     def wait_time_seconds(self) -> int:
         return int(self.attributes[QueueAttributeName.ReceiveMessageWaitTimeSeconds])
 
@@ -351,7 +419,7 @@ class SqsQueue:
             if standard_message not in self.inflight:
                 raise MessageNotInflight()
 
-            standard_message.visibility_timeout = visibility_timeout
+            standard_message.update_visibility_timeout(visibility_timeout)
 
             if visibility_timeout == 0:
                 LOG.info(
@@ -405,6 +473,7 @@ class SqsQueue:
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
+        delay_seconds: int = None,
     ):
         raise NotImplementedError
 
@@ -429,7 +498,7 @@ class SqsQueue:
                     self.visibility_timeout if visibility_timeout is None else visibility_timeout
                 )
                 standard_message.receive_times += 1
-                standard_message.last_received = time.time()
+                standard_message.set_last_received(time.time())
                 if standard_message.first_received is None:
                     standard_message.first_received = standard_message.last_received
 
@@ -463,16 +532,30 @@ class SqsQueue:
             return
 
         with self.mutex:
-            messages = list(self.inflight)
+            messages = [message for message in self.inflight if message.is_visible]
             for standard_message in messages:
-                if standard_message.is_visible:
-                    LOG.debug(
-                        "re-queueing inflight messages %s into queue %s",
-                        standard_message.message["MessageId"],
-                        self.arn,
-                    )
-                    self.inflight.remove(standard_message)
-                    self.visible.put_nowait(standard_message)
+                LOG.debug(
+                    "re-queueing inflight messages %s into queue %s",
+                    standard_message.message["MessageId"],
+                    self.arn,
+                )
+                self.inflight.remove(standard_message)
+                self.visible.put_nowait(standard_message)
+
+    def enqueue_delayed_messages(self):
+        if not self.delayed:
+            return
+
+        with self.mutex:
+            messages = [message for message in self.delayed if not message.is_delayed]
+            for standard_message in messages:
+                LOG.debug(
+                    "enqueueing delayed messages %s into queue %s",
+                    standard_message.message["MessageId"],
+                    self.arn,
+                )
+                self.delayed.remove(standard_message)
+                self.visible.put_nowait(standard_message)
 
     def _assert_queue_name(self, name):
         if not re.match(r"^[a-zA-Z0-9_-]{1,80}$", name):
@@ -486,7 +569,7 @@ class SqsQueue:
 
         for k in attributes.keys():
             if k not in valid:
-                raise InvalidAttributeName(f"Unknown Attribute {k}")
+                raise InvalidAttributeName(f"Unknown Attribute {k}.")
 
     def generate_sequence_number(self):
         return None
@@ -499,8 +582,8 @@ class StandardQueue(SqsQueue):
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
+        delay_seconds: int = None,
     ):
-
         if message_deduplication_id:
             raise InvalidParameterValue(
                 f"Value {message_deduplication_id} for parameter MessageDeduplicationId is invalid. Reason: The "
@@ -520,18 +603,28 @@ class StandardQueue(SqsQueue):
             # use the attribute from the queue
             standard_message.visibility_timeout = self.visibility_timeout
 
-        self.visible.put_nowait(standard_message)
+        if delay_seconds is not None:
+            standard_message.delay_seconds = delay_seconds
+        else:
+            standard_message.delay_seconds = self.delay_seconds
+
+        if standard_message.is_delayed:
+            self.delayed.add(standard_message)
+        else:
+            self.visible.put_nowait(standard_message)
 
 
 class FifoQueue(SqsQueue):
-    visible: PriorityQueue
-    inflight: Set[SqsMessage]
-    receipts: Dict[str, SqsMessage]
     deduplication: Dict[str, Dict[str, SqsMessage]]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         super().__init__(name, region, account_id, attributes, tags)
         self.deduplication = {}
+
+    def update_delay_seconds(self, value: int):
+        super(FifoQueue, self).update_delay_seconds(value)
+        for message in self.delayed:
+            message.delay_seconds = value
 
     def put(
         self,
@@ -539,7 +632,14 @@ class FifoQueue(SqsQueue):
         visibility_timeout: int = None,
         message_deduplication_id: str = None,
         message_group_id: str = None,
+        delay_seconds: int = None,
     ):
+        if delay_seconds is not None:
+            # in fifo queues, delay is only applied on queue level
+            raise InvalidParameterValue(
+                f"Value {delay_seconds} for parameter DelaySeconds is invalid. Reason: The request include parameter "
+                f"that is not valid for this queue type."
+            )
 
         if not message_group_id:
             raise MissingParameter("The request must contain the parameter MessageGroupId.")
@@ -556,32 +656,43 @@ class FifoQueue(SqsQueue):
                 "explicitly "
             )
 
-        qm = SqsMessage(
+        fifo_message = SqsMessage(
             time.time(),
             message,
             message_deduplication_id=dedup_id,
             message_group_id=message_group_id,
         )
         if visibility_timeout is not None:
-            qm.visibility_timeout = visibility_timeout
+            fifo_message.visibility_timeout = visibility_timeout
         else:
             # use the attribute from the queue
-            qm.visibility_timeout = self.visibility_timeout
+            fifo_message.visibility_timeout = self.visibility_timeout
+
+        if delay_seconds is not None:
+            fifo_message.delay_seconds = delay_seconds
+        else:
+            fifo_message.delay_seconds = self.delay_seconds
+
         original_message = None
         original_message_group = self.deduplication.get(message_group_id)
         if original_message_group:
             original_message = original_message_group.get(dedup_id)
+
         if (
             original_message
             and not original_message.deleted
-            and original_message.priority + DEDUPLICATION_INTERVAL_IN_SEC > qm.priority
+            and original_message.priority + DEDUPLICATION_INTERVAL_IN_SEC > fifo_message.priority
         ):
             message["MessageId"] = original_message.message["MessageId"]
         else:
-            self.visible.put_nowait(qm)
+            if fifo_message.is_delayed:
+                self.delayed.add(fifo_message)
+            else:
+                self.visible.put_nowait(fifo_message)
+
             if not original_message_group:
                 self.deduplication[message_group_id] = {}
-            self.deduplication[message_group_id][message_deduplication_id] = qm
+            self.deduplication[message_group_id][dedup_id] = fifo_message
 
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):
@@ -598,7 +709,7 @@ class FifoQueue(SqsQueue):
 
         for k in attributes.keys():
             if k not in valid:
-                raise InvalidAttributeName(f"Unknown Attribute {k}")
+                raise InvalidAttributeName(f"Unknown Attribute {k}.")
         # Special Cases
         fifo = attributes.get(QueueAttributeName.FifoQueue)
         if fifo and fifo.lower() != "true":
@@ -612,42 +723,55 @@ class FifoQueue(SqsQueue):
         return _create_mock_sequence_number()
 
 
-class InflightUpdateWorker:
+class QueueUpdateWorker:
     """
-    Regularly re-queues inflight messages whose visibility timeout has expired.
-
-    FIXME: very crude implementation. it would be better to have event-driven communication.
+    Regularly re-queues inflight and delayed messages whose visibility timeout has expired or delay deadline has been
+    reached.
     """
 
     def __init__(self) -> None:
         super().__init__()
-        self.running = False
+        self.scheduler = Scheduler()
         self.thread: Optional[FuncThread] = None
+        self.mutex = threading.RLock()
+
+    def do_update_all_queues(self):
+        for region in SqsBackend.regions().keys():
+            backend = SqsBackend.get(region)
+            for queue in backend.queues.values():
+                try:
+                    queue.requeue_inflight_messages()
+                except Exception:
+                    LOG.exception("error re-queueing inflight messages")
+
+                try:
+                    queue.enqueue_delayed_messages()
+                except Exception:
+                    LOG.exception("error enqueueing delayed messages")
 
     def start(self):
-        if self.thread:
-            return
+        with self.mutex:
+            if self.thread:
+                return
 
-        def _run(*_args):
-            self.running = True
-            self.run()
+            self.scheduler = Scheduler()
+            self.scheduler.schedule(self.do_update_all_queues, period=1)
 
-        self.thread = start_thread(_run)
+            def _run(*_args):
+                self.scheduler.run()
+
+            self.thread = start_thread(_run)
 
     def stop(self):
-        if self.thread:
-            self.thread.stop()
+        with self.mutex:
+            if self.scheduler:
+                self.scheduler.close()
 
-        self.running = False
-        self.thread = None
+            if self.thread:
+                self.thread.stop()
 
-    def run(self):
-        while self.running:
-            time.sleep(1)
-            for region in SqsBackend.regions().keys():
-                backend = SqsBackend.get(region)
-                for queue in backend.queues.values():
-                    queue.requeue_inflight_messages()
+            self.thread = None
+            self.scheduler = None
 
 
 def check_attributes(message_attributes: MessageBodyAttributeMap):
@@ -741,13 +865,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def __init__(self) -> None:
         super().__init__()
         self._mutex = threading.RLock()
-        self._inflight_worker = InflightUpdateWorker()
+        self._queue_update_worker = QueueUpdateWorker()
 
     def on_before_start(self):
-        self._inflight_worker.start()
+        self._queue_update_worker.start()
 
     def on_before_stop(self):
-        self._inflight_worker.stop()
+        self._queue_update_worker.stop()
 
     def _require_queue(self, context: RequestContext, name: str) -> SqsQueue:
         """
@@ -808,8 +932,24 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         with self._mutex:
             if queue_name in backend.queues:
-                # FIXME #5938: should raise `QueueNameExists` if queue exists with different attributes
                 queue = backend.queues[queue_name]
+
+                if attributes:
+                    # if attributes are set, then we check whether the existing attributes match the passed ones
+                    self._validate_queue_attributes(attributes)
+                    for k, v in attributes.items():
+                        if queue.attributes.get(k) != v:
+                            LOG.debug(
+                                "queue attribute values %s for queue %s do not match %s (existing) != %s (new)",
+                                k,
+                                queue_name,
+                                queue.attributes.get(k),
+                                v,
+                            )
+                            raise QueueNameExists(
+                                f"A queue already exists with the same name and a different value for attribute {k}"
+                            )
+
                 return CreateQueueResult(QueueUrl=queue.url(context))
 
             if config.SQS_DELAY_RECENTLY_DELETED:
@@ -1053,7 +1193,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         check_fifo_id(message_deduplication_id)
         check_fifo_id(message_group_id)
 
-        message: Message = Message(
+        message = Message(
             MessageId=generate_message_id(),
             MD5OfBody=md5(message_body),
             Body=message_body,
@@ -1061,23 +1201,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             MD5OfMessageAttributes=_create_message_attribute_hash(message_attributes),
             MessageAttributes=message_attributes,
         )
-        delay_seconds = delay_seconds or queue.attributes.get(QueueAttributeName.DelaySeconds, "0")
 
-        if int(delay_seconds):
-            # FIXME: this is a pretty bad implementation (one thread per message...). polling on a priority queue
-            #  would probably be better. We also need access to delayed messages for the
-            #  ApproximateNumberrOfDelayedMessages attribute.
-            threading.Timer(
-                int(delay_seconds),
-                queue.put,
-                args=(message, message_deduplication_id, message_group_id),
-            ).start()
-        else:
-            queue.put(
-                message=message,
-                message_deduplication_id=message_deduplication_id,
-                message_group_id=message_group_id,
-            )
+        queue.put(
+            message=message,
+            message_deduplication_id=message_deduplication_id,
+            message_group_id=message_group_id,
+            delay_seconds=int(delay_seconds) if delay_seconds is not None else None,
+        )
 
         return message
 
@@ -1256,6 +1386,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue.validate_queue_attributes(attributes)
 
         for k, v in attributes.items():
+            if k in INTERNAL_QUEUE_ATTRIBUTES:
+                raise InvalidAttributeName(f"Unknown Attribute {k}.")
             queue.attributes[k] = v
 
         # Special cases
@@ -1348,8 +1480,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         valid = [k[1] for k in inspect.getmembers(QueueAttributeName)]
 
         for k in attributes.keys():
-            if k not in valid:
-                raise InvalidAttributeName("Unknown Attribute %s" % k)
+            if k not in valid or k in INTERNAL_QUEUE_ATTRIBUTES:
+                raise InvalidAttributeName(f"Unknown Attribute {k}.")
 
     def _validate_actions(self, actions: ActionNameList):
         service = load_service(service=self.service, version=self.version)

@@ -323,7 +323,21 @@ def route53_client() -> "Route53Client":
 
 
 @pytest.fixture
-def dynamodb_create_table_with_parameters(dynamodb_client):
+def dynamodb_wait_for_table_active(dynamodb_client):
+    def wait_for_table_active(table_name: str):
+        def wait():
+            return (
+                dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"]
+                == "ACTIVE"
+            )
+
+        poll_condition(wait, timeout=30)
+
+    return wait_for_table_active
+
+
+@pytest.fixture
+def dynamodb_create_table_with_parameters(dynamodb_client, dynamodb_wait_for_table_active):
     tables = []
 
     def factory(**kwargs):
@@ -339,20 +353,14 @@ def dynamodb_create_table_with_parameters(dynamodb_client):
     for table in tables:
         try:
             # table has to be in ACTIVE state before deletion
-            def wait_for_table_created():
-                return (
-                    dynamodb_client.describe_table(TableName=table)["Table"]["TableStatus"]
-                    == "ACTIVE"
-                )
-
-            poll_condition(wait_for_table_created, timeout=30)
+            dynamodb_wait_for_table_active(table)
             dynamodb_client.delete_table(TableName=table)
         except Exception as e:
             LOG.debug("error cleaning up table %s: %s", table, e)
 
 
 @pytest.fixture
-def dynamodb_create_table(dynamodb_client):
+def dynamodb_create_table(dynamodb_client, dynamodb_wait_for_table_active):
     # beware, this swallows exception in create_dynamodb_table utility function
     tables = []
 
@@ -373,13 +381,7 @@ def dynamodb_create_table(dynamodb_client):
     for table in tables:
         try:
             # table has to be in ACTIVE state before deletion
-            def wait_for_table_created():
-                return (
-                    dynamodb_client.describe_table(TableName=table)["Table"]["TableStatus"]
-                    == "ACTIVE"
-                )
-
-            poll_condition(wait_for_table_created, timeout=30)
+            dynamodb_wait_for_table_active(table)
             dynamodb_client.delete_table(TableName=table)
         except Exception as e:
             LOG.debug("error cleaning up table %s: %s", table, e)
@@ -672,8 +674,6 @@ def kinesis_create_stream(kinesis_client):
     def _create_stream(**kwargs):
         if "StreamName" not in kwargs:
             kwargs["StreamName"] = f"test-stream-{short_uid()}"
-        if "ShardCount" not in kwargs:
-            kwargs["ShardCount"] = 2
         kinesis_client.create_stream(**kwargs)
         stream_names.append(kwargs["StreamName"])
         return kwargs["StreamName"]
@@ -875,6 +875,7 @@ def deploy_cfn_template(
         template_path: Optional[str | os.PathLike] = None,
         template_mapping: Optional[Dict[str, any]] = None,
         parameters: Optional[Dict[str, str]] = None,
+        max_wait: Optional[int] = None,
     ) -> DeployResult:
         if is_update:
             assert stack_name
@@ -904,7 +905,8 @@ def deploy_cfn_template(
 
         assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        assert wait_until(is_change_set_finished(change_set_id), _max_wait=60)
+        # TODO: potentially poll for ExecutionStatus=ROLLBACK_COMPLETE here as well, to catch errors early on
+        assert wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
 
         outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
 
@@ -922,9 +924,8 @@ def deploy_cfn_template(
                 )
 
             assert wait_until(_await_stack_delete, _max_wait=60)
-            time.sleep(
-                2
-            )  # TODO: fix in localstack. stack should only be in DELETE_COMPLETE state after all resources have been deleted
+            # TODO: fix in localstack. stack should only be in DELETE_COMPLETE state after all resources have been deleted
+            time.sleep(2)
 
         return DeployResult(
             change_set_id, stack_id, stack_name, change_set_name, mapped_outputs, _destroy_stack
@@ -1310,24 +1311,45 @@ def create_secret(secretsmanager_client):
         secretsmanager_client.delete_secret(SecretId=item)
 
 
+# TODO Figure out how to make cert creation tests pass against AWS.
+#
+# We would like to have localstack tests to pass not just against localstack, but also against AWS to make sure
+# our emulation is correct. Unfortunately, with certificate creation there are some issues.
+#
+# In AWS newly created ACM certificates have to be validated either by email or by DNS. The latter is
+# by adding some CNAME records as requested by ASW in response to a certificate request.
+# For testing purposes the DNS one seems to be easier, at least as long as DNS is handled by Region53 AWS DNS service.
+#
+# The other possible option is to use IAM certificates instead of ACM ones. Those just have to be uploaded from files
+# created by openssl etc. Not sure if there are other issues after that.
+#
+# The third option might be having in AWS some certificates created in advance - so they do not require validation
+# and can be easily used in tests. The issie with such an approach is that for AppSync, for example, in order to
+# register a domain name (https://docs.aws.amazon.com/appsync/latest/APIReference/API_CreateDomainName.html),
+# the domain name in the API request has to match the domain name used in certificate creation. Which means that with
+# pre-created certificates we would have to use specific domain names instead of random ones.
 @pytest.fixture
-def acm_request_certificate(acm_client):
+def acm_request_certificate():
     certificate_arns = []
 
     def factory(**kwargs) -> str:
         if "DomainName" not in kwargs:
             kwargs["DomainName"] = f"test-domain-{short_uid()}.localhost.localstack.cloud"
 
+        region_name = kwargs.pop("region_name", None)
+        acm_client = _client("acm", region_name)
+
         response = acm_client.request_certificate(**kwargs)
         created_certificate_arn = response["CertificateArn"]
-        certificate_arns.append(created_certificate_arn)
+        certificate_arns.append((created_certificate_arn, region_name))
         return created_certificate_arn
 
     yield factory
 
     # cleanup
-    for certificate_arn in certificate_arns:
+    for certificate_arn, region_name in certificate_arns:
         try:
+            acm_client = _client("acm", region_name)
             acm_client.delete_certificate(CertificateArn=certificate_arn)
         except Exception as e:
             LOG.debug("error cleaning up certificate %s: %s", certificate_arn, e)

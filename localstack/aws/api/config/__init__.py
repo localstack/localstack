@@ -20,6 +20,7 @@ AwsRegion = str
 BaseResourceId = str
 Boolean = bool
 ChannelName = str
+ComplianceScore = str
 ConfigRuleName = str
 Configuration = str
 ConfigurationAggregatorArn = str
@@ -392,10 +393,34 @@ class ResourceType(str):
     AWS_GuardDuty_Detector = "AWS::GuardDuty::Detector"
     AWS_EMR_SecurityConfiguration = "AWS::EMR::SecurityConfiguration"
     AWS_SageMaker_CodeRepository = "AWS::SageMaker::CodeRepository"
+    AWS_Route53Resolver_ResolverEndpoint = "AWS::Route53Resolver::ResolverEndpoint"
+    AWS_Route53Resolver_ResolverRule = "AWS::Route53Resolver::ResolverRule"
+    AWS_Route53Resolver_ResolverRuleAssociation = "AWS::Route53Resolver::ResolverRuleAssociation"
+    AWS_DMS_ReplicationSubnetGroup = "AWS::DMS::ReplicationSubnetGroup"
+    AWS_DMS_EventSubscription = "AWS::DMS::EventSubscription"
+    AWS_MSK_Cluster = "AWS::MSK::Cluster"
+    AWS_StepFunctions_Activity = "AWS::StepFunctions::Activity"
+    AWS_WorkSpaces_Workspace = "AWS::WorkSpaces::Workspace"
+    AWS_WorkSpaces_ConnectionAlias = "AWS::WorkSpaces::ConnectionAlias"
+    AWS_SageMaker_Model = "AWS::SageMaker::Model"
+    AWS_ElasticLoadBalancingV2_Listener = "AWS::ElasticLoadBalancingV2::Listener"
+    AWS_StepFunctions_StateMachine = "AWS::StepFunctions::StateMachine"
+    AWS_Batch_JobQueue = "AWS::Batch::JobQueue"
+    AWS_Batch_ComputeEnvironment = "AWS::Batch::ComputeEnvironment"
+    AWS_AccessAnalyzer_Analyzer = "AWS::AccessAnalyzer::Analyzer"
 
 
 class ResourceValueType(str):
     RESOURCE_ID = "RESOURCE_ID"
+
+
+class SortBy(str):
+    SCORE = "SCORE"
+
+
+class SortOrder(str):
+    ASCENDING = "ASCENDING"
+    DESCENDING = "DESCENDING"
 
 
 class ConformancePackTemplateValidationException(ServiceException):
@@ -684,7 +709,6 @@ class ResourceConcurrentModificationException(ServiceException):
     code: str = "ResourceConcurrentModificationException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ResourceInUseException(ServiceException):
@@ -1136,6 +1160,21 @@ class ConformancePackComplianceFilters(TypedDict, total=False):
 
 
 ConformancePackComplianceResourceIds = List[StringWithCharLimit256]
+LastUpdatedTime = datetime
+
+
+class ConformancePackComplianceScore(TypedDict, total=False):
+    Score: Optional[ComplianceScore]
+    ConformancePackName: Optional[ConformancePackName]
+    LastUpdatedTime: Optional[LastUpdatedTime]
+
+
+ConformancePackComplianceScores = List[ConformancePackComplianceScore]
+ConformancePackNameFilter = List[ConformancePackName]
+
+
+class ConformancePackComplianceScoresFilters(TypedDict, total=False):
+    ConformancePackNames: ConformancePackNameFilter
 
 
 class ConformancePackComplianceSummary(TypedDict, total=False):
@@ -2158,6 +2197,19 @@ class ListAggregateDiscoveredResourcesResponse(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class ListConformancePackComplianceScoresRequest(ServiceRequest):
+    Filters: Optional[ConformancePackComplianceScoresFilters]
+    SortOrder: Optional[SortOrder]
+    SortBy: Optional[SortBy]
+    Limit: Optional[PageSizeLimit]
+    NextToken: Optional[NextToken]
+
+
+class ListConformancePackComplianceScoresResponse(TypedDict, total=False):
+    NextToken: Optional[NextToken]
+    ConformancePackComplianceScores: ConformancePackComplianceScores
+
+
 ResourceIdList = List[ResourceId]
 
 
@@ -3006,6 +3058,18 @@ class ConfigApi:
         limit: Limit = None,
         next_token: NextToken = None,
     ) -> ListAggregateDiscoveredResourcesResponse:
+        raise NotImplementedError
+
+    @handler("ListConformancePackComplianceScores")
+    def list_conformance_pack_compliance_scores(
+        self,
+        context: RequestContext,
+        filters: ConformancePackComplianceScoresFilters = None,
+        sort_order: SortOrder = None,
+        sort_by: SortBy = None,
+        limit: PageSizeLimit = None,
+        next_token: NextToken = None,
+    ) -> ListConformancePackComplianceScoresResponse:
         raise NotImplementedError
 
     @handler("ListDiscoveredResources")

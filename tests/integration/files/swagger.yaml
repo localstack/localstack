@@ -2,6 +2,7 @@ openapi: 3.0.1
 info:
   title: test
   version: '2020-07-23T23:02:57Z'
+basePath: /base
 servers:
 - url: https://rei6t36l9d.execute-api.us-east-1.amazonaws.com/{basePath}
   variables:

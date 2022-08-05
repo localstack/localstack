@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 from typing import Optional
 
@@ -19,8 +18,6 @@ from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import SNAPSHOT_BASIC_TRANSFORMER
 
-LOG = logging.getLogger(__name__)
-
 
 @pytest.hookimpl
 def pytest_configure(config: Config):
@@ -30,6 +27,7 @@ def pytest_configure(config: Config):
 @pytest.hookimpl
 def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
     parser.addoption("--snapshot-update", action="store_true")
+    parser.addoption("--snapshot-skip-all", action="store_true")
     parser.addoption("--snapshot-verify", action="store_true")
 
 
@@ -77,17 +75,19 @@ def fixture_region():
 
 @pytest.fixture(name="snapshot", scope="function")
 def fixture_snapshot(request: SubRequest, account_id, region):
+    update_overwrite = os.environ.get("SNAPSHOT_UPDATE", None) == "1"
+
     sm = SnapshotSession(
         file_path=os.path.join(
             request.fspath.dirname, f"{request.fspath.purebasename}.snapshot.json"
         ),
         scope_key=request.node.nodeid,
-        update=request.config.option.snapshot_update,
-        verify=request.config.option.snapshot_verify,
+        update=update_overwrite or request.config.option.snapshot_update,
+        verify=False if request.config.option.snapshot_skip_all else True,
     )
     sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=2)
     sm.add_transformer(RegexTransformer(region, "<region>"), priority=2)
-    sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER)
+    sm.add_transformer(SNAPSHOT_BASIC_TRANSFORMER, priority=2)
 
     yield sm
 

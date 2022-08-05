@@ -179,7 +179,10 @@ def patch_moto_request_handling():
                 if match:
                     action = snake_to_camel_case(match.group(1))
             service = extract_service_name_from_auth_header(request.headers)
-            msg = f"API action '{action}' for service '{service}' not yet implemented"
+            msg = (
+                f"API action '{action}' for service '{service}' not yet implemented or pro feature"
+                f" - check https://docs.localstack.cloud/aws/feature-coverage for further information"
+            )
             response = requests_error_response(request.headers, msg, code=501)
             if config.MOCK_UNIMPLEMENTED:
                 is_json = is_json_request(request.headers)

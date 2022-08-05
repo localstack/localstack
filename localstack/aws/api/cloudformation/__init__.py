@@ -541,7 +541,6 @@ class CFNRegistryException(ServiceException):
     code: str = "CFNRegistryException"
     sender_fault: bool = True
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class ChangeSetNotFoundException(ServiceException):

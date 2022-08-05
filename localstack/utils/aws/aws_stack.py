@@ -212,9 +212,13 @@ def get_partition(region_name: str = None):
 def get_local_region():
     global LOCAL_REGION
     if LOCAL_REGION is None:
-        session = boto3.session.Session()
-        LOCAL_REGION = session.region_name or ""
+        LOCAL_REGION = get_boto3_region() or ""
     return config.DEFAULT_REGION or LOCAL_REGION
+
+
+def get_boto3_region() -> str:
+    """Return the region name, as determined from the environment when creating a new boto3 session"""
+    return boto3.session.Session().region_name
 
 
 def is_internal_call_context(headers):
@@ -901,7 +905,7 @@ def kinesis_stream_name(kinesis_arn):
 
 def mock_aws_request_headers(
     service="dynamodb", region_name=None, access_key=None, internal=False
-) -> dict[str, str]:
+) -> Dict[str, str]:
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
         ctype = APPLICATION_AMZ_JSON_1_1
@@ -1310,6 +1314,13 @@ def get_route53_resolver_firewall_domain_list_arn(
     id: str, account_id: str = None, region_name: str = None
 ):
     pattern = "arn:aws:route53resolver:%s:%s:firewall-domain-list/%s"
+    return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
+
+
+def get_route53_resolver_firewall_rule_group_associations_arn(
+    id: str, account_id: str = None, region_name: str = None
+):
+    pattern = "arn:aws:route53resolver:%s:%s:firewall-rule-group-association/%s"
     return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
 
 

@@ -69,10 +69,6 @@ to certain so-called "traits" in Smithy.
 
 The result of the serialization methods is the HTTP response which can
 be sent back to the calling client.
-
-**Experimental:** The serializers in this module are still experimental.
-When implementing services with these serializers, some edge cases might
-not work out-of-the-box.
 """
 import abc
 import base64
@@ -88,20 +84,12 @@ from typing import Any, Iterable, Iterator, Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
 from boto.utils import ISO8601
-from botocore.model import (
-    ListShape,
-    MapShape,
-    NoShapeFoundError,
-    OperationModel,
-    ServiceModel,
-    Shape,
-    StructureShape,
-)
+from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
 from moto.core.utils import gen_amzn_requestid_long
 
-from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
+from localstack.aws.api import HttpResponse, ServiceException
 from localstack.utils.common import to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -214,51 +202,14 @@ class ResponseSerializer(abc.ABC):
         """
         # TODO implement streaming error serialization
         serialized_response = self._create_default_response(operation_model)
-        if isinstance(error, CommonServiceException):
-            # Not all possible exceptions are contained in the service's specification.
-            # Therefore, service implementations can also throw a "CommonServiceException" to raise arbitrary /
-            # non-specified exceptions (where the developer needs to define the data which would usually be taken from
-            # the specification, like the "Code").
-            code = error.code
-            sender_fault = error.sender_fault
-            status_code = error.status_code
-            shape = None
-        else:
-            # It's not a CommonServiceException, the exception is being serialized based on the specification
+        if not error or not isinstance(error, ServiceException):
+            raise ProtocolSerializerError(
+                f"Error to serialize ({error.__class__.__name__ if error else None}) is not a ServiceException."
+            )
+        shape = operation_model.service_model.shape_for_error_code(error.code)
+        serialized_response.status_code = error.status_code
 
-            # The shape name is equal to the class name (since the classes are generated from the shape's name)
-            error_shape_name = error.__class__.__name__
-            # Lookup the corresponding error shape in the operation model
-            try:
-                shape = operation_model.service_model.shape_for(error_shape_name)
-                if not shape.metadata.get("exception", False):
-                    raise ProtocolSerializerError(
-                        f"The given error ({error_shape_name}) corresponds to a non-exception"
-                        f"shape."
-                    )
-            except NoShapeFoundError as e:
-                raise ProtocolSerializerError(
-                    f"Error to serialize ({error_shape_name}) neither is a CommonServiceException, nor is its error "
-                    f"shape contained in the service's specification ({operation_model.service_model.service_name})."
-                ) from e
-
-            error_spec = shape.metadata.get("error", {})
-            status_code = error_spec.get("httpStatusCode")
-
-            # If the code is not explicitly set, it's typically the shape's name
-            code = error_spec.get("code", shape.name)
-
-            # The senderFault is only set if the "senderFault" is true
-            # (there are no examples which show otherwise)
-            sender_fault = error_spec.get("senderFault")
-
-        # Some specifications do not contain the httpStatusCode field.
-        # These errors typically have the http status code 400.
-        serialized_response.status_code = status_code or 400
-
-        self._serialize_error(
-            error, code, sender_fault, serialized_response, shape, operation_model
-        )
+        self._serialize_error(error, serialized_response, shape, operation_model)
         serialized_response = self._prepare_additional_traits_in_response(
             serialized_response, operation_model
         )
@@ -290,10 +241,8 @@ class ResponseSerializer(abc.ABC):
     def _serialize_error(
         self,
         error: ServiceException,
-        code: str,
-        sender_fault: bool,
         response: HttpResponse,
-        shape: Shape,
+        shape: StructureShape,
         operation_model: OperationModel,
     ) -> None:
         raise NotImplementedError
@@ -531,21 +480,15 @@ class BaseXMLResponseSerializer(ResponseSerializer):
     While the botocore's RestXMLSerializer is quite similar, there are some subtle differences (since botocore's
     implementation handles the serialization of the requests from the client to the service, not the responses from the
     service to the client).
-
-    **Experimental:** This serializer is still experimental.
-    When implementing services with this serializer, some edge cases might not work out-of-the-box.
     """
 
     def _serialize_error(
         self,
         error: ServiceException,
-        code: str,
-        sender_fault: bool,
         response: HttpResponse,
-        shape: Shape,
+        shape: StructureShape,
         operation_model: OperationModel,
     ) -> None:
-        # TODO handle error shapes with members
         # Check if we need to add a namespace
         attr = (
             {"xmlns": operation_model.metadata.get("xmlNamespace")}
@@ -553,23 +496,48 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             else {}
         )
         root = ETree.Element("ErrorResponse", attr)
+
         error_tag = ETree.SubElement(root, "Error")
-        self._add_error_tags(code, error, error_tag, sender_fault)
+        self._add_error_tags(error, error_tag)
         request_id = ETree.SubElement(root, "RequestId")
         request_id.text = gen_amzn_requestid_long()
+
+        self._add_additional_error_tags(error, root, shape)
+
         response.set_response(self._encode_payload(self._xml_to_string(root)))
 
-    def _add_error_tags(
-        self, code: str, error: ServiceException, error_tag: ETree.Element, sender_fault: bool
-    ) -> None:
+    def _add_error_tags(self, error: ServiceException, error_tag: ETree.Element) -> None:
         code_tag = ETree.SubElement(error_tag, "Code")
-        code_tag.text = code
+        code_tag.text = error.code
         message = self._get_error_message(error)
         if message:
             self._default_serialize(error_tag, message, None, "Message")
-        if sender_fault:
+        if error.sender_fault:
             # The sender fault is either not set or "Sender"
             self._default_serialize(error_tag, "Sender", None, "Type")
+
+    def _add_additional_error_tags(
+        self, error: ServiceException, node: ETree, shape: StructureShape
+    ):
+        if shape:
+            params = {}
+            # TODO add a possibility to serialize simple non-modelled errors (like S3 NoSuchBucket#BucketName)
+            for member in shape.members:
+                # XML protocols do not add modeled default fields to the root node
+                # (tested for cloudfront, route53, cloudwatch, iam)
+                if member.lower() not in ["code", "message"] and hasattr(error, member):
+                    params[member] = getattr(error, member)
+
+            # If there is an error shape with members which should be set, they need to be added to the node
+            if params:
+                # Serialize the remaining params
+                root_name = shape.serialization.get("name", shape.name)
+                pseudo_root = ETree.Element("")
+                self._serialize(shape, params, pseudo_root, root_name)
+                real_root = list(pseudo_root)[0]
+                # Add the child elements to the already created root error element
+                for child in list(real_root):
+                    node.append(child)
 
     def _serialize_body_params(
         self, params: dict, shape: Shape, operation_model: OperationModel
@@ -778,7 +746,7 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
     ) -> None:
         header_params, payload_params = self._partition_members(parameters, shape)
         self._process_header_members(header_params, response, shape)
-        # "HEAD" responeses are basically "GET" responses without the actual body.
+        # "HEAD" responses are basically "GET" responses without the actual body.
         # Do not process the body payload in this case (setting a body could also manipulate the headers)
         if operation_model.http.get("method") != "HEAD":
             self._serialize_payload(payload_params, response, shape, shape_members, operation_model)
@@ -931,37 +899,10 @@ class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSeria
     The ``RestXMLResponseSerializer`` is responsible for the serialization of responses from services with the
     ``rest-xml`` protocol.
     It combines the ``BaseRestResponseSerializer`` (for the ReST specific logic) with the ``BaseXMLResponseSerializer``
-    (for the XML body response serialization), and adds some minor logic to handle S3 specific peculiarities with the
-    error response serialization.
-
-    **Experimental:** This serializer is still experimental.
-    When implementing services with this serializer, some edge cases might not work out-of-the-box.
+    (for the XML body response serialization).
     """
 
-    def _serialize_error(
-        self,
-        error: ServiceException,
-        code: str,
-        sender_fault: bool,
-        response: HttpResponse,
-        shape: Shape,
-        operation_model: OperationModel,
-    ) -> None:
-        # It wouldn't be a spec if there wouldn't be any exceptions.
-        # S3 errors look differently than other service's errors.
-        if operation_model.name == "s3":
-            attr = (
-                {"xmlns": operation_model.metadata.get("xmlNamespace")}
-                if "xmlNamespace" in operation_model.metadata
-                else None
-            )
-            root = ETree.Element("Error", attr)
-            self._add_error_tags(code, error, root, sender_fault)
-            request_id = ETree.SubElement(root, "RequestId")
-            request_id.text = gen_amzn_requestid_long()
-            response.set_response(self._encode_payload(self._xml_to_string(root)))
-        else:
-            super()._serialize_error(error, code, sender_fault, response, shape, operation_model)
+    pass
 
 
 class QueryResponseSerializer(BaseXMLResponseSerializer):
@@ -969,9 +910,6 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
     The ``QueryResponseSerializer`` is responsible for the serialization of responses from services which use the
     ``query`` protocol. The responses of these services also use XML. It is basically a subset of the features, since it
     does not allow any payload or location traits.
-
-    **Experimental:** This serializer is still experimental.
-    When implementing services with this serializer, some edge cases might not work out-of-the-box.
     """
 
     def _serialize_response(
@@ -1000,7 +938,7 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
         self, params: dict, shape: Shape, operation_model: OperationModel
     ) -> ETree.Element:
         # The Query protocol responses have a root element which is not contained in the specification file.
-        # Therefore we first call the super function to perform the normal XML serialization, and afterwards wrap the
+        # Therefore, we first call the super function to perform the normal XML serialization, and afterwards wrap the
         # result in a root element based on the operation name.
         node = super()._serialize_body_params_to_xml(params, shape, operation_model)
 
@@ -1030,18 +968,13 @@ class EC2ResponseSerializer(QueryResponseSerializer):
     The ``EC2ResponseSerializer`` is responsible for the serialization of responses from services which use the
     ``ec2`` protocol (basically the EC2 service). This protocol is basically equal to the ``query`` protocol with only
     a few subtle differences.
-
-    **Experimental:** This serializer is still experimental.
-    When implementing services with this serializer, some edge cases might not work out-of-the-box.
     """
 
     def _serialize_error(
         self,
         error: ServiceException,
-        code: str,
-        sender_fault: bool,
         response: HttpResponse,
-        shape: Shape,
+        shape: StructureShape,
         operation_model: OperationModel,
     ) -> None:
         # EC2 errors look like:
@@ -1061,9 +994,10 @@ class EC2ResponseSerializer(QueryResponseSerializer):
             if "xmlNamespace" in operation_model.metadata
             else None
         )
-        root = ETree.Element("Errors", attr)
-        error_tag = ETree.SubElement(root, "Error")
-        self._add_error_tags(code, error, error_tag, sender_fault)
+        root = ETree.Element("Response", attr)
+        errors_tag = ETree.SubElement(root, "Errors")
+        error_tag = ETree.SubElement(errors_tag, "Error")
+        self._add_error_tags(error, error_tag)
         request_id = ETree.SubElement(root, "RequestID")
         request_id.text = gen_amzn_requestid_long()
         response.set_response(self._encode_payload(self._xml_to_string(root)))
@@ -1088,9 +1022,6 @@ class JSONResponseSerializer(ResponseSerializer):
     The ``JSONResponseSerializer`` is responsible for the serialization of responses from services with the ``json``
     protocol. It implements the JSON response body serialization, which is also used by the
     ``RestJSONResponseSerializer``.
-
-    **Experimental:** This serializer is still experimental.
-    When implementing services with this serializer, some edge cases might not work out-of-the-box.
     """
 
     TIMESTAMP_FORMAT = "unixtimestamp"
@@ -1098,22 +1029,35 @@ class JSONResponseSerializer(ResponseSerializer):
     def _serialize_error(
         self,
         error: ServiceException,
-        code: str,
-        sender_fault: bool,
         response: HttpResponse,
-        shape: Shape,
+        shape: StructureShape,
         operation_model: OperationModel,
     ) -> None:
-        # TODO handle error shapes with members
+        body = {}
+
         # TODO implement different service-specific serializer configurations
         #   - currently we set both, the `__type` member as well as the `X-Amzn-Errortype` header
         #   - the specification defines that it's either the __type field OR the header
-        #     (https://awslabs.github.io/smithy/1.0/spec/aws/aws-json-1_1-protocol.html#operation-error-serialization)
-        body = {"__type": code}
-        response.headers["X-Amzn-Errortype"] = code
-        message = self._get_error_message(error)
-        if message is not None:
-            body["message"] = message
+        response.headers["X-Amzn-Errortype"] = error.code
+        body["__type"] = error.code
+
+        if shape:
+            remaining_params = {}
+            # TODO add a possibility to serialize simple non-modelled errors (like S3 NoSuchBucket#BucketName)
+            for member in shape.members:
+                if hasattr(error, member):
+                    remaining_params[member] = getattr(error, member)
+                # Default error message fields can sometimes have different casing in the specs
+                elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
+                    remaining_params[member] = getattr(error, member.lower())
+            self._serialize(body, remaining_params, shape)
+
+        # Only set the message if it has not been set with the shape members
+        if "message" not in body and "Message" not in body:
+            message = self._get_error_message(error)
+            if message is not None:
+                body["message"] = message
+
         response.set_json(body)
 
     def _serialize_response(
@@ -1228,9 +1172,6 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
     ``rest-json`` protocol.
     It combines the ``BaseRestResponseSerializer`` (for the ReST specific logic) with the ``JSONResponseSerializer``
     (for the JSOn body response serialization).
-
-    **Experimental:** This serializer is still experimental.
-    When implementing services with this serializer, some edge cases might not work out-of-the-box.
     """
 
     def _serialize_content_type(self, serialized: HttpResponse, shape: Shape, shape_members: dict):
@@ -1244,6 +1185,32 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
         has_content_type = self._has_header("Content-Type", serialized.headers)
         if has_body and not has_content_type:
             serialized.headers["Content-Type"] = "application/json"
+
+
+class S3ResponseSerializer(RestXMLResponseSerializer):
+    """
+    The ``S3ResponseSerializer`` adds some minor logic to handle S3 specific peculiarities with the error response
+    serialization.
+    """
+
+    def _serialize_error(
+        self,
+        error: ServiceException,
+        response: HttpResponse,
+        shape: StructureShape,
+        operation_model: OperationModel,
+    ) -> None:
+        attr = (
+            {"xmlns": operation_model.metadata.get("xmlNamespace")}
+            if "xmlNamespace" in operation_model.metadata
+            else {}
+        )
+        root = ETree.Element("Error", attr)
+        self._add_error_tags(error, root)
+        request_id = ETree.SubElement(root, "RequestId")
+        request_id.text = gen_amzn_requestid_long()
+        self._add_additional_error_tags(error, root, shape)
+        response.set_response(self._encode_payload(self._xml_to_string(root)))
 
 
 class SqsResponseSerializer(QueryResponseSerializer):
@@ -1288,10 +1255,6 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
     """
     Creates the right serializer for the given service model.
 
-    **Experimental:** The serializers in this module are still experimental.
-    When implementing services with these serializers, some edge cases might
-    not work out-of-the-box.
-
     :param service: to create the serializer for
     :return: ResponseSerializer which can handle the protocol of the service
     """
@@ -1302,9 +1265,7 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
     # specific services as close as possible.
     # Therefore, the service-specific serializer implementations (basically the implicit / informally more specific
     # protocol implementation) has precedence over the more general protocol-specific serializers.
-    service_specific_serializers = {
-        "sqs": SqsResponseSerializer,
-    }
+    service_specific_serializers = {"sqs": SqsResponseSerializer, "s3": S3ResponseSerializer}
     protocol_specific_serializers = {
         "query": QueryResponseSerializer,
         "json": JSONResponseSerializer,

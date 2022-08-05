@@ -11,8 +11,8 @@
             }
             </style>
             <p>
-                <a href="https://github.com/localstack/localstack/issues/6398">
-                    We are preparing a major release of LocalStack! Check out the significant changes coming up and share your feedback with us!
+                <a href="https://localstack.cloud/blog/2022-07-13-announcing-localstack-v1-general-availability/">
+                    We are excited to announce LocalStack 1.0, with significant enhancements, exciting new features and developer tools!
                 </a>
             </p>
         </div>

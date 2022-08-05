@@ -122,7 +122,7 @@ def apply_patches():
     @patch(s3_responses.S3Response._bucket_response_get)
     def _bucket_response_get(fn, self, bucket_name, querystring, *args, **kwargs):
         result = fn(self, bucket_name, querystring, *args, **kwargs)
-        # for some reason in the "get-bucket-location" call, moto doesn't return a code, headers, body triple as a result
+        # for some reason in the "get-bucket-location" call, moto doesn't return a code/headers/body triple as a result
         if isinstance(result, tuple) and len(result) == 3:
             code, headers, body = result
             bucket = self.backend.get_bucket(bucket_name)
@@ -240,6 +240,7 @@ def apply_patches():
     def s3_bucket_response_delete_keys(self, bucket_name, *args, **kwargs):
         template = self.response_template(s3_delete_keys_response_template)
         elements = minidom.parseString(self.body).getElementsByTagName("Object")
+
         if len(elements) == 0:
             raise MalformedXML()
 

@@ -113,6 +113,16 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
+    def restart_container(self, container_name: str, timeout: int = 10) -> None:
+        LOG.debug("Restarting container: %s", container_name)
+        try:
+            container = self.client().containers.get(container_name)
+            container.restart(timeout=timeout)
+        except NotFound:
+            raise NoSuchContainer(container_name)
+        except APIError as e:
+            raise ContainerException() from e
+
     def pause_container(self, container_name: str) -> None:
         LOG.debug("Pausing container: %s", container_name)
         try:

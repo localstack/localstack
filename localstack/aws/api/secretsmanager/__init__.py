@@ -68,84 +68,72 @@ class DecryptionFailure(ServiceException):
     code: str = "DecryptionFailure"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class EncryptionFailure(ServiceException):
     code: str = "EncryptionFailure"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class InternalServiceError(ServiceException):
     code: str = "InternalServiceError"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class InvalidNextTokenException(ServiceException):
     code: str = "InvalidNextTokenException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class InvalidParameterException(ServiceException):
     code: str = "InvalidParameterException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class InvalidRequestException(ServiceException):
     code: str = "InvalidRequestException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class LimitExceededException(ServiceException):
     code: str = "LimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class MalformedPolicyDocumentException(ServiceException):
     code: str = "MalformedPolicyDocumentException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class PreconditionNotMetException(ServiceException):
     code: str = "PreconditionNotMetException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class PublicPolicyException(ServiceException):
     code: str = "PublicPolicyException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class ResourceExistsException(ServiceException):
     code: str = "ResourceExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class ReplicaRegionType(TypedDict, total=False):

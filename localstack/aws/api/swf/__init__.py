@@ -291,70 +291,60 @@ class DefaultUndefinedFault(ServiceException):
     code: str = "DefaultUndefinedFault"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class DomainAlreadyExistsFault(ServiceException):
     code: str = "DomainAlreadyExistsFault"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class DomainDeprecatedFault(ServiceException):
     code: str = "DomainDeprecatedFault"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class LimitExceededFault(ServiceException):
     code: str = "LimitExceededFault"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class OperationNotPermittedFault(ServiceException):
     code: str = "OperationNotPermittedFault"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class TooManyTagsFault(ServiceException):
     code: str = "TooManyTagsFault"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class TypeAlreadyExistsFault(ServiceException):
     code: str = "TypeAlreadyExistsFault"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class TypeDeprecatedFault(ServiceException):
     code: str = "TypeDeprecatedFault"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class UnknownResourceFault(ServiceException):
     code: str = "UnknownResourceFault"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class WorkflowExecutionAlreadyStartedFault(ServiceException):
     code: str = "WorkflowExecutionAlreadyStartedFault"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ActivityType(TypedDict, total=False):

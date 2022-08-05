@@ -4,8 +4,8 @@ import os
 from datetime import date, datetime, time
 from typing import Any, Dict, Optional
 
-from moto.core import BaseBackend
-from moto.ses.models import ses_backends
+from moto.ses import ses_backends
+from moto.ses.models import SESBackend
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
@@ -41,7 +41,7 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
-from localstack.utils.time import timestamp_millis
+from localstack.utils.time import timestamp, timestamp_millis
 
 LOGGER = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
     mkdir(ses_dir)
     path = os.path.join(ses_dir, id + ".json")
 
-    email = {"Id": id, "Region": region, **kwargs}
+    email = {"Id": id, "Timestamp": timestamp(), "Region": region, **kwargs}
 
     EMAILS[id] = email
 
@@ -91,7 +91,7 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
     LOGGER.debug("Email saved at: %s", path)
 
 
-def get_ses_backend(context: RequestContext) -> BaseBackend:
+def get_ses_backend(context: RequestContext) -> SESBackend:
     return ses_backends[context.account_id]["global"]
 
 

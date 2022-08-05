@@ -121,7 +121,6 @@ class NoSuchBucket(CommonServiceException):
             code="NoSuchBucket",
             message="The specified bucket does not exist",
             status_code=404,
-            sender_fault=True,
         )
 
 

@@ -334,6 +334,7 @@ class VolumeType(str):
     standard = "standard"
     gp2 = "gp2"
     io1 = "io1"
+    gp3 = "gp3"
 
 
 class AccessDeniedException(ServiceException):
@@ -346,7 +347,6 @@ class BaseException(ServiceException):
     code: str = "BaseException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ConflictException(ServiceException):
@@ -768,6 +768,7 @@ class EBSOptions(TypedDict, total=False):
     VolumeType: Optional[VolumeType]
     VolumeSize: Optional[IntegerClass]
     Iops: Optional[IntegerClass]
+    Throughput: Optional[IntegerClass]
 
 
 class CreateDomainRequest(ServiceRequest):

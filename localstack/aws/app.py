@@ -57,6 +57,7 @@ class LocalstackAwsGateway(Gateway):
         self.response_handlers.extend(
             [
                 handlers.parse_service_response,
+                handlers.set_close_connection_header,
                 handlers.run_custom_response_handlers,
                 handlers.add_cors_response_headers,
                 handlers.log_response,

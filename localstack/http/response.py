@@ -33,7 +33,7 @@ class Response(WerkzeugResponse):
         Returns a read-only version of a response dictionary as it is often expected by other libraries like boto.
         """
         return {
-            "body": self.get_data(as_text=True).encode("utf-8"),
+            "body": self.stream if self.is_streamed else self.data,
             "status_code": self.status_code,
             "headers": dict(self.headers),
         }

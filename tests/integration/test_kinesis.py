@@ -31,6 +31,19 @@ def get_shard_iterator(stream_name, kinesis_client):
 
 
 class TestKinesis:
+    @pytest.mark.aws_validated
+    def test_create_stream_without_shard_count(
+        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+    ):
+        stream_name = kinesis_create_stream()
+        wait_for_stream_ready(stream_name)
+        describe_stream = kinesis_client.describe_stream(StreamName=stream_name)
+        assert describe_stream
+        assert "StreamDescription" in describe_stream
+        assert "Shards" in describe_stream["StreamDescription"]
+        # By default, new streams have a shard count of 4
+        assert len(describe_stream["StreamDescription"]["Shards"]) == 4
+
     def test_stream_consumers(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready
     ):
@@ -239,6 +252,32 @@ class TestKinesis:
         assert select_attributes(json_records[0], attrs) == select_attributes(
             result["Records"][0], attrs
         )
+
+    def test_get_records_empty_stream(
+        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+    ):
+        stream_name = "test-%s" % short_uid()
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name)
+
+        # empty get records with JSON encoding
+        iterator = get_shard_iterator(stream_name, kinesis_client)
+        json_response = kinesis_client.get_records(ShardIterator=iterator)
+        json_records = json_response.get("Records")
+        assert 0 == len(json_records)
+
+        # empty get records with CBOR encoding
+        url = config.get_edge_url()
+        headers = aws_stack.mock_aws_request_headers("kinesis")
+        headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
+        headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
+        data = cbor2.dumps({"ShardIterator": iterator})
+        cbor_response = requests.post(url, data, headers=headers)
+        assert 200 == cbor_response.status_code
+        cbor_records_content = cbor2.loads(cbor_response.content)
+        cbor_records = cbor_records_content.get("Records")
+        assert 0 == len(cbor_records)
 
     def test_record_lifecycle_data_integrity(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready

@@ -266,189 +266,162 @@ class ConcurrentModificationException(ServiceException):
     code: str = "ConcurrentModification"
     sender_fault: bool = True
     status_code: int = 409
-    message: Optional[ConcurrentModificationMessage]
 
 
 class CredentialReportExpiredException(ServiceException):
     code: str = "ReportExpired"
     sender_fault: bool = True
     status_code: int = 410
-    message: Optional[credentialReportExpiredExceptionMessage]
 
 
 class CredentialReportNotPresentException(ServiceException):
     code: str = "ReportNotPresent"
     sender_fault: bool = True
     status_code: int = 410
-    message: Optional[credentialReportNotPresentExceptionMessage]
 
 
 class CredentialReportNotReadyException(ServiceException):
     code: str = "ReportInProgress"
     sender_fault: bool = True
     status_code: int = 404
-    message: Optional[credentialReportNotReadyExceptionMessage]
 
 
 class DeleteConflictException(ServiceException):
     code: str = "DeleteConflict"
     sender_fault: bool = True
     status_code: int = 409
-    message: Optional[deleteConflictMessage]
 
 
 class DuplicateCertificateException(ServiceException):
     code: str = "DuplicateCertificate"
     sender_fault: bool = True
     status_code: int = 409
-    message: Optional[duplicateCertificateMessage]
 
 
 class DuplicateSSHPublicKeyException(ServiceException):
     code: str = "DuplicateSSHPublicKey"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[duplicateSSHPublicKeyMessage]
 
 
 class EntityAlreadyExistsException(ServiceException):
     code: str = "EntityAlreadyExists"
     sender_fault: bool = True
     status_code: int = 409
-    message: Optional[entityAlreadyExistsMessage]
 
 
 class EntityTemporarilyUnmodifiableException(ServiceException):
     code: str = "EntityTemporarilyUnmodifiable"
     sender_fault: bool = True
     status_code: int = 409
-    message: Optional[entityTemporarilyUnmodifiableMessage]
 
 
 class InvalidAuthenticationCodeException(ServiceException):
     code: str = "InvalidAuthenticationCode"
     sender_fault: bool = True
     status_code: int = 403
-    message: Optional[invalidAuthenticationCodeMessage]
 
 
 class InvalidCertificateException(ServiceException):
     code: str = "InvalidCertificate"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[invalidCertificateMessage]
 
 
 class InvalidInputException(ServiceException):
     code: str = "InvalidInput"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[invalidInputMessage]
 
 
 class InvalidPublicKeyException(ServiceException):
     code: str = "InvalidPublicKey"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[invalidPublicKeyMessage]
 
 
 class InvalidUserTypeException(ServiceException):
     code: str = "InvalidUserType"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[invalidUserTypeMessage]
 
 
 class KeyPairMismatchException(ServiceException):
     code: str = "KeyPairMismatch"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[keyPairMismatchMessage]
 
 
 class LimitExceededException(ServiceException):
     code: str = "LimitExceeded"
     sender_fault: bool = True
     status_code: int = 409
-    message: Optional[limitExceededMessage]
 
 
 class MalformedCertificateException(ServiceException):
     code: str = "MalformedCertificate"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[malformedCertificateMessage]
 
 
 class MalformedPolicyDocumentException(ServiceException):
     code: str = "MalformedPolicyDocument"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[malformedPolicyDocumentMessage]
 
 
 class NoSuchEntityException(ServiceException):
     code: str = "NoSuchEntity"
     sender_fault: bool = True
     status_code: int = 404
-    message: Optional[noSuchEntityMessage]
 
 
 class PasswordPolicyViolationException(ServiceException):
     code: str = "PasswordPolicyViolation"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[passwordPolicyViolationMessage]
 
 
 class PolicyEvaluationException(ServiceException):
     code: str = "PolicyEvaluation"
     sender_fault: bool = False
     status_code: int = 500
-    message: Optional[policyEvaluationErrorMessage]
 
 
 class PolicyNotAttachableException(ServiceException):
     code: str = "PolicyNotAttachable"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[policyNotAttachableMessage]
 
 
 class ReportGenerationLimitExceededException(ServiceException):
     code: str = "ReportGenerationLimitExceeded"
     sender_fault: bool = True
     status_code: int = 409
-    message: Optional[reportGenerationLimitExceededMessage]
 
 
 class ServiceFailureException(ServiceException):
     code: str = "ServiceFailure"
     sender_fault: bool = False
     status_code: int = 500
-    message: Optional[serviceFailureExceptionMessage]
 
 
 class ServiceNotSupportedException(ServiceException):
     code: str = "NotSupportedService"
     sender_fault: bool = True
     status_code: int = 404
-    message: Optional[serviceNotSupportedMessage]
 
 
 class UnmodifiableEntityException(ServiceException):
     code: str = "UnmodifiableEntity"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[unmodifiableEntityMessage]
 
 
 class UnrecognizedPublicKeyEncodingException(ServiceException):
     code: str = "UnrecognizedPublicKeyEncoding"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[unrecognizedPublicKeyEncodingMessage]
 
 
 dateType = datetime

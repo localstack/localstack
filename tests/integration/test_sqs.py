@@ -1,23 +1,17 @@
-import datetime
 import json
 import os
 import re
 import time
 from threading import Timer
-from urllib.parse import urlencode
 
 import pytest
 import requests
-from botocore.auth import SIGV4_TIMESTAMP, SigV4Auth
-from botocore.awsrequest import AWSRequest
-from botocore.credentials import Credentials
 from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid, to_str
+from localstack.utils.common import poll_condition, retry, short_uid, to_str
 
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
@@ -58,6 +52,11 @@ def get_qsize(sqs_client, queue_url: str) -> int:
     return int(response["Attributes"]["ApproximateNumberOfMessages"])
 
 
+@pytest.fixture(autouse=True)
+def sqs_snapshot_transformer(snapshot):
+    snapshot.add_transformer(snapshot.transform.sqs_api())
+
+
 class TestSqsProvider:
     @pytest.mark.only_localstack
     def test_get_queue_url_contains_request_host(self, sqs_client, sqs_create_queue, monkeypatch):
@@ -80,6 +79,7 @@ class TestSqsProvider:
         queue_url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
         assert queue_url == f"{host}/{account_id}/{queue_name}"
 
+    @pytest.mark.aws_validated
     def test_list_queues(self, sqs_client, sqs_create_queue):
         queue_names = [
             "a-test-queue-" + short_uid(),
@@ -117,6 +117,7 @@ class TestSqsProvider:
         for url in queue_urls:
             assert url in result["QueueUrls"]
 
+    @pytest.mark.aws_validated
     def test_create_queue_and_get_attributes(self, sqs_client, sqs_queue):
         result = sqs_client.get_queue_attributes(
             QueueUrl=sqs_queue, AttributeNames=["QueueArn", "CreatedTimestamp", "VisibilityTimeout"]
@@ -182,6 +183,7 @@ class TestSqsProvider:
         sqs_client.delete_queue(QueueUrl=queue_url)
         assert queue_url == sqs_create_queue(QueueName=name)
 
+    @pytest.mark.aws_validated
     def test_send_receive_message(self, sqs_client, sqs_queue):
         send_result = sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="message")
 
@@ -214,6 +216,7 @@ class TestSqsProvider:
             float(attrs["ApproximateFirstReceiveTimestamp"]), 2
         )
 
+    @pytest.mark.aws_validated
     def test_send_receive_message_multiple_queues(self, sqs_client, sqs_create_queue):
         queue0 = sqs_create_queue()
         queue1 = sqs_create_queue()
@@ -227,6 +230,7 @@ class TestSqsProvider:
         assert len(result["Messages"]) == 1
         assert result["Messages"][0]["Body"] == "message"
 
+    @pytest.mark.aws_validated
     def test_send_message_batch(self, sqs_client, sqs_queue):
         sqs_client.send_message_batch(
             QueueUrl=sqs_queue,
@@ -250,6 +254,7 @@ class TestSqsProvider:
         assert message0["Body"] == "message-0"
         assert message1["Body"] == "message-1"
 
+    @pytest.mark.aws_validated
     def test_send_batch_receive_multiple(self, sqs_client, sqs_queue):
         # send a batch, then a single message, then receive them
         # Important: AWS does not guarantee the order of messages, be it within the batch or between sends
@@ -276,6 +281,7 @@ class TestSqsProvider:
             f"message-{b}" for b in range(message_count)
         )
 
+    @pytest.mark.aws_validated
     def test_send_message_batch_with_empty_list(self, sqs_client, sqs_create_queue):
         queue_url = sqs_create_queue()
 
@@ -285,6 +291,7 @@ class TestSqsProvider:
             assert "EmptyBatchRequest" in e.response["Error"]["Code"]
             assert e.response["ResponseMetadata"]["HTTPStatusCode"] in [400, 404]
 
+    @pytest.mark.aws_validated
     def test_tag_untag_queue(self, sqs_client, sqs_create_queue):
         queue_url = sqs_create_queue()
 
@@ -307,6 +314,7 @@ class TestSqsProvider:
         response = sqs_client.list_queue_tags(QueueUrl=queue_url)
         assert "Tags" not in response
 
+    @pytest.mark.aws_validated
     def test_tags_case_sensitive(self, sqs_client, sqs_create_queue):
         queue_url = sqs_create_queue()
 
@@ -317,6 +325,7 @@ class TestSqsProvider:
         response = sqs_client.list_queue_tags(QueueUrl=queue_url)
         assert response["Tags"] == tags
 
+    @pytest.mark.aws_validated
     def test_untag_queue_ignores_non_existing_tag(self, sqs_client, sqs_create_queue):
         queue_url = sqs_create_queue()
 
@@ -330,6 +339,7 @@ class TestSqsProvider:
         response = sqs_client.list_queue_tags(QueueUrl=queue_url)
         assert response["Tags"] == {"tag2": "value2"}
 
+    @pytest.mark.aws_validated
     def test_tag_queue_overwrites_existing_tag(self, sqs_client, sqs_create_queue):
         queue_url = sqs_create_queue()
 
@@ -344,6 +354,7 @@ class TestSqsProvider:
         response = sqs_client.list_queue_tags(QueueUrl=queue_url)
         assert response["Tags"] == {"tag1": "VALUE1", "tag2": "value2", "tag3": "value3"}
 
+    @pytest.mark.aws_validated
     def test_create_queue_with_tags(self, sqs_client, sqs_create_queue):
         tags = {"tag1": "value1", "tag2": "value2"}
         queue_url = sqs_create_queue(tags=tags)
@@ -426,46 +437,213 @@ class TestSqsProvider:
         ), f"unexpected number of messages in response {response}"
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5938")
+    def test_create_queue_with_default_attributes_is_idempotent(self, sqs_client, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}"
+        attributes = {
+            "VisibilityTimeout": "69",
+            "ReceiveMessageWaitTimeSeconds": "1",
+        }
+
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+        assert sqs_create_queue(QueueName=queue_name) == queue_url
+
+    @pytest.mark.aws_validated
     def test_create_queue_with_different_attributes_raises_exception(
-        self, sqs_client, sqs_create_queue
+        self, sqs_client, sqs_create_queue, snapshot
     ):
         queue_name = f"queue-{short_uid()}"
 
-        sqs_create_queue(QueueName=queue_name)
+        # create queue with ReceiveMessageWaitTimeSeconds=2
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "ReceiveMessageWaitTimeSeconds": "1",
+                "DelaySeconds": "1",
+            },
+        )
 
+        # try to create a queue without attributes works
+        assert queue_url == sqs_create_queue(QueueName=queue_name)
+
+        # try to create a queue with one attribute specified
+        assert queue_url == sqs_create_queue(QueueName=queue_name, Attributes={"DelaySeconds": "1"})
+
+        # try to create a queue with the same name but different ReceiveMessageWaitTimeSeconds value
         with pytest.raises(ClientError) as e:
             sqs_create_queue(
                 QueueName=queue_name,
                 Attributes={
                     "ReceiveMessageWaitTimeSeconds": "1",
+                    "DelaySeconds": "2",
+                },
+            )
+        snapshot.match("create_queue_01", e.value)
+
+        # update the attribute of the queue
+        sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"DelaySeconds": "2"})
+
+        # try again
+        assert queue_url == sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "ReceiveMessageWaitTimeSeconds": "1",
+                "DelaySeconds": "2",
+            },
+        )
+
+        # try with the original request
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(
+                QueueName=queue_name,
+                Attributes={
+                    "ReceiveMessageWaitTimeSeconds": "1",
+                    "DelaySeconds": "1",
+                },
+            )
+        snapshot.match("create_queue_02", e.value)
+
+    @pytest.mark.aws_validated
+    def test_create_queue_after_internal_attributes_changes_works(
+        self, sqs_client, sqs_create_queue
+    ):
+        queue_name = f"queue-{short_uid()}"
+
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar-1", DelaySeconds=1)
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar-2")
+
+        assert queue_url == sqs_create_queue(QueueName=queue_name)
+
+    @pytest.mark.aws_validated
+    def test_create_and_update_queue_attributes(self, sqs_client, sqs_create_queue, snapshot):
+        queue_url = sqs_create_queue(
+            Attributes={
+                "MessageRetentionPeriod": "604800",  # Unsupported by ElasticMq, should be saved in memory
+                "ReceiveMessageWaitTimeSeconds": "10",
+                "VisibilityTimeout": "20",
+            }
+        )
+
+        response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+        snapshot.match("get_queue_attributes", response)
+
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url,
+            Attributes={
+                "MaximumMessageSize": "2048",
+                "VisibilityTimeout": "69",
+                "DelaySeconds": "420",
+            },
+        )
+
+        response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+        snapshot.match("get_updated_queue_attributes", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5938")
+    def test_create_queue_with_default_arguments_works_with_modified_attributes(
+        self, sqs_client, sqs_create_queue
+    ):
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url,
+            Attributes={
+                "VisibilityTimeout": "2",
+                "ReceiveMessageWaitTimeSeconds": "2",
+            },
+        )
+
+        # original attributes
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(
+                QueueName=queue_name,
+                Attributes={
+                    "VisibilityTimeout": "1",
+                    "ReceiveMessageWaitTimeSeconds": "1",
                 },
             )
         e.match("QueueAlreadyExists")
 
-        assert (
-            e.value.response["Error"]["Message"]
-            == "A queue already exists with the same name and a different value for attribute "
-            "ReceiveMessageWaitTimeSeconds "
+        # modified attributes
+        assert queue_url == sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "VisibilityTimeout": "2",
+                "ReceiveMessageWaitTimeSeconds": "2",
+            },
         )
 
-    def test_create_queue_with_attributes(self, sqs_client, sqs_create_queue):
-        attributes = {
-            "MessageRetentionPeriod": "604800",  # Unsupported by ElasticMq, should be saved in memory
-            "ReceiveMessageWaitTimeSeconds": "10",
-            "VisibilityTimeout": "20",
-        }
+        # no attributes always works
+        assert queue_url == sqs_create_queue(QueueName=queue_name)
 
-        queue_url = sqs_create_queue(Attributes=attributes)
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5938")
+    def test_create_queue_after_modified_attributes(self, sqs_client, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "VisibilityTimeout": "1",
+                "ReceiveMessageWaitTimeSeconds": "1",
+            },
+        )
 
-        attrs = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])[
-            "Attributes"
-        ]
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url,
+            Attributes={
+                "VisibilityTimeout": "2",
+                "ReceiveMessageWaitTimeSeconds": "2",
+            },
+        )
 
-        assert attrs["MessageRetentionPeriod"] == "604800"
-        assert attrs["VisibilityTimeout"] == "20"
-        assert attrs["ReceiveMessageWaitTimeSeconds"] == "10"
+        # original attributes
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(
+                QueueName=queue_name,
+                Attributes={
+                    "VisibilityTimeout": "1",
+                    "ReceiveMessageWaitTimeSeconds": "1",
+                },
+            )
+        e.match("QueueAlreadyExists")
 
+        # modified attributes
+        assert queue_url == sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "VisibilityTimeout": "2",
+                "ReceiveMessageWaitTimeSeconds": "2",
+            },
+        )
+
+        # no attributes always works
+        assert queue_url == sqs_create_queue(QueueName=queue_name)
+
+    @pytest.mark.aws_validated
+    def test_create_queue_after_send(self, sqs_client, sqs_create_queue):
+        # checks that intrinsic queue attributes like "ApproxMessages" does not hinder queue creation
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar")
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="bared")
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="baz")
+
+        def _qsize(_url):
+            response = sqs_client.get_queue_attributes(
+                QueueUrl=_url, AttributeNames=["ApproximateNumberOfMessages"]
+            )
+            return int(response["Attributes"]["ApproximateNumberOfMessages"])
+
+        assert poll_condition(lambda: _qsize(queue_url) > 0, timeout=10)
+
+        # we know that the system attribute has changed, now check whether create_queue works
+        assert queue_url == sqs_create_queue(QueueName=queue_name)
+
+    @pytest.mark.aws_validated
     def test_send_delay_and_wait_time(self, sqs_client, sqs_queue):
         sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foobar", DelaySeconds=1)
 
@@ -476,6 +654,46 @@ class TestSqsProvider:
         assert "Messages" in result
         assert len(result["Messages"]) == 1
 
+    @pytest.mark.only_localstack
+    def test_approximate_number_of_messages_delayed(self, sqs_client, sqs_queue):
+        # this test does not work against AWS in the same way, because AWS only has eventual consistency guarantees
+        # for the tested attributes that can take up to a minute to update.
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="ed")
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foo", DelaySeconds=2)
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="bar", DelaySeconds=2)
+
+        result = sqs_client.get_queue_attributes(
+            QueueUrl=sqs_queue,
+            AttributeNames=[
+                "ApproximateNumberOfMessages",
+                "ApproximateNumberOfMessagesNotVisible",
+                "ApproximateNumberOfMessagesDelayed",
+            ],
+        )
+        assert result["Attributes"] == {
+            "ApproximateNumberOfMessages": "1",
+            "ApproximateNumberOfMessagesNotVisible": "0",
+            "ApproximateNumberOfMessagesDelayed": "2",
+        }
+
+        def _assert():
+            _result = sqs_client.get_queue_attributes(
+                QueueUrl=sqs_queue,
+                AttributeNames=[
+                    "ApproximateNumberOfMessages",
+                    "ApproximateNumberOfMessagesNotVisible",
+                    "ApproximateNumberOfMessagesDelayed",
+                ],
+            )
+            assert _result["Attributes"] == {
+                "ApproximateNumberOfMessages": "3",
+                "ApproximateNumberOfMessagesNotVisible": "0",
+                "ApproximateNumberOfMessagesDelayed": "0",
+            }
+
+        retry(_assert)
+
+    @pytest.mark.aws_validated
     def test_receive_after_visibility_timeout(self, sqs_client, sqs_create_queue):
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "1"})
 
@@ -499,6 +717,7 @@ class TestSqsProvider:
             message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"]
         ), "receipt handles should be different"
 
+    @pytest.mark.aws_validated
     def test_receive_terminate_visibility_timeout(self, sqs_client, sqs_queue):
         queue_url = sqs_queue
 
@@ -519,6 +738,67 @@ class TestSqsProvider:
         # TODO: check if this is correct (whether receive with VisibilityTimeout = 0 is permanent)
         result = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in result
+
+    @pytest.mark.aws_validated
+    def test_extend_message_visibility_timeout_set_in_queue(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "2"})
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="test")
+        response = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
+        receipt = response["Messages"][0]["ReceiptHandle"]
+
+        # update even if time expires
+        for _ in range(4):
+            time.sleep(1)
+            # we've waited a total of four seconds, although the visibility timeout is 2, so we are extending it
+            sqs_client.change_message_visibility(
+                QueueUrl=queue_url, ReceiptHandle=receipt, VisibilityTimeout=2
+            )
+            assert sqs_client.receive_message(QueueUrl=queue_url).get("Messages", []) == []
+
+        messages = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)["Messages"]
+        assert messages[0]["Body"] == "test"
+        assert len(messages) == 1
+
+    @pytest.mark.aws_validated
+    def test_receive_message_with_visibility_timeout_updates_timeout(
+        self, sqs_client, sqs_create_queue
+    ):
+        queue_url = sqs_create_queue()
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="test")
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=2, VisibilityTimeout=0
+        )
+        assert len(response["Messages"]) == 1
+
+        response = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=3)
+        assert len(response["Messages"]) == 1
+
+        response = sqs_client.receive_message(QueueUrl=queue_url)
+        assert response.get("Messages", []) == []
+
+    @pytest.mark.aws_validated
+    def test_terminate_visibility_timeout_after_receive(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="test")
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=2, VisibilityTimeout=0
+        )
+        receipt_1 = response["Messages"][0]["ReceiptHandle"]
+        assert len(response["Messages"]) == 1
+
+        response = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=3)
+        assert len(response["Messages"]) == 1
+
+        sqs_client.change_message_visibility(
+            QueueUrl=queue_url, ReceiptHandle=receipt_1, VisibilityTimeout=0
+        )
+        response = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert len(response["Messages"]) == 1
 
     def test_delete_message_batch_from_lambda(
         self, sqs_client, sqs_create_queue, lambda_client, create_lambda_function
@@ -547,6 +827,7 @@ class TestSqsProvider:
         receive_result = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in receive_result.keys()
 
+    @pytest.mark.aws_validated
     def test_invalid_receipt_handle_should_return_error_message(self, sqs_client, sqs_create_queue):
         # issue 3619
         queue_url = sqs_create_queue()
@@ -556,6 +837,7 @@ class TestSqsProvider:
             )
         e.match("ReceiptHandleIsInvalid")
 
+    @pytest.mark.aws_validated
     def test_message_with_attributes_should_be_enqueued(self, sqs_client, sqs_create_queue):
         # issue 3737
         queue_url = sqs_create_queue()
@@ -701,7 +983,7 @@ class TestSqsProvider:
         assert result.status_code == 200
         assert message_body in result.text
 
-    @pytest.mark.xfail
+    @pytest.mark.aws_validated
     def test_fifo_messages_in_order_after_timeout(self, sqs_client, sqs_create_queue):
         # issue 4287
         queue_name = f"queue-{short_uid()}.fifo"
@@ -726,6 +1008,53 @@ class TestSqsProvider:
         time.sleep(timeout + 1)
         receive_and_check_order()
 
+    @pytest.mark.aws_validated
+    def test_fifo_queue_send_message_with_delay_seconds_fails(
+        self, sqs_client, sqs_create_queue, snapshot
+    ):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+        )
+
+        with pytest.raises(ClientError) as e:
+            sqs_client.send_message(
+                QueueUrl=queue_url, MessageBody="message-1", MessageGroupId="1", DelaySeconds=2
+            )
+
+        snapshot.match("send_message", e.value)
+
+    @pytest.mark.aws_validated
+    def test_fifo_queue_send_message_with_delay_on_queue_works(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+                "DelaySeconds": "2",
+            },
+        )
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="message-1", MessageGroupId="1")
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="message-2", MessageGroupId="2")
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="message-3", MessageGroupId="3")
+
+        response = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert response.get("Messages", []) == []
+
+        messages = []
+
+        def _collect():
+            _response = sqs_client.receive_message(QueueUrl=queue_url)
+            messages.extend(_response.get("Messages", []))
+            assert len(messages) == 3
+
+        retry(_collect, sleep_before=2)  # let the delay expire first
+        assert messages[0]["Body"] == "message-1"
+        assert messages[1]["Body"] == "message-2"
+        assert messages[2]["Body"] == "message-3"
+
+    @pytest.mark.aws_validated
     def test_list_queue_tags(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -735,6 +1064,7 @@ class TestSqsProvider:
         tag_list = sqs_client.list_queue_tags(QueueUrl=queue_url)
         assert tags == tag_list["Tags"]
 
+    @pytest.mark.aws_validated
     def test_queue_list_nonexistent_tags(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -743,6 +1073,7 @@ class TestSqsProvider:
 
         assert "Tags" not in tag_list["ResponseMetadata"].keys()
 
+    @pytest.mark.aws_validated
     def test_publish_get_delete_message(self, sqs_client, sqs_create_queue):
 
         # visibility part handled by test_receive_terminate_visibility_timeout
@@ -760,6 +1091,7 @@ class TestSqsProvider:
         result_recv = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in result_recv.keys()
 
+    @pytest.mark.aws_validated
     def test_delete_message_deletes_with_change_visibility_timeout(
         self, sqs_client, sqs_create_queue
     ):
@@ -787,6 +1119,7 @@ class TestSqsProvider:
         result_follow_up = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in result_follow_up.keys()
 
+    @pytest.mark.aws_validated
     def test_publish_get_delete_message_batch(self, sqs_client, sqs_create_queue):
         message_count = 10
         queue_name = f"queue-{short_uid()}"
@@ -833,6 +1166,7 @@ class TestSqsProvider:
         )
         assert "Messages" not in confirmation.keys()
 
+    @pytest.mark.aws_validated
     def test_create_and_send_to_fifo_queue(self, sqs_client, sqs_create_queue):
         # Old name: test_create_fifo_queue
         queue_name = f"queue-{short_uid()}.fifo"
@@ -930,6 +1264,7 @@ class TestSqsProvider:
             )
         e.match("InvalidParameterValue")
 
+    @pytest.mark.aws_validated
     def test_set_queue_policy(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -949,6 +1284,7 @@ class TestSqsProvider:
         policy = json.loads(attributes["Policy"])
         assert "sqs:SendMessage" == policy["Statement"][0]["Action"]
 
+    @pytest.mark.aws_validated
     def test_set_empty_queue_policy(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -976,6 +1312,7 @@ class TestSqsProvider:
         ]
         assert "Policy" not in attributes.keys()
 
+    @pytest.mark.aws_validated
     def test_send_message_with_attributes(self, sqs_client, sqs_create_queue):
         # Old name: test_send_message_attributes
         queue_name = f"queue-{short_uid()}"
@@ -998,6 +1335,7 @@ class TestSqsProvider:
         assert messages[0]["MessageAttributes"] == attributes
         assert messages[0]["MD5OfMessageAttributes"] == result_send["MD5OfMessageAttributes"]
 
+    @pytest.mark.aws_validated
     def test_sent_message_retains_attributes_after_receive(self, sqs_client, sqs_create_queue):
         # Old name: test_send_message_retains_attributes
         queue_name = f"queue-{short_uid()}"
@@ -1124,6 +1462,7 @@ class TestSqsProvider:
             )
         e.match("InvalidParameterValue")
 
+    @pytest.mark.aws_validated
     def test_send_message_with_invalid_payload_characters(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1133,6 +1472,7 @@ class TestSqsProvider:
             sqs_client.send_message(QueueUrl=queue_url, MessageBody=invalid_message_body)
         e.match("InvalidMessageContents")
 
+    @pytest.mark.aws_validated
     def test_dead_letter_queue_config(self, sqs_client, sqs_create_queue):
 
         queue_name = f"queue-{short_uid()}"
@@ -1152,6 +1492,7 @@ class TestSqsProvider:
 
         assert queue_url
 
+    @pytest.mark.aws_validated
     def test_dead_letter_queue_list_sources(self, sqs_client, sqs_create_queue):
         dl_queue_url = sqs_create_queue()
         url_parts = dl_queue_url.split("/")
@@ -1268,6 +1609,7 @@ class TestSqsProvider:
         assert message["MessageId"] == message_id
         assert message["Body"] == "foobar"
 
+    @pytest.mark.aws_validated
     def test_dead_letter_queue_max_receive_count(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = f"dl-queue-{short_uid()}"
@@ -1351,6 +1693,7 @@ class TestSqsProvider:
 
     # TODO: check if test_set_queue_attribute_at_creation == test_create_queue_with_attributes
 
+    @pytest.mark.aws_validated
     def test_get_specific_queue_attribute_response(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
@@ -1397,6 +1740,7 @@ class TestSqsProvider:
         assert max_receive_count == redrive_policy.get("maxReceiveCount")
 
     @pytest.mark.xfail
+    @pytest.mark.aws_validated
     def test_set_unsupported_attribute_fifo(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
         queue_name = f"queue-{short_uid()}"
@@ -1416,6 +1760,7 @@ class TestSqsProvider:
             )
         e.match("InvalidAttributeValue")
 
+    @pytest.mark.aws_validated
     def test_fifo_queue_send_multiple_messages_multiple_single_receives(
         self, sqs_client, sqs_create_queue
     ):
@@ -1444,6 +1789,35 @@ class TestSqsProvider:
             assert message["MessageId"] == sent_messages[i]["MessageId"]
             sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
 
+    @pytest.mark.aws_validated
+    def test_fifo_content_based_message_deduplication_arrives_once(
+        self, sqs_client, sqs_create_queue
+    ):
+        # created for https://github.com/localstack/localstack/issues/6327
+        queue_url = sqs_create_queue(
+            QueueName=f"test-queue-{short_uid()}.fifo",
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+        )
+        item = '{"foo": "bar"}'
+        group = "group-1"
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=item, MessageGroupId=group)
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=item, MessageGroupId=group)
+
+        # first receive has the item
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=2
+        )
+        assert len(response["Messages"]) == 1
+        assert response["Messages"][0]["Body"] == item
+
+        # second doesn't since the message has the same content
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1, WaitTimeSeconds=1
+        )
+        assert response.get("Messages", []) == []
+
+    @pytest.mark.aws_validated
     @pytest.mark.xfail(
         reason="localstack allows queue names with slashes, but this should be deprecated"
     )
@@ -1452,53 +1826,6 @@ class TestSqsProvider:
         with pytest.raises(Exception) as e:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
-
-    def test_post_list_queues_with_auth_in_presigned_url(self):
-        # TODO: does not work when testing against AWS
-        method = "post"
-        protocol = get_service_protocol()
-        # CI might not set EDGE_PORT variables properly
-        port = 4566
-        if protocol == "https":
-            port = 443
-        base_url = "{}://{}:{}".format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, port)
-
-        req = AWSRequest(
-            method=method,
-            url=base_url,
-            data={"Action": "ListQueues", "Version": "2012-11-05"},
-        )
-
-        # boto doesn't support querystring-style auth, so we have to do some
-        # weird logic to use boto's signing functions, to understand what's
-        # going on here look at the internals of the SigV4Auth.add_auth
-        # method.
-        datetime_now = datetime.datetime.utcnow()
-        req.context["timestamp"] = datetime_now.strftime(SIGV4_TIMESTAMP)
-        signer = SigV4Auth(
-            Credentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY),
-            "sqs",
-            os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION,
-        )
-        canonical_request = signer.canonical_request(req)
-        string_to_sign = signer.string_to_sign(req, canonical_request)
-
-        payload = {
-            "Action": "ListQueues",
-            "Version": "2012-11-05",
-            "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
-            "X-Amz-Credential": signer.scope(req),
-            "X-Amz-SignedHeaders": ";".join(signer.headers_to_sign(req).keys()),
-            "X-Amz-Signature": signer.signature(string_to_sign, req),
-        }
-
-        response = requests.post(
-            url=base_url,
-            data=urlencode(payload),
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        assert response.status_code == 200
-        assert b"<ListQueuesResponse" in response.content
 
     @pytest.mark.aws_validated
     def test_get_list_queues_with_query_auth(self, aws_http_client_factory):
@@ -1608,10 +1935,6 @@ class TestSqsProvider:
             )
         e.match("MissingParameter")
 
-    def test_approximate_number_of_messages_delayed(self):
-        # TODO: test approximateNumberOfMessages once delayed Messages are properly counted
-        pass
-
     @pytest.mark.aws_validated
     def test_posting_to_queue_via_queue_name(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
@@ -1641,6 +1964,7 @@ class TestSqsProvider:
             )
         e.match("InvalidParameterValue")
 
+    @pytest.mark.aws_validated
     def test_change_message_visibility_not_permanent(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1722,6 +2046,7 @@ class TestSqsProvider:
         assert result_send["MD5OfMessageBody"] == result_receive["Messages"][0]["MD5OfBody"]
         assert message_content == result_receive["Messages"][0]["Body"]
 
+    @pytest.mark.aws_validated
     def test_purge_queue(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1736,6 +2061,7 @@ class TestSqsProvider:
         receive_result = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in receive_result.keys()
 
+    @pytest.mark.aws_validated
     def test_remove_message_with_old_receipt_handle(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1752,7 +2078,7 @@ class TestSqsProvider:
         )
         assert int(approx_nr_of_messages["Attributes"]["ApproximateNumberOfMessages"]) == 0
 
-    @pytest.mark.localstack_only
+    @pytest.mark.only_localstack
     def test_list_queues_multi_region_without_endpoint_strategy(
         self, create_boto_client, cleanups, monkeypatch
     ):
@@ -1907,23 +2233,57 @@ class TestSqsProvider:
             "Messages"
         )[0].get("MD5OfBody")
 
-    def test_sse_attributes_are_accepted(self, sqs_client, sqs_create_queue):
-        queue_name = f"queue-{short_uid()}"
-        queue_url = sqs_create_queue(QueueName=queue_name)
+    @pytest.mark.aws_validated
+    def test_sse_queue_attributes(self, sqs_client, sqs_create_queue, snapshot):
+        # KMS server-side encryption (SSE)
+        queue_url = sqs_create_queue()
         attributes = {
             "KmsMasterKeyId": "testKeyId",
             "KmsDataKeyReusePeriodSeconds": "6000",
+            "SqsManagedSseEnabled": "false",
+        }
+        sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+        response = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url,
+            AttributeNames=[
+                "KmsMasterKeyId",
+                "KmsDataKeyReusePeriodSeconds",
+                "SqsManagedSseEnabled",
+            ],
+        )
+        snapshot.match("sse_kms_attributes", response)
+
+        # SQS SSE
+        queue_url = sqs_create_queue()
+        attributes = {
             "SqsManagedSseEnabled": "true",
         }
         sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
-        result_attributes = sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["All"]
-        )["Attributes"]
-        keys = result_attributes.keys()
-        for k in attributes.keys():
-            assert k in keys
-            assert attributes[k] == result_attributes[k]
+        response = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url,
+            AttributeNames=[
+                "KmsMasterKeyId",
+                "KmsDataKeyReusePeriodSeconds",
+                "SqsManagedSseEnabled",
+            ],
+        )
+        snapshot.match("sse_sqs_attributes", response)
 
+    @pytest.mark.xfail(reason="validation currently not implemented in localstack")
+    @pytest.mark.aws_validated
+    def test_sse_kms_and_sqs_are_mutually_exclusive(self, sqs_client, sqs_create_queue, snapshot):
+        queue_url = sqs_create_queue()
+        attributes = {
+            "KmsMasterKeyId": "testKeyId",
+            "SqsManagedSseEnabled": "true",
+        }
+
+        with pytest.raises(ClientError) as e:
+            sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+
+        snapshot.match("error", e.value)
+
+    @pytest.mark.aws_validated
     def test_receive_message_message_attribute_names_filters(
         self, sqs_client, sqs_create_queue, snapshot
     ):
@@ -1931,8 +2291,6 @@ class TestSqsProvider:
         Receive message allows a list of filters to be passed with MessageAttributeNames. See:
         https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message
         """
-        snapshot.add_transformer(snapshot.transform.sqs_api())
-
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 
         response = sqs_client.send_message(
@@ -1988,11 +2346,11 @@ class TestSqsProvider:
         response = receive_message(["..foo"])
         assert snapshot.match("illegal_name_2", response)
 
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..Attributes.SenderId"])
     def test_receive_message_attribute_names_filters(self, sqs_client, sqs_create_queue, snapshot):
         # TODO -> senderId in LS == account ID, but on AWS it looks quite different: [A-Z]{21}:<email>
         # account id is replaced with higher priority
-        snapshot.add_transformer(snapshot.transform.sqs_api())
 
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 

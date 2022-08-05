@@ -77,8 +77,11 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
 
 class LogsAwsApiListener(AwsApiListener):
     def __init__(self):
-        self.provider = LogsProvider()
+        self.provider = self._create_provider()
         super().__init__("logs", MotoFallbackDispatcher(self.provider))
+
+    def _create_provider(self):
+        return LogsProvider()
 
     def request(self, request: Request) -> Response:
         response = super().request(request)

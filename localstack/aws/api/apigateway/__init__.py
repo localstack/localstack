@@ -1,6 +1,6 @@
 import sys
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import IO, Dict, Iterable, List, Optional, Union
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -172,14 +172,12 @@ class BadRequestException(ServiceException):
     code: str = "BadRequestException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ConflictException(ServiceException):
     code: str = "ConflictException"
     sender_fault: bool = False
     status_code: int = 409
-    message: Optional[String]
 
 
 class LimitExceededException(ServiceException):
@@ -187,14 +185,12 @@ class LimitExceededException(ServiceException):
     sender_fault: bool = False
     status_code: int = 429
     retryAfterSeconds: Optional[String]
-    message: Optional[String]
 
 
 class NotFoundException(ServiceException):
     code: str = "NotFoundException"
     sender_fault: bool = False
     status_code: int = 404
-    message: Optional[String]
 
 
 class ServiceUnavailableException(ServiceException):
@@ -202,7 +198,6 @@ class ServiceUnavailableException(ServiceException):
     sender_fault: bool = False
     status_code: int = 503
     retryAfterSeconds: Optional[String]
-    message: Optional[String]
 
 
 class TooManyRequestsException(ServiceException):
@@ -210,14 +205,12 @@ class TooManyRequestsException(ServiceException):
     sender_fault: bool = False
     status_code: int = 429
     retryAfterSeconds: Optional[String]
-    message: Optional[String]
 
 
 class UnauthorizedException(ServiceException):
     code: str = "UnauthorizedException"
     sender_fault: bool = False
     status_code: int = 401
-    message: Optional[String]
 
 
 class AccessLogSettings(TypedDict, total=False):
@@ -740,9 +733,9 @@ class DomainNames(TypedDict, total=False):
 
 
 class ExportResponse(TypedDict, total=False):
+    body: Optional[Union[Blob, IO[Blob], Iterable[Blob]]]
     contentType: Optional[String]
     contentDisposition: Optional[String]
-    body: Optional[Blob]
 
 
 class FlushStageAuthorizersCacheRequest(ServiceRequest):
@@ -1044,22 +1037,22 @@ class GetVpcLinksRequest(ServiceRequest):
 
 
 class ImportApiKeysRequest(ServiceRequest):
-    body: Blob
+    body: IO[Blob]
     format: ApiKeysFormat
     failOnWarnings: Optional[Boolean]
 
 
 class ImportDocumentationPartsRequest(ServiceRequest):
+    body: IO[Blob]
     restApiId: String
     mode: Optional[PutMode]
     failOnWarnings: Optional[Boolean]
-    body: Blob
 
 
 class ImportRestApiRequest(ServiceRequest):
+    body: IO[Blob]
     failOnWarnings: Optional[Boolean]
     parameters: Optional[MapOfStringToString]
-    body: Blob
 
 
 class TlsConfig(TypedDict, total=False):
@@ -1363,11 +1356,11 @@ class PutMethodResponseRequest(ServiceRequest):
 
 
 class PutRestApiRequest(ServiceRequest):
+    body: IO[Blob]
     restApiId: String
     mode: Optional[PutMode]
     failOnWarnings: Optional[Boolean]
     parameters: Optional[MapOfStringToString]
-    body: Blob
 
 
 class RequestValidators(TypedDict, total=False):
@@ -1386,9 +1379,9 @@ class RestApis(TypedDict, total=False):
 
 
 class SdkResponse(TypedDict, total=False):
+    body: Optional[Union[Blob, IO[Blob], Iterable[Blob]]]
     contentType: Optional[String]
     contentDisposition: Optional[String]
-    body: Optional[Blob]
 
 
 class SdkTypes(TypedDict, total=False):
@@ -2307,7 +2300,7 @@ class ApigatewayApi:
     def import_api_keys(
         self,
         context: RequestContext,
-        body: Blob,
+        body: IO[Blob],
         format: ApiKeysFormat,
         fail_on_warnings: Boolean = None,
     ) -> ApiKeyIds:
@@ -2318,7 +2311,7 @@ class ApigatewayApi:
         self,
         context: RequestContext,
         rest_api_id: String,
-        body: Blob,
+        body: IO[Blob],
         mode: PutMode = None,
         fail_on_warnings: Boolean = None,
     ) -> DocumentationPartIds:
@@ -2328,7 +2321,7 @@ class ApigatewayApi:
     def import_rest_api(
         self,
         context: RequestContext,
-        body: Blob,
+        body: IO[Blob],
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
     ) -> RestApi:
@@ -2403,7 +2396,7 @@ class ApigatewayApi:
         self,
         context: RequestContext,
         rest_api_id: String,
-        body: Blob,
+        body: IO[Blob],
         mode: PutMode = None,
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,

@@ -23,7 +23,13 @@ from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_f
 from localstack.utils import analytics, config_listener, files, persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.request_context import patch_moto_request_handling
-from localstack.utils.bootstrap import canonicalize_api_names, in_ci, log_duration, setup_logging
+from localstack.utils.bootstrap import (
+    canonicalize_api_names,
+    in_ci,
+    is_api_enabled,
+    log_duration,
+    setup_logging,
+)
 from localstack.utils.container_networking import get_main_container_id
 from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import get_free_tcp_port, is_port_open
@@ -481,12 +487,14 @@ def do_start_infra(asynchronous, apis, is_in_docker):
             return
 
         for api in available_services:
-            try:
-                SERVICE_PLUGINS.require(api)
-            except ServiceDisabled as e:
-                LOG.debug("%s", e)
-            except Exception:
-                LOG.exception("could not load service plugin %s", api)
+            # this should be the only call to is_api_enabled left
+            if is_api_enabled(api):
+                try:
+                    SERVICE_PLUGINS.require(api)
+                except ServiceDisabled as e:
+                    LOG.debug("%s", e)
+                except Exception:
+                    LOG.exception("could not load service plugin %s", api)
 
     @log_duration()
     def start_runtime_components():

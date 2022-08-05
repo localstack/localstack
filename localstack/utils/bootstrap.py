@@ -240,6 +240,7 @@ def canonicalize_api_names(apis: Iterable[str] = None) -> List[str]:
     return list(apis)
 
 
+# DEPRECATED, lazy loading should be assumed
 def is_api_enabled(api: str) -> bool:
     apis = get_enabled_apis()
 

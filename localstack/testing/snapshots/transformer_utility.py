@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 from typing import Optional, Pattern
 
+from localstack.aws.api.secretsmanager import CreateSecretResponse
 from localstack.testing.snapshots.transformer import (
     JsonpathTransformer,
     KeyValueBasedTransformer,
@@ -22,7 +23,7 @@ PATTERN_ARN_CHANGESET = re.compile(
 PATTERN_LOGSTREAM_ID: Pattern[str] = re.compile(
     # r"\d{4}/\d{2}/\d{2}/\[((\$LATEST)|\d+)\][0-9a-f]{32}" # TODO - this was originally included
     # but some responses from LS look like this: 2022/5/30/[$LATEST]20b0964ab88b01c1 -> might not be correct on LS?
-    r"\d{4}/\d{1,2}/\d{1,2}/\[((\$LATEST)|\d+)\][0-9a-f]{16,32}"
+    r"\d{4}/\d{1,2}/\d{1,2}/\[((\$LATEST)|\d+)\][0-9a-f]{8,32}"
 )
 
 
@@ -180,6 +181,30 @@ class TransformerUtility:
             ),
         ]
 
+    @staticmethod
+    def cloudwatch_api():
+        """
+        :return: array with Transformers, for cloudwatch api.
+        """
+        return [
+            TransformerUtility.key_value("AlarmName"),
+            KeyValueBasedTransformer(_resource_name_transformer, "SubscriptionArn"),
+            TransformerUtility.key_value("Region", "region-name-full"),
+        ]
+
+    @staticmethod
+    def secretsmanager_secret_id_arn(create_secret_res: CreateSecretResponse, index: int):
+        secret_id_repl = f"<SecretId-{index}idx>"
+        arn_part_repl = f"<ArnPart-{index}idx>"
+
+        secret_id: str = create_secret_res["Name"]
+        arn_part: str = "".join(create_secret_res["ARN"].rpartition("-")[-2:])
+
+        return [
+            RegexTransformer(arn_part, arn_part_repl),
+            RegexTransformer(secret_id, secret_id_repl),
+        ]
+
     # TODO add example
     # @staticmethod
     # def custom(fn: Callable[[dict], dict]) -> Transformer:
@@ -224,6 +249,8 @@ def _resource_name_transformer(key: str, val: str) -> str:
             if res.startswith("<") and res.endswith(">"):
                 # value was already replaced
                 return None
+            if ":changeSet/" in val:
+                return val.split(":changeSet/")[-1]
             if "/" in res:
                 return res.split("/")[-1]
             if res.startswith("function:"):

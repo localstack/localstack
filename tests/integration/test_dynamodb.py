@@ -13,7 +13,6 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
-from localstack.utils.sync import poll_condition
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
@@ -346,10 +345,12 @@ class TestDynamoDB:
         # clean up
         delete_table(table_name)
 
-    def test_valid_local_secondary_index(self, dynamodb_client, dynamodb_create_table):
+    def test_valid_local_secondary_index(
+        self, dynamodb_client, dynamodb_create_table_with_parameters, dynamodb_wait_for_table_active
+    ):
         try:
             table_name = f"test-table-{short_uid()}"
-            dynamodb_client.create_table(
+            dynamodb_create_table_with_parameters(
                 TableName=table_name,
                 KeySchema=[
                     {"AttributeName": "PK", "KeyType": "HASH"},
@@ -374,13 +375,7 @@ class TestDynamoDB:
                 Tags=TEST_DDB_TAGS,
             )
 
-            def wait_for_table_created():
-                return (
-                    dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"]
-                    == "ACTIVE"
-                )
-
-            poll_condition(wait_for_table_created, timeout=30)
+            dynamodb_wait_for_table_active(table_name)
             item = {"SK": {"S": "hello"}, "LSI1SK": {"N": "123"}, "PK": {"S": "test one"}}
 
             dynamodb_client.put_item(TableName=table_name, Item=item)
@@ -421,35 +416,60 @@ class TestDynamoDB:
         # clean up
         delete_table(table_name)
 
-    def test_return_values_in_put_item(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+    @pytest.mark.aws_validated
+    def test_return_values_in_put_item(self, dynamodb, dynamodb_client):
+        aws_stack.create_dynamodb_table(
+            TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY, client=dynamodb_client
+        )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
+
+        def _validate_response(response, expected: dict = {}):
+            """
+            Validates the response against the optionally expected one.
+            It checks that the response doesn't contain `Attributes`,
+            `ConsumedCapacity` and `ItemCollectionMetrics` unless they are expected.
+            """
+            should_not_contain = {
+                "Attributes",
+                "ConsumedCapacity",
+                "ItemCollectionMetrics",
+            } - expected.keys()
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+            assert expected.items() <= response.items()
+            assert response.keys().isdisjoint(should_not_contain)
 
         # items which are being used to put in the table
         item1 = {PARTITION_KEY: "id1", "data": "foobar"}
+        item1b = {PARTITION_KEY: "id1", "data": "barfoo"}
         item2 = {PARTITION_KEY: "id2", "data": "foobar"}
 
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
         # there is no data present in the table already so even if return values
         # is set to 'ALL_OLD' as there is no data it will not return any data.
-        assert not response.get("Attributes")
+        _validate_response(response)
         # now the same data is present so when we pass return values as 'ALL_OLD'
         # it should give us attributes
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
-        assert response.get("Attributes")
-        assert item1.get("id") == response.get("Attributes").get("id")
-        assert item1.get("data") == response.get("Attributes").get("data")
+        _validate_response(response, expected={"Attributes": item1})
+
+        # now a previous version of data is present, so when we pass return
+        # values as 'ALL_OLD' it should give us the old attributes
+        response = table.put_item(Item=item1b, ReturnValues="ALL_OLD")
+        _validate_response(response, expected={"Attributes": item1})
 
         response = table.put_item(Item=item2)
         # we do not have any same item as item2 already so when we add this by default
         # return values is set to None so no Attribute values should be returned
-        assert not response.get("Attributes")
+        _validate_response(response)
 
         response = table.put_item(Item=item2)
         # in this case we already have item2 in the table so on this request
         # it should not return any data as return values is set to None so no
         # Attribute values should be returned
-        assert not response.get("Attributes")
+        _validate_response(response)
+
+        # cleanup
+        table.delete()
 
     @pytest.mark.aws_validated
     def test_empty_and_binary_values(self, dynamodb, dynamodb_client):
@@ -970,6 +990,61 @@ class TestDynamoDB:
             ]
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+    @pytest.mark.aws_validated
+    def test_transaction_write_canceled(
+        self, dynamodb_create_table_with_parameters, dynamodb_wait_for_table_active, dynamodb_client
+    ):
+        table_name = "table_%s" % short_uid()
+
+        # create table
+        dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+
+        dynamodb_wait_for_table_active(table_name)
+
+        # put item in table - INSERT event
+        dynamodb_client.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
+
+        # provoke a TransactionCanceledException by adding a condition which is not met
+        with pytest.raises(Exception) as ctx:
+            dynamodb_client.transact_write_items(
+                TransactItems=[
+                    {
+                        "ConditionCheck": {
+                            "TableName": table_name,
+                            "ConditionExpression": "attribute_not_exists(Username)",
+                            "Key": {"Username": {"S": "Fred"}},
+                        }
+                    },
+                    {"Delete": {"TableName": table_name, "Key": {"Username": {"S": "Bert"}}}},
+                ]
+            )
+        # Make sure the exception contains the cancellation reasons
+        assert ctx.match("TransactionCanceledException")
+        assert (
+            str(ctx.value)
+            == "An error occurred (TransactionCanceledException) when calling the TransactWriteItems operation: "
+            "Transaction cancelled, please refer cancellation reasons for specific reasons "
+            "[ConditionalCheckFailed, None]"
+        )
+        assert hasattr(ctx.value, "response")
+        assert "CancellationReasons" in ctx.value.response
+        conditional_check_failed = [
+            reason
+            for reason in ctx.value.response["CancellationReasons"]
+            if reason.get("Code") == "ConditionalCheckFailed"
+        ]
+        assert len(conditional_check_failed) == 1
+        assert "Message" in conditional_check_failed[0]
+        # dynamodb-local adds a trailing "." to the message, AWS does not
+        assert re.match(
+            r"^The conditional request failed\.?$", conditional_check_failed[0]["Message"]
+        )
 
     def test_transaction_write_binary_data(
         self, dynamodb_client, dynamodb_create_table_with_parameters

@@ -4,17 +4,18 @@ import os
 import re
 import time
 import unittest
-
-import mock
+from unittest import mock
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
-from localstack.services.awslambda.lambda_executors import OutputLog
+from localstack.services.awslambda.lambda_api import get_lambda_policy_name
+from localstack.services.awslambda.lambda_executors import OutputLog, Util
 from localstack.services.awslambda.lambda_utils import API_PATH_ROOT
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.common import isoformat_milliseconds, mkdir, new_tmp_dir, save_file
+from localstack.utils.container_utils.container_client import VolumeInfo
 
 TEST_EVENT_SOURCE_ARN = "arn:aws:sqs:eu-west-1:000000000000:testq"
 TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN = (
@@ -342,7 +343,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_create_disabled_event_source_mapping(self):
         createResponse = self.client.post(
-            "{0}/event-source-mappings/".format(API_PATH_ROOT),
+            f"{API_PATH_ROOT}/event-source-mappings/",
             data=json.dumps(
                 {
                     "FunctionName": "test-lambda-function",
@@ -1026,6 +1027,7 @@ class TestLambdaAPI(unittest.TestCase):
         region.lambdas[arn].last_modified = self.LAST_MODIFIED
         region.lambdas[arn].role = self.ROLE
         region.lambdas[arn].memory_size = self.MEMORY_SIZE
+        region.lambdas[arn].state = "Active"
 
     def _update_function_code(self, function_name, tags=None):
         if tags is None:
@@ -1130,3 +1132,79 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
         self.assertEqual(self.RETRY_ATTEMPTS, response["MaximumRetryAttempts"])
         self.assertEqual(self.EVENT_AGE, response["MaximumEventAgeInSeconds"])
         self.assertEqual(self.DL_QUEUE, response["DestinationConfig"]["OnFailure"]["Destination"])
+
+
+class TestLambdaUtils:
+    def test_host_path_for_path_in_docker_windows(self):
+        with mock.patch(
+            "localstack.services.awslambda.lambda_executors.get_default_volume_dir_mount"
+        ) as get_volume, mock.patch("localstack.config.is_in_docker", True):
+            get_volume.return_value = VolumeInfo(
+                type="bind",
+                source=r"C:\Users\localstack\volume\mount",
+                destination="/var/lib/localstack",
+                mode="rw",
+                rw=True,
+                propagation="rprivate",
+            )
+            result = Util.get_host_path_for_path_in_docker("/var/lib/localstack/some/test/file")
+            get_volume.assert_called_once()
+            # this path style is kinda weird, but windows will accept it - no need for manual conversion of / to \
+            assert result == r"C:\Users\localstack\volume\mount/some/test/file"
+
+    def test_host_path_for_path_in_docker_linux(self):
+        with mock.patch(
+            "localstack.services.awslambda.lambda_executors.get_default_volume_dir_mount"
+        ) as get_volume, mock.patch("localstack.config.is_in_docker", True):
+            get_volume.return_value = VolumeInfo(
+                type="bind",
+                source="/home/some-user/.cache/localstack/volume",
+                destination="/var/lib/localstack",
+                mode="rw",
+                rw=True,
+                propagation="rprivate",
+            )
+            result = Util.get_host_path_for_path_in_docker("/var/lib/localstack/some/test/file")
+            get_volume.assert_called_once()
+            assert result == "/home/some-user/.cache/localstack/volume/some/test/file"
+
+    def test_host_path_for_path_in_docker_linux_volume_dir(self):
+        with mock.patch(
+            "localstack.services.awslambda.lambda_executors.get_default_volume_dir_mount"
+        ) as get_volume, mock.patch("localstack.config.is_in_docker", True):
+            get_volume.return_value = VolumeInfo(
+                type="bind",
+                source="/home/some-user/.cache/localstack/volume",
+                destination="/var/lib/localstack",
+                mode="rw",
+                rw=True,
+                propagation="rprivate",
+            )
+            result = Util.get_host_path_for_path_in_docker("/var/lib/localstack")
+            get_volume.assert_called_once()
+            assert result == "/home/some-user/.cache/localstack/volume"
+
+    def test_host_path_for_path_in_docker_linux_wrong_path(self):
+        with mock.patch(
+            "localstack.services.awslambda.lambda_executors.get_default_volume_dir_mount"
+        ) as get_volume, mock.patch("localstack.config.is_in_docker", True):
+            get_volume.return_value = VolumeInfo(
+                type="bind",
+                source="/home/some-user/.cache/localstack/volume",
+                destination="/var/lib/localstack",
+                mode="rw",
+                rw=True,
+                propagation="rprivate",
+            )
+            result = Util.get_host_path_for_path_in_docker("/var/lib/localstacktest")
+            get_volume.assert_called_once()
+            assert result == "/var/lib/localstacktest"
+            result = Util.get_host_path_for_path_in_docker("/etc/some/path")
+            assert result == "/etc/some/path"
+
+    def test_lambda_policy_name(self):
+        func_name = "lambda1"
+        policy_name1 = get_lambda_policy_name(func_name)
+        policy_name2 = get_lambda_policy_name(lambda_api.func_arn(func_name))
+        assert func_name in policy_name1
+        assert policy_name1 == policy_name2

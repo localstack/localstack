@@ -48,7 +48,9 @@ def apply_patches():
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
 
-    def apigateway_models_backend_put_rest_api(self, function_id, body, query_params):
+    def apigateway_models_backend_put_rest_api(
+        self, function_id: str, body: Dict, query_params: Dict
+    ):
         rest_api = self.get_rest_api(function_id)
         return import_api_from_openapi_spec(rest_api, body, query_params)
 

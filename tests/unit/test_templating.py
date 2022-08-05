@@ -110,6 +110,14 @@ class TestMessageTransformationBasic:
         result = re.sub(r"\s+", " ", result).strip()
         assert result == '{"foo": "bar2"}'
 
+    def test_quiet_return_put(self):
+        template = "#set($v1 = {})\n$util.qr($v1.put('value', 'hi2'))\n#return($v1)"
+        result = render_velocity_template(template, {})
+        assert json.loads(result) == {"value": "hi2"}
+        template = "#set($v1 = {})\n$util.qr($v1.put('value', 'hi2'))\n"
+        result = render_velocity_template(template, {})
+        assert result.strip() == ""
+
     def test_map_put_all(self):
         template = """
         #set($v1 = {})

@@ -63,49 +63,42 @@ class BadRequestException(ServiceException):
     code: str = "BadRequestException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ErrorMessage]
 
 
 class ForbiddenException(ServiceException):
     code: str = "ForbiddenException"
     sender_fault: bool = False
     status_code: int = 403
-    Message: Optional[ErrorMessage]
 
 
 class InternalServerErrorException(ServiceException):
     code: str = "InternalServerErrorException"
     sender_fault: bool = False
     status_code: int = 500
-    Message: Optional[ErrorMessage]
 
 
 class MethodNotAllowedException(ServiceException):
     code: str = "MethodNotAllowedException"
     sender_fault: bool = False
     status_code: int = 405
-    Message: Optional[ErrorMessage]
 
 
 class NotFoundException(ServiceException):
     code: str = "NotFoundException"
     sender_fault: bool = False
     status_code: int = 404
-    Message: Optional[ErrorMessage]
 
 
 class TooManyRequestsException(ServiceException):
     code: str = "TooManyRequestsException"
     sender_fault: bool = False
     status_code: int = 429
-    Message: Optional[ErrorMessage]
 
 
 class UnauthorizedException(ServiceException):
     code: str = "UnauthorizedException"
     sender_fault: bool = False
     status_code: int = 401
-    Message: Optional[ErrorMessage]
 
 
 GroupConfigurationParameterValueList = List[GroupConfigurationParameterValue]

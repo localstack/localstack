@@ -119,16 +119,21 @@ class GatewayRestAPI(GenericBaseModel):
             resource = resources[resource_id]
             props = resource["Properties"]
 
+            # TODO: add missing attributes
             result = client.create_rest_api(
                 name=props["Name"], description=props.get("Description", "")
-            )  # TODO: rest of the attributes
+            )
             body = props.get("Body")
-            if body is not None:
+            if body:
+                # the default behavior for imports via CFn is basepath=ignore (validated against AWS)
+                api_params = {"basepath": "ignore"}
                 body = json.dumps(body) if isinstance(body, dict) else body
-                client.put_rest_api(restApiId=result["id"], body=to_bytes(body))
+                client.put_rest_api(
+                    restApiId=result["id"], body=to_bytes(body), parameters=api_params
+                )
 
         return {
-            "create": [{"function": _create}],
+            "create": {"function": _create},
             "delete": {
                 "function": "delete_rest_api",
                 "parameters": {

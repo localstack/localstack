@@ -997,7 +997,6 @@ class AlreadyExistsException(ServiceException):
     code: str = "AlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class AssociatedInstances(ServiceException):
@@ -1016,14 +1015,12 @@ class AssociationDoesNotExist(ServiceException):
     code: str = "AssociationDoesNotExist"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class AssociationExecutionDoesNotExist(ServiceException):
     code: str = "AssociationExecutionDoesNotExist"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class AssociationLimitExceeded(ServiceException):
@@ -1036,112 +1033,96 @@ class AssociationVersionLimitExceeded(ServiceException):
     code: str = "AssociationVersionLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class AutomationDefinitionNotApprovedException(ServiceException):
     code: str = "AutomationDefinitionNotApprovedException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class AutomationDefinitionNotFoundException(ServiceException):
     code: str = "AutomationDefinitionNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class AutomationDefinitionVersionNotFoundException(ServiceException):
     code: str = "AutomationDefinitionVersionNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class AutomationExecutionLimitExceededException(ServiceException):
     code: str = "AutomationExecutionLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class AutomationExecutionNotFoundException(ServiceException):
     code: str = "AutomationExecutionNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class AutomationStepNotFoundException(ServiceException):
     code: str = "AutomationStepNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class ComplianceTypeCountLimitExceededException(ServiceException):
     code: str = "ComplianceTypeCountLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class CustomSchemaCountLimitExceededException(ServiceException):
     code: str = "CustomSchemaCountLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class DocumentAlreadyExists(ServiceException):
     code: str = "DocumentAlreadyExists"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class DocumentLimitExceeded(ServiceException):
     code: str = "DocumentLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class DocumentPermissionLimit(ServiceException):
     code: str = "DocumentPermissionLimit"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class DocumentVersionLimitExceeded(ServiceException):
     code: str = "DocumentVersionLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class DoesNotExistException(ServiceException):
     code: str = "DoesNotExistException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class DuplicateDocumentContent(ServiceException):
     code: str = "DuplicateDocumentContent"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class DuplicateDocumentVersionName(ServiceException):
     code: str = "DuplicateDocumentVersionName"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class DuplicateInstanceId(ServiceException):
@@ -1154,105 +1135,90 @@ class FeatureNotAvailableException(ServiceException):
     code: str = "FeatureNotAvailableException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class HierarchyLevelLimitExceededException(ServiceException):
     code: str = "HierarchyLevelLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class HierarchyTypeMismatchException(ServiceException):
     code: str = "HierarchyTypeMismatchException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class IdempotentParameterMismatch(ServiceException):
     code: str = "IdempotentParameterMismatch"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class IncompatiblePolicyException(ServiceException):
     code: str = "IncompatiblePolicyException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InternalServerError(ServiceException):
     code: str = "InternalServerError"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidActivation(ServiceException):
     code: str = "InvalidActivation"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidActivationId(ServiceException):
     code: str = "InvalidActivationId"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidAggregatorException(ServiceException):
     code: str = "InvalidAggregatorException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidAllowedPatternException(ServiceException):
     code: str = "InvalidAllowedPatternException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidAssociation(ServiceException):
     code: str = "InvalidAssociation"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidAssociationVersion(ServiceException):
     code: str = "InvalidAssociationVersion"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidAutomationExecutionParametersException(ServiceException):
     code: str = "InvalidAutomationExecutionParametersException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidAutomationSignalException(ServiceException):
     code: str = "InvalidAutomationSignalException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidAutomationStatusUpdateException(ServiceException):
     code: str = "InvalidAutomationStatusUpdateException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidCommandId(ServiceException):
@@ -1265,63 +1231,54 @@ class InvalidDeleteInventoryParametersException(ServiceException):
     code: str = "InvalidDeleteInventoryParametersException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidDeletionIdException(ServiceException):
     code: str = "InvalidDeletionIdException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidDocument(ServiceException):
     code: str = "InvalidDocument"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidDocumentContent(ServiceException):
     code: str = "InvalidDocumentContent"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidDocumentOperation(ServiceException):
     code: str = "InvalidDocumentOperation"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidDocumentSchemaVersion(ServiceException):
     code: str = "InvalidDocumentSchemaVersion"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidDocumentType(ServiceException):
     code: str = "InvalidDocumentType"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidDocumentVersion(ServiceException):
     code: str = "InvalidDocumentVersion"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidFilter(ServiceException):
     code: str = "InvalidFilter"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidFilterKey(ServiceException):
@@ -1334,49 +1291,42 @@ class InvalidFilterOption(ServiceException):
     code: str = "InvalidFilterOption"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidFilterValue(ServiceException):
     code: str = "InvalidFilterValue"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidInstanceId(ServiceException):
     code: str = "InvalidInstanceId"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidInstanceInformationFilterValue(ServiceException):
     code: str = "InvalidInstanceInformationFilterValue"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidInventoryGroupException(ServiceException):
     code: str = "InvalidInventoryGroupException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidInventoryItemContextException(ServiceException):
     code: str = "InvalidInventoryItemContextException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidInventoryRequestException(ServiceException):
     code: str = "InvalidInventoryRequestException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidItemContentException(ServiceException):
@@ -1384,35 +1334,30 @@ class InvalidItemContentException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     TypeName: Optional[InventoryItemTypeName]
-    Message: Optional[String]
 
 
 class InvalidKeyId(ServiceException):
     code: str = "InvalidKeyId"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidNextToken(ServiceException):
     code: str = "InvalidNextToken"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidNotificationConfig(ServiceException):
     code: str = "InvalidNotificationConfig"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidOptionException(ServiceException):
     code: str = "InvalidOptionException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidOutputFolder(ServiceException):
@@ -1431,14 +1376,12 @@ class InvalidParameters(ServiceException):
     code: str = "InvalidParameters"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidPermissionType(ServiceException):
     code: str = "InvalidPermissionType"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidPluginName(ServiceException):
@@ -1451,14 +1394,12 @@ class InvalidPolicyAttributeException(ServiceException):
     code: str = "InvalidPolicyAttributeException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidPolicyTypeException(ServiceException):
     code: str = "InvalidPolicyTypeException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidResourceId(ServiceException):
@@ -1477,49 +1418,42 @@ class InvalidResultAttributeException(ServiceException):
     code: str = "InvalidResultAttributeException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidRole(ServiceException):
     code: str = "InvalidRole"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidSchedule(ServiceException):
     code: str = "InvalidSchedule"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidTarget(ServiceException):
     code: str = "InvalidTarget"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidTargetMaps(ServiceException):
     code: str = "InvalidTargetMaps"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidTypeNameException(ServiceException):
     code: str = "InvalidTypeNameException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvalidUpdate(ServiceException):
     code: str = "InvalidUpdate"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class InvocationDoesNotExist(ServiceException):
@@ -1533,7 +1467,6 @@ class ItemContentMismatchException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     TypeName: Optional[InventoryItemTypeName]
-    Message: Optional[String]
 
 
 class ItemSizeLimitExceededException(ServiceException):
@@ -1541,21 +1474,18 @@ class ItemSizeLimitExceededException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     TypeName: Optional[InventoryItemTypeName]
-    Message: Optional[String]
 
 
 class MaxDocumentSizeExceeded(ServiceException):
     code: str = "MaxDocumentSizeExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class OpsItemAlreadyExistsException(ServiceException):
     code: str = "OpsItemAlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
     OpsItemId: Optional[String]
 
 
@@ -1567,7 +1497,6 @@ class OpsItemInvalidParameterException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     ParameterNames: Optional[OpsItemParameterNamesList]
-    Message: Optional[String]
 
 
 class OpsItemLimitExceededException(ServiceException):
@@ -1577,21 +1506,18 @@ class OpsItemLimitExceededException(ServiceException):
     ResourceTypes: Optional[OpsItemParameterNamesList]
     Limit: Optional[Integer]
     LimitType: Optional[String]
-    Message: Optional[String]
 
 
 class OpsItemNotFoundException(ServiceException):
     code: str = "OpsItemNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class OpsItemRelatedItemAlreadyExistsException(ServiceException):
     code: str = "OpsItemRelatedItemAlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
     ResourceUri: Optional[OpsItemRelatedItemAssociationResourceUri]
     OpsItemId: Optional[OpsItemId]
 
@@ -1600,105 +1526,90 @@ class OpsItemRelatedItemAssociationNotFoundException(ServiceException):
     code: str = "OpsItemRelatedItemAssociationNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class OpsMetadataAlreadyExistsException(ServiceException):
     code: str = "OpsMetadataAlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class OpsMetadataInvalidArgumentException(ServiceException):
     code: str = "OpsMetadataInvalidArgumentException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class OpsMetadataKeyLimitExceededException(ServiceException):
     code: str = "OpsMetadataKeyLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class OpsMetadataLimitExceededException(ServiceException):
     code: str = "OpsMetadataLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class OpsMetadataNotFoundException(ServiceException):
     code: str = "OpsMetadataNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class OpsMetadataTooManyUpdatesException(ServiceException):
     code: str = "OpsMetadataTooManyUpdatesException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ParameterAlreadyExists(ServiceException):
     code: str = "ParameterAlreadyExists"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ParameterLimitExceeded(ServiceException):
     code: str = "ParameterLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ParameterMaxVersionLimitExceeded(ServiceException):
     code: str = "ParameterMaxVersionLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ParameterNotFound(ServiceException):
     code: str = "ParameterNotFound"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ParameterPatternMismatchException(ServiceException):
     code: str = "ParameterPatternMismatchException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ParameterVersionLabelLimitExceeded(ServiceException):
     code: str = "ParameterVersionLabelLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ParameterVersionNotFound(ServiceException):
     code: str = "ParameterVersionNotFound"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class PoliciesLimitExceededException(ServiceException):
     code: str = "PoliciesLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ResourceDataSyncAlreadyExistsException(ServiceException):
@@ -1712,21 +1623,18 @@ class ResourceDataSyncConflictException(ServiceException):
     code: str = "ResourceDataSyncConflictException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class ResourceDataSyncCountExceededException(ServiceException):
     code: str = "ResourceDataSyncCountExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class ResourceDataSyncInvalidConfigurationException(ServiceException):
     code: str = "ResourceDataSyncInvalidConfigurationException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class ResourceDataSyncNotFoundException(ServiceException):
@@ -1735,28 +1643,24 @@ class ResourceDataSyncNotFoundException(ServiceException):
     status_code: int = 400
     SyncName: Optional[ResourceDataSyncName]
     SyncType: Optional[ResourceDataSyncType]
-    Message: Optional[String]
 
 
 class ResourceInUseException(ServiceException):
     code: str = "ResourceInUseException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class ResourceLimitExceededException(ServiceException):
     code: str = "ResourceLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class ServiceSettingNotFound(ServiceException):
     code: str = "ServiceSettingNotFound"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class StatusUnchanged(ServiceException):
@@ -1769,21 +1673,18 @@ class SubTypeCountLimitExceededException(ServiceException):
     code: str = "SubTypeCountLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class TargetInUseException(ServiceException):
     code: str = "TargetInUseException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class TargetNotConnected(ServiceException):
     code: str = "TargetNotConnected"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class TooManyTagsError(ServiceException):
@@ -1796,28 +1697,24 @@ class TooManyUpdates(ServiceException):
     code: str = "TooManyUpdates"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class TotalSizeLimitExceededException(ServiceException):
     code: str = "TotalSizeLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class UnsupportedCalendarException(ServiceException):
     code: str = "UnsupportedCalendarException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class UnsupportedFeatureRequiredException(ServiceException):
     code: str = "UnsupportedFeatureRequiredException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class UnsupportedInventoryItemContextException(ServiceException):
@@ -1825,35 +1722,30 @@ class UnsupportedInventoryItemContextException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     TypeName: Optional[InventoryItemTypeName]
-    Message: Optional[String]
 
 
 class UnsupportedInventorySchemaVersionException(ServiceException):
     code: str = "UnsupportedInventorySchemaVersionException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class UnsupportedOperatingSystem(ServiceException):
     code: str = "UnsupportedOperatingSystem"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 class UnsupportedParameterType(ServiceException):
     code: str = "UnsupportedParameterType"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class UnsupportedPlatformType(ServiceException):
     code: str = "UnsupportedPlatformType"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[String]
 
 
 AccountIdList = List[AccountId]

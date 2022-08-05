@@ -7,9 +7,37 @@ route53resolver:
     - TestAccRoute53ResolverFirewallRule_block
     - TestAccRoute53ResolverFirewallRule_blockOverride
     - TestAccRoute53ResolverFirewallRule_disappears
-    - TestAccRoute53ResolverFirewallRuleGroup_basic
-    - TestAccRoute53ResolverFirewallRuleGroup_disappears
-    - TestAccRoute53ResolverFirewallRuleGroup_tags
+    - TestAccRoute53ResolverFirewallRuleGroup
     - TestAccRoute53ResolverFirewallDomainList
 s3:
     - TestAccS3ObjectCopy
+ec2:
+    - TestAccVPC_disappears
+    - TestAccVPC_tags
+    - TestAccVPC_DefaultTags_providerOnly
+    - TestAccVPC_DefaultTags_updateToProviderOnly
+    - TestAccVPC_DefaultTags_updateToResourceOnly
+    - TestAccVPC_DefaultTagsProviderAndResource_nonOverlappingTag
+    - TestAccVPC_DefaultTagsProviderAndResource_overlappingTag
+    - TestAccVPC_DefaultTagsProviderAndResource_duplicateTag
+    - TestAccVPC_DynamicResourceTagsMergedWithLocals_ignoreChanges
+    - TestAccVPC_DynamicResourceTags_ignoreChanges
+    - TestAccVPC_defaultAndIgnoreTags
+    - TestAccVPC_ignoreTags
+    - TestAccVPC_tenancy
+    - TestAccVPC_updateDNSHostnames
+    - TestAccVPC_bothDNSOptionsSet
+    - TestAccVPC_disabledDNSSupport
+    - TestAccVPC_classicLinkOptionSet
+    - TestAccVPC_classicLinkDNSSupportOptionSet
+    - TestAccVPC_IPAMIPv4BasicExplicitCIDR
+    - TestAccVPCSubnet_basic
+    - TestAccVPCSubnet_DefaultTags_providerOnly
+    - TestAccVPCSubnet_DefaultTags_updateToProviderOnly
+    - TestAccVPCSubnet_DefaultTags_updateToResourceOnly
+    - TestAccVPCSubnet_DefaultTagsProviderAndResource_nonOverlappingTag
+    - TestAccVPCSubnet_DefaultTagsProviderAndResource_overlappingTag
+    - TestAccVPCSubnet_DefaultTagsProviderAndResource_duplicateTag
+    - TestAccVPCSubnet_defaultAndIgnoreTags
+    - TestAccVPCSubnet_updateTagsKnownAtApply
+    - TestAccVPCSubnet_ignoreTags

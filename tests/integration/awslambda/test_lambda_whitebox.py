@@ -1,14 +1,18 @@
 import base64
 import json
+import logging
 import os
+import threading
 import time
 import unittest
 
 import pytest
+from botocore.exceptions import ClientError
 
+import localstack.services.awslambda.lambda_api
 from localstack import config
 from localstack.services.awslambda import lambda_api, lambda_executors
-from localstack.services.awslambda.lambda_api import use_docker
+from localstack.services.awslambda.lambda_api import do_set_function_code, use_docker
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
@@ -24,8 +28,14 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
+from localstack.utils.testutil import create_lambda_archive
 
-from .test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
+from .test_lambda import (
+    TEST_LAMBDA_ENV,
+    TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_PYTHON,
+    TEST_LAMBDA_PYTHON_ECHO,
+)
 
 # TestLocalLambda variables
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -35,6 +45,8 @@ TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE1 = os.path.join(
 TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2 = os.path.join(
     THIS_FOLDER, "functions", "python3", "lambda2", "lambda2.zip"
 )
+
+LOG = logging.getLogger(__name__)
 
 
 class TestLambdaFallbackUrl(unittest.TestCase):
@@ -370,3 +382,57 @@ class TestLocalExecutors(unittest.TestCase):
             testutil.delete_lambda_function(lambda_name2)
         finally:
             lambda_api.DO_USE_DOCKER = original_do_use_docker
+
+
+class TestFunctionStates:
+    def test_invoke_failure_when_state_pending(self, lambda_client, lambda_su_role, monkeypatch):
+        """Tests if a lambda invocation fails if state is pending"""
+        function_name = f"test-function-{short_uid()}"
+        zip_file = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+
+        function_code_set = threading.Event()
+
+        def _do_set_function_code(*args, **kwargs):
+            result = do_set_function_code(*args, **kwargs)
+            function_code_set.wait()
+            return result
+
+        monkeypatch.setattr(
+            localstack.services.awslambda.lambda_api, "do_set_function_code", _do_set_function_code
+        )
+        try:
+            response = lambda_client.create_function(
+                FunctionName=function_name,
+                Runtime="python3.9",
+                Handler="handler.handler",
+                Role=lambda_su_role,
+                Code={"ZipFile": zip_file},
+            )
+
+            assert response["State"] == "Pending"
+
+            with pytest.raises(ClientError) as e:
+                lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+
+            assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 409
+            assert e.match("ResourceConflictException")
+            assert e.match(
+                "The operation cannot be performed at this time. The function is currently in the following state: Pending"
+            )
+
+            # let function move to active
+            function_code_set.set()
+
+            # lambda has to get active at some point
+            def _check_lambda_state():
+                response = lambda_client.get_function(FunctionName=function_name)
+                assert response["Configuration"]["State"] == "Active"
+                return response
+
+            retry(_check_lambda_state)
+            lambda_client.invoke(FunctionName=function_name, Payload=b"{}")
+        finally:
+            try:
+                lambda_client.delete_function(FunctionName=function_name)
+            except Exception:
+                LOG.debug("Unable to delete function %s", function_name)

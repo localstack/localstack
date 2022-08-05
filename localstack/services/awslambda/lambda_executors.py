@@ -1036,7 +1036,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             image_name=container_config.image_name,
             remove=container_config.remove,
             interactive=container_config.interactive,
-            detach=container_config.detach,
             name=container_config.name,
             entrypoint=container_config.entrypoint,
             command=container_config.command,
@@ -1596,17 +1595,19 @@ class Util:
                         f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for lambda code mounting to work"
                     )
 
-                result, subs = re.subn(
-                    r"^%s/(.*)$" % DEFAULT_VOLUME_DIR, r"%s/\1" % volume.source, path
-                )
-                if subs == 0:
+                if not path.startswith(f"{DEFAULT_VOLUME_DIR}/") and path != DEFAULT_VOLUME_DIR:
                     # We should be able to replace something here.
                     # if this warning is printed, the usage of this function is probably wrong.
-                    # Please check for missing slashes after DEFAULT_VOLUME_DIR etc.
+                    # Please check if the target path is indeed prefixed by /var/lib/localstack
+                    # if this happens, mounts may fail
                     LOG.warning(
-                        "Error while performing automatic host path replacement for path %s to source %s"
+                        "Error while performing automatic host path replacement for path '%s' to source '%s'",
+                        path,
+                        volume.source,
                     )
                 else:
+                    relative_path = path.removeprefix(DEFAULT_VOLUME_DIR)
+                    result = volume.source + relative_path
                     return result
             else:
                 raise ValueError(f"No volume mounted to {DEFAULT_VOLUME_DIR}")

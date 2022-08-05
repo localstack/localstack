@@ -11,6 +11,8 @@ from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
     AvailabilityZone,
     Boolean,
+    CreateSubnetRequest,
+    CreateSubnetResult,
     CurrencyCodeValues,
     DescribeAvailabilityZonesRequest,
     DescribeAvailabilityZonesResult,
@@ -219,6 +221,19 @@ class Ec2Provider(Ec2Api, ABC):
             if enable_dns64:
                 attr_name = camelcase_to_underscores("EnableDns64")
                 backend.modify_subnet_attribute(subnet_id, attr_name, enable_dns64)
+
+    @handler("CreateSubnet", expand=False)
+    def create_subnet(
+        self, context: RequestContext, request: CreateSubnetRequest
+    ) -> CreateSubnetResult:
+        response = call_moto(context)
+        backend = ec2_backends[context.region]
+        subnet_id = response["Subnet"]["SubnetId"]
+        host_type = request.get("PrivateDnsHostnameTypeOnLaunch", "ip-name")
+        attr_name = camelcase_to_underscores("PrivateDnsNameOptionsOnLaunch")
+        value = {"HostnameType": host_type}
+        backend.modify_subnet_attribute(subnet_id, attr_name, value)
+        return response
 
     @handler("RevokeSecurityGroupEgress", expand=False)
     def revoke_security_group_egress(

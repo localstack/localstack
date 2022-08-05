@@ -1,6 +1,6 @@
 import sys
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import IO, Dict, Iterable, List, Optional, Union
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -257,7 +257,6 @@ class CodeSigningConfigNotFoundException(ServiceException):
     sender_fault: bool = False
     status_code: int = 404
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class CodeStorageExceededException(ServiceException):
@@ -265,7 +264,6 @@ class CodeStorageExceededException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     Type: Optional[String]
-    message: Optional[String]
 
 
 class CodeVerificationFailedException(ServiceException):
@@ -273,7 +271,6 @@ class CodeVerificationFailedException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class EC2AccessDeniedException(ServiceException):
@@ -281,7 +278,6 @@ class EC2AccessDeniedException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class EC2ThrottledException(ServiceException):
@@ -289,7 +285,6 @@ class EC2ThrottledException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class EC2UnexpectedException(ServiceException):
@@ -297,7 +292,6 @@ class EC2UnexpectedException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
     EC2ErrorCode: Optional[String]
 
 
@@ -306,7 +300,6 @@ class EFSIOException(ServiceException):
     sender_fault: bool = False
     status_code: int = 410
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class EFSMountConnectivityException(ServiceException):
@@ -314,7 +307,6 @@ class EFSMountConnectivityException(ServiceException):
     sender_fault: bool = False
     status_code: int = 408
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class EFSMountFailureException(ServiceException):
@@ -322,7 +314,6 @@ class EFSMountFailureException(ServiceException):
     sender_fault: bool = False
     status_code: int = 403
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class EFSMountTimeoutException(ServiceException):
@@ -330,7 +321,6 @@ class EFSMountTimeoutException(ServiceException):
     sender_fault: bool = False
     status_code: int = 408
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class ENILimitReachedException(ServiceException):
@@ -338,7 +328,6 @@ class ENILimitReachedException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class InvalidCodeSignatureException(ServiceException):
@@ -346,7 +335,6 @@ class InvalidCodeSignatureException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class InvalidParameterValueException(ServiceException):
@@ -354,7 +342,6 @@ class InvalidParameterValueException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     Type: Optional[String]
-    message: Optional[String]
 
 
 class InvalidRequestContentException(ServiceException):
@@ -362,7 +349,6 @@ class InvalidRequestContentException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     Type: Optional[String]
-    message: Optional[String]
 
 
 class InvalidRuntimeException(ServiceException):
@@ -370,7 +356,6 @@ class InvalidRuntimeException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class InvalidSecurityGroupIDException(ServiceException):
@@ -378,7 +363,6 @@ class InvalidSecurityGroupIDException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class InvalidSubnetIDException(ServiceException):
@@ -386,7 +370,6 @@ class InvalidSubnetIDException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class InvalidZipFileException(ServiceException):
@@ -394,7 +377,6 @@ class InvalidZipFileException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class KMSAccessDeniedException(ServiceException):
@@ -402,7 +384,6 @@ class KMSAccessDeniedException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class KMSDisabledException(ServiceException):
@@ -410,7 +391,6 @@ class KMSDisabledException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class KMSInvalidStateException(ServiceException):
@@ -418,7 +398,6 @@ class KMSInvalidStateException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class KMSNotFoundException(ServiceException):
@@ -426,7 +405,6 @@ class KMSNotFoundException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class PolicyLengthExceededException(ServiceException):
@@ -434,7 +412,6 @@ class PolicyLengthExceededException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     Type: Optional[String]
-    message: Optional[String]
 
 
 class PreconditionFailedException(ServiceException):
@@ -442,7 +419,6 @@ class PreconditionFailedException(ServiceException):
     sender_fault: bool = False
     status_code: int = 412
     Type: Optional[String]
-    message: Optional[String]
 
 
 class ProvisionedConcurrencyConfigNotFoundException(ServiceException):
@@ -450,7 +426,6 @@ class ProvisionedConcurrencyConfigNotFoundException(ServiceException):
     sender_fault: bool = False
     status_code: int = 404
     Type: Optional[String]
-    message: Optional[String]
 
 
 class RequestTooLargeException(ServiceException):
@@ -458,7 +433,6 @@ class RequestTooLargeException(ServiceException):
     sender_fault: bool = False
     status_code: int = 413
     Type: Optional[String]
-    message: Optional[String]
 
 
 class ResourceConflictException(ServiceException):
@@ -466,7 +440,6 @@ class ResourceConflictException(ServiceException):
     sender_fault: bool = False
     status_code: int = 409
     Type: Optional[String]
-    message: Optional[String]
 
 
 class ResourceInUseException(ServiceException):
@@ -474,7 +447,6 @@ class ResourceInUseException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class ResourceNotFoundException(ServiceException):
@@ -482,7 +454,6 @@ class ResourceNotFoundException(ServiceException):
     sender_fault: bool = False
     status_code: int = 404
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class ResourceNotReadyException(ServiceException):
@@ -490,7 +461,6 @@ class ResourceNotReadyException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    message: Optional[String]
 
 
 class ServiceException(ServiceException):
@@ -498,7 +468,6 @@ class ServiceException(ServiceException):
     sender_fault: bool = False
     status_code: int = 500
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class SubnetIPAddressLimitReachedException(ServiceException):
@@ -506,7 +475,6 @@ class SubnetIPAddressLimitReachedException(ServiceException):
     sender_fault: bool = False
     status_code: int = 502
     Type: Optional[String]
-    Message: Optional[String]
 
 
 class TooManyRequestsException(ServiceException):
@@ -515,7 +483,6 @@ class TooManyRequestsException(ServiceException):
     status_code: int = 429
     retryAfterSeconds: Optional[String]
     Type: Optional[String]
-    message: Optional[String]
     Reason: Optional[ThrottleReason]
 
 
@@ -524,7 +491,6 @@ class UnsupportedMediaTypeException(ServiceException):
     sender_fault: bool = False
     status_code: int = 415
     Type: Optional[String]
-    message: Optional[String]
 
 
 Long = int
@@ -1155,25 +1121,25 @@ class GetProvisionedConcurrencyConfigResponse(TypedDict, total=False):
 
 
 class InvocationRequest(ServiceRequest):
+    Payload: Optional[IO[Blob]]
     FunctionName: NamespacedFunctionName
     InvocationType: Optional[InvocationType]
     LogType: Optional[LogType]
     ClientContext: Optional[String]
-    Payload: Optional[Blob]
     Qualifier: Optional[Qualifier]
 
 
 class InvocationResponse(TypedDict, total=False):
+    Payload: Optional[Union[Blob, IO[Blob], Iterable[Blob]]]
     StatusCode: Optional[Integer]
     FunctionError: Optional[String]
     LogResult: Optional[String]
-    Payload: Optional[Blob]
     ExecutedVersion: Optional[Version]
 
 
 class InvokeAsyncRequest(ServiceRequest):
+    InvokeArgs: IO[BlobStream]
     FunctionName: NamespacedFunctionName
-    InvokeArgs: BlobStream
 
 
 class InvokeAsyncResponse(TypedDict, total=False):
@@ -1842,7 +1808,7 @@ class LambdaApi:
         invocation_type: InvocationType = None,
         log_type: LogType = None,
         client_context: String = None,
-        payload: Blob = None,
+        payload: IO[Blob] = None,
         qualifier: Qualifier = None,
     ) -> InvocationResponse:
         raise NotImplementedError
@@ -1852,7 +1818,7 @@ class LambdaApi:
         self,
         context: RequestContext,
         function_name: NamespacedFunctionName,
-        invoke_args: BlobStream,
+        invoke_args: IO[BlobStream],
     ) -> InvokeAsyncResponse:
         raise NotImplementedError
 

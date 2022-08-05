@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import TYPE_CHECKING, Dict, Mapping, Optional, Tuple, Union
+from typing import IO, TYPE_CHECKING, Dict, Mapping, Optional, Tuple, Union
 from urllib.parse import quote, unquote, urlencode
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ def dummy_wsgi_environment(
     method: str = "GET",
     path: str = "",
     headers: Optional[Union[Dict, Headers]] = None,
-    body: Optional[Union[bytes, str]] = None,
+    body: Optional[Union[bytes, str, IO[bytes]]] = None,
     scheme: str = "http",
     root_path: str = "/",
     query_string: Optional[str] = None,
@@ -52,11 +52,8 @@ def dummy_wsgi_environment(
         "SCRIPT_NAME": unquote(quote(root_path.rstrip("/")), "latin-1"),
         "PATH_INFO": unquote(quote(path), "latin-1"),
         "SERVER_PROTOCOL": "HTTP/1.1",
+        "QUERY_STRING": query_string or "",
     }
-
-    data = strings.to_bytes(body) if body else b""
-
-    environ["QUERY_STRING"] = query_string or ""
 
     if raw_uri:
         if query_string:
@@ -78,26 +75,21 @@ def dummy_wsgi_environment(
         environ["REMOTE_ADDR"] = remote_addr
 
     if headers:
-        for k, v in headers.items():
-            name = k.upper().replace("-", "_")
+        set_environment_headers(environ, headers)
 
-            if name not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
-                name = f"HTTP_{name}"
-
-            val = v
-            if name in environ:
-                val = environ[name] + "," + val
-
-            environ[name] = val
-
-    if "CONTENT_LENGTH" not in environ:
-        # try to determine content length from body
-        environ["CONTENT_LENGTH"] = str(len(data))
+    if not body or isinstance(body, (str, bytes)):
+        data = strings.to_bytes(body) if body else b""
+        wsgi_input = BytesIO(data)
+        if "CONTENT_LENGTH" not in environ:
+            # try to determine content length from body
+            environ["CONTENT_LENGTH"] = str(len(data))
+    else:
+        wsgi_input = body
 
     # WSGI environ keys
     environ["wsgi.version"] = (1, 0)
     environ["wsgi.url_scheme"] = scheme
-    environ["wsgi.input"] = BytesIO(data)
+    environ["wsgi.input"] = wsgi_input
     environ["wsgi.input_terminated"] = True
     environ["wsgi.errors"] = BytesIO()
     environ["wsgi.multithread"] = True
@@ -105,6 +97,32 @@ def dummy_wsgi_environment(
     environ["wsgi.run_once"] = False
 
     return environ
+
+
+def set_environment_headers(environ: "WSGIEnvironment", headers: Union[Dict, Headers]):
+    # Collect all the headers to set
+    # (this might be is accessing the environment, this needs to be done before removing the items from the env)
+    new_headers = {}
+    for k, v in headers.items():
+        name = k.upper().replace("-", "_")
+
+        if name not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
+            name = f"HTTP_{name}"
+
+        val = v
+        if name in new_headers:
+            val = new_headers[name] + "," + val
+
+        new_headers[name] = val
+
+    # Clear the HTTP headers in the env
+    header_keys = [name for name in environ if name.startswith("HTTP_")]
+    for name in header_keys:
+        environ.pop(name, None)
+
+    # Set the new headers in the env
+    for k, v in new_headers.items():
+        environ[k] = v
 
 
 class Request(WerkzeugRequest):

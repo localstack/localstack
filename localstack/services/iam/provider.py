@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Dict, List
 from urllib.parse import quote
 
-from moto.core import BaseBackend
 from moto.iam.models import AWSManagedPolicy, IAMBackend, InlinePolicy, Policy
 from moto.iam.models import Role as MotoRole
 from moto.iam.models import filter_items_with_path_prefix, iam_backends
@@ -89,7 +88,7 @@ ADDITIONAL_MANAGED_POLICIES = {
 }
 
 
-def get_iam_backend(context: RequestContext) -> BaseBackend:
+def get_iam_backend(context: RequestContext) -> IAMBackend:
     return iam_backends[context.account_id]["global"]
 
 
@@ -322,7 +321,7 @@ class IamProvider(IamApi):
     def put_user_permissions_boundary(
         self, context: RequestContext, user_name: userNameType, permissions_boundary: arnType
     ) -> None:
-        if user := moto_iam_backend.users.get(user_name):
+        if user := get_iam_backend(context).users.get(user_name):
             user.permissions_boundary = permissions_boundary
         else:
             raise NoSuchEntityException()
@@ -330,7 +329,7 @@ class IamProvider(IamApi):
     def delete_user_permissions_boundary(
         self, context: RequestContext, user_name: userNameType
     ) -> None:
-        if user := moto_iam_backend.users.get(user_name):
+        if user := get_iam_backend(context).users.get(user_name):
             if hasattr(user, "permissions_boundary"):
                 delattr(user, "permissions_boundary")
         else:
@@ -345,7 +344,7 @@ class IamProvider(IamApi):
         tags: tagListType = None,
     ) -> CreateUserResponse:
         response = call_moto(context=context)
-        user = moto_iam_backend.get_user(user_name)
+        user = get_iam_backend(context).get_user(user_name)
         if permissions_boundary:
             user.permissions_boundary = permissions_boundary
             response["User"]["PermissionsBoundary"] = AttachedPermissionsBoundary(
@@ -359,7 +358,7 @@ class IamProvider(IamApi):
     ) -> GetUserResponse:
         response = call_moto(context=context)
         moto_user_name = response["User"]["UserName"]
-        moto_user = moto_iam_backend.users.get(moto_user_name)
+        moto_user = get_iam_backend(context).users.get(moto_user_name)
         # if the user does not exist or is no user
         if not moto_user and not user_name:
             access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
