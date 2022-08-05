@@ -173,10 +173,7 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("ReceiptHandle"),
-            # account ID
-            TransformerUtility.key_value(
-                "SenderId", value_replacement="111111111111", reference_replacement=False
-            ),
+            TransformerUtility.key_value("SenderId"),
             TransformerUtility.jsonpath("$..MessageAttributes.RequestID.StringValue", "request-id"),
             KeyValueBasedTransformer(_resource_name_transformer, "resource"),
         ]
@@ -187,12 +184,17 @@ class TransformerUtility:
         :return: array with Transformers, for sns api.
         """
         return [
+            TransformerUtility.key_value("ReceiptHandle"),
             TransformerUtility.key_value("SequenceNumber"),  # this might need to be in SQS
             TransformerUtility.key_value(
                 "Signature", value_replacement="<signature>", reference_replacement=False
             ),
+            # the body of SNS messages contains a timestamp, need to ignore the hash
             TransformerUtility.key_value("MD5OfBody", "<md5-hash>", reference_replacement=False),
-            KeyValueBasedTransformer(_sns_unsubscribe_url_token_transformer, replacement="token"),
+            # this can interfere in ARN with the accountID
+            TransformerUtility.key_value(
+                "SenderId", value_replacement="<sender-id>", reference_replacement=False
+            ),
             KeyValueBasedTransformer(
                 _sns_pem_file_token_transformer,
                 replacement="signing-cert-file",
@@ -204,6 +206,11 @@ class TransformerUtility:
             RegexTransformer(
                 r"(?<=(?i)UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)",
                 replacement="<unsubscribe-domain>",
+            ),
+            KeyValueBasedTransformer(_resource_name_transformer, "resource"),
+            # add a special transformer with 'resource' replacement for SubscriptionARN in UnsubscribeURL
+            KeyValueBasedTransformer(
+                _sns_unsubscribe_url_subscription_arn_transformer, replacement="resource"
             ),
         ]
 
@@ -245,7 +252,7 @@ def _sns_pem_file_token_transformer(key: str, val: str) -> str:
             return match.groups()[0]
 
 
-def _sns_unsubscribe_url_token_transformer(key: str, val: str) -> str:
+def _sns_unsubscribe_url_subscription_arn_transformer(key: str, val: str) -> str:
     if isinstance(val, str) and key.lower() == "UnsubscribeURL".lower():
         pattern = re.compile(r".*(?<=\?Action=Unsubscribe&SubscriptionArn=).*:(.*)")
         match = re.match(pattern, val)

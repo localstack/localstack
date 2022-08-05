@@ -1174,6 +1174,7 @@ def create_sns_message_body(
         "Timestamp": timestamp_millis(),
         "SignatureVersion": "1",
         # TODO Add a more sophisticated solution with an actual signature
+        #  check KMS for providing real cert and how to serve them
         # Hardcoded
         "Signature": "EXAMPLEpH+..",
         "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
