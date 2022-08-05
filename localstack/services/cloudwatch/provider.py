@@ -22,7 +22,7 @@ from localstack.aws.api.cloudwatch import (
     TagResourceOutput,
     UntagResourceOutput,
 )
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Request
 from localstack.services import moto
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
@@ -247,7 +247,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     def get_raw_metrics(self, request: Request):
         region = aws_stack.extract_region_from_auth_header(request.headers)
         account_id = (
-            extract_access_key_id_from_auth_header(request.headers) or TEST_AWS_ACCESS_KEY_ID
+            extract_access_key_id_from_auth_header(request.headers) or DEFAULT_AWS_ACCOUNT_ID
         )
         backend = cloudwatch_backends[account_id][region]
         if backend:

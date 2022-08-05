@@ -38,6 +38,7 @@ DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
 
+# Fallback Account ID if not available in the client request
 DEFAULT_AWS_ACCOUNT_ID = "000000000000"
 
 # TODO@viren remove TEST_AWS_ACCOUNT_ID
