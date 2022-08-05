@@ -7,7 +7,7 @@ from typing import Any, Optional
 from botocore.model import ServiceModel
 from werkzeug.datastructures import Headers
 
-from localstack.aws.accounts import get_account_id_from_access_key_id, set_ctx_aws_access_key_id
+from localstack.aws.accounts import get_account_id_from_access_key_id, set_aws_access_key_id
 from localstack.aws.api import RequestContext
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
@@ -30,7 +30,7 @@ def get_account_id_from_request(request: Request) -> str:
     access_key_id = (
         extract_access_key_id_from_auth_header(request.headers) or TEST_AWS_ACCESS_KEY_ID
     )
-    set_ctx_aws_access_key_id(access_key_id)
+    set_aws_access_key_id(access_key_id)
     return get_account_id_from_access_key_id(access_key_id)
 
 
