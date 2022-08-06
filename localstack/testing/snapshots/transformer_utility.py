@@ -1,7 +1,7 @@
 import logging
 import re
 from datetime import datetime
-from typing import Dict, List, Optional, Pattern, Set, Union
+from typing import Dict, Optional, Pattern, Set
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
 from localstack.testing.snapshots.transformer import (

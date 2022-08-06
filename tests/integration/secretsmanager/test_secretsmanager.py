@@ -20,6 +20,7 @@ from localstack.aws.api.secretsmanager import (
     ListSecretsResponse,
     ListSecretVersionIdsResponse,
     PutSecretValueResponse,
+    SecretVersionsListEntry,
     UpdateSecretResponse,
     UpdateSecretVersionStageResponse,
 )
@@ -101,6 +102,11 @@ class TestSecretsManager:
             LOG.warning(
                 f"Timed out whilst awaiting for force deletion of secret '{secret_id}' to complete."
             )
+
+    @staticmethod
+    def _normalise_list_secret_version_ids_response(response: ListSecretVersionIdsResponse) -> None:
+        versions: List[SecretVersionsListEntry] = response["Versions"]
+        versions.sort(key=lambda e: e["CreatedDate"], reverse=True)
 
     @pytest.mark.parametrize(
         "secret_name, is_valid_partial_arn",
@@ -237,7 +243,7 @@ class TestSecretsManager:
         list_secrets_res = self._typed_response_of(
             typ=ListSecretsResponse, response=sm_client.list_secrets()
         )
-        sm_snapshot.match(f"list_secrets_res", list_secrets_res)
+        sm_snapshot.match("list_secrets_res", list_secrets_res)
 
         # clean up
         for i, secret_name in enumerate(secret_names):
@@ -799,6 +805,7 @@ class TestSecretsManager:
             typ=ListSecretVersionIdsResponse,
             response=sm_client.list_secret_version_ids(SecretId=secret_name),
         )
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
         secret_string_v1 = "secret_string_v1"
@@ -813,6 +820,7 @@ class TestSecretsManager:
             typ=ListSecretVersionIdsResponse,
             response=sm_client.list_secret_version_ids(SecretId=secret_name),
         )
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
         delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
@@ -821,55 +829,75 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    def test_update_secret_version_stages_current_pending(self, sm_client):
+    def test_update_secret_version_stages_current_pending(self, sm_client, sm_snapshot):
         secret_name = f"s-{short_uid()}"
-        create = sm_client.create_secret(Name=secret_name, SecretString="Something1")
-        version_id_v0 = create["VersionId"]
-
-        put_pending_res = sm_client.put_secret_value(
-            SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
+        #
+        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
+            typ=CreateSecretResponse,
+            response=sm_client.create_secret(Name=secret_name, SecretString="Something1"),
         )
-        version_id_v1 = put_pending_res["VersionId"]
-        assert version_id_v1 != version_id_v0
-
-        list_ids_res = sm_client.list_secret_version_ids(SecretId=secret_name)
-        assert len(list_ids_res["Versions"]) == 2
-        list_ids_0 = list_ids_res["Versions"][0]
-        assert list_ids_0["VersionId"] == version_id_v0
-        assert list_ids_0["VersionStages"] == ["AWSCURRENT"]
-        list_ids_1 = list_ids_res["Versions"][1]
-        assert list_ids_1["VersionId"] == version_id_v1
-        assert list_ids_1["VersionStages"] == ["AWSPENDING"]
-
-        upd_res = sm_client.update_secret_version_stage(
-            SecretId=secret_name,
-            RemoveFromVersionId=version_id_v0,
-            MoveToVersionId=version_id_v1,
-            VersionStage="AWSCURRENT",
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
-        assert "VersionId" not in upd_res
+        sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        list_ids_2_res = sm_client.list_secret_version_ids(SecretId=secret_name)
-        assert len(list_ids_2_res["Versions"]) == 2
-        list_ids_2_0 = list_ids_2_res["Versions"][0]
-        assert list_ids_2_0["VersionId"] == version_id_v0
-        assert list_ids_2_0["VersionStages"] == ["AWSPREVIOUS"]
-        list_ids_2_1 = list_ids_2_res["Versions"][1]
-        assert list_ids_2_1["VersionId"] == version_id_v1
-        assert list_ids_2_1["VersionStages"] == ["AWSPENDING", "AWSCURRENT"]
+        version_id_v0 = create_secret_rs_0["VersionId"]
 
-        upd_2_res = sm_client.put_secret_value(SecretId=secret_name, SecretString="SS3")
-        version_id_v2 = upd_2_res["VersionId"]
-        assert len({version_id_v0, version_id_v1, version_id_v2}) == 3
+        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(
+                SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
+            ),
+        )
+        sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
 
-        list_ids_3_res = sm_client.list_secret_version_ids(SecretId=secret_name)
-        assert len(list_ids_3_res["Versions"]) == 2
-        list_ids_3_0 = list_ids_3_res["Versions"][0]
-        assert list_ids_3_0["VersionId"] == version_id_v1
-        assert list_ids_3_0["VersionStages"] == ["AWSPREVIOUS"]
-        list_ids_3_1 = list_ids_3_res["Versions"][1]
-        assert list_ids_3_1["VersionId"] == version_id_v2
-        assert list_ids_3_1["VersionStages"] == ["AWSCURRENT"]
+        version_id_v1 = put_secret_value_res_0["VersionId"]
+
+        list_secret_version_ids_res_0: ListSecretVersionIdsResponse = self._typed_response_of(
+            typ=ListSecretVersionIdsResponse,
+            response=sm_client.list_secret_version_ids(SecretId=secret_name),
+        )
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
+        sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
+
+        update_secret_version_stage_res_0: UpdateSecretVersionStageResponse = (
+            self._typed_response_of(
+                typ=UpdateSecretVersionStageResponse,
+                response=sm_client.update_secret_version_stage(
+                    SecretId=secret_name,
+                    RemoveFromVersionId=version_id_v0,
+                    MoveToVersionId=version_id_v1,
+                    VersionStage="AWSCURRENT",
+                ),
+            )
+        )
+        sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
+
+        list_secret_version_ids_res_1: ListSecretVersionIdsResponse = self._typed_response_of(
+            typ=ListSecretVersionIdsResponse,
+            response=sm_client.list_secret_version_ids(SecretId=secret_name),
+        )
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
+        sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
+
+        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(SecretId=secret_name, SecretString="SS3"),
+        )
+        sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
+
+        list_secret_version_ids_res_2: ListSecretVersionIdsResponse = self._typed_response_of(
+            typ=ListSecretVersionIdsResponse,
+            response=sm_client.list_secret_version_ids(SecretId=secret_name),
+        )
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_2)
+        sm_snapshot.match("list_secret_version_ids_res_2", list_secret_version_ids_res_2)
+
+        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
+            typ=DeleteSecretResponse,
+            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        )
+        sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     def test_update_secret_version_stages_current_pending_cycle(self, sm_client):
         secret_name = f"s-{short_uid()}"

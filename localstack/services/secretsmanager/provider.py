@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import time
-from typing import Dict, Final, List, Optional, Set, Union
+from typing import Dict, Final, List, Optional, Union
 
 from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
@@ -374,15 +374,20 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
 
     secret = self.secrets[secret_id]
 
+    # Patch: output format, report exact createdate instead of current time.
     versions: List[SecretVersionsListEntry] = list()
     for version_id, version in secret.versions.items():
+        version_stages = version["version_stages"]
         entry = SecretVersionsListEntry(
             CreatedDate=version["createdate"],
             # LastAccessedDate=int(time.time()), TODO: last accessed date of versions is currently unsupported.
             VersionId=version_id,
-            VersionStages=version["version_stages"],
+            VersionStages=version_stages,
         )
         versions.append(entry)
+
+    # Patch: sort versions by date.
+    versions.sort(key=lambda v: v["CreatedDate"], reverse=True)
 
     response = ListSecretVersionIdsResponse(ARN=secret.arn, Name=secret.name, Versions=versions)
 
@@ -473,24 +478,34 @@ def backend_update_secret_version_stage(
     fn(self, secret_id, version_stage, remove_from_version_id, move_to_version_id)
 
     secret = self.secrets[secret_id]
+
+    # Patch: default version is the new AWSCURRENT version
     if version_stage == AWSCURRENT:
         secret.default_version_id = move_to_version_id
 
-        # Ensure only one AWSPREVIOUS tagged version is in the pool.
-        # Remove secret versions with no version stages.
-        versions_no_stages = []
-        update_vid_set = {remove_from_version_id, move_to_version_id}
-        for version_id, version in secret.versions.items():
-            version_stages = version["version_stages"]
-            if version_id not in update_vid_set and AWSPREVIOUS in version_stages:
-                version_stages.remove(AWSPREVIOUS)
-                if not version_stages:
-                    versions_no_stages.append(version_id)
+    versions_no_stages = []
+    update_vid_set = {remove_from_version_id, move_to_version_id}
+    for version_id, version in secret.versions.items():
+        version_stages = version["version_stages"]
 
-        for version_no_stages in versions_no_stages:
-            del secret.versions[version_no_stages]
+        # Patch: ensure only one AWSPREVIOUS tagged version is in the pool.
+        if version_id not in update_vid_set and AWSPREVIOUS in version_stages:
+            version_stages.remove(AWSPREVIOUS)
+            if not version_stages:
+                versions_no_stages.append(version_id)
 
-    return json.dumps({"ARN": secret.arn, "Name": secret.name})
+        # Patch: versions stages are added in front not appended, AWSCURRENT is always in front.
+        version_stages.reverse()
+        if AWSCURRENT in version_stages and version_stages[0] != AWSCURRENT:
+            version_stages.remove(AWSCURRENT)
+            version_stages.insert(0, AWSCURRENT)
+
+    # Patch: remove secret versions with no version stages.
+    for version_no_stages in versions_no_stages:
+        del secret.versions[version_no_stages]
+
+    res = UpdateSecretVersionStageResponse(ARN=secret.arn, Name=secret.name)
+    return json.dumps(res)
 
 
 @patch(FakeSecret.reset_default_version)
