@@ -51,6 +51,14 @@ class TransformerUtility:
         )
 
     @staticmethod
+    def resource_name(replacement_name: str = "resource"):
+        """Creates a new KeyValueBasedTransformer for the resource name.
+
+        :return: KeyValueBasedTransformer
+        """
+        return KeyValueBasedTransformer(_resource_name_transformer, replacement_name)
+
+    @staticmethod
     def jsonpath(jsonpath: str, value_replacement: str, reference_replacement: bool = True):
         """Creates a new JsonpathTransformer. If the jsonpath matches, the value will be replaced.
 

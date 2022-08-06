@@ -79,6 +79,8 @@ s3_lambda_permission = {
 
 
 class TestSQSEventSourceMapping:
+    # FIXME: refactor and move to test_lambda_sqs_integration
+
     @pytest.mark.skip_snapshot_verify
     def test_event_source_mapping_default_batch_size(
         self,

@@ -124,21 +124,22 @@ class SQSEventSourceListener(EventSourceListener):
         records = []
         for msg in messages:
             message_attrs = message_attributes_to_lower(msg.get("MessageAttributes"))
-            records.append(
-                {
-                    "body": msg.get("Body", "MessageBody"),
-                    "receiptHandle": msg.get("ReceiptHandle"),
-                    "md5OfBody": msg.get("MD5OfBody") or msg.get("MD5OfMessageBody"),
-                    "eventSourceARN": queue_arn,
-                    "eventSource": lambda_executors.EVENT_SOURCE_SQS,
-                    "awsRegion": region,
-                    "messageId": msg["MessageId"],
-                    "attributes": msg.get("Attributes", {}),
-                    "messageAttributes": message_attrs,
-                    "md5OfMessageAttributes": msg.get("MD5OfMessageAttributes"),
-                    "sqs": True,
-                }
-            )
+            record = {
+                "body": msg.get("Body", "MessageBody"),
+                "receiptHandle": msg.get("ReceiptHandle"),
+                "md5OfBody": msg.get("MD5OfBody") or msg.get("MD5OfMessageBody"),
+                "eventSourceARN": queue_arn,
+                "eventSource": lambda_executors.EVENT_SOURCE_SQS,
+                "awsRegion": region,
+                "messageId": msg["MessageId"],
+                "attributes": msg.get("Attributes", {}),
+                "messageAttributes": message_attrs,
+            }
+
+            if md5OfMessageAttributes := msg.get("MD5OfMessageAttributes"):
+                record["md5OfMessageAttributes"] = md5OfMessageAttributes
+
+            records.append(record)
 
         event = {"Records": records}
 
