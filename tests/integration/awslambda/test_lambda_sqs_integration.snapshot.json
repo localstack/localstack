@@ -237,5 +237,295 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_sqs_integration.py::test_report_batch_item_failures": {
+    "recorded-date": "07-08-2022, 19:18:36",
+    "recorded-content": {
+      "get_destination_queue_url": {
+        "QueueUrl": "<queue-url:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "send_message_batch": {
+        "Successful": [
+          {
+            "Id": "message-1",
+            "MessageId": "<uuid:1>",
+            "MD5OfMessageBody": "<md5-of-body:1>",
+            "SequenceNumber": "<sequence-number:1>"
+          },
+          {
+            "Id": "message-2",
+            "MessageId": "<uuid:2>",
+            "MD5OfMessageBody": "<md5-of-body:2>",
+            "SequenceNumber": "<sequence-number:2>"
+          },
+          {
+            "Id": "message-3",
+            "MessageId": "<uuid:3>",
+            "MD5OfMessageBody": "<md5-of-body:3>",
+            "SequenceNumber": "<sequence-number:3>"
+          },
+          {
+            "Id": "message-4",
+            "MessageId": "<uuid:4>",
+            "MD5OfMessageBody": "<m-d5-of-body:3>",
+            "SequenceNumber": "<sequence-number:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_event_source_mapping": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        },
+        "UUID": "<uuid:5>",
+        "BatchSize": 10,
+        "MaximumBatchingWindowInSeconds": 0,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "LastModified": "datetime",
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures"
+        ]
+      },
+      "first_invocation": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:6>",
+            "ReceiptHandle": "<receipt-handle:1>",
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "Body": {
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:1>",
+                    "receiptHandle": "<receipt-handle:4>",
+                    "body": {
+                      "message": 1,
+                      "fail_attempts": 0
+                    },
+                    "attributes": {
+                      "ApproximateReceiveCount": "1",
+                      "SentTimestamp": "timestamp",
+                      "SequenceNumber": "<sequence-number:1>",
+                      "MessageGroupId": "1",
+                      "SenderId": "sender-id",
+                      "MessageDeduplicationId": "dedup-1",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<md5-of-body:1>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  },
+                  {
+                    "messageId": "<uuid:2>",
+                    "receiptHandle": "<receipt-handle:5>",
+                    "body": {
+                      "message": 2,
+                      "fail_attempts": 1
+                    },
+                    "attributes": {
+                      "ApproximateReceiveCount": "1",
+                      "SentTimestamp": "timestamp",
+                      "SequenceNumber": "<sequence-number:2>",
+                      "MessageGroupId": "1",
+                      "SenderId": "sender-id",
+                      "MessageDeduplicationId": "dedup-2",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<md5-of-body:2>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  },
+                  {
+                    "messageId": "<uuid:3>",
+                    "receiptHandle": "<receipt-handle:6>",
+                    "body": {
+                      "message": 3,
+                      "fail_attempts": 1
+                    },
+                    "attributes": {
+                      "ApproximateReceiveCount": "1",
+                      "SentTimestamp": "timestamp",
+                      "SequenceNumber": "<sequence-number:3>",
+                      "MessageGroupId": "1",
+                      "SenderId": "sender-id",
+                      "MessageDeduplicationId": "dedup-3",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<md5-of-body:3>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  },
+                  {
+                    "messageId": "<uuid:4>",
+                    "receiptHandle": "<receipt-handle:7>",
+                    "body": {
+                      "message": 4,
+                      "fail_attempts": 2
+                    },
+                    "attributes": {
+                      "ApproximateReceiveCount": "1",
+                      "SentTimestamp": "timestamp",
+                      "SequenceNumber": "<sequence-number:4>",
+                      "MessageGroupId": "1",
+                      "SenderId": "sender-id",
+                      "MessageDeduplicationId": "dedup-4",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<m-d5-of-body:3>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              },
+              "result": {
+                "batchItemFailures": [
+                  {
+                    "itemIdentifier": "<uuid:2>"
+                  },
+                  {
+                    "itemIdentifier": "<uuid:3>"
+                  },
+                  {
+                    "itemIdentifier": "<uuid:4>"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_invocation": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:7>",
+            "ReceiptHandle": "<receipt-handle:2>",
+            "MD5OfBody": "<m-d5-of-body:2>",
+            "Body": {
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:2>",
+                    "receiptHandle": "<receipt-handle:8>",
+                    "body": {
+                      "message": 2,
+                      "fail_attempts": 1
+                    },
+                    "attributes": {
+                      "ApproximateReceiveCount": "2",
+                      "SentTimestamp": "timestamp",
+                      "SequenceNumber": "<sequence-number:2>",
+                      "MessageGroupId": "1",
+                      "SenderId": "sender-id",
+                      "MessageDeduplicationId": "dedup-2",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<md5-of-body:2>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  },
+                  {
+                    "messageId": "<uuid:3>",
+                    "receiptHandle": "<receipt-handle:9>",
+                    "body": {
+                      "message": 3,
+                      "fail_attempts": 1
+                    },
+                    "attributes": {
+                      "ApproximateReceiveCount": "2",
+                      "SentTimestamp": "timestamp",
+                      "SequenceNumber": "<sequence-number:3>",
+                      "MessageGroupId": "1",
+                      "SenderId": "sender-id",
+                      "MessageDeduplicationId": "dedup-3",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<md5-of-body:3>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  },
+                  {
+                    "messageId": "<uuid:4>",
+                    "receiptHandle": "<receipt-handle:10>",
+                    "body": {
+                      "message": 4,
+                      "fail_attempts": 2
+                    },
+                    "attributes": {
+                      "ApproximateReceiveCount": "2",
+                      "SentTimestamp": "timestamp",
+                      "SequenceNumber": "<sequence-number:4>",
+                      "MessageGroupId": "1",
+                      "SenderId": "sender-id",
+                      "MessageDeduplicationId": "dedup-4",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<m-d5-of-body:3>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              },
+              "result": {
+                "batchItemFailures": [
+                  {
+                    "itemIdentifier": "<uuid:4>"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dlq_response": {
+        "Messages": [
+          {
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:3>",
+            "MD5OfBody": "<m-d5-of-body:3>",
+            "Body": {
+              "message": 4,
+              "fail_attempts": 2
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

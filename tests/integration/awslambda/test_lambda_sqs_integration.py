@@ -16,6 +16,9 @@ from tests.integration.awslambda.test_lambda import TEST_LAMBDA_FUNCTION_PREFIX,
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 LAMBDA_SQS_INTEGRATION_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_sqs_integration.py")
+LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE = os.path.join(
+    THIS_FOLDER, "functions", "lambda_sqs_batch_item_failure.py"
+)
 
 
 def _await_event_source_mapping_enabled(lambda_client, uuid, retries=30):
@@ -31,6 +34,7 @@ def _snapshot_transformers(snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("QueueUrl"))
     snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
     snapshot.add_transformer(snapshot.transform.key_value("SenderId", reference_replacement=False))
+    snapshot.add_transformer(snapshot.transform.key_value("SequenceNumber"))
     snapshot.add_transformer(snapshot.transform.resource_name())
     # body contains dynamic attributes so md5 hash changes
     snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
@@ -307,3 +311,189 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
     messages = retry(receive_dlq, retries=retries, sleep=3)
 
     snapshot.match("messages", messages)
+
+
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        # FIXME: we don't seem to be returning SQS FIFO sequence numbers correctly
+        "$..SequenceNumber",
+        # no idea why this one fails
+        "$..receiptHandle",
+        # matching these attributes doesn't work well because of the dynamic nature of messages
+        "$..md5OfBody",
+        "$..MD5OfMessageBody",
+        # FIXME: this is most of the event source mapping unfortunately
+        "$..create_event_source_mapping.ParallelizationFactor",
+        "$..create_event_source_mapping.LastProcessingResult",
+        "$..create_event_source_mapping.Topics",
+        "$..create_event_source_mapping.MaximumRetryAttempts",
+        "$..create_event_source_mapping.MaximumBatchingWindowInSeconds",
+        "$..create_event_source_mapping.FunctionResponseTypes",
+        "$..create_event_source_mapping.StartingPosition",
+        "$..create_event_source_mapping.StateTransitionReason",
+        "$..create_event_source_mapping.State",
+        "$..create_event_source_mapping.ResponseMetadata",
+    ]
+)
+def test_report_batch_item_failures(
+    create_lambda_function,
+    lambda_client,
+    sqs_client,
+    sqs_create_queue,
+    sqs_queue_arn,
+    lambda_su_role,
+    snapshot,
+    cleanups,
+):
+    """This test verifies the SQS Lambda integration feature Reporting batch item failures
+    redrive policy, and the lambda is invoked the correct number of times. The test retries twice and the event
+    source mapping should then automatically move the message to the DQL, but not earlier (see
+    https://github.com/localstack/localstack/issues/5283)"""
+
+    # create queue used in the lambda to send invocation results to (to verify lambda was invoked)
+    destination_queue_name = f"destination-queue-{short_uid()}"
+    destination_url = sqs_create_queue(QueueName=destination_queue_name)
+    snapshot.match(
+        "get_destination_queue_url", sqs_client.get_queue_url(QueueName=destination_queue_name)
+    )
+
+    # timeout in seconds, used for both the lambda and the queue visibility timeout.
+    # increase to 10 if testing against AWS fails.
+    retry_timeout = 4
+    retries = 2
+
+    # set up lambda function
+    function_name = f"failing-lambda-{short_uid()}"
+    create_lambda_function(
+        func_name=function_name,
+        handler_file=LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE,
+        runtime=LAMBDA_RUNTIME_PYTHON38,
+        role=lambda_su_role,
+        timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
+        envvars={"DESTINATION_QUEUE_URL": destination_url},
+    )
+
+    # create dlq for event source queue
+    event_dlq_url = sqs_create_queue(
+        QueueName=f"event-dlq-{short_uid()}.fifo", Attributes={"FifoQueue": "true"}
+    )
+    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+
+    # create event source queue
+    # we use a FIFO queue to be sure the lambda is invoked in a deterministic way
+    event_source_url = sqs_create_queue(
+        QueueName=f"source-queue-{short_uid()}.fifo",
+        Attributes={
+            "FifoQueue": "true",
+            # the visibility timeout is implicitly also the time between retries
+            "VisibilityTimeout": str(retry_timeout),
+            "RedrivePolicy": json.dumps(
+                {"deadLetterTargetArn": event_dlq_arn, "maxReceiveCount": retries}
+            ),
+        },
+    )
+    event_source_arn = sqs_queue_arn(event_source_url)
+
+    # put a batch in the queue. the event format is expected by the lambda_sqs_batch_item_failure.py lambda.
+    # we add the batch before the event_source_mapping to be sure that the entire batch is sent to the first invocation.
+    # message 1 succeeds immediately
+    # message 2 and 3 succeeds after one retry
+    # message 4 fails after 2 retries and lands in the DLQ
+    response = sqs_client.send_message_batch(
+        QueueUrl=event_source_url,
+        Entries=[
+            {
+                "Id": "message-1",
+                "MessageBody": json.dumps({"message": 1, "fail_attempts": 0}),
+                "MessageGroupId": "1",
+                "MessageDeduplicationId": "dedup-1",
+            },
+            {
+                "Id": "message-2",
+                "MessageBody": json.dumps({"message": 2, "fail_attempts": 1}),
+                "MessageGroupId": "1",
+                "MessageDeduplicationId": "dedup-2",
+            },
+            {
+                "Id": "message-3",
+                "MessageBody": json.dumps({"message": 3, "fail_attempts": 1}),
+                "MessageGroupId": "1",
+                "MessageDeduplicationId": "dedup-3",
+            },
+            {
+                "Id": "message-4",
+                "MessageBody": json.dumps({"message": 4, "fail_attempts": retries}),
+                "MessageGroupId": "1",
+                "MessageDeduplicationId": "dedup-4",
+            },
+        ],
+    )
+    # sort so snapshotting works
+    response["Successful"].sort(key=lambda r: r["Id"])
+    snapshot.match("send_message_batch", response)
+
+    # wait for all items to appear in the queue
+    def _verify_event_queue_size():
+        attr = "ApproximateNumberOfMessages"
+        qsize = int(
+            sqs_client.get_queue_attributes(QueueUrl=event_source_url, AttributeNames=[attr])[
+                "Attributes"
+            ][attr]
+        )
+        assert qsize == 4
+
+    retry(_verify_event_queue_size, retries=30)
+
+    # wire everything with the event source mapping
+    response = lambda_client.create_event_source_mapping(
+        EventSourceArn=event_source_arn,
+        FunctionName=function_name,
+        BatchSize=10,
+        MaximumBatchingWindowInSeconds=0,
+        FunctionResponseTypes=["ReportBatchItemFailures"],
+    )
+    snapshot.match("create_event_source_mapping", response)
+    mapping_uuid = response["UUID"]
+    # TODO: snapshot the create_event_source_mapping
+    cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
+
+    # now wait for the first invocation result which is expected to have processed message 1 we wait half the retry
+    # interval to wait long enough for the message to appear, but short enough to check that the DLQ is empty after
+    # the first attempt.
+    first_invocation = sqs_client.receive_message(
+        QueueUrl=destination_url, WaitTimeSeconds=int(retry_timeout / 2), MaxNumberOfMessages=1
+    )
+    assert "Messages" in first_invocation
+    # hack to make snapshot work
+    first_invocation["Messages"][0]["Body"] = json.loads(first_invocation["Messages"][0]["Body"])
+    first_invocation["Messages"][0]["Body"]["event"]["Records"].sort(
+        key=lambda record: json.loads(record["body"])["message"]
+    )
+    snapshot.match("first_invocation", first_invocation)
+
+    # check that the DQL is empty
+    assert "Messages" not in sqs_client.receive_message(QueueUrl=event_dlq_url)
+
+    # now wait for the second invocation result which is expected to have processed message 2 and 3
+    second_invocation = sqs_client.receive_message(
+        QueueUrl=destination_url, WaitTimeSeconds=retry_timeout + 2, MaxNumberOfMessages=1
+    )
+    assert "Messages" in second_invocation
+    # hack to make snapshot work
+    second_invocation["Messages"][0]["Body"] = json.loads(second_invocation["Messages"][0]["Body"])
+    second_invocation["Messages"][0]["Body"]["event"]["Records"].sort(
+        key=lambda record: json.loads(record["body"])["message"]
+    )
+    snapshot.match("second_invocation", second_invocation)
+
+    # here we make sure there's actually not a third attempt, since our retries = 2
+    third_attempt = sqs_client.receive_message(
+        QueueUrl=destination_url, WaitTimeSeconds=1, MaxNumberOfMessages=1
+    )
+    assert "Messages" not in third_attempt
+
+    # now check that message 4 was placed in the DLQ
+    dlq_response = sqs_client.receive_message(QueueUrl=event_dlq_url, WaitTimeSeconds=15)
+    assert "Messages" in dlq_response
+    snapshot.match("dlq_response", dlq_response)

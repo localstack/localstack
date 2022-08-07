@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from typing import Dict, List
@@ -82,6 +83,10 @@ class SQSEventSourceListener(EventSourceListener):
     def _process_messages_for_event_source(self, source, messages):
         lambda_arn = source["FunctionArn"]
         queue_arn = source["EventSourceArn"]
+        # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#services-sqs-batchfailurereporting
+        report_partial_failures = "ReportBatchItemFailures" in source.get(
+            "FunctionResponseTypes", []
+        )
         region_name = queue_arn.split(":")[3]
         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
         LOG.debug("Sending event from event source %s to Lambda %s", queue_arn, lambda_arn)
@@ -91,22 +96,69 @@ class SQSEventSourceListener(EventSourceListener):
             lambda_arn,
             messages,
             region=region_name,
+            report_partial_failures=report_partial_failures,
         )
         return res
 
-    def _send_event_to_lambda(self, queue_arn, queue_url, lambda_arn, messages, region) -> bool:
-        def delete_messages(result, func_arn, event, error=None, **kwargs):
+    def _send_event_to_lambda(
+        self, queue_arn, queue_url, lambda_arn, messages, region, report_partial_failures=False
+    ) -> bool:
+        records = []
+
+        def delete_messages(result: InvocationResult, func_arn, event, error=None, **kwargs):
             if error:
                 # Skip deleting messages from the queue in case of processing errors. We'll pick them up and retry
                 # next time they become visible in the queue. Redrive policies will be handled automatically by SQS
                 # on the next polling attempt.
+                # Even if ReportBatchItemFailures is set, the entire batch fails if an error is raised.
                 return
 
             region_name = queue_arn.split(":")[3]
             sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
-            entries = [
-                {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
-            ]
+
+            if report_partial_failures:
+                valid_message_ids = [r["messageId"] for r in records]
+                # collect messages to delete (= the ones that were processed successfully)
+                try:
+                    if messages_to_keep := parse_batch_item_failures(
+                        result, valid_message_ids=valid_message_ids
+                    ):
+                        # unless there is an exception or the parse result is empty, only delete those messages that
+                        # are not part of the partial failure report.
+                        messages_to_delete = [
+                            message_id
+                            for message_id in valid_message_ids
+                            if message_id not in messages_to_keep
+                        ]
+                    else:
+                        # otherwise delete all messages
+                        messages_to_delete = valid_message_ids
+
+                    LOG.debug(
+                        "Lambda partial SQS batch failure report: ok=%s, failed=%s",
+                        messages_to_delete,
+                        messages_to_keep,
+                    )
+                except Exception as e:
+                    LOG.error(
+                        "Error while parsing batchItemFailures from lambda response %s: %s. "
+                        "Treating the batch as complete failure.",
+                        result.result,
+                        e,
+                    )
+                    return
+
+                entries = [
+                    {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]}
+                    for r in records
+                    if r["messageId"] in messages_to_delete
+                ]
+
+            else:
+                entries = [
+                    {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
+                ]
+
             try:
                 sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
             except Exception as e:
@@ -115,7 +167,6 @@ class SQSEventSourceListener(EventSourceListener):
                     + "(please check SQS visibility timeout settings): %s - %s" % (entries, e)
                 )
 
-        records = []
         for msg in messages:
             message_attrs = message_attributes_to_lower(msg.get("MessageAttributes"))
             record = {
@@ -149,3 +200,57 @@ class SQSEventSourceListener(EventSourceListener):
             if status_code >= 400:
                 return False
         return True
+
+
+def parse_batch_item_failures(result: InvocationResult, valid_message_ids: List[str]) -> List[str]:
+    """
+    Parses a lambda responses as a partial batch failure response, that looks something like this::
+
+        {
+          "batchItemFailures": [
+                {
+                    "itemIdentifier": "id2"
+                },
+                {
+                    "itemIdentifier": "id4"
+                }
+            ]
+        }
+
+    If the response returns an empty list, then the batch should be considered as a complete success. If an exception
+    is raised, the batch should be considered a complete failure.
+
+    See https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#services-sqs-batchfailurereporting
+
+    :param result: the lambda invocation result
+    :param valid_message_ids: the list of valid message ids in the batch
+    :raises ValueError: if the item
+    :raises Exception: any other exception related to parsing (e.g., JSON parser error)
+    :return: a list of message IDs that are part of a failure and should not be deleted from the queue
+    """
+    if not result or not result.result:
+        return []
+
+    partial_batch_failure = json.loads(result.result)
+
+    if not partial_batch_failure:
+        return []
+
+    batch_item_failures = partial_batch_failure.get("batchItemFailures")
+
+    if not batch_item_failures:
+        return []
+
+    messages_to_keep = []
+    for item in partial_batch_failure["batchItemFailures"]:
+        if "itemIdentifier" not in item:
+            raise KeyError(f"missing itemIdentifier in batchItemFailure record {item}")
+
+        item_identifier = item["itemIdentifier"]
+
+        if item_identifier not in valid_message_ids:
+            raise KeyError(f"itemIdentifier '{item_identifier}' not in the batch")
+
+        messages_to_keep.append(item_identifier)
+
+    return messages_to_keep

@@ -239,6 +239,9 @@ def build_mapping_obj(data) -> Dict:
     if data.get("DestinationConfig"):
         mapping["DestinationConfig"] = data.get("DestinationConfig")
 
+    if data.get("FunctionResponseTypes"):
+        mapping["FunctionResponseTypes"] = data.get("FunctionResponseTypes")
+
     return mapping
 
 
