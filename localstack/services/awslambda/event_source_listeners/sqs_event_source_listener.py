@@ -49,8 +49,6 @@ class SQSEventSourceListener(EventSourceListener):
                     self.SQS_LISTENER_THREAD.pop("_thread_")
                     return
 
-                unprocessed_messages = {}
-
                 for source in sources:
                     queue_arn = source["EventSourceArn"]
                     region_name = queue_arn.split(":")[3]
@@ -59,21 +57,17 @@ class SQSEventSourceListener(EventSourceListener):
 
                     try:
                         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
-                        messages = unprocessed_messages.pop(queue_arn, None)
+                        result = sqs_client.receive_message(
+                            QueueUrl=queue_url,
+                            AttributeNames=["All"],
+                            MessageAttributeNames=["All"],
+                            MaxNumberOfMessages=batch_size,
+                        )
+                        messages = result.get("Messages")
                         if not messages:
-                            result = sqs_client.receive_message(
-                                QueueUrl=queue_url,
-                                AttributeNames=["All"],
-                                MessageAttributeNames=["All"],
-                                MaxNumberOfMessages=batch_size,
-                            )
-                            messages = result.get("Messages")
-                            if not messages:
-                                continue
+                            continue
 
-                        res = self._process_messages_for_event_source(source, messages)
-                        if not res:
-                            unprocessed_messages[queue_arn] = messages
+                        self._process_messages_for_event_source(source, messages)
 
                     except Exception as e:
                         if "NonExistentQueue" not in str(e):
@@ -100,7 +94,7 @@ class SQSEventSourceListener(EventSourceListener):
         )
         return res
 
-    def _send_event_to_lambda(self, queue_arn, queue_url, lambda_arn, messages, region):
+    def _send_event_to_lambda(self, queue_arn, queue_url, lambda_arn, messages, region) -> bool:
         def delete_messages(result, func_arn, event, error=None, **kwargs):
             if error:
                 # Skip deleting messages from the queue in case of processing errors. We'll pick them up and retry

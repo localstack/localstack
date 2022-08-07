@@ -2382,18 +2382,11 @@ class TestSqsProvider:
         sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=handle)
         sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=handle)
 
+    # TODO: test message attributes and message system attributes
+
 
 def get_region():
     return os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
-
-
-# TODO: test visibility timeout (with various ways to set them: queue attributes, receive parameter, update call)
-# TODO: test message attributes and message system attributes
-
-
-class TestSqsLambdaIntegration:
-    pass
-    # TODO: move tests here
 
 
 @pytest.fixture()
