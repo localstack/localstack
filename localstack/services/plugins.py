@@ -14,7 +14,7 @@ from werkzeug import Request
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.config import ServiceProviderConfig
-from localstack.services.stores import BaseStoreType
+from localstack.datatypes import BaseStoreType
 from localstack.utils.bootstrap import get_enabled_apis, log_duration
 from localstack.utils.functions import call_safe
 from localstack.utils.net import wait_for_port_status
@@ -141,12 +141,12 @@ class BackendStateLifecycle(abc.ABC):
     """
 
     @abc.abstractmethod
-    def store(self, context: RequestContext = None) -> BaseStoreType:
-        """
-        Get the provider store for account ID and region in the request context.
+    def get_store(self, context: RequestContext = None) -> BaseStoreType:
+        """Get the provider store for account ID and region in the current context."""
 
-        If request context is not supplied, account ID and region is obtained from current thread context.
-        """
+    @abc.abstractmethod
+    def get_backend(self, context: RequestContext = None) -> BaseStoreType:
+        """Get the Moto backend for account ID and region in the current context."""
 
     @abc.abstractmethod
     def retrieve_state(self, **kwargs):

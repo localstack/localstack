@@ -22,19 +22,18 @@ Access patterns are as follows
     sqs_stores[account_id]['ap-south-1']  # -> SqsStore
     sqs_stores[account_id]['ap-south-1'].queues  # -> {}
 """
-
 import re
 from collections.abc import Callable
-from typing import Any, Dict, Type, TypeVar, Union
+from typing import Any, Dict, Type, Union
 
 from boto3 import Session
+
+from localstack.datatypes import BaseStoreType
 
 # Keeps track of all initialised store bundles
 STORES_DIRECTORY: Dict[str, "AccountRegionBundle"] = {}
 
 LOCAL_ATTR_PREFIX = "attr_"
-
-BaseStoreType = TypeVar("BaseStoreType", bound="BaseStore")
 
 
 #
@@ -201,7 +200,7 @@ class AccountRegionBundle(dict):
 
     def __init__(self, service_name: str, store: Type[BaseStoreType], validate: bool = True):
         """
-        :param service_name: Name of the service. Must be a valid service defined in botocore.
+        :param service_name: Name of the service. Must be a same as provider service name.
         :param store: Class definition of the Store
         :param validate: Whether to raise if invalid region names or account IDs are used during subscription
         """
@@ -209,7 +208,10 @@ class AccountRegionBundle(dict):
         self.store = store
         self.validate = validate
 
-        STORES_DIRECTORY[self.service_name] = self
+        if self.service_name in STORES_DIRECTORY:
+            raise RuntimeError(f"Duplicate stores cannot be registered: {self.service_name}")
+        else:
+            STORES_DIRECTORY[self.service_name] = self
 
     def __getitem__(self, account_id: str) -> RegionBundle:
         if self.validate and not re.match(r"\d{12}", account_id):
