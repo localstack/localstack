@@ -18,8 +18,8 @@ import boto3
 
 def handler(event, context):
     # this lambda expects inputs from an SQS event source mapping
-    if not event.get("Records"):
-        raise ValueError("no records passed to event")
+    if len(event.get("Records", [])) != 1:
+        raise ValueError("the payload must consist of exactly one record")
 
     # it expects exactly one record where the message body is '{"destination": "<queue_url>"}' that mimics a
     # DestinationConfig (which is not possible with SQS event source mappings).
@@ -49,7 +49,4 @@ def create_external_boto_client(service):
         endpoint_url = (
             f"http://{os.environ['LOCALSTACK_HOSTNAME']}:{os.environ.get('EDGE_PORT', 4566)}"
         )
-    region_name = (
-        os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION") or "us-east-1"
-    )
-    return boto3.client(service, endpoint_url=endpoint_url, region_name=region_name)
+    return boto3.client(service, endpoint_url=endpoint_url)

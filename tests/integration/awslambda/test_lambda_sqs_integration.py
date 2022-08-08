@@ -137,7 +137,6 @@ def test_failing_lambda_retries_after_visibility_timeout(
 
 @pytest.mark.skip_snapshot_verify(
     paths=[
-        # FIXME: this is most of the event source mapping unfortunately
         "$..ParallelizationFactor",
         "$..LastProcessingResult",
         "$..Topics",
@@ -158,9 +157,9 @@ def test_redrive_policy_with_failing_lambda(
     snapshot,
     cleanups,
 ):
-    """This test verifies a that SQS moves a message that is passed to a failing lambda to a DLQ according to the
+    """This test verifies that SQS moves a message that is passed to a failing lambda to a DLQ according to the
     redrive policy, and the lambda is invoked the correct number of times. The test retries twice and the event
-    source mapping should then automatically move the message to the DQL, but not earlier (see
+    source mapping should then automatically move the message to the DLQ, but not earlier (see
     https://github.com/localstack/localstack/issues/5283)"""
 
     # create queue used in the lambda to send events to (to verify lambda was invoked)
