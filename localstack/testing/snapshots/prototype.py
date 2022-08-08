@@ -3,7 +3,6 @@ import logging
 import os
 from datetime import datetime
 from json import JSONDecodeError
-from operator import itemgetter
 from pathlib import Path
 from re import Pattern
 from typing import Dict, List, Optional
@@ -241,11 +240,19 @@ class SnapshotSession:
 
         return tmp
 
-    def _order_dict(self, response: dict) -> dict:
-        return {
-            key: self._order_dict(val) if isinstance(val, dict) else val
-            for key, val in sorted(response.items(), key=itemgetter(0))
-        }
+    def _order_dict(self, response) -> dict:
+        if isinstance(response, dict):
+            ordered_dict = {}
+            for key, val in sorted(response.items()):
+                if isinstance(val, dict):
+                    ordered_dict[key] = self._order_dict(val)
+                elif isinstance(val, list):
+                    ordered_dict[key] = [self._order_dict(entry) for entry in val]
+                else:
+                    ordered_dict[key] = val
+            return ordered_dict
+        else:
+            return response
 
     # LEGACY API
     def register_replacement(self, pattern: Pattern[str], value: str):
