@@ -49,8 +49,6 @@ class SQSEventSourceListener(EventSourceListener):
                     self.SQS_LISTENER_THREAD.pop("_thread_")
                     return
 
-                unprocessed_messages = {}
-
                 for source in sources:
                     queue_arn = source["EventSourceArn"]
                     region_name = queue_arn.split(":")[3]
@@ -59,21 +57,17 @@ class SQSEventSourceListener(EventSourceListener):
 
                     try:
                         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
-                        messages = unprocessed_messages.pop(queue_arn, None)
+                        result = sqs_client.receive_message(
+                            QueueUrl=queue_url,
+                            AttributeNames=["All"],
+                            MessageAttributeNames=["All"],
+                            MaxNumberOfMessages=batch_size,
+                        )
+                        messages = result.get("Messages")
                         if not messages:
-                            result = sqs_client.receive_message(
-                                QueueUrl=queue_url,
-                                AttributeNames=["All"],
-                                MessageAttributeNames=["All"],
-                                MaxNumberOfMessages=batch_size,
-                            )
-                            messages = result.get("Messages")
-                            if not messages:
-                                continue
+                            continue
 
-                        res = self._process_messages_for_event_source(source, messages)
-                        if not res:
-                            unprocessed_messages[queue_arn] = messages
+                        self._process_messages_for_event_source(source, messages)
 
                     except Exception as e:
                         if "NonExistentQueue" not in str(e):
@@ -100,12 +94,12 @@ class SQSEventSourceListener(EventSourceListener):
         )
         return res
 
-    def _send_event_to_lambda(self, queue_arn, queue_url, lambda_arn, messages, region):
-        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
-            if error and not dlq_sent:
-                # Skip deleting messages from the queue in case of processing errors AND if
-                # the message has not yet been sent to a dead letter queue (DLQ).
-                # We'll pick them up and retry next time they become available on the queue.
+    def _send_event_to_lambda(self, queue_arn, queue_url, lambda_arn, messages, region) -> bool:
+        def delete_messages(result, func_arn, event, error=None, **kwargs):
+            if error:
+                # Skip deleting messages from the queue in case of processing errors. We'll pick them up and retry
+                # next time they become visible in the queue. Redrive policies will be handled automatically by SQS
+                # on the next polling attempt.
                 return
 
             region_name = queue_arn.split(":")[3]
@@ -124,25 +118,25 @@ class SQSEventSourceListener(EventSourceListener):
         records = []
         for msg in messages:
             message_attrs = message_attributes_to_lower(msg.get("MessageAttributes"))
-            records.append(
-                {
-                    "body": msg.get("Body", "MessageBody"),
-                    "receiptHandle": msg.get("ReceiptHandle"),
-                    "md5OfBody": msg.get("MD5OfBody") or msg.get("MD5OfMessageBody"),
-                    "eventSourceARN": queue_arn,
-                    "eventSource": lambda_executors.EVENT_SOURCE_SQS,
-                    "awsRegion": region,
-                    "messageId": msg["MessageId"],
-                    "attributes": msg.get("Attributes", {}),
-                    "messageAttributes": message_attrs,
-                    "md5OfMessageAttributes": msg.get("MD5OfMessageAttributes"),
-                    "sqs": True,
-                }
-            )
+            record = {
+                "body": msg.get("Body", "MessageBody"),
+                "receiptHandle": msg.get("ReceiptHandle"),
+                "md5OfBody": msg.get("MD5OfBody") or msg.get("MD5OfMessageBody"),
+                "eventSourceARN": queue_arn,
+                "eventSource": lambda_executors.EVENT_SOURCE_SQS,
+                "awsRegion": region,
+                "messageId": msg["MessageId"],
+                "attributes": msg.get("Attributes", {}),
+                "messageAttributes": message_attrs,
+            }
+
+            if md5OfMessageAttributes := msg.get("MD5OfMessageAttributes"):
+                record["md5OfMessageAttributes"] = md5OfMessageAttributes
+
+            records.append(record)
 
         event = {"Records": records}
 
-        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
         res = run_lambda(
             func_arn=lambda_arn,
             event=event,

@@ -1515,56 +1515,6 @@ class TestSqsProvider:
         assert queue_url_1 in source_urls["queueUrls"]
         assert queue_url_2 in source_urls["queueUrls"]
 
-    def test_dead_letter_queue_execution(
-        self, sqs_client, sqs_create_queue, lambda_client, create_lambda_function
-    ):
-
-        # TODO: lambda creation does not work when testing against AWS
-        queue_name = f"queue-{short_uid()}"
-        dead_letter_queue_name = f"dl-queue-{short_uid()}"
-        dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
-
-        # create arn
-        url_parts = dl_queue_url.split("/")
-        region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
-        dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[-1]
-        )
-
-        policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
-        queue_url = sqs_create_queue(
-            QueueName=queue_name, Attributes={"RedrivePolicy": json.dumps(policy)}
-        )
-
-        lambda_name = f"lambda-{short_uid()}"
-        create_lambda_function(
-            func_name=lambda_name,
-            libs=TEST_LAMBDA_LIBS,
-            handler_file=TEST_LAMBDA_PYTHON,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-        )
-        # create arn
-        url_parts = queue_url.split("/")
-        queue_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[-1]
-        )
-        lambda_client.create_event_source_mapping(
-            EventSourceArn=queue_arn, FunctionName=lambda_name
-        )
-
-        # add message to SQS, which will trigger the Lambda, resulting in an error
-        payload = {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}
-        sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(payload))
-
-        assert poll_condition(
-            lambda: "Messages"
-            in sqs_client.receive_message(QueueUrl=dl_queue_url, VisibilityTimeout=0),
-            10.0,
-            1.0,
-        )
-        result_recv = sqs_client.receive_message(QueueUrl=dl_queue_url, VisibilityTimeout=0)
-        assert result_recv["Messages"][0]["Body"] == json.dumps(payload)
-
     @pytest.mark.aws_validated
     def test_dead_letter_queue_with_fifo_and_content_based_deduplication(
         self, sqs_client, sqs_create_queue, sqs_queue_arn
@@ -2432,18 +2382,11 @@ class TestSqsProvider:
         sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=handle)
         sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=handle)
 
+    # TODO: test message attributes and message system attributes
+
 
 def get_region():
     return os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
-
-
-# TODO: test visibility timeout (with various ways to set them: queue attributes, receive parameter, update call)
-# TODO: test message attributes and message system attributes
-
-
-class TestSqsLambdaIntegration:
-    pass
-    # TODO: move tests here
 
 
 @pytest.fixture()
