@@ -408,6 +408,15 @@ class ResourceType(str):
     AWS_Batch_JobQueue = "AWS::Batch::JobQueue"
     AWS_Batch_ComputeEnvironment = "AWS::Batch::ComputeEnvironment"
     AWS_AccessAnalyzer_Analyzer = "AWS::AccessAnalyzer::Analyzer"
+    AWS_Athena_WorkGroup = "AWS::Athena::WorkGroup"
+    AWS_Athena_DataCatalog = "AWS::Athena::DataCatalog"
+    AWS_Detective_Graph = "AWS::Detective::Graph"
+    AWS_GlobalAccelerator_Accelerator = "AWS::GlobalAccelerator::Accelerator"
+    AWS_GlobalAccelerator_EndpointGroup = "AWS::GlobalAccelerator::EndpointGroup"
+    AWS_GlobalAccelerator_Listener = "AWS::GlobalAccelerator::Listener"
+    AWS_EC2_TransitGatewayAttachment = "AWS::EC2::TransitGatewayAttachment"
+    AWS_EC2_TransitGatewayRouteTable = "AWS::EC2::TransitGatewayRouteTable"
+    AWS_DMS_Certificate = "AWS::DMS::Certificate"
 
 
 class ResourceValueType(str):

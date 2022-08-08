@@ -12,6 +12,7 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 AccountId = str
 ActionPrefix = str
 ActionsEnabled = bool
+ActionsSuppressedReason = str
 AlarmArn = str
 AlarmDescription = str
 AlarmName = str
@@ -82,10 +83,17 @@ Stat = str
 StateReason = str
 StateReasonData = str
 StorageResolution = int
+SuppressorPeriod = int
 TagKey = str
 TagValue = str
 Threshold = float
 TreatMissingData = str
+
+
+class ActionsSuppressedBy(str):
+    WaitPeriod = "WaitPeriod"
+    ExtensionPeriod = "ExtensionPeriod"
+    Alarm = "Alarm"
 
 
 class AlarmType(str):
@@ -388,6 +396,12 @@ class CompositeAlarm(TypedDict, total=False):
     StateReasonData: Optional[StateReasonData]
     StateUpdatedTimestamp: Optional[Timestamp]
     StateValue: Optional[StateValue]
+    StateTransitionedTimestamp: Optional[Timestamp]
+    ActionsSuppressedBy: Optional[ActionsSuppressedBy]
+    ActionsSuppressedReason: Optional[ActionsSuppressedReason]
+    ActionsSuppressor: Optional[AlarmArn]
+    ActionsSuppressorWaitPeriod: Optional[SuppressorPeriod]
+    ActionsSuppressorExtensionPeriod: Optional[SuppressorPeriod]
 
 
 CompositeAlarms = List[CompositeAlarm]
@@ -914,6 +928,9 @@ class PutCompositeAlarmInput(ServiceRequest):
     InsufficientDataActions: Optional[ResourceList]
     OKActions: Optional[ResourceList]
     Tags: Optional[TagList]
+    ActionsSuppressor: Optional[AlarmArn]
+    ActionsSuppressorWaitPeriod: Optional[SuppressorPeriod]
+    ActionsSuppressorExtensionPeriod: Optional[SuppressorPeriod]
 
 
 class PutDashboardInput(ServiceRequest):
@@ -1279,6 +1296,9 @@ class CloudwatchApi:
         insufficient_data_actions: ResourceList = None,
         ok_actions: ResourceList = None,
         tags: TagList = None,
+        actions_suppressor: AlarmArn = None,
+        actions_suppressor_wait_period: SuppressorPeriod = None,
+        actions_suppressor_extension_period: SuppressorPeriod = None,
     ) -> None:
         raise NotImplementedError
 
