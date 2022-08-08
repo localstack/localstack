@@ -77,7 +77,6 @@ def localstack_status(ctx):
     name="docker", help="Query information about the LocalStack Docker image and runtime"
 )
 @click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
-@publish_invocation
 def cmd_status_docker(format):
     with console.status("Querying Docker status"):
         print_docker_status(format)
@@ -85,7 +84,6 @@ def cmd_status_docker(format):
 
 @localstack_status.command(name="services", help="Query information about running services")
 @click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
-@publish_invocation
 def cmd_status_services(format):
     import requests
 
