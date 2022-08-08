@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 import moto.route53.models as route53_models
-from moto.route53.models import route53_backend
+from moto.route53.models import route53_backends
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.route53 import (
@@ -28,9 +28,9 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
     def get_health_check(
         self, context: RequestContext, health_check_id: HealthCheckId
     ) -> GetHealthCheckResponse:
-        health_check: Optional[route53_models.HealthCheck] = route53_backend.health_checks.get(
-            health_check_id, None
-        )
+        health_check: Optional[route53_models.HealthCheck] = route53_backends[context.account_id][
+            "global"
+        ].health_checks.get(health_check_id, None)
         if not health_check:
             raise NoSuchHealthCheck(
                 f"No health check exists with the specified ID {health_check_id}"
@@ -60,7 +60,9 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
     def delete_health_check(
         self, context: RequestContext, health_check_id: HealthCheckId
     ) -> DeleteHealthCheckResponse:
-        health_check = route53_backend.delete_health_check(health_check_id)
+        health_check = route53_backends[context.account_id]["global"].delete_health_check(
+            health_check_id
+        )
         if not health_check:
             raise NoSuchHealthCheck(
                 f"No health check exists with the specified ID {health_check_id}"
