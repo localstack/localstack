@@ -6,7 +6,10 @@ import random
 import re
 import string
 import uuid
+import zlib
 from typing import Dict, List, Union
+
+from crc32c import crc32c
 
 from localstack.config import DEFAULT_ENCODING
 
@@ -141,6 +144,28 @@ def md5(string: Union[str, bytes]) -> str:
     m = hashlib.md5()
     m.update(to_bytes(string))
     return m.hexdigest()
+
+
+def checksum_crc32(string: Union[str, bytes]) -> str:
+    bytes = to_bytes(string)
+    checksum = zlib.crc32(bytes)
+    return base64.b64encode(checksum.to_bytes(4, "big")).decode()
+
+
+def checksum_crc32c(string: Union[str, bytes]):
+    bytes = to_bytes(string)
+    checksum = crc32c(bytes).to_bytes(4, "big")
+    return base64.b64encode(checksum).decode()
+
+
+def hash_sha1(string: Union[str, bytes]) -> str:
+    digest = hashlib.sha1(to_bytes(string)).digest()
+    return base64.b64encode(digest).decode()
+
+
+def hash_sha256(string: Union[str, bytes]) -> str:
+    digest = hashlib.sha256(to_bytes(string)).digest()
+    return base64.b64encode(digest).decode()
 
 
 def base64_to_hex(b64_string: str) -> bytes:
