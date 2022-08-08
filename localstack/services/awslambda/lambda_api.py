@@ -1278,27 +1278,6 @@ def update_function_code(function):
     return jsonify(result or {})
 
 
-@app.route("%s/functions/<function>/code" % API_PATH_ROOT, methods=["GET"])
-def get_function_code(function):
-    """Get the code of an existing function
-    ---
-    operationId: 'getFunctionCode'
-    parameters:
-    """
-    region = LambdaRegion.get()
-    arn = func_arn(function)
-    lambda_function = region.lambdas.get(arn)
-    if not lambda_function:
-        return not_found_error(arn)
-    lambda_zip_dir = lambda_function.zip_dir
-    tmp_file = f"{lambda_zip_dir}/{LAMBDA_ZIP_FILE_NAME}"
-    return Response(
-        load_file(tmp_file, mode="rb"),
-        mimetype="application/zip",
-        headers={"Content-Disposition": "attachment; filename=lambda_archive.zip"},
-    )
-
-
 @app.route("%s/functions/<function>/configuration" % API_PATH_ROOT, methods=["GET"])
 def get_function_configuration(function):
     """Get the configuration of an existing function
