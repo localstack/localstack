@@ -28,6 +28,20 @@ def _await_event_source_mapping_enabled(lambda_client, uuid, retries=30):
     retry(assert_mapping_enabled, sleep_before=2, retries=retries)
 
 
+def _await_queue_size(sqs_client, queue_url: str, qsize: int, retries=10, sleep=1):
+    # wait for all items to appear in the queue
+    def _verify_event_queue_size():
+        attr = "ApproximateNumberOfMessages"
+        _approx = int(
+            sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=[attr])[
+                "Attributes"
+            ][attr]
+        )
+        assert _approx >= qsize
+
+    retry(_verify_event_queue_size, retries=retries, sleep=sleep)
+
+
 @pytest.fixture(autouse=True)
 def _snapshot_transformers(snapshot):
     # manual transformers since we are passing SQS attributes through lambdas and back again
@@ -359,7 +373,7 @@ def test_report_batch_item_failures(
 
     # timeout in seconds, used for both the lambda and the queue visibility timeout.
     # increase to 10 if testing against AWS fails.
-    retry_timeout = 4
+    retry_timeout = 6
     retries = 2
 
     # set up lambda function
@@ -433,16 +447,7 @@ def test_report_batch_item_failures(
     snapshot.match("send_message_batch", response)
 
     # wait for all items to appear in the queue
-    def _verify_event_queue_size():
-        attr = "ApproximateNumberOfMessages"
-        qsize = int(
-            sqs_client.get_queue_attributes(QueueUrl=event_source_url, AttributeNames=[attr])[
-                "Attributes"
-            ][attr]
-        )
-        assert qsize == 4
-
-    retry(_verify_event_queue_size, retries=30)
+    _await_queue_size(sqs_client, event_source_url, qsize=4, retries=30)
 
     # wire everything with the event source mapping
     response = lambda_client.create_event_source_mapping(
@@ -454,7 +459,6 @@ def test_report_batch_item_failures(
     )
     snapshot.match("create_event_source_mapping", response)
     mapping_uuid = response["UUID"]
-    # TODO: snapshot the create_event_source_mapping
     cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=mapping_uuid))
     _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
 
@@ -497,3 +501,88 @@ def test_report_batch_item_failures(
     dlq_response = sqs_client.receive_message(QueueUrl=event_dlq_url, WaitTimeSeconds=15)
     assert "Messages" in dlq_response
     snapshot.match("dlq_response", dlq_response)
+
+
+@pytest.mark.aws_validated
+def test_report_batch_item_failures_on_lambda_error(
+    create_lambda_function,
+    lambda_client,
+    sqs_client,
+    sqs_create_queue,
+    sqs_queue_arn,
+    lambda_su_role,
+    snapshot,
+    cleanups,
+):
+    # timeout in seconds, used for both the lambda and the queue visibility timeout
+    retry_timeout = 2
+    retries = 2
+
+    # set up lambda function
+    function_name = f"failing-lambda-{short_uid()}"
+    create_lambda_function(
+        func_name=function_name,
+        handler_file=LAMBDA_SQS_INTEGRATION_FILE,
+        runtime=LAMBDA_RUNTIME_PYTHON38,
+        role=lambda_su_role,
+        timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
+    )
+
+    # create dlq for event source queue
+    event_dlq_url = sqs_create_queue(QueueName=f"event-dlq-{short_uid()}")
+    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+
+    # create event source queue
+    event_source_url = sqs_create_queue(
+        QueueName=f"source-queue-{short_uid()}",
+        Attributes={
+            # the visibility timeout is implicitly also the time between retries
+            "VisibilityTimeout": str(retry_timeout),
+            "RedrivePolicy": json.dumps(
+                {"deadLetterTargetArn": event_dlq_arn, "maxReceiveCount": retries}
+            ),
+        },
+    )
+    event_source_arn = sqs_queue_arn(event_source_url)
+
+    # send a batch with a message to the queue that provokes a lambda failure (the lambda tries to parse the body as
+    # JSON, but if it's not a json document, it fails). consequently, the entire batch should be discarded
+    sqs_client.send_message_batch(
+        QueueUrl=event_source_url,
+        Entries=[
+            {
+                "Id": "message-1",
+                "MessageBody": "{not a json body",
+            },
+            {
+                # this one's ok, but will be sent to the DLQ nonetheless because it's part of this bad batch.
+                "Id": "message-2",
+                "MessageBody": json.dumps({"message": 2, "fail_attempts": 0}),
+            },
+        ],
+    )
+    _await_queue_size(sqs_client, event_source_url, qsize=2)
+
+    # wire everything with the event source mapping
+    mapping_uuid = lambda_client.create_event_source_mapping(
+        EventSourceArn=event_source_arn,
+        FunctionName=function_name,
+        FunctionResponseTypes=["ReportBatchItemFailures"],
+    )["UUID"]
+    cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
+
+    # the message should arrive in the DLQ after 2 retries + some time for processing
+
+    messages = []
+
+    def _collect_message():
+        dlq_response = sqs_client.receive_message(QueueUrl=event_dlq_url)
+        messages.extend(dlq_response.get("Messages", []))
+        assert len(messages) >= 2
+
+    # the message should arrive in the DLQ after 2 retries + some time for processing
+    wait_time = retry_timeout * retries
+    retry(_collect_message, retries=10, sleep=1, sleep_before=wait_time)
+
+    snapshot.match("dlq_messages", messages)

@@ -19,10 +19,6 @@ import boto3
 def handler(event, context):
     sqs = create_external_boto_client("sqs")
 
-    destination_queue_url = os.environ.get("DESTINATION_QUEUE_URL")
-    if not destination_queue_url:
-        raise ValueError("no destination queue passed to lambda")
-
     print("incoming event:")
     print(json.dumps(event))
 
@@ -47,10 +43,12 @@ def handler(event, context):
         ]
     }
 
-    sqs.send_message(
-        QueueUrl=destination_queue_url,
-        MessageBody=json.dumps({"event": event, "result": result}),
-    )
+    destination_queue_url = os.environ.get("DESTINATION_QUEUE_URL")
+    if destination_queue_url:
+        sqs.send_message(
+            QueueUrl=destination_queue_url,
+            MessageBody=json.dumps({"event": event, "result": result}),
+        )
 
     return result
 

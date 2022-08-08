@@ -527,5 +527,27 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_sqs_integration.py::test_report_batch_item_failures_on_lambda_error": {
+    "recorded-date": "08-08-2022, 21:24:21",
+    "recorded-content": {
+      "dlq_messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "{not a json body"
+        },
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "message": 2,
+            "fail_attempts": 0
+          }
+        }
+      ]
+    }
   }
 }
