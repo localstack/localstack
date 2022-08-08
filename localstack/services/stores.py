@@ -179,6 +179,7 @@ class RegionBundle(dict):
 
     def reset(self):
         """Clear all store data."""
+        # For safety, clear data in all referenced store instances, if any
         for store_inst in self.values():
             attrs = list(store_inst.__dict__.keys())
             for attr in attrs:
@@ -189,6 +190,8 @@ class RegionBundle(dict):
                 # reset the local attributes
                 elif attr.startswith(LOCAL_ATTR_PREFIX):
                     delattr(store_inst, attr)
+        self._global.clear()
+        self.clear()
 
 
 class AccountRegionBundle(dict):
@@ -223,5 +226,7 @@ class AccountRegionBundle(dict):
 
     def reset(self):
         """Clear all store data."""
+        # For safety, clear all referenced region bundles, if any
         for region_bundle in self.values():
             region_bundle.reset()
+        self.clear()

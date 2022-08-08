@@ -184,7 +184,8 @@ class ServiceExceptionSerializer(ExceptionHandler):
         if operation and isinstance(exception, NotImplementedError):
             action_name = operation.name
             message = (
-                f"API action '{action_name}' for service '{service_name}' " f"not yet implemented"
+                f"API action '{action_name}' for service '{service_name}' not yet implemented or pro feature"
+                f" - check https://docs.localstack.cloud/aws/feature-coverage for further information"
             )
             LOG.info(message)
             error = CommonServiceException("InternalFailure", message, status_code=501)

@@ -31,3 +31,13 @@ ec2:
     - TestAccVPC_classicLinkOptionSet
     - TestAccVPC_classicLinkDNSSupportOptionSet
     - TestAccVPC_IPAMIPv4BasicExplicitCIDR
+    - TestAccVPCSubnet_basic
+    - TestAccVPCSubnet_DefaultTags_providerOnly
+    - TestAccVPCSubnet_DefaultTags_updateToProviderOnly
+    - TestAccVPCSubnet_DefaultTags_updateToResourceOnly
+    - TestAccVPCSubnet_DefaultTagsProviderAndResource_nonOverlappingTag
+    - TestAccVPCSubnet_DefaultTagsProviderAndResource_overlappingTag
+    - TestAccVPCSubnet_DefaultTagsProviderAndResource_duplicateTag
+    - TestAccVPCSubnet_defaultAndIgnoreTags
+    - TestAccVPCSubnet_updateTagsKnownAtApply
+    - TestAccVPCSubnet_ignoreTags

@@ -60,9 +60,9 @@ class SchemaExtractor:
 
     @classmethod
     def get_key_schema(cls, table_name: str) -> Optional[List[Dict]]:
-        from localstack.services.dynamodb.provider import DynamoDBRegion
+        from localstack.services.dynamodb.provider import get_store
 
-        table_definitions = DynamoDBRegion.get().table_definitions
+        table_definitions: Dict = get_store().table_definitions
         table_def = table_definitions.get(table_name)
         if not table_def:
             raise Exception(f"Unknown table: {table_name} not found in {table_definitions.keys()}")

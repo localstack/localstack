@@ -15,6 +15,16 @@ class FirehoseDeliveryStream(GenericBaseModel):
             DeliveryStreamName=stream_name
         )
 
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "Arn":
+            return aws_stack.firehose_stream_arn(self.props.get("DeliveryStreamName"))
+        return super().get_cfn_attribute(attribute_name)
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute == "Arn":
+            return self.get_cfn_attribute("Arn")
+        return self.props.get("DeliveryStreamName")
+
     @staticmethod
     def get_deploy_templates():
         return {

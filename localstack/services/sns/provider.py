@@ -12,6 +12,7 @@ from typing import Dict, List
 import botocore.exceptions
 import requests as requests
 from flask import Response as FlaskResponse
+from moto.sns import sns_backends as moto_sns_backends
 from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from requests.models import Response
@@ -448,19 +449,19 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> PublishBatchResponse:
         if len(publish_batch_request_entries) > 10:
             raise TooManyEntriesInBatchRequestException(
-                "The batch request contains more entries than permissible"
+                "The batch request contains more entries than permissible."
             )
 
         ids = [entry["Id"] for entry in publish_batch_request_entries]
         if len(set(ids)) != len(publish_batch_request_entries):
             raise BatchEntryIdsNotDistinctException(
-                "Two or more batch entries in the request have the same Id"
+                "Two or more batch entries in the request have the same Id."
             )
 
         if topic_arn and ".fifo" in topic_arn:
             if not all(["MessageGroupId" in entry for entry in publish_batch_request_entries]):
                 raise InvalidParameterException(
-                    "The MessageGroupId parameter is required for FIFO topics"
+                    "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                 )
         response = {"Successful": [], "Failed": []}
         for entry in publish_batch_request_entries:
@@ -575,6 +576,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return CreateEndpointResponse(**result)
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
+        call_moto(context)
         sns_backend = SNSBackend.get()
 
         def should_be_kept(current_subscription, target_subscription_arn):
@@ -651,16 +653,32 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> PublishResponse:
         # We do not want the request to be forwarded to SNS backend
         if subject == "":
-            raise InvalidParameterException("Empty string for subject is not supported")
+            raise InvalidParameterException("Invalid parameter: Subject")
         if not message or all(not m for m in message):
-            raise InvalidParameterException("Empty message")
+            raise InvalidParameterException("Invalid parameter: Empty message")
 
         if len(message) > MAXIMUM_MESSAGE_LENGTH:
-            raise InvalidParameterException("Message too long")
+            raise InvalidParameterException("Invalid parameter: Message too long")
 
-        if topic_arn and ".fifo" in topic_arn and not message_group_id:
+        if topic_arn and ".fifo" in topic_arn:
+            if not message_group_id:
+                raise InvalidParameterException(
+                    "The MessageGroupId parameter is required for FIFO topics",
+                )
+            moto_sns_backend = moto_sns_backends[context.region]
+            if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
+                if not message_deduplication_id:
+                    raise InvalidParameterException(
+                        "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+                    )
+        elif message_deduplication_id:
+            # this is the first one to raise if both are set while the topic is not fifo
             raise InvalidParameterException(
-                "The MessageGroupId parameter is required for FIFO topics",
+                "Invalid parameter: MessageDeduplicationId Reason: The request includes MessageDeduplicationId parameter that is not valid for this topic type"
+            )
+        elif message_group_id:
+            raise InvalidParameterException(
+                "Invalid parameter: MessageGroupId Reason: The request includes MessageGroupId parameter that is not valid for this topic type"
             )
 
         sns_backend = SNSBackend.get()
@@ -821,7 +839,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         topic_arn = moto_response["TopicArn"]
         tag_resource_success = extract_tags(topic_arn, tags, True, sns_backend)
         if not tag_resource_success:
-            raise InvalidParameterException("Topic already exists with different tags")
+            raise InvalidParameterException(
+                "Invalid parameter: Tags Reason: Topic already exists with different tags"
+            )
         if tags:
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
         sns_backend.sns_subscriptions[topic_arn] = (
@@ -845,6 +865,7 @@ def message_to_subscribers(
     skip_checks=False,
     message_attributes=None,
 ):
+    # AWS allows using TargetArn to publish to a topic, for backward compatibility
     if not topic_arn:
         topic_arn = req_data.get("TargetArn")
     sns_backend = SNSBackend.get()

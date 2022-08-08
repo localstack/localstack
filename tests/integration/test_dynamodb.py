@@ -3,6 +3,7 @@ import json
 import re
 from datetime import datetime
 from time import sleep
+from typing import Dict
 
 import pytest
 from boto3.dynamodb.conditions import Key
@@ -1390,6 +1391,42 @@ class TestDynamoDB:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert len(response["StreamDescription"]["Shards"]) == 0
+
+    @pytest.mark.aws_validated
+    def test_dynamodb_idempotent_writing(
+        self, dynamodb_create_table_with_parameters, dynamodb_client, dynamodb_wait_for_table_active
+    ):
+        table_name = f"ddb-table-{short_uid()}"
+        dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[
+                {"AttributeName": "id", "KeyType": "HASH"},
+                {"AttributeName": "name", "KeyType": "RANGE"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "id", "AttributeType": "S"},
+                {"AttributeName": "name", "AttributeType": "S"},
+            ],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        dynamodb_wait_for_table_active(table_name)
+
+        def _transact_write(_d: Dict):
+            response = dynamodb_client.transact_write_items(
+                ClientRequestToken="dedupe_token",
+                TransactItems=[
+                    {
+                        "Put": {
+                            "TableName": table_name,
+                            "Item": _d,
+                        }
+                    },
+                ],
+            )
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        _transact_write({"id": {"S": "id1"}, "name": {"S": "name1"}})
+        _transact_write({"name": {"S": "name1"}, "id": {"S": "id1"}})
 
 
 def delete_table(name):
