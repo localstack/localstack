@@ -338,13 +338,15 @@ def fake_secret_set_versions(_, self, versions):
 def moto_smb_get_secret_value(fn, self, secret_id, version_id, version_stage):
     res = fn(self, secret_id, version_id, version_stage)
 
-    secret_id = self.secrets[secret_id]
-    if secret_id:  # Redundant, we know from the response it exists: no exceptions.
-        secret_id.last_accessed_date = today_no_time()
-    else:
-        LOG.warning(
-            f'Expected Secret to exist on non failing GetSecretValue request for SecretId "{secret_id}"'
-        )
+    secret = self.secrets[secret_id]
+
+    # Patch: update last accessed date on get.
+    secret.last_accessed_date = today_no_time()
+
+    # Patch: update version's last accessed date.
+    secret_version = secret.versions.get(version_id or secret.default_version_id)
+    if secret_version:
+        secret_version["last_accessed_date"] = secret.last_accessed_date
 
     return res
 
@@ -380,10 +382,15 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
         version_stages = version["version_stages"]
         entry = SecretVersionsListEntry(
             CreatedDate=version["createdate"],
-            # LastAccessedDate=int(time.time()), TODO: last accessed date of versions is currently unsupported.
             VersionId=version_id,
             VersionStages=version_stages,
         )
+
+        # Patch: bind LastAccessedDate if one exists for this version.
+        last_accessed_date = version.get("last_accessed_date")
+        if last_accessed_date:
+            entry["LastAccessedDate"] = last_accessed_date
+
         versions.append(entry)
 
     # Patch: sort versions by date.
