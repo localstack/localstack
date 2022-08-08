@@ -1290,8 +1290,8 @@ def get_function_code(function):
     lambda_function = region.lambdas.get(arn)
     if not lambda_function:
         return not_found_error(arn)
-    lambda_cwd = lambda_function.cwd
-    tmp_file = "%s/%s" % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
+    lambda_zip_dir = lambda_function.zip_dir
+    tmp_file = f"{lambda_zip_dir}/{LAMBDA_ZIP_FILE_NAME}"
     return Response(
         load_file(tmp_file, mode="rb"),
         mimetype="application/zip",
