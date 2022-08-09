@@ -95,12 +95,12 @@ RECENTLY_DELETED_TIMEOUT = 60
 INTERNAL_QUEUE_ATTRIBUTES = [
     # these attributes cannot be changed by set_queue_attributes and should
     # therefore be ignored when comparing queue attributes for create_queue
+    # 'FifoQueue' is handled on a per_queue basis
     QueueAttributeName.ApproximateNumberOfMessages,
     QueueAttributeName.ApproximateNumberOfMessagesDelayed,
     QueueAttributeName.ApproximateNumberOfMessagesNotVisible,
     QueueAttributeName.ContentBasedDeduplication,
     QueueAttributeName.CreatedTimestamp,
-    QueueAttributeName.FifoQueue,
     QueueAttributeName.LastModifiedTimestamp,
     QueueAttributeName.QueueArn,
 ]
@@ -564,7 +564,11 @@ class SqsQueue:
             )
 
     def validate_queue_attributes(self, attributes):
-        valid = [k[1] for k in inspect.getmembers(QueueAttributeName)]
+        valid = [
+            k[1]
+            for k in inspect.getmembers(QueueAttributeName)
+            if k not in INTERNAL_QUEUE_ATTRIBUTES
+        ]
         del valid[valid.index(QueueAttributeName.FifoQueue)]
 
         for k in attributes.keys():
@@ -705,8 +709,11 @@ class FifoQueue(SqsQueue):
         super()._assert_queue_name(queue_name)
 
     def validate_queue_attributes(self, attributes):
-        valid = [k[1] for k in inspect.getmembers(QueueAttributeName)]
-
+        valid = [
+            k[1]
+            for k in inspect.getmembers(QueueAttributeName)
+            if k not in INTERNAL_QUEUE_ATTRIBUTES
+        ]
         for k in attributes.keys():
             if k not in valid:
                 raise InvalidAttributeName(f"Unknown Attribute {k}.")
@@ -936,7 +943,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
                 if attributes:
                     # if attributes are set, then we check whether the existing attributes match the passed ones
-                    self._validate_queue_attributes(attributes)
+                    queue.validate_queue_attributes(attributes)
                     for k, v in attributes.items():
                         if queue.attributes.get(k) != v:
                             LOG.debug(
@@ -1475,13 +1482,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 result[attr] = message_system_attributes[attr]["StringValue"]
 
         return result
-
-    def _validate_queue_attributes(self, attributes: QueueAttributeMap):
-        valid = [k[1] for k in inspect.getmembers(QueueAttributeName)]
-
-        for k in attributes.keys():
-            if k not in valid or k in INTERNAL_QUEUE_ATTRIBUTES:
-                raise InvalidAttributeName(f"Unknown Attribute {k}.")
 
     def _validate_actions(self, actions: ActionNameList):
         service = load_service(service=self.service, version=self.version)
