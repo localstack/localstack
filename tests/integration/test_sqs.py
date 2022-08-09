@@ -448,6 +448,13 @@ class TestSqsProvider:
         assert sqs_create_queue(QueueName=queue_name) == queue_url
 
     @pytest.mark.aws_validated
+    def test_create_fifo_queue_with_same_attributes_is_idempotent(self, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}.fifo"
+        attributes = {"FifoQueue": "true"}
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+        assert sqs_create_queue(QueueName=queue_name, Attributes=attributes) == queue_url
+
+    @pytest.mark.aws_validated
     def test_create_queue_with_different_attributes_raises_exception(
         self, sqs_client, sqs_create_queue, snapshot
     ):
