@@ -22,6 +22,7 @@ from requests.models import Request, Response
 
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException
+from localstack.config import get_protocol as get_service_protocol
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
@@ -46,18 +47,21 @@ from localstack.utils.aws.aws_responses import (
     is_invalid_html_response,
     requests_response,
 )
-from localstack.utils.common import (
-    clone,
-    get_service_protocol,
+from localstack.utils.json import clone
+from localstack.utils.objects import not_none_or
+from localstack.utils.strings import (
+    checksum_crc32,
+    checksum_crc32c,
+    hash_sha1,
+    hash_sha256,
     is_base64,
     md5,
-    not_none_or,
     short_uid,
-    strip_xmlns,
-    timestamp_millis,
     to_bytes,
     to_str,
 )
+from localstack.utils.time import timestamp_millis
+from localstack.utils.xml import strip_xmlns
 
 # backend port (configured in s3_starter.py on startup)
 PORT_S3_BACKEND = None
@@ -1031,6 +1035,43 @@ def check_content_md5(data, headers):
         )
 
 
+def validate_checksum(data, headers):
+    algorithm = headers.get("x-amz-sdk-checksum-algorithm", "")
+    checksum_header = f"x-amz-checksum-{algorithm.lower()}"
+    received_checksum = headers.get(checksum_header)
+
+    calculated_checksum = ""
+    match algorithm:
+        case "CRC32":
+            calculated_checksum = checksum_crc32(data)
+            pass
+
+        case "CRC32C":
+            calculated_checksum = checksum_crc32c(data)
+            pass
+
+        case "SHA1":
+            calculated_checksum = hash_sha1(data)
+            pass
+
+        case "SHA256":
+            calculated_checksum = hash_sha256(data)
+
+        case _:
+            return error_response(
+                "The value specified in the x-amz-trailer header is not supported",
+                "InvalidRequest",
+                status_code=400,
+            )
+
+    if calculated_checksum != received_checksum:
+        return error_response(
+            f"Value for {checksum_header} header is invalid.",
+            "InvalidRequest",
+            status_code=400,
+        )
+
+
 def error_response(message, code, status_code=400):
     result = {"Error": {"Code": code, "Message": message}}
     content = xmltodict.unparse(result)
@@ -1346,12 +1387,16 @@ class ProxyListenerS3(ProxyListener):
             return serve_static_website(headers=headers, path=path, bucket_name=bucket_name)
 
         # check content md5 hash integrity if not a copy request or multipart initialization
-        if (
-            "Content-MD5" in headers
-            and not self.is_s3_copy_request(headers, path)
-            and not self.is_create_multipart_request(parsed_path.query)
+        if not self.is_s3_copy_request(headers, path) and not self.is_create_multipart_request(
+            parsed_path.query
         ):
-            response = check_content_md5(data, headers)
+            response = None
+            if "Content-MD5" in headers:
+                response = check_content_md5(data, headers)
+
+            if "x-amz-sdk-checksum-algorithm" in headers:
+                response = validate_checksum(data, headers)
+
             if response is not None:
                 return response
 
