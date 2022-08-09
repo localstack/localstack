@@ -569,6 +569,7 @@ def _generate_data_key_pair(data, create_cipher=True, add_to_keys=True):
     if create_cipher:
         cipher_text = kms.encrypt(KeyId=key_id, Plaintext=private_key)["CiphertextBlob"]
 
+    account_id = get_aws_account_id()
     region = region_details.get_current_request_region()
     result = {
         "PrivateKeyCiphertextBlob": cipher_text,
@@ -588,7 +589,7 @@ def _generate_data_key_pair(data, create_cipher=True, add_to_keys=True):
     if add_to_keys:
         region_details.key_pairs[key_id] = result
 
-    key = Key("", result["KeyUsage"], key_spec, result["Description"], region)
+    key = Key("", result["KeyUsage"], key_spec, result["Description"], account_id, region)
     key.id = key_id
 
     result = {**key.to_dict()["KeyMetadata"], **result}

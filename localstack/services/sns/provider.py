@@ -12,7 +12,7 @@ from typing import Dict, List
 import botocore.exceptions
 import requests as requests
 from flask import Response as FlaskResponse
-from moto.sns import sns_backends as moto_sns_backends
+from moto.sns import sns_backends
 from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from requests.models import Response
@@ -665,7 +665,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "The MessageGroupId parameter is required for FIFO topics",
                 )
-            moto_sns_backend = moto_sns_backends[context.region]
+            moto_sns_backend = sns_backends[context.account_id][context.region]
             if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
                 if not message_deduplication_id:
                     raise InvalidParameterException(
