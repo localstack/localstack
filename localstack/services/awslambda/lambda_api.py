@@ -48,6 +48,7 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
+from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.common import (
     TMP_FILES,
     empty_context_manager,
@@ -523,7 +524,7 @@ def run_lambda(
         aws_stack.connect_to_service("lambda").list_functions()
         run_lambda._provider_initialized = True
 
-    region_name = func_arn.split(":")[3]
+    region_name = extract_region_from_arn(func_arn)
     region = LambdaRegion.get(region_name)
     if suppress_output:
         stdout_ = sys.stdout
@@ -919,7 +920,7 @@ def do_list_functions():
             continue
 
         # filter out functions of current region
-        func_region = f_arn.split(":")[3]
+        func_region = extract_region_from_arn(f_arn)
         if func_region != this_region:
             continue
 

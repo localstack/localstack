@@ -227,7 +227,7 @@ class Ec2Provider(Ec2Api, ABC):
         self, context: RequestContext, request: CreateSubnetRequest
     ) -> CreateSubnetResult:
         response = call_moto(context)
-        backend = ec2_backends[context.region]
+        backend = ec2_backends[context.account_id][context.region]
         subnet_id = response["Subnet"]["SubnetId"]
         host_type = request.get("PrivateDnsHostnameTypeOnLaunch", "ip-name")
         attr_name = camelcase_to_underscores("PrivateDnsNameOptionsOnLaunch")

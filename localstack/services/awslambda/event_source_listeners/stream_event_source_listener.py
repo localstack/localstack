@@ -11,6 +11,7 @@ from localstack.services.awslambda.event_source_listeners.event_source_listener 
 )
 from localstack.services.awslambda.lambda_api import run_lambda
 from localstack.services.awslambda.lambda_executors import InvocationResult
+from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import long_uid, timestamp_millis
 from localstack.utils.threads import FuncThread
@@ -293,7 +294,7 @@ class StreamEventSourceListener(EventSourceListener):
                 for source in sources:
                     mapping_uuid = source["UUID"]
                     stream_arn = source["EventSourceArn"]
-                    region_name = stream_arn.split(":")[3]
+                    region_name = extract_region_from_arn(stream_arn)
                     stream_client = self._get_stream_client(region_name)
                     batch_size = source.get("BatchSize", 10)
                     failure_destination = (

@@ -595,6 +595,13 @@ def parse_arn(arn: str) -> ArnData:
     return _arn_parser.parse_arn(arn)
 
 
+def extract_account_id_from_arn(arn: str) -> Optional[str]:
+    try:
+        return parse_arn(arn).get("account")
+    except InvalidArnException:
+        return None
+
+
 def extract_region_from_arn(arn: str) -> Optional[str]:
     try:
         return parse_arn(arn).get("region")

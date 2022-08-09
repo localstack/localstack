@@ -193,7 +193,7 @@ class ValidationError(CommonServiceException):
 
 
 def _set_alarm_actions(context, alarm_names, enabled):
-    backend = cloudwatch_backends[context.region]
+    backend = cloudwatch_backends[context.account_id][context.region]
     for name in alarm_names:
         alarm = backend.alarms.get(name)
         if alarm:

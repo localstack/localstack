@@ -13,6 +13,7 @@ from localstack.services.awslambda.lambda_api import (
 )
 from localstack.services.awslambda.lambda_executors import InvocationResult
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.threads import FuncThread
 
 LOG = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ class SQSEventSourceListener(EventSourceListener):
 
                 for source in sources:
                     queue_arn = source["EventSourceArn"]
-                    region_name = queue_arn.split(":")[3]
+                    region_name = extract_region_from_arn(queue_arn)
                     sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
 
@@ -88,7 +89,7 @@ class SQSEventSourceListener(EventSourceListener):
     def _process_messages_for_event_source(self, source, messages):
         lambda_arn = source["FunctionArn"]
         queue_arn = source["EventSourceArn"]
-        region_name = queue_arn.split(":")[3]
+        region_name = extract_region_from_arn(queue_arn)
         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
         LOG.debug("Sending event from event source %s to Lambda %s", queue_arn, lambda_arn)
         res = self._send_event_to_lambda(
@@ -108,7 +109,7 @@ class SQSEventSourceListener(EventSourceListener):
                 # We'll pick them up and retry next time they become available on the queue.
                 return
 
-            region_name = queue_arn.split(":")[3]
+            region_name = extract_region_from_arn(queue_arn)
             sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
             entries = [
                 {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records

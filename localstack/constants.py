@@ -46,8 +46,9 @@ DEFAULT_AWS_ACCOUNT_ID = "000000000000"
 if "TEST_AWS_ACCOUNT_ID" not in os.environ:
     os.environ["TEST_AWS_ACCOUNT_ID"] = DEFAULT_AWS_ACCOUNT_ID
 
-# Account ID used by tests
+# Values used by tests
 TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
+TEST_AWS_REGION_NAME = "us-west-2"
 
 # root code folder
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
