@@ -1,6 +1,6 @@
 {
   "tests/integration/awslambda/test_lambda_sqs_integration.py::test_failing_lambda_retries_after_visibility_timeout": {
-    "recorded-date": "06-08-2022, 20:38:01",
+    "recorded-date": "09-08-2022, 11:28:33",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -10,32 +10,29 @@
         }
       },
       "event_source_mapping": {
+        "BatchSize": 1,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         },
-        "UUID": "<uuid:1>",
-        "BatchSize": 1,
-        "MaximumBatchingWindowInSeconds": 0,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
-        "LastModified": "datetime",
         "State": "Enabled",
         "StateTransitionReason": "USER_INITIATED",
-        "FunctionResponseTypes": []
+        "UUID": "<uuid:1>"
       },
       "first_attempt": {
         "Messages": [
           {
-            "MessageId": "<uuid:2>",
-            "ReceiptHandle": "<receipt-handle:1>",
-            "MD5OfBody": "<m-d5-of-body:1>",
             "Body": {
               "error": "failed attempt",
               "event": {
                 "Records": [
                   {
-                    "messageId": "<uuid:3>",
+                    "messageId": "<uuid:2>",
                     "receiptHandle": "<receipt-handle:3>",
                     "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 1}",
                     "attributes": {
@@ -52,7 +49,10 @@
                   }
                 ]
               }
-            }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
         "ResponseMetadata": {
@@ -63,15 +63,12 @@
       "second_attempt": {
         "Messages": [
           {
-            "MessageId": "<uuid:4>",
-            "ReceiptHandle": "<receipt-handle:2>",
-            "MD5OfBody": "<m-d5-of-body:2>",
             "Body": {
               "error": null,
               "event": {
                 "Records": [
                   {
-                    "messageId": "<uuid:3>",
+                    "messageId": "<uuid:2>",
                     "receiptHandle": "<receipt-handle:4>",
                     "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 1}",
                     "attributes": {
@@ -88,7 +85,10 @@
                   }
                 ]
               }
-            }
+            },
+            "MD5OfBody": "<m-d5-of-body:2>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:2>"
           }
         ],
         "ResponseMetadata": {
@@ -99,7 +99,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_sqs_integration.py::test_redrive_policy_with_failing_lambda": {
-    "recorded-date": "06-08-2022, 21:14:45",
+    "recorded-date": "09-08-2022, 11:32:01",
     "recorded-content": {
       "get_destination_queue_url": {
         "QueueUrl": "<queue-url:1>",
@@ -111,15 +111,12 @@
       "first_attempt": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:1>",
-            "MD5OfBody": "<m-d5-of-body:1>",
             "Body": {
               "error": "failed attempt",
               "event": {
                 "Records": [
                   {
-                    "messageId": "<uuid:2>",
+                    "messageId": "<uuid:1>",
                     "receiptHandle": "<receipt-handle:4>",
                     "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 2}",
                     "attributes": {
@@ -136,7 +133,10 @@
                   }
                 ]
               }
-            }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
         "ResponseMetadata": {
@@ -147,15 +147,12 @@
       "second_attempt": {
         "Messages": [
           {
-            "MessageId": "<uuid:3>",
-            "ReceiptHandle": "<receipt-handle:2>",
-            "MD5OfBody": "<m-d5-of-body:2>",
             "Body": {
               "error": "failed attempt",
               "event": {
                 "Records": [
                   {
-                    "messageId": "<uuid:2>",
+                    "messageId": "<uuid:1>",
                     "receiptHandle": "<receipt-handle:5>",
                     "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 2}",
                     "attributes": {
@@ -172,7 +169,10 @@
                   }
                 ]
               }
-            }
+            },
+            "MD5OfBody": "<m-d5-of-body:2>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:2>"
           }
         ],
         "ResponseMetadata": {
@@ -183,13 +183,13 @@
       "dlq_response": {
         "Messages": [
           {
-            "MessageId": "<uuid:2>",
-            "ReceiptHandle": "<receipt-handle:3>",
-            "MD5OfBody": "<m-d5-of-body:3>",
             "Body": {
               "destination": "<queue-url:1>",
               "fail_attempts": 2
-            }
+            },
+            "MD5OfBody": "<m-d5-of-body:3>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:3>"
           }
         ],
         "ResponseMetadata": {
