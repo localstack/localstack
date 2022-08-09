@@ -226,7 +226,11 @@ def get_record_from_event(event: Dict, key: str) -> Any:
 
 def get_lambda_extraction_dir() -> str:
     """
-    Get the directory a lambda is supposed to use as working directory (= the directory to extract the contents to)
+    Get the directory a lambda is supposed to use as working directory (= the directory to extract the contents to).
+    This method is needed due to performance problems for IO on bind volumes when running inside Docker Desktop, due to
+    the file sharing with the host being slow when using gRPC-FUSE.
+    By extracting to a not-mounted directory, we can improve performance significantly.
+    The lambda zip file itself, however, should still be located on the mount.
 
     :return: directory path
     """
