@@ -9,7 +9,7 @@ import uuid
 import zlib
 from typing import Dict, List, Union
 
-from crc32c import crc32c
+from botocore.httpchecksum import CrtCrc32cChecksum
 
 from localstack.config import DEFAULT_ENCODING
 
@@ -153,9 +153,9 @@ def checksum_crc32(string: Union[str, bytes]) -> str:
 
 
 def checksum_crc32c(string: Union[str, bytes]):
-    bytes = to_bytes(string)
-    checksum = crc32c(bytes).to_bytes(4, "big")
-    return base64.b64encode(checksum).decode()
+    checksum = CrtCrc32cChecksum()
+    checksum.update(to_bytes(string))
+    return base64.b64encode(checksum.digest()).decode()
 
 
 def hash_sha1(string: Union[str, bytes]) -> str:

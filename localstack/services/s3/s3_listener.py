@@ -1058,7 +1058,6 @@ def validate_checksum(data, headers):
             calculated_checksum = hash_sha256(data)
 
         case _:
-            print("here")
             return error_response(
                 "The value specified in the x-amz-trailer header is not supported",
                 "InvalidRequest",
