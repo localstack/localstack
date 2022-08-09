@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import re
@@ -401,6 +402,22 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
     return json.dumps(response)
 
 
+@patch(SecretsManagerBackend.put_secret_value)
+def moto_smb_put_secret_value(
+    fn, self, secret_id, secret_string, secret_binary, client_request_token, version_stages
+):
+    # Patch: VersionStages are sequentially appended but AWS* ones which are appended after custom stages.
+    # TODO: more investigations are required, AWS behaviour seems sporadic.
+    aws_version_stages: List[str] = [
+        vs for vs in version_stages or [] if (vs or "").startswith("AWS")
+    ]
+    if aws_version_stages:
+        for aws_vs in aws_version_stages:
+            version_stages.remove(aws_vs)
+            version_stages.append(aws_vs)
+    return fn(self, secret_id, secret_string, secret_binary, client_request_token, version_stages)
+
+
 @patch(FakeSecret.to_dict)
 def fake_secret_to_dict(fn, self):
     res_dict = fn(self)
@@ -482,6 +499,14 @@ def response_update_secret(_, self):
 def backend_update_secret_version_stage(
     fn, self, secret_id, version_stage, remove_from_version_id, move_to_version_id
 ):
+    # Cache the version stages in the source version, to allow for the detection of added stages.
+    prev_rm_from_version_stages = None
+    secret = self.secrets.get(secret_id)
+    if secret:
+        src_version = secret.versions.get(remove_from_version_id)
+        if src_version:
+            prev_rm_from_version_stages = copy.deepcopy(src_version["version_stages"])
+
     fn(self, secret_id, version_stage, remove_from_version_id, move_to_version_id)
 
     secret = self.secrets[secret_id]
@@ -501,15 +526,33 @@ def backend_update_secret_version_stage(
             if not version_stages:
                 versions_no_stages.append(version_id)
 
-        # Patch: versions stages are added in front not appended, AWSCURRENT is always in front.
-        version_stages.reverse()
-        if AWSCURRENT in version_stages and version_stages[0] != AWSCURRENT:
-            version_stages.remove(AWSCURRENT)
-            version_stages.insert(0, AWSCURRENT)
-
     # Patch: remove secret versions with no version stages.
     for version_no_stages in versions_no_stages:
         del secret.versions[version_no_stages]
+
+    # Patch: versions stages are added in front not appended, AWSCURRENT is always in front of all other AWS stages.
+    dst_version = secret.versions.get(move_to_version_id)
+    if dst_version:
+        version_stages = dst_version["version_stages"]
+        if version_stage in version_stages:
+            version_stages.remove(version_stage)
+            insert_index: int = 0
+            if version_stage == AWSCURRENT:
+                # Find were to place AWSCURRENT.
+                for i, vs in enumerate(version_stages):
+                    if vs.startswith("AWS"):
+                        insert_index = i
+                        break
+            version_stages.insert(insert_index, version_stage)
+
+    # Patch: ensure the version stages added to the source version are injected in the correct order.
+    src_version = secret.versions.get(remove_from_version_id)
+    if prev_rm_from_version_stages and src_version:
+        version_stages = src_version["version_stages"]
+        added_stages = list(set(version_stages) - set(prev_rm_from_version_stages))
+        for added_stage in added_stages:
+            version_stages.remove(added_stage)
+            version_stages.insert(0, added_stage)
 
     res = UpdateSecretVersionStageResponse(ARN=secret.arn, Name=secret.name)
     return json.dumps(res)

@@ -1011,107 +1011,120 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    @pytest.mark.skip("TODO")
-    def test_update_secret_version_stages_current_pending_cycle_custom_stages_1(self, sm_client):
+    def test_update_secret_version_stages_current_pending_cycle_custom_stages_1(
+        self, sm_client, sm_snapshot
+    ):
         secret_name = f"s-{short_uid()}"
-        create = sm_client.create_secret(Name=secret_name, SecretString="S1")
-        vid_0 = create["VersionId"]
-
-        put_1 = sm_client.put_secret_value(
-            SecretId=secret_name, SecretString="S2", VersionStages=["AWSPENDING", "PUT1"]
+        #
+        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
+            typ=CreateSecretResponse,
+            response=sm_client.create_secret(Name=secret_name, SecretString="S1"),
         )
-        vid_1 = put_1["VersionId"]
-        assert vid_1 != vid_0
-
-        lst_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
-        assert len(lst_1["Versions"]) == 2
-        #
-        lst_1_v_0 = lst_1["Versions"][0]
-        assert lst_1_v_0["VersionId"] == vid_0
-        assert lst_1_v_0["VersionStages"] == ["AWSCURRENT"]
-        #
-        lst_1_v_1 = lst_1["Versions"][1]
-        assert lst_1_v_1["VersionId"] == vid_1
-        assert lst_1_v_1["VersionStages"] == ["AWSPENDING", "PUT1"]
-
-        get_1 = sm_client.get_secret_value(SecretId=secret_name)
-        assert get_1["VersionId"] == vid_0
-        assert get_1["SecretString"] == "S1"
-        assert get_1["VersionStages"] == ["AWSCURRENT"]
-
-        upd_1 = sm_client.update_secret_version_stage(
-            SecretId=secret_name,
-            RemoveFromVersionId=vid_0,
-            MoveToVersionId=vid_1,
-            VersionStage="AWSCURRENT",
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
-        assert "VersionId" not in upd_1
+        sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
+        vid_0 = create_secret_rs_0["VersionId"]
 
-        lst_1_u = sm_client.list_secret_version_ids(SecretId=secret_name)
-        assert len(lst_1_u["Versions"]) == 2
-        #
-        lst_1_u_v_0 = lst_1_u["Versions"][0]
-        assert lst_1_u_v_0["VersionId"] == vid_0
-        assert lst_1_u_v_0["VersionStages"] == ["AWSPREVIOUS"]
-        #
-        lst_1_u_v_1 = lst_1_u["Versions"][1]
-        assert lst_1_u_v_1["VersionId"] == vid_1
-        assert lst_1_u_v_1["VersionStages"] == ["AWSPENDING", "PUT1", "AWSCURRENT"]
-
-        get_1_u = sm_client.get_secret_value(SecretId=secret_name)
-        assert get_1_u["VersionId"] == vid_1
-        assert get_1_u["SecretString"] == "S2"
-        assert get_1_u["VersionStages"] == ["AWSPENDING", "PUT1", "AWSCURRENT"]
-
-        put_2 = sm_client.put_secret_value(
-            SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING", "PUT2"]
+        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(
+                SecretId=secret_name,
+                SecretString="S2",
+                VersionStages=["AWSSOMETHING", "AWSPENDING", "PUT1"],
+            ),
         )
-        vid_2 = put_2["VersionId"]
-        assert len({vid_0, vid_1, vid_2}) == 3
+        sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
+        vid_1 = put_secret_value_res_0["VersionId"]
 
-        lst_2 = sm_client.list_secret_version_ids(SecretId=secret_name)
-        assert len(lst_2["Versions"]) == 3
-        #
-        lst_2_v_0 = lst_2["Versions"][0]
-        assert lst_2_v_0["VersionId"] == vid_0
-        assert lst_2_v_0["VersionStages"] == ["AWSPREVIOUS"]
-        #
-        lst_2_v_1 = lst_2["Versions"][1]
-        assert lst_2_v_1["VersionId"] == vid_1
-        assert lst_2_v_1["VersionStages"] == ["PUT1", "AWSCURRENT"]
-        #
-        lst_2_v_2 = lst_2["Versions"][2]
-        assert lst_2_v_2["VersionId"] == vid_2
-        assert lst_2_v_2["VersionStages"] == ["AWSPENDING", "PUT2"]
-
-        get_2 = sm_client.get_secret_value(SecretId=secret_name)
-        assert get_2["VersionId"] == vid_1
-        assert get_2["SecretString"] == "S2"
-        assert get_2["VersionStages"] == ["PUT1", "AWSCURRENT"]
-
-        upd_2 = sm_client.update_secret_version_stage(
-            SecretId=secret_name,
-            RemoveFromVersionId=vid_1,
-            MoveToVersionId=vid_2,
-            VersionStage="AWSCURRENT",
+        list_secret_version_ids_res_0: ListSecretVersionIdsResponse = self._typed_response_of(
+            typ=ListSecretVersionIdsResponse,
+            response=sm_client.list_secret_version_ids(SecretId=secret_name),
         )
-        assert "VersionId" not in upd_2
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
+        sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        lst_2_u = sm_client.list_secret_version_ids(SecretId=secret_name)
-        assert len(lst_2_u["Versions"]) == 2
-        #
-        lst_2_u_v_0 = lst_2_u["Versions"][0]
-        assert lst_2_u_v_0["VersionId"] == vid_1
-        assert lst_2_u_v_0["VersionStages"] == ["PUT1", "AWSPREVIOUS"]
-        #
-        lst_2_u_v_1 = lst_2_u["Versions"][1]
-        assert lst_2_u_v_1["VersionId"] == vid_2
-        assert lst_2_u_v_1["VersionStages"] == ["AWSPENDING", "PUT2", "AWSCURRENT"]
+        get_secret_value_res_0: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        sm_snapshot.match("get_secret_value_res_0", get_secret_value_res_0)
 
-        get_1_u = sm_client.get_secret_value(SecretId=secret_name)
-        assert get_1_u["VersionId"] == vid_2
-        assert get_1_u["SecretString"] == "S3"
-        assert get_1_u["VersionStages"] == ["AWSPENDING", "PUT2", "AWSCURRENT"]
+        update_secret_version_stage_res_0: UpdateSecretVersionStageResponse = (
+            self._typed_response_of(
+                typ=UpdateSecretVersionStageResponse,
+                response=sm_client.update_secret_version_stage(
+                    SecretId=secret_name,
+                    RemoveFromVersionId=vid_0,
+                    MoveToVersionId=vid_1,
+                    VersionStage="AWSCURRENT",
+                ),
+            )
+        )
+        sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
+
+        list_secret_version_ids_res_1: ListSecretVersionIdsResponse = self._typed_response_of(
+            typ=ListSecretVersionIdsResponse,
+            response=sm_client.list_secret_version_ids(SecretId=secret_name),
+        )
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
+        sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
+
+        get_secret_value_res_1: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        sm_snapshot.match("get_secret_value_res_1", get_secret_value_res_1)
+
+        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(
+                SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING", "PUT2"]
+            ),
+        )
+        sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
+        vid_2 = put_secret_value_res_1["VersionId"]
+
+        list_secret_version_ids_res_2: ListSecretVersionIdsResponse = self._typed_response_of(
+            typ=ListSecretVersionIdsResponse,
+            response=sm_client.list_secret_version_ids(SecretId=secret_name),
+        )
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_2)
+        sm_snapshot.match("list_secret_version_ids_res_2", list_secret_version_ids_res_2)
+
+        get_secret_value_res_2: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
+
+        update_secret_version_stage_res_1: UpdateSecretVersionStageResponse = (
+            self._typed_response_of(
+                typ=UpdateSecretVersionStageResponse,
+                response=sm_client.update_secret_version_stage(
+                    SecretId=secret_name,
+                    RemoveFromVersionId=vid_1,
+                    MoveToVersionId=vid_2,
+                    VersionStage="AWSCURRENT",
+                ),
+            )
+        )
+        sm_snapshot.match("update_secret_version_stage_res_1", update_secret_version_stage_res_1)
+
+        list_secret_version_ids_res_3: ListSecretVersionIdsResponse = self._typed_response_of(
+            typ=ListSecretVersionIdsResponse,
+            response=sm_client.list_secret_version_ids(SecretId=secret_name),
+        )
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_3)
+        sm_snapshot.match("list_secret_version_ids_res_3", list_secret_version_ids_res_3)
+
+        get_secret_value_res_3: GetSecretValueResponse = self._typed_response_of(
+            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
+        )
+        sm_snapshot.match("get_secret_value_res_3", get_secret_value_res_3)
+
+        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
+            typ=DeleteSecretResponse,
+            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        )
+        sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @pytest.mark.skip("TODO")
     def test_update_secret_version_stages_current_pending_cycle_custom_stages_2(self, sm_client):
