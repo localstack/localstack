@@ -637,11 +637,9 @@ class TestSNSProvider:
         snapshot,
     ):
         snapshot.add_transformer(
-            [
-                snapshot.transform.jsonpath(
-                    "$..Messages..MessageAttributes.RequestID.Value", "request-id"
-                )
-            ]
+            snapshot.transform.jsonpath(
+                "$..Messages..MessageAttributes.RequestID.Value", "request-id"
+            )
         )
 
         # create an SNS topic that will be used as a DLQ by the lambda
