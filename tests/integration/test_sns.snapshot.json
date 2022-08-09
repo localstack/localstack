@@ -114,15 +114,15 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[True]": {
-    "recorded-date": "03-08-2022, 16:38:45",
+    "recorded-date": "08-08-2022, 17:49:05",
     "recorded-content": {
       "raw_message_delivery": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:1>",
+            "Body": "test_dlq_after_sqs_endpoint_deleted",
             "MD5OfBody": "<md5-hash>",
-            "Body": "test_dlq_after_sqs_endpoint_deleted"
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
         "ResponseMetadata": {
@@ -133,35 +133,35 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[False]": {
-    "recorded-date": "03-08-2022, 16:38:48",
+    "recorded-date": "08-08-2022, 17:49:08",
     "recorded-content": {
       "json_encoded_delivery": {
         "Messages": [
           {
-            "MessageId": "<uuid:1>",
-            "ReceiptHandle": "<receipt-handle:1>",
-            "MD5OfBody": "<md5-hash>",
             "Body": {
-              "Type": "Notification",
-              "MessageId": "<uuid:2>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
               "Message": "test_dlq_after_sqs_endpoint_deleted",
-              "Timestamp": "date",
-              "SignatureVersion": "1",
-              "Signature": "<signature>",
-              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<token:1>",
               "MessageAttributes": {
-                "attr2": {
-                  "Type": "Binary",
-                  "Value": "AgME"
-                },
                 "attr1": {
                   "Type": "Number",
                   "Value": "111"
+                },
+                "attr2": {
+                  "Type": "Binary",
+                  "Value": "AgME"
                 }
-              }
-            }
+              },
+              "MessageId": "<uuid:1>",
+              "Signature": "<signature>",
+              "SignatureVersion": "1",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+              "Timestamp": "date",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "Type": "Notification",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<token:1>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
         "ResponseMetadata": {

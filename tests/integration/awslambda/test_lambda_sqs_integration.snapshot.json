@@ -1,0 +1,202 @@
+{
+  "tests/integration/awslambda/test_lambda_sqs_integration.py::test_failing_lambda_retries_after_visibility_timeout": {
+    "recorded-date": "09-08-2022, 11:28:33",
+    "recorded-content": {
+      "get_destination_queue_url": {
+        "QueueUrl": "<queue-url:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "event_source_mapping": {
+        "BatchSize": 1,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "State": "Enabled",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>"
+      },
+      "first_attempt": {
+        "Messages": [
+          {
+            "Body": {
+              "error": "failed attempt",
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:2>",
+                    "receiptHandle": "<receipt-handle:3>",
+                    "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 1}",
+                    "attributes": {
+                      "ApproximateReceiveCount": "1",
+                      "SentTimestamp": "timestamp",
+                      "SenderId": "sender-id",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<md5-of-body:1>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_attempt": {
+        "Messages": [
+          {
+            "Body": {
+              "error": null,
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:2>",
+                    "receiptHandle": "<receipt-handle:4>",
+                    "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 1}",
+                    "attributes": {
+                      "ApproximateReceiveCount": "2",
+                      "SentTimestamp": "timestamp",
+                      "SenderId": "sender-id",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<md5-of-body:1>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:2>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_sqs_integration.py::test_redrive_policy_with_failing_lambda": {
+    "recorded-date": "09-08-2022, 11:32:01",
+    "recorded-content": {
+      "get_destination_queue_url": {
+        "QueueUrl": "<queue-url:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_attempt": {
+        "Messages": [
+          {
+            "Body": {
+              "error": "failed attempt",
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:1>",
+                    "receiptHandle": "<receipt-handle:4>",
+                    "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 2}",
+                    "attributes": {
+                      "ApproximateReceiveCount": "1",
+                      "SentTimestamp": "timestamp",
+                      "SenderId": "sender-id",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<m-d5-of-body:3>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_attempt": {
+        "Messages": [
+          {
+            "Body": {
+              "error": "failed attempt",
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:1>",
+                    "receiptHandle": "<receipt-handle:5>",
+                    "body": "{\"destination\": \"<queue-url:1>\", \"fail_attempts\": 2}",
+                    "attributes": {
+                      "ApproximateReceiveCount": "2",
+                      "SentTimestamp": "timestamp",
+                      "SenderId": "sender-id",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<m-d5-of-body:3>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:2>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dlq_response": {
+        "Messages": [
+          {
+            "Body": {
+              "destination": "<queue-url:1>",
+              "fail_attempts": 2
+            },
+            "MD5OfBody": "<m-d5-of-body:3>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

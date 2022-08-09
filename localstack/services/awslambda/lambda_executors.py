@@ -25,7 +25,6 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PROVIDED,
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
-    get_record_from_event,
     is_java_lambda,
     is_nodejs_runtime,
     rm_docker_container,
@@ -34,10 +33,7 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.services.install import GO_LAMBDA_RUNTIME, INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.aws.dead_letter_queue import (
-    lambda_error_to_dead_letter_queue,
-    sqs_error_to_dead_letter_queue,
-)
+from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import (
@@ -354,14 +350,7 @@ def handle_error(
     lambda_function: LambdaFunction, event: Dict, error: Exception, asynchronous: bool = False
 ):
     if asynchronous:
-        if get_record_from_event(event, "eventSource") == EVENT_SOURCE_SQS:
-            sqs_queue_arn = get_record_from_event(event, "eventSourceARN")
-            if sqs_queue_arn:
-                # event source is SQS, send event back to dead letter queue
-                return sqs_error_to_dead_letter_queue(sqs_queue_arn, event, error)
-        else:
-            # event source is not SQS, send back to lambda dead letter queue
-            lambda_error_to_dead_letter_queue(lambda_function, event, error)
+        lambda_error_to_dead_letter_queue(lambda_function, event, error)
 
 
 class LambdaAsyncLocks:
@@ -425,7 +414,6 @@ class LambdaExecutor:
                     # start the execution
                     raised_error = None
                     result = None
-                    dlq_sent = None
                     invocation_type = "Event" if asynchronous else "RequestResponse"
                     inv_context = InvocationContext(
                         lambda_function,
@@ -438,13 +426,13 @@ class LambdaExecutor:
                         result = self._execute(lambda_function, inv_context)
                     except Exception as e:
                         raised_error = e
-                        dlq_sent = handle_error(lambda_function, event, e, asynchronous)
+                        handle_error(lambda_function, event, e, asynchronous)
                         raise e
                     finally:
                         self.function_invoke_times[func_arn] = invocation_time
-                        callback and callback(
-                            result, func_arn, event, error=raised_error, dlq_sent=dlq_sent
-                        )
+                        if callback:
+                            callback(result, func_arn, event, error=raised_error)
+
                         lambda_result_to_destination(
                             lambda_function, event, result, asynchronous, raised_error
                         )

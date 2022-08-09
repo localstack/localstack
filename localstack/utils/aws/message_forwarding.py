@@ -35,7 +35,7 @@ def lambda_result_to_destination(
     event: Dict,
     result: InvocationResult,
     is_async: bool,
-    error: InvocationException,
+    error: Optional[InvocationException],
 ):
     if not func_details.destination_enabled():
         return
