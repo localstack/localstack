@@ -463,6 +463,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                 )
+            moto_sns_backend = moto_sns_backends[context.region]
+            if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
+                if not all(
+                    ["MessageDeduplicationId" in entry for entry in publish_batch_request_entries]
+                ):
+                    raise InvalidParameterException(
+                        "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+                    )
+
         response = {"Successful": [], "Failed": []}
         for entry in publish_batch_request_entries:
             message_id = str(uuid.uuid4())
@@ -499,9 +508,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> None:
         sub = get_subscription_by_arn(subscription_arn)
         if not sub:
-            raise NotFoundException(
-                f"Unable to find subscription for given ARN: {subscription_arn}"
-            )
+            raise NotFoundException("Subscription does not exist")
         sub[attribute_name] = attribute_value
 
     def confirm_subscription(
@@ -663,7 +670,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if topic_arn and ".fifo" in topic_arn:
             if not message_group_id:
                 raise InvalidParameterException(
-                    "The MessageGroupId parameter is required for FIFO topics",
+                    "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
                 )
             moto_sns_backend = moto_sns_backends[context.region]
             if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
@@ -730,7 +737,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             )
         if ".fifo" in endpoint and ".fifo" not in topic_arn:
             raise InvalidParameterException(
-                "FIFO SQS Queues can not be subscribed to standard SNS topics"
+                "Invalid parameter: Invalid parameter: Endpoint Reason: FIFO SQS Queues can not be subscribed to standard SNS topics"
             )
         moto_response = call_moto(context)
         subscription_arn = moto_response.get("SubscriptionArn")
@@ -1167,6 +1174,7 @@ def create_sns_message_body(
         "Timestamp": timestamp_millis(),
         "SignatureVersion": "1",
         # TODO Add a more sophisticated solution with an actual signature
+        #  check KMS for providing real cert and how to serve them
         # Hardcoded
         "Signature": "EXAMPLEpH+..",
         "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",

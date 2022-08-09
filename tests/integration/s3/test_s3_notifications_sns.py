@@ -110,14 +110,9 @@ class TestS3NotificationsToSns:
         snapshot,
     ):
         snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.sns_api())
         snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(
-            snapshot.transform.jsonpath(
-                "$..Signature",
-                "signature",
-                reference_replacement=False,
-            ),
-        )
+
         bucket_name = s3_create_bucket()
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()

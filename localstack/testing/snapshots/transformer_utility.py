@@ -176,16 +176,41 @@ class TransformerUtility:
             TransformerUtility.key_value("SenderId"),
             TransformerUtility.jsonpath("$..MessageAttributes.RequestID.StringValue", "request-id"),
             KeyValueBasedTransformer(_resource_name_transformer, "resource"),
-            KeyValueBasedTransformer(_signing_cert_url_token_transformer, replacement="token"),
-            KeyValueBasedTransformer(
-                _sns_pem_file_token_transformer, replacement="signing-cert-file"
+        ]
+
+    @staticmethod
+    def sns_api():
+        """
+        :return: array with Transformers, for sns api.
+        """
+        return [
+            TransformerUtility.key_value("ReceiptHandle"),
+            TransformerUtility.key_value("SequenceNumber"),  # this might need to be in SQS
+            TransformerUtility.key_value(
+                "Signature", value_replacement="<signature>", reference_replacement=False
             ),
-            # replaces the domain in "UnsubscribeURL"
-            TransformerUtility.regex(
-                re.compile(
-                    r"(?<=UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)"
-                ),
+            # the body of SNS messages contains a timestamp, need to ignore the hash
+            TransformerUtility.key_value("MD5OfBody", "<md5-hash>", reference_replacement=False),
+            # this can interfere in ARN with the accountID
+            TransformerUtility.key_value(
+                "SenderId", value_replacement="<sender-id>", reference_replacement=False
+            ),
+            KeyValueBasedTransformer(
+                _sns_pem_file_token_transformer,
+                replacement="signing-cert-file",
+            ),
+            # replaces the domain in "UnsubscribeURL" URL (KeyValue won't work as it replaces reference, and if
+            # replace_reference is False, then it replaces the whole key
+            # this will be able to use a KeyValue based once we provide a certificate for message signing in SNS
+            # a match must be made case-insensitive because the key casing is different from lambda notifications
+            RegexTransformer(
+                r"(?<=(?i)UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)",
                 replacement="<unsubscribe-domain>",
+            ),
+            KeyValueBasedTransformer(_resource_name_transformer, "resource"),
+            # add a special transformer with 'resource' replacement for SubscriptionARN in UnsubscribeURL
+            KeyValueBasedTransformer(
+                _sns_unsubscribe_url_subscription_arn_transformer, replacement="resource"
             ),
         ]
 
@@ -220,15 +245,15 @@ class TransformerUtility:
 
 
 def _sns_pem_file_token_transformer(key: str, val: str) -> str:
-    if isinstance(val, str) and key == "SigningCertURL":
-        pattern = re.compile(r".*SimpleNotificationService-(.*)?\.pem")
+    if isinstance(val, str) and key.lower() == "SigningCertURL".lower():
+        pattern = re.compile(r".*SimpleNotificationService-(.*\.pem)")
         match = re.match(pattern, val)
         if match:
             return match.groups()[0]
 
 
-def _signing_cert_url_token_transformer(key: str, val: str) -> str:
-    if isinstance(val, str) and key == "UnsubscribeURL":
+def _sns_unsubscribe_url_subscription_arn_transformer(key: str, val: str) -> str:
+    if isinstance(val, str) and key.lower() == "UnsubscribeURL".lower():
         pattern = re.compile(r".*(?<=\?Action=Unsubscribe&SubscriptionArn=).*:(.*)")
         match = re.match(pattern, val)
         if match:
