@@ -439,6 +439,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
         moto_response = call_moto(context)
+        # todo fix some attributes by moto, see snapshot
         return GetTopicAttributesResponse(**moto_response)
 
     def publish_batch(
@@ -637,6 +638,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sub = get_subscription_by_arn(subscription_arn)
         if not sub:
             raise NotFoundException(f"Subscription with arn {subscription_arn} not found")
+        # todo fix some attributes by moto see snapshot
         return GetSubscriptionAttributesResponse(Attributes=sub)
 
     def list_subscriptions(

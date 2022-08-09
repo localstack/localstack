@@ -10,11 +10,18 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 
 from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
+from .awslambda.test_lambda import (
+    LAMBDA_RUNTIME_PYTHON36,
+    LAMBDA_RUNTIME_PYTHON37,
+    TEST_LAMBDA_FUNCTION_PREFIX,
+    TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_PYTHON,
+)
 
 TEST_POLICY = """
 {
@@ -2848,3 +2855,67 @@ class TestSqsQueryApi:
 
     # TODO: write tests for making POST requests (not clear how signing would work without custom code)
     #  https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-making-api-requests.html#structure-post-request
+
+    @pytest.mark.aws_validated
+    def test_sqs_queue_as_lambda_dead_letter_queue(
+        self,
+        sqs_client,
+        lambda_client,
+        lambda_su_role,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_queue_arn,
+        snapshot,
+    ):
+        snapshot.add_transformer(
+            [
+                # MessageAttributes contain the request id, messes the hash
+                snapshot.transform.key_value(
+                    "MD5OfMessageAttributes",
+                    value_replacement="<md5-hash>",
+                    reference_replacement=False,
+                ),
+                snapshot.transform.jsonpath(
+                    "$..Messages..MessageAttributes.RequestID.Value", "request-id"
+                ),
+            ]
+        )
+
+        dlq_queue_url = sqs_create_queue()
+        dlq_queue_arn = sqs_queue_arn(dlq_queue_url)
+
+        function_name = f"{TEST_LAMBDA_FUNCTION_PREFIX}-{short_uid()}"
+        lambda_creation_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=lambda_su_role,
+            DeadLetterConfig={"TargetArn": dlq_queue_arn},
+        )
+        snapshot.match(
+            "lambda-response-dlq-config",
+            lambda_creation_response["CreateFunctionResponse"]["DeadLetterConfig"],
+        )
+
+        # invoke Lambda, triggering an error
+        payload = {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}
+        lambda_client.invoke(
+            FunctionName=function_name,
+            Payload=json.dumps(payload),
+            InvocationType="Event",
+        )
+
+        def receive_dlq():
+            result = sqs_client.receive_message(
+                QueueUrl=dlq_queue_url, MessageAttributeNames=["All"], VisibilityTimeout=0
+            )
+            assert len(result["Messages"]) > 0
+            return result
+
+        # check that the SQS queue used as DLQ received the error from the lambda
+        # on AWS, event retries can be quite delayed, so we have to wait up to 6 minutes here
+        # reduced retries when using localstack to avoid tests flaking
+        retries = 120 if is_aws_cloud() else 3
+        messages = retry(receive_dlq, retries=retries, sleep=3)
+
+        snapshot.match("messages", messages)
