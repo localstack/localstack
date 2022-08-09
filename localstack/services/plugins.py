@@ -12,9 +12,7 @@ from readerwriterlock import rwlock
 from werkzeug import Request
 
 from localstack import config
-from localstack.aws.api import RequestContext
 from localstack.config import ServiceProviderConfig
-from localstack.datatypes import BaseStoreType
 from localstack.utils.bootstrap import get_enabled_apis, log_duration
 from localstack.utils.functions import call_safe
 from localstack.utils.net import wait_for_port_status
@@ -139,14 +137,6 @@ class BackendStateLifecycle(abc.ABC):
     """
     Interface that supports the retrieval, injection and restore of the backend for services.
     """
-
-    @abc.abstractmethod
-    def get_store(self, context: RequestContext = None) -> BaseStoreType:
-        """Get the provider store for account ID and region in the current context."""
-
-    @abc.abstractmethod
-    def get_backend(self, context: RequestContext = None) -> BaseStoreType:
-        """Get the Moto backend for account ID and region in the current context."""
 
     @abc.abstractmethod
     def retrieve_state(self, **kwargs):
