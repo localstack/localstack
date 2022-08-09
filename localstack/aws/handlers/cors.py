@@ -86,6 +86,9 @@ ALLOWED_CORS_ORIGINS = [
 if EXTRA_CORS_ALLOWED_ORIGINS:
     ALLOWED_CORS_ORIGINS += EXTRA_CORS_ALLOWED_ORIGINS.split(",")
 
+ACL_REQUEST_PRIVATE_NETWORK = "Access-Control-Request-Private-Network"
+ACL_ALLOW_PRIVATE_NETWORK = "Access-Control-Allow-Private-Network"
+
 LOG = logging.getLogger(__name__)
 
 
@@ -108,6 +111,14 @@ class CorsEnforcer(Handler):
             )
             response.status_code = 403
             chain.terminate()
+        elif (
+            self.should_enforce_self_managed_service(context)
+            and context.request.method == "OPTIONS"
+            and not config.DISABLE_PREFLIGHT_PROCESSING
+        ):
+            # we want to return immediately here, but we do not want to omit our response chain for cors headers
+            response.status_code = 204
+            chain.stop()
 
     @staticmethod
     def should_enforce_self_managed_service(context: RequestContext) -> bool:
@@ -177,6 +188,11 @@ class CorsResponseEnricher(Handler):
             headers[ACL_ALLOW_HEADERS] = ",".join([h for h in requested_headers if h])
         if ACL_EXPOSE_HEADERS not in headers:
             headers[ACL_EXPOSE_HEADERS] = ",".join(CORS_EXPOSE_HEADERS)
+        if (
+            request_headers.get(ACL_REQUEST_PRIVATE_NETWORK) == "true"
+            and ACL_ALLOW_PRIVATE_NETWORK not in headers
+        ):
+            headers[ACL_ALLOW_PRIVATE_NETWORK] = "true"
 
         for header in ALLOWED_CORS_RESPONSE_HEADERS:
             if headers.get(header) == "":
