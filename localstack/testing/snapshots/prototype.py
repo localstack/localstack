@@ -139,9 +139,7 @@ class SnapshotSession:
         self.called_keys.add(key)
 
         # order the obj to guarantee reference replacement works as expected
-        self.observed_state[key] = (
-            self._order_dict(obj) if isinstance(obj, dict) else obj
-        )  # type is not enforced, we already have some tests using list-objects
+        self.observed_state[key] = self._order_dict(obj)
         # TODO: track them separately since the transformation is now done *just* before asserting
 
         if not self.update and (not self.recorded_state or not self.recorded_state.get(key)):
