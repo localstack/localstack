@@ -107,10 +107,6 @@ class TestSecretsManager:
     def _normalise_list_secret_version_ids_response(response: ListSecretVersionIdsResponse) -> None:
         versions: List[SecretVersionsListEntry] = response["Versions"]
         versions.sort(key=lambda e: e["CreatedDate"], reverse=True)
-        for version in versions:
-            version_stages = version.get("VersionStages")
-            if version_stages:
-                version_stages.sort()
 
     @pytest.mark.parametrize(
         "secret_name, is_valid_partial_arn",
@@ -1263,45 +1259,57 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    @pytest.mark.skip("TODO")
-    def test_non_versioning_version_stages_replacement(self, sm_client):
+    def test_non_versioning_version_stages_replacement(self, sm_client, sm_snapshot):
         secret_name = f"s-{short_uid()}"
-        create = sm_client.create_secret(Name=secret_name, SecretString="S0")
-        vid_s = create["VersionId"]
-
-        put_0 = sm_client.put_secret_value(
-            SecretId=secret_name, SecretString="S1", VersionStages=["one", "two", "three"]
+        #
+        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
+            typ=CreateSecretResponse,
+            response=sm_client.create_secret(Name=secret_name, SecretString="S0"),
         )
-        vid_0 = put_0["VersionId"]
-        assert vid_0 != vid_s
-
-        lst_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
-        assert len(lst_0["Versions"]) == 2
-        #
-        lst_0_v_0 = lst_0["Versions"][0]
-        assert lst_0_v_0["VersionId"] == vid_s
-        assert lst_0_v_0["VersionStages"] == ["AWSCURRENT"]
-        #
-        lst_0_v_1 = lst_0["Versions"][1]
-        assert lst_0_v_1["VersionId"] == vid_0
-        assert lst_0_v_1["VersionStages"] == ["one", "two", "three"]
-
-        put_1 = sm_client.put_secret_value(
-            SecretId=secret_name, SecretString="S2", VersionStages=["one", "two", "three", "four"]
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
-        vid_1 = put_1["VersionId"]
-        assert len({vid_s, vid_0, vid_1}) == 3
+        sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        lst_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
-        assert len(lst_1["Versions"]) == 2
+        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(
+                SecretId=secret_name, SecretString="S1", VersionStages=["one", "two", "three"]
+            ),
+        )
+        sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
+
+        list_secret_version_ids_res_0: ListSecretVersionIdsResponse = self._typed_response_of(
+            typ=ListSecretVersionIdsResponse,
+            response=sm_client.list_secret_version_ids(SecretId=secret_name),
+        )
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
+        sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
+
+        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
+            typ=PutSecretValueResponse,
+            response=sm_client.put_secret_value(
+                SecretId=secret_name,
+                SecretString="S2",
+                VersionStages=["one", "two", "three", "four"],
+            ),
+        )
+        sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
         #
-        lst_1_v_0 = lst_1["Versions"][0]
-        assert lst_1_v_0["VersionId"] == vid_s
-        assert lst_1_v_0["VersionStages"] == ["AWSCURRENT"]
-        #
-        lst_1_v_1 = lst_1["Versions"][1]
-        assert lst_1_v_1["VersionId"] == vid_1
-        assert lst_1_v_1["VersionStages"] == ["one", "two", "three", "four"]
+        vid_1 = put_secret_value_res_1["VersionId"]
+
+        list_secret_version_ids_res_1: ListSecretVersionIdsResponse = self._typed_response_of(
+            typ=ListSecretVersionIdsResponse,
+            response=sm_client.list_secret_version_ids(SecretId=secret_name),
+        )
+        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
+        sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
+
+        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
+            typ=DeleteSecretResponse,
+            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        )
+        sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @pytest.mark.skip("TODO")
     def test_non_versioning_version_stages_no_replacement(self, sm_client):

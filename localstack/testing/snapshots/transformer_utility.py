@@ -292,8 +292,28 @@ class TransformerUtility:
             def transform(self, input_data: Dict, *, ctx: TransformContext) -> Dict:
                 return self._drop(input_data)
 
+        class NormaliseVersionStages(Transformer):
+            def _normalise(self, input_data):
+                if isinstance(input_data, dict):
+                    res = dict()
+                    for k, v in input_data.items():
+                        res[k] = (
+                            sorted(v)
+                            if k == "VersionStages" and isinstance(v, list)
+                            else self._normalise(v)
+                        )
+                    return res
+                elif isinstance(input_data, list):
+                    return list(map(self._normalise, input_data))
+                else:
+                    return input_data
+
+            def transform(self, input_data: Dict, *, ctx: TransformContext) -> Dict:
+                return self._normalise(input_data)
+
         return [
             DropUnsupportedEntries(),
+            NormaliseVersionStages(),
             KeyValueBasedTransformer(
                 lambda k, v: (
                     k
