@@ -187,6 +187,7 @@ class LambdaFunction(Component):
         self.runtime = None
         self.handler = None
         self.cwd = None
+        self.zip_dir = None
         self.timeout = None
         self.last_modified = None
         self.vpc_config = None

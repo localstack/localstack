@@ -1449,7 +1449,7 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         classpath = "%s:%s:%s" % (
             main_file,
-            Util.get_java_classpath(main_file),
+            Util.get_java_classpath(lambda_function.cwd),
             LAMBDA_EXECUTOR_JAR,
         )
         cmd = "java %s -cp %s %s %s" % (
@@ -1628,27 +1628,25 @@ class Util:
         return "%s:%s" % (docker_image, docker_tag)
 
     @classmethod
-    def get_java_classpath(cls, archive):
+    def get_java_classpath(cls, lambda_cwd):
         """
-        Return the Java classpath, using the parent folder of the
-        given archive as the base folder.
+        Return the Java classpath, using the given working directory as the base folder.
 
-        The result contains any *.jar files in the base folder, as
+        The result contains any *.jar files in the workdir folder, as
         well as any JAR files in the "lib/*" subfolder living
         alongside the supplied java archive (.jar or .zip).
 
-        :param archive: an absolute path to a .jar or .zip Java archive
-        :return: the Java classpath, relative to the base dir of "archive"
+        :param lambda_cwd: an absolute path to a working directory folder of a java lambda
+        :return: the Java classpath, relative to the base dir of the working directory
         """
         entries = ["."]
-        base_dir = os.path.dirname(archive)
         for pattern in ["%s/*.jar", "%s/lib/*.jar", "%s/java/lib/*.jar", "%s/*.zip"]:
-            for entry in glob.glob(pattern % base_dir):
-                if os.path.realpath(archive) != os.path.realpath(entry):
-                    entries.append(os.path.relpath(entry, base_dir))
+            for entry in glob.glob(pattern % lambda_cwd):
+                if os.path.realpath(lambda_cwd) != os.path.realpath(entry):
+                    entries.append(os.path.relpath(entry, lambda_cwd))
         # make sure to append the localstack-utils.jar at the end of the classpath
         # https://github.com/localstack/localstack/issues/1160
-        entries.append(os.path.relpath(archive, base_dir))
+        entries.append(os.path.relpath(lambda_cwd, lambda_cwd))
         entries.append("*.jar")
         entries.append("java/lib/*.jar")
         result = ":".join(entries)

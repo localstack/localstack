@@ -38,6 +38,7 @@ from localstack.services.awslambda.lambda_utils import (
     event_source_arn_matches,
     get_executor_mode,
     get_handler_file_from_name,
+    get_lambda_extraction_dir,
     get_lambda_runtime,
     get_zip_bytes,
     multi_value_dict_for_list,
@@ -709,13 +710,16 @@ def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes = Non
     latest_version = lambda_details.get_version(VERSION_LATEST)
     latest_version["CodeSize"] = len(zip_file_content)
     latest_version["CodeSha256"] = code_sha_256.decode("utf-8")
-    tmp_dir = "%s/zipfile.%s" % (config.dirs.tmp, short_uid())
-    mkdir(tmp_dir)
-    tmp_file = "%s/%s" % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
+    zip_dir_name = f"function.zipfile.{short_uid()}"
+    zip_dir = f"{config.dirs.tmp}/{zip_dir_name}"
+    mkdir(zip_dir)
+    tmp_file = f"{zip_dir}/{LAMBDA_ZIP_FILE_NAME}"
     save_file(tmp_file, zip_file_content)
-    TMP_FILES.append(tmp_dir)
-    lambda_details.cwd = tmp_dir
-    return tmp_dir
+    TMP_FILES.append(zip_dir)
+    lambda_details.zip_dir = zip_dir
+    lambda_details.cwd = f"{get_lambda_extraction_dir()}/{zip_dir_name}"
+    mkdir(lambda_details.cwd)
+    return zip_dir
 
 
 def set_function_code(lambda_function: LambdaFunction):
@@ -749,22 +753,22 @@ def store_and_get_lambda_code_archive(
     in case this is a Lambda with the special bucket marker __local__, used for code mounting."""
     code_passed = lambda_function.code
     is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
-    lambda_cwd = lambda_function.cwd
+    lambda_zip_dir = lambda_function.zip_dir
 
     if code_passed:
-        lambda_cwd = lambda_cwd or set_archive_code(code_passed, lambda_function.name())
+        lambda_zip_dir = lambda_zip_dir or set_archive_code(code_passed, lambda_function.name())
         if not zip_file_content and not is_local_mount:
             # Save the zip file to a temporary file that the lambda executors can reference
             zip_file_content = get_zip_bytes(code_passed)
     else:
         lambda_details = LambdaRegion.get().lambdas[lambda_function.arn()]
-        lambda_cwd = lambda_cwd or lambda_details.cwd
+        lambda_zip_dir = lambda_zip_dir or lambda_details.zip_dir
 
-    if not lambda_cwd:
+    if not lambda_zip_dir:
         return
 
     # construct archive name
-    archive_file = os.path.join(lambda_cwd, LAMBDA_ZIP_FILE_NAME)
+    archive_file = os.path.join(lambda_zip_dir, LAMBDA_ZIP_FILE_NAME)
 
     if not zip_file_content:
         zip_file_content = load_file(archive_file, mode="rb")
@@ -773,7 +777,7 @@ def store_and_get_lambda_code_archive(
         save_file(archive_file, zip_file_content)
     # remove content from code attribute, if present
     lambda_function.code.pop("ZipFile", None)
-    return lambda_cwd, archive_file, zip_file_content
+    return lambda_zip_dir, archive_file, zip_file_content
 
 
 def do_set_function_code(lambda_function: LambdaFunction):
@@ -804,7 +808,8 @@ def do_set_function_code(lambda_function: LambdaFunction):
     _result = store_and_get_lambda_code_archive(lambda_function)
     if not _result:
         return
-    lambda_cwd, archive_file, zip_file_content = _result
+    lambda_zip_dir, archive_file, zip_file_content = _result
+    lambda_cwd = lambda_function.cwd
 
     # Set the appropriate Lambda handler.
     lambda_handler = generic_handler
@@ -841,19 +846,15 @@ def do_set_function_code(lambda_function: LambdaFunction):
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
-        main_file = "%s/%s" % (lambda_cwd, handler_file)
+        main_file = f"{lambda_cwd}/{handler_file}"
 
         if CHECK_HANDLER_ON_CREATION and not os.path.exists(main_file):
             # Raise an error if (1) this is not a local mount lambda, or (2) we're
             # running Lambdas locally (not in Docker), or (3) we're using remote Docker.
             # -> We do *not* want to raise an error if we're using local mount in non-remote Docker
             if not is_local_mount or not use_docker() or config.LAMBDA_REMOTE_DOCKER:
-                file_list = run('cd "%s"; du -d 3 .' % lambda_cwd)
-                config_debug = 'Config for local mount, docker, remote: "%s", "%s", "%s"' % (
-                    is_local_mount,
-                    use_docker(),
-                    config.LAMBDA_REMOTE_DOCKER,
-                )
+                file_list = run(f'cd "{lambda_cwd}"; du -d 3 .')
+                config_debug = f'Config for local mount, docker, remote: "{is_local_mount}", "{use_docker()}", "{config.LAMBDA_REMOTE_DOCKER}"'
                 LOG.debug("Lambda archive content:\n%s", file_list)
                 raise ClientError(
                     error_response(
@@ -1275,27 +1276,6 @@ def update_function_code(function):
     if data.get("Publish"):
         result["Version"] = publish_new_function_version(arn)["Version"]
     return jsonify(result or {})
-
-
-@app.route("%s/functions/<function>/code" % API_PATH_ROOT, methods=["GET"])
-def get_function_code(function):
-    """Get the code of an existing function
-    ---
-    operationId: 'getFunctionCode'
-    parameters:
-    """
-    region = LambdaRegion.get()
-    arn = func_arn(function)
-    lambda_function = region.lambdas.get(arn)
-    if not lambda_function:
-        return not_found_error(arn)
-    lambda_cwd = lambda_function.cwd
-    tmp_file = "%s/%s" % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
-    return Response(
-        load_file(tmp_file, mode="rb"),
-        mimetype="application/zip",
-        headers={"Content-Disposition": "attachment; filename=lambda_archive.zip"},
-    )
 
 
 @app.route("%s/functions/<function>/configuration" % API_PATH_ROOT, methods=["GET"])
