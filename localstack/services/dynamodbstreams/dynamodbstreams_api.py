@@ -6,7 +6,6 @@ from typing import Dict
 
 from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
 from localstack.services.generic_proxy import RegionBackend
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc
 from localstack.utils.json import BytesEncoder
@@ -57,11 +56,6 @@ def add_dynamodb_stream(
             "shards_id_map": {},
         }
         region.ddb_streams[table_name] = stream
-        # record event
-        event_publisher.fire_event(
-            event_publisher.EVENT_DYNAMODB_CREATE_STREAM,
-            payload={"n": event_publisher.get_hash(table_name)},
-        )
 
 
 def get_stream_for_table(table_arn: str) -> dict:

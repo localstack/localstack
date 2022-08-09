@@ -3,7 +3,6 @@ import logging
 import re
 from urllib.parse import urlencode
 
-import xmltodict
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 from moto.sqs.utils import parse_message_attributes
 from requests.models import Request
@@ -15,7 +14,6 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import unsubscribe_sqs_queue
 from localstack.services.sqs.utils import is_sqs_queue_url
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     calculate_crc32,
@@ -158,23 +156,6 @@ def _add_queue_attributes(path, req_data, content_str, headers):
         + re.sub(regex, r"\3", content_str, flags=flags)
     )
     return content_str
-
-
-def _fire_event(req_data, response):
-    action = req_data.get("Action")
-    event_type = None
-    queue_url = None
-    if action == "CreateQueue":
-        event_type = event_publisher.EVENT_SQS_CREATE_QUEUE
-        response_data = xmltodict.parse(response.content)
-        if "CreateQueueResponse" in response_data:
-            queue_url = response_data["CreateQueueResponse"]["CreateQueueResult"]["QueueUrl"]
-    elif action == "DeleteQueue":
-        event_type = event_publisher.EVENT_SQS_DELETE_QUEUE
-        queue_url = req_data.get("QueueUrl")
-
-    if event_type and queue_url:
-        event_publisher.fire_event(event_type, payload={"u": event_publisher.get_hash(queue_url)})
 
 
 def _queue_url(path, req_data, headers):
@@ -351,8 +332,6 @@ class ProxyListenerSQS(ProxyListener):
 
         if response.status_code >= 400:
             return response
-
-        _fire_event(req_data, response)
 
         # patch the response and add missing attributes
         if action == "GetQueueAttributes":

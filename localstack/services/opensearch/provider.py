@@ -85,7 +85,6 @@ from localstack.services.opensearch.cluster_manager import (
     DomainKey,
     create_cluster_manager,
 )
-from localstack.utils.analytics import event_publisher
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
 from localstack.utils.objects import singleton_factory
 from localstack.utils.serving import Server
@@ -437,12 +436,6 @@ class OpensearchProvider(OpensearchApi):
             # get the (updated) status
             status = get_domain_status(domain_key)
 
-        # record event
-        event_publisher.fire_event(
-            event_publisher.EVENT_OPENSEARCH_CREATE_DOMAIN,
-            payload={"n": event_publisher.get_hash(domain_name)},
-        )
-
         return CreateDomainResponse(DomainStatus=status)
 
     def delete_domain(
@@ -460,12 +453,6 @@ class OpensearchProvider(OpensearchApi):
 
             status = get_domain_status(domain_key, deleted=True)
             _remove_cluster(domain_key)
-
-        # record event
-        event_publisher.fire_event(
-            event_publisher.EVENT_OPENSEARCH_DELETE_DOMAIN,
-            payload={"n": event_publisher.get_hash(domain_name)},
-        )
 
         return DeleteDomainResponse(DomainStatus=status)
 

@@ -11,7 +11,6 @@ from requests.models import Response
 from localstack import config
 from localstack.constants import APPLICATION_CBOR, APPLICATION_JSON, HEADER_AMZN_ERROR_TYPE
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
 from localstack.utils.common import clone, json_safe, now_utc, to_bytes, to_str
@@ -151,17 +150,7 @@ class ProxyListenerKinesis(ProxyListener):
         data, encoding_type = self.decode_content(data or "{}", True)
         response._content = self.replace_in_encoded(response.content or "")
 
-        if action in ("CreateStream", "DeleteStream"):
-            event_type = (
-                event_publisher.EVENT_KINESIS_CREATE_STREAM
-                if action == "CreateStream"
-                else event_publisher.EVENT_KINESIS_DELETE_STREAM
-            )
-            payload = {"n": event_publisher.get_hash(data.get("StreamName"))}
-            if action == "CreateStream":
-                payload["s"] = data.get("ShardCount")
-            event_publisher.fire_event(event_type, payload=payload)
-        elif action == "UpdateShardCount" and config.KINESIS_PROVIDER == "kinesalite":
+        if action == "UpdateShardCount" and config.KINESIS_PROVIDER == "kinesalite":
             # Currently kinesalite, which backs the Kinesis implementation for localstack, does
             # not support UpdateShardCount:
             # https://github.com/mhart/kinesalite/issues/61

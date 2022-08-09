@@ -6,7 +6,6 @@ from typing import Optional
 from flask import Response
 
 from localstack import config
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
 from localstack.utils.time import now_utc
@@ -126,21 +125,9 @@ def _func_name(kwargs):
     return func_name
 
 
-def publish_event(time_before, result, kwargs):
-    event_publisher.fire_event(
-        event_publisher.EVENT_LAMBDA_INVOKE_FUNC,
-        payload={
-            "f": event_publisher.get_hash(_func_name(kwargs)),
-            "d": now_utc() - time_before,
-            "r": result[0],
-        },
-    )
-
-
 def publish_result(ns, time_before, result, kwargs):
     if ns == "lambda":
         publish_lambda_result(time_before, result, kwargs)
-        publish_event(time_before, "success", kwargs)
     else:
         LOG.info("Unexpected CloudWatch namespace: %s", ns)
 
@@ -148,7 +135,6 @@ def publish_result(ns, time_before, result, kwargs):
 def publish_error(ns, time_before, e, kwargs):
     if ns == "lambda":
         publish_lambda_error(time_before, kwargs)
-        publish_event(time_before, "error", kwargs)
     else:
         LOG.info("Unexpected CloudWatch namespace: %s", ns)
 
