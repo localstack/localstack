@@ -1428,8 +1428,9 @@ class TestDynamoDB:
         _transact_write({"id": {"S": "id1"}, "name": {"S": "name1"}})
         _transact_write({"name": {"S": "name1"}, "id": {"S": "id1"}})
 
+    @pytest.mark.aws_validated
     def test_batch_write_not_matching_schema(
-        self, dynamodb_client, dynamodb_create_table_with_parameters
+        self, dynamodb_client, dynamodb_create_table_with_parameters, dynamodb_wait_for_table_active
     ):
         table_name = f"ddb-table-{short_uid()}"
 
@@ -1445,6 +1446,7 @@ class TestDynamoDB:
             ],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
+        dynamodb_wait_for_table_active(table_name)
 
         faulty_item = {"Item": {"nonKey": {"S": "hello"}}}
         with pytest.raises(Exception) as ctx:
