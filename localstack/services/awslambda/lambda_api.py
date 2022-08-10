@@ -1067,8 +1067,8 @@ def lookup_function(function, region, request_url):
     if lambda_details.package_type == "Image":
         result["Code"] = lambda_details.code
         result["Configuration"]["CodeSize"] = 0
-        del result["Configuration"]["Handler"]
-        del result["Configuration"]["Layers"]
+        result["Configuration"].pop("Handler", None)
+        result["Configuration"].pop("Layers", None)
 
     if lambda_details.concurrency is not None:
         result["Concurrency"] = lambda_details.concurrency
