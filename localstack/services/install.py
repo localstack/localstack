@@ -571,20 +571,11 @@ def install_dynamodb_local():
     if not os.path.exists(JAVASSIST_JAR_PATH):
         download(JAVASSIST_JAR_URL, JAVASSIST_JAR_PATH)
 
-    # patch/update libraries with known CVEs
-    upgrade_jar_file(
-        ddb_local_lib_dir,
-        "jackson-databind-*.jar",
-        "com/fasterxml/jackson/core/jackson-databind:2.13.3",
-    )
     upgrade_jar_file(ddb_local_lib_dir, "slf4j-ext-*.jar", "org/slf4j/slf4j-ext:1.8.0-beta4")
 
     # ensure that javassist.jar is in the manifest classpath
     update_jar_manifest(
         "DynamoDBLocal.jar", INSTALL_DIR_DDB, "Class-Path:", "Class-Path: javassist.jar"
-    )
-    update_jar_manifest(
-        "DynamoDBLocal.jar", INSTALL_DIR_DDB, "databind-2.12.3.jar", "databind-2.13.3.jar"
     )
 
 
