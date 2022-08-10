@@ -77,6 +77,7 @@ from localstack.aws.api.opensearch import (
     VPCDerivedInfoStatus,
     VPCOptions,
 )
+from localstack.config import LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.opensearch import versions
@@ -146,7 +147,7 @@ def create_cluster(
     # FIXME: in AWS, the Endpoint is set once the cluster is running, not before (like here), but our tests and
     #  in particular cloudformation currently relies on the assumption that it is set when the domain is created.
     status = region.opensearch_domains[domain_key.domain_name]
-    status["Endpoint"] = cluster.url.split("://")[-1]
+    status["Endpoint"] = cluster.url.split("://")[-1].replace("0.0.0.0", LOCALSTACK_HOSTNAME)
     status["EngineVersion"] = engine_version
 
     if cluster.is_up():
