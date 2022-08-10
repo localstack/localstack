@@ -82,6 +82,8 @@ class SchemaExtractor:
 class ItemFinder:
     @staticmethod
     def find_existing_item(put_item: Dict, table_name=None) -> Optional[Dict]:
+        from localstack.services.dynamodb.provider import ValidationException
+
         table_name = table_name or put_item["TableName"]
         ddb_client = aws_stack.connect_to_service("dynamodb")
 
@@ -98,7 +100,14 @@ class ItemFinder:
             for schema in schemas:
                 for key in schema:
                     key_name = key["AttributeName"]
-                    search_key[key_name] = put_item["Item"][key_name]
+                    key_value = put_item["Item"].get(key_name)
+                    if not key_value:
+                        raise ValidationException(
+                            "An error occurred (ValidationException) when calling the "
+                            "BatchWriteItem operation: The provided key element does not match "
+                            "the schema"
+                        )
+                    search_key[key_name] = key_value
             if not search_key:
                 return
 
