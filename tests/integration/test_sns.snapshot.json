@@ -1668,5 +1668,132 @@
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_sqs_from_sns_with_xray_propagation": {
     "recorded-date": "09-08-2022, 11:35:46",
     "recorded-content": {}
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_subscription_after_failure_to_deliver": {
+    "recorded-date": "10-08-2022, 17:04:52",
+    "recorded-content": {
+      "subscriptions-attrs": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-before-delete": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>",
+              "Message": "test_dlq_before_sqs_endpoint_deleted",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscriptions": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "Subscriptions": [
+          {
+            "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "Owner": "111111111111",
+            "Protocol": "sqs",
+            "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+            "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+          }
+        ]
+      },
+      "subscriptions-attrs-with-redrive": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "RedrivePolicy": {
+            "deadLetterTargetArn": "arn:aws:sqs:<region>:111111111111:<resource:4>"
+          },
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "message-0-after-delete": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>",
+              "Message": "test_dlq_after_sqs_endpoint_deleted_0",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "message-1-after-delete": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:5>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>",
+              "Message": "test_dlq_after_sqs_endpoint_deleted_1",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:6>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

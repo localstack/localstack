@@ -2,6 +2,7 @@
 import json
 import queue
 import random
+import time
 from operator import itemgetter
 
 import pytest
@@ -2113,3 +2114,91 @@ class TestSNSProvider:
 
         sns_client.delete_endpoint(EndpointArn=endpoint_arn)
         sns_client.delete_platform_application(PlatformApplicationArn=platform_app_arn)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Attributes.Owner",
+            "$..Attributes.ConfirmationWasAuthenticated",
+            "$..Attributes.RawMessageDelivery",
+            "$..Attributes.sqs_queue_url",
+            "$..Subscriptions..Owner",
+        ]
+    )
+    def test_subscription_after_failure_to_deliver(
+        self,
+        sns_client,
+        sqs_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sqs_queue_arn,
+        sqs_queue_exists,
+        sns_create_sqs_subscription,
+        sns_allow_topic_sqs_queue,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_name = f"test-queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        dlq_url = sqs_create_queue()
+        dlq_arn = sqs_queue_arn(dlq_url)
+
+        sns_allow_topic_sqs_queue(
+            sqs_queue_url=dlq_url,
+            sqs_queue_arn=dlq_arn,
+            sns_topic_arn=topic_arn,
+        )
+
+        sub_attrs = sns_client.get_subscription_attributes(SubscriptionArn=subscription_arn)
+        snapshot.match("subscriptions-attrs", sub_attrs)
+
+        message = "test_dlq_before_sqs_endpoint_deleted"
+        sns_client.publish(TopicArn=topic_arn, Message=message)
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=10, MaxNumberOfMessages=4
+        )
+        snapshot.match("messages-before-delete", response)
+        sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        sqs_client.delete_queue(QueueUrl=queue_url)
+        # try to send a message before setting a DLQ
+        message = "test_dlq_after_sqs_endpoint_deleted"
+        sns_client.publish(TopicArn=topic_arn, Message=message)
+        # to avoid race condition, publish is async and the redrive policy can be in effect before the actual publish
+        time.sleep(1)
+
+        # check the subscription is still there after we deleted the queue
+        subscriptions = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
+        snapshot.match("subscriptions", subscriptions)
+
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="RedrivePolicy",
+            AttributeValue=json.dumps({"deadLetterTargetArn": dlq_arn}),
+        )
+
+        sub_attrs = sns_client.get_subscription_attributes(SubscriptionArn=subscription_arn)
+        snapshot.match("subscriptions-attrs-with-redrive", sub_attrs)
+
+        # AWS takes some time to delete the queue, which make the test fails as it delivers the message correctly
+        assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
+
+        # test sending and receiving multiple messages
+        for i in range(2):
+            message = f"test_dlq_after_sqs_endpoint_deleted_{i}"
+
+            sns_client.publish(TopicArn=topic_arn, Message=message)
+            response = sqs_client.receive_message(
+                QueueUrl=dlq_url, WaitTimeSeconds=10, MaxNumberOfMessages=4
+            )
+            sqs_client.delete_message(
+                QueueUrl=dlq_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+            )
+
+            snapshot.match(f"message-{i}-after-delete", response)
