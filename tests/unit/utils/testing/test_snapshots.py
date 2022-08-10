@@ -81,3 +81,19 @@ class TestSnapshotManager:
             },
         )
         sm._assert_all()
+
+    def test_replacement_key_value(self):
+        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm.add_transformer(
+            KeyValueBasedTransformer(
+                # returns last two characters of value -> only this should be replaced
+                lambda k, v: v[-2:] if k == "aaa" else None,
+                replacement="A",
+                replace_reference=False,
+            )
+        )
+        sm.recorded_state = {
+            "key_a": {"aaa": "hellA", "aab": "this is a test", "b": {"aaa": "another teA"}}
+        }
+        sm.match("key_a", {"aaa": "helloo", "aab": "this is a test", "b": {"aaa": "another test"}})
+        sm._assert_all()

@@ -183,10 +183,16 @@ class KeyValueBasedTransformer:
                         ctx, reference_value=match_result, replacement=self.replacement
                     )
                 else:
-                    SNAPSHOT_LOGGER.debug(
-                        f"Replacing value for key '{k}' with '{self.replacement}'. (Original value: {str(v)})"
-                    )
-                    input_data[k] = self.replacement
+                    if isinstance(v, str):
+                        SNAPSHOT_LOGGER.debug(
+                            f"Replacing value for key '{k}': Match result '{match_result}' with '{self.replacement}'. (Original value: {str(v)})"
+                        )
+                        input_data[k] = v.replace(match_result, self.replacement)
+                    else:
+                        SNAPSHOT_LOGGER.debug(
+                            f"Replacing value for key '{k}' with '{self.replacement}'. (Original value: {str(v)})"
+                        )
+                        input_data[k] = self.replacement
             elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict):
                 for i in range(0, len(v)):
                     v[i] = self.transform(v[i], ctx=ctx)
