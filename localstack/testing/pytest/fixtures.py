@@ -1461,6 +1461,25 @@ def create_iam_role_with_policy(iam_client):
 
 
 @pytest.fixture
+def firehose_create_delivery_stream(firehose_client, wait_for_delivery_stream_ready):
+    delivery_streams = {}
+
+    def _create_delivery_stream(**kwargs):
+        if "DeliveryStreamName" not in kwargs:
+            kwargs["DeliveryStreamName"] = f"test-delivery-stream-{short_uid()}"
+
+        delivery_stream = firehose_client.create_delivery_stream(**kwargs)
+        delivery_streams.update({kwargs["DeliveryStreamName"]: delivery_stream})
+        wait_for_delivery_stream_ready(kwargs["DeliveryStreamName"])
+        return delivery_stream
+
+    yield _create_delivery_stream
+
+    for delivery_stream_name in delivery_streams.keys():
+        firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+
+
+@pytest.fixture
 def cleanups(ec2_client):
     cleanup_fns = []
 

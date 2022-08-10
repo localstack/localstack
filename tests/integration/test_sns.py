@@ -2187,6 +2187,7 @@ class TestSNSProvider:
 
             snapshot.match(f"message-{i}-after-delete", response)
 
+    @pytest.mark.aws_validated
     def test_publish_to_firehose_with_s3(
         self,
         s3_client,
@@ -2195,7 +2196,7 @@ class TestSNSProvider:
         sns_client,
         create_role,
         s3_create_bucket,
-        wait_for_delivery_stream_ready,
+        firehose_create_delivery_stream,
         sns_create_topic,
         sns_subscription,
     ):
@@ -2242,7 +2243,7 @@ class TestSNSProvider:
 
         s3_create_bucket(Bucket=bucket_name)
 
-        stream = firehose_client.create_delivery_stream(
+        stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             DeliveryStreamType="DirectPut",
             S3DestinationConfiguration={
@@ -2251,8 +2252,6 @@ class TestSNSProvider:
                 "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 60},
             },
         )
-
-        wait_for_delivery_stream_ready(stream_name)
 
         topic = sns_create_topic(Name=topic_name)
         sns_subscription(
@@ -2290,9 +2289,8 @@ class TestSNSProvider:
         sleep = 1
         sleep_before = 0
         if is_aws_cloud():
-            retries = 25
+            retries = 30
             sleep = 10
             sleep_before = 10
 
         retry(validate_content, retries=retries, sleep_before=sleep_before, sleep=sleep)
-        firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
