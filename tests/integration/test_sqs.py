@@ -455,6 +455,24 @@ class TestSqsProvider:
         assert sqs_create_queue(QueueName=queue_name, Attributes=attributes) == queue_url
 
     @pytest.mark.aws_validated
+    def test_send_message_with_delay_0_works_for_fifo(self, sqs_client, sqs_create_queue):
+        # see issue https://github.com/localstack/localstack/issues/6612
+        queue_name = f"queue-{short_uid()}.fifo"
+        attributes = {"FifoQueue": "true"}
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+        message_sent_hash = sqs_client.send_message(
+            QueueUrl=queue_url,
+            DelaySeconds=0,
+            MessageBody="Hello World!",
+            MessageGroupId="test",
+            MessageDeduplicationId="42",
+        )["MD5OfMessageBody"]
+        message_received_hash = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)[
+            "Messages"
+        ][0]["MD5OfBody"]
+        assert message_sent_hash == message_received_hash
+
+    @pytest.mark.aws_validated
     def test_create_queue_with_different_attributes_raises_exception(
         self, sqs_client, sqs_create_queue, snapshot
     ):
