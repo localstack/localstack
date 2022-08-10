@@ -516,6 +516,17 @@ TEST_STATE_MACHINE_3 = {
     },
 }
 
+STS_ROLE_POLICY_DOC = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"Service": ["states.amazonaws.com"]},
+            "Action": "sts:AssumeRole",
+        }
+    ],
+}
+
 
 @pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
 @pytest.mark.parametrize("statemachine_definition", (TEST_STATE_MACHINE_3,))  # TODO: add sync2 test
@@ -568,6 +579,36 @@ def test_multiregion_nested(region_name, statemachine_definition):
     finally:
         client1.delete_state_machine(stateMachineArn=machine_arn)
         client1.delete_state_machine(stateMachineArn=child_machine_arn)
+
+
+@pytest.mark.aws_validated
+def test_default_logging_configuration(
+    iam_client,
+    stepfunctions_client,
+):
+    role_name = f"role_name-{short_uid()}"
+    role_arn = iam_client.create_role(
+        RoleName=role_name,
+        AssumeRolePolicyDocument=json.dumps(STS_ROLE_POLICY_DOC),
+    )["Role"]["Arn"]
+
+    definition = clone(TEST_STATE_MACHINE)
+    definition = json.dumps(definition)
+
+    sm_name = f"sts-logging-{short_uid()}"
+    result = stepfunctions_client.create_state_machine(
+        name=sm_name, definition=definition, roleArn=role_arn
+    )
+
+    assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+    result = stepfunctions_client.describe_state_machine(stateMachineArn=result["stateMachineArn"])
+    assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+    assert result["loggingConfiguration"]
+    assert result["loggingConfiguration"] == {"level": "OFF", "includeExecutionData": False}
+
+    # clean up
+    stepfunctions_client.delete_state_machine(stateMachineArn=result["stateMachineArn"])
+    iam_client.delete_role(RoleName=role_name)
 
 
 def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):
