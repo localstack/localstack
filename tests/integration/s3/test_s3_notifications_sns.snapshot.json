@@ -1,6 +1,6 @@
 {
   "tests/integration/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_object_created_put": {
-    "recorded-date": "08-08-2022, 17:51:20",
+    "recorded-date": "09-08-2022, 11:38:05",
     "recorded-content": {
       "receive_messages": {
         "messages": [
@@ -44,14 +44,14 @@
               ]
             },
             "MessageId": "<uuid:1>",
-            "Signature": "signature",
+            "Signature": "<signature>",
             "SignatureVersion": "1",
-            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
             "Subject": "Amazon S3 Notification",
             "Timestamp": "date",
             "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:2>",
             "Type": "Notification",
-            "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:2>:<token:1>"
+            "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:2>:<resource:3>"
           },
           {
             "Message": {
@@ -93,14 +93,14 @@
               ]
             },
             "MessageId": "<uuid:2>",
-            "Signature": "signature",
+            "Signature": "<signature>",
             "SignatureVersion": "1",
-            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
+            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
             "Subject": "Amazon S3 Notification",
             "Timestamp": "date",
             "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:2>",
             "Type": "Notification",
-            "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:2>:<token:1>"
+            "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:2>:<resource:3>"
           }
         ]
       }
