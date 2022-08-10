@@ -100,10 +100,10 @@ class CorsEnforcer(Handler):
     """
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response) -> None:
-        if (
-            not config.DISABLE_CORS_CHECKS
-            and self.should_enforce_self_managed_service(context)
-            and not self.is_cors_origin_allowed(context.request.headers)
+        if not self.should_enforce_self_managed_service(context):
+            return
+        if not config.DISABLE_CORS_CHECKS and not self.is_cors_origin_allowed(
+            context.request.headers
         ):
             LOG.info(
                 "Blocked CORS request from forbidden origin %s",
@@ -111,11 +111,7 @@ class CorsEnforcer(Handler):
             )
             response.status_code = 403
             chain.terminate()
-        elif (
-            self.should_enforce_self_managed_service(context)
-            and context.request.method == "OPTIONS"
-            and not config.DISABLE_PREFLIGHT_PROCESSING
-        ):
+        elif context.request.method == "OPTIONS" and not config.DISABLE_PREFLIGHT_PROCESSING:
             # we want to return immediately here, but we do not want to omit our response chain for cors headers
             response.status_code = 204
             chain.stop()
