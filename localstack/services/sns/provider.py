@@ -989,7 +989,13 @@ async def message_to_subscriber(
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
+
+            if is_raw_message_delivery(subscriber):
+                msg_attrs = create_sqs_message_attributes(subscriber, message_attributes)
+            else:
+                msg_attrs = {}
+
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc), msg_attrs=msg_attrs)
             if "NonExistentQueue" in str(exc):
                 LOG.debug("The SQS queue endpoint does not exist anymore")
                 # todo: if the queue got deleted, even if we recreate a queue with the same name/url

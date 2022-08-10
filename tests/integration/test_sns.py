@@ -1813,7 +1813,12 @@ class TestSNSProvider:
         }
         sns_client.publish(TopicArn=topic_arn, Message=message, MessageAttributes=message_attr)
 
-        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        response = sqs_client.receive_message(
+            QueueUrl=dlq_url,
+            WaitTimeSeconds=10,
+            AttributeNames=["All"],
+            MessageAttributeNames=["All"],
+        )
         snapshot.match("messages", response)
 
     @pytest.mark.aws_validated
