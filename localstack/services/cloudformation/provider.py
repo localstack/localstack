@@ -581,7 +581,7 @@ class CloudformationProvider(CloudformationApi):
         template_deployer.prepare_template_body(request)  # TODO: avoid mutating request directly
         template = template_preparer.parse_template(request["TemplateBody"])
         stack_name = template["StackName"] = request.get("StackName")
-        stack = Stack(request, template)
+        stack = Stack(request, template)  # TODO: proper body handling like in create_change_set
 
         # find existing stack with same name, and remove it if this stack is in DELETED state
         existing = ([s for s in state.stacks.values() if s.stack_name == stack_name] or [None])[0]
