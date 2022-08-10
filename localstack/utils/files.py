@@ -53,15 +53,9 @@ def cache_dir() -> Path:
 def save_file(file, content, append=False, permissions=None):
     mode = "a" if append else "w+"
     if not isinstance(content, str):
-        mode = mode + "b"
-
-    def _opener(path, flags):
-        return os.open(path, flags, permissions)
-
-    # make sure that the parent dir exsits
+        mode += "b"
     mkdir(os.path.dirname(file))
-    # store file contents
-    with open(file, mode, opener=_opener if permissions else None) as f:
+    with safe_open(file, mode, permissions) as f:
         f.write(content)
         f.flush()
 
@@ -266,3 +260,30 @@ def new_tmp_dir():
     rm_rf(folder)
     mkdir(folder)
     return folder
+
+
+class safe_open:
+    def __init__(self, path, mode="w+b", permissions=None):
+        self._target = path
+        self._mode = mode
+        self._permissions = permissions
+
+    def __enter__(self):
+        """
+        Open the file and return a handle to it.
+        """
+        self._file = tempfile.NamedTemporaryFile(self._mode, delete=False)
+        return self._file
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Close the file and rename to the intended final file. Rename is atomic, there is no
+        "partial" state.
+        """
+        self._file.close()
+        if exc_type is None:
+            os.rename(self._file.name, self._target)
+            if self._permissions:
+                os.chmod(self._file.name, self._permissions)
+        else:
+            os.unlink(self._file.name)

@@ -1,6 +1,10 @@
+import contextlib
+import tempfile
+
 import pytest
 
 from localstack.utils.common import new_tmp_file, save_file
+from localstack.utils.files import safe_open
 from localstack.utils.generic.file_utils import parse_config_file
 
 CONFIG_FILE_SECTION = """
@@ -44,3 +48,34 @@ def test_parse_config_file(input_type, sections):
         assert sections == len(result)
         for section in result.values():
             assert expected == section
+
+
+def test_write_file_atomically():
+
+    # open a temporary file and writes to it, so far nothing new
+    tf = tempfile.NamedTemporaryFile()
+    with safe_open(tf.name) as f:
+        f.write(b"Hello Word")
+
+    # check the content of the file is the expected one
+    assert open(tf.name, "r").read() == "Hello Word"
+
+    # open the file again and write to it, but this time, using the standard open call.
+    # writes, and even tho we throw an exception, the file will be written.
+    with contextlib.suppress(Exception):
+        with open(tf.name, "wb+") as f:
+            f.write(b"Replace the hello world, ")
+            raise Exception("Something went wrong")
+
+    # check the content of the file is not rolled back,
+    # and contains the content before the exception
+    assert open(tf.name, "r").read() == "Replace the hello world, "
+
+    # let's do the same thing, but this time, using the safe_open call.
+    # writes, but because an exception is thrown, the file will be rolled back.
+    with contextlib.suppress(Exception):
+        with safe_open(tf.name) as f:
+            f.write(b"This wont be written, ")
+            raise Exception("Something went wrong")
+
+    assert open(tf.name, "r").read() == "Replace the hello world, "
