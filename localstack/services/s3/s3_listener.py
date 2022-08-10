@@ -172,7 +172,6 @@ class BackendState:
     @staticmethod
     def get_bucket(bucket_name: str) -> FakeBucket:
         bucket_name = normalize_bucket_name(bucket_name)
-        # TODO@viren does this have any impact on presigned URLs?
         backend = get_s3_backend()
         bucket = backend.buckets.get(bucket_name)
         if not bucket:

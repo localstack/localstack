@@ -463,7 +463,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException(
                     "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                 )
-            moto_sns_backend = moto_sns_backends[context.region]
+            moto_sns_backend = sns_backends[context.account_id][context.region]
             if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
                 if not all(
                     ["MessageDeduplicationId" in entry for entry in publish_batch_request_entries]
