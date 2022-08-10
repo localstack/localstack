@@ -8,7 +8,7 @@ from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from localstack.utils.sync import poll_condition
+from localstack.utils.sync import ShortCircuitWaitException, poll_condition
 
 
 # TODO: refactor file and remove this compatibility fn
@@ -431,3 +431,86 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
         return first_bucket_name in bucket_names and second_bucket_name not in bucket_names
 
     poll_condition(condition=assert_bucket_gone, timeout=20, interval=5)
+
+
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..NotificationARNs",
+        "$..IncludeNestedStacks",
+        "$..Parameters",
+    ]
+)
+@pytest.mark.aws_validated
+def test_empty_changeset(cfn_client, snapshot, cleanups):
+    """
+    Creates a change set that doesn't actually update any resources and then tries to execute it
+    """
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+    change_set_name_nochange = f"change-set-nochange-{short_uid()}"
+    cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+
+    template_path = os.path.join(os.path.dirname(__file__), "../templates/cdkmetadata.yaml")
+    template = load_template_file(template_path)
+
+    # 1. create change set and execute
+
+    first_changeset = cfn_client.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=template,
+        Capabilities=["CAPABILITY_AUTO_EXPAND", "CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
+        ChangeSetType="CREATE",
+    )
+    snapshot.match("first_changeset", first_changeset)
+
+    def _check_changeset_available():
+        status = cfn_client.describe_change_set(
+            StackName=stack_name, ChangeSetName=first_changeset["Id"]
+        )["Status"]
+        if status == "FAILED":
+            raise ShortCircuitWaitException("Change set in unrecoverable status")
+        return status == "CREATE_COMPLETE"
+
+    assert wait_until(_check_changeset_available)
+
+    describe_first_cs = cfn_client.describe_change_set(
+        StackName=stack_name, ChangeSetName=first_changeset["Id"]
+    )
+    snapshot.match("describe_first_cs", describe_first_cs)
+    assert describe_first_cs["ExecutionStatus"] == "AVAILABLE"
+
+    cfn_client.execute_change_set(StackName=stack_name, ChangeSetName=first_changeset["Id"])
+
+    def _check_changeset_success():
+        status = cfn_client.describe_change_set(
+            StackName=stack_name, ChangeSetName=first_changeset["Id"]
+        )["ExecutionStatus"]
+        if status in ["EXECUTE_FAILED", "UNAVAILABLE", "OBSOLETE"]:
+            raise ShortCircuitWaitException("Change set in unrecoverable status")
+        return status == "EXECUTE_COMPLETE"
+
+    assert wait_until(_check_changeset_success)
+
+    # 2. create a new change set without changes
+    nochange_changeset = cfn_client.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name_nochange,
+        TemplateBody=template,
+        Capabilities=["CAPABILITY_AUTO_EXPAND", "CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
+        ChangeSetType="UPDATE",
+    )
+    snapshot.match("nochange_changeset", nochange_changeset)
+
+    describe_nochange = cfn_client.describe_change_set(
+        StackName=stack_name, ChangeSetName=nochange_changeset["Id"]
+    )
+    snapshot.match("describe_nochange", describe_nochange)
+    assert describe_nochange["ExecutionStatus"] == "UNAVAILABLE"
+
+    # 3. try to execute the unavailable change set
+    with pytest.raises(cfn_client.exceptions.InvalidChangeSetStatusException) as e:
+        cfn_client.execute_change_set(StackName=stack_name, ChangeSetName=nochange_changeset["Id"])
+    snapshot.match("error_execute_failed", e.value)

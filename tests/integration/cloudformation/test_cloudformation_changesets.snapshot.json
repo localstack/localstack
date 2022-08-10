@@ -72,5 +72,83 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/test_cloudformation_changesets.py::test_empty_changeset": {
+    "recorded-date": "10-08-2022, 10:52:55",
+    "recorded-content": {
+      "first_changeset": {
+        "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>"
+      },
+      "describe_first_cs": {
+        "Capabilities": [
+          "CAPABILITY_AUTO_EXPAND",
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "CDKMetadata",
+              "ResourceType": "AWS::CDK::Metadata",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "RollbackConfiguration": {},
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE"
+      },
+      "nochange_changeset": {
+        "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>"
+      },
+      "describe_nochange": {
+        "Capabilities": [
+          "CAPABILITY_AUTO_EXPAND",
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:2>",
+        "Changes": [],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "UNAVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "RollbackConfiguration": {},
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "FAILED",
+        "StatusReason": "The submitted information didn't contain changes. Submit different information to create a change set."
+      },
+      "error_execute_failed": "An error occurred (InvalidChangeSetStatus) when calling the ExecuteChangeSet operation: ChangeSet [arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>] cannot be executed in its current status of [FAILED]"
+    }
   }
 }

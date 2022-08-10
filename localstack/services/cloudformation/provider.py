@@ -107,11 +107,12 @@ class StackInstance:
 
 
 class Stack:
-    def __init__(self, metadata=None, template=None):
+    def __init__(self, metadata=None, template=None, template_body=None):
         if template is None:
             template = {}
         self.metadata = metadata or {}
         self.template = template or {}
+        self.template_body = template_body
         self._template_raw = clone_safe(self.template)
         self.template_original = clone_safe(self.template)
         # initialize resources
@@ -704,12 +705,20 @@ class CloudformationProvider(CloudformationApi):
         template_stage: TemplateStage = None,
     ) -> GetTemplateOutput:
 
-        stack = find_stack(stack_name)
+        stack = None
         if change_set_name:
             stack = find_change_set(stack_name=stack_name, cs_name=change_set_name)
+        else:
+            stack = find_stack(stack_name)
         if not stack:
             return stack_not_found_error(stack_name)
-        return GetTemplateOutput(TemplateBody=json.dumps(stack.latest_template_raw()))
+
+        # TODO:  check when they shouldn't be both available?
+        return GetTemplateOutput(
+            TemplateBody=stack.template_body,
+            StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
+        )
+        # return GetTemplateOutput(TemplateBody=json.dumps(stack.latest_template_raw()))
 
     @handler("GetTemplateSummary", expand=False)
     def get_template_summary(
@@ -868,6 +877,10 @@ class CloudformationProvider(CloudformationApi):
             )  # TODO: check proper message
 
         prepare_template_body(req_params)  # TODO: function has too many unclear responsibilities
+        if not template_body:
+            template_body = req_params[
+                "TemplateBody"
+            ]  # should then have been set by prepare_template_body
         template = template_preparer.parse_template(req_params["TemplateBody"])
         del req_params["TemplateBody"]  # TODO: stop mutating req_params
         template["StackName"] = stack_name
@@ -890,7 +903,11 @@ class CloudformationProvider(CloudformationApi):
             empty_stack_template = dict(template)
             empty_stack_template["Resources"] = {}
             req_params_copy = clone_stack_params(req_params)
-            stack = Stack(req_params_copy, empty_stack_template)
+            stack = Stack(
+                req_params_copy,
+                empty_stack_template,
+                template_body=template_body,
+            )
             state.stacks[stack.stack_id] = stack
             stack.set_stack_status("REVIEW_IN_PROGRESS")
         elif change_set_type == "IMPORT":
