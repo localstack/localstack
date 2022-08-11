@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 import pytest
@@ -163,6 +164,8 @@ STATE_MACHINE_EVENTS = {
     },
 }
 
+LOG = logging.getLogger(__name__)
+
 
 @pytest.fixture(scope="module")
 def setup_and_tear_down():
@@ -198,6 +201,24 @@ def setup_and_tear_down():
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_3)
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_4)
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_5)
+
+
+@pytest.fixture
+def create_state_machine(stepfunctions_client):
+    machines_arns = []
+
+    def factory(**kwargs):
+        result = stepfunctions_client.create_state_machine(**kwargs)
+        machines_arns.append(result["stateMachineArn"])
+        return result
+
+    yield factory
+
+    for machine in machines_arns:
+        try:
+            stepfunctions_client.delete_state_machine(stateMachineArn=machine)
+        except Exception as e:
+            LOG.debug("Unable to delete SFN state machine: ", e)
 
 
 def _assert_machine_instances(expected_instances, sfn_client):
@@ -582,32 +603,28 @@ def test_multiregion_nested(region_name, statemachine_definition):
 
 
 @pytest.mark.aws_validated
-def test_default_logging_configuration(
-    iam_client,
-    stepfunctions_client,
-):
+def test_default_logging_configuration(iam_client, create_state_machine, stepfunctions_client):
     role_name = f"role_name-{short_uid()}"
-    role_arn = iam_client.create_role(
-        RoleName=role_name,
-        AssumeRolePolicyDocument=json.dumps(STS_ROLE_POLICY_DOC),
-    )["Role"]["Arn"]
+    try:
+        role_arn = iam_client.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(STS_ROLE_POLICY_DOC),
+        )["Role"]["Arn"]
 
-    definition = clone(TEST_STATE_MACHINE)
-    definition = json.dumps(definition)
+        definition = clone(TEST_STATE_MACHINE)
+        definition = json.dumps(definition)
 
-    sm_name = f"sts-logging-{short_uid()}"
-    result = stepfunctions_client.create_state_machine(
-        name=sm_name, definition=definition, roleArn=role_arn
-    )
+        sm_name = f"sts-logging-{short_uid()}"
+        result = create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
 
-    assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
-    result = stepfunctions_client.describe_state_machine(stateMachineArn=result["stateMachineArn"])
-    assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
-    assert result["loggingConfiguration"] == {"level": "OFF", "includeExecutionData": False}
-
-    # clean up
-    stepfunctions_client.delete_state_machine(stateMachineArn=result["stateMachineArn"])
-    iam_client.delete_role(RoleName=role_name)
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+        result = stepfunctions_client.describe_state_machine(
+            stateMachineArn=result["stateMachineArn"]
+        )
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert result["loggingConfiguration"] == {"level": "OFF", "includeExecutionData": False}
+    finally:
+        iam_client.delete_role(RoleName=role_name)
 
 
 def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):
