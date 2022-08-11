@@ -3,6 +3,7 @@ from io import BytesIO
 import pytest
 from moto.core import DEFAULT_ACCOUNT_ID
 
+import localstack.aws.accounts
 from localstack import config
 from localstack.aws.api import ServiceException, handler
 from localstack.services import moto
@@ -81,6 +82,14 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
 )
 def test_call_s3_with_streaming_trait(payload, monkeypatch):
     monkeypatch.setenv("MOTO_S3_CUSTOM_ENDPOINTS", "s3.localhost.localstack.cloud:4566")
+
+    # In this test we use low-level interface with Moto and skip the standard setup
+    # In the absence of below patch, Moto and LocalStack uses difference AWS Account IDs causing the test to fail
+    monkeypatch.setattr(
+        localstack.aws.accounts,
+        "account_id_resolver",
+        localstack.aws.accounts.get_moto_default_account_id,
+    )
 
     bucket_name = f"bucket-{short_uid()}"
     key_name = f"key-{short_uid()}"

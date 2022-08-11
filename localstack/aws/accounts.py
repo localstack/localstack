@@ -3,6 +3,8 @@ import re
 import threading
 from typing import Optional
 
+import moto.core
+
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 
 # Thread local storage for keeping current request & account related info
@@ -34,6 +36,10 @@ def get_aws_account_id() -> str:
 
 def get_default_account_id() -> str:
     return DEFAULT_AWS_ACCOUNT_ID
+
+
+def get_moto_default_account_id() -> str:
+    return moto.core.DEFAULT_ACCOUNT_ID
 
 
 account_id_resolver = get_default_account_id
