@@ -91,6 +91,7 @@ def render_report(result: SnapshotMatchResult):
             LOG.warning(
                 f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support. {expected=} | {actual=}"
             )
+        return []
 
     lines = []
     for cat, changes in result.result.tree.items():
