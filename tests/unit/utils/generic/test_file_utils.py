@@ -72,7 +72,7 @@ def test_write_file_atomically():
     assert open(tf.name, "r").read() == "Replace the hello world, "
 
     # let's do the same thing, but this time, using the safe_open call.
-    # writes, but because an exception is thrown, the file will be rolled back.
+    # given an exception is thrown, the content of the file will be rolled back.
     with contextlib.suppress(Exception):
         with safe_open(tf.name) as f:
             f.write(b"This wont be written, ")
