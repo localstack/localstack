@@ -170,5 +170,12 @@
     "recorded-content": {
       "exception": "An error occurred (ValidationError) when calling the DescribeChangeSet operation: Stack [somestack] does not exist"
     }
+  },
+  "tests/integration/cloudformation/test_cloudformation_changesets.py::test_delete_change_set_exception": {
+    "recorded-date": "11-08-2022, 14:07:38",
+    "recorded-content": {
+      "e1": "<ExceptionInfo ClientError('An error occurred (ValidationError) when calling the DeleteChangeSet operation: Stack [nostack] does not exist') tblen=3>",
+      "e2": "<ExceptionInfo ClientError('An error occurred (ValidationError) when calling the DeleteChangeSet operation: StackName must be specified if ChangeSetName is not specified as an ARN.') tblen=3>"
+    }
   }
 }

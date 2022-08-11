@@ -967,6 +967,11 @@ class CloudformationProvider(CloudformationApi):
 
         # only relevant if change_set_name isn't an ARN
         if not ARN_CHANGESET_REGEX.match(change_set_name):
+            if not stack_name:
+                raise ValidationError(
+                    "StackName must be specified if ChangeSetName is not specified as an ARN."
+                )
+
             stack = find_stack(stack_name)
             if not stack:
                 raise ValidationError(f"Stack [{stack_name}] does not exist")
@@ -984,7 +989,17 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
     ) -> DeleteChangeSetOutput:
-        # TODO: change_set_name can be an ARN
+
+        # only relevant if change_set_name isn't an ARN
+        if not ARN_CHANGESET_REGEX.match(change_set_name):
+            if not stack_name:
+                raise ValidationError(
+                    "StackName must be specified if ChangeSetName is not specified as an ARN."
+                )
+
+            stack = find_stack(stack_name)
+            if not stack:
+                raise ValidationError(f"Stack [{stack_name}] does not exist")
 
         change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:

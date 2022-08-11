@@ -377,11 +377,16 @@ def test_execute_change_set(
         cleanup_stacks([stack_id])
 
 
-def test_delete_change_set_nonexisting(cfn_client):
-    with pytest.raises(Exception) as ex:
-        cfn_client.delete_change_set(ChangeSetName="DoesNotExist")
+@pytest.mark.aws_validated
+def test_delete_change_set_exception(cfn_client, snapshot):
+    """test error cases when trying to delete a change set"""
+    with pytest.raises(Exception) as e1:
+        cfn_client.delete_change_set(StackName="nostack", ChangeSetName="DoesNotExist")
+    snapshot.match("e1", e1)
 
-    assert ex.value.response["Error"]["Code"] == "ResourceNotFoundException"
+    with pytest.raises(Exception) as e2:
+        cfn_client.delete_change_set(ChangeSetName="DoesNotExist")
+    snapshot.match("e2", e2)
 
 
 @pytest.mark.aws_validated
