@@ -678,6 +678,12 @@ def _resolve_refs_recursively(stack, value):
             value[key] = resolve_refs_recursively(stack, val)
 
     if isinstance(value, list):
+        # in some cases, intrinsic functions are passed in as, e.g., `[['Fn::Sub', '${MyRef}']]`
+        if len(value) == 1 and isinstance(value[0], list) and len(value[0]) == 2:
+            inner_list = value[0]
+            if str(inner_list[0]).lower().startswith("fn::"):
+                return resolve_refs_recursively(stack, {inner_list[0]: inner_list[1]})
+
         for i in range(len(value)):
             value[i] = resolve_refs_recursively(stack, value[i])
 
