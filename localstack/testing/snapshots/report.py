@@ -1,4 +1,8 @@
+import logging
+
 from localstack.testing.snapshots import SnapshotMatchResult
+
+LOG = logging.getLogger(__file__)
 
 _esctable = dict(
     # text colors
@@ -84,8 +88,8 @@ def render_report(result: SnapshotMatchResult):
                 )
             ]
         else:
-            raise ValueError(
-                f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support. {c.t1=} | {c.t2=}"
+            LOG.warning(
+                f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support. {expected=} | {actual=}"
             )
 
     lines = []
