@@ -603,7 +603,6 @@ def test_default_logging_configuration(
     assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
     result = stepfunctions_client.describe_state_machine(stateMachineArn=result["stateMachineArn"])
     assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
-    assert result["loggingConfiguration"]
     assert result["loggingConfiguration"] == {"level": "OFF", "includeExecutionData": False}
 
     # clean up
