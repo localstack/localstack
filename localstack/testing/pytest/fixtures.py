@@ -345,9 +345,9 @@ def dynamodb_create_table_with_parameters(dynamodb_client, dynamodb_wait_for_tab
             kwargs["TableName"] = f"test-table-{short_uid()}"
 
         tables.append(kwargs["TableName"])
-        fn = dynamodb_client.create_table(**kwargs)
+        response = dynamodb_client.create_table(**kwargs)
         dynamodb_wait_for_table_active(kwargs["TableName"])
-        return fn
+        return response
 
     yield factory
 
@@ -375,9 +375,7 @@ def dynamodb_create_table(dynamodb_client, dynamodb_wait_for_table_active):
 
         tables.append(kwargs["table_name"])
 
-        fn = create_dynamodb_table(**kwargs)
-        dynamodb_wait_for_table_active(kwargs["table_name"])
-        return fn
+        return create_dynamodb_table(**kwargs)
 
     yield factory
 
