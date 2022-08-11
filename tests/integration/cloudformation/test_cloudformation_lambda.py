@@ -1,6 +1,7 @@
 import os
 
 import jinja2
+import pytest
 
 from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.utils.common import short_uid, to_str
@@ -97,23 +98,27 @@ def test_update_lambda_inline_code(
         cleanup_stacks([stack_name])
 
 
+@pytest.mark.aws_validated
 def test_lambda_w_dynamodb_event_filter(
-    cfn_client, dynamodb_client, is_stack_created, cleanup_stacks
+    cfn_client, dynamodb_client, is_stack_created, cleanup_stacks, logs_client
 ):
     stack_name = f"stack-{short_uid()}"
     function_name = f"test-fn-{short_uid()}"
     table_name = f"ddb-tbl-{short_uid()}"
-    item_to_put = {"id": {"S": "test123"}}
+    item_to_put = {"id": {"S": "test123"}, "id2": {"S": "test42"}}
+    item_to_put2 = {"id": {"S": "test123"}, "id2": {"S": "test67"}}
 
     try:
         template_1 = jinja2.Template(load_template_raw("lambda_dynamodb_filtering.yaml")).render(
-            event_filter='{"eventName": ["INSERT"]}',
+            event_filter='{"eventName": ["MODIFY"]}',
             table_name=table_name,
             function_name=function_name,
         )
 
         response = cfn_client.create_stack(
-            StackName=stack_name, TemplateBody=template_1, Capabilities=["CAPABILITY_IAM"]
+            StackName=stack_name,
+            TemplateBody=template_1,
+            Capabilities=["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"],
         )
         stack_id = response["StackId"]
         assert stack_id
@@ -122,15 +127,14 @@ def test_lambda_w_dynamodb_event_filter(
         # put item the first time: INSERT
         dynamodb_client.put_item(TableName=table_name, Item=item_to_put)
 
-        def assert_single_lambda_call():
-            events = get_lambda_log_events(function_name)
+        def _assert_single_lambda_call():
+            events = get_lambda_log_events(function_name, logs_client=logs_client)
             assert len(events) == 1
+            assert '"eventName":"MODIFY"' in events[0]
 
-        retry(assert_single_lambda_call, retries=10)
-
-        # put item the second time: MODIFY and lambda should not be called
-        dynamodb_client.put_item(TableName=table_name, Item=item_to_put)
-        retry(assert_single_lambda_call, retries=10)
+        # put item the second time: MODIFY and lambda should be called
+        dynamodb_client.put_item(TableName=table_name, Item=item_to_put2)
+        retry(_assert_single_lambda_call, retries=30)
 
     finally:
         # cleanup
