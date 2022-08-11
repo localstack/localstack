@@ -15,6 +15,7 @@ from localstack.testing.pytest.fixtures import (  # TODO(!) fix. shouldn't impor
     _client,
 )
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
+from localstack.testing.snapshots.report import render_report
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import SNAPSHOT_BASIC_TRANSFORMER
 
@@ -33,16 +34,22 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> Optional[TestReport]:
+    use_legacy_report = os.environ.get("SNAPSHOT_LEGACY_REPORT", "0") == "1"
+
     result: _Result = yield
     report: TestReport = result.result
 
     if call.excinfo is not None and isinstance(call.excinfo.value, SnapshotAssertionError):
         err: SnapshotAssertionError = call.excinfo.value
-        error_report = ""
-        for res in err.result:
-            if not res:
-                error_report = f"{error_report}Match failed for '{res.key}':\n{json.dumps(json.loads(res.result.to_json()), indent=2)}\n\n"
-        report.longrepr = error_report
+
+        if use_legacy_report:
+            error_report = ""
+            for res in err.result:
+                if not res:
+                    error_report = f"{error_report}Match failed for '{res.key}':\n{json.dumps(json.loads(res.result.to_json()), indent=2)}\n\n"
+            report.longrepr = error_report
+        else:
+            report.longrepr = "\n".join([str(render_report(r)) for r in err.result if not r])
     return report
 
 
