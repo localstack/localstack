@@ -85,7 +85,7 @@ def render_report(result: SnapshotMatchResult):
             ]
         else:
             raise ValueError(
-                f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support."
+                f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support. {c.t1=} | {c.t2=}"
             )
 
     lines = []
