@@ -6,6 +6,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
     CallAs,
     ChangeSetNameOrId,
+    ChangeSetNotFoundException,
     ClientRequestToken,
     CloudformationApi,
     CreateChangeSetInput,
@@ -713,12 +714,10 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return stack_not_found_error(stack_name)
 
-        # TODO:  check when they shouldn't be both available?
         return GetTemplateOutput(
             TemplateBody=stack.template_body,
             StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
         )
-        # return GetTemplateOutput(TemplateBody=json.dumps(stack.latest_template_raw()))
 
     @handler("GetTemplateSummary", expand=False)
     def get_template_summary(
@@ -957,11 +956,11 @@ class CloudformationProvider(CloudformationApi):
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
     ) -> DescribeChangeSetOutput:
+
         change_set = find_change_set(change_set_name, stack_name=stack_name)
+
         if not change_set:
-            return not_found_error(
-                f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
-            )
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 
         return change_set.metadata
 
@@ -972,13 +971,15 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
     ) -> DeleteChangeSetOutput:
+        # TODO: change_set_name can be an ARN
+
         change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:
-            return not_found_error(
-                f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
-            )
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         change_set.stack.change_sets = [
-            cs for cs in change_set.stack.change_sets if cs.change_set_name != change_set_name
+            cs
+            for cs in change_set.stack.change_sets
+            if (cs.change_set_name != change_set_name and cs.change_set_id != change_set_name)
         ]
         return DeleteChangeSetOutput()
 
@@ -993,9 +994,7 @@ class CloudformationProvider(CloudformationApi):
     ) -> ExecuteChangeSetOutput:
         change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:
-            return not_found_error(
-                f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
-            )
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         if change_set.metadata.get("ExecutionStatus") != ExecutionStatus.AVAILABLE:
             LOG.debug("Change set %s not in execution status 'AVAILABLE'", change_set_name)
             raise InvalidChangeSetStatusException(

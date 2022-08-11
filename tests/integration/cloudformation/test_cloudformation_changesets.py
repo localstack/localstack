@@ -514,3 +514,45 @@ def test_empty_changeset(cfn_client, snapshot, cleanups):
     with pytest.raises(cfn_client.exceptions.InvalidChangeSetStatusException) as e:
         cfn_client.execute_change_set(StackName=stack_name, ChangeSetName=nochange_changeset["Id"])
     snapshot.match("error_execute_failed", e.value)
+
+
+def test_deleted_changeset(cfn_client, snapshot, cleanups):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    changeset_name = f"changeset-{short_uid()}"
+    stack_name = f"stack-{short_uid()}"
+    cleanups.append(lambda: cfn_client.delete_stack(StackName=stack_name))
+
+    snapshot.add_transformer(snapshot.transform.regex(stack_name, "<stack-name>"))
+
+    template_path = os.path.join(os.path.dirname(__file__), "../templates/cdkmetadata.yaml")
+    template = load_template_file(template_path)
+
+    # 1. create change set
+    create = cfn_client.create_change_set(
+        ChangeSetName=changeset_name,
+        StackName=stack_name,
+        TemplateBody=template,
+        Capabilities=["CAPABILITY_AUTO_EXPAND", "CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
+        ChangeSetType="CREATE",
+    )
+    snapshot.match("create", create)
+
+    changeset_id = create["Id"]
+
+    def _check_changeset_available():
+        status = cfn_client.describe_change_set(StackName=stack_name, ChangeSetName=changeset_id)[
+            "Status"
+        ]
+        if status == "FAILED":
+            raise ShortCircuitWaitException("Change set in unrecoverable status")
+        return status == "CREATE_COMPLETE"
+
+    assert wait_until(_check_changeset_available)
+
+    # 2. delete change set
+    cfn_client.delete_change_set(ChangeSetName=changeset_id, StackName=stack_name)
+
+    with pytest.raises(cfn_client.exceptions.ChangeSetNotFoundException) as e:
+        cfn_client.describe_change_set(StackName=stack_name, ChangeSetName=changeset_id)
+    snapshot.match("postdelete_changeset_notfound", e.value)

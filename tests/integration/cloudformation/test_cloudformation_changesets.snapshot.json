@@ -150,5 +150,19 @@
       },
       "error_execute_failed": "An error occurred (InvalidChangeSetStatus) when calling the ExecuteChangeSet operation: ChangeSet [arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:3>] cannot be executed in its current status of [FAILED]"
     }
+  },
+  "tests/integration/cloudformation/test_cloudformation_changesets.py::test_deleted_changeset": {
+    "recorded-date": "11-08-2022, 11:11:47",
+    "recorded-content": {
+      "create": {
+        "Id": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name>/<resource:2>"
+      },
+      "postdelete_changeset_notfound": "An error occurred (ChangeSetNotFound) when calling the DescribeChangeSet operation: ChangeSet [arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>] does not exist"
+    }
   }
 }
