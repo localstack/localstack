@@ -305,11 +305,11 @@ def test_create_change_set_with_ssm_parameter(
         cleanup_stacks([stack_id])
 
 
-def test_describe_change_set_nonexisting(cfn_client):
+@pytest.mark.aws_validated
+def test_describe_change_set_nonexisting(cfn_client, snapshot):
     with pytest.raises(Exception) as ex:
-        cfn_client.describe_change_set(ChangeSetName="DoesNotExist")
-
-    assert ex.value.response["Error"]["Code"] == "ResourceNotFoundException"
+        cfn_client.describe_change_set(StackName="somestack", ChangeSetName="DoesNotExist")
+    snapshot.match("exception", ex.value)
 
 
 def test_execute_change_set(
@@ -516,7 +516,9 @@ def test_empty_changeset(cfn_client, snapshot, cleanups):
     snapshot.match("error_execute_failed", e.value)
 
 
+@pytest.mark.aws_validated
 def test_deleted_changeset(cfn_client, snapshot, cleanups):
+    """simple case verifying that proper exception is thrown when trying to get a deleted changeset"""
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
     changeset_name = f"changeset-{short_uid()}"

@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Any, Dict, List, Optional
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -77,6 +78,13 @@ from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
+
+ARN_CHANGESET_REGEX = re.compile(
+    r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:changeSet/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+)
+ARN_STACK_REGEX = re.compile(
+    r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:stack/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+)
 
 
 class StackSet:
@@ -957,8 +965,13 @@ class CloudformationProvider(CloudformationApi):
         next_token: NextToken = None,
     ) -> DescribeChangeSetOutput:
 
-        change_set = find_change_set(change_set_name, stack_name=stack_name)
+        # only relevant if change_set_name isn't an ARN
+        if not ARN_CHANGESET_REGEX.match(change_set_name):
+            stack = find_stack(stack_name)
+            if not stack:
+                raise ValidationError(f"Stack [{stack_name}] does not exist")
 
+        change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 

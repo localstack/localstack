@@ -164,5 +164,11 @@
       },
       "postdelete_changeset_notfound": "An error occurred (ChangeSetNotFound) when calling the DescribeChangeSet operation: ChangeSet [arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>] does not exist"
     }
+  },
+  "tests/integration/cloudformation/test_cloudformation_changesets.py::test_describe_change_set_nonexisting": {
+    "recorded-date": "11-08-2022, 13:22:01",
+    "recorded-content": {
+      "exception": "An error occurred (ValidationError) when calling the DescribeChangeSet operation: Stack [somestack] does not exist"
+    }
   }
 }
