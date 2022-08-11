@@ -284,6 +284,6 @@ class safe_open:
         if exc_type is None:
             os.rename(self._file.name, self._target)
             if self._permissions:
-                os.chmod(self._file.name, self._permissions)
+                os.chmod(self._target, self._permissions)
         else:
             os.unlink(self._file.name)
