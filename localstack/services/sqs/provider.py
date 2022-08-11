@@ -638,8 +638,8 @@ class FifoQueue(SqsQueue):
         message_group_id: str = None,
         delay_seconds: int = None,
     ):
-        if delay_seconds is not None:
-            # in fifo queues, delay is only applied on queue level
+        if delay_seconds:
+            # in fifo queues, delay is only applied on queue level. However, explicitly setting delay_seconds=0 is valid
             raise InvalidParameterValue(
                 f"Value {delay_seconds} for parameter DelaySeconds is invalid. Reason: The request include parameter "
                 f"that is not valid for this queue type."
