@@ -991,12 +991,10 @@ async def message_to_subscriber(
             store_delivery_log(subscriber, False, message, message_id)
             sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
             if "NonExistentQueue" in str(exc):
-                LOG.info(
-                    'Removing non-existent queue "%s" subscribed to topic "%s"',
-                    queue_url,
-                    topic_arn,
-                )
-                subscriptions.remove(subscriber)
+                LOG.debug("The SQS queue endpoint does not exist anymore")
+                # todo: if the queue got deleted, even if we recreate a queue with the same name/url
+                #  AWS won't send to it anymore. Would need to unsub/resub.
+                #  We should mark this subscription as "broken"
         return
 
     elif subscriber["Protocol"] == "lambda":
