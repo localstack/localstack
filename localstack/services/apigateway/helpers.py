@@ -899,9 +899,9 @@ def set_api_id_stage_invocation_path(
 
 def get_api_region(api_id: str) -> Optional[str]:
     """Return the region name for the given REST API ID"""
-    for account_id, region_bundle in apigateway_backends.items():
-        for region_name, store in region_bundle.items():
-            if api_id in store.apis:
+    for account_id, account in apigateway_backends.items():
+        for region_name, region in account.items():
+            if api_id in region.apis:
                 return region_name
 
 

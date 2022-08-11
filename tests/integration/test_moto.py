@@ -83,7 +83,7 @@ def test_call_s3_with_streaming_trait(payload, monkeypatch):
     monkeypatch.setenv("MOTO_S3_CUSTOM_ENDPOINTS", "s3.localhost.localstack.cloud:4566")
 
     bucket_name = f"bucket-{short_uid()}"
-    key_name = "foobared"
+    key_name = f"key-{short_uid()}"
 
     # create the bucket
     moto.call_moto(moto.create_aws_request_context("s3", "CreateBucket", {"Bucket": bucket_name}))
