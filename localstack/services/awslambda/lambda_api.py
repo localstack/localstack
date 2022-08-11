@@ -14,6 +14,7 @@ import urllib.parse
 import uuid
 from datetime import datetime
 from io import StringIO
+from random import random
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
@@ -83,6 +84,7 @@ from localstack.utils.functions import run_safe
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.patch import patch
 from localstack.utils.run import run_for_max_seconds
+from localstack.utils.strings import md5
 from localstack.utils.time import TIMESTAMP_READABLE_FORMAT, mktime, timestamp
 
 LOG = logging.getLogger(__name__)
@@ -1148,6 +1150,7 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
     if not any(char in readable for char in ["+", "-"]):
         readable += "+0000"
 
+    sourceIp = headers.get("Remote-Addr", "")
     requestContext = {
         "accountId": "anonymous",
         "apiId": api_id,
@@ -1157,10 +1160,10 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
             "method": method,
             "path": rawPath,
             "protocol": "HTTP/1.1",
-            "sourceIp": headers.get("Remote-Addr", ""),
+            "sourceIp": sourceIp,
             "userAgent": headers.get("User-Agent", ""),
         },
-        "requestId": short_uid(),
+        "requestId": long_uid(),
         "routeKey": "$default",
         "stage": "$default",
         "time": readable,
@@ -1173,12 +1176,26 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
     is_base64_encoded = not (data.isascii() and content_type_is_text) if data else False
     body = base64.b64encode(data).decode() if is_base64_encoded else data
 
+    event_headers = {k.lower(): v for k, v in headers.items()}
+    event_headers.pop("connection")
+    event_headers.pop("x-localstack-tgt-api")
+
+    event_headers.update(
+        {
+            "x-amzn-tls-cipher-suite": "ECDHE-RSA-AES128-GCM-SHA256",
+            "x-amzn-tls-version": "TLSv1.2",
+            "x-forwarded-proto": "http",
+            "x-forwarded-for": sourceIp,
+            "x-forwarded-port": str(config.EDGE_PORT),
+        }
+    )
+
     event = {
         "version": "2.0",
         "routeKey": "$default",
         "rawPath": rawPath,
         "rawQueryString": rawQueryString,
-        "headers": {k.lower(): v for k, v in headers.items()},
+        "headers": event_headers,
         "queryStringParameters": queryStringParameters,
         "requestContext": requestContext,
         "body": body,
@@ -1543,9 +1560,9 @@ def create_url_config(function):
             "ResourceConflictException",
         )
 
-    custom_id = short_uid()
+    custom_id = md5(str(random()))
     region = LambdaRegion.get_current_request_region()
-    url = f"http://{custom_id}.lambda-url.{region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+    url = f"http://{custom_id}.lambda-url.{region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}/"
 
     data = json.loads(to_str(request.data))
     cors = data.get("Cors", {})

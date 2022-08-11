@@ -2462,7 +2462,24 @@ class TestLambdaBehavior:
 
 class TestLambdaURL:
     @pytest.mark.aws_validated
-    def test_lambda_url_invocation(self, lambda_client, create_lambda_function):
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..context.memoryLimitInMB",
+            "$..event.headers.host",
+            "$..event.headers.x-forwarded-proto",
+            "$..event.headers.x-forwarded-for",
+            "$..event.headers.x-forwarded-port",
+            "$..event.headers.x-amzn-trace-id",
+            "$..event.requestContext.apiId",
+            "$..event.requestContext.http.sourceIp",
+            "$..event.requestContext.domainName",
+            "$..event.requestContext.domainPrefix",
+            "$..event.requestContext.time",
+            "$..event.requestContext.timeEpoch",
+        ]
+    )
+    def test_lambda_url_invocation(self, lambda_client, create_lambda_function, snapshot):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
         function_name = f"test-function-{short_uid()}"
 
         create_lambda_function(
@@ -2486,38 +2503,14 @@ class TestLambdaURL:
         )
 
         url = url_config["FunctionUrl"]
-        url += "/custom_path/?test_param=test_value"
+        url += "custom_path/extend?test_param=test_value"
 
         result = safe_requests.post(
             url, data=b"{'key':'value'}", headers={"User-Agent": "python-requests/testing"}
         )
 
         assert result.status_code == 200
-
-        content = json.loads(result.content)
-        assert "event" in content
-        assert "context" in content
-
-        event = content["event"]
-
-        assert "version" in event
-        assert "routeKey" in event
-        assert "rawPath" in event
-        assert "rawQueryString" in event
-        assert "headers" in event
-        assert "queryStringParameters" in event
-        assert "requestContext" in event
-        assert "body" in event
-        assert "isBase64Encoded" in event
-
-        assert "custom_path" in event["rawPath"]
-        assert event["requestContext"]["accountId"] == "anonymous"
-        assert event["queryStringParameters"]["test_param"] == "test_value"
-        assert event["headers"]["user-agent"] == "python-requests/testing"
-        assert event["headers"]["host"] in url
-
-        assert event["body"] == to_str(base64.b64encode(b"{'key':'value'}"))
-        assert event["isBase64Encoded"] is True
+        snapshot.match("lambda_url_invocation", json.loads(result.content))
 
         result = safe_requests.post(url, data="text", headers={"Content-Type": "text/plain"})
         event = json.loads(result.content)["event"]
