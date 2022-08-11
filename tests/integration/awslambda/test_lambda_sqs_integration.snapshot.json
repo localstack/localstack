@@ -198,5 +198,44 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_sqs_integration.py::test_sqs_queue_as_lambda_dead_letter_queue": {
+    "recorded-date": "10-08-2022, 11:10:19",
+    "recorded-content": {
+      "lambda-response-dlq-config": {
+        "TargetArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"
+      },
+      "messages": {
+        "Messages": [
+          {
+            "Body": {
+              "raise_error": 1
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MD5OfMessageAttributes": "<md5-hash>",
+            "MessageAttributes": {
+              "ErrorCode": {
+                "DataType": "Number",
+                "StringValue": "200"
+              },
+              "ErrorMessage": {
+                "DataType": "String",
+                "StringValue": "Test exception (this is intentional)"
+              },
+              "RequestID": {
+                "DataType": "String",
+                "StringValue": "<request-id:1>"
+              }
+            },
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

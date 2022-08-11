@@ -431,7 +431,7 @@ def process_sns_notification(
                     # TODO Add a more sophisticated solution with an actual signature
                     # Hardcoded
                     "Signature": "EXAMPLEpH+..",
-                    "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-000000000.pem",
+                    "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
                     "UnsubscribeUrl": unsubscribe_url,
                     "MessageAttributes": message_attributes,
                 },

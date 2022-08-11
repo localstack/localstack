@@ -623,16 +623,6 @@ class TestSNSProvider:
         assert poll_condition(check_subscription, timeout=5)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(
-        paths=[
-            "$..Messages..Body.Message.raise_error",  # check lambda delivery format into DLQ
-            "$..Messages..MessageAttributes.ErrorCode.Type",
-            "$..Messages..MessageAttributes.ErrorMessage.Value",
-        ]
-    )
-    @pytest.mark.xfail(
-        reason="Behaviour and format diverges from AWS, see https://github.com/localstack/localstack/issues/6613"
-    )
     def test_sns_topic_as_lambda_dead_letter_queue(
         self,
         sns_client,
@@ -646,8 +636,6 @@ class TestSNSProvider:
         sns_create_sqs_subscription,
         snapshot,
     ):
-        # todo check the skipped paths, as the format is very wrong
-        snapshot.add_transformer(snapshot.transform.lambda_api())
         snapshot.add_transformer(
             snapshot.transform.jsonpath(
                 "$..Messages..MessageAttributes.RequestID.Value", "request-id"
@@ -719,13 +707,6 @@ class TestSNSProvider:
         )
 
         snapshot.match("messages", messages)
-
-        # as we ignore some fields, still assert manually the presence of certain fields
-        msg_body = messages["Messages"][0]["Body"]
-        msg_attrs = msg_body["MessageAttributes"]
-        assert "RequestID" in msg_attrs
-        assert "ErrorCode" in msg_attrs
-        assert "ErrorMessage" in msg_attrs
 
     @pytest.mark.only_localstack
     def test_redrive_policy_http_subscription(
