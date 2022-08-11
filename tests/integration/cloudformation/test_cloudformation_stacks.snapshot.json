@@ -27,7 +27,7 @@
     }
   },
   "tests/integration/cloudformation/test_cloudformation_stacks.py::test_get_template[yaml]": {
-    "recorded-date": "10-08-2022, 10:53:30",
+    "recorded-date": "11-08-2022, 10:55:10",
     "recorded-content": {
       "describe_stacks": {
         "ResponseMetadata": {
@@ -53,7 +53,7 @@
             "Outputs": [
               {
                 "OutputKey": "TopicName",
-                "OutputValue": "<stack-name:1>-topic69831491-1HT7YTYGJ865N"
+                "OutputValue": "<topic-name>"
               }
             ],
             "RollbackConfiguration": {},
@@ -73,7 +73,7 @@
           "Original",
           "Processed"
         ],
-        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName"
+        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n"
       },
       "template_processed": {
         "ResponseMetadata": {
@@ -84,12 +84,12 @@
           "Original",
           "Processed"
         ],
-        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName"
+        "TemplateBody": "Resources:\n  topic69831491:\n    Type: AWS::SNS::Topic\nOutputs:\n  TopicName:\n    Value:\n      Fn::GetAtt:\n        - topic69831491\n        - TopicName\n"
       }
     }
   },
   "tests/integration/cloudformation/test_cloudformation_stacks.py::test_get_template[json]": {
-    "recorded-date": "10-08-2022, 10:53:54",
+    "recorded-date": "11-08-2022, 10:55:35",
     "recorded-content": {
       "describe_stacks": {
         "ResponseMetadata": {
@@ -115,7 +115,7 @@
             "Outputs": [
               {
                 "OutputKey": "TopicName",
-                "OutputValue": "<stack-name:1>-topic69831491-1R0GSRI7LFP31"
+                "OutputValue": "<topic-name>"
               }
             ],
             "RollbackConfiguration": {},
