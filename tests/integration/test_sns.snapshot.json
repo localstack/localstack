@@ -56,13 +56,30 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[True]": {
-    "recorded-date": "09-08-2022, 11:36:01",
+    "recorded-date": "10-08-2022, 11:36:11",
     "recorded-content": {
       "messages": {
         "Messages": [
           {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
             "Body": "test_dlq_after_sqs_endpoint_deleted",
             "MD5OfBody": "<md5-hash>",
+            "MD5OfMessageAttributes": "<md5-hash>",
+            "MessageAttributes": {
+              "attr1": {
+                "DataType": "Number",
+                "StringValue": "111"
+              },
+              "attr2": {
+                "BinaryValue": "b'\\x02\\x03\\x04'",
+                "DataType": "Binary"
+              }
+            },
             "MessageId": "<uuid:1>",
             "ReceiptHandle": "<receipt-handle:1>"
           }
@@ -75,11 +92,17 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_redrive_policy_sqs_queue_subscription[False]": {
-    "recorded-date": "09-08-2022, 11:36:04",
+    "recorded-date": "10-08-2022, 11:36:14",
     "recorded-content": {
       "messages": {
         "Messages": [
           {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:1>",
@@ -666,7 +689,7 @@
     }
   },
   "tests/integration/test_sns.py::TestSNSProvider::test_redrive_policy_lambda_subscription": {
-    "recorded-date": "09-08-2022, 11:34:55",
+    "recorded-date": "11-08-2022, 14:36:27",
     "recorded-content": {
       "subscription-attributes": {
         "Attributes": {
@@ -699,7 +722,13 @@
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:3>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:3>",
+              "MessageAttributes": {
+                "attr1": {
+                  "Type": "Number",
+                  "Value": "1"
+                }
+              }
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:2>",

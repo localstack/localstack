@@ -836,16 +836,13 @@ class TestSNSProvider:
         sns_client.publish(
             TopicArn=topic_arn,
             Message="test_redrive_policy",
+            MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "1"}},
         )
 
-        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        response = sqs_client.receive_message(
+            QueueUrl=dlq_url, WaitTimeSeconds=10, MessageAttributeNames=["All"]
+        )
         snapshot.match("messages", response)
-        assert (
-            len(response["Messages"]) == 1
-        ), f"invalid number of messages in DLQ response {response}"
-        message = json.loads(response["Messages"][0]["Body"])
-        assert message["Type"] == "Notification"
-        assert message["Message"] == "test_redrive_policy"
 
     @pytest.mark.aws_validated
     def test_publish_with_empty_subject(self, sns_client, sns_create_topic, snapshot):
@@ -1813,7 +1810,12 @@ class TestSNSProvider:
         }
         sns_client.publish(TopicArn=topic_arn, Message=message, MessageAttributes=message_attr)
 
-        response = sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        response = sqs_client.receive_message(
+            QueueUrl=dlq_url,
+            WaitTimeSeconds=10,
+            AttributeNames=["All"],
+            MessageAttributeNames=["All"],
+        )
         snapshot.match("messages", response)
 
     @pytest.mark.aws_validated
