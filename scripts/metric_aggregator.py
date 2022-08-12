@@ -45,13 +45,16 @@ def create_simple_html_report(file_name, metrics):
     for service in sorted(metrics.keys()):
         output += f"<h1> {service} </h1>\n<div>\n"
         details = metrics[service]
-        if not details["service_attributes"]["pro"]:
-            output += "community<br/>\n"
-        elif not details["service_attributes"]["community"]:
-            output += "pro only<br/>\n"
-        else:
-            output += "community, and pro features<br/>\n"
-        del metrics[service]["service_attributes"]
+        # TODO - currently not working in circle ci - everything seems to be pro
+        # if not details["service_attributes"]["pro"]:
+        #     output += "community<br/>\n"
+        # elif not details["service_attributes"]["community"]:
+        #     output += "pro only<br/>\n"
+        # else:
+        #     output += "community, and pro features<br/>\n"
+        # del metrics[service]["service_attributes"]
+        if metrics[service].get("service_attributes"):
+            del metrics[service]["service_attributes"]
         output += "</div>\n"
         operation_counter = len(details)
         operation_tested = 0
@@ -143,37 +146,44 @@ def create_readable_report(file_name: str, metrics: dict):
             output = ""
 
 
-def _init_service_metric_counter() -> Dict:
-    metric_recorder = {}
+def _load_service_info(service_name: str) -> Dict:
     from localstack.aws.spec import load_service
 
-    for s, provider in SERVICE_PLUGINS.api_provider_specs.items():
-        try:
-            print(f"found service {s}")
-            service = load_service(s)
-            ops = {}
-            service_attributes = {"pro": "pro" in provider, "community": "default" in provider}
-            ops["service_attributes"] = service_attributes
-            for op in service.operation_names:
-                attributes = {}
-                attributes["invoked"] = 0
-                attributes["aws_validated"] = False
-                attributes["snapshot"] = False
-                if hasattr(service.operation_model(op).input_shape, "members"):
-                    params = {}
-                    for n in service.operation_model(op).input_shape.members:
-                        params[n] = 0
-                    attributes["parameters"] = params
-                if hasattr(service.operation_model(op), "error_shapes"):
-                    exceptions = {}
-                    for e in service.operation_model(op).error_shapes:
-                        exceptions[e.name] = 0
-                    attributes["errors"] = exceptions
-                ops[op] = attributes
+    try:
+        print(f"trying to load service {service_name}")
+        info = {}
+        service = load_service(service_name)
+        for op in service.operation_names:
+            attributes = {}
+            attributes["invoked"] = 0
+            attributes["aws_validated"] = False
+            attributes["snapshot"] = False
+            if hasattr(service.operation_model(op).input_shape, "members"):
+                params = {}
+                for n in service.operation_model(op).input_shape.members:
+                    params[n] = 0
+                attributes["parameters"] = params
+            if hasattr(service.operation_model(op), "error_shapes"):
+                exceptions = {}
+                for e in service.operation_model(op).error_shapes:
+                    exceptions[e.name] = 0
+                attributes["errors"] = exceptions
+            info[op] = attributes
+        return info
+    except Exception:
+        print(f"cannot load service '{service_name}'")
+        return {}
 
-            metric_recorder[s] = ops
-        except Exception:
-            print(f"cannot load service '{s}'")
+
+def _init_service_metric_counter() -> Dict:
+    metric_recorder = {}
+    for s, provider in SERVICE_PLUGINS.api_provider_specs.items():
+        print(f"found service {s}")
+        ops = _load_service_info(s)
+        service_attributes = {"pro": "pro" in provider, "community": "default" in provider}
+        ops["service_attributes"] = service_attributes
+        metric_recorder[s] = ops
+
     return metric_recorder
 
 
@@ -232,8 +242,13 @@ def aggregate_recorded_raw_data(
                 if collect_for_arch and collect_for_arch not in str(path):
                     continue
                 if not recorded.get(metric.service):
-                    print(f"could not find service {metric.service}, skipping...")
-                    continue
+                    print(f"could not find service {metric.service}, trying to load manually...")
+                    tmp = _load_service_info(metric.service)
+                    if tmp:
+                        recorded[metric.service] = tmp
+                    else:
+                        print(f"could not load service {metric.service}, skipping")
+                        continue
                 service = recorded[metric.service]
                 ops = service[metric.operation]
 
@@ -252,10 +267,10 @@ def aggregate_recorded_raw_data(
                             break
 
                 ops["invoked"] += 1
-                if metric.snapshot == "True":
+                if str(metric.snapshot).lower() == "true":
                     ops["snapshot"] = True  # TODO snapshot currently includes also "skip_verify"
                     ops["snapshot_skipped_paths"] = metric.snapshot_skipped_paths or ""
-                if metric.aws_validated == "True":
+                if str(metric.aws_validated).lower() == "true":
                     ops["aws_validated"] = True
                 if not metric.parameters:
                     params = ops.setdefault("parameters", {})
