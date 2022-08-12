@@ -2480,6 +2480,9 @@ class TestLambdaURL:
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value("requestId", "uuid", reference_replacement=False),
+                snapshot.transform.key_value(
+                    "FunctionUrl", "lambda-url", reference_replacement=False
+                ),
                 snapshot.transform.jsonpath(
                     "$..event.requestContext.http.sourceIp",
                     "ip-address",
@@ -2502,13 +2505,13 @@ class TestLambdaURL:
                     "$..event.headers.host", "lambda-url", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.requestContext.apiId", "md5", reference_replacement=False
+                    "$..event.requestContext.apiId", "api-id", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
                     "$..event.requestContext.domainName", "lambda-url", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.requestContext.domainPrefix", "md5", reference_replacement=False
+                    "$..event.requestContext.domainPrefix", "api-id", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
                     "$..event.requestContext.time", "readable-date", reference_replacement=False
@@ -2535,13 +2538,17 @@ class TestLambdaURL:
             AuthType="NONE",
         )
 
-        lambda_client.add_permission(
+        snapshot.match("create_lambda_url_config", url_config)
+
+        permissions_response = lambda_client.add_permission(
             FunctionName=function_name,
             StatementId="urlPermission",
             Action="lambda:InvokeFunctionUrl",
             Principal="*",
             FunctionUrlAuthType="NONE",
         )
+
+        snapshot.match("add_permission", permissions_response)
 
         url = url_config["FunctionUrl"]
         url += "custom_path/extend?test_param=test_value"

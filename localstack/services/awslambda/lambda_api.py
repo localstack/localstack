@@ -51,41 +51,34 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
 from localstack.utils.analytics import event_publisher
+from localstack.utils.archives import get_unzipped_size, is_zip_file, unzip
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
-from localstack.utils.common import (
-    TMP_FILES,
-    empty_context_manager,
-    ensure_readable,
-    first_char_to_lower,
-    get_unzipped_size,
-    is_zip_file,
-    isoformat_milliseconds,
-    json_safe,
-    load_file,
-    long_uid,
-    mkdir,
-    now_utc,
-    parse_request_data,
-    run,
-    safe_requests,
-    save_file,
-    short_uid,
-    synchronized,
-    timestamp_millis,
-    to_bytes,
-    to_str,
-    unzip,
-)
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.docker_utils import DOCKER_CLIENT
-from localstack.utils.functions import run_safe
-from localstack.utils.http import canonicalize_headers, parse_chunked_data
+from localstack.utils.files import TMP_FILES, ensure_readable, load_file, mkdir, save_file
+from localstack.utils.functions import empty_context_manager, run_safe
+from localstack.utils.http import (
+    canonicalize_headers,
+    parse_chunked_data,
+    parse_request_data,
+    safe_requests,
+)
+from localstack.utils.json import json_safe
 from localstack.utils.patch import patch
-from localstack.utils.run import run_for_max_seconds
-from localstack.utils.strings import md5
-from localstack.utils.time import TIMESTAMP_READABLE_FORMAT, mktime, timestamp
+from localstack.utils.run import run, run_for_max_seconds
+from localstack.utils.strings import first_char_to_lower, long_uid, md5, short_uid, to_bytes, to_str
+from localstack.utils.sync import synchronized
+from localstack.utils.time import (
+    TIMESTAMP_FORMAT_MICROS,
+    TIMESTAMP_READABLE_FORMAT,
+    isoformat_milliseconds,
+    mktime,
+    now_utc,
+    timestamp,
+    timestamp_millis,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -1495,7 +1488,7 @@ def update_function_configuration(function):
     return jsonify(result)
 
 
-def generate_policy_statement(sid, action, arn, sourcearn, principal):
+def generate_policy_statement(sid, action, arn, sourcearn, principal, url_auth_type):
 
     statement = {
         "Sid": sid,
@@ -1511,14 +1504,17 @@ def generate_policy_statement(sid, action, arn, sourcearn, principal):
 
     # Adds Principal only if Principal is present
     if principal:
-        principal = {"Service": principal}
+        principal = "*" if principal == "*" else {"Service": principal}
         statement["Principal"] = principal
+
+    if url_auth_type:
+        statement["Condition"] = {"StringEquals": {"lambda:FunctionUrlAuthType": url_auth_type}}
 
     return statement
 
 
-def generate_policy(sid, action, arn, sourcearn, principal):
-    new_statement = generate_policy_statement(sid, action, arn, sourcearn, principal)
+def generate_policy(sid, action, arn, sourcearn, principal, url_auth_type):
+    new_statement = generate_policy_statement(sid, action, arn, sourcearn, principal, url_auth_type)
     policy = {
         "Version": IAM_POLICY_VERSION,
         "Id": "LambdaFuncAccess-%s" % sid,
@@ -1534,7 +1530,7 @@ def add_permission(function):
     qualifier = request.args.get("Qualifier")
     q_arn = func_qualifier(function, qualifier)
     result = add_permission_policy_statement(function, arn, q_arn, qualifier=qualifier)
-    return result
+    return result, 201
 
 
 @app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["POST"])
@@ -1578,14 +1574,16 @@ def create_url_config(function):
         },
         "FunctionArn": arn,
         "FunctionUrl": url,
-        "CreationTime": datetime.now().isoformat(),
+        "CreationTime": timestamp(format=TIMESTAMP_FORMAT_MICROS),
         "CustomId": custom_id,
     }
 
     lambda_backend.url_configs.update({arn: url_config})
     response = url_config.copy()
     response.pop("CustomId")
-    return response
+    if "Cors" not in data:
+        response.pop("Cors")
+    return response, 201
 
 
 @app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["GET"])
@@ -1602,7 +1600,7 @@ def get_url_config(function):
 
     response = url_config.copy()
     response.pop("CustomId")
-    return response
+    return response, 201
 
 
 @app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["PUT"])
@@ -1635,6 +1633,8 @@ def update_url_config(function):
     prev_url_config.update(new_url_config)
 
     response = prev_url_config.copy()
+    if "Cors" not in data:
+        response.pop("Cors")
     response.pop("CustomId")
     return response
 
@@ -1662,6 +1662,7 @@ def add_permission_policy_statement(
     action = data.get("Action")
     principal = data.get("Principal")
     sourcearn = data.get("SourceArn")
+    function_url_auth_type = data.get("FunctionUrlAuthType")
     previous_policy = get_lambda_policy(resource_name, qualifier)
 
     if resource_arn not in region.lambdas:
@@ -1675,7 +1676,9 @@ def add_permission_policy_statement(
         )
         return error_response(msg, 400, error_type="ValidationException")
 
-    new_policy = generate_policy(sid, action, resource_arn_qualified, sourcearn, principal)
+    new_policy = generate_policy(
+        sid, action, resource_arn_qualified, sourcearn, principal, function_url_auth_type
+    )
     new_statement = new_policy["Statement"][0]
     result = {"Statement": json.dumps(new_statement)}
     if previous_policy:
