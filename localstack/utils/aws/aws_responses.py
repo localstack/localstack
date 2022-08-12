@@ -51,6 +51,7 @@ def flask_error_response_json(
 ):
     result = {
         "Type": "User" if code < 500 else "Server",
+        "message": msg,
         "Message": msg,
         "__type": error_type,
     }

@@ -1549,15 +1549,11 @@ def create_url_config(function):
     arn = q_arn or arn
     lambda_backend = LambdaRegion.get()
     if arn in lambda_backend.url_configs:
-        response = error_response(
+        return error_response(
             f"Failed to create function url config for [functionArn = {arn}]. Error message:  FunctionUrlConfig exists for this Lambda function",
             409,
             "ResourceConflictException",
         )
-        response_dict = json.loads(response.data)
-        response_dict.update({"message": response_dict.get("Message")})
-        response.set_data(json.dumps(response_dict))
-        return response
 
     custom_id = md5(str(random()))
     region = LambdaRegion.get_current_request_region()
