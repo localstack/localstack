@@ -243,9 +243,9 @@ def message_to_endpoint(target_arn, message, structure, endpoint_attributes, pla
         )
 
     if response is None:
-        LOG.warn("Platform not implemeted yet")
+        LOG.warning("Platform not implemented yet")
     elif response.status_code != 200:
-        LOG.warn(
+        LOG.warning(
             f"Platform {platform_name} returned response {response.status_code} with content {response.content}"
         )
 
@@ -481,7 +481,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             data["Subject"] = [entry.get("Subject")]
             if ".fifo" in topic_arn:
                 data["MessageGroupId"] = [entry.get("MessageGroupId")]
-            # TODO: add MessageDeduplication checks once ASF-SQS implementation becomes default
+                data["MessageDeduplicationId"] = [entry.get("MessageDeduplicationId")]
+            # TODO: implement SNS MessageDeduplicationId and ContentDeduplication checks
 
             message_attributes = entry.get("MessageAttributes", {})
             try:
