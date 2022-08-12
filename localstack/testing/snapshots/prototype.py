@@ -27,7 +27,7 @@ class SnapshotMatchResult:
     def __init__(self, a: dict, b: dict, key: str = ""):
         self.a = a
         self.b = b
-        self.result = DeepDiff(a, b, verbose_level=2)
+        self.result = DeepDiff(a, b, verbose_level=2, view="tree")
         self.key = key
 
     def __bool__(self) -> bool:

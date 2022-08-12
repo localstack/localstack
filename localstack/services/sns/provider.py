@@ -439,6 +439,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
         moto_response = call_moto(context)
+        # todo fix some attributes by moto, see snapshot
         return GetTopicAttributesResponse(**moto_response)
 
     def publish_batch(
@@ -637,6 +638,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sub = get_subscription_by_arn(subscription_arn)
         if not sub:
             raise NotFoundException(f"Subscription with arn {subscription_arn} not found")
+        # todo fix some attributes by moto see snapshot
         return GetSubscriptionAttributesResponse(Attributes=sub)
 
     def list_subscriptions(
@@ -989,14 +991,18 @@ async def message_to_subscriber(
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
+
+            if is_raw_message_delivery(subscriber):
+                msg_attrs = create_sqs_message_attributes(subscriber, message_attributes)
+            else:
+                msg_attrs = {}
+
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc), msg_attrs=msg_attrs)
             if "NonExistentQueue" in str(exc):
-                LOG.info(
-                    'Removing non-existent queue "%s" subscribed to topic "%s"',
-                    queue_url,
-                    topic_arn,
-                )
-                subscriptions.remove(subscriber)
+                LOG.debug("The SQS queue endpoint does not exist anymore")
+                # todo: if the queue got deleted, even if we recreate a queue with the same name/url
+                #  AWS won't send to it anymore. Would need to unsub/resub.
+                #  We should mark this subscription as "broken"
         return
 
     elif subscriber["Protocol"] == "lambda":

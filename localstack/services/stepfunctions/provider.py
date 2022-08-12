@@ -5,6 +5,8 @@ from localstack.aws.api.stepfunctions import (
     CreateStateMachineOutput,
     DeleteStateMachineInput,
     DeleteStateMachineOutput,
+    LoggingConfiguration,
+    LogLevel,
     StepfunctionsApi,
 )
 from localstack.aws.forwarder import HttpFallbackDispatcher, get_request_forwarder_http
@@ -42,6 +44,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     def create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput
     ) -> CreateStateMachineOutput:
+        # set default logging configuration
+        if not request.get("loggingConfiguration"):
+            request["loggingConfiguration"] = LoggingConfiguration(
+                level=LogLevel.OFF, includeExecutionData=False
+            )
         result = self.forward_request(context, request)
         event_publisher.fire_event(
             event_publisher.EVENT_STEPFUNCTIONS_CREATE_SM,

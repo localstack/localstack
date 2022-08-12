@@ -1,7 +1,7 @@
 import json
 import logging
 import uuid
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -10,12 +10,13 @@ from localstack.utils.strings import convert_to_printable_chars, first_char_to_u
 LOG = logging.getLogger(__name__)
 
 
-def sns_error_to_dead_letter_queue(sns_subscriber: dict, event: str, error):
-    # event should be of type str if coming from SNS, as it represents the message body being passed down
+def sns_error_to_dead_letter_queue(sns_subscriber: dict, message: str, error, msg_attrs=None):
+    # message should be of type str if coming from SNS, as it represents the message body being passed down
     policy = json.loads(sns_subscriber.get("RedrivePolicy") or "{}")
     target_arn = policy.get("deadLetterTargetArn")
     if not target_arn:
         return
+    event = {"message": message, "message_attributes": msg_attrs or {}}
     return _send_to_dead_letter_queue(sns_subscriber["SubscriptionArn"], target_arn, event, error)
 
 
@@ -25,7 +26,7 @@ def lambda_error_to_dead_letter_queue(func_details: LambdaFunction, event: Dict,
     return _send_to_dead_letter_queue(source_arn, dlq_arn, event, error)
 
 
-def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Union[Dict, str], error):
+def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error):
     if not dlq_arn:
         return
     LOG.info("Sending failed execution %s to dead letter queue %s", source_arn, dlq_arn)
@@ -63,7 +64,7 @@ def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Union[Dict,
     return dlq_arn
 
 
-def _prepare_messages_to_dlq(source_arn: str, event: Union[Dict, str], error) -> List[Dict]:
+def _prepare_messages_to_dlq(source_arn: str, event: Dict, error) -> List[Dict]:
     messages = []
     custom_attrs = {
         "RequestID": {"DataType": "String", "StringValue": str(uuid.uuid4())},
@@ -86,30 +87,27 @@ def _prepare_messages_to_dlq(source_arn: str, event: Union[Dict, str], error) ->
         messages.append(
             {
                 "Id": str(uuid.uuid4()),
-                "MessageBody": event,
-                "MessageAttributes": custom_attrs,
+                "MessageBody": event["message"],
+                "MessageAttributes": event.get("message_attributes", {}),
             }
         )
     elif ":lambda:" in source_arn:
-        if event.get("Records") and "sns" in event["Records"][0]["EventSource"]:
-            for record in event["Records"]:
-                sns_rec = record.get("Sns", {})
-                message_attrs = {**sns_rec.get("MessageAttributes"), **custom_attrs}
-                messages.append(
-                    {
-                        "Id": sns_rec.get("MessageId"),
-                        "MessageBody": sns_rec.get("Message"),
-                        "MessageAttributes": message_attrs,
-                    }
-                )
-        else:
-            messages.append(
-                {
-                    "Id": str(uuid.uuid4()),
-                    "MessageBody": json.dumps(event),
-                    "MessageAttributes": custom_attrs,
-                }
-            )
+        custom_attrs["ErrorCode"]["DataType"] = "Number"
+        # not sure about what type of error can come here
+        try:
+            error_message = json.loads(error.result)["errorMessage"]
+            custom_attrs["ErrorMessage"]["StringValue"] = error_message
+        except (ValueError, KeyError):
+            # using old behaviour
+            custom_attrs["ErrorMessage"]["StringValue"] = str(error)
+
+        messages.append(
+            {
+                "Id": str(uuid.uuid4()),
+                "MessageBody": json.dumps(event),
+                "MessageAttributes": custom_attrs,
+            }
+        )
     # make sure we only have printable strings in the message attributes
     for message in messages:
         if message.get("MessageAttributes"):
