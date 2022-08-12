@@ -465,7 +465,6 @@ class SqsQueue:
                 #  receipt handle that was issued before the message was put back in the visible queue.
                 self.visible.queue.remove(standard_message)
                 heapq.heapify(self.visible.queue)
-                pass
 
     def put(
         self,

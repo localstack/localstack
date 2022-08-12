@@ -54,7 +54,6 @@ from localstack.aws.api.kms import (
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import kms_alias_arn
 from localstack.utils.collections import PaginatedList, remove_attributes
@@ -139,8 +138,6 @@ class KmsProvider(KmsApi):
         context: RequestContext,
         create_key_request: CreateKeyRequest = None,
     ) -> CreateKeyResponse:
-        descr = create_key_request.get("Description") or ""
-        event_publisher.fire_event(EVENT_KMS_CREATE_KEY, {"k": event_publisher.get_hash(descr)})
         result = call_moto(context)
 
         # generate keypair for signing, if this is a SIGN_VERIFY key

@@ -77,7 +77,6 @@ from localstack.services.firehose.mappers import (
     convert_source_config_to_desc,
 )
 from localstack.services.generic_proxy import RegionBackend
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (
     connect_to_resource,
@@ -223,12 +222,6 @@ class FirehoseProvider(FirehoseApi):
         FirehoseBackend.TAGS.tag_resource(stream["DeliveryStreamARN"], tags)
         region.delivery_streams[delivery_stream_name] = stream
 
-        # record event
-        event_publisher.fire_event(
-            event_publisher.EVENT_FIREHOSE_CREATE_STREAM,
-            payload={"n": event_publisher.get_hash(delivery_stream_name)},
-        )
-
         if delivery_stream_type == DeliveryStreamType.KinesisStreamAsSource:
             if not kinesis_stream_source_configuration:
                 raise InvalidArgumentException("Missing delivery stream configuration")
@@ -267,12 +260,6 @@ class FirehoseProvider(FirehoseApi):
             raise ResourceNotFoundException(
                 f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
             )
-
-        # record event
-        event_publisher.fire_event(
-            event_publisher.EVENT_FIREHOSE_DELETE_STREAM,
-            payload={"n": event_publisher.get_hash(delivery_stream_name)},
-        )
 
         return DeleteDeliveryStreamOutput()
 

@@ -45,7 +45,6 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
@@ -1099,10 +1098,6 @@ def delete_lambda_function(function_name: str) -> Dict[None, None]:
             f"Unable to delete non-existing Lambda function {func_arn(function_name)}"
         )
 
-    event_publisher.fire_event(
-        event_publisher.EVENT_LAMBDA_DELETE_FUNC,
-        payload={"n": event_publisher.get_hash(function_name)},
-    )
     i = 0
     while i < len(region.event_source_mappings):
         mapping = region.event_source_mappings[i]
@@ -1147,10 +1142,6 @@ def create_function():
             )
         data = json.loads(to_str(request.data))
         lambda_name = data["FunctionName"]
-        event_publisher.fire_event(
-            event_publisher.EVENT_LAMBDA_CREATE_FUNC,
-            payload={"n": event_publisher.get_hash(lambda_name)},
-        )
         arn = func_arn(lambda_name)
         if arn in region.lambdas:
             return error_response(

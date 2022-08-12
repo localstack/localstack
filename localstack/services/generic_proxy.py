@@ -228,8 +228,6 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
     class InvalidRegionException(Exception):
         """An exception indicating that a region could not be matched to a partition."""
 
-        pass
-
     arn_regex = re.compile(
         r"arn:"  # Prefix
         r"(?P<Partition>(aws|aws-cn|aws-iso|aws-iso-b|aws-us-gov)*):"  # Partition

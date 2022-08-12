@@ -104,7 +104,6 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 )
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
@@ -400,11 +399,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_description.pop("Tags", None)
         table_description.pop("BillingMode", None)
 
-        event_publisher.fire_event(
-            event_publisher.EVENT_DYNAMODB_CREATE_TABLE,
-            payload={"n": event_publisher.get_hash(table_name)},
-        )
-
         return result
 
     def delete_table(self, context: RequestContext, table_name: TableName) -> DeleteTableOutput:
@@ -415,10 +409,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # forward request to backend
         result = self.forward_request(context)
 
-        event_publisher.fire_event(
-            event_publisher.EVENT_DYNAMODB_DELETE_TABLE,
-            payload={"n": event_publisher.get_hash(table_name)},
-        )
         table_arn = result.get("TableDescription", {}).get("TableArn")
         table_arn = self.fix_table_arn(table_arn)
         self.delete_all_event_source_mappings(table_arn)

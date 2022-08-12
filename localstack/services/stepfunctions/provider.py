@@ -17,7 +17,6 @@ from localstack.services.stepfunctions.stepfunctions_starter import (
     start_stepfunctions,
     wait_for_stepfunctions,
 )
-from localstack.utils.analytics import event_publisher
 
 
 class StepFunctionsApiListener(AwsApiListener):
@@ -50,10 +49,6 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 level=LogLevel.OFF, includeExecutionData=False
             )
         result = self.forward_request(context, request)
-        event_publisher.fire_event(
-            event_publisher.EVENT_STEPFUNCTIONS_CREATE_SM,
-            payload={"m": event_publisher.get_hash(request["name"])},
-        )
         return result
 
     @handler("DeleteStateMachine", expand=False)
@@ -61,9 +56,4 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         self, context: RequestContext, request: DeleteStateMachineInput
     ) -> DeleteStateMachineOutput:
         result = self.forward_request(context, request)
-        name = request["stateMachineArn"].split(":")[-1]
-        event_publisher.fire_event(
-            event_publisher.EVENT_STEPFUNCTIONS_DELETE_SM,
-            payload={"m": event_publisher.get_hash(name)},
-        )
         return result

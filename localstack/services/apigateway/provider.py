@@ -56,7 +56,6 @@ from localstack.services.apigateway.invocations import invoke_rest_api_from_requ
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.collections import PaginatedList, ensure_list
 from localstack.utils.json import parse_json_or_yaml
@@ -120,10 +119,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     @handler("CreateRestApi", expand=False)
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
         result = call_moto(context)
-        event_publisher.fire_event(
-            event_publisher.EVENT_APIGW_CREATE_API,
-            payload={"a": event_publisher.get_hash(result["id"])},
-        )
         return result
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
@@ -134,11 +129,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException(
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             ) from e
-
-        event_publisher.fire_event(
-            event_publisher.EVENT_APIGW_DELETE_API,
-            payload={"a": event_publisher.get_hash(rest_api_id)},
-        )
 
     # authorizers
 

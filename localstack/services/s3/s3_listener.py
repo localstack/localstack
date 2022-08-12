@@ -40,7 +40,6 @@ from localstack.services.s3.s3_utils import (
     uses_host_addressing,
     validate_bucket_name,
 )
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     create_sqs_system_attributes,
@@ -1597,19 +1596,6 @@ class ProxyListenerS3(ProxyListener):
                 }
 
             send_notifications(method, bucket_name, object_path, version_id, headers, method_map)
-
-        # publish event for creation/deletion of buckets:
-        if method in ("PUT", "DELETE") and (
-            "/" not in path[1:] or len(path[1:].split("/")[1]) <= 0
-        ):
-            event_type = (
-                event_publisher.EVENT_S3_CREATE_BUCKET
-                if method == "PUT"
-                else event_publisher.EVENT_S3_DELETE_BUCKET
-            )
-            event_publisher.fire_event(
-                event_type, payload={"n": event_publisher.get_hash(bucket_name)}
-            )
 
         # fix an upstream issue in moto S3 (see https://github.com/localstack/localstack/issues/382)
         if method == "PUT":

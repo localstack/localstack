@@ -21,11 +21,9 @@ from localstack.services import generic_proxy, install, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import analytics, config_listener, files, persistence
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import (
     canonicalize_api_names,
-    in_ci,
     is_api_enabled,
     log_duration,
     setup_logging,
@@ -285,7 +283,6 @@ def stop_infra():
     # also used to signal shutdown for edge proxy so that any further requests will be rejected
     events.infra_stopping.set()
 
-    event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
     analytics.log.event("infra_stop")
 
     try:
@@ -437,11 +434,6 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
-    event_publisher.fire_event(
-        event_publisher.EVENT_START_INFRA,
-        {"d": is_in_docker and 1 or 0, "c": in_ci() and 1 or 0},
-    )
-
     if config.DEVELOP:
         install.install_debugpy_and_dependencies()
         import debugpy
