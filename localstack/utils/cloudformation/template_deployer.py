@@ -1,5 +1,4 @@
 import base64
-import copy
 import json
 import logging
 import re
@@ -15,6 +14,7 @@ from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     PLACEHOLDER_RESOURCE_NAME,
+    fix_boto_parameters_based_on_report,
     is_none_or_empty_value,
     remove_none_values,
 )
@@ -992,17 +992,10 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
     params = fix_account_id_in_arns(params)
     # convert data types (e.g., boolean strings to bool)
+    # TODO: this might not be needed anymore
     params = convert_data_types(func_details, params)
     # remove None values, as they usually raise boto3 errors
     params = remove_none_values(params)
-
-    # convert boolean strings
-    #  (TODO: we should find a more reliable mechanism than this opportunistic/probabilistic approach!)
-    params_before_conversion = copy.deepcopy(params)
-    for param_key, param_value in dict(params).items():
-        # Convert to boolean (TODO: do this recursively?)
-        if str(param_value).lower() in ["true", "false"]:
-            params[param_key] = str(param_value).lower() == "true"
 
     # invoke function
     try:
@@ -1016,10 +1009,17 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
         try:
             result = function(**params)
         except botocore.exceptions.ParamValidationError as e:
-            LOG.debug(f"Trying original parameters: {params_before_conversion}")
-            if "type: <class 'bool'>" not in str(e):
+            # alternatively we could also use the ParamValidator directly
+            report = e.kwargs.get("report")
+            if not report:
                 raise
-            result = function(**params_before_conversion)
+
+            LOG.debug("Converting parameters to allowed types")
+            converted_params = fix_boto_parameters_based_on_report(params, report)
+            LOG.debug("Original parameters:  %s", params)
+            LOG.debug("Converted parameters: %s", converted_params)
+
+            result = function(**converted_params)
     except Exception as e:
         if action_name == "delete" and check_not_found_exception(e, resource_type, resource):
             return
