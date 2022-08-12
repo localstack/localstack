@@ -143,6 +143,7 @@ class TestSQSEventSourceMapping:
         finally:
             lambda_client.delete_event_source_mapping(UUID=uuid)
 
+    @pytest.mark.aws_validated
     def test_sqs_event_source_mapping(
         self,
         create_lambda_function,
@@ -155,11 +156,13 @@ class TestSQSEventSourceMapping:
     ):
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
+        mapping_uuid = None
+
         try:
             create_lambda_function(
                 func_name=function_name,
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                runtime=LAMBDA_RUNTIME_PYTHON36,
+                runtime=LAMBDA_RUNTIME_PYTHON37,
                 role=lambda_su_role,
             )
             queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
@@ -185,7 +188,8 @@ class TestSQSEventSourceMapping:
             rs = sqs_client.receive_message(QueueUrl=queue_url_1)
             assert rs.get("Messages") is None
         finally:
-            lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
+            if mapping_uuid:
+                lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
 
 
 class TestDynamoDBEventSourceMapping:

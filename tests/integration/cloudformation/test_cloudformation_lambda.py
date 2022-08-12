@@ -1,4 +1,3 @@
-import json
 import os
 
 import jinja2
@@ -131,7 +130,7 @@ def test_lambda_w_dynamodb_event_filter(
         def _assert_single_lambda_call():
             events = get_lambda_log_events(function_name, logs_client=logs_client)
             assert len(events) == 1
-            assert '"eventName": "MODIFY"' in events[0] or '"eventName":"MODIFY"' in events[0]
+            assert "MODIFY" in events[0] and "INSERT" not in events[0]
 
         # put item the second time: MODIFY and lambda should be called
         dynamodb_client.put_item(TableName=table_name, Item=item_to_put2)
