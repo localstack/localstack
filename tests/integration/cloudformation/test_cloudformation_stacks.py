@@ -193,3 +193,54 @@ Resources:
     deployed = deploy_cfn_template(template=template)
     response = cfn_client.describe_stacks(StackName=deployed.stack_id)["Stacks"][0]
     snapshot.match("describe_stack", response)
+
+
+@pytest.mark.aws_validated
+def test_import_values_across_stacks(deploy_cfn_template, s3_client):
+    export_name = f"b-{short_uid()}"
+
+    # create stack #1
+    template1 = """
+Parameters:
+  BucketExportName:
+    Type: String
+Resources:
+  Bucket1:
+    Type: AWS::S3::Bucket
+    Properties: {}
+Outputs:
+  BucketName1:
+    Value: !Ref Bucket1
+    Export:
+      Name: !Ref BucketExportName
+    """
+    result = deploy_cfn_template(template=template1, parameters={"BucketExportName": export_name})
+    bucket_name1 = result.outputs.get("BucketName1")
+    assert bucket_name1
+
+    # create stack #2
+    template2 = """
+Parameters:
+  BucketExportName:
+    Type: String
+Resources:
+  Bucket2:
+    Type: AWS::S3::Bucket
+    Properties:
+      Tags:
+        - Key: test
+          Value: !ImportValue
+            'Fn::Sub': '${BucketExportName}'
+Outputs:
+  BucketName2:
+    Value: !Ref Bucket2
+    """
+    result = deploy_cfn_template(template=template2, parameters={"BucketExportName": export_name})
+    bucket_name2 = result.outputs.get("BucketName2")
+    assert bucket_name2
+
+    # assert that correct bucket tags have been created
+    tagging = s3_client.get_bucket_tagging(Bucket=bucket_name2)
+    test_tag = [tag for tag in tagging["TagSet"] if tag["Key"] == "test"]
+    assert test_tag
+    assert test_tag[0]["Value"] == bucket_name1
