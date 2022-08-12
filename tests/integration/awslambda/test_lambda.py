@@ -638,15 +638,24 @@ class TestLambdaAPI:
         snapshot.match("policy_after_2_add", policy_response)
 
     @pytest.mark.aws_validated
-    def test_url_config_lifecycle(self, lambda_client, create_lambda_function):
+    def test_url_config_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "FunctionUrl", "lambda-url", reference_replacement=False
+                ),
+            ]
+        )
+
         function_name = f"test-function-{short_uid()}"
 
-        with pytest.raises(ClientError) as ex:
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ex:
             lambda_client.create_function_url_config(
                 FunctionName=function_name,
                 AuthType="NONE",
             )
-        assert ex.value.response["Error"]["Code"] == "ResourceNotFoundException"
+        snapshot.match("failed_creation", ex.value.response)
 
         create_lambda_function(
             func_name=function_name,
@@ -659,35 +668,28 @@ class TestLambdaAPI:
             FunctionName=function_name,
             AuthType="NONE",
         )
+        snapshot.match("url_creation", url_config_created)
 
-        with pytest.raises(ClientError) as ex:
+        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as ex:
             lambda_client.create_function_url_config(
                 FunctionName=function_name,
                 AuthType="NONE",
             )
-        assert ex.value.response["Error"]["Code"] == "ResourceConflictException"
+        snapshot.match("failed_duplication", ex.value.response)
 
         url_config_obtained = lambda_client.get_function_url_config(FunctionName=function_name)
-
-        assert url_config_created["AuthType"] == url_config_obtained["AuthType"]
-        assert url_config_created["FunctionUrl"] == url_config_obtained["FunctionUrl"]
-        assert url_config_created["FunctionArn"] == url_config_obtained["FunctionArn"]
-        assert url_config_created["CreationTime"] == url_config_obtained["CreationTime"]
-
-        if "Cors" in url_config_obtained:
-            assert url_config_created["Cors"] == url_config_obtained["Cors"]
+        snapshot.match("get_url_config", url_config_obtained)
 
         url_config_updated = lambda_client.update_function_url_config(
             FunctionName=function_name,
             AuthType="AWS_IAM",
         )
-        assert "LastModifiedTime" in url_config_updated
-        assert url_config_updated["AuthType"] == "AWS_IAM"
+        snapshot.match("updated_url_config", url_config_updated)
 
         lambda_client.delete_function_url_config(FunctionName=function_name)
-        with pytest.raises(ClientError) as ex:
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ex:
             lambda_client.get_function_url_config(FunctionName=function_name)
-        assert ex.value.response["Error"]["Code"] == "ResourceNotFoundException"
+        snapshot.match("failed_deletion", ex.value.response)
 
 
 class TestLambdaBaseFeatures:

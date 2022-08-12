@@ -1542,47 +1542,57 @@ def create_url_config(function):
     lambda_backend = LambdaRegion.get()
     function = lambda_backend.lambdas.get(arn)
     if function is None:
-        return not_found_error()
+        return error_response("Function does not exist", 404, "ResourceNotFoundException")
 
     if qualifier and not function.qualifier_exists(qualifier=qualifier):
         return not_found_error()
 
     arn = q_arn or arn
     lambda_backend = LambdaRegion.get()
-    if arn in lambda_backend.url_configs.keys():
-        return error_response(
-            "The resource already exists, or another operation is in progress.",
+    if arn in lambda_backend.url_configs:
+        response = error_response(
+            f"Failed to create function url config for [functionArn = {arn}]. Error message:  FunctionUrlConfig exists for this Lambda function",
             409,
             "ResourceConflictException",
         )
+        response_dict = json.loads(response.data)
+        response_dict.update({"message": response_dict.get("Message")})
+        response.set_data(json.dumps(response_dict))
+        return response
 
     custom_id = md5(str(random()))
     region = LambdaRegion.get_current_request_region()
     url = f"http://{custom_id}.lambda-url.{region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}/"
 
     data = json.loads(to_str(request.data))
-    cors = data.get("Cors", {})
     url_config = {
         "AuthType": data.get("AuthType"),
-        "Cors": {
-            "AllowCredentials": cors.get("AllowCredentials", ["*"]),
-            "AllowHeaders": cors.get("AllowHeaders", ["*"]),
-            "AllowMethods": cors.get("AllowMethods", ["*"]),
-            "AllowOrigins": cors.get("AllowOrigins", ["*"]),
-            "ExposeHeaders": cors.get("ExposeHeaders", []),
-            "MaxAge": cors.get("MaxAge", 0),
-        },
         "FunctionArn": arn,
         "FunctionUrl": url,
         "CreationTime": timestamp(format=TIMESTAMP_FORMAT_MICROS),
+        "LastModifiedTime": timestamp(format=TIMESTAMP_FORMAT_MICROS),
         "CustomId": custom_id,
     }
 
+    if "Cors" in data:
+        cors = data.get("Cors", {})
+        url_config.update(
+            {
+                "Cors": {
+                    "AllowCredentials": cors.get("AllowCredentials", ["*"]),
+                    "AllowHeaders": cors.get("AllowHeaders", ["*"]),
+                    "AllowMethods": cors.get("AllowMethods", ["*"]),
+                    "AllowOrigins": cors.get("AllowOrigins", ["*"]),
+                    "ExposeHeaders": cors.get("ExposeHeaders", []),
+                    "MaxAge": cors.get("MaxAge", 0),
+                }
+            }
+        )
+
     lambda_backend.url_configs.update({arn: url_config})
     response = url_config.copy()
+    response.pop("LastModifiedTime")
     response.pop("CustomId")
-    if "Cors" not in data:
-        response.pop("Cors")
     return response, 201
 
 
@@ -1600,7 +1610,7 @@ def get_url_config(function):
 
     response = url_config.copy()
     response.pop("CustomId")
-    return response, 201
+    return response
 
 
 @app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["PUT"])
@@ -1617,24 +1627,27 @@ def update_url_config(function):
         return not_found_error()
 
     data = json.loads(to_str(request.data))
-    cors = data.get("Cors", {})
     new_url_config = {
         "AuthType": data.get("AuthType"),
-        "Cors": {
-            "AllowCredentials": cors.get("AllowCredentials", ["*"]),
-            "AllowHeaders": cors.get("AllowHeaders", ["*"]),
-            "AllowMethods": cors.get("AllowMethods", ["*"]),
-            "AllowOrigins": cors.get("AllowOrigins", ["*"]),
-            "ExposeHeaders": cors.get("ExposeHeaders", []),
-            "MaxAge": cors.get("MaxAge", 0),
-        },
-        "LastModifiedTime": datetime.now().isoformat(),
+        "LastModifiedTime": timestamp(format=TIMESTAMP_FORMAT_MICROS),
     }
+    if "Cors" in data:
+        cors = data.get("Cors", {})
+        new_url_config.update(
+            {
+                "Cors": {
+                    "AllowCredentials": cors.get("AllowCredentials", ["*"]),
+                    "AllowHeaders": cors.get("AllowHeaders", ["*"]),
+                    "AllowMethods": cors.get("AllowMethods", ["*"]),
+                    "AllowOrigins": cors.get("AllowOrigins", ["*"]),
+                    "ExposeHeaders": cors.get("ExposeHeaders", []),
+                    "MaxAge": cors.get("MaxAge", 0),
+                }
+            }
+        )
     prev_url_config.update(new_url_config)
 
     response = prev_url_config.copy()
-    if "Cors" not in data:
-        response.pop("Cors")
     response.pop("CustomId")
     return response
 
@@ -1647,8 +1660,10 @@ def delete_url_config(function):
     arn = q_arn or arn
 
     lambda_backend = LambdaRegion.get()
-    lambda_backend.url_configs.pop(arn, None)
+    if arn not in lambda_backend.url_configs:
+        return error_response("Function does not exist", 404, "ResourceNotFoundException")
 
+    lambda_backend.url_configs.pop(arn)
     return {}
 
 
