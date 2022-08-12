@@ -422,34 +422,38 @@ class TestDynamoDBEventSourceMapping:
         finally:
             lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
 
+    @pytest.mark.aws_validated
     @pytest.mark.parametrize(
         "item_to_put1, item_to_put2, filter, calls",
         [
-            # Test with no filter, and two times same entry (aka MODIFY)
+            # TODO: cover "FilterCriteria": {"Filters": [{"Pattern": "null"}]}} -> raises InvalidParameterValueException against AWS
+            # TODO: Test with no filter, and two times same entry
+            # AWS behaviour: Lambda only called once
+            # Localstack behaviour: triggered twice (once INSERT, once MODIFY)
+            # (
+            #     {"id": {"S": "test123"}, "id2": {"S": "test42"}},
+            #     None,
+            #     None,
+            #     1,
+            # ),
+            # Test with filter, and two times same entry
             (
-                {"id": {"S": "test123"}},
-                None,
-                None,
-                2,
-            ),
-            # Test with filter, and two times same entry (aka MODIFY)
-            (
-                {"id": {"S": "test123"}},
+                {"id": {"S": "test123"}, "id2": {"S": "test42"}},
                 None,
                 {"eventName": ["INSERT"]},
                 1,
             ),
-            # Test with OR filter, and two times same entry (aka MODIFY)
+            # Test with OR filter
             (
                 {"id": {"S": "test123"}},
-                None,
+                {"id": {"S": "test123"}, "id2": {"S": "42test"}},
                 {"eventName": ["INSERT", "MODIFY"]},
                 2,
             ),
-            # Test with 2 filters (AND), and two times same entry (aka MODIFY)
+            # Test with 2 filters (AND), and two times same entry (second time modified aka MODIFY eventName)
             (
                 {"id": {"S": "test123"}},
-                None,
+                {"id": {"S": "test123"}, "id2": {"S": "42test"}},
                 {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]},
                 1,
             ),
@@ -461,23 +465,50 @@ class TestDynamoDBEventSourceMapping:
                 1,
             ),
             # numeric filters
+            # NOTE: numeric filters seem not to work with DynamoDB as the values are represented as string
+            # and it looks like that there is no conversion happening
+            # I leave the test here in case this changes in future.
             (
                 {"id": {"S": "test123"}, "numericFilter": {"N": "123"}},
                 {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
-                {"dynamodb": {"NewImage": {"numericFilter": [{"numeric": [">", 100]}]}}},
-                1,
+                {
+                    "dynamodb": {
+                        "NewImage": {
+                            "numericFilter": {
+                                "N": [
+                                    {
+                                        "numeric": [">", 100]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                0,
             ),
             (
                 {"id": {"S": "test123"}, "numericFilter": {"N": "100"}},
                 {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
-                {"dynamodb": {"NewImage": {"numericFilter": [{"numeric": [">=", 100, "<", 200]}]}}},
-                1,
+                {
+                    "dynamodb": {
+                        "NewImage": {
+                            "numericFilter": {
+                                "N": [
+                                    {
+                                        "numeric": [">=", 100, "<", 200]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                0,
             ),
             # Prefix
             (
                 {"id": {"S": "test123"}, "prefix": {"S": "us-1-testtest"}},
                 {"id": {"S": "test1234"}, "prefix": {"S": "testtest"}},
-                {"dynamodb": {"NewImage": {"prefix": [{"prefix": "us-1"}]}}},
+                {"dynamodb": {"NewImage": {"prefix": {"S": [{"prefix": "us-1"}]}}}},
                 1,
             ),
         ],
@@ -488,6 +519,9 @@ class TestDynamoDBEventSourceMapping:
         lambda_client,
         dynamodb_client,
         dynamodb_create_table,
+        lambda_su_role,
+        logs_client,
+        wait_for_dynamodb_stream_ready,
         filter,
         calls,
         item_to_put1,
@@ -496,12 +530,16 @@ class TestDynamoDBEventSourceMapping:
 
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
+        event_source_uuid = None
+        max_retries = 50
 
         try:
+
             create_lambda_function(
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
                 func_name=function_name,
                 runtime=LAMBDA_RUNTIME_PYTHON37,
+                role=lambda_su_role,
             )
             dynamodb_create_table(table_name=table_name, partition_key="id")
             _await_dynamodb_table_active(dynamodb_client, table_name)
@@ -509,47 +547,59 @@ class TestDynamoDBEventSourceMapping:
                 TableName=table_name,
                 StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
             )["TableDescription"]["LatestStreamArn"]
+            wait_for_dynamodb_stream_ready(stream_arn)
+            event_source_mapping_kwargs = {
+                "FunctionName": function_name,
+                "BatchSize": 1,
+                "StartingPosition": "TRIM_HORIZON",
+                "EventSourceArn": stream_arn,
+                "MaximumBatchingWindowInSeconds": 1,
+                "MaximumRetryAttempts": 1,
+            }
+            if filter:
+                event_source_mapping_kwargs.update(
+                    FilterCriteria={
+                        "Filters": [
+                            {"Pattern": json.dumps(filter)},
+                        ]
+                    }
+                )
             event_source_uuid = lambda_client.create_event_source_mapping(
-                FunctionName=function_name,
-                BatchSize=1,
-                StartingPosition="LATEST",
-                EventSourceArn=stream_arn,
-                MaximumBatchingWindowInSeconds=1,
-                MaximumRetryAttempts=1,
-                FilterCriteria={
-                    "Filters": [
-                        {"Pattern": json.dumps(filter)},
-                    ]
-                },
+                **event_source_mapping_kwargs
             )["UUID"]
             _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
             dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
 
-            def assert_single_lambda_call():
-                events = get_lambda_log_events(function_name)
-                assert len(events) == 1
+            def assert_lambda_called():
+                events = get_lambda_log_events(function_name, logs_client=logs_client)
+                if calls > 0:
+                    assert len(events) == 1
+                else:
+                    # negative test for 'numeric' filter
+                    assert len(events) == 0
 
-            retry(assert_single_lambda_call, retries=10)
+            # sleep before to wait for potential record of 'slow AWS' for 'numeric' filter
+            retry(assert_lambda_called, retries=max_retries, sleep_before=30.0 if calls == 0 else 0)
 
             # Following lines are relevant if variables are set via parametrize
             if item_to_put2:
                 # putting a new item (item_to_put2) a second time is a 'INSERT' request
                 dynamodb_client.put_item(TableName=table_name, Item=item_to_put2)
             else:
-                # putting the same item (item_to_put1) a second time is a 'MODIFY' request
+                # putting the same item (item_to_put1) a second time is a 'MODIFY' request (at least in Localstack)
                 dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
             # depending on the parametrize values the filter (and the items to put) the lambda might be called multiple times
             if calls > 1:
 
                 def assert_events_called_multiple():
-                    events = get_lambda_log_events(function_name)
+                    events = get_lambda_log_events(function_name, logs_client=logs_client)
                     assert len(events) == calls
 
                 # lambda was called a second time, so new records should be found
-                retry(assert_events_called_multiple, retries=10)
+                retry(assert_events_called_multiple, retries=max_retries)
             else:
                 # lambda wasn't called a second time, so no new records should be found
-                retry(assert_single_lambda_call, retries=10)
+                retry(assert_lambda_called, retries=max_retries)
 
         finally:
             if event_source_uuid:

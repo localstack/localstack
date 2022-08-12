@@ -311,12 +311,10 @@ def parse_and_apply_numeric_filter(record_value: Dict, numeric_filter: List[Unio
     if len(numeric_filter) % 2 > 0:
         LOG.warn("Invalid numeric lambda filter given")
         return True
-    try:
-        # record_value is a dynamo DB entry in following form { datatype : value}
-        record_value = float(record_value.get("N"))
-    except (ValueError, TypeError):
-        LOG.warn(f"Could not convert Record {record_value} to a valid number value for filtering")
-        return True
+
+    if not isinstance(record_value, (int, float)):
+        LOG.warn(f"Record {record_value} seem not to be a valid number")
+        return False
 
     for idx in range(0, len(numeric_filter), 2):
 
@@ -340,21 +338,24 @@ def parse_and_apply_numeric_filter(record_value: Dict, numeric_filter: List[Unio
 
 def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]):
     # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
-    filter_results = []
+    fits_filter = False
     for key, filter_value in dict_filter.items():
         if key.lower() == "anything-but":
-            filter_results.append(record_value not in filter_value)
+            fits_filter = record_value not in filter_value
         elif key.lower() == "numeric":
-            filter_results.append(parse_and_apply_numeric_filter(record_value, filter_value))
+            fits_filter = parse_and_apply_numeric_filter(record_value, filter_value)
         elif key.lower() == "exists":
-            filter_results.append(
-                bool(filter_value)
-            )  # exists means that the key exists in the event record
+            fits_filter = bool(filter_value) # exists means that the key exists in the event record
         elif key.lower() == "prefix":
-            filter_results.append(str(record_value.get("S")).startswith(str(filter_value)))
-        else:
-            filter_results.append(False)
-    return all(filter_results)
+            if not isinstance(record_value, str):
+                LOG.warn(
+                f"Could not convert filter value {numeric_filter[idx + 1]} to a valid number value for filtering"
+            )
+            fits_filter = isinstance(record_value, str) and record_value.startswith(str(filter_value))
+
+        if fits_filter:
+            return True
+    return fits_filter
 
 
 def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]):
