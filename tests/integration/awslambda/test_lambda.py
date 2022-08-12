@@ -2465,21 +2465,62 @@ class TestLambdaURL:
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..context.memoryLimitInMB",
-            "$..event.headers.host",
             "$..event.headers.x-forwarded-proto",
             "$..event.headers.x-forwarded-for",
             "$..event.headers.x-forwarded-port",
+            "$..event.headers.x-amzn-lambda-forwarded-client-ip",
+            "$..event.headers.x-amzn-lambda-forwarded-host",
+            "$..event.headers.x-amzn-lambda-proxy-auth",
+            "$..event.headers.x-amzn-lambda-proxying-cell",
             "$..event.headers.x-amzn-trace-id",
-            "$..event.requestContext.apiId",
-            "$..event.requestContext.http.sourceIp",
-            "$..event.requestContext.domainName",
-            "$..event.requestContext.domainPrefix",
-            "$..event.requestContext.time",
-            "$..event.requestContext.timeEpoch",
         ]
     )
     def test_lambda_url_invocation(self, lambda_client, create_lambda_function, snapshot):
         snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("requestId", "uuid", reference_replacement=False),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.http.sourceIp",
+                    "ip-address",
+                    reference_replacement=False,
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.headers.x-forwarded-for", "ip-address", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.headers.x-amzn-lambda-forwarded-client-ip",
+                    "ip-address",
+                    reference_replacement=False,
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.headers.x-amzn-lambda-forwarded-host",
+                    "lambda-url",
+                    reference_replacement=False,
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.headers.host", "lambda-url", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.apiId", "md5", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.domainName", "lambda-url", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.domainPrefix", "md5", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.time", "readable-date", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.timeEpoch",
+                    "epoch-milliseconds",
+                    reference_replacement=False,
+                ),
+            ]
+        )
+
         function_name = f"test-function-{short_uid()}"
 
         create_lambda_function(
