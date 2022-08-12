@@ -1428,6 +1428,33 @@ class TestDynamoDB:
         _transact_write({"id": {"S": "id1"}, "name": {"S": "name1"}})
         _transact_write({"name": {"S": "name1"}, "id": {"S": "id1"}})
 
+    @pytest.mark.aws_validated
+    def test_batch_write_not_matching_schema(
+        self, dynamodb_client, dynamodb_create_table_with_parameters, dynamodb_wait_for_table_active
+    ):
+        table_name = f"ddb-table-{short_uid()}"
+
+        dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[
+                {"AttributeName": "id", "KeyType": "HASH"},
+                {"AttributeName": "sortKey", "KeyType": "RANGE"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "id", "AttributeType": "S"},
+                {"AttributeName": "sortKey", "AttributeType": "S"},
+            ],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        dynamodb_wait_for_table_active(table_name)
+
+        faulty_item = {"Item": {"nonKey": {"S": "hello"}}}
+        with pytest.raises(Exception) as ctx:
+            dynamodb_client.batch_write_item(
+                RequestItems={table_name: [{"PutRequest": faulty_item}]}
+            )
+        assert ctx.match("ValidationException")
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
