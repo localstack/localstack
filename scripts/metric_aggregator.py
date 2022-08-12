@@ -149,6 +149,7 @@ def _init_service_metric_counter() -> Dict:
 
     for s, provider in SERVICE_PLUGINS.api_provider_specs.items():
         try:
+            print(f"found service {s}")
             service = load_service(s)
             ops = {}
             service_attributes = {"pro": "pro" in provider, "community": "default" in provider}
@@ -172,7 +173,7 @@ def _init_service_metric_counter() -> Dict:
 
             metric_recorder[s] = ops
         except Exception:
-            LOG.debug(f"cannot load service '{s}'")
+            print(f"cannot load service '{s}'")
     return metric_recorder
 
 
