@@ -50,7 +50,6 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
-from localstack.utils.analytics import event_publisher
 from localstack.utils.archives import get_unzipped_size, is_zip_file, unzip
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
@@ -1235,7 +1234,7 @@ def lambda_result_to_response(result: str):
     response.headers.update({"Content-Type": "application/json"})
 
     parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
-    parsed_result = common.json_safe(parsed_result)
+    parsed_result = json_safe(parsed_result)
     parsed_result = {} if parsed_result is None else parsed_result
     parsed_headers = parsed_result.get("headers", {})
 
