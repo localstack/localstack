@@ -346,52 +346,51 @@ class TestDynamoDB:
         # clean up
         delete_table(table_name)
 
+    @pytest.mark.aws_validated
     def test_valid_local_secondary_index(
-        self, dynamodb_client, dynamodb_create_table_with_parameters, dynamodb_wait_for_table_active
+        self, dynamodb_client, dynamodb_create_table_with_parameters
     ):
-        try:
-            table_name = f"test-table-{short_uid()}"
-            dynamodb_create_table_with_parameters(
-                TableName=table_name,
-                KeySchema=[
-                    {"AttributeName": "PK", "KeyType": "HASH"},
-                    {"AttributeName": "SK", "KeyType": "RANGE"},
-                ],
-                AttributeDefinitions=[
-                    {"AttributeName": "PK", "AttributeType": "S"},
-                    {"AttributeName": "SK", "AttributeType": "S"},
-                    {"AttributeName": "LSI1SK", "AttributeType": "N"},
-                ],
-                LocalSecondaryIndexes=[
-                    {
-                        "IndexName": "LSI1",
-                        "KeySchema": [
-                            {"AttributeName": "PK", "KeyType": "HASH"},
-                            {"AttributeName": "LSI1SK", "KeyType": "RANGE"},
-                        ],
-                        "Projection": {"ProjectionType": "ALL"},
-                    }
-                ],
-                ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
-                Tags=TEST_DDB_TAGS,
-            )
+        table_name = f"test-table-{short_uid()}"
+        dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[
+                {"AttributeName": "PK", "KeyType": "HASH"},
+                {"AttributeName": "SK", "KeyType": "RANGE"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "PK", "AttributeType": "S"},
+                {"AttributeName": "SK", "AttributeType": "S"},
+                {"AttributeName": "LSI1SK", "AttributeType": "N"},
+            ],
+            LocalSecondaryIndexes=[
+                {
+                    "IndexName": "LSI1",
+                    "KeySchema": [
+                        {"AttributeName": "PK", "KeyType": "HASH"},
+                        {"AttributeName": "LSI1SK", "KeyType": "RANGE"},
+                    ],
+                    "Projection": {"ProjectionType": "ALL"},
+                }
+            ],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            Tags=TEST_DDB_TAGS,
+        )
 
-            dynamodb_wait_for_table_active(table_name)
-            item = {"SK": {"S": "hello"}, "LSI1SK": {"N": "123"}, "PK": {"S": "test one"}}
+        item = {"SK": {"S": "hello"}, "LSI1SK": {"N": "123"}, "PK": {"S": "test one"}}
 
-            dynamodb_client.put_item(TableName=table_name, Item=item)
-            result = dynamodb_client.query(
-                TableName=table_name,
-                IndexName="LSI1",
-                KeyConditionExpression="PK = :v1",
-                ExpressionAttributeValues={":v1": {"S": "test one"}},
-                Select="ALL_ATTRIBUTES",
-            )
-            assert result["Items"] == [item]
-        finally:
-            dynamodb_client.delete_table(TableName=table_name)
+        dynamodb_client.put_item(TableName=table_name, Item=item)
+        result = dynamodb_client.query(
+            TableName=table_name,
+            IndexName="LSI1",
+            KeyConditionExpression="PK = :v1",
+            ExpressionAttributeValues={":v1": {"S": "test one"}},
+            Select="ALL_ATTRIBUTES",
+        )
+        assert result["Items"] == [item]
 
-    def test_more_than_20_global_secondary_indexes(self, dynamodb, dynamodb_client):
+    def test_more_than_20_global_secondary_indexes(
+        self, dynamodb_client, dynamodb_create_table_with_parameters
+    ):
         table_name = f"test-table-{short_uid()}"
         num_gsis = 25
         attrs = [{"AttributeName": f"a{i}", "AttributeType": "S"} for i in range(num_gsis)]
@@ -403,7 +402,7 @@ class TestDynamoDB:
             }
             for i in range(num_gsis)
         ]
-        dynamodb.create_table(
+        dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}, *attrs],
@@ -414,9 +413,6 @@ class TestDynamoDB:
         table = dynamodb_client.describe_table(TableName=table_name)
         assert len(table["Table"]["GlobalSecondaryIndexes"]) == num_gsis
 
-        # clean up
-        delete_table(table_name)
-
     @pytest.mark.aws_validated
     def test_return_values_in_put_item(self, dynamodb, dynamodb_client):
         aws_stack.create_dynamodb_table(
@@ -424,12 +420,14 @@ class TestDynamoDB:
         )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
-        def _validate_response(response, expected: dict = {}):
+        def _validate_response(response, expected=None):
             """
             Validates the response against the optionally expected one.
             It checks that the response doesn't contain `Attributes`,
             `ConsumedCapacity` and `ItemCollectionMetrics` unless they are expected.
             """
+            if expected is None:
+                expected = {}
             should_not_contain = {
                 "Attributes",
                 "ConsumedCapacity",
@@ -492,9 +490,10 @@ class TestDynamoDB:
         # clean up
         table.delete()
 
-    def test_batch_write_binary(self, dynamodb_client):
-        table_name = "table_batch_binary_%s" % short_uid()
-        dynamodb_client.create_table(
+    @pytest.mark.aws_validated
+    def test_batch_write_binary(self, dynamodb_client, dynamodb_create_table_with_parameters):
+        table_name = f"table_batch_binary_{short_uid()}"
+        dynamodb_create_table_with_parameters(
             TableName=table_name,
             AttributeDefinitions=[
                 {"AttributeName": "PK", "AttributeType": "S"},
@@ -529,7 +528,6 @@ class TestDynamoDB:
             RequestItems={table_name: [{"PutRequest": item}, {"PutRequest": item_non_decodable}]}
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        dynamodb_client.delete_table(TableName=table_name)
 
     def test_binary_data_with_stream(
         self,
@@ -562,12 +560,13 @@ class TestDynamoDB:
         assert 1 == len(json_records)
         assert "Data" in json_records[0]
 
-    def test_dynamodb_stream_shard_iterator(self, wait_for_stream_ready):
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    def test_dynamodb_stream_shard_iterator(
+        self, wait_for_stream_ready, dynamodb_create_table_with_parameters
+    ):
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
 
-        table_name = "table_with_stream-%s" % short_uid()
-        table = dynamodb.create_table(
+        table_name = f"table_with_stream-{short_uid()}"
+        table = dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
@@ -600,10 +599,12 @@ class TestDynamoDB:
         )
         assert "ShardIterator" in response
 
-    def test_dynamodb_create_table_with_class(self, dynamodb_client):
-        table_name = "table_with_class_%s" % short_uid()
+    def test_dynamodb_create_table_with_class(
+        self, dynamodb_client, dynamodb_create_table_with_parameters
+    ):
+        table_name = f"table_with_class_{short_uid()}"
         # create table
-        result = dynamodb_client.create_table(
+        result = dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
@@ -622,12 +623,13 @@ class TestDynamoDB:
         )
         result = dynamodb_client.describe_table(TableName=table_name)
         assert result["Table"]["TableClassSummary"]["TableClass"] == "STANDARD_INFREQUENT_ACCESS"
-        # clean resources
-        dynamodb_client.delete_table(TableName=table_name)
 
-    def test_dynamodb_execute_transaction(self, dynamodb_client):
-        table_name = "table_%s" % short_uid()
-        dynamodb_client.create_table(
+    @pytest.mark.aws_validated
+    def test_dynamodb_execute_transaction(
+        self, dynamodb_client, dynamodb_create_table_with_parameters
+    ):
+        table_name = f"table_{short_uid()}"
+        dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
@@ -643,11 +645,12 @@ class TestDynamoDB:
         result = dynamodb_client.scan(TableName=table_name)
         assert result["ScannedCount"] == 2
 
-        dynamodb_client.delete_table(TableName=table_name)
-
-    def test_dynamodb_batch_execute_statement(self, dynamodb_client):
-        table_name = "table_%s" % short_uid()
-        dynamodb_client.create_table(
+    @pytest.mark.aws_validated
+    def test_dynamodb_batch_execute_statement(
+        self, dynamodb_client, dynamodb_create_table_with_parameters
+    ):
+        table_name = f"table_{short_uid()}"
+        dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
@@ -675,11 +678,12 @@ class TestDynamoDB:
 
         dynamodb_client.delete_table(TableName=table_name)
 
-    def test_dynamodb_partiql_missing(self, dynamodb_client):
-        table_name = "table_with_stream_%s" % short_uid()
+    @pytest.mark.aws_validated
+    def test_dynamodb_partiql_missing(self, dynamodb_client, dynamodb_create_table_with_parameters):
+        table_name = f"table_with_stream_{short_uid()}"
 
         # create table
-        dynamodb_client.create_table(
+        dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
@@ -910,8 +914,9 @@ class TestDynamoDB:
             dynamodb.describe_global_table(GlobalTableName="invalid-table-name")
         assert ctx.match("GlobalTableNotFoundException")
 
+    @pytest.mark.aws_validated
     def test_create_duplicate_table(self, dynamodb_create_table_with_parameters):
-        table_name = "duplicateTable"
+        table_name = f"duplicateTable-{short_uid()}"
 
         dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -932,7 +937,7 @@ class TestDynamoDB:
         ctx.match("ResourceInUseException")
 
     def test_delete_table(self, dynamodb_client, dynamodb_create_table):
-        table_name = "test-ddb-table-%s" % short_uid()
+        table_name = f"test-ddb-table-{short_uid()}"
 
         tables_before = len(dynamodb_client.list_tables()["TableNames"])
 
@@ -955,8 +960,9 @@ class TestDynamoDB:
             dynamodb_client.delete_table(TableName=table_name)
         assert ctx.match("ResourceNotFoundException")
 
+    @pytest.mark.aws_validated
     def test_transaction_write_items(self, dynamodb_client, dynamodb_create_table_with_parameters):
-        table_name = "test-ddb-table-%s" % short_uid()
+        table_name = f"test-ddb-table-{short_uid()}"
 
         dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -994,7 +1000,7 @@ class TestDynamoDB:
 
     @pytest.mark.aws_validated
     def test_transaction_write_canceled(
-        self, dynamodb_create_table_with_parameters, dynamodb_wait_for_table_active, dynamodb_client
+        self, dynamodb_create_table_with_parameters, dynamodb_client
     ):
         table_name = "table_%s" % short_uid()
 
@@ -1005,8 +1011,6 @@ class TestDynamoDB:
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
-
-        dynamodb_wait_for_table_active(table_name)
 
         # put item in table - INSERT event
         dynamodb_client.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
@@ -1047,10 +1051,11 @@ class TestDynamoDB:
             r"^The conditional request failed\.?$", conditional_check_failed[0]["Message"]
         )
 
+    @pytest.mark.aws_validated
     def test_transaction_write_binary_data(
         self, dynamodb_client, dynamodb_create_table_with_parameters
     ):
-        table_name = "test-ddb-table-%s" % short_uid()
+        table_name = f"test-ddb-table-{short_uid()}"
         dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
@@ -1077,8 +1082,9 @@ class TestDynamoDB:
         assert item["binaryData"]
         assert item["binaryData"] == binary_item
 
+    @pytest.mark.aws_validated
     def test_transact_get_items(self, dynamodb_client, dynamodb_create_table):
-        table_name = "test-ddb-table-%s" % short_uid()
+        table_name = f"test-ddb-table-{short_uid()}"
         dynamodb_create_table(
             table_name=table_name,
             partition_key=PARTITION_KEY,
@@ -1089,8 +1095,9 @@ class TestDynamoDB:
         )
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    @pytest.mark.aws_validated
     def test_batch_write_items(self, dynamodb_client, dynamodb_create_table_with_parameters):
-        table_name = "test-ddb-table-%s" % short_uid()
+        table_name = f"test-ddb-table-{short_uid()}"
         dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
@@ -1193,7 +1200,7 @@ class TestDynamoDB:
         retry(check_expected_records, retries=5, sleep=1, sleep_before=2)
 
     def test_query_on_deleted_resource(self, dynamodb_client, dynamodb_create_table):
-        table_name = "ddb-table-%s" % short_uid()
+        table_name = f"ddb-table-{short_uid()}"
         partition_key = "username"
 
         dynamodb_create_table(table_name=table_name, partition_key=partition_key)
@@ -1269,10 +1276,11 @@ class TestDynamoDB:
 
         lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
 
+    @pytest.mark.aws_validated
     def test_dynamodb_batch_write_item(
         self, dynamodb_client, dynamodb_create_table_with_parameters
     ):
-        table_name = "ddb-table-%s" % short_uid()
+        table_name = f"ddb-table-{short_uid()}"
 
         dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -1294,8 +1302,9 @@ class TestDynamoDB:
 
         assert result.get("UnprocessedItems") == {}
 
+    @pytest.mark.aws_validated
     def test_dynamodb_pay_per_request(self, dynamodb_create_table_with_parameters):
-        table_name = "ddb-table-%s" % short_uid()
+        table_name = f"ddb-table-{short_uid()}"
 
         with pytest.raises(Exception) as e:
             dynamodb_create_table_with_parameters(
@@ -1310,7 +1319,7 @@ class TestDynamoDB:
     def test_dynamodb_create_table_with_sse_specification(
         self, dynamodb_create_table_with_parameters
     ):
-        table_name = "ddb-table-%s" % short_uid()
+        table_name = f"ddb-table-{short_uid()}"
 
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
@@ -1329,10 +1338,11 @@ class TestDynamoDB:
         assert result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
         assert result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
 
+    @pytest.mark.aws_validated
     def test_dynamodb_create_table_with_partial_sse_specification(
         self, dynamodb_create_table_with_parameters, kms_client
     ):
-        table_name = "ddb-table-%s" % short_uid()
+        table_name = f"ddb-table-{short_uid()}"
 
         sse_specification = {"Enabled": True}
 
@@ -1353,8 +1363,9 @@ class TestDynamoDB:
         result = kms_client.describe_key(KeyId=kms_master_key_arn)
         assert result["KeyMetadata"]["KeyManager"] == "AWS"
 
+    @pytest.mark.aws_validated
     def test_dynamodb_get_batch_items(self, dynamodb_client, dynamodb_create_table_with_parameters):
-        table_name = "ddb-table-%s" % short_uid()
+        table_name = f"ddb-table-{short_uid()}"
 
         dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -1394,7 +1405,7 @@ class TestDynamoDB:
 
     @pytest.mark.aws_validated
     def test_dynamodb_idempotent_writing(
-        self, dynamodb_create_table_with_parameters, dynamodb_client, dynamodb_wait_for_table_active
+        self, dynamodb_create_table_with_parameters, dynamodb_client
     ):
         table_name = f"ddb-table-{short_uid()}"
         dynamodb_create_table_with_parameters(
@@ -1409,7 +1420,6 @@ class TestDynamoDB:
             ],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
-        dynamodb_wait_for_table_active(table_name)
 
         def _transact_write(_d: Dict):
             response = dynamodb_client.transact_write_items(
