@@ -549,5 +549,166 @@
         }
       ]
     }
+  },
+  "tests/integration/awslambda/test_lambda_sqs_integration.py::test_report_batch_item_failures_invalid_result_json_batch_fails": {
+    "recorded-date": "12-08-2022, 23:58:04",
+    "recorded-content": {
+      "get_destination_queue_url": {
+        "QueueUrl": "<queue-url:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_invocation": {
+        "Messages": [
+          {
+            "Body": {
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:1>",
+                    "receiptHandle": "<receipt-handle:4>",
+                    "body": "{\"message\": 1, \"fail_attempts\": 0}",
+                    "attributes": {
+                      "ApproximateReceiveCount": "1",
+                      "SentTimestamp": "timestamp",
+                      "SenderId": "sender-id",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<m-d5-of-body:3>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              },
+              "result": {
+                "batchItemFailures": [
+                  {
+                    "foo": "notvalid"
+                  }
+                ]
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "second_invocation": {
+        "Messages": [
+          {
+            "Body": {
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:1>",
+                    "receiptHandle": "<receipt-handle:5>",
+                    "body": "{\"message\": 1, \"fail_attempts\": 0}",
+                    "attributes": {
+                      "ApproximateReceiveCount": "2",
+                      "SentTimestamp": "timestamp",
+                      "SenderId": "sender-id",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<m-d5-of-body:3>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              },
+              "result": {
+                "batchItemFailures": [
+                  {
+                    "foo": "notvalid"
+                  }
+                ]
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:2>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "dlq_response": {
+        "Messages": [
+          {
+            "Body": {
+              "message": 1,
+              "fail_attempts": 0
+            },
+            "MD5OfBody": "<m-d5-of-body:3>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_sqs_integration.py::test_report_batch_item_failures_empty_json_batch_succeeds": {
+    "recorded-date": "13-08-2022, 00:52:53",
+    "recorded-content": {
+      "get_destination_queue_url": {
+        "QueueUrl": "<queue-url:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "first_invocation": {
+        "Messages": [
+          {
+            "Body": {
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:1>",
+                    "receiptHandle": "<receipt-handle:2>",
+                    "body": "{\"message\": 1, \"fail_attempts\": 0}",
+                    "attributes": {
+                      "ApproximateReceiveCount": "1",
+                      "SentTimestamp": "timestamp",
+                      "SenderId": "sender-id",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<md5-of-body:1>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              },
+              "result": {}
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

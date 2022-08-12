@@ -231,7 +231,10 @@ def parse_batch_item_failures(result: InvocationResult, valid_message_ids: List[
     if not result or not result.result:
         return []
 
-    partial_batch_failure = json.loads(result.result)
+    if isinstance(result.result, dict):
+        partial_batch_failure = result.result
+    else:
+        partial_batch_failure = json.loads(result.result)
 
     if not partial_batch_failure:
         return []

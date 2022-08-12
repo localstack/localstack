@@ -263,7 +263,6 @@ def test_redrive_policy_with_failing_lambda(
     snapshot.match("dlq_response", dlq_response)
 
 
-@pytest.mark.aws_validated
 def test_sqs_queue_as_lambda_dead_letter_queue(
     sqs_client,
     lambda_client,
@@ -503,7 +502,6 @@ def test_report_batch_item_failures(
     snapshot.match("dlq_response", dlq_response)
 
 
-@pytest.mark.aws_validated
 def test_report_batch_item_failures_on_lambda_error(
     create_lambda_function,
     lambda_client,
@@ -586,3 +584,180 @@ def test_report_batch_item_failures_on_lambda_error(
     retry(_collect_message, retries=10, sleep=1, sleep_before=wait_time)
 
     snapshot.match("dlq_messages", messages)
+
+
+def test_report_batch_item_failures_invalid_result_json_batch_fails(
+    create_lambda_function,
+    lambda_client,
+    sqs_client,
+    sqs_create_queue,
+    sqs_queue_arn,
+    lambda_su_role,
+    snapshot,
+    cleanups,
+):
+    # create queue used in the lambda to send invocation results to (to verify lambda was invoked)
+    destination_queue_name = f"destination-queue-{short_uid()}"
+    destination_url = sqs_create_queue(QueueName=destination_queue_name)
+    snapshot.match(
+        "get_destination_queue_url", sqs_client.get_queue_url(QueueName=destination_queue_name)
+    )
+
+    # timeout in seconds, used for both the lambda and the queue visibility timeout.
+    # increase to 10 if testing against AWS fails.
+    retry_timeout = 4
+    retries = 2
+
+    # set up lambda function
+    function_name = f"failing-lambda-{short_uid()}"
+    create_lambda_function(
+        func_name=function_name,
+        handler_file=LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE,
+        runtime=LAMBDA_RUNTIME_PYTHON38,
+        role=lambda_su_role,
+        timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
+        envvars={
+            "DESTINATION_QUEUE_URL": destination_url,
+            "OVERWRITE_RESULT": '{"batchItemFailures": [{"foo":"notvalid"}]}',
+        },
+    )
+
+    # create dlq for event source queue
+    event_dlq_url = sqs_create_queue(QueueName=f"event-dlq-{short_uid()}")
+    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+
+    # create event source queue
+    event_source_url = sqs_create_queue(
+        QueueName=f"source-queue-{short_uid()}",
+        Attributes={
+            # the visibility timeout is implicitly also the time between retries
+            "VisibilityTimeout": str(retry_timeout),
+            "RedrivePolicy": json.dumps(
+                {"deadLetterTargetArn": event_dlq_arn, "maxReceiveCount": retries}
+            ),
+        },
+    )
+    event_source_arn = sqs_queue_arn(event_source_url)
+
+    # wire everything with the event source mapping
+    mapping_uuid = lambda_client.create_event_source_mapping(
+        EventSourceArn=event_source_arn,
+        FunctionName=function_name,
+        BatchSize=10,
+        MaximumBatchingWindowInSeconds=0,
+        FunctionResponseTypes=["ReportBatchItemFailures"],
+    )["UUID"]
+    cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
+
+    # trigger the lambda, the message content doesn't matter because the whole batch should be treated as failure
+    sqs_client.send_message(
+        QueueUrl=event_source_url,
+        MessageBody=json.dumps({"message": 1, "fail_attempts": 0}),
+    )
+
+    # now wait for the first invocation result which is expected to have processed message 1 we wait half the retry
+    # interval to wait long enough for the message to appear, but short enough to check that the DLQ is empty after
+    # the first attempt.
+    first_invocation = sqs_client.receive_message(
+        QueueUrl=destination_url, WaitTimeSeconds=15, MaxNumberOfMessages=1
+    )
+    assert "Messages" in first_invocation
+    snapshot.match("first_invocation", first_invocation)
+
+    # now wait for the second invocation result which
+    second_invocation = sqs_client.receive_message(
+        QueueUrl=destination_url, WaitTimeSeconds=15, MaxNumberOfMessages=1
+    )
+    assert "Messages" in second_invocation
+    # hack to make snapshot work
+    snapshot.match("second_invocation", second_invocation)
+
+    # now check that the messages was placed in the DLQ
+    dlq_response = sqs_client.receive_message(QueueUrl=event_dlq_url, WaitTimeSeconds=15)
+    assert "Messages" in dlq_response
+    snapshot.match("dlq_response", dlq_response)
+
+
+def test_report_batch_item_failures_empty_json_batch_succeeds(
+    create_lambda_function,
+    lambda_client,
+    sqs_client,
+    sqs_create_queue,
+    sqs_queue_arn,
+    lambda_su_role,
+    snapshot,
+    cleanups,
+):
+    # create queue used in the lambda to send invocation results to (to verify lambda was invoked)
+    destination_queue_name = f"destination-queue-{short_uid()}"
+    destination_url = sqs_create_queue(QueueName=destination_queue_name)
+    snapshot.match(
+        "get_destination_queue_url", sqs_client.get_queue_url(QueueName=destination_queue_name)
+    )
+
+    # timeout in seconds, used for both the lambda and the queue visibility timeout.
+    # increase to 10 if testing against AWS fails.
+    retry_timeout = 4
+    retries = 1
+
+    # set up lambda function
+    function_name = f"failing-lambda-{short_uid()}"
+    create_lambda_function(
+        func_name=function_name,
+        handler_file=LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE,
+        runtime=LAMBDA_RUNTIME_PYTHON38,
+        role=lambda_su_role,
+        timeout=retry_timeout,  # timeout needs to be <= than visibility timeout
+        envvars={"DESTINATION_QUEUE_URL": destination_url, "OVERWRITE_RESULT": "{}"},
+    )
+
+    # create dlq for event source queue
+    event_dlq_url = sqs_create_queue(QueueName=f"event-dlq-{short_uid()}")
+    event_dlq_arn = sqs_queue_arn(event_dlq_url)
+
+    # create event source queue
+    # we use a FIFO queue to be sure the lambda is invoked in a deterministic way
+    event_source_url = sqs_create_queue(
+        QueueName=f"source-queue-{short_uid()}",
+        Attributes={
+            # the visibility timeout is implicitly also the time between retries
+            "VisibilityTimeout": str(retry_timeout),
+            "RedrivePolicy": json.dumps(
+                {"deadLetterTargetArn": event_dlq_arn, "maxReceiveCount": retries}
+            ),
+        },
+    )
+    event_source_arn = sqs_queue_arn(event_source_url)
+
+    # wire everything with the event source mapping
+    mapping_uuid = lambda_client.create_event_source_mapping(
+        EventSourceArn=event_source_arn,
+        FunctionName=function_name,
+        BatchSize=10,
+        MaximumBatchingWindowInSeconds=0,
+        FunctionResponseTypes=["ReportBatchItemFailures"],
+    )["UUID"]
+    cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=mapping_uuid))
+    _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
+
+    # trigger the lambda, the message content doesn't matter because the whole batch should be treated as failure
+    sqs_client.send_message(
+        QueueUrl=event_source_url,
+        MessageBody=json.dumps({"message": 1, "fail_attempts": 0}),
+    )
+
+    # now wait for the first invocation result which is expected to have processed message 1 we wait half the retry
+    # interval to wait long enough for the message to appear, but short enough to check that the DLQ is empty after
+    # the first attempt.
+    first_invocation = sqs_client.receive_message(
+        QueueUrl=destination_url, WaitTimeSeconds=15, MaxNumberOfMessages=1
+    )
+    assert "Messages" in first_invocation
+    snapshot.match("first_invocation", first_invocation)
+
+    # now check that the messages was placed in the DLQ
+    dlq_response = sqs_client.receive_message(
+        QueueUrl=event_dlq_url, WaitTimeSeconds=retry_timeout + 1
+    )
+    assert "Messages" not in dlq_response

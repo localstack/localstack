@@ -3,13 +3,17 @@ DestinationConfigurations that send lambda results to other source (like SQS que
 invocations, this lambda does this manually. You can pass in an event that looks like this::
 
     {
-        "destination": "<queue_url>",
         "fail_attempts": 2
     }
 
 Which will cause the lambda to mark that record as failure twice (comparing the "ApproximateReceiveCount" of the SQS
 event triggering the lambda). The lambda returns a batchItemFailures list that contains every failed record. All
-other records are sent to the destination queue as successfully processed."""
+other records are sent to the DESTINATION_QUEUE_URL as successfully processed.
+
+The lambda understands two env variables:
+* OVERWRITE_RESULT: a string (potentially a json document) that can be used to return custom responses to provoke errors
+* DESTINATION_QUEUE_URL: the queue url to send the event and result to
+"""
 import json
 import os
 
@@ -43,6 +47,14 @@ def handler(event, context):
         ]
     }
 
+    if os.environ.get("OVERWRITE_RESULT") is not None:
+        # try to parse the overwrite result as json
+        result = os.environ.get("OVERWRITE_RESULT")
+        try:
+            result = json.loads(result)
+        except Exception:
+            pass
+
     destination_queue_url = os.environ.get("DESTINATION_QUEUE_URL")
     if destination_queue_url:
         sqs.send_message(
@@ -59,7 +71,4 @@ def create_external_boto_client(service):
         endpoint_url = (
             f"http://{os.environ['LOCALSTACK_HOSTNAME']}:{os.environ.get('EDGE_PORT', 4566)}"
         )
-    region_name = (
-        os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION") or "us-east-1"
-    )
-    return boto3.client(service, endpoint_url=endpoint_url, region_name=region_name)
+    return boto3.client(service, endpoint_url=endpoint_url)
