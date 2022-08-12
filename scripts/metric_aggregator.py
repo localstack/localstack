@@ -83,7 +83,7 @@ def create_simple_html_report(file_name, metrics):
                 tmp += _generate_details_block_html("errors hit", op_details["errors"])
             tmp += "</ul>"
             tmp += "</p>"
-        output += f"<p><details><summary>{operation_tested/operation_counter*100:.2f}% test coverage</summary>\n\n{tmp}\n</details></p>\n"
+        output += f"<p><details><summary>{'-' if not operation_counter else operation_tested/operation_counter*100:.2f}% test coverage</summary>\n\n{tmp}\n</details></p>\n"
 
         with open(file_name, "a") as fd:
             fd.write(f"{output}\n")
@@ -150,9 +150,9 @@ def _load_service_info(service_name: str) -> Dict:
     from localstack.aws.spec import load_service
 
     try:
-        print(f"trying to load service {service_name}")
         info = {}
         service = load_service(service_name)
+        print(f"successfully loaded service {service_name}")
         for op in service.operation_names:
             attributes = {}
             attributes["invoked"] = 0
@@ -178,7 +178,6 @@ def _load_service_info(service_name: str) -> Dict:
 def _init_service_metric_counter() -> Dict:
     metric_recorder = {}
     for s, provider in SERVICE_PLUGINS.api_provider_specs.items():
-        print(f"found service {s}")
         ops = _load_service_info(s)
         service_attributes = {"pro": "pro" in provider, "community": "default" in provider}
         ops["service_attributes"] = service_attributes
