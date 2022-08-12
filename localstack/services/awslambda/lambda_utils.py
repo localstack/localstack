@@ -345,13 +345,13 @@ def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]):
         elif key.lower() == "numeric":
             fits_filter = parse_and_apply_numeric_filter(record_value, filter_value)
         elif key.lower() == "exists":
-            fits_filter = bool(filter_value) # exists means that the key exists in the event record
+            fits_filter = bool(filter_value)  # exists means that the key exists in the event record
         elif key.lower() == "prefix":
             if not isinstance(record_value, str):
-                LOG.warn(
-                f"Could not convert filter value {numeric_filter[idx + 1]} to a valid number value for filtering"
+                LOG.warn(f"Record Value {record_value} does not seem to be a valid string.")
+            fits_filter = isinstance(record_value, str) and record_value.startswith(
+                str(filter_value)
             )
-            fits_filter = isinstance(record_value, str) and record_value.startswith(str(filter_value))
 
         if fits_filter:
             return True
@@ -397,3 +397,10 @@ def filter_stream_records(records, filters: List[FilterCriteria]):
                     filtered_records.append(record)
                     break
     return filtered_records
+
+
+def validate_filters(filter: FilterCriteria):
+    for rule in filter["Filters"]:
+        if not json.loads(rule["Pattern"]):
+            return False
+    return True

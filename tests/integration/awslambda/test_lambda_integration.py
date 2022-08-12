@@ -426,16 +426,13 @@ class TestDynamoDBEventSourceMapping:
     @pytest.mark.parametrize(
         "item_to_put1, item_to_put2, filter, calls",
         [
-            # TODO: cover "FilterCriteria": {"Filters": [{"Pattern": "null"}]}} -> raises InvalidParameterValueException against AWS
-            # TODO: Test with no filter, and two times same entry
-            # AWS behaviour: Lambda only called once
-            # Localstack behaviour: triggered twice (once INSERT, once MODIFY)
-            # (
-            #     {"id": {"S": "test123"}, "id2": {"S": "test42"}},
-            #     None,
-            #     None,
-            #     1,
-            # ),
+            # Localstack behaviour: triggered twice
+            (
+                {"id": {"S": "test123"}, "id2": {"S": "test42"}},
+                None,
+                None,
+                1,
+            ),
             # Test with filter, and two times same entry
             (
                 {"id": {"S": "test123"}, "id2": {"S": "test42"}},
@@ -471,19 +468,7 @@ class TestDynamoDBEventSourceMapping:
             (
                 {"id": {"S": "test123"}, "numericFilter": {"N": "123"}},
                 {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
-                {
-                    "dynamodb": {
-                        "NewImage": {
-                            "numericFilter": {
-                                "N": [
-                                    {
-                                        "numeric": [">", 100]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                },
+                {"dynamodb": {"NewImage": {"numericFilter": {"N": [{"numeric": [">", 100]}]}}}},
                 0,
             ),
             (
@@ -491,15 +476,7 @@ class TestDynamoDBEventSourceMapping:
                 {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
                 {
                     "dynamodb": {
-                        "NewImage": {
-                            "numericFilter": {
-                                "N": [
-                                    {
-                                        "numeric": [">=", 100, "<", 200]
-                                    }
-                                ]
-                            }
-                        }
+                        "NewImage": {"numericFilter": {"N": [{"numeric": [">=", 100, "<", 200]}]}}
                     }
                 },
                 0,
@@ -556,17 +533,25 @@ class TestDynamoDBEventSourceMapping:
                 "MaximumBatchingWindowInSeconds": 1,
                 "MaximumRetryAttempts": 1,
             }
-            if filter:
-                event_source_mapping_kwargs.update(
-                    FilterCriteria={
-                        "Filters": [
-                            {"Pattern": json.dumps(filter)},
-                        ]
-                    }
-                )
-            event_source_uuid = lambda_client.create_event_source_mapping(
-                **event_source_mapping_kwargs
-            )["UUID"]
+            event_source_mapping_kwargs.update(
+                FilterCriteria={
+                    "Filters": [
+                        {"Pattern": json.dumps(filter)},
+                    ]
+                }
+            )
+            try:
+                event_source_uuid = lambda_client.create_event_source_mapping(
+                    **event_source_mapping_kwargs
+                )["UUID"]
+            except Exception as ex:
+                if filter:
+                    # json.loads serializes None to "FilterCriteria": {"Filters": [{"Pattern": "null"}]}}
+                    # TODO: raise correct Exception, AWS raises following Exception:
+                    # An error occurred (InvalidParameterValueException) when calling the CreateEventSourceMapping
+                    # operation: Invalid filter pattern definition.
+                    raise ex
+                return
             _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
             dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
 
