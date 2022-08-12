@@ -231,7 +231,9 @@ def aggregate_recorded_raw_data(
                     continue
                 if collect_for_arch and collect_for_arch not in str(path):
                     continue
-
+                if not recorded.get(metric.service):
+                    print(f"could not find service {metric.service}, skipping...")
+                    continue
                 service = recorded[metric.service]
                 ops = service[metric.operation]
 
