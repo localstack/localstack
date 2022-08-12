@@ -373,7 +373,7 @@ def test_report_batch_item_failures(
 
     # timeout in seconds, used for both the lambda and the queue visibility timeout.
     # increase to 10 if testing against AWS fails.
-    retry_timeout = 6
+    retry_timeout = 8
     retries = 2
 
     # set up lambda function
