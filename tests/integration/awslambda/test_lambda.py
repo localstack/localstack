@@ -689,7 +689,7 @@ class TestLambdaAPI:
         lambda_client.delete_function_url_config(FunctionName=function_name)
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ex:
             lambda_client.get_function_url_config(FunctionName=function_name)
-        snapshot.match("failed_deletion", ex.value.response)
+        snapshot.match("failed_getter", ex.value.response)
 
 
 class TestLambdaBaseFeatures:

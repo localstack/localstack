@@ -1541,7 +1541,11 @@ def create_url_config(function):
     lambda_backend = LambdaRegion.get()
     function = lambda_backend.lambdas.get(arn)
     if function is None:
-        return error_response("Function does not exist", 404, "ResourceNotFoundException")
+        response = error_response("Function does not exist", 404, "ResourceNotFoundException")
+        response_data = json.loads(response.data)
+        response_data.update({"Message": response_data.get("message")})
+        response.set_data(json.dumps(response_data))
+        return response
 
     if qualifier and not function.qualifier_exists(qualifier=qualifier):
         return not_found_error()
@@ -1601,7 +1605,13 @@ def get_url_config(function):
     url_config = lambda_backend.url_configs.get(arn)
 
     if url_config is None:
-        return not_found_error()
+        response = error_response(
+            "The resource you requested does not exist.", 404, "ResourceNotFoundException"
+        )
+        response_data = json.loads(response.data)
+        response_data.update({"Message": response_data.get("message")})
+        response.set_data(json.dumps(response_data))
+        return response
 
     response = url_config.copy()
     response.pop("CustomId")
@@ -1656,7 +1666,11 @@ def delete_url_config(function):
 
     lambda_backend = LambdaRegion.get()
     if arn not in lambda_backend.url_configs:
-        return error_response("Function does not exist", 404, "ResourceNotFoundException")
+        response = error_response("Function does not exist", 404, "ResourceNotFoundException")
+        response_data = json.loads(response.data)
+        response_data.update({"Message": response_data.get("message")})
+        response.set_data(json.dumps(response_data))
+        return response
 
     lambda_backend.url_configs.pop(arn)
     return {}
