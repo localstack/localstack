@@ -1131,10 +1131,10 @@ def get_lambda_url_config(api_id, region=None):
 
 
 def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
-    rawPath = path.split("?")[0]
-    rawQueryString = path.split("?")[1] if len(path.split("?")) > 1 else ""
-    queryStringParameters = (
-        {} if not rawQueryString else dict(urllib.parse.parse_qsl(rawQueryString))
+    raw_path = path.split("?")[0]
+    raw_query_string = path.split("?")[1] if len(path.split("?")) > 1 else ""
+    query_string_parameters = (
+        {} if not raw_query_string else dict(urllib.parse.parse_qsl(raw_query_string))
     )
 
     now = datetime.utcnow()
@@ -1142,17 +1142,17 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
     if not any(char in readable for char in ["+", "-"]):
         readable += "+0000"
 
-    sourceIp = headers.get("Remote-Addr", "")
-    requestContext = {
+    source_ip = headers.get("Remote-Addr", "")
+    request_context = {
         "accountId": "anonymous",
         "apiId": api_id,
         "domainName": headers.get("Host", ""),
         "domainPrefix": api_id,
         "http": {
             "method": method,
-            "path": rawPath,
+            "path": raw_path,
             "protocol": "HTTP/1.1",
-            "sourceIp": sourceIp,
+            "sourceIp": source_ip,
             "userAgent": headers.get("User-Agent", ""),
         },
         "requestId": long_uid(),
@@ -1177,7 +1177,7 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
             "x-amzn-tls-cipher-suite": "ECDHE-RSA-AES128-GCM-SHA256",
             "x-amzn-tls-version": "TLSv1.2",
             "x-forwarded-proto": "http",
-            "x-forwarded-for": sourceIp,
+            "x-forwarded-for": source_ip,
             "x-forwarded-port": str(config.EDGE_PORT),
         }
     )
@@ -1185,11 +1185,11 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
     event = {
         "version": "2.0",
         "routeKey": "$default",
-        "rawPath": rawPath,
-        "rawQueryString": rawQueryString,
+        "rawPath": raw_path,
+        "rawQueryString": raw_query_string,
         "headers": event_headers,
-        "queryStringParameters": queryStringParameters,
-        "requestContext": requestContext,
+        "queryStringParameters": query_string_parameters,
+        "requestContext": request_context,
         "body": body,
         "isBase64Encoded": is_base64_encoded,
     }
