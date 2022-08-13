@@ -2466,7 +2466,7 @@ class TestLambdaURL:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..context.memoryLimitInMB",
+            "$..context",
             "$..event.headers.x-forwarded-proto",
             "$..event.headers.x-forwarded-for",
             "$..event.headers.x-forwarded-port",
