@@ -1171,6 +1171,7 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
     event_headers = {k.lower(): v for k, v in headers.items()}
     event_headers.pop("connection")
     event_headers.pop("x-localstack-tgt-api")
+    event_headers.pop("x-localstack-request-url")
 
     event_headers.update(
         {
