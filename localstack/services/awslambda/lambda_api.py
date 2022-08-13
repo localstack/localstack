@@ -1532,6 +1532,13 @@ def add_permission(function):
     return result, 201
 
 
+def correct_error_response_for_url_config(response):
+    response_data = json.loads(response.data)
+    response_data.update({"Message": response_data.get("message")})
+    response.set_data(json.dumps(response_data))
+    return response
+
+
 @app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["POST"])
 def create_url_config(function):
     arn = func_arn(function)
@@ -1542,10 +1549,7 @@ def create_url_config(function):
     function = lambda_backend.lambdas.get(arn)
     if function is None:
         response = error_response("Function does not exist", 404, "ResourceNotFoundException")
-        response_data = json.loads(response.data)
-        response_data.update({"Message": response_data.get("message")})
-        response.set_data(json.dumps(response_data))
-        return response
+        return correct_error_response_for_url_config(response)
 
     if qualifier and not function.qualifier_exists(qualifier=qualifier):
         return not_found_error()
@@ -1608,10 +1612,7 @@ def get_url_config(function):
         response = error_response(
             "The resource you requested does not exist.", 404, "ResourceNotFoundException"
         )
-        response_data = json.loads(response.data)
-        response_data.update({"Message": response_data.get("message")})
-        response.set_data(json.dumps(response_data))
-        return response
+        return correct_error_response_for_url_config(response)
 
     response = url_config.copy()
     response.pop("CustomId")
@@ -1667,9 +1668,6 @@ def delete_url_config(function):
     lambda_backend = LambdaRegion.get()
     if arn not in lambda_backend.url_configs:
         response = error_response("Function does not exist", 404, "ResourceNotFoundException")
-        response_data = json.loads(response.data)
-        response_data.update({"Message": response_data.get("message")})
-        response.set_data(json.dumps(response_data))
         return response
 
     lambda_backend.url_configs.pop(arn)
