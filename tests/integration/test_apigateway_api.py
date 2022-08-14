@@ -263,7 +263,7 @@ def test_integration_response(apigateway_client):
         {
             "statusCode": "200",
             "selectionPattern": "foobar",
-            "ResponseMetadata": {"HTTPStatusCode": 200},
+            "ResponseMetadata": {"HTTPStatusCode": 201},
             "responseTemplates": {},  # Note: TF compatibility
         }
     )
@@ -342,7 +342,7 @@ def test_integration_response(apigateway_client):
         {
             "statusCode": "200",
             "selectionPattern": "foobar",
-            "ResponseMetadata": {"HTTPStatusCode": 200},
+            "ResponseMetadata": {"HTTPStatusCode": 201},
             "responseTemplates": {},  # Note: TF compatibility
             "contentHandling": "CONVERT_TO_BINARY",
         }
