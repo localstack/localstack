@@ -50,7 +50,7 @@ def test_parse_config_file(input_type, sections):
             assert expected == section
 
 
-def test_write_file_atomically():
+def test_write_to_file_atomically():
 
     # open a temporary file and writes to it, so far nothing new
     tf = tempfile.NamedTemporaryFile()
