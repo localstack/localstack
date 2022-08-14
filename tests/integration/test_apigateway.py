@@ -467,6 +467,9 @@ class TestAPIGateway:
         assert response.headers["Content-Type"] == "text/html"
         assert response.headers["Access-Control-Allow-Origin"] == "*"
 
+        delete_rest_api(apigateway_client, apiId=api_id)
+
+
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
     def test_api_gateway_http_integrations(self, int_type, monkeypatch):
         monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_APIGATEWAY", False)
