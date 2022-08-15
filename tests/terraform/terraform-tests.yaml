@@ -97,11 +97,6 @@ route53resolver:
     - TestAccRoute53ResolverQueryLogConfig_basic
     - TestAccRoute53ResolverQueryLogConfig_disappears
     - TestAccRoute53ResolverQueryLogConfig_tags
-    - TestAccRoute53ResolverRule_justDotDomainName
-    - TestAccRoute53ResolverRule_tags
-    - TestAccRoute53ResolverRulesDataSource_nameRegex
-    - TestAccRoute53ResolverRulesDataSource_resolverEndpointID
-    - TestAccRoute53ResolverRulesDataSource_nonExistentNameRegex
     - TestValidResolverName
 s3:
     - TestAccS3BucketVersioning_basic
