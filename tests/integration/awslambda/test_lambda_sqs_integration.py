@@ -73,9 +73,8 @@ def test_failing_lambda_retries_after_visibility_timeout(
         "get_destination_queue_url", sqs_client.get_queue_url(QueueName=destination_queue_name)
     )
 
-    retry_timeout = (
-        2  # timeout in seconds, used for both the lambda and the queue visibility timeout
-    )
+    # timeout in seconds, used for both the lambda and the queue visibility timeout
+    retry_timeout = 5
 
     # set up lambda function
     function_name = f"failing-lambda-{short_uid()}"
@@ -175,9 +174,8 @@ def test_redrive_policy_with_failing_lambda(
         "get_destination_queue_url", sqs_client.get_queue_url(QueueName=destination_queue_name)
     )
 
-    retry_timeout = (
-        2  # timeout in seconds, used for both the lambda and the queue visibility timeout
-    )
+    # timeout in seconds, used for both the lambda and the queue visibility timeout
+    retry_timeout = 5
     retries = 2
 
     # set up lambda function

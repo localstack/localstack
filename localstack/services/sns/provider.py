@@ -95,7 +95,6 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
@@ -831,10 +830,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sns_backend = SNSBackend.get()
         sns_backend.sns_subscriptions.pop(topic_arn, None)
         sns_backend.sns_tags.pop(topic_arn, None)
-        event_publisher.fire_event(
-            event_publisher.EVENT_SNS_DELETE_TOPIC,
-            payload={"t": event_publisher.get_hash(topic_arn)},
-        )
 
     def create_topic(
         self,
@@ -855,11 +850,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
         sns_backend.sns_subscriptions[topic_arn] = (
             sns_backend.sns_subscriptions.get(topic_arn) or []
-        )
-        # publish event
-        event_publisher.fire_event(
-            event_publisher.EVENT_SNS_CREATE_TOPIC,
-            payload={"t": event_publisher.get_hash(topic_arn)},
         )
         return CreateTopicResponse(TopicArn=topic_arn)
 
