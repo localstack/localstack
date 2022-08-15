@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from typing import Optional
 
 from moto.ec2.models import ec2_backends
 from moto.route53resolver.models import Route53ResolverBackend as MotoRoute53ResolverBackend
@@ -75,18 +74,18 @@ from localstack.aws.api.route53resolver import (
 )
 from localstack.services.route53resolver.models import (
     Route53ResolverBackend,
-    get_or_create_firewall_config,
-    delete_resolver_query_log_config_associations,
     delete_firewall_domain_list,
     delete_firewall_rule,
     delete_firewall_rule_group,
     delete_firewall_rule_group_association,
     delete_resolver_query_log_config,
+    delete_resolver_query_log_config_associations,
     get_firewall_domain,
     get_firewall_domain_list,
     get_firewall_rule,
     get_firewall_rule_group,
     get_firewall_rule_group_association,
+    get_or_create_firewall_config,
     get_resolver_query_log_config,
     get_resolver_query_log_config_associations,
 )
@@ -549,7 +548,7 @@ class Route53ResolverProvider(Route53ResolverApi):
             resolver_query_log_configs.append(ResolverQueryLogConfig(resolver_query_log_config))
         return ListResolverQueryLogConfigsResponse(
             ResolverQueryLogConfigs=resolver_query_log_configs,
-            TotalCount=len(resolver_query_log_configs)
+            TotalCount=len(resolver_query_log_configs),
         )
 
     def associate_resolver_query_log_config(

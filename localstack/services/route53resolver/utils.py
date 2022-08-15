@@ -26,6 +26,7 @@ def get_resolver_query_log_config_id():
 def get_route53_resolver_query_log_config_association_id():
     return f"rslvr-qlcassoc-{get_random_hex(17)}"
 
+
 def get_firewall_config_id():
     return f"rslvr-fc-{get_random_hex(17)}"
 

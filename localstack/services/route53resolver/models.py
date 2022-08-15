@@ -138,11 +138,13 @@ def delete_resolver_query_log_config(id):
 
 def get_resolver_query_log_config_associations(id):
     region_details = Route53ResolverBackend.get()
-    resolver_query_log_config_association = region_details.resolver_query_log_config_associations.get(id)
+    resolver_query_log_config_association = (
+        region_details.resolver_query_log_config_associations.get(id)
+    )
     if not resolver_query_log_config_association:
         raise ResourceNotFoundException(
-                f"[RSLVR-01601] The specified query logging configuration doesn't exist. Trace Id: '{aws_stack.get_trace_id()}'"
-            )
+            f"[RSLVR-01601] The specified query logging configuration doesn't exist. Trace Id: '{aws_stack.get_trace_id()}'"
+        )
     return resolver_query_log_config_association
 
 
