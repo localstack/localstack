@@ -1,18 +1,13 @@
 import logging
 import os
-from typing import NamedTuple, Optional, Set, cast
+from typing import NamedTuple, Optional, Set
 
 import botocore
 from werkzeug.http import parse_dict_header
 
 import localstack
 from localstack import config
-from localstack.aws.spec import (
-    CachedServiceCatalog,
-    ServiceCatalog,
-    load_service_index_cache,
-    save_service_index_cache,
-)
+from localstack.aws.spec import ServiceCatalog, build_service_index_cache, load_service_index_cache
 from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
 from localstack.services.s3.s3_utils import uses_host_addressing
@@ -231,23 +226,29 @@ def legacy_rules(request: Request) -> Optional[str]:
 
 @singleton_factory
 def get_service_catalog() -> ServiceCatalog:
-    """Loads the ServiceCatalog (which contains all the service specs)."""
+    """Loads the ServiceCatalog (which contains all the service specs), and potentially re-uses a cached index."""
     if not os.path.isdir(config.dirs.cache):
         return ServiceCatalog()
 
-    cache_file = os.path.join(
-        config.dirs.cache, f"service-catalog-{localstack.__version__}-{botocore.__version__}.pickle"
-    )
+    try:
+        ls_ver = localstack.__version__.replace(".", "_")
+        botocore_ver = botocore.__version__.replace(".", "_")
+        cache_file_name = f"service-catalog-{ls_ver}-{botocore_ver}.pickle"
+        cache_file = os.path.join(config.dirs.cache, cache_file_name)
 
-    if os.path.exists(cache_file):
-        LOG.debug("loading service catalog index cache file %s", cache_file)
-        cache = load_service_index_cache(cache_file)
-        return cast(ServiceCatalog, CachedServiceCatalog(cache))
-    else:
-        catalog = ServiceCatalog()
-        LOG.debug("saving service catalog index cache file %s", cache_file)
-        save_service_index_cache(catalog, cache_file)
-        return catalog
+        if not os.path.exists(cache_file):
+            LOG.debug("building service catalog index cache file %s", cache_file)
+            index = build_service_index_cache(cache_file)
+        else:
+            LOG.debug("loading service catalog index cache file %s", cache_file)
+            index = load_service_index_cache(cache_file)
+
+        return ServiceCatalog(index)
+    except Exception:
+        LOG.exception(
+            "error while processing service catalog index cache, falling back to lazy-loaded index"
+        )
+        return ServiceCatalog()
 
 
 def resolve_conflicts(candidates: Set[str], request: Request):
