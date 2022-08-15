@@ -1,14 +1,23 @@
 import logging
-from functools import lru_cache
-from typing import NamedTuple, Optional, Set
+import os
+from typing import NamedTuple, Optional, Set, cast
 
+import botocore
 from werkzeug.http import parse_dict_header
 
-from localstack.aws.spec import ServiceCatalog
+import localstack
+from localstack import config
+from localstack.aws.spec import (
+    CachedServiceCatalog,
+    ServiceCatalog,
+    load_service_index_cache,
+    save_service_index_cache,
+)
 from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
+from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import hostname_from_url
 
@@ -220,10 +229,25 @@ def legacy_rules(request: Request) -> Optional[str]:
         return "s3"
 
 
-@lru_cache()
+@singleton_factory
 def get_service_catalog() -> ServiceCatalog:
     """Loads the ServiceCatalog (which contains all the service specs)."""
-    return ServiceCatalog()
+    if not os.path.isdir(config.dirs.cache):
+        return ServiceCatalog()
+
+    cache_file = os.path.join(
+        config.dirs.cache, f"service-catalog-{localstack.__version__}-{botocore.__version__}.pickle"
+    )
+
+    if os.path.exists(cache_file):
+        LOG.debug("loading service catalog index cache file %s", cache_file)
+        cache = load_service_index_cache(cache_file)
+        return cast(ServiceCatalog, CachedServiceCatalog(cache))
+    else:
+        catalog = ServiceCatalog()
+        LOG.debug("saving service catalog index cache file %s", cache_file)
+        save_service_index_cache(catalog, cache_file)
+        return catalog
 
 
 def resolve_conflicts(candidates: Set[str], request: Request):
