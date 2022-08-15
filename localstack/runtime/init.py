@@ -1,6 +1,7 @@
 import dataclasses
 import logging
 import os.path
+import subprocess
 import time
 from enum import Enum
 from functools import cached_property
@@ -8,7 +9,6 @@ from typing import Dict, List, Optional
 
 from localstack.runtime import hooks
 from localstack.utils.objects import singleton_factory
-from localstack.utils.run import ShellCommandThread
 
 LOG = logging.getLogger(__name__)
 
@@ -54,15 +54,9 @@ class ShellScriptRunner(ScriptRunner):
     """
 
     def run(self, path: str) -> None:
-        def _log(*args, **kwargs):
-            LOG.info(args[0].rstrip())
-
-        t = ShellCommandThread(cmd=path, quiet=False, log_listener=_log)
-        t.start()
-
-        result = t.result_future.result()
-        if result != 0:
-            raise OSError("Script %s returned a non-zero exit code %s" % (path, result))
+        exit_code = subprocess.call(args=[], executable=path)
+        if exit_code != 0:
+            raise OSError("Script %s returned a non-zero exit code %s" % (path, exit_code))
 
 
 class PythonScriptRunner(ScriptRunner):
@@ -94,9 +88,6 @@ class InitScriptManager:
     def __init__(self, script_root: str):
         self.script_root = script_root
         self.stage_completed = {stage: False for stage in Stage}
-
-        # BOOT is special since it runs outside the python process
-        self.stage_completed[Stage.BOOT] = True
 
     @cached_property
     def scripts(self) -> Dict[Stage, List[Script]]:
@@ -156,7 +147,6 @@ class InitScriptManager:
                 continue
 
             stage_path = os.path.join(self.script_root, stage_dir)
-            print(stage_path)
             if not os.path.isdir(stage_path):
                 continue
 
@@ -212,3 +202,22 @@ def _run_and_log(stage: Stage):
 
     if scripts:
         log.event("run_init", {"stage": stage.name, "scripts": len(scripts), "duration": took})
+
+
+def main():
+    """
+    Run the init scripts for a particular stage. For example, to run all boot scripts run::
+
+        python -m localstack.runtime.init BOOT
+
+    The __main__ entrypoint is currently mainly used for the docker-entrypoint.sh. Other stages
+    are executed from runtime hooks.
+    """
+    import sys
+
+    stage = Stage[sys.argv[1]]
+    init_script_manager().run_stage(stage)
+
+
+if __name__ == "__main__":
+    main()

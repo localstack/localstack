@@ -77,6 +77,9 @@ cat /dev/null > ${LOG_DIR}/localstack_infra.err
 test -f /tmp/localstack_infra.log || ln -s ${LOG_DIR}/localstack_infra.log /tmp/localstack_infra.log
 test -f /tmp/localstack_infra.err || ln -s ${LOG_DIR}/localstack_infra.err /tmp/localstack_infra.err
 
+# run modern runtime init scripts before starting localstack
+test -d /etc/localstack/init/boot.d && /opt/code/localstack/.venv/bin/python -m localstack.runtime.init BOOT
+
 supervisord -c /etc/supervisord.conf &
 suppid="$!"
 
