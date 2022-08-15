@@ -311,9 +311,22 @@ class LambdaIntegration(BackendIntegration):
                 response._content = ""
                 response.status_code = 200
             else:
-                parsed_result = (
-                    result if isinstance(result, dict) else json.loads(str(result or "{}"))
-                )
+                # depending on the lambda executor sometimes it returns a string and sometimes a dict
+                match result:
+                    case dict():
+                        parsed_result = result
+                    case str():
+                        # try to parse the result as json, if it succeeds we assume it's a valid
+                        # json string and we don't do anything.
+                        if isinstance(json.loads(result or "{}"), dict):
+                            parsed_result = result
+                        else:
+                            # the docker executor returns a string wrapping a json string,
+                            # so we need to remove the outer string
+                            parsed_result = json.loads(result or "{}")
+                    case _:
+                        parsed_result = json.loads(str(result or "{}"))
+
                 parsed_result = common.json_safe(parsed_result)
                 parsed_result = {} if parsed_result is None else parsed_result
                 response.status_code = 200
