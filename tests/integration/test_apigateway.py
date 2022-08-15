@@ -1908,7 +1908,7 @@ class TestAPIGateway:
         )
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
         assert 200 == response.get("status")
-        assert "response from" in response.get("body").get("body")
+        assert "response from" in json.loads(response.get("body")).get("body")
 
         # run test_invoke_method API #2
         response = client.test_invoke_method(
@@ -1921,8 +1921,8 @@ class TestAPIGateway:
         )
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
         assert 200 == response.get("status")
-        assert "response from" in response.get("body").get("body")
-        assert "val123" in response.get("body").get("body")
+        assert "response from" in json.loads(response.get("body")).get("body")
+        assert "val123" in json.loads(response.get("body")).get("body")
 
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)
