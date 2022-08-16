@@ -142,8 +142,9 @@ def simulate_call(service: str, op: str) -> RowEntry:
         config=botocore.config.Config(
             parameter_validation=False,
             retries={"max_attempts": 0, "total_max_attempts": 1},
-            connect_timeout=1,
+            connect_timeout=30,
             read_timeout=1,
+            inject_host_prefix=False,
         ),
     )
 
