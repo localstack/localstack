@@ -6485,9 +6485,13 @@ class CreateSnapshotRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+VolumeIdStringList = List[VolumeId]
+
+
 class InstanceSpecification(TypedDict, total=False):
     InstanceId: Optional[InstanceId]
     ExcludeBootVolume: Optional[Boolean]
+    ExcludeDataVolumeIds: Optional[VolumeIdStringList]
 
 
 class CreateSnapshotsRequest(ServiceRequest):
@@ -11789,9 +11793,6 @@ class DescribeVolumeAttributeResult(TypedDict, total=False):
     AutoEnableIO: Optional[AttributeBooleanValue]
     ProductCodes: Optional[ProductCodeList]
     VolumeId: Optional[String]
-
-
-VolumeIdStringList = List[VolumeId]
 
 
 class DescribeVolumeStatusRequest(ServiceRequest):
