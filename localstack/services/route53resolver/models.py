@@ -117,6 +117,7 @@ def delete_firewall_rule(firewall_rule_group_id, firewall_domain_list_id):
 
 
 def get_resolver_query_log_config(id):
+    """returns resolver query log config with the given id if it exists"""
     region_details = Route53ResolverBackend.get()
     resolver_query_log_config = region_details.resolver_query_log_configs.get(id)
     if not resolver_query_log_config:
@@ -127,6 +128,7 @@ def get_resolver_query_log_config(id):
 
 
 def delete_resolver_query_log_config(id):
+    """deletes the resolver query log config with the given id"""
     region_details = Route53ResolverBackend.get()
     if not region_details.resolver_query_log_configs.get(id):
         raise ResourceNotFoundException(
@@ -135,8 +137,8 @@ def delete_resolver_query_log_config(id):
     resolver_query_log_config = region_details.resolver_query_log_configs.pop(id)
     return resolver_query_log_config
 
-
 def get_resolver_query_log_config_associations(id):
+    """returns resolver query log config association with the given id if it exists"""
     region_details = Route53ResolverBackend.get()
     resolver_query_log_config_association = (
         region_details.resolver_query_log_config_associations.get(id)
@@ -149,6 +151,7 @@ def get_resolver_query_log_config_associations(id):
 
 
 def delete_resolver_query_log_config_associations(resolver_query_log_config_id, resource_id):
+    """deletes the resolver query log config association with the given id and vpc id"""
     region_details = Route53ResolverBackend.get()
     association_id = None
     for association in region_details.resolver_query_log_config_associations.values():
@@ -163,6 +166,7 @@ def delete_resolver_query_log_config_associations(resolver_query_log_config_id, 
 
 
 def get_or_create_firewall_config(resource_id, region, owner_id):
+    """returns the firewall config with the given id if it exists or creates a new one"""
     region_details = Route53ResolverBackend.get()
     validate_vpc(resource_id, region)
     firewall_config: FirewallConfig
