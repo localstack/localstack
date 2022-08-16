@@ -5,14 +5,17 @@ import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Protocol, Tuple, TypedDict, runtime_checkable
 
+from moto.core.utils import BackendDict
 from plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 from readerwriterlock import rwlock
 from werkzeug import Request
 
 from localstack import config
 from localstack.config import ServiceProviderConfig
+from localstack.services.generic_proxy import RegionBackend
+from localstack.services.stores import AccountRegionBundle
 from localstack.utils.bootstrap import get_enabled_apis, log_duration
 from localstack.utils.functions import call_safe
 from localstack.utils.net import wait_for_port_status
@@ -100,6 +103,28 @@ class StateSerializerComposite(StateSerializer):
 
 # maps service names to serializers (TODO: to be encapsulated in ServicePlugin instances)
 SERIALIZERS: Dict[str, StateSerializer] = {}
+
+
+# -----------------
+# STORAGE UTILITIES
+# -----------------
+class StorageBackend(TypedDict, total=False):
+    """Encapsulation for all the possible backends a provider can use to store its data."""
+
+    Store: Optional[AccountRegionBundle]
+    RegionBackend: Optional[RegionBackend]
+    BackendDict: Optional[BackendDict]
+
+
+@runtime_checkable
+class StorageBackendAccessor(Protocol):
+    """
+    Common way to access the `StorageBackend` for a provider.
+    It returns the entire backends objects, i.e., it returns the data for all accounts and regions.
+    """
+
+    def get_storage_backend(self) -> StorageBackend:
+        ...
 
 
 # -----------------
