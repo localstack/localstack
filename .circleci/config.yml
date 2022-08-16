@@ -254,6 +254,46 @@ jobs:
             - repo/target/coverage/
             - repo/target/metric_reports
 
+  capture-not-implemented:
+    parameters:
+      platform:
+        description: "Platform to build for"
+        default: "amd64"
+        type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
+        type: string
+    machine:
+      image: << parameters.machine_image >>
+    resource_class: << parameters.resource_class >>
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Run localstack
+          command: |
+            make venv
+            bin/localstack start -d
+            sleep 10
+      - run:
+          name: Run capture-not-implemented
+          command: |
+            source .venv/bin/activate
+            cd scripts
+            python -m capture_notimplemented_responses
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/scripts/implementation_coverage_aggregated.csv
+            - repo/scripts/implementation_coverage_full.csv
+
   report:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -282,6 +322,10 @@ jobs:
             python -m scripts.metric_aggregator . amd64
       - store_artifacts:
           path: parity_metrics/
+      - store_artifacts:
+          path: scripts/implementation_coverage_aggregated.csv
+      - store_artifacts:
+          path: scripts/implementation_coverage_full.csv
 
   docker-push:
     executor: ubuntu-machine-amd64
@@ -384,12 +428,20 @@ workflows:
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           requires:
             - docker-build-amd64
+      - capture-not-implemented:
+          name: collect-not-implemented
+          platform: amd64
+          resource_class: medium
+          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          requires:
+            - docker-build-amd64
       - report:
           requires:
             - itest-lambda-docker
             - itest-lambda-provider
             - docker-test-amd64
             - docker-test-arm64
+            - collect-not-implemented
             - unit-tests
       - docker-push:
           filters:
