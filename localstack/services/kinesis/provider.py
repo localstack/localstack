@@ -8,7 +8,6 @@ from typing import Dict, List, Set
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.kinesis import (
-    BooleanObject,
     Consumer,
     ConsumerARN,
     ConsumerDescription,
@@ -38,7 +37,6 @@ from localstack.aws.api.kinesis import (
     ShardId,
     StartingPosition,
     StreamARN,
-    StreamModeDetails,
     StreamName,
     SubscribeToShardEvent,
     SubscribeToShardEventStream,
@@ -52,7 +50,6 @@ from localstack.constants import LOCALHOST
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.kinesis.kinesis_starter import check_kinesis, start_kinesis
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
@@ -346,29 +343,4 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
             )
 
         # If kinesis-mock is used, we forward the request through the fallback by raising a NotImplementedError
-        raise NotImplementedError
-
-    def create_stream(
-        self,
-        context: RequestContext,
-        stream_name: StreamName,
-        shard_count: PositiveIntegerObject = None,
-        stream_mode_details: StreamModeDetails = None,
-    ) -> None:
-        payload = {"n": event_publisher.get_hash(stream_name), "s": shard_count}
-        event_publisher.fire_event(event_publisher.EVENT_KINESIS_CREATE_STREAM, payload=payload)
-
-        # After the event is logged, the request is forwarded to the fallback by raising a NotImplementedError
-        raise NotImplementedError
-
-    def delete_stream(
-        self,
-        context: RequestContext,
-        stream_name: StreamName,
-        enforce_consumer_deletion: BooleanObject = None,
-    ) -> None:
-        payload = {"n": event_publisher.get_hash(stream_name)}
-        event_publisher.fire_event(event_publisher.EVENT_KINESIS_DELETE_STREAM, payload=payload)
-
-        # After the event is logged, the request is forwarded to the fallback by raising a NotImplementedError
         raise NotImplementedError
