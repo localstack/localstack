@@ -1,12 +1,13 @@
 import json
-import os
 
 import pytest
 import requests
 
+from localstack import config
 from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -89,7 +90,11 @@ def test_lambda_aws_integration(apigateway_client, create_rest_apigw):
 
 
 def get_apigateway_base_url():
-    return "amazonaws.com" if os.environ.get("TEST_TARGET") == "AWS_CLOUD" else LOCALHOST_HOSTNAME
+    return "amazonaws.com" if is_aws_cloud() else f"{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
+
+
+def format_apigateway_url(api_id: str, region: str, stage: str, path: str):
+    return f"https://{api_id}.execute-api.{f'{region}.' if is_aws_cloud() else ''}{get_apigateway_base_url()}/{stage}{path}"
 
 
 @pytest.mark.aws_validated
@@ -168,10 +173,17 @@ def test_lambda_proxy_integration(
         apigateway_client.create_deployment(restApiId=rest_api_id, stageName=stage_name)
 
         # invoke rest api
-        invocation_url = f"https://{rest_api_id}.execute-api.{apigateway_client.meta.region_name}.{get_apigateway_base_url()}/{stage_name}/test-path"
+        invocation_url = format_apigateway_url(
+            api_id=rest_api_id,
+            region=apigateway_client.meta.region_name,
+            stage=stage_name,
+            path="/test-path",
+        )
 
         def invoke_api(url):
-            response = requests.get(url, headers={"User-Agent": "python-requests/testing"})
+            response = requests.get(
+                url, headers={"User-Agent": "python-requests/testing"}, verify=False
+            )
             assert 200 == response.status_code
             return response
 

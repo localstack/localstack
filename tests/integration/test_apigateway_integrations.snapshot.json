@@ -1,6 +1,6 @@
 {
   "tests/integration/test_apigateway_integrations.py::test_lambda_proxy_integration": {
-    "recorded-date": "10-08-2022, 22:13:01",
+    "recorded-date": "16-08-2022, 14:07:01",
     "recorded-content": {
       "rest-api-creation": {
         "ResponseMetadata": {
@@ -124,7 +124,7 @@
           "protocol": "HTTP/1.1",
           "requestId": "<uuid:1>",
           "requestTime": "<request-time:1>",
-          "requestTimeEpoch": 1660162380490,
+          "requestTimeEpoch": 1660651619986,
           "resourceId": "<resource-id:1>",
           "resourcePath": "/test-path",
           "stage": "test"
@@ -236,8 +236,8 @@
           "path": "/test/test-path/",
           "protocol": "HTTP/1.1",
           "requestId": "<uuid:2>",
-          "requestTime": "<request-time:1>",
-          "requestTimeEpoch": 1660162380865,
+          "requestTime": "<request-time:2>",
+          "requestTimeEpoch": 1660651620366,
           "resourceId": "<resource-id:1>",
           "resourcePath": "/test-path",
           "stage": "test"
