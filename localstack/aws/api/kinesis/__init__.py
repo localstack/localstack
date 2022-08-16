@@ -95,63 +95,93 @@ class StreamStatus(str):
 
 
 class ExpiredIteratorException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "ExpiredIteratorException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ExpiredNextTokenException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "ExpiredNextTokenException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InternalFailureException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "InternalFailureException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidArgumentException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "InvalidArgumentException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class KMSAccessDeniedException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "KMSAccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class KMSDisabledException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "KMSDisabledException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class KMSInvalidStateException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "KMSInvalidStateException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class KMSNotFoundException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "KMSNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class KMSOptInRequired(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "KMSOptInRequired"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class KMSThrottlingException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "KMSThrottlingException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class LimitExceededException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "LimitExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ProvisionedThroughputExceededException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "ProvisionedThroughputExceededException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ResourceInUseException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "ResourceInUseException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ResourceNotFoundException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "ResourceNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ValidationException(ServiceException):
-    message: Optional[ErrorMessage]
+    code: str = "ValidationException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 TagMap = Dict[TagKey, TagValue]
