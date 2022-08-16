@@ -624,6 +624,14 @@ class FifoQueue(SqsQueue):
         super().__init__(name, region, account_id, attributes, tags)
         self.deduplication = {}
 
+    def default_attributes(self) -> QueueAttributeMap:
+        return {
+            **super().default_attributes(),
+            QueueAttributeName.ContentBasedDeduplication: "false",
+            QueueAttributeName.DeduplicationScope: "queue",
+            QueueAttributeName.FifoThroughputLimit: "perQueue",
+        }
+
     def update_delay_seconds(self, value: int):
         super(FifoQueue, self).update_delay_seconds(value)
         for message in self.delayed:
