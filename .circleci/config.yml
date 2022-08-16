@@ -279,8 +279,7 @@ jobs:
           name: Parity metric aggregation
           command: |
             source .venv/bin/activate
-            # TODO: remove this - workaround to temporarily unblock the pipeline for now
-            python scripts/metric_aggregator.py . amd64 || true
+            python -m scripts.metric_aggregator . amd64
       - store_artifacts:
           path: parity_metrics/
 
