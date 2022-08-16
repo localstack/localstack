@@ -83,11 +83,6 @@ def create_simple_html_report(file_name, metrics):
                 tmp += _generate_details_block_html("errors hit", op_details["errors"])
             tmp += "</ul>"
             tmp += "</p>"
-        if not operation_counter:
-            print(
-                f"---> error: operation_counter={operation_counter}, operation_tested={operation_tested} for service '{service}'"
-            )
-            operation_counter = 1
         output += f"<p><details><summary>{operation_tested/operation_counter*100:.2f}% test coverage</summary>\n\n{tmp}\n</details></p>\n"
 
         with open(file_name, "a") as fd:
@@ -184,6 +179,8 @@ def _init_service_metric_counter() -> Dict:
     metric_recorder = {}
     for s, provider in SERVICE_PLUGINS.api_provider_specs.items():
         ops = _load_service_info(s)
+        if not ops:
+            continue
         service_attributes = {"pro": "pro" in provider, "community": "default" in provider}
         ops["service_attributes"] = service_attributes
         metric_recorder[s] = ops
