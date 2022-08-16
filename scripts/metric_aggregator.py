@@ -83,7 +83,12 @@ def create_simple_html_report(file_name, metrics):
                 tmp += _generate_details_block_html("errors hit", op_details["errors"])
             tmp += "</ul>"
             tmp += "</p>"
-        output += f"<p><details><summary>{'-' if not operation_counter else operation_tested/operation_counter*100:.2f}% test coverage</summary>\n\n{tmp}\n</details></p>\n"
+        if not operation_counter:
+            print(
+                f"---> error: operation_counter={operation_counter}, operation_tested={operation_tested} for service '{service}'"
+            )
+            operation_counter = 1
+        output += f"<p><details><summary>{operation_tested/operation_counter*100:.2f}% test coverage</summary>\n\n{tmp}\n</details></p>\n"
 
         with open(file_name, "a") as fd:
             fd.write(f"{output}\n")
