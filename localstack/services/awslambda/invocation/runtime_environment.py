@@ -4,7 +4,7 @@ import string
 from datetime import date, datetime
 from enum import Enum, auto
 from threading import RLock, Timer
-from typing import TYPE_CHECKING, Dict, Literal, Optional
+from typing import TYPE_CHECKING, Dict, Literal, Optional, Type
 
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
@@ -42,6 +42,17 @@ def generate_runtime_id() -> str:
     return "".join(random.choices(string.hexdigits[:16], k=32)).lower()
 
 
+def get_runtime_executor() -> Type[RuntimeExecutor]:
+    if config.LAMBDA_KUBERNETES_ENABLED:
+        from localstack.services.awslambda.invocation.runtime_executor_kubernetes import (
+            KubernetesRuntimeExecutor,
+        )
+
+        return KubernetesRuntimeExecutor
+    else:
+        return RuntimeExecutor
+
+
 class RuntimeEnvironment:
     runtime_executor: RuntimeExecutor
     status_lock: RLock
@@ -61,7 +72,7 @@ class RuntimeEnvironment:
         self.status_lock = RLock()
         self.function_version = function_version
         self.initialization_type = initialization_type
-        self.runtime_executor = RuntimeExecutor(
+        self.runtime_executor = get_runtime_executor()(
             self.id, function_version, service_endpoint=service_endpoint
         )
         self.last_returned = datetime.min
@@ -81,7 +92,7 @@ class RuntimeEnvironment:
         env_vars = {
             # Runtime API specifics
             "LOCALSTACK_RUNTIME_ID": self.id,
-            "LOCALSTACK_RUNTIME_ENDPOINT": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{self.runtime_executor.executor_endpoint.port}",
+            "LOCALSTACK_RUNTIME_ENDPOINT": f"http://{self.runtime_executor.get_executor_endpoint_from_executor()}",
             # General Lambda Environment Variables
             "AWS_LAMBDA_LOG_GROUP_NAME": self.get_log_group_name(),
             "AWS_LAMBDA_LOG_STREAM_NAME": self.get_log_stream_name(),
@@ -101,9 +112,9 @@ class RuntimeEnvironment:
             "AWS_SESSION_TOKEN": "test",
             # TODO xray
             # LocalStack endpoint specifics
-            "LOCALSTACK_HOSTNAME": self.runtime_executor.get_endpoint_from_executor(),
+            "LOCALSTACK_HOSTNAME": self.runtime_executor.get_localstack_endpoint_from_executor(),
             "EDGE_PORT": str(config.EDGE_PORT),
-            "AWS_ENDPOINT_URL": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.EDGE_PORT}",
+            "AWS_ENDPOINT_URL": f"http://{self.runtime_executor.get_localstack_endpoint_from_executor()}:{config.EDGE_PORT}",
         }
         if self.function_version.config.handler:
             env_vars["_HANDLER"] = self.function_version.config.handler

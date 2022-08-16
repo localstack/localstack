@@ -50,6 +50,8 @@ RUN apt-get update && \
             git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords \
             # Postgres
             postgresql postgresql-client postgresql-plpython3 \
+            # OpenSSH client (for kubernetes proxy) \
+            openssh-client \
             # NodeJS
             nodejs && \
         apt-get clean && rm -rf /var/lib/apt/lists/*

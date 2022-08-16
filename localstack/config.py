@@ -690,6 +690,12 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_en
     "ES_MULTI_CLUSTER"
 )
 
+# Kubernetes hackathon config variables
+LAMBDA_KUBERNETES_IMAGE_PREFIX = (
+    os.environ.get("LAMBDA_KUBERNETES_IMAGE_PREFIX") or "dfangl/localstack-lambda-images"
+)
+LAMBDA_KUBERNETES_ENABLED = is_env_not_false("LAMBDA_KUBERNETES_ENABLED")
+
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately

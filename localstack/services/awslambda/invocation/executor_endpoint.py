@@ -15,7 +15,6 @@ from localstack.services.awslambda.invocation.lambda_models import (
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
-INVOCATION_PORT = 9563
 
 
 class InvokeSendError(Exception):
@@ -34,10 +33,12 @@ class ExecutorEndpoint(Server):
         service_endpoint: ServiceEndpoint,
         host: str = "0.0.0.0",
         container_address: Optional[str] = None,
+        invocation_port: int = 9563,
     ) -> None:
         super().__init__(port, host)
         self.service_endpoint = service_endpoint
         self.container_address = container_address
+        self.invocation_port = invocation_port
 
     def _create_endpoint(self) -> Flask:
         executor_endpoint = Flask(f"executor_endpoint_{self.port}")
@@ -96,7 +97,7 @@ class ExecutorEndpoint(Server):
     def invoke(self, payload: Dict[str, str]) -> None:
         if not self.container_address:
             raise ValueError("Container address not set, but got an invoke.")
-        invocation_url = f"http://{self.container_address}:{INVOCATION_PORT}/invoke"
+        invocation_url = f"http://{self.container_address}:{self.invocation_port}/invoke"
         response = requests.post(url=invocation_url, json=payload)
         if not response.ok:
             raise InvokeSendError(

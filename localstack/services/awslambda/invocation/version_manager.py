@@ -22,10 +22,7 @@ from localstack.services.awslambda.invocation.runtime_environment import (
     InvalidStatusException,
     RuntimeEnvironment,
     RuntimeStatus,
-)
-from localstack.services.awslambda.invocation.runtime_executor import (
-    cleanup_version,
-    prepare_version,
+    get_runtime_executor,
 )
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 
@@ -176,7 +173,7 @@ class LambdaVersionManager(ServiceEndpoint):
             invocation_thread.start()
             self.invocation_thread = invocation_thread
             self.log_handler.start_subscriber()
-            prepare_version(self.function_version)
+            get_runtime_executor().prepare_version(self.function_version)
 
             self.state = VersionState(state=State.Active)
             LOG.debug(f"Lambda '{self.function_arn}' changed to active")
@@ -207,7 +204,7 @@ class LambdaVersionManager(ServiceEndpoint):
         for environment in list(self.all_environments.values()):
             self.stop_environment(environment)
         self.log_handler.stop()
-        cleanup_version(self.function_version)
+        get_runtime_executor().cleanup_version(self.function_version)
 
     def update_provisioned_concurrency_config(self, provisioned_concurrent_executions: int) -> None:
         self.provisioned_concurrent_executions = provisioned_concurrent_executions

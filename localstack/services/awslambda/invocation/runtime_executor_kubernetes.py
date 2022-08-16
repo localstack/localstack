@@ -1,4 +1,6 @@
+import copy
 import logging
+import os
 import re
 import shutil
 import time
@@ -6,19 +8,19 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Dict, Literal, Optional, Tuple
 
+from kubernetes import client as kubernetes_client
+from kubernetes import config as kubernetes_config
+from kubernetes import utils as kubernetes_utils
+
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
     ServiceEndpoint,
 )
 from localstack.services.awslambda.invocation.lambda_models import FunctionVersion
-from localstack.services.awslambda.lambda_utils import (
-    get_container_network_for_lambda,
-    get_main_endpoint_from_container,
-)
+from localstack.services.awslambda.lambda_utils import get_main_endpoint_from_container
 from localstack.services.install import LAMBDA_RUNTIME_INIT_PATH
 from localstack.utils.archives import unzip
-from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.net import get_free_tcp_port
 
@@ -37,6 +39,20 @@ LAMBDA_DOCKERFILE = """FROM {base_img}
 COPY aws-lambda-rie {rapid_entrypoint}
 COPY code/ /var/task
 """
+
+LAMBDA_POD_DEF = {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {"name": ""},
+    "spec": {
+        "containers": [
+            {
+                "image": "",
+                "name": "lambda-container",
+            }
+        ]
+    },
+}
 
 
 # TODO provided runtimes
@@ -64,7 +80,7 @@ def get_code_path_for_function(function_version: FunctionVersion) -> Path:
 
 
 def get_image_name_for_function(function_version: FunctionVersion) -> str:
-    return f"localstack/lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
+    return f"{config.LAMBDA_KUBERNETES_IMAGE_PREFIX}:lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
 
 
 def get_image_for_runtime(runtime: str) -> str:
@@ -94,10 +110,12 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
     with docker_file_path.open(mode="w") as f:
         f.write(docker_file)
     try:
+        image_name = get_image_name_for_function(function_version)
         CONTAINER_CLIENT.build_image(
             dockerfile_path=str(docker_file_path),
-            image_name=get_image_name_for_function(function_version),
+            image_name=image_name,
         )
+        CONTAINER_CLIENT.push_image(image_name)
     except Exception as e:
         if LOG.isEnabledFor(logging.DEBUG):
             LOG.exception(
@@ -117,10 +135,11 @@ class LambdaRuntimeException(Exception):
         super().__init__(message)
 
 
-class RuntimeExecutor:
+class KubernetesRuntimeExecutor:
     id: str
     function_version: FunctionVersion
-    ip: Optional[str]
+    # address the container is available at (for LocalStack)
+    address: Optional[str]
     executor_endpoint: Optional[ExecutorEndpoint]
 
     def __init__(
@@ -128,7 +147,7 @@ class RuntimeExecutor:
     ) -> None:
         self.id = id
         self.function_version = function_version
-        self.ip = None
+        self.address = None
         self.executor_endpoint = self._build_executor_endpoint(service_endpoint)
 
     @staticmethod
@@ -144,8 +163,7 @@ class RuntimeExecutor:
             file.write(function_version.code.zip_file)
             file.flush()
             unzip(file.name, str(target_code))
-        if config.LAMBDA_PREBUILD_IMAGES:
-            prepare_image(target_path, function_version)
+        prepare_image(target_path, function_version)
         LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
 
     @staticmethod
@@ -160,17 +178,12 @@ class RuntimeExecutor:
                 e.strerror,
                 e.filename,
             )
-        if config.LAMBDA_PREBUILD_IMAGES:
-            CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))
+        CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))
 
     def get_image(self) -> str:
         if not self.function_version.config.runtime:
             raise NotImplementedError("Custom images are currently not supported")
-        return (
-            get_image_name_for_function(self.function_version)
-            if config.LAMBDA_PREBUILD_IMAGES
-            else get_image_for_runtime(self.function_version.config.runtime)
-        )
+        return get_image_name_for_function(self.function_version)
 
     def _build_executor_endpoint(self, service_endpoint: ServiceEndpoint) -> ExecutorEndpoint:
         port = get_free_tcp_port()
@@ -187,30 +200,28 @@ class RuntimeExecutor:
         )
         return executor_endpoint
 
+    def get_kubernetes_client(self):
+        kubernetes_config.load_kube_config(
+            config_file=os.path.join(config.dirs.config, "kube", "config")
+        )
+        return kubernetes_client.ApiClient()
+
     def start(self, env_vars: Dict[str, str]) -> None:
         self.executor_endpoint.start()
-        network = self.get_network_for_executor()
-        container_config = ContainerConfiguration(
-            image_name=self.get_image(),
-            name=self.id,
-            env_vars=env_vars,
-            network=network,
-            entrypoint=RAPID_ENTRYPOINT,
-        )
-        CONTAINER_CLIENT.create_container_from_config(container_config)
-        if not config.LAMBDA_PREBUILD_IMAGES:
-            CONTAINER_CLIENT.copy_into_container(
-                self.id, str(get_runtime_client_path()), RAPID_ENTRYPOINT
-            )
-            CONTAINER_CLIENT.copy_into_container(
-                self.id, f"{str(get_code_path_for_function(self.function_version))}/", "/var/task/"
-            )
+        # deep copy is not really necessary, but lets keep it to be safe
+        pod_definition = copy.deepcopy(LAMBDA_POD_DEF)
+        pod_definition["spec"]["containers"][0]["image"] = self.get_image()
+        pod_definition["metadata"]["name"] = self.id
+        # add environment variables
+        pod_definition["spec"]["containers"][0]["env"] = env_vars
 
-        CONTAINER_CLIENT.start_container(self.id)
-        self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
-            container_name_or_id=self.id, container_network=network
-        )
-        self.executor_endpoint.container_address = self.ip
+        # create the pod
+        kubernetes_utils.create_from_dict(self.get_kubernetes_client(), pod_definition)
+
+        # TODO proxy through kube https://github.com/kubernetes-client/python/blob/master/examples/pod_portforward.py
+        # address should be localhost then, port a random available port
+        self.executor_endpoint.container_address = self.address
+        self.executor_endpoint.invocation_port = 0000
 
     def stop(self) -> None:
         CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
@@ -225,18 +236,15 @@ class RuntimeExecutor:
             )
 
     def get_address(self) -> str:
-        if not self.ip:
-            raise LambdaRuntimeException(f"IP address of executor '{self.id}' unknown")
-        return self.ip
+        if not self.address:
+            raise LambdaRuntimeException(f"Address of executor '{self.id}' unknown")
+        return self.address
 
     def get_executor_endpoint_from_executor(self) -> str:
         return f"{get_main_endpoint_from_container()}:{self.executor_endpoint.port}"
 
     def get_localstack_endpoint_from_executor(self) -> str:
         return get_main_endpoint_from_container()
-
-    def get_network_for_executor(self) -> str:
-        return get_container_network_for_lambda()
 
     def invoke(self, payload: Dict[str, str]):
         LOG.debug("Sending invoke-payload '%s' to executor '%s'", payload, self.id)
