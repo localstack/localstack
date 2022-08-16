@@ -127,8 +127,6 @@ s3:
     - TestAccS3BucketObjectDataSource_leadingSlash
     - TestAccS3BucketObjectDataSource_multipleSlashes
     - TestAccS3BucketObjectDataSource_singleSlashAsKey
-    - TestAccS3BucketLogging_disappears
-    - TestAccS3BucketLogging_update
     - TestAccS3BucketLogging_TargetGrantByEmail
     - TestAccS3BucketLogging_TargetGrantByGroup
     - TestAccS3BucketLogging_migrate_loggingNoChange
