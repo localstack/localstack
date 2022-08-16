@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
@@ -17,6 +18,7 @@ class TestS3NotificationsToEventBridge:
         sqs_queue_arn,
         events_client,
         events_create_rule,
+        snapshot,
     ):
 
         bus_name = "default"
@@ -74,26 +76,36 @@ class TestS3NotificationsToEventBridge:
 
         messages = {}
 
-        def _validate_messages():
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.jsonpath(
+                    "$..account", "111111111111", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath("$..detail.bucket.name", "bucket-name"),
+                snapshot.transform.jsonpath("$..detail.object.key", "key-name"),
+                snapshot.transform.jsonpath("$..detail.object.etag", "object-etag"),
+                snapshot.transform.jsonpath(
+                    "$..detail.object.sequencer", "object-sequencer", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..detail.request-id", "request-id", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath("$..detail.requester", "111111111111"),
+                snapshot.transform.jsonpath("$..detail.source-ip-address", "ip-address"),
+            ]
+        )
+
+        def _receive_messages():
             received = sqs_client.receive_message(QueueUrl=queue_url).get("Messages", [])
             for msg in received:
                 event_message = json.loads(msg["Body"])
                 messages.update({event_message["detail-type"]: event_message})
+
             assert len(messages) == 2
 
-            delete_event_message = messages.get("Object Deleted")
-            create_event_message = messages.get("Object Created")
+        retries = 10 if is_aws_cloud() else 5
+        retry(_receive_messages, retries=retries)
 
-            assert delete_event_message["source"] == "aws.s3"
-            assert create_event_message["source"] == "aws.s3"
-
-            assert delete_event_message["detail"]["reason"] == "DeleteObject"
-            assert create_event_message["detail"]["reason"] == "PutObject"
-
-            assert delete_event_message["detail"]["bucket"]["name"] == bucket_name
-            assert create_event_message["detail"]["bucket"]["name"] == bucket_name
-
-            assert delete_event_message["detail"]["object"]["key"] == test_key
-            assert create_event_message["detail"]["object"]["key"] == test_key
-
-        retry(_validate_messages)
+        snapshot.match("object_deleted", messages.get("Object Deleted"))
+        snapshot.match("object_created", messages.get("Object Created"))

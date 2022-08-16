@@ -416,7 +416,7 @@ def send_notification_for_subscriber(
                 "bucket": {"name": bucket_name},
                 "object": {
                     "key": key,
-                    "size": 4,
+                    "size": object_data.get("ContentLength"),
                     "etag": object_data.get("ETag", ""),
                     "sequencer": "0062E99A88DC407460",
                 },
@@ -433,6 +433,9 @@ def send_notification_for_subscriber(
         if action == "ObjectRemoved":
             entry["DetailType"] = "Object Deleted"
             entry["Detail"]["reason"] = f"{api_method}Object"
+            entry["Detail"]["deletion-type"] = "Permanently Deleted"
+            entry["Detail"]["object"].pop("etag")
+            entry["Detail"]["object"].pop("size")
 
         if action == "ObjectTagging":
             entry["DetailType"] = (
