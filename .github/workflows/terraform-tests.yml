@@ -93,4 +93,4 @@ jobs:
 
     - name: Run Test Cases
       run: |
-        bash ../tests/terraform/run.sh ${{ matrix.service }} ${{ steps.get-list.outputs.testlist }}
+        bash tests/terraform/run.sh ${{ matrix.service }} ${{ steps.get-list.outputs.testlist }}
