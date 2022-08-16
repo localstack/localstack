@@ -67,24 +67,24 @@ def render_report(result: SnapshotMatchResult):
         if c.report_type in [
             "dictionary_item_removed",
         ]:
-            return [(change_path, f"[remove](-)[/remove] {change_path} ( {expected} )")]
+            return [(change_path, f"[remove](-)[/remove] {change_path} ( {expected!r} )")]
         elif c.report_type in ["iterable_item_removed"]:
             if actual:
                 # seems to be a bug with deepdiff, if there's the same number of items in the iterable and one differs
                 # it will report the missing one but won't report the "additional" on the corresponding position
                 return [
-                    (change_path, f"[remove](-)[/remove] {change_path} ( {expected} )"),
-                    (change_path, f"[add](+)[/add] {change_path} ( {actual} )"),
+                    (change_path, f"[remove](-)[/remove] {change_path} ( {expected!r} )"),
+                    (change_path, f"[add](+)[/add] {change_path} ( {actual!r} )"),
                 ]
-            return [(change_path, f"[remove](-)[/remove] {change_path} ( {expected} )")]
+            return [(change_path, f"[remove](-)[/remove] {change_path} ( {expected!r} )")]
         elif c.report_type in ["dictionary_item_added", "iterable_item_added"]:
-            return [(change_path, f"[add](+)[/add] {change_path} ( {actual} )")]
+            return [(change_path, f"[add](+)[/add] {change_path} ( {actual!r} )")]
         elif c.report_type in ["values_changed"]:
             # TODO: more fancy change detection and visualization (e.g. parts of a string)
             return [
                 (
                     change_path,
-                    f"[replace](~)[/replace] {change_path} {expected} → {actual} ... (expected → actual)",
+                    f"[replace](~)[/replace] {change_path} {expected!r} → {actual!r} ... (expected → actual)",
                 )
             ]
         else:
