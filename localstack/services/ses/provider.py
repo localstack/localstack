@@ -273,7 +273,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             if not source:
                 LOGGER.warning("Source not specified. Rejecting message.")
                 raise MessageRejected()
-        
+
         if destinations is None:
             destinations = []
 
