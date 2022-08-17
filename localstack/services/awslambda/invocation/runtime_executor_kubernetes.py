@@ -49,6 +49,8 @@ LAMBDA_POD_DEF = {
             {
                 "image": "",
                 "name": "lambda-container",
+                "command": [RAPID_ENTRYPOINT],
+                "ports": [{"containerPort": 0}],
             }
         ]
     },
@@ -212,18 +214,25 @@ class KubernetesRuntimeExecutor:
         pod_definition = copy.deepcopy(LAMBDA_POD_DEF)
         pod_definition["spec"]["containers"][0]["image"] = self.get_image()
         pod_definition["metadata"]["name"] = self.id
+
         # add environment variables
         pod_definition["spec"]["containers"][0]["env"] = [
             {"name": str(k), "value": str(v)} for k, v in env_vars.items()
         ]
+        interop_port = get_free_tcp_port()
+        pod_definition["spec"]["containers"][0]["env"].append(
+            {"name": "LOCALSTACK_INTEROP_PORT", "value": str(interop_port)}
+        )
+
+        # address should be localhost then, port a random available port
+        self.executor_endpoint.container_address = "localhost"
+        self.executor_endpoint.invocation_port = interop_port
+
+        pod_definition["spec"]["containers"][0]["ports"][0]["containerPort"] = interop_port
 
         # create the pod
         kubernetes_utils.create_from_dict(self.get_kubernetes_client(), pod_definition)
-
         # TODO proxy through kube https://github.com/kubernetes-client/python/blob/master/examples/pod_portforward.py
-        # address should be localhost then, port a random available port
-        self.executor_endpoint.container_address = self.address
-        self.executor_endpoint.invocation_port = 0000
 
     def stop(self) -> None:
         api_client = self.get_kubernetes_client()
