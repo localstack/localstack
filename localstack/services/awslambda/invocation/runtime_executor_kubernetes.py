@@ -23,7 +23,7 @@ from localstack.utils.archives import unzip
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.net import get_free_tcp_port
 from localstack.utils.run import ShellCommandThread
-from localstack.utils.sync import poll_condition
+from localstack.utils.sync import poll_condition, retry
 
 LOG = logging.getLogger(__name__)
 
@@ -264,9 +264,12 @@ class KubernetesRuntimeExecutor:
         return kubernetes_client.ApiClient()
 
     def setup_proxies(self):
-        self.expose_util = ExposeLSUtil()
-        self.edge_url = self.expose_util.expose_local_port(config.EDGE_PORT)
-        self.executor_url = self.expose_util.expose_local_port(self.executor_endpoint.port)
+        def _setup():
+            self.expose_util = ExposeLSUtil()
+            self.edge_url = self.expose_util.expose_local_port(config.EDGE_PORT)
+            self.executor_url = self.expose_util.expose_local_port(self.executor_endpoint.port)
+
+        retry(_setup)
         LOG.debug("Edge url: %s", self.edge_url)
         LOG.debug("Executor url: %s", self.executor_url)
 
