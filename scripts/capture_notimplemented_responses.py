@@ -1,11 +1,12 @@
 import csv
 import logging
+import sys
 import time
 from datetime import timedelta
+from pathlib import Path
 from typing import TypedDict
 
 import botocore.config
-import click
 from botocore.exceptions import (
     ClientError,
     ConnectTimeoutError,
@@ -254,11 +255,14 @@ def map_to_notimplemented(row: RowEntry) -> bool:
     return False
 
 
-def run_script(services: list[str]):
+def run_script(services: list[str], path: None):
     """send requests against all APIs"""
+    print(
+        f"writing results to '{path}implementation_coverage_full.csv' and '{path}implementation_coverage_aggregated.csv'..."
+    )
     with (
-        open("implementation_coverage_full.csv", "w") as csvfile,
-        open("implementation_coverage_aggregated.csv", "w") as aggregatefile,
+        open(f"{path}implementation_coverage_full.csv", "w") as csvfile,
+        open(f"{path}implementation_coverage_aggregated.csv", "w") as aggregatefile,
     ):
         full_w = csv.DictWriter(
             csvfile,
@@ -365,9 +369,14 @@ def calculate_percentages():
             writer.writerow(agg)
 
 
-@click.command()
+# @click.command()
 def main():
-    run_script(latest_services_pro)
+    path = "./"
+    if len(sys.argv) > 1 and Path(sys.argv[1]).is_dir():
+        path = sys.argv[1]
+        if not path.endswith("/"):
+            path += "/"
+    run_script(latest_services_pro, path=path)
 
 
 if __name__ == "__main__":
