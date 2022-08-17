@@ -1,9 +1,12 @@
 import copy
+import json
 import logging
 import os
 import re
 import shutil
 import time
+from contextlib import closing
+from http.client import HTTPConnection
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Dict, List, Literal, Optional, Tuple
@@ -11,10 +14,13 @@ from typing import Dict, List, Literal, Optional, Tuple
 from kubernetes import client as kubernetes_client
 from kubernetes import config as kubernetes_config
 from kubernetes import utils as kubernetes_utils
+from kubernetes.stream import portforward
+from kubernetes.stream.ws_client import PortForward
 
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
+    InvokeSendError,
     ServiceEndpoint,
 )
 from localstack.services.awslambda.invocation.lambda_models import FunctionVersion
@@ -298,7 +304,6 @@ class KubernetesRuntimeExecutor:
 
         # create the pod
         kubernetes_utils.create_from_dict(api_client, pod_definition)
-        # TODO proxy through kube https://github.com/kubernetes-client/python/blob/master/examples/pod_portforward.py
 
     def stop(self) -> None:
         self.expose_util.shutdown()
@@ -334,4 +339,31 @@ class KubernetesRuntimeExecutor:
 
     def invoke(self, payload: Dict[str, str]):
         LOG.debug("Sending invoke-payload '%s' to executor '%s'", payload, self.id)
-        self.executor_endpoint.invoke(payload)
+
+        if not self.executor_endpoint.container_address:
+            raise ValueError("Container address not set, but got an invoke.")
+
+        client = self.get_kubernetes_client()
+        corev1 = kubernetes_client.CoreV1Api(client)
+
+        with closing(
+            portforward(
+                corev1.connect_post_namespaced_pod_portforward,
+                self.id,
+                "default",
+                ports=str(self.executor_endpoint.invocation_port),
+            )
+        ) as pf:
+            conn = ForwardedKubernetesHTTPConnection(pf, self.executor_endpoint.invocation_port)
+            serialized_payload = json.dumps(payload)
+            conn.request("POST", "/invoke", serialized_payload)
+            resp = conn.getresponse()
+
+            if resp.status >= 400:
+                raise InvokeSendError(invocation_id=self.id, payload=bytes(serialized_payload))
+
+
+class ForwardedKubernetesHTTPConnection(HTTPConnection):
+    def __init__(self, forwarding: PortForward, port: int):
+        super().__init__("127.0.0.1", port)
+        self.sock = forwarding.socket(port)
