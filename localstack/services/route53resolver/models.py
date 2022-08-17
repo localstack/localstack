@@ -137,6 +137,7 @@ def delete_resolver_query_log_config(id):
     resolver_query_log_config = region_details.resolver_query_log_configs.pop(id)
     return resolver_query_log_config
 
+
 def get_resolver_query_log_config_associations(id):
     """returns resolver query log config association with the given id if it exists"""
     region_details = Route53ResolverBackend.get()
