@@ -6,7 +6,7 @@ import shutil
 import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Dict, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 from kubernetes import client as kubernetes_client
 from kubernetes import config as kubernetes_config
@@ -18,11 +18,12 @@ from localstack.services.awslambda.invocation.executor_endpoint import (
     ServiceEndpoint,
 )
 from localstack.services.awslambda.invocation.lambda_models import FunctionVersion
-from localstack.services.awslambda.lambda_utils import get_main_endpoint_from_container
 from localstack.services.install import LAMBDA_RUNTIME_INIT_PATH
 from localstack.utils.archives import unzip
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.net import get_free_tcp_port
+from localstack.utils.run import ShellCommandThread
+from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
 
@@ -137,12 +138,58 @@ class LambdaRuntimeException(Exception):
         super().__init__(message)
 
 
+class ExposeLSUtil:
+    cmd_threads: List[ShellCommandThread]
+
+    def __init__(self):
+        self.cmd_threads = []
+
+    def expose_local_port(self, port: int) -> str:
+        """Expose the given port on the web using a tunnel
+        Returns the url the port is exposed
+        """
+        url_regex = r"https://([^.]*.lhrtunnel.link)"
+        url = None
+
+        def log_listener(msg: str, *args, **kwargs):
+            nonlocal url
+            match = re.search(url_regex, msg)
+            if match:
+                url = match.group(1)
+
+        thread = ShellCommandThread(
+            cmd=["ssh", "-R", f"80:localhost:{port}", "nokey@localhost.run"],
+            log_listener=log_listener,
+        )
+        self.cmd_threads.append(thread)
+        thread.start()
+
+        def check_url_set():
+            return url is not None
+
+        result = poll_condition(check_url_set, timeout=15, interval=1)
+        if not result:
+            raise LambdaRuntimeException("Could not setup port forwarding using ssh")
+
+        return url
+
+    def shutdown(self):
+        for cmd_thread in self.cmd_threads:
+            try:
+                cmd_thread.stop()
+            except Exception:
+                LOG.exception("Error shutting down ssh process")
+
+
 class KubernetesRuntimeExecutor:
     id: str
     function_version: FunctionVersion
     # address the container is available at (for LocalStack)
     address: Optional[str]
     executor_endpoint: Optional[ExecutorEndpoint]
+    expose_util: Optional[ExposeLSUtil]
+    executor_url: Optional[str]
+    edge_url: Optional[str]
 
     def __init__(
         self, id: str, function_version: FunctionVersion, service_endpoint: ServiceEndpoint
@@ -151,6 +198,8 @@ class KubernetesRuntimeExecutor:
         self.function_version = function_version
         self.address = None
         self.executor_endpoint = self._build_executor_endpoint(service_endpoint)
+        self.expose_util = None
+        self.setup_proxies()
 
     @staticmethod
     def prepare_version(function_version: FunctionVersion) -> None:
@@ -208,6 +257,13 @@ class KubernetesRuntimeExecutor:
         )
         return kubernetes_client.ApiClient()
 
+    def setup_proxies(self):
+        self.expose_util = ExposeLSUtil()
+        self.edge_url = self.expose_util.expose_local_port(config.EDGE_PORT)
+        self.executor_url = self.expose_util.expose_local_port(self.executor_endpoint.port)
+        LOG.debug("Edge url: %s", self.edge_url)
+        LOG.debug("Executor url: %s", self.executor_url)
+
     def start(self, env_vars: Dict[str, str]) -> None:
         self.executor_endpoint.start()
         # deep copy is not really necessary, but let's keep it to be safe
@@ -235,9 +291,13 @@ class KubernetesRuntimeExecutor:
         # TODO proxy through kube https://github.com/kubernetes-client/python/blob/master/examples/pod_portforward.py
 
     def stop(self) -> None:
+        self.expose_util.shutdown()
+        LOG.debug("Expose shutdown complete")
         api_client = self.get_kubernetes_client()
         core_v1_client = kubernetes_client.CoreV1Api(api_client)
+        LOG.debug("Deleting pod")
         core_v1_client.delete_namespaced_pod(name=self.id, namespace="default")
+        LOG.debug("Pod deleted")
         try:
             self.executor_endpoint.shutdown()
         except Exception as e:
@@ -253,15 +313,15 @@ class KubernetesRuntimeExecutor:
         return self.address
 
     def get_executor_endpoint_from_executor(self) -> str:
-        return f"{get_main_endpoint_from_container()}:{self.executor_endpoint.port}"
+        if not self.executor_url:
+            raise LambdaRuntimeException("Address of forwarding is not known!")
+        return f"{self.executor_url}"
 
     def get_localstack_endpoint_from_executor(self) -> str:
-        return get_main_endpoint_from_container()
+        if not self.edge_url:
+            raise LambdaRuntimeException("Edge address of forwarding is not known!")
+        return self.edge_url
 
     def invoke(self, payload: Dict[str, str]):
         LOG.debug("Sending invoke-payload '%s' to executor '%s'", payload, self.id)
         self.executor_endpoint.invoke(payload)
-
-
-class ExposeLSUtil:
-    pass

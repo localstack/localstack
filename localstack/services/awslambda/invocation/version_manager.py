@@ -308,6 +308,7 @@ class LambdaVersionManager(ServiceEndpoint):
         return invocation_storage.result_future
 
     def set_environment_ready(self, executor_id: str) -> None:
+        LOG.debug("Environment %s ready!", executor_id)
         environment = self.all_environments.get(executor_id)
         if not environment:
             raise Exception(

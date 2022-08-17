@@ -25,7 +25,7 @@ class InvokeSendError(Exception):
 
 class ExecutorEndpoint(Server):
     service_endpoint: ServiceEndpoint
-    port: Optional[str]
+    port: Optional[int]
 
     def __init__(
         self,

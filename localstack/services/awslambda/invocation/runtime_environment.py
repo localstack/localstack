@@ -15,7 +15,7 @@ from localstack.utils.strings import to_str
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.version_manager import QueuedInvocation
 
-STARTUP_TIMEOUT_SEC = 10.0
+STARTUP_TIMEOUT_SEC = 30.0
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
 
 LOG = logging.getLogger(__name__)
