@@ -55,6 +55,9 @@ RUN apt-get update && \
             && \
         apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# TODO: tmp. workaround to fix the installation of some plugins that require npm
+RUN ln -s /bin/true /usr/local/bin/npm
+
 SHELL [ "/bin/bash", "-c" ]
 
 # Install Java 11
