@@ -42,7 +42,7 @@ RUN apt-get update && \
         # Install dependencies to add additional repos
         apt-get install -y --no-install-recommends ca-certificates curl && \
         # Setup Node 14 Repo
-        curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
+        # curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
         # Install Packages
         apt-get update && \
         apt-get install -y --no-install-recommends \
@@ -51,7 +51,8 @@ RUN apt-get update && \
             # Postgres
             postgresql postgresql-client postgresql-plpython3 \
             # NodeJS
-            nodejs && \
+            # nodejs \
+            && \
         apt-get clean && rm -rf /var/lib/apt/lists/*
 
 SHELL [ "/bin/bash", "-c" ]

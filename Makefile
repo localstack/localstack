@@ -119,14 +119,7 @@ docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
 SOURCE_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
 TARGET_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
 docker-push-master: 	  ## Push a single platform-specific Docker image to registry IF we are currently on the master branch
-	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
-		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
-	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
-		echo "Skipping docker push as no credentials are provided.") || \
-	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
-		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
-		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
-		echo "This is a fork and not the main repo.") || \
+	DOCKER_ACTION='image push' make docker-check-not-master-or-main-repo || \
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
 			docker tag $(SOURCE_IMAGE_NAME):latest $(TARGET_IMAGE_NAME):latest-$(PLATFORM) && \
@@ -149,14 +142,7 @@ docker-push-master-all:		## Push Docker images of localstack, localstack-light, 
 
 MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
 docker-create-push-manifests:	## Create and push manifests for a docker image (default: full)
-	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
-		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
-	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
-		echo "Skipping docker manifest push as no credentials are provided.") || \
-	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
-		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
-		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
-		echo "This is a fork and not the main repo.") || \
+	DOCKER_ACTION='manifest push' make docker-check-not-master-or-main-repo || \
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
 			docker manifest create $(MANIFEST_IMAGE_NAME):latest --amend $(MANIFEST_IMAGE_NAME):latest-amd64 --amend $(MANIFEST_IMAGE_NAME):latest-arm64 && \
@@ -176,6 +162,16 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION))) && \
 		docker manifest push $(MANIFEST_IMAGE_NAME):latest \
 	)
+
+docker-check-not-master-or-main-repo:
+	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
+		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
+	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
+		echo "Skipping Docker $(DOCKER_ACTION) as no credentials are provided.") || \
+	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
+		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
+		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
+		echo "This is a fork and not the main repo.")
 
 docker-create-push-manifests-light:	## Create and push manifests for the light docker image
 	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-create-push-manifests
