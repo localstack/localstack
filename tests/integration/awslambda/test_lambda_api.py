@@ -1,4 +1,5 @@
 # ALL TESTS IN HERE ARE VALIDATED AGAINST AWS CLOUD
+import json
 import logging
 import os.path
 
@@ -132,3 +133,24 @@ class TestLambdaAsfApi:
 
         invoke_result = lambda_client.invoke(FunctionName=fn_name, Payload=bytes("{}", "utf-8"))
         snapshot.match("lambda_invoke_result", invoke_result)
+
+    def test_basic_invoke_k8s(self, lambda_client, create_lambda_function_aws, lambda_su_role):
+        # predefined names
+        fn_name = f"ls-fn-{short_uid()}"
+
+        # infra setup (& validations)
+        with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
+            response = create_lambda_function_aws(
+                FunctionName=fn_name,
+                Handler="index.handler",
+                Code={"ZipFile": f.read()},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime="python3.9",
+            )
+
+        invoke_result = lambda_client.invoke(
+            FunctionName=fn_name, Payload=bytes(json.dumps({"msg": "hello"}), "utf-8")
+        )
+        response = invoke_result["Payload"].read()
+        assert json.loads(response) == {"msg": "hello"}
