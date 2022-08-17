@@ -194,10 +194,11 @@ def _print_diff(metric_recorder_internal, metric_recorder_external):
                     print(f"found invocation mismatch: {key}.{subkey}")
 
 
-def append_row_to_raw_collection(collection_raw_csv_file_name, row, arch):
+def append_row_to_raw_collection(collection_raw_csv_file_name, row, arch=None):
     with open(collection_raw_csv_file_name, "a") as fd:
         writer = csv.writer(fd)
-        row.append(arch)
+        if arch:
+            row.append(arch)
         writer.writerow(row)
 
 
@@ -214,16 +215,11 @@ def aggregate_recorded_raw_data(
             next(csv_dict_reader)
             for row in csv_dict_reader:
                 if collection_raw_csv:
-                    arch = ""
-                    if "arm64" in str(path):
-                        arch = "arm64"
-                    elif "amd64" in str(path):
-                        arch = "amd64"
                     # only aggregate all if we did not set a specific target to collect
                     if not collect_for_arch:
-                        append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row), arch)
+                        append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row))
                     elif collect_for_arch in str(path):
-                        append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row), arch)
+                        append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row))
                 metric: Metric = Metric(*row)
                 if metric.xfail == "True":
                     print(f"test {metric.node_id} marked as xfail")
@@ -290,7 +286,9 @@ def main():
     Path(metrics_path).mkdir(parents=True, exist_ok=True)
     dtime = datetime.datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%s")
 
-    collection_raw_csv = os.path.join(metrics_path, f"raw-collected-data-{dtime}.csv")
+    collection_raw_csv = os.path.join(
+        metrics_path, f"metric-report-raw-data-all-{collect_for_arch}{dtime}.csv"
+    )
 
     with open(collection_raw_csv, "w") as fd:
         writer = csv.writer(fd)

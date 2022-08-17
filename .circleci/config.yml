@@ -271,7 +271,7 @@ jobs:
       - run:
           name: Run localstack
           command: |
-            <<#parameters.pro>>LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY)<</parameters.pro>> IMAGE_NAME="localstack/localstack-full:latest" bin/localstack start -d
+            <<#parameters.pro>>LOCALSTACK_API_KEY=$TEST_LOCALSTACK_API_KEY<</parameters.pro>> IMAGE_NAME="localstack/localstack-full:latest" bin/localstack start -d
             bin/localstack wait -t 120
       - run:
           name: Run capture-not-implemented
@@ -281,13 +281,17 @@ jobs:
             python -m capture_notimplemented_responses
             <<#parameters.pro>>mkdir -p pro<</parameters.pro>>
             <<#parameters.pro>>mv implementation_coverage_aggregated.csv pro/implementation_coverage_aggregated.csv<</parameters.pro>>
-            <<#parameters.pro>>mv implementation_coverage_aggregated.csv pro/implementation_coverage_full.csv<</parameters.pro>>
+            <<#parameters.pro>>mv implementation_coverage_full.csv pro/implementation_coverage_full.csv<</parameters.pro>>
       - run:
           name: Print the logs
-          command: localstack logs
+          command: |
+            source .venv/bin/activate
+            localstack logs
       - run:
           name: Stop localstack
-          command: localstack stop
+          command: |
+            source .venv/bin/activate
+            localstack stop
       - persist_to_workspace:
           root:
             /tmp/workspace
