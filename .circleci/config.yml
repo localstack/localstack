@@ -256,37 +256,35 @@ jobs:
 
   capture-not-implemented:
     parameters:
-      platform:
-        description: "Platform to build for"
-        default: "amd64"
-        type: string
-      resource_class:
-        description: "CircleCI machine type to run at"
-        default: "medium"
-        type: string
-      machine_image:
-        description: "CircleCI machine type to run at"
-        default: << pipeline.parameters.ubuntu-amd64-machine-image >>
-        type: string
-    machine:
-      image: << parameters.machine_image >>
-    resource_class: << parameters.resource_class >>
+      pro:
+        description: "Run tests against Pro?"
+        default: false
+        type: boolean
+    executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
+          name: Load docker localstack-full image
+          command: docker load -i target/localstack-docker-image-amd64.tar
+      - run:
           name: Run localstack
           command: |
-            make venv
-            bin/localstack start -d
-            sleep 10
+            <<#parameters.pro>>LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY)<</parameters.pro>> IMAGE_NAME="localstack/localstack-full:latest" bin/localstack start -d
+            bin/localstack wait -t 120
       - run:
           name: Run capture-not-implemented
           command: |
             source .venv/bin/activate
             cd scripts
             python -m capture_notimplemented_responses
+      - run:
+          name: Print the logs
+          command: localstack logs
+      - run:
+          name: Stop localstack
+          command: localstack stop
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -428,11 +426,13 @@ workflows:
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           requires:
             - docker-build-amd64
-      - capture-not-implemented:
+      - capture-not-implemented-community:
           name: collect-not-implemented
-          platform: amd64
-          resource_class: medium
-          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
+          requires:
+            - docker-build-amd64
+      - capture-not-implemented-pro:
+          name: collect-not-implemented
+          pro: true
           requires:
             - docker-build-amd64
       - report:
@@ -441,7 +441,8 @@ workflows:
             - itest-lambda-provider
             - docker-test-amd64
             - docker-test-arm64
-            - collect-not-implemented
+            - collect-not-implemented-community
+            - collect-not-implemented-pro
             - unit-tests
       - docker-push:
           filters:
