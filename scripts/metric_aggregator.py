@@ -208,6 +208,8 @@ def aggregate_recorded_raw_data(
     pathlist = Path(base_dir).rglob("metric-report-raw-data-*.csv")
     recorded = _init_service_metric_counter()
     for path in pathlist:
+        if str(path) == collection_raw_csv:
+            continue
         print(f"checking {str(path)}")
         with open(path, "r") as csv_obj:
             csv_dict_reader = csv.reader(csv_obj)
@@ -221,12 +223,11 @@ def aggregate_recorded_raw_data(
                     elif collect_for_arch in str(path):
                         append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row))
                 metric: Metric = Metric(*row)
-                if metric.xfail == "True":
+                if str(metric.xfail).lower() == "true":
                     print(f"test {metric.node_id} marked as xfail")
                     continue
                 if collect_for_arch and collect_for_arch not in str(path):
                     continue
-
                 service = recorded[metric.service]
                 ops = service[metric.operation]
 
@@ -245,10 +246,10 @@ def aggregate_recorded_raw_data(
                             break
 
                 ops["invoked"] += 1
-                if metric.snapshot == "True":
+                if str(metric.snapshot).lower() == "true":
                     ops["snapshot"] = True  # TODO snapshot currently includes also "skip_verify"
                     ops["snapshot_skipped_paths"] = metric.snapshot_skipped_paths or ""
-                if metric.aws_validated == "True":
+                if str(metric.aws_validated).lower() == "true":
                     ops["aws_validated"] = True
                 if not metric.parameters:
                     params = ops.setdefault("parameters", {})
