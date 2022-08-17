@@ -208,12 +208,14 @@ class KubernetesRuntimeExecutor:
 
     def start(self, env_vars: Dict[str, str]) -> None:
         self.executor_endpoint.start()
-        # deep copy is not really necessary, but lets keep it to be safe
+        # deep copy is not really necessary, but let's keep it to be safe
         pod_definition = copy.deepcopy(LAMBDA_POD_DEF)
         pod_definition["spec"]["containers"][0]["image"] = self.get_image()
         pod_definition["metadata"]["name"] = self.id
         # add environment variables
-        pod_definition["spec"]["containers"][0]["env"] = env_vars
+        pod_definition["spec"]["containers"][0]["env"] = [
+            {"name": str(k), "value": str(v)} for k, v in env_vars.items()
+        ]
 
         # create the pod
         kubernetes_utils.create_from_dict(self.get_kubernetes_client(), pod_definition)
@@ -224,8 +226,9 @@ class KubernetesRuntimeExecutor:
         self.executor_endpoint.invocation_port = 0000
 
     def stop(self) -> None:
-        CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
-        CONTAINER_CLIENT.remove_container(container_name=self.id)
+        api_client = self.get_kubernetes_client()
+        core_v1_client = kubernetes_client.CoreV1Api(api_client)
+        core_v1_client.delete_namespaced_pod(name=self.id, namespace="default")
         try:
             self.executor_endpoint.shutdown()
         except Exception as e:
@@ -249,3 +252,7 @@ class KubernetesRuntimeExecutor:
     def invoke(self, payload: Dict[str, str]):
         LOG.debug("Sending invoke-payload '%s' to executor '%s'", payload, self.id)
         self.executor_endpoint.invoke(payload)
+
+
+class ExposeLSUtil:
+    pass
