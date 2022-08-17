@@ -695,6 +695,9 @@ LAMBDA_KUBERNETES_IMAGE_PREFIX = (
     os.environ.get("LAMBDA_KUBERNETES_IMAGE_PREFIX") or "dfangl/localstack-lambda-images"
 )
 LAMBDA_KUBERNETES_ENABLED = is_env_not_false("LAMBDA_KUBERNETES_ENABLED")
+LAMBDA_KUBERNETES_PUSH_USERNAME = os.environ.get("LAMBDA_KUBERNETES_PUSH_USERNAME", "")
+LAMBDA_KUBERNETES_PUSH_PASSWORD = os.environ.get("LAMBDA_KUBERNETES_PUSH_PASSWORD", "")
+LAMBDA_KUBERNETES_PUSH_REGISTRY = os.environ.get("LAMBDA_KUBERNETES_PUSH_REGISTRY")
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!

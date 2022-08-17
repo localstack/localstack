@@ -488,6 +488,11 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def login(self, username: str, password: str, registry: str = None) -> None:
+        """Logs into the given registry. If registry is none, dockerhub is used"""
+        pass
+
+    @abstractmethod
     def push_image(self, docker_image: str) -> None:
         """Pushes an image with a given name to a Docker registry"""
         pass

@@ -292,6 +292,21 @@ class CmdDockerClient(ContainerClient):
                 f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
+    def login(self, username: str, password: str, registry: str = None) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["login", "--username", username, "--password", password]
+        if registry:
+            cmd.append(registry)
+        LOG.debug("Logging in to %s with cmd: %s", registry, cmd)
+        try:
+            run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "connection refused" in to_str(e.stdout):
+                raise RegistryConnectionError(e.stdout)
+            raise ContainerException(
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
+            ) from e
+
     def build_image(self, dockerfile_path: str, image_name: str, context_path: str = None):
         cmd = self._docker_cmd()
         dockerfile_path = Util.resolve_dockerfile_path(dockerfile_path)

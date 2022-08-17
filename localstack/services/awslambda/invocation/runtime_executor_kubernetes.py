@@ -118,6 +118,12 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
             dockerfile_path=str(docker_file_path),
             image_name=image_name,
         )
+        if config.LAMBDA_KUBERNETES_PUSH_USERNAME:
+            CONTAINER_CLIENT.login(
+                username=config.LAMBDA_KUBERNETES_PUSH_USERNAME,
+                password=config.LAMBDA_KUBERNETES_PUSH_PASSWORD,
+                registry=config.LAMBDA_KUBERNETES_PUSH_REGISTRY,
+            )
         CONTAINER_CLIENT.push_image(image_name)
     except Exception as e:
         if LOG.isEnabledFor(logging.DEBUG):
@@ -279,6 +285,7 @@ class KubernetesRuntimeExecutor:
         pod_definition["spec"]["containers"][0]["env"].append(
             {"name": "LOCALSTACK_INTEROP_PORT", "value": str(interop_port)}
         )
+        api_client = self.get_kubernetes_client()
 
         # address should be localhost then, port a random available port
         self.executor_endpoint.container_address = "localhost"
@@ -287,7 +294,7 @@ class KubernetesRuntimeExecutor:
         pod_definition["spec"]["containers"][0]["ports"][0]["containerPort"] = interop_port
 
         # create the pod
-        kubernetes_utils.create_from_dict(self.get_kubernetes_client(), pod_definition)
+        kubernetes_utils.create_from_dict(api_client, pod_definition)
         # TODO proxy through kube https://github.com/kubernetes-client/python/blob/master/examples/pod_portforward.py
 
     def stop(self) -> None:

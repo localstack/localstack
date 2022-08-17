@@ -223,6 +223,16 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
+    def login(self, username: str, password: str, registry: str = None) -> None:
+        LOG.debug("Logging in to registry %s", registry)
+        # some path in the docker image string indicates a custom repository
+        try:
+            self.client().login(
+                registry=registry, username=username, password=password, reauth=True
+            )
+        except APIError as e:
+            raise ContainerException() from e
+
     def push_image(self, docker_image: str) -> None:
         LOG.debug("Pushing Docker image: %s", docker_image)
         try:
