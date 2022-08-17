@@ -92,5 +92,7 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/terraform-provider-aws/go.sum') }}
 
     - name: Run Test Cases
+      env:
+        CI: true
       run: |
         bash tests/terraform/run.sh ${{ matrix.service }} ${{ steps.get-list.outputs.testlist }}

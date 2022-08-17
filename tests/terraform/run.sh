@@ -31,21 +31,25 @@ if [ $# == 2 ]; then
     echo "Service: $1 | Test: $2"
     if [ $PARALLEL == 1 ]; then
         echo "Parallelism: $VALUE"
-        go test ./internal/service/$1 -test.count 1 -test.v -test.timeout 10m -parallel $VALUE -run $2
+        go test ./internal/service/$1 -test.count 1 -test.v -test.timeout 60m -parallel $VALUE -run $2
     else
         echo "Parallelism: Auto"
-        go test ./internal/service/$1 -test.count 1 -test.v -test.timeout 10m -run $2
+        go test ./internal/service/$1 -test.count 1 -test.v -test.timeout 60m -run $2
     fi
 elif [ $# == 1 ]; then
     echo "Service: $1 | Test: All"
     if [ $PARALLEL == 1 ]; then
         echo "Parallelism: $VALUE"
-        go test ./internal/service/$1 -test.count 1 -test.v -test.timeout 10m -parallel $VALUE
+        go test ./internal/service/$1 -test.count 1 -test.v -test.timeout 60m -parallel $VALUE
     else
         echo "Parallelism: Auto"
-        go test ./internal/service/$1 -test.count 1 -test.v -test.timeout 10m
+        go test ./internal/service/$1 -test.count 1 -test.v -test.timeout 60m
     fi
 else
     echo "usage: ./run.sh service_name [test_case_pattern]"
     exit 1
+fi
+
+if [ $CI == "false" ]; then
+    python -m http.server
 fi
