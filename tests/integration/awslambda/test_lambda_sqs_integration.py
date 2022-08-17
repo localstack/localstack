@@ -665,7 +665,7 @@ def test_report_batch_item_failures_invalid_result_json_batch_fails(
     assert "Messages" in first_invocation
     snapshot.match("first_invocation", first_invocation)
 
-    # now wait for the second invocation result which
+    # now wait for the second invocation result, which should be a retry of the first
     second_invocation = sqs_client.receive_message(
         QueueUrl=destination_url, WaitTimeSeconds=15, MaxNumberOfMessages=1
     )

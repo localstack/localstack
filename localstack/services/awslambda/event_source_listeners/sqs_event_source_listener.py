@@ -224,7 +224,7 @@ def parse_batch_item_failures(result: InvocationResult, valid_message_ids: List[
 
     :param result: the lambda invocation result
     :param valid_message_ids: the list of valid message ids in the batch
-    :raises ValueError: if the item
+    :raises KeyError: if the itemIdentifier value is missing or not in the batch
     :raises Exception: any other exception related to parsing (e.g., JSON parser error)
     :return: a list of message IDs that are part of a failure and should not be deleted from the queue
     """
@@ -245,7 +245,7 @@ def parse_batch_item_failures(result: InvocationResult, valid_message_ids: List[
         return []
 
     messages_to_keep = []
-    for item in partial_batch_failure["batchItemFailures"]:
+    for item in batch_item_failures:
         if "itemIdentifier" not in item:
             raise KeyError(f"missing itemIdentifier in batchItemFailure record {item}")
 
