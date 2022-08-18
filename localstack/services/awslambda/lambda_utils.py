@@ -307,7 +307,7 @@ class FilterCriteria(TypedDict):
     Filters: List[Dict[str, any]]
 
 
-def parse_and_apply_numeric_filter(record_value: Dict, numeric_filter: List[Union[str, int]]):
+def parse_and_apply_numeric_filter(record_value: Dict, numeric_filter: List[Union[str, int]]) -> bool:
     if len(numeric_filter) % 2 > 0:
         LOG.warn("Invalid numeric lambda filter given")
         return True
@@ -336,7 +336,7 @@ def parse_and_apply_numeric_filter(record_value: Dict, numeric_filter: List[Unio
     return True
 
 
-def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]):
+def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]) -> bool:
     # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
     fits_filter = False
     for key, filter_value in dict_filter.items():
@@ -358,7 +358,7 @@ def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]):
     return fits_filter
 
 
-def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]):
+def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) -> bool:
     if not filter_rule:
         return True
     # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
@@ -399,7 +399,7 @@ def filter_stream_records(records, filters: List[FilterCriteria]):
     return filtered_records
 
 
-def validate_filters(filter: FilterCriteria):
+def validate_filters(filter: FilterCriteria) -> bool:
     for rule in filter["Filters"]:
         try:
             if not json.loads(rule["Pattern"]):
@@ -409,7 +409,7 @@ def validate_filters(filter: FilterCriteria):
     return True
 
 
-def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str):
+def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Dict]:
     # late import to avoid circular import
     from localstack.services.awslambda.lambda_api import LambdaRegion
 
