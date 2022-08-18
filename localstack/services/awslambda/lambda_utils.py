@@ -401,6 +401,9 @@ def filter_stream_records(records, filters: List[FilterCriteria]):
 
 def validate_filters(filter: FilterCriteria):
     for rule in filter["Filters"]:
-        if not json.loads(rule["Pattern"]):
+        try:
+            if not json.loads(rule["Pattern"]):
+                return False
+        except json.JSONDecodeError:
             return False
     return True
