@@ -33,7 +33,7 @@ def create_simplified_metrics(metrics: dict, impl_details: dict):
             del metrics[service]["service_attributes"]
         for operation in sorted(details.keys()):
             op_details = details[operation]
-            if impl_details[service].get(operation) is None:
+            if impl_details.get(service, {}).get(operation) is None:
                 print(
                     f"------> WARNING: {service}.{operation} does not have implementation details"
                 )

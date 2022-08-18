@@ -64,6 +64,7 @@ latest_services_pro = [
     "es",
     "events",
     "firehose",
+    "fis",
     "glacier",
     "glue",
     "iam",
