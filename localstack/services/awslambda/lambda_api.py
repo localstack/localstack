@@ -22,7 +22,6 @@ from flask import Flask, Response, jsonify, request
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api.lambda_ import InvalidParameterValueException
 from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
 from localstack.http import Request
 from localstack.http import Response as HttpResponse
@@ -252,7 +251,9 @@ def build_mapping_obj(data) -> Dict:
             # AWS raises following Exception when FilterCriteria is not valid:
             # An error occurred (InvalidParameterValueException) when calling the CreateEventSourceMapping operation:
             # Invalid filter pattern definition.
-            raise InvalidParameterValueException("Invalid filter pattern definition.")
+            raise ValueError(
+                INVALID_PARAMETER_VALUE_EXCEPTION, "Invalid filter pattern definition."
+            )
         mapping["FilterCriteria"] = data.get("FilterCriteria")
     return mapping
 
