@@ -52,12 +52,12 @@ class PatchPath(str):
 
 
 def render_report(result: SnapshotMatchResult):
-    def _line(c) -> [(str, str)]:
-        def _render_path_part(part):
-            if isinstance(part, int):
-                return f"[{part}]"  # wrap iterable index in [] to more clearly denote it being such
-            return str(part)
+    def _render_path_part(part):
+        if isinstance(part, int):
+            return f"[{part}]"  # wrap iterable index in [] to more clearly denote it being such
+        return str(part)
 
+    def _line(c) -> [(str, str)]:
         path_parts = [_render_path_part(p) for p in c.path(output_format="list")]
         change_path = "/" + "/".join(path_parts)
 
@@ -87,16 +87,26 @@ def render_report(result: SnapshotMatchResult):
                     f"[replace](~)[/replace] {change_path} {expected!r} → {actual!r} ... (expected → actual)",
                 )
             ]
+        elif c.report_type in ["type_changes"]:
+            # TODO: more fancy change detection and visualization (e.g. parts of a string)
+            return [
+                (
+                    change_path,
+                    f"[replace](~)[/replace] {change_path} {expected!r} → {actual!r} ... (expected → actual)",
+                )
+            ]
         else:
             LOG.warning(
                 f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support. {expected=} | {actual=}"
             )
         return []
 
+    json_paths = []
     lines = []
     for cat, changes in result.result.tree.items():
         for change in changes:
             lines.extend(_line(change))
+            json_paths.append(change.path(output_format="list"))
 
     printstr = f">> match key: {result.key}\n"
 
@@ -115,5 +125,17 @@ def render_report(result: SnapshotMatchResult):
     for token, replacements in replacement_map.items():
         printstr = printstr.replace(f"[{token}]", "".join(f"\x1b[{code}m" for code in replacements))
         printstr = printstr.replace(f"[/{token}]", "\x1b[0m")
+
+    printstr += "\nIgnore list:\n"
+
+    def _format_json_path(path: list):
+        json_str = ""
+        for elem in path:
+            if not isinstance(elem, int):
+                json_str += "."
+            json_str += _render_path_part(elem)
+        return f'"${json_str}"'
+
+    printstr += f"[{', '.join(sorted([_format_json_path(path) for path in json_paths]))}]"
 
     return printstr

@@ -763,7 +763,7 @@ def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tup
     path_map = get_rest_api_paths(
         rest_api_id=invocation_context.api_id, region_name=invocation_context.region_name
     )
-    relative_path = invocation_context.invocation_path
+    relative_path = invocation_context.invocation_path.rstrip("/")
     try:
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
         invocation_context.resource = resource
@@ -830,6 +830,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     request_context["identity"].update(invocation_context.auth_identity or {})
 
     if not is_test_invoke_method(method, path):
+        # TODO here
         request_context["path"] = (f"/{stage}" if stage else "") + relative_path
         request_context["stage"] = stage
     return request_context

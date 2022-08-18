@@ -98,6 +98,70 @@ def format_apigateway_url(api_id: str, region: str, stage: str, path: str):
 
 
 @pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..body",
+        "$..headers.Accept",
+        "$..headers.Accept-Encoding",
+        "$..headers.Authorization",
+        "$..headers.CloudFront-Forwarded-Proto",
+        "$..headers.CloudFront-Is-Desktop-Viewer",
+        "$..headers.CloudFront-Is-Mobile-Viewer",
+        "$..headers.CloudFront-Is-SmartTV-Viewer",
+        "$..headers.CloudFront-Is-Tablet-Viewer",
+        "$..headers.CloudFront-Viewer-ASN",
+        "$..headers.CloudFront-Viewer-Country",
+        "$..headers.Connection",
+        "$..headers.Host",
+        "$..headers.Via",
+        "$..headers.X-Amz-Cf-Id",
+        "$..headers.X-Amzn-Trace-Id",
+        "$..headers.X-Forwarded-For",
+        "$..headers.X-Forwarded-Port",
+        "$..headers.X-Forwarded-Proto",
+        "$..headers.accept",
+        "$..headers.accept-encoding",
+        "$..headers.x-localstack-edge",
+        "$..headers.x-localstack-tgt-api",
+        "$..multiValueHeaders.Accept",
+        "$..multiValueHeaders.Accept-Encoding",
+        "$..multiValueHeaders.Authorization",
+        "$..multiValueHeaders.CloudFront-Forwarded-Proto",
+        "$..multiValueHeaders.CloudFront-Is-Desktop-Viewer",
+        "$..multiValueHeaders.CloudFront-Is-Mobile-Viewer",
+        "$..multiValueHeaders.CloudFront-Is-SmartTV-Viewer",
+        "$..multiValueHeaders.CloudFront-Is-Tablet-Viewer",
+        "$..multiValueHeaders.CloudFront-Viewer-ASN",
+        "$..multiValueHeaders.CloudFront-Viewer-Country",
+        "$..multiValueHeaders.Connection",
+        "$..multiValueHeaders.Host",
+        "$..multiValueHeaders.Via",
+        "$..multiValueHeaders.X-Amz-Cf-Id",
+        "$..multiValueHeaders.X-Amzn-Trace-Id",
+        "$..multiValueHeaders.X-Forwarded-For",
+        "$..multiValueHeaders.X-Forwarded-Port",
+        "$..multiValueHeaders.X-Forwarded-Proto",
+        "$..multiValueHeaders.accept",
+        "$..multiValueHeaders.accept-encoding",
+        "$..multiValueHeaders.x-localstack-edge",
+        "$..multiValueHeaders.x-localstack-tgt-api",
+        "$..pathParameters",
+        "$..requestContext.authorizer",
+        "$..requestContext.domainName",
+        "$..requestContext.extendedRequestId",
+        "$..requestContext.identity.accessKey",
+        "$..requestContext.identity.accountId",
+        "$..requestContext.identity.caller",
+        "$..requestContext.identity.cognitoAuthenticationProvider",
+        "$..requestContext.identity.cognitoAuthenticationType",
+        "$..requestContext.identity.cognitoIdentityId",
+        "$..requestContext.identity.cognitoIdentityPoolId",
+        "$..requestContext.identity.principalOrgId",
+        "$..requestContext.identity.user",
+        "$..requestContext.identity.userArn",
+        "$..stageVariables",
+    ]
+)
 def test_lambda_proxy_integration(
     apigateway_client,
     create_lambda_function,
@@ -194,6 +258,20 @@ def test_lambda_proxy_integration(
         # invoke rest api with trailing slash
         response_trailing_slash = retry(invoke_api, sleep=2, retries=10, url=f"{invocation_url}/")
         snapshot.match("invocation-payload-with-trailing-slash", response_trailing_slash.json())
+        response_trailing_slash = retry(
+            invoke_api, sleep=2, retries=10, url=f"{invocation_url}?urlparam=test"
+        )
+        snapshot.match(
+            "invocation-payload-without-trailing-slash-and-query-params",
+            response_trailing_slash.json(),
+        )
+        response_trailing_slash = retry(
+            invoke_api, sleep=2, retries=10, url=f"{invocation_url}/?urlparam=test"
+        )
+        snapshot.match(
+            "invocation-payload-with-trailing-slash-and-query-params",
+            response_trailing_slash.json(),
+        )
     finally:
         apigateway_client.delete_rest_api(restApiId=rest_api_id)
 
