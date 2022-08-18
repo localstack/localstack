@@ -1007,7 +1007,7 @@ class CloudformationProvider(CloudformationApi):
         change_set.stack.change_sets = [
             cs
             for cs in change_set.stack.change_sets
-            if (cs.change_set_name != change_set_name and cs.change_set_id != change_set_name)
+            if change_set_name not in (cs.change_set_name, cs.change_set_id)
         ]
         return DeleteChangeSetOutput()
 
