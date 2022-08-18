@@ -44,8 +44,6 @@ from localstack.aws.api.kinesis import (
     Timestamp,
     UpdateShardCountOutput,
 )
-from localstack.aws.forwarder import HttpFallbackDispatcher
-from localstack.aws.proxy import AwsApiListener
 from localstack.constants import LOCALHOST
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.kinesis.kinesis_starter import check_kinesis, start_kinesis
@@ -62,13 +60,6 @@ LOG = logging.getLogger(__name__)
 #             - SDKv2: Transform timestamps to int?
 #             - Remove double quotes for JSON responses
 #             - Convert base64 encoded data back to bytes for the cbor encoding
-
-
-class KinesisApiListener(AwsApiListener):
-    def __init__(self, provider=None):
-        provider = provider or KinesisProvider()
-        self.provider = provider
-        super().__init__("kinesis", HttpFallbackDispatcher(provider, provider.get_forward_url))
 
 
 class KinesisBackend(RegionBackend):
