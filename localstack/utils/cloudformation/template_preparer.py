@@ -60,7 +60,7 @@ def transform_template(req_data) -> Optional[str]:
                 os.environ["AWS_DEFAULT_REGION"] = region_before
 
 
-def prepare_template_body(req_data) -> Optional[str]:  # TODO: mutating and returning
+def prepare_template_body(req_data) -> str | bytes | None:  # TODO: mutating and returning
     template_url = req_data.get("TemplateURL")
     if template_url:
         req_data["TemplateURL"] = convert_s3_to_local_url(template_url)
@@ -139,7 +139,7 @@ def get_template_body(req_data):
             raise Exception(
                 "Unable to fetch template body (code %s) from URL %s" % (status_code, url)
             )
-        return response.content
+        return to_str(response.content)
     raise Exception("Unable to get template body from input: %s" % req_data)
 
 

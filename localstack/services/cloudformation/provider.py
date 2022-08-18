@@ -1,11 +1,13 @@
 import json
 import logging
+import re
 from typing import Any, Dict, List, Optional
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
     CallAs,
     ChangeSetNameOrId,
+    ChangeSetNotFoundException,
     ClientRequestToken,
     CloudformationApi,
     CreateChangeSetInput,
@@ -77,6 +79,13 @@ from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
 
+ARN_CHANGESET_REGEX = re.compile(
+    r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:changeSet/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+)
+ARN_STACK_REGEX = re.compile(
+    r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:stack/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+)
+
 
 class StackSet:
     """A stack set contains multiple stack instances."""
@@ -107,11 +116,12 @@ class StackInstance:
 
 
 class Stack:
-    def __init__(self, metadata=None, template=None):
+    def __init__(self, metadata=None, template=None, template_body=None):
         if template is None:
             template = {}
         self.metadata = metadata or {}
         self.template = template or {}
+        self.template_body = template_body
         self._template_raw = clone_safe(self.template)
         self.template_original = clone_safe(self.template)
         # initialize resources
@@ -580,7 +590,7 @@ class CloudformationProvider(CloudformationApi):
         template_deployer.prepare_template_body(request)  # TODO: avoid mutating request directly
         template = template_preparer.parse_template(request["TemplateBody"])
         stack_name = template["StackName"] = request.get("StackName")
-        stack = Stack(request, template)
+        stack = Stack(request, template)  # TODO: proper body handling like in create_change_set
 
         # find existing stack with same name, and remove it if this stack is in DELETED state
         existing = ([s for s in state.stacks.values() if s.stack_name == stack_name] or [None])[0]
@@ -704,12 +714,18 @@ class CloudformationProvider(CloudformationApi):
         template_stage: TemplateStage = None,
     ) -> GetTemplateOutput:
 
-        stack = find_stack(stack_name)
+        stack = None
         if change_set_name:
             stack = find_change_set(stack_name=stack_name, cs_name=change_set_name)
+        else:
+            stack = find_stack(stack_name)
         if not stack:
             return stack_not_found_error(stack_name)
-        return GetTemplateOutput(TemplateBody=json.dumps(stack.latest_template_raw()))
+
+        return GetTemplateOutput(
+            TemplateBody=stack.template_body,
+            StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
+        )
 
     @handler("GetTemplateSummary", expand=False)
     def get_template_summary(
@@ -868,6 +884,10 @@ class CloudformationProvider(CloudformationApi):
             )  # TODO: check proper message
 
         prepare_template_body(req_params)  # TODO: function has too many unclear responsibilities
+        if not template_body:
+            template_body = req_params[
+                "TemplateBody"
+            ]  # should then have been set by prepare_template_body
         template = template_preparer.parse_template(req_params["TemplateBody"])
         del req_params["TemplateBody"]  # TODO: stop mutating req_params
         template["StackName"] = stack_name
@@ -890,7 +910,11 @@ class CloudformationProvider(CloudformationApi):
             empty_stack_template = dict(template)
             empty_stack_template["Resources"] = {}
             req_params_copy = clone_stack_params(req_params)
-            stack = Stack(req_params_copy, empty_stack_template)
+            stack = Stack(
+                req_params_copy,
+                empty_stack_template,
+                template_body=template_body,
+            )
             state.stacks[stack.stack_id] = stack
             stack.set_stack_status("REVIEW_IN_PROGRESS")
         elif change_set_type == "IMPORT":
@@ -940,11 +964,21 @@ class CloudformationProvider(CloudformationApi):
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
     ) -> DescribeChangeSetOutput:
+
+        # only relevant if change_set_name isn't an ARN
+        if not ARN_CHANGESET_REGEX.match(change_set_name):
+            if not stack_name:
+                raise ValidationError(
+                    "StackName must be specified if ChangeSetName is not specified as an ARN."
+                )
+
+            stack = find_stack(stack_name)
+            if not stack:
+                raise ValidationError(f"Stack [{stack_name}] does not exist")
+
         change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:
-            return not_found_error(
-                f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
-            )
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 
         return change_set.metadata
 
@@ -955,13 +989,25 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
     ) -> DeleteChangeSetOutput:
+
+        # only relevant if change_set_name isn't an ARN
+        if not ARN_CHANGESET_REGEX.match(change_set_name):
+            if not stack_name:
+                raise ValidationError(
+                    "StackName must be specified if ChangeSetName is not specified as an ARN."
+                )
+
+            stack = find_stack(stack_name)
+            if not stack:
+                raise ValidationError(f"Stack [{stack_name}] does not exist")
+
         change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:
-            return not_found_error(
-                f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
-            )
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         change_set.stack.change_sets = [
-            cs for cs in change_set.stack.change_sets if cs.change_set_name != change_set_name
+            cs
+            for cs in change_set.stack.change_sets
+            if change_set_name not in (cs.change_set_name, cs.change_set_id)
         ]
         return DeleteChangeSetOutput()
 
@@ -976,9 +1022,7 @@ class CloudformationProvider(CloudformationApi):
     ) -> ExecuteChangeSetOutput:
         change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:
-            return not_found_error(
-                f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
-            )
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         if change_set.metadata.get("ExecutionStatus") != ExecutionStatus.AVAILABLE:
             LOG.debug("Change set %s not in execution status 'AVAILABLE'", change_set_name)
             raise InvalidChangeSetStatusException(

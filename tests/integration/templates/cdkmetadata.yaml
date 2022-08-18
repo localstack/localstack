@@ -1,0 +1,7 @@
+Resources:
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/zPSMzbTM1BMLC/WTU7J1s3JTNKrDi5JTM7WcU7LC0otzi8tSk4FsZ3z81IySzLz82p18vJTUvWyivXLDM30DE30jBSzijMzdYtK80oyc1P1giA0AExi6LdZAAAA
+    Metadata:
+      aws:cdk:path: CdkTestStack/CDKMetadata/Default

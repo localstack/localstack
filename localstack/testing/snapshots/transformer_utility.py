@@ -54,6 +54,7 @@ class TransformerUtility:
     def resource_name(replacement_name: str = "resource"):
         """Creates a new KeyValueBasedTransformer for the resource name.
 
+        :param replacement_name ARN of a resource to extract name from
         :return: KeyValueBasedTransformer
         """
         return KeyValueBasedTransformer(_resource_name_transformer, replacement_name)
@@ -115,10 +116,11 @@ class TransformerUtility:
         :return: array with Transformers, for cloudformation api.
         """
         return [
-            TransformerUtility.key_value("ChangeSetName"),
-            TransformerUtility.key_value("StackName"),
             KeyValueBasedTransformer(_resource_name_transformer, "resource"),
             KeyValueBasedTransformer(_change_set_id_transformer, "change-set-id"),
+            TransformerUtility.key_value("ChangeSetName"),
+            TransformerUtility.key_value("ChangeSetId"),
+            TransformerUtility.key_value("StackName"),
         ]
 
     @staticmethod

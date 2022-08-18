@@ -1034,9 +1034,13 @@ def _has_stack_status(cfn_client, statuses: List[str]):
 
 @pytest.fixture
 def is_change_set_finished(cfn_client):
-    def _is_change_set_finished(change_set_id: str):
+    def _is_change_set_finished(change_set_id: str, stack_name: Optional[str] = None):
         def _inner():
-            check_set = cfn_client.describe_change_set(ChangeSetName=change_set_id)
+            kwargs = {"ChangeSetName": change_set_id}
+            if stack_name:
+                kwargs["StackName"] = stack_name
+
+            check_set = cfn_client.describe_change_set(**kwargs)
             return check_set.get("ExecutionStatus") == "EXECUTE_COMPLETE"
 
         return _inner
