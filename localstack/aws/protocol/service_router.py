@@ -1,14 +1,18 @@
 import logging
-from functools import lru_cache
+import os
 from typing import NamedTuple, Optional, Set
 
+import botocore
 from werkzeug.http import parse_dict_header
 
-from localstack.aws.spec import ServiceCatalog
+import localstack
+from localstack import config
+from localstack.aws.spec import ServiceCatalog, build_service_index_cache, load_service_index_cache
 from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
+from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import hostname_from_url
 
@@ -220,10 +224,31 @@ def legacy_rules(request: Request) -> Optional[str]:
         return "s3"
 
 
-@lru_cache()
+@singleton_factory
 def get_service_catalog() -> ServiceCatalog:
-    """Loads the ServiceCatalog (which contains all the service specs)."""
-    return ServiceCatalog()
+    """Loads the ServiceCatalog (which contains all the service specs), and potentially re-uses a cached index."""
+    if not os.path.isdir(config.dirs.cache):
+        return ServiceCatalog()
+
+    try:
+        ls_ver = localstack.__version__.replace(".", "_")
+        botocore_ver = botocore.__version__.replace(".", "_")
+        cache_file_name = f"service-catalog-{ls_ver}-{botocore_ver}.pickle"
+        cache_file = os.path.join(config.dirs.cache, cache_file_name)
+
+        if not os.path.exists(cache_file):
+            LOG.debug("building service catalog index cache file %s", cache_file)
+            index = build_service_index_cache(cache_file)
+        else:
+            LOG.debug("loading service catalog index cache file %s", cache_file)
+            index = load_service_index_cache(cache_file)
+
+        return ServiceCatalog(index)
+    except Exception:
+        LOG.exception(
+            "error while processing service catalog index cache, falling back to lazy-loaded index"
+        )
+        return ServiceCatalog()
 
 
 def resolve_conflicts(candidates: Set[str], request: Request):

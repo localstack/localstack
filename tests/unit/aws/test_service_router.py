@@ -19,7 +19,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
     Collects all service<>operation combinations to test.
     """
     service_catalog = get_service_catalog()
-    for service in service_catalog.services.values():
+    for service_name in service_catalog.service_names:
+        service = service_catalog.get(service_name)
         for operation_name in service.operation_names:
             # FIXME try to support more and more services, get these exclusions down!
             # Exclude all operations for the following, currently _not_ supported services

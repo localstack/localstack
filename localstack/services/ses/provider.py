@@ -276,6 +276,9 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 LOGGER.warning("Source not specified. Rejecting message.")
                 raise MessageRejected()
 
+        if destinations is None:
+            destinations = []
+
         backend = get_ses_backend(context)
         message = backend.send_raw_email(source, destinations, raw_data, context.region)
 

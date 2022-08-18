@@ -1,5 +1,8 @@
+import builtins
 import json
 import os
+import re
+from copy import deepcopy
 from typing import Callable
 
 from localstack.config import dirs
@@ -161,3 +164,50 @@ def pre_create_default_name(key: str) -> Callable[[str, dict, str, dict, str], N
             props[key] = generate_default_name(stack_name, resource_id)
 
     return _pre_create_default_name
+
+
+# Utils for parameter conversion
+
+# TODO: handling of multiple valid types
+param_validation = re.compile(
+    r"Invalid type for parameter (?P<param>\w+), value: (?P<value>\w+), type: <class '(?P<wrong_class>\w+)'>, valid types: <class '(?P<valid_class>\w+)'>"
+)
+
+
+def get_nested(obj: dict, path: str):
+    parts = path.split(".")
+    result = obj
+    for p in parts[:-1]:
+        result = result.get(p, {})
+    return result.get(parts[-1])
+
+
+def set_nested(obj: dict, path: str, value):
+    parts = path.split(".")
+    result = obj
+    for p in parts[:-1]:
+        result = result.get(p, {})
+    result[parts[-1]] = value
+
+
+def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> dict:
+    """
+    Fix invalid type parameter validation errors in boto request parameters
+
+    :param original_params: original boto request parameters that lead to the parameter validation error
+    :param report: error report from botocore ParamValidator
+    :return: a copy of original_params with all values replaced by their correctly cast ones
+    """
+    params = deepcopy(original_params)
+    for found in param_validation.findall(report):
+        param_name, value, wrong_class, valid_class = found
+        cast_class = getattr(builtins, valid_class)
+        old_value = get_nested(params, param_name)
+
+        new_value = None
+        if cast_class == bool and str(old_value).lower() in ["true", "false"]:
+            new_value = str(old_value).lower() == "true"
+        else:
+            new_value = cast_class(old_value)
+        set_nested(params, param_name, new_value)
+    return params
