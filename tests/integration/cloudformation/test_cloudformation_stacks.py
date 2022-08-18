@@ -245,6 +245,7 @@ Outputs:
     assert test_tag
     assert test_tag[0]["Value"] == bucket_name1
 
+
 @pytest.mark.aws_validated
 @pytest.mark.parametrize("fileformat", ["yaml", "json"])
 def test_get_template(cfn_client, deploy_cfn_template, snapshot, fileformat):
