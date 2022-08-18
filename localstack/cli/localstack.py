@@ -47,6 +47,7 @@ def _setup_cli_debug():
 def localstack(debug, profile):
     if profile:
         os.environ["CONFIG_PROFILE"] = profile
+        config.CONFIG_PROFILE = profile
     if debug:
         _setup_cli_debug()
 
