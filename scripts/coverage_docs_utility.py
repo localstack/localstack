@@ -198,6 +198,9 @@ def main(path_to_implementation_details: str, path_to_raw_metrics: str):
     ) as file:
         csv_reader = csv.DictReader(file)
         for row in csv_reader:
+            if row["service"] not in impl_details:
+                print(f"{row['service']} is not available, continuing!")
+                continue
             service = impl_details[row["service"]]
             details = service[row["operation"]]
             if not details["implemented"] and row["is_implemented"] == "True":
