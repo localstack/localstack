@@ -9,9 +9,12 @@ from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
-from localstack.services.awslambda.lambda_api import LambdaRegion, run_lambda
+from localstack.services.awslambda.lambda_api import run_lambda
 from localstack.services.awslambda.lambda_executors import InvocationResult
-from localstack.services.awslambda.lambda_utils import filter_stream_records
+from localstack.services.awslambda.lambda_utils import (
+    filter_stream_records,
+    get_lambda_event_filters_for_arn,
+)
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import long_uid, timestamp_millis
 from localstack.utils.threads import FuncThread
@@ -179,21 +182,12 @@ class StreamEventSourceListener(EventSourceListener):
         max_num_retries = params["max_num_retries"]
         num_invocation_failures = 0
 
-        region_name = function_arn.split(":")[3]
-        region = LambdaRegion.get(region_name)
-
         while lock_discriminator in self._STREAM_LISTENER_THREADS:
             records_response = stream_client.get_records(
                 ShardIterator=shard_iterator, Limit=batch_size
             )
             records = records_response.get("Records")
-            event_filter_criterias = [
-                event_source_mapping.get("FilterCriteria")
-                for event_source_mapping in region.event_source_mappings
-                if event_source_mapping.get("FunctionArn") == function_arn
-                and event_source_mapping.get("EventSourceArn") == stream_arn
-                and event_source_mapping.get("FilterCriteria") is not None
-            ]
+            event_filter_criterias = get_lambda_event_filters_for_arn(function_arn, stream_arn)
             if len(event_filter_criterias) > 0:
                 records = filter_stream_records(records, event_filter_criterias)
 

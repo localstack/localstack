@@ -407,3 +407,21 @@ def validate_filters(filter: FilterCriteria):
         except json.JSONDecodeError:
             return False
     return True
+
+
+def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str):
+    # late import to avoid circular import
+    from localstack.services.awslambda.lambda_api import LambdaRegion
+
+    region_name = lambda_arn.split(":")[3]
+    region = LambdaRegion.get(region_name)
+
+    event_filter_criterias = [
+        event_source_mapping.get("FilterCriteria")
+        for event_source_mapping in region.event_source_mappings
+        if event_source_mapping.get("FunctionArn") == lambda_arn
+        and event_source_mapping.get("EventSourceArn") == event_arn
+        and event_source_mapping.get("FilterCriteria") is not None
+    ]
+
+    return event_filter_criterias
