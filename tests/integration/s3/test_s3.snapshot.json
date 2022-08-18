@@ -370,7 +370,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_copy_metadata_replace": {
-    "recorded-date": "18-08-2022, 17:20:36",
+    "recorded-date": "18-08-2022, 17:31:08",
     "recorded-content": {
       "put_object": {
         "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
@@ -411,6 +411,80 @@
         "LastModified": "datetime",
         "Metadata": {
           "another-key": "value"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_copy_content_type_and_metadata": {
+    "recorded-date": "18-08-2022, 17:52:12",
+    "recorded-content": {
+      "put_object": {
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "application/json",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key": "value"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy_object": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head_object_copy": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "application/json",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key": "value"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy_object_second": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head_object_second_copy": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "application/json",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key": "value"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
