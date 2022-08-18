@@ -141,8 +141,9 @@ class KmsProvider(KmsApi):
         result = call_moto(context)
 
         # generate keypair for signing, if this is a SIGN_VERIFY key
-        key_usage = create_key_request.get("KeyUsage")
-        if key_usage == "SIGN_VERIFY":
+        key_usage = create_key_request.get("KeyUsage", "ENCRYPT_DECRYPT")
+        key_spec = create_key_request.get("KeySpec", "SYMMETRIC_DEFAULT")
+        if not (key_usage == "ENCRYPT_DECRYPT" and key_spec == "SYMMETRIC_DEFAULT"):
             create_key_request["KeyId"] = result["KeyMetadata"]["KeyId"]
             _generate_data_key_pair(create_key_request, create_cipher=False)
 
@@ -268,6 +269,7 @@ class KmsProvider(KmsApi):
 
         return ListGrantsResponse(Grants=in_limit, Truncated=True, NextMarker=marker_id)
 
+    @handler("GetPublicKey")
     def get_public_key(
         self, context: RequestContext, key_id: KeyIdType, grant_tokens: GrantTokenList = None
     ) -> GetPublicKeyResponse:
@@ -567,7 +569,7 @@ def _generate_data_key_pair(data, create_cipher=True, add_to_keys=True):
         "KeyId": key_id,
         "KeyPairSpec": key_spec,
         "KeySpec": key_spec,
-        "KeyUsage": "SIGN_VERIFY",
+        "KeyUsage": data.get("KeyUsage", "ENCRYPT_DECRYPT"),
         "Policy": data.get("Policy"),
         "Region": region,
         "Description": data.get("Description"),
