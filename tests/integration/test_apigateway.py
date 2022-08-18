@@ -51,7 +51,7 @@ from tests.integration.apigateway_fixtures import (
     create_rest_api_method_response,
     create_rest_resource,
     create_rest_resource_method,
-    delete_rest_api,
+    delete_rest_api, create_rest_api_deployment, update_rest_api_deployment,
 )
 from tests.integration.awslambda.test_lambda_integration import TEST_STAGE_NAME
 
@@ -293,6 +293,43 @@ class TestAPIGateway:
         messages = aws_stack.sqs_receive_message(queue_name)["Messages"]
         assert 1 == len(messages)
         assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
+
+    def test_update_rest_api_deployment(self, apigateway_client):
+        api_id, _, root = create_rest_api(apigateway_client, name="aws lambda api")
+
+        create_rest_resource_method(apigateway_client,
+            restApiId=api_id, resourceId=root, httpMethod="GET", authorizationType="none"
+        )
+
+        create_rest_api_integration(apigateway_client,
+            restApiId=api_id,
+            resourceId=root,
+            httpMethod="GET",
+            type="HTTP",
+            uri="http://httpbin.org/robots.txt",
+            integrationHttpMethod="POST",
+        )
+        create_rest_api_integration_response(apigateway_client,
+            restApiId=api_id,
+            resourceId=root,
+            httpMethod="GET",
+            statusCode="200",
+            selectionPattern="foobar",
+            responseTemplates={},
+        )
+
+        deployment_id, _ = create_rest_api_deployment(apigateway_client, restApiId=api_id,
+            description="my deployment")
+        patch_operations = [
+            {"op": "replace", "path": "/description", "value": "new-description"}
+        ]
+        deployment = update_rest_api_deployment(
+            apigateway_client,
+            restApiId=api_id,
+            deploymentId=deployment_id,
+            patchOperations=patch_operations
+        )
+        assert deployment["description"] == "new-description"
 
     def test_api_gateway_lambda_integration(self, apigateway_client, create_lambda_function):
         """
@@ -1797,6 +1834,7 @@ class TestAPIGateway:
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)
         client.delete_rest_api(restApiId=rest_api["id"])
+
 
     @staticmethod
     def start_http_backend(test_port):

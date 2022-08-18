@@ -432,7 +432,7 @@ def apply_patches():
 
     def individual_deployment(self, request, full_url, headers, *args, **kwargs):
         result = individual_deployment_orig(self, request, full_url, headers, *args, **kwargs)
-        if self.method == "PATCH" and len(result) >= 3 and result[2] in ["null", None, str(None)]:
+        if self.method == "PATCH":
             url_path_parts = self.path.split("/")
             function_id = url_path_parts[2]
             deployment_id = url_path_parts[4]

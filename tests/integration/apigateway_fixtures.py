@@ -124,6 +124,13 @@ def create_base_path_mapping(apigateway_client, **kwargs):
 def create_rest_api_deployment(apigateway_client, **kwargs):
     response = apigateway_client.create_deployment(**kwargs)
     assert_response_is_200(response)
+    return response.get("id"), response.get("createdDate")
+
+
+def update_rest_api_deployment(apigateway_client, **kwargs):
+    response = apigateway_client.update_deployment(**kwargs)
+    assert_response_is_200(response)
+    return response
 
 
 def create_cognito_user_pool(cognito_idp, **kwargs):
