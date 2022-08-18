@@ -24,14 +24,13 @@ Access patterns are as follows
 """
 
 import re
-import threading
 from collections.abc import Callable
+from threading import RLock
 from typing import Any, Type, TypeVar, Union
 
 from boto3 import Session
 
 LOCAL_ATTR_PREFIX = "attr_"
-BUNDLE_LOCK = threading.RLock()
 
 BaseStoreType = TypeVar("BaseStoreType", bound="BaseStore")
 
@@ -143,12 +142,18 @@ class RegionBundle(dict):
     """
 
     def __init__(
-        self, service_name: str, store: Type[BaseStoreType], account_id: str, validate: bool = True
+        self,
+        service_name: str,
+        store: Type[BaseStoreType],
+        account_id: str,
+        validate: bool = True,
+        lock: RLock = None,
     ):
         self.store = store
         self.account_id = account_id
         self.service_name = service_name
         self.validate = validate
+        self.lock = lock or RLock()
 
         self.valid_regions = Session().get_available_regions(service_name)
 
@@ -162,7 +167,7 @@ class RegionBundle(dict):
                 f"'{region_name}' is not a valid AWS region name for {self.service_name}"
             )
 
-        with BUNDLE_LOCK:
+        with self.lock:
             if region_name not in self.keys():
                 store_obj = self.store()
 
@@ -191,7 +196,7 @@ class RegionBundle(dict):
 
         self._global.clear()
 
-        with BUNDLE_LOCK:
+        with self.lock:
             self.clear()
 
 
@@ -209,18 +214,20 @@ class AccountRegionBundle(dict):
         self.service_name = service_name
         self.store = store
         self.validate = validate
+        self.lock = RLock()
 
     def __getitem__(self, account_id: str) -> RegionBundle:
         if self.validate and not re.match(r"\d{12}", account_id):
             raise ValueError(f"'{account_id}' is not a valid AWS account ID")
 
-        with BUNDLE_LOCK:
+        with self.lock:
             if account_id not in self.keys():
                 self[account_id] = RegionBundle(
                     service_name=self.service_name,
                     store=self.store,
                     account_id=account_id,
                     validate=self.validate,
+                    lock=self.lock,
                 )
 
         return super().__getitem__(account_id)
@@ -231,5 +238,5 @@ class AccountRegionBundle(dict):
         for region_bundle in self.values():
             region_bundle.reset()
 
-        with BUNDLE_LOCK:
+        with self.lock:
             self.clear()
