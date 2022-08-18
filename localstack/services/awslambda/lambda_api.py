@@ -1168,10 +1168,8 @@ def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
     is_base64_encoded = not (data.isascii() and content_type_is_text) if data else False
     body = base64.b64encode(data).decode() if is_base64_encoded else data
 
-    event_headers = {k.lower(): v for k, v in headers.items()}
-    event_headers.pop("connection")
-    event_headers.pop("x-localstack-tgt-api")
-    event_headers.pop("x-localstack-request-url")
+    ignored_headers = ["connection", "x-localstack-tgt-api", "x-localstack-request-url"]
+    event_headers = {k.lower(): v for k, v in headers.items() if k.lower() not in ignored_headers}
 
     event_headers.update(
         {
