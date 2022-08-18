@@ -10,9 +10,11 @@ import sys
 import threading
 import time
 import traceback
+import urllib.parse
 import uuid
 from datetime import datetime
 from io import StringIO
+from random import random
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
@@ -20,7 +22,9 @@ from flask import Flask, Response, jsonify, request
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME
+from localstack.http import Request
+from localstack.http import Response as HttpResponse
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.event_source_listeners.event_source_listener import (
     EventSourceListener,
@@ -29,6 +33,7 @@ from localstack.services.awslambda.invocation.lambda_util import function_name_f
 from localstack.services.awslambda.lambda_executors import InvocationResult, LambdaContext
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
+    API_PATH_ROOT_2,
     DOTNET_LAMBDA_RUNTIMES,
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
@@ -45,39 +50,34 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
+from localstack.utils.archives import get_unzipped_size, is_zip_file, unzip
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
-from localstack.utils.common import (
-    TMP_FILES,
-    empty_context_manager,
-    ensure_readable,
-    first_char_to_lower,
-    get_unzipped_size,
-    is_zip_file,
-    isoformat_milliseconds,
-    json_safe,
-    load_file,
-    long_uid,
-    mkdir,
-    now_utc,
-    parse_request_data,
-    run,
-    safe_requests,
-    save_file,
-    short_uid,
-    synchronized,
-    timestamp_millis,
-    to_bytes,
-    to_str,
-    unzip,
-)
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.docker_utils import DOCKER_CLIENT
-from localstack.utils.functions import run_safe
-from localstack.utils.http import canonicalize_headers, parse_chunked_data
+from localstack.utils.files import TMP_FILES, ensure_readable, load_file, mkdir, save_file
+from localstack.utils.functions import empty_context_manager, run_safe
+from localstack.utils.http import (
+    canonicalize_headers,
+    parse_chunked_data,
+    parse_request_data,
+    safe_requests,
+)
+from localstack.utils.json import json_safe
 from localstack.utils.patch import patch
-from localstack.utils.run import run_for_max_seconds
+from localstack.utils.run import run, run_for_max_seconds
+from localstack.utils.strings import first_char_to_lower, long_uid, md5, short_uid, to_bytes, to_str
+from localstack.utils.sync import synchronized
+from localstack.utils.time import (
+    TIMESTAMP_FORMAT_MICROS,
+    TIMESTAMP_READABLE_FORMAT,
+    isoformat_milliseconds,
+    mktime,
+    now_utc,
+    timestamp,
+    timestamp_millis,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -162,11 +162,14 @@ class LambdaRegion(RegionBackend):
     code_signing_configs: Dict[str, CodeSigningConfig]
     # list of event source mappings for the API
     event_source_mappings: List[Dict]
+    # map ARN strings to url configs
+    url_configs = Dict[str, Dict]
 
     def __init__(self):
         self.lambdas = {}
         self.code_signing_configs = {}
         self.event_source_mappings = []
+        self.url_configs = {}
 
 
 def cleanup():
@@ -386,6 +389,15 @@ def process_apigateway_invocation(
         LOG.warning(
             "Unable to run Lambda function on API Gateway message: %s %s", e, traceback.format_exc()
         )
+
+
+def process_lambda_url_invocation(lambda_url_config: dict, event: dict):
+    inv_result = run_lambda(
+        func_arn=lambda_url_config["FunctionArn"],
+        event=event,
+        asynchronous=False,
+    )
+    return inv_result.result
 
 
 def construct_invocation_event(
@@ -1111,6 +1123,138 @@ def delete_lambda_function(function_name: str) -> Dict[None, None]:
     return {}
 
 
+def get_lambda_url_config(api_id, region=None):
+    lambda_backend = LambdaRegion.get(region)
+    url_configs = lambda_backend.url_configs.values()
+    lambda_url_configs = [config for config in url_configs if config.get("CustomId") == api_id]
+    return lambda_url_configs[0]
+
+
+def event_for_lambda_url(api_id, path, data, headers, method) -> dict:
+    raw_path = path.split("?")[0]
+    raw_query_string = path.split("?")[1] if len(path.split("?")) > 1 else ""
+    query_string_parameters = (
+        {} if not raw_query_string else dict(urllib.parse.parse_qsl(raw_query_string))
+    )
+
+    now = datetime.utcnow()
+    readable = timestamp(time=now, format=TIMESTAMP_READABLE_FORMAT)
+    if not any(char in readable for char in ["+", "-"]):
+        readable += "+0000"
+
+    source_ip = headers.get("Remote-Addr", "")
+    request_context = {
+        "accountId": "anonymous",
+        "apiId": api_id,
+        "domainName": headers.get("Host", ""),
+        "domainPrefix": api_id,
+        "http": {
+            "method": method,
+            "path": raw_path,
+            "protocol": "HTTP/1.1",
+            "sourceIp": source_ip,
+            "userAgent": headers.get("User-Agent", ""),
+        },
+        "requestId": long_uid(),
+        "routeKey": "$default",
+        "stage": "$default",
+        "time": readable,
+        "timeEpoch": mktime(ts=now, millis=True),
+    }
+
+    content_type = headers.get("Content-Type", "").lower()
+    content_type_is_text = any(text_type in content_type for text_type in ["text", "json", "xml"])
+
+    is_base64_encoded = not (data.isascii() and content_type_is_text) if data else False
+    body = base64.b64encode(data).decode() if is_base64_encoded else data
+
+    ignored_headers = ["connection", "x-localstack-tgt-api", "x-localstack-request-url"]
+    event_headers = {k.lower(): v for k, v in headers.items() if k.lower() not in ignored_headers}
+
+    event_headers.update(
+        {
+            "x-amzn-tls-cipher-suite": "ECDHE-RSA-AES128-GCM-SHA256",
+            "x-amzn-tls-version": "TLSv1.2",
+            "x-forwarded-proto": "http",
+            "x-forwarded-for": source_ip,
+            "x-forwarded-port": str(config.EDGE_PORT),
+        }
+    )
+
+    event = {
+        "version": "2.0",
+        "routeKey": "$default",
+        "rawPath": raw_path,
+        "rawQueryString": raw_query_string,
+        "headers": event_headers,
+        "queryStringParameters": query_string_parameters,
+        "requestContext": request_context,
+        "body": body,
+        "isBase64Encoded": is_base64_encoded,
+    }
+
+    if not data:
+        event.pop("body")
+
+    return event
+
+
+def handle_lambda_url_invocation(
+    request: Request, api_id: str, region: str, **url_params: Dict[str, str]
+) -> HttpResponse:
+    response = HttpResponse(headers={"Content-type": "application/json"})
+    try:
+        lambda_url_config = get_lambda_url_config(api_id, region)
+    except IndexError as e:
+        LOG.warning(f"Lambda URL ({api_id}) not found: {e}")
+        response.set_json({"Message": None})
+        response.status = "404"
+        return response
+
+    event = event_for_lambda_url(
+        api_id, request.full_path, request.data, dict(request.headers), request.method
+    )
+
+    try:
+        result = process_lambda_url_invocation(lambda_url_config, event)
+    except Exception as e:
+        LOG.warning(f"Lambda URL ({api_id}) failed during execution: {e}")
+
+        response.set_json({"Message": "lambda function failed during execution"})
+        response.status = "403"
+        return response
+
+    response = lambda_result_to_response(result)
+    return response
+
+
+def lambda_result_to_response(result: str):
+    response = HttpResponse()
+    response.headers.update({"Content-Type": "application/json"})
+
+    parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
+    parsed_result = json_safe(parsed_result)
+    parsed_result = {} if parsed_result is None else parsed_result
+    parsed_headers = parsed_result.get("headers", {})
+
+    if parsed_headers is not None:
+        response.headers.update(parsed_headers)
+    try:
+        result_body = parsed_result.get("body")
+        if isinstance(result_body, dict):
+            response.set_data(json.dumps(result_body))
+        else:
+            body_bytes = to_bytes(to_str(result_body or ""))
+            if parsed_result.get("isBase64Encoded", False):
+                body_bytes = base64.b64decode(body_bytes)
+            response.set_data(body_bytes)
+    except Exception as e:
+        LOG.warning("Couldn't set Lambda response content: %s", e)
+        response._content = "{}"
+
+    return response
+
+
 # ------------
 # API METHODS
 # ------------
@@ -1342,7 +1486,7 @@ def update_function_configuration(function):
     return jsonify(result)
 
 
-def generate_policy_statement(sid, action, arn, sourcearn, principal):
+def generate_policy_statement(sid, action, arn, sourcearn, principal, url_auth_type):
 
     statement = {
         "Sid": sid,
@@ -1358,14 +1502,17 @@ def generate_policy_statement(sid, action, arn, sourcearn, principal):
 
     # Adds Principal only if Principal is present
     if principal:
-        principal = {"Service": principal}
+        principal = "*" if principal == "*" else {"Service": principal}
         statement["Principal"] = principal
+
+    if url_auth_type:
+        statement["Condition"] = {"StringEquals": {"lambda:FunctionUrlAuthType": url_auth_type}}
 
     return statement
 
 
-def generate_policy(sid, action, arn, sourcearn, principal):
-    new_statement = generate_policy_statement(sid, action, arn, sourcearn, principal)
+def generate_policy(sid, action, arn, sourcearn, principal, url_auth_type):
+    new_statement = generate_policy_statement(sid, action, arn, sourcearn, principal, url_auth_type)
     policy = {
         "Version": IAM_POLICY_VERSION,
         "Id": "LambdaFuncAccess-%s" % sid,
@@ -1381,7 +1528,149 @@ def add_permission(function):
     qualifier = request.args.get("Qualifier")
     q_arn = func_qualifier(function, qualifier)
     result = add_permission_policy_statement(function, arn, q_arn, qualifier=qualifier)
-    return result
+    return result, 201
+
+
+def correct_error_response_for_url_config(response):
+    response_data = json.loads(response.data)
+    response_data.update({"Message": response_data.get("message")})
+    response.set_data(json.dumps(response_data))
+    return response
+
+
+@app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["POST"])
+def create_url_config(function):
+    arn = func_arn(function)
+    qualifier = request.args.get("Qualifier")
+    q_arn = func_qualifier(function, qualifier)
+
+    lambda_backend = LambdaRegion.get()
+    function = lambda_backend.lambdas.get(arn)
+    if function is None:
+        response = error_response("Function does not exist", 404, "ResourceNotFoundException")
+        return correct_error_response_for_url_config(response)
+
+    if qualifier and not function.qualifier_exists(qualifier=qualifier):
+        return not_found_error()
+
+    arn = q_arn or arn
+    lambda_backend = LambdaRegion.get()
+    if arn in lambda_backend.url_configs:
+        return error_response(
+            f"Failed to create function url config for [functionArn = {arn}]. Error message:  FunctionUrlConfig exists for this Lambda function",
+            409,
+            "ResourceConflictException",
+        )
+
+    custom_id = md5(str(random()))
+    region = LambdaRegion.get_current_request_region()
+    url = f"http://{custom_id}.lambda-url.{region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}/"
+
+    data = json.loads(to_str(request.data))
+    url_config = {
+        "AuthType": data.get("AuthType"),
+        "FunctionArn": arn,
+        "FunctionUrl": url,
+        "CreationTime": timestamp(format=TIMESTAMP_FORMAT_MICROS),
+        "LastModifiedTime": timestamp(format=TIMESTAMP_FORMAT_MICROS),
+        "CustomId": custom_id,
+    }
+
+    if "Cors" in data:
+        cors = data.get("Cors", {})
+        url_config.update(
+            {
+                "Cors": {
+                    "AllowCredentials": cors.get("AllowCredentials", ["*"]),
+                    "AllowHeaders": cors.get("AllowHeaders", ["*"]),
+                    "AllowMethods": cors.get("AllowMethods", ["*"]),
+                    "AllowOrigins": cors.get("AllowOrigins", ["*"]),
+                    "ExposeHeaders": cors.get("ExposeHeaders", []),
+                    "MaxAge": cors.get("MaxAge", 0),
+                }
+            }
+        )
+
+    lambda_backend.url_configs.update({arn: url_config})
+    response = url_config.copy()
+    response.pop("LastModifiedTime")
+    response.pop("CustomId")
+    return response, 201
+
+
+@app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["GET"])
+def get_url_config(function):
+    arn = func_arn(function)
+    qualifier = request.args.get("Qualifier")
+    q_arn = func_qualifier(function, qualifier)
+    arn = q_arn or arn
+    lambda_backend = LambdaRegion.get()
+    url_config = lambda_backend.url_configs.get(arn)
+
+    if url_config is None:
+        response = error_response(
+            "The resource you requested does not exist.", 404, "ResourceNotFoundException"
+        )
+        return correct_error_response_for_url_config(response)
+
+    response = url_config.copy()
+    response.pop("CustomId")
+    return response
+
+
+@app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["PUT"])
+def update_url_config(function):
+    arn = func_arn(function)
+    qualifier = request.args.get("Qualifier")
+    q_arn = func_qualifier(function, qualifier)
+    arn = q_arn or arn
+
+    lambda_backend = LambdaRegion.get()
+    prev_url_config = lambda_backend.url_configs.get(arn)
+
+    if prev_url_config is None:
+        return not_found_error()
+
+    data = json.loads(to_str(request.data))
+    new_url_config = {
+        "AuthType": data.get("AuthType"),
+        "LastModifiedTime": timestamp(format=TIMESTAMP_FORMAT_MICROS),
+    }
+    if "Cors" in data:
+        cors = data.get("Cors", {})
+        new_url_config.update(
+            {
+                "Cors": {
+                    "AllowCredentials": cors.get("AllowCredentials", ["*"]),
+                    "AllowHeaders": cors.get("AllowHeaders", ["*"]),
+                    "AllowMethods": cors.get("AllowMethods", ["*"]),
+                    "AllowOrigins": cors.get("AllowOrigins", ["*"]),
+                    "ExposeHeaders": cors.get("ExposeHeaders", []),
+                    "MaxAge": cors.get("MaxAge", 0),
+                }
+            }
+        )
+    prev_url_config.update(new_url_config)
+
+    response = prev_url_config.copy()
+    response.pop("CustomId")
+    return response
+
+
+@app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["DELETE"])
+def delete_url_config(function):
+    arn = func_arn(function)
+    qualifier = request.args.get("Qualifier")
+    q_arn = func_qualifier(function, qualifier)
+    arn = q_arn or arn
+
+    lambda_backend = LambdaRegion.get()
+    if arn not in lambda_backend.url_configs:
+        response = error_response("Function does not exist", 404, "ResourceNotFoundException")
+        return response
+
+    lambda_backend.url_configs.pop(arn)
+    return {}
 
 
 def add_permission_policy_statement(
@@ -1394,6 +1683,7 @@ def add_permission_policy_statement(
     action = data.get("Action")
     principal = data.get("Principal")
     sourcearn = data.get("SourceArn")
+    function_url_auth_type = data.get("FunctionUrlAuthType")
     previous_policy = get_lambda_policy(resource_name, qualifier)
 
     if resource_arn not in region.lambdas:
@@ -1407,7 +1697,9 @@ def add_permission_policy_statement(
         )
         return error_response(msg, 400, error_type="ValidationException")
 
-    new_policy = generate_policy(sid, action, resource_arn_qualified, sourcearn, principal)
+    new_policy = generate_policy(
+        sid, action, resource_arn_qualified, sourcearn, principal, function_url_auth_type
+    )
     new_statement = new_policy["Statement"][0]
     result = {"Statement": json.dumps(new_statement)}
     if previous_policy:

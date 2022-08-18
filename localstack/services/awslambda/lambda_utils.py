@@ -26,6 +26,7 @@ LOG = logging.getLogger(__name__)
 
 # root path of Lambda API endpoints
 API_PATH_ROOT = "/2015-03-31"
+API_PATH_ROOT_2 = "/2021-10-31"
 
 # Lambda runtime constants
 LAMBDA_RUNTIME_PYTHON36 = "python3.6"

@@ -55,6 +55,7 @@ from localstack.utils.common import (
     new_tmp_dir,
     retry,
     run_safe,
+    safe_requests,
     save_file,
     short_uid,
     to_bytes,
@@ -112,6 +113,8 @@ TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "functions/lambda_environment.py")
 TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions/lambda_send_message.py")
 TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions/lambda_put_item.py")
 TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, "functions/lambda_start_execution.py")
+
+TEST_LAMBDA_URL = os.path.join(THIS_FOLDER, "functions/lambda_url.js")
 
 TEST_LAMBDA_FUNCTION_PREFIX = "lambda-function"
 
@@ -633,6 +636,60 @@ class TestLambdaAPI:
             FunctionName=function_name,
         )
         snapshot.match("policy_after_2_add", policy_response)
+
+    @pytest.mark.aws_validated
+    def test_url_config_lifecycle(self, lambda_client, create_lambda_function, snapshot):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "FunctionUrl", "lambda-url", reference_replacement=False
+                ),
+            ]
+        )
+
+        function_name = f"test-function-{short_uid()}"
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ex:
+            lambda_client.create_function_url_config(
+                FunctionName=function_name,
+                AuthType="NONE",
+            )
+        snapshot.match("failed_creation", ex.value.response)
+
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="lambda_handler.handler",
+        )
+
+        url_config_created = lambda_client.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+        snapshot.match("url_creation", url_config_created)
+
+        with pytest.raises(lambda_client.exceptions.ResourceConflictException) as ex:
+            lambda_client.create_function_url_config(
+                FunctionName=function_name,
+                AuthType="NONE",
+            )
+        snapshot.match("failed_duplication", ex.value.response)
+
+        url_config_obtained = lambda_client.get_function_url_config(FunctionName=function_name)
+        snapshot.match("get_url_config", url_config_obtained)
+
+        url_config_updated = lambda_client.update_function_url_config(
+            FunctionName=function_name,
+            AuthType="AWS_IAM",
+        )
+        snapshot.match("updated_url_config", url_config_updated)
+
+        lambda_client.delete_function_url_config(FunctionName=function_name)
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as ex:
+            lambda_client.get_function_url_config(FunctionName=function_name)
+        snapshot.match("failed_getter", ex.value.response)
 
 
 class TestLambdaBaseFeatures:
@@ -2403,3 +2460,114 @@ class TestLambdaBehavior:
         assert get_invoke_init_type(lambda_client, func_name, "$LATEST") == "on-demand"
         # TODO: why is this flaky?
         # assert lambda_client.get_function(FunctionName=func_name, Qualifier='$LATEST')['Configuration']['RevisionId'] == lambda_client.get_function(FunctionName=func_name, Qualifier=first_ver['Version'])['Configuration']['RevisionId']
+
+
+class TestLambdaURL:
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..context",
+            "$..event.headers.x-forwarded-proto",
+            "$..event.headers.x-forwarded-for",
+            "$..event.headers.x-forwarded-port",
+            "$..event.headers.x-amzn-lambda-forwarded-client-ip",
+            "$..event.headers.x-amzn-lambda-forwarded-host",
+            "$..event.headers.x-amzn-lambda-proxy-auth",
+            "$..event.headers.x-amzn-lambda-proxying-cell",
+            "$..event.headers.x-amzn-trace-id",
+        ]
+    )
+    def test_lambda_url_invocation(self, lambda_client, create_lambda_function, snapshot):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("requestId", "uuid", reference_replacement=False),
+                snapshot.transform.key_value(
+                    "FunctionUrl", "lambda-url", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.http.sourceIp",
+                    "ip-address",
+                    reference_replacement=False,
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.headers.x-forwarded-for", "ip-address", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.headers.x-amzn-lambda-forwarded-client-ip",
+                    "ip-address",
+                    reference_replacement=False,
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.headers.x-amzn-lambda-forwarded-host",
+                    "lambda-url",
+                    reference_replacement=False,
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.headers.host", "lambda-url", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.apiId", "api-id", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.domainName", "lambda-url", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.domainPrefix", "api-id", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.time", "readable-date", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..event.requestContext.timeEpoch",
+                    "epoch-milliseconds",
+                    reference_replacement=False,
+                ),
+            ]
+        )
+
+        function_name = f"test-function-{short_uid()}"
+
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="lambda_url.handler",
+        )
+
+        url_config = lambda_client.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+
+        snapshot.match("create_lambda_url_config", url_config)
+
+        permissions_response = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+
+        snapshot.match("add_permission", permissions_response)
+
+        url = url_config["FunctionUrl"]
+        url += "custom_path/extend?test_param=test_value"
+
+        result = safe_requests.post(
+            url, data=b"{'key':'value'}", headers={"User-Agent": "python-requests/testing"}
+        )
+
+        assert result.status_code == 200
+        snapshot.match("lambda_url_invocation", json.loads(result.content))
+
+        result = safe_requests.post(url, data="text", headers={"Content-Type": "text/plain"})
+        event = json.loads(result.content)["event"]
+        assert event["body"] == "text"
+        assert event["isBase64Encoded"] is False
+
+        result = safe_requests.post(url)
+        event = json.loads(result.content)["event"]
+        assert "Body" not in event
+        assert event["isBase64Encoded"] is False
