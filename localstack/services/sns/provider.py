@@ -1130,6 +1130,19 @@ async def message_to_subscriber(
                 Destination={"ToAddresses": [subscriber.get("Endpoint")]},
             )
             store_delivery_log(subscriber, True, message, message_id)
+    elif subscriber["Protocol"] == "firehose":
+        firehose_client = aws_stack.connect_to_service("firehose")
+        endpoint = subscriber["Endpoint"]
+        sns_body = create_sns_message_body(
+            subscriber=subscriber, req_data=req_data, message_id=message_id
+        )
+        if endpoint:
+            delivery_stream = aws_stack.extract_resource_from_arn(endpoint).split("/")[1]
+            firehose_client.put_record(
+                DeliveryStreamName=delivery_stream, Record={"Data": to_bytes(sns_body)}
+            )
+            store_delivery_log(subscriber, True, message, message_id)
+        return
     else:
         LOG.warning('Unexpected protocol "%s" for SNS subscription', subscriber["Protocol"])
 

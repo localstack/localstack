@@ -3,6 +3,7 @@ import json
 import queue
 import random
 import time
+from io import BytesIO
 from operator import itemgetter
 
 import pytest
@@ -19,7 +20,7 @@ from localstack.services.sns.provider import SNSBackend
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
@@ -2185,3 +2186,111 @@ class TestSNSProvider:
             )
 
             snapshot.match(f"message-{i}-after-delete", response)
+
+    @pytest.mark.aws_validated
+    def test_publish_to_firehose_with_s3(
+        self,
+        s3_client,
+        iam_client,
+        firehose_client,
+        sns_client,
+        create_role,
+        s3_create_bucket,
+        firehose_create_delivery_stream,
+        sns_create_topic,
+        sns_subscription,
+    ):
+        role_name = f"test-role-{short_uid()}"
+        stream_name = f"test-stream-{short_uid()}"
+        bucket_name = f"test-bucket-{short_uid()}"
+        topic_name = f"test_topic_{short_uid()}"
+
+        trust_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "s3.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                },
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "firehose.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                },
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "sns.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                },
+            ],
+        }
+
+        role = create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
+
+        iam_client.attach_role_policy(
+            RoleName=role_name,
+            PolicyArn="arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess",
+        )
+
+        iam_client.attach_role_policy(
+            RoleName=role_name, PolicyArn="arn:aws:iam::aws:policy/AmazonS3FullAccess"
+        )
+        subscription_role_arn = role["Role"]["Arn"]
+
+        if is_aws_cloud():
+            time.sleep(10)
+
+        s3_create_bucket(Bucket=bucket_name)
+
+        stream = firehose_create_delivery_stream(
+            DeliveryStreamName=stream_name,
+            DeliveryStreamType="DirectPut",
+            S3DestinationConfiguration={
+                "RoleARN": subscription_role_arn,
+                "BucketARN": f"arn:aws:s3:::{bucket_name}",
+                "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 60},
+            },
+        )
+
+        topic = sns_create_topic(Name=topic_name)
+        sns_subscription(
+            TopicArn=topic["TopicArn"],
+            Protocol="firehose",
+            Endpoint=stream["DeliveryStreamARN"],
+            Attributes={"SubscriptionRoleArn": subscription_role_arn},
+            ReturnSubscriptionArn=True,
+        )
+
+        message = json.dumps({"message": "hello world"})
+        message_attributes = {
+            "testAttribute": {"DataType": "String", "StringValue": "valueOfAttribute"}
+        }
+        sns_client.publish(
+            TopicArn=topic["TopicArn"], Message=message, MessageAttributes=message_attributes
+        )
+
+        def validate_content():
+            files = s3_client.list_objects(Bucket=bucket_name)["Contents"]
+            f = BytesIO()
+            s3_client.download_fileobj(bucket_name, files[0]["Key"], f)
+            content = to_str(f.getvalue())
+
+            sns_message = json.loads(content.split("\n")[0])
+
+            assert "Type" in sns_message
+            assert "MessageId" in sns_message
+            assert "Message" in sns_message
+            assert "Timestamp" in sns_message
+
+            assert message == sns_message["Message"]
+
+        retries = 5
+        sleep = 1
+        sleep_before = 0
+        if is_aws_cloud():
+            retries = 30
+            sleep = 10
+            sleep_before = 10
+
+        retry(validate_content, retries=retries, sleep_before=sleep_before, sleep=sleep)

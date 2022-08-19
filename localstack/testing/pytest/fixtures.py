@@ -704,6 +704,23 @@ def wait_for_stream_ready(kinesis_client):
     return _wait_for_stream_ready
 
 
+@pytest.fixture
+def wait_for_delivery_stream_ready(firehose_client):
+    def _wait_for_stream_ready(delivery_stream_name: str):
+        def is_stream_ready():
+            describe_stream_response = firehose_client.describe_delivery_stream(
+                DeliveryStreamName=delivery_stream_name
+            )
+            return (
+                describe_stream_response["DeliveryStreamDescription"]["DeliveryStreamStatus"]
+                == "ACTIVE"
+            )
+
+        poll_condition(is_stream_ready)
+
+    return _wait_for_stream_ready
+
+
 @pytest.fixture()
 def kms_create_key(kms_client):
     key_ids = []
@@ -1445,6 +1462,25 @@ def create_iam_role_with_policy(iam_client):
     for role_name, policy_name in roles.items():
         iam_client.delete_role_policy(RoleName=role_name, PolicyName=policy_name)
         iam_client.delete_role(RoleName=role_name)
+
+
+@pytest.fixture
+def firehose_create_delivery_stream(firehose_client, wait_for_delivery_stream_ready):
+    delivery_streams = {}
+
+    def _create_delivery_stream(**kwargs):
+        if "DeliveryStreamName" not in kwargs:
+            kwargs["DeliveryStreamName"] = f"test-delivery-stream-{short_uid()}"
+
+        delivery_stream = firehose_client.create_delivery_stream(**kwargs)
+        delivery_streams.update({kwargs["DeliveryStreamName"]: delivery_stream})
+        wait_for_delivery_stream_ready(kwargs["DeliveryStreamName"])
+        return delivery_stream
+
+    yield _create_delivery_stream
+
+    for delivery_stream_name in delivery_streams.keys():
+        firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
 
 
 @pytest.fixture
