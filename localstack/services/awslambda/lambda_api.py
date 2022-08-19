@@ -1564,7 +1564,8 @@ def create_url_config(function):
 
     custom_id = md5(str(random()))
     region = LambdaRegion.get_current_request_region()
-    url = f"http://{custom_id}.lambda-url.{region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}/"
+    url = f"http://{custom_id}.lambda-url.{region}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT_HTTP or config.EDGE_PORT}/"
+    # TODO: HTTPS support
 
     data = json.loads(to_str(request.data))
     url_config = {

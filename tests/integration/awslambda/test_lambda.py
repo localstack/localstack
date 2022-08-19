@@ -2463,7 +2463,6 @@ class TestLambdaBehavior:
 
 
 class TestLambdaURL:
-    # testing
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
