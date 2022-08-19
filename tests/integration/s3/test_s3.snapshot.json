@@ -369,7 +369,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_copy_metadata_replace": {
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_metadata_replace": {
     "recorded-date": "18-08-2022, 17:31:08",
     "recorded-content": {
       "put_object": {
@@ -419,7 +419,7 @@
       }
     }
   },
-  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_copy_content_type_and_metadata": {
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_copy_content_type_and_metadata": {
     "recorded-date": "18-08-2022, 17:52:12",
     "recorded-content": {
       "put_object": {

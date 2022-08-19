@@ -390,6 +390,82 @@ class TestS3:
         response = s3_client.put_object(**params)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
+    def test_s3_copy_metadata_replace(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        object_key = "source-object"
+        bucket_name = s3_create_bucket()
+        resp = s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ContentType="application/json",
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put_object", resp)
+
+        head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("head_object", head_object)
+
+        object_key_copy = f"{object_key}-copy"
+        resp = s3_client.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=object_key_copy,
+            Metadata={"another-key": "value"},
+            ContentType="application/javascript",
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy_object", resp)
+
+        head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
+        snapshot.match("head_object_copy", head_object)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
+    def test_s3_copy_content_type_and_metadata(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        object_key = "source-object"
+        bucket_name = s3_create_bucket()
+        resp = s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ContentType="application/json",
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put_object", resp)
+
+        head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("head_object", head_object)
+
+        object_key_copy = f"{object_key}-copy"
+        resp = s3_client.copy_object(
+            Bucket=bucket_name, CopySource=f"{bucket_name}/{object_key}", Key=object_key_copy
+        )
+        snapshot.match("copy_object", resp)
+
+        head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
+        snapshot.match("head_object_copy", head_object)
+
+        s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key_copy}]})
+
+        # does not set MetadataDirective=REPLACE, so the original metadata should be kept
+        object_key_copy = f"{object_key}-second-copy"
+        resp = s3_client.copy_object(
+            Bucket=bucket_name,
+            CopySource=f"{bucket_name}/{object_key}",
+            Key=object_key_copy,
+            Metadata={"another-key": "value"},
+            ContentType="application/javascript",
+        )
+        snapshot.match("copy_object_second", resp)
+
+        head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
+        snapshot.match("head_object_second_copy", head_object)
+
 
 class TestS3PresignedUrl:
     """
@@ -547,82 +623,6 @@ class TestS3PresignedUrl:
         response = requests.get(url, data=b"get body is ignored by AWS")
         assert response.status_code == 200
         assert response.text == body
-
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
-    def test_s3_copy_metadata_replace(self, s3_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-
-        object_key = "source-object"
-        bucket_name = s3_create_bucket()
-        resp = s3_client.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Body='{"key": "value"}',
-            ContentType="application/json",
-            Metadata={"key": "value"},
-        )
-        snapshot.match("put_object", resp)
-
-        head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key)
-        snapshot.match("head_object", head_object)
-
-        object_key_copy = f"{object_key}-copy"
-        resp = s3_client.copy_object(
-            Bucket=bucket_name,
-            CopySource=f"{bucket_name}/{object_key}",
-            Key=object_key_copy,
-            Metadata={"another-key": "value"},
-            ContentType="application/javascript",
-            MetadataDirective="REPLACE",
-        )
-        snapshot.match("copy_object", resp)
-
-        head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
-        snapshot.match("head_object_copy", head_object)
-
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
-    def test_s3_copy_content_type_and_metadata(self, s3_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        object_key = "source-object"
-        bucket_name = s3_create_bucket()
-        resp = s3_client.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Body='{"key": "value"}',
-            ContentType="application/json",
-            Metadata={"key": "value"},
-        )
-        snapshot.match("put_object", resp)
-
-        head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key)
-        snapshot.match("head_object", head_object)
-
-        object_key_copy = f"{object_key}-copy"
-        resp = s3_client.copy_object(
-            Bucket=bucket_name, CopySource=f"{bucket_name}/{object_key}", Key=object_key_copy
-        )
-        snapshot.match("copy_object", resp)
-
-        head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
-        snapshot.match("head_object_copy", head_object)
-
-        s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key_copy}]})
-
-        # does not set MetadataDirective=REPLACE, so the original metadata should be kept
-        object_key_copy = f"{object_key}-second-copy"
-        resp = s3_client.copy_object(
-            Bucket=bucket_name,
-            CopySource=f"{bucket_name}/{object_key}",
-            Key=object_key_copy,
-            Metadata={"another-key": "value"},
-            ContentType="application/javascript",
-        )
-        snapshot.match("copy_object_second", resp)
-
-        head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
-        snapshot.match("head_object_second_copy", head_object)
 
 
 class TestS3DeepArchive:
