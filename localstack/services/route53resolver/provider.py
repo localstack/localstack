@@ -73,23 +73,12 @@ from localstack.aws.api.route53resolver import (
     ValidationException,
 )
 from localstack.services.route53resolver.models import (
-    Route53ResolverBackend,
-    delete_firewall_domain_list,
-    delete_firewall_rule,
-    delete_firewall_rule_group,
-    delete_firewall_rule_group_association,
-    delete_resolver_query_log_config,
-    delete_resolver_query_log_config_associations,
-    get_firewall_domain,
-    get_firewall_domain_list,
-    get_firewall_rule,
-    get_firewall_rule_group,
-    get_firewall_rule_group_association,
-    get_or_create_firewall_config,
-    get_resolver_query_log_config,
-    get_resolver_query_log_config_associations,
+    Route53ResolverBackend
+    
+   
 )
 from localstack.services.route53resolver.utils import (
+    
     get_resolver_query_log_config_id,
     get_route53_resolver_firewall_domain_list_id,
     get_route53_resolver_firewall_rule_group_association_id,
@@ -136,15 +125,17 @@ class Route53ResolverProvider(Route53ResolverApi):
     def delete_firewall_rule_group(
         self, context: RequestContext, firewall_rule_group_id: ResourceId
     ) -> DeleteFirewallRuleGroupResponse:
+        region_details = Route53ResolverBackend.get()
         """Delete a Firewall Rule Group."""
-        firewall_rule_group: FirewallRuleGroup = delete_firewall_rule_group(firewall_rule_group_id)
+        firewall_rule_group: FirewallRuleGroup = region_details.delete_firewall_rule_group(firewall_rule_group_id)
         return DeleteFirewallRuleGroupResponse(FirewallRuleGroup=firewall_rule_group)
 
     def get_firewall_rule_group(
         self, context: RequestContext, firewall_rule_group_id: ResourceId
     ) -> GetFirewallRuleGroupResponse:
+        region_details = Route53ResolverBackend.get()
         """Get the details of a Firewall Rule Group."""
-        firewall_rule_group: FirewallRuleGroup = get_firewall_rule_group(firewall_rule_group_id)
+        firewall_rule_group: FirewallRuleGroup = region_details.get_firewall_rule_group(firewall_rule_group_id)
         return GetFirewallRuleGroupResponse(FirewallRuleGroup=firewall_rule_group)
 
     def list_firewall_rule_groups(
@@ -189,8 +180,9 @@ class Route53ResolverProvider(Route53ResolverApi):
     def delete_firewall_domain_list(
         self, context: RequestContext, firewall_domain_list_id: ResourceId
     ) -> DeleteFirewallDomainListResponse:
+        region_details = Route53ResolverBackend.get()
         """Delete a Firewall Domain List."""
-        firewall_domain_list: FirewallDomainList = delete_firewall_domain_list(
+        firewall_domain_list: FirewallDomainList = region_details.delete_firewall_domain_list(
             firewall_domain_list_id
         )
         return DeleteFirewallDomainListResponse(FirewallDomainList=firewall_domain_list)
@@ -198,8 +190,9 @@ class Route53ResolverProvider(Route53ResolverApi):
     def get_firewall_domain_list(
         self, context: RequestContext, firewall_domain_list_id: ResourceId
     ) -> GetFirewallDomainListResponse:
+        region_details = Route53ResolverBackend.get()
         """Get the details of a Firewall Domain List."""
-        firewall_domain_list: FirewallDomainList = get_firewall_domain_list(firewall_domain_list_id)
+        firewall_domain_list: FirewallDomainList = region_details.get_firewall_domain_list(firewall_domain_list_id)
         return GetFirewallDomainListResponse(FirewallDomainList=firewall_domain_list)
 
     def list_firewall_domain_lists(
@@ -221,12 +214,13 @@ class Route53ResolverProvider(Route53ResolverApi):
         operation: FirewallDomainUpdateOperation,
         domains: FirewallDomains,
     ) -> UpdateFirewallDomainsResponse:
+        region_details = Route53ResolverBackend.get()
         """Update the domains in a Firewall Domain List."""
         region_details = Route53ResolverBackend.get()
-        firewall_domain_list: FirewallDomainList = get_firewall_domain_list(firewall_domain_list_id)
+        firewall_domain_list: FirewallDomainList = region_details.get_firewall_domain_list(firewall_domain_list_id)
 
-        firewall_domain_list: FirewallDomainList = get_firewall_domain_list(firewall_domain_list_id)
-        firewall_domains = get_firewall_domain(firewall_domain_list_id)
+        firewall_domain_list: FirewallDomainList = region_details.get_firewall_domain_list(firewall_domain_list_id)
+        firewall_domains = Route53ResolverBackend.get_firewall_domain(firewall_domain_list_id)
 
         if operation == FirewallDomainUpdateOperation.ADD:
             if not firewall_domains:
@@ -318,8 +312,9 @@ class Route53ResolverProvider(Route53ResolverApi):
         firewall_rule_group_id: ResourceId,
         firewall_domain_list_id: ResourceId,
     ) -> DeleteFirewallRuleResponse:
+        region_details = Route53ResolverBackend.get()
         """Delete a firewall rule"""
-        firewall_rule: FirewallRule = delete_firewall_rule(
+        firewall_rule: FirewallRule = region_details.delete_firewall_rule(
             firewall_rule_group_id, firewall_domain_list_id
         )
         return DeleteFirewallRuleResponse(
@@ -362,8 +357,9 @@ class Route53ResolverProvider(Route53ResolverApi):
         block_override_ttl: BlockOverrideTtl = None,
         name: Name = None,
     ) -> UpdateFirewallRuleResponse:
+        region_details = Route53ResolverBackend.get()
         """Updates a firewall rule"""
-        firewall_rule: FirewallRule = get_firewall_rule(
+        firewall_rule: FirewallRule = region_details.get_firewall_rule(
             firewall_rule_group_id, firewall_domain_list_id
         )
 
@@ -439,9 +435,10 @@ class Route53ResolverProvider(Route53ResolverApi):
     def disassociate_firewall_rule_group(
         self, context: RequestContext, firewall_rule_group_association_id: ResourceId
     ) -> DisassociateFirewallRuleGroupResponse:
+        region_details = Route53ResolverBackend.get()
         """Disassociate a DNS Firewall rule group from a VPC."""
         firewall_rule_group_association: FirewallRuleGroupAssociation = (
-            delete_firewall_rule_group_association(firewall_rule_group_association_id)
+            region_details.delete_firewall_rule_group_association(firewall_rule_group_association_id)
         )
         return DisassociateFirewallRuleGroupResponse(
             FirewallRuleGroupAssociation=firewall_rule_group_association
@@ -450,9 +447,10 @@ class Route53ResolverProvider(Route53ResolverApi):
     def get_firewall_rule_group_association(
         self, context: RequestContext, firewall_rule_group_association_id: ResourceId
     ) -> GetFirewallRuleGroupAssociationResponse:
+        region_details = Route53ResolverBackend.get()
         """Returns the Firewall Rule Group Association that you specified."""
         firewall_rule_group_association: FirewallRuleGroupAssociation = (
-            get_firewall_rule_group_association(firewall_rule_group_association_id)
+            region_details.get_firewall_rule_group_association(firewall_rule_group_association_id)
         )
         return GetFirewallRuleGroupAssociationResponse(
             FirewallRuleGroupAssociation=firewall_rule_group_association
@@ -466,12 +464,13 @@ class Route53ResolverProvider(Route53ResolverApi):
         mutation_protection: MutationProtectionStatus = None,
         name: Name = None,
     ) -> UpdateFirewallRuleGroupAssociationResponse:
+        region_details = Route53ResolverBackend.get()
         """Updates the specified Firewall Rule Group Association."""
         validate_priority(priority=priority)
         validate_mutation_protection(mutation_protection=mutation_protection)
 
         firewall_rule_group_association: FirewallRuleGroupAssociation = (
-            get_firewall_rule_group_association(firewall_rule_group_association_id)
+            region_details.get_firewall_rule_group_association(firewall_rule_group_association_id)
         )
 
         if priority:
@@ -518,7 +517,8 @@ class Route53ResolverProvider(Route53ResolverApi):
     def get_resolver_query_log_config(
         self, context: RequestContext, resolver_query_log_config_id: ResourceId
     ) -> GetResolverQueryLogConfigResponse:
-        resolver_query_log_config: ResolverQueryLogConfig = get_resolver_query_log_config(
+        region_details = Route53ResolverBackend.get()
+        resolver_query_log_config: ResolverQueryLogConfig = region_details.get_resolver_query_log_config(
             resolver_query_log_config_id
         )
         return GetResolverQueryLogConfigResponse(ResolverQueryLogConfig=resolver_query_log_config)
@@ -526,7 +526,8 @@ class Route53ResolverProvider(Route53ResolverApi):
     def delete_resolver_query_log_config(
         self, context: RequestContext, resolver_query_log_config_id: ResourceId
     ) -> DeleteResolverQueryLogConfigResponse:
-        resolver_query_log_config: ResolverQueryLogConfig = delete_resolver_query_log_config(
+        region_details = Route53ResolverBackend.get()
+        resolver_query_log_config: ResolverQueryLogConfig = region_details.delete_resolver_query_log_config(
             resolver_query_log_config_id
         )
         return DeleteResolverQueryLogConfigResponse(
@@ -587,8 +588,8 @@ class Route53ResolverProvider(Route53ResolverApi):
         resolver_query_log_config_id: ResourceId,
         resource_id: ResourceId,
     ) -> DisassociateResolverQueryLogConfigResponse:
-
-        resolver_query_log_config_association = delete_resolver_query_log_config_associations(
+        region_details = Route53ResolverBackend.get()
+        resolver_query_log_config_association = region_details.delete_resolver_query_log_config_associations(
             resolver_query_log_config_id, resource_id
         )
 
@@ -599,8 +600,9 @@ class Route53ResolverProvider(Route53ResolverApi):
     def get_resolver_query_log_config_association(
         self, context: RequestContext, resolver_query_log_config_association_id: ResourceId
     ) -> GetResolverQueryLogConfigAssociationResponse:
+        region_details = Route53ResolverBackend.get()
         resolver_query_log_config_association: ResolverQueryLogConfigAssociation = (
-            get_resolver_query_log_config_associations(resolver_query_log_config_association_id)
+            region_details.get_resolver_query_log_config_associations(resolver_query_log_config_association_id)
         )
         return GetResolverQueryLogConfigAssociationResponse(
             ResolverQueryLogConfigAssociation=resolver_query_log_config_association
@@ -632,7 +634,8 @@ class Route53ResolverProvider(Route53ResolverApi):
     def get_firewall_config(
         self, context: RequestContext, resource_id: ResourceId
     ) -> GetFirewallConfigResponse:
-        firewall_config = get_or_create_firewall_config(
+        region_details = Route53ResolverBackend.get()
+        firewall_config = region_details.get_or_create_firewall_config(
             resource_id, context.region, context.account_id
         )
         return GetFirewallConfigResponse(FirewallConfig=firewall_config)
@@ -648,7 +651,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         backend = ec2_backends[context.region]
         for vpc in backend.vpcs:
             if vpc not in region_details.firewall_configs:
-                get_or_create_firewall_config(vpc, context.region, context.account_id)
+                region_details.get_or_create_firewall_config(vpc, context.region, context.account_id)
         for firewall_config in region_details.firewall_configs.values():
             firewall_configs.append(select_from_typed_dict(FirewallConfig, firewall_config))
         return ListFirewallConfigsResponse(FirewallConfigs=firewall_configs)
@@ -663,7 +666,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         backend = ec2_backends[context.region]
         for resource_id in backend.vpcs:
             if resource_id not in region_details.firewall_configs:
-                firewall_config = get_or_create_firewall_config(
+                firewall_config = region_details.get_or_create_firewall_config(
                     resource_id, context.region, context.account_id
                 )
                 firewall_config["FirewallFailOpen"] = firewall_fail_open
