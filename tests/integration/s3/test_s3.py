@@ -1,5 +1,7 @@
+import gzip
 import json
 import time
+from io import BytesIO
 
 import pytest
 import requests
@@ -14,7 +16,44 @@ from localstack.utils.strings import (
     hash_sha1,
     hash_sha256,
     short_uid,
+    to_bytes,
 )
+
+
+@pytest.fixture
+def s3_multipart_upload(s3_client):
+    def perform_multipart_upload(bucket, key, data=None, zipped=False, acl=None):
+        kwargs = {"ACL": acl} if acl else {}
+        multipart_upload_dict = s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
+        upload_id = multipart_upload_dict["UploadId"]
+
+        # Write contents to memory rather than a file.
+        data = data or (5 * short_uid())
+        data = to_bytes(data)
+        upload_file_object = BytesIO(data)
+        if zipped:
+            upload_file_object = BytesIO()
+            with gzip.GzipFile(fileobj=upload_file_object, mode="w") as filestream:
+                filestream.write(data)
+
+        response = s3_client.upload_part(
+            Bucket=bucket,
+            Key=key,
+            Body=upload_file_object,
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+
+        multipart_upload_parts = [{"ETag": response["ETag"], "PartNumber": 1}]
+
+        return s3_client.complete_multipart_upload(
+            Bucket=bucket,
+            Key=key,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+
+    return perform_multipart_upload
 
 
 class TestS3:
@@ -465,6 +504,41 @@ class TestS3:
 
         head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
         snapshot.match("head_object_second_copy", head_object)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="wrong behaviour, see https://docs.aws.amazon.com/AmazonS3/latest/userguide/managing-acls.html"
+    )
+    def test_s3_multipart_upload_acls(
+        self, s3_client, s3_create_bucket, s3_multipart_upload, snapshot
+    ):
+        # The basis for this test is wrong - see:
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/managing-acls.html
+        # > Bucket and object permissions are independent of each other. An object does not inherit the permissions
+        # > from its bucket. For example, if you create a bucket and grant write access to a user, you can't access
+        # > that user’s objects unless the user explicitly grants you access.
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("DisplayName"),
+                snapshot.transform.key_value("ID", value_replacement="owner-id"),
+            ]
+        )
+        bucket_name = "test-bucket-%s" % short_uid()
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        response = s3_client.get_bucket_acl(Bucket=bucket_name)
+        snapshot.match("bucket-acl", response)
+
+        def check_permissions(key, expected_perms):
+            acl_response = s3_client.get_object_acl(Bucket=bucket_name, Key=key)
+            snapshot.match(f"permission-{key}", acl_response)
+
+        # perform uploads (multipart and regular) and check ACLs
+        s3_client.put_object(Bucket=bucket_name, Key="acl-key0", Body="something")
+        check_permissions("acl-key0", 1)
+        s3_multipart_upload(bucket=bucket_name, key="acl-key1")
+        check_permissions("acl-key1", 1)
+        s3_multipart_upload(bucket=bucket_name, key="acl-key2", acl="public-read-write")
+        check_permissions("acl-key2", 2)
 
 
 class TestS3PresignedUrl:
