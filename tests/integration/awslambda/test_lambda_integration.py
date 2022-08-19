@@ -318,6 +318,48 @@ class TestSQSEventSourceMapping:
             if mapping_uuid:
                 lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "invalid_filter", [None, "simple string", {"eventSource": "aws:sqs"}, {"eventSource": []}]
+    )
+    def test_sqs_invalid_event_filter(
+        self,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_queue_arn,
+        lambda_su_role,
+        lambda_client,
+        invalid_filter,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        queue_name_1 = f"queue-{short_uid()}"
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=lambda_su_role,
+        )
+        queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
+        queue_arn_1 = sqs_queue_arn(queue_url_1)
+
+        with pytest.raises(Exception) as expected:
+            lambda_client.create_event_source_mapping(
+                EventSourceArn=queue_arn_1,
+                FunctionName=function_name,
+                MaximumBatchingWindowInSeconds=1,
+                FilterCriteria={
+                    "Filters": [
+                        {
+                            "Pattern": invalid_filter
+                            if isinstance(invalid_filter, str)
+                            else json.dumps(invalid_filter)
+                        },
+                    ]
+                },
+            )
+        expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
+
 
 class TestDynamoDBEventSourceMapping:
     def test_dynamodb_event_source_mapping(
@@ -327,7 +369,6 @@ class TestDynamoDBEventSourceMapping:
         create_iam_role_with_policy,
         dynamodb_client,
         dynamodb_create_table,
-        logs_client,
         check_lambda_logs,
     ):
         def check_logs():

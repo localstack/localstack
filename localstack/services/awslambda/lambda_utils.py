@@ -399,13 +399,27 @@ def filter_stream_records(records, filters: List[FilterCriteria]):
     return filtered_records
 
 
+def contains_list(filter: Dict) -> bool:
+    if isinstance(filter, dict):
+        for key, value in filter.items():
+            if isinstance(value, list) and len(value) > 0:
+                return True
+            return contains_list(value)
+    return False
+
+
 def validate_filters(filter: FilterCriteria) -> bool:
+    # filter needs to be json serializeable
     for rule in filter["Filters"]:
         try:
-            if not json.loads(rule["Pattern"]):
+            if not (filter_pattern := json.loads(rule["Pattern"])):
                 return False
+            return contains_list(filter_pattern)
         except json.JSONDecodeError:
             return False
+    # needs to contain on what to filter (some list with citerias)
+    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
+
     return True
 
 
