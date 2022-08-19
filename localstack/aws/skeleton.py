@@ -171,7 +171,7 @@ class Skeleton:
         context.service_response = result
 
         # Serialize result dict to an HTTPResponse and return it
-        return self.serializer.serialize_to_response(result, operation)
+        return self.serializer.serialize_to_response(result, operation, context.request.headers)
 
     def on_service_exception(
         self, context: RequestContext, exception: ServiceException
@@ -185,7 +185,9 @@ class Skeleton:
         """
         context.service_exception = exception
 
-        return self.serializer.serialize_error_to_response(exception, context.operation)
+        return self.serializer.serialize_error_to_response(
+            exception, context.operation, context.request.headers
+        )
 
     def on_not_implemented_error(self, context: RequestContext) -> HttpResponse:
         """
@@ -211,4 +213,4 @@ class Skeleton:
         )
         context.service_exception = error
 
-        return serializer.serialize_error_to_response(error, operation)
+        return serializer.serialize_error_to_response(error, operation, context.request.headers)

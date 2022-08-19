@@ -76,7 +76,7 @@ def _botocore_serializer_integration_test(
     # The serializer changes the incoming dict, therefore copy it before passing it to the serializer
     response_to_parse = copy.deepcopy(response)
     serialized_response = response_serializer.serialize_to_response(
-        response_to_parse, service.operation_model(action)
+        response_to_parse, service.operation_model(action), None
     )
 
     # Use the parser from botocore to parse the serialized response
@@ -141,7 +141,7 @@ def _botocore_error_serializer_integration_test(
     # Use our serializer to serialize the response
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model(action)
+        exception, service.operation_model(action), None
     )
 
     # Use the parser from botocore to parse the serialized response
@@ -430,7 +430,7 @@ def test_query_protocol_error_serialization_plain():
     # Use our serializer to serialize the response
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("ChangeMessageVisibility")
+        exception, service.operation_model("ChangeMessageVisibility"), None
     )
     serialized_response_dict = serialized_response.to_readonly_response_dict()
     # Replace the random request ID with a static value for comparison
@@ -615,7 +615,7 @@ def test_json_protocol_error_serialization_with_shaped_default_members_on_root()
     service = load_service("dynamodb")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("ExecuteTransaction")
+        exception, service.operation_model("ExecuteTransaction"), None
     )
     body = serialized_response.data
     parsed_body = json.loads(body)
@@ -652,7 +652,7 @@ def test_rest_json_protocol_error_serialization_with_shaped_default_members_on_r
     service = load_service("lambda")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("GetLayerVersion")
+        exception, service.operation_model("GetLayerVersion"), None
     )
     body = serialized_response.data
     parsed_body = json.loads(body)
@@ -687,7 +687,7 @@ def test_query_protocol_error_serialization_with_default_members_not_on_root():
     service = load_service("sns")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("VerifySMSSandboxPhoneNumber")
+        exception, service.operation_model("VerifySMSSandboxPhoneNumber"), None
     )
     body = serialized_response.data
     parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
@@ -702,7 +702,7 @@ def test_rest_xml_protocol_error_serialization_with_default_members_not_on_root(
     service = load_service("route53")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("DeleteHostedZone")
+        exception, service.operation_model("DeleteHostedZone"), None
     )
     body = serialized_response.data
     parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
@@ -740,7 +740,7 @@ def test_json_protocol_content_type_1_0():
     service = load_service("apprunner")
     response_serializer = create_serializer(service)
     result: Response = response_serializer.serialize_to_response(
-        {}, service.operation_model("DeleteConnection")
+        {}, service.operation_model("DeleteConnection"), None
     )
     assert result is not None
     assert result.content_type is not None
@@ -752,7 +752,7 @@ def test_json_protocol_content_type_1_1():
     service = load_service("logs")
     response_serializer = create_serializer(service)
     result: Response = response_serializer.serialize_to_response(
-        {}, service.operation_model("DeleteLogGroup")
+        {}, service.operation_model("DeleteLogGroup"), None
     )
     assert result is not None
     assert result.content_type is not None
@@ -1206,7 +1206,7 @@ def test_ec2_protocol_errors_have_response_root_element():
     service = load_service("ec2")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("DescribeSubnets")
+        exception, service.operation_model("DescribeSubnets"), None
     )
     body = serialized_response.data
     parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
@@ -1221,7 +1221,7 @@ def test_restxml_s3_errors_have_error_root_element():
     service = load_service("s3")
     response_serializer = create_serializer(service)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model("GetObject")
+        exception, service.operation_model("GetObject"), None
     )
     body = serialized_response.data
     parser = ElementTree.XMLParser(target=ElementTree.TreeBuilder())
@@ -1373,7 +1373,7 @@ def test_json_event_streaming():
     service = load_service("kinesis")
     operation_model = service.operation_model("SubscribeToShard")
     response_serializer = create_serializer(service)
-    serialized_response = response_serializer.serialize_to_response(response, operation_model)
+    serialized_response = response_serializer.serialize_to_response(response, operation_model, None)
 
     # Convert the Werkzeug response from our serializer to a response botocore can work with
     urllib_response = UrlLibHttpResponse(
@@ -1546,7 +1546,7 @@ def test_no_mutation_of_parameters():
 
     # serialize response and check whether parameters are unchanged
     _ = response_serializer.serialize_to_response(
-        parameters, service.operation_model("CreateHostedConfigurationVersion")
+        parameters, service.operation_model("CreateHostedConfigurationVersion"), None
     )
     assert parameters == expected
 
@@ -1559,7 +1559,7 @@ def test_serializer_error_on_protocol_error_invalid_exception():
     with pytest.raises(ProtocolSerializerError):
         # a known protocol error would be if we try to serialize an exception which is not a CommonServiceException and
         # also not a generated exception
-        serializer.serialize_error_to_response(NotImplementedError(), operation_model)
+        serializer.serialize_error_to_response(NotImplementedError(), operation_model, None)
 
 
 def test_serializer_error_on_protocol_error_invalid_data():
@@ -1569,7 +1569,9 @@ def test_serializer_error_on_protocol_error_invalid_data():
     serializer = QueryResponseSerializer()
     with pytest.raises(ProtocolSerializerError):
         serializer.serialize_to_response(
-            {"StreamDescription": {"CreationRequestDateTime": "invalid_timestamp"}}, operation_model
+            {"StreamDescription": {"CreationRequestDateTime": "invalid_timestamp"}},
+            operation_model,
+            None,
         )
 
 
@@ -1586,7 +1588,7 @@ def test_serializer_error_on_unknown_error():
 
     serializer._serialize_response = raise_error
     with pytest.raises(UnknownSerializerError):
-        serializer.serialize_to_response({}, operation_model)
+        serializer.serialize_to_response({}, operation_model, None)
 
 
 class ComparableBytesIO(BytesIO):

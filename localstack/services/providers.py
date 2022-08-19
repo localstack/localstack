@@ -142,10 +142,10 @@ def iam():
 
 @aws_provider()
 def sts():
-    from localstack.services.sts.provider import StsAwsApiListener
+    from localstack.services.sts.provider import StsProvider
 
-    listener = StsAwsApiListener()
-    return Service("sts", listener=listener)
+    provider = StsProvider()
+    return Service("sts", listener=AwsApiListener("sts", MotoFallbackDispatcher(provider)))
 
 
 @aws_provider(api="kinesis", name="legacy")

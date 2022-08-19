@@ -856,7 +856,7 @@ class TestAPIGateway:
         domain_name = f"{short_uid()}.example.com"
         apigw_client = aws_stack.create_external_boto_client("apigateway")
         rs = apigw_client.create_domain_name(domainName=domain_name)
-        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
+        assert 201 == rs["ResponseMetadata"]["HTTPStatusCode"]
         rs = apigw_client.get_domain_name(domainName=domain_name)
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
         assert domain_name == rs["domainName"]

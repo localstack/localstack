@@ -52,15 +52,6 @@ from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
 
-# TODO ASF: Check if we need to implement CBOR encoding in the serializer!
-# TODO ASF: Set "X-Amzn-Errortype" (HEADER_AMZN_ERROR_TYPE) on responses
-# TODO ASF: Rewrite responses
-#           - Region in content of responses
-#           - Record rewriting:
-#             - SDKv2: Transform timestamps to int?
-#             - Remove double quotes for JSON responses
-#             - Convert base64 encoded data back to bytes for the cbor encoding
-
 
 class KinesisBackend(RegionBackend):
     def __init__(self):
