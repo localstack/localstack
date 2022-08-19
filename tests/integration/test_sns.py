@@ -1293,6 +1293,7 @@ class TestSNSProvider:
             "$..Successful..SequenceNumber",  # sequence number are not added
         ]
     )
+    @pytest.mark.parametrize("content_based_deduplication", [True, False])
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
         self,
         sns_client,
@@ -1301,16 +1302,19 @@ class TestSNSProvider:
         sqs_create_queue,
         sns_create_sqs_subscription,
         snapshot,
+        content_based_deduplication,
     ):
         topic_name = f"topic-{short_uid()}.fifo"
         queue_name = f"queue-{short_uid()}.fifo"
+        topic_attributes = {"FifoTopic": "true"}
+        queue_attributes = {"FifoQueue": "true"}
+        if content_based_deduplication:
+            topic_attributes["ContentBasedDeduplication"] = "true"
+            queue_attributes["ContentBasedDeduplication"] = "true"
 
         topic_arn = sns_create_topic(
             Name=topic_name,
-            Attributes={
-                "FifoTopic": "true",
-                "ContentBasedDeduplication": "true",
-            },
+            Attributes=topic_attributes,
         )["TopicArn"]
 
         response = sns_client.get_topic_attributes(TopicArn=topic_arn)
@@ -1318,10 +1322,7 @@ class TestSNSProvider:
 
         queue_url = sqs_create_queue(
             QueueName=queue_name,
-            Attributes={
-                "FifoQueue": "true",
-                "ContentBasedDeduplication": "true",
-            },
+            Attributes=queue_attributes,
         )
 
         subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
@@ -1335,35 +1336,40 @@ class TestSNSProvider:
 
         response = sns_client.get_subscription_attributes(SubscriptionArn=subscription_arn)
         snapshot.match("sub-attrs-raw-true", response)
-
         message_group_id = "complexMessageGroupId"
+        publish_batch_request_entries = [
+            {
+                "Id": "1",
+                "MessageGroupId": message_group_id,
+                "Message": "Test Message with two attributes",
+                "Subject": "Subject",
+                "MessageAttributes": {
+                    "attr1": {"DataType": "Number", "StringValue": "99.12"},
+                    "attr2": {"DataType": "Number", "StringValue": "109.12"},
+                },
+            },
+            {
+                "Id": "2",
+                "MessageGroupId": message_group_id,
+                "Message": "Test Message with one attribute",
+                "Subject": "Subject",
+                "MessageAttributes": {"attr1": {"DataType": "Number", "StringValue": "19.12"}},
+            },
+            {
+                "Id": "3",
+                "MessageGroupId": message_group_id,
+                "Message": "Test Message without attribute",
+                "Subject": "Subject",
+            },
+        ]
+
+        if not content_based_deduplication:
+            for index, message in enumerate(publish_batch_request_entries):
+                message["MessageDeduplicationId"] = f"MessageDeduplicationId-{index}"
+
         publish_batch_response = sns_client.publish_batch(
             TopicArn=topic_arn,
-            PublishBatchRequestEntries=[
-                {
-                    "Id": "1",
-                    "MessageGroupId": message_group_id,
-                    "Message": "Test Message with two attributes",
-                    "Subject": "Subject",
-                    "MessageAttributes": {
-                        "attr1": {"DataType": "Number", "StringValue": "99.12"},
-                        "attr2": {"DataType": "Number", "StringValue": "109.12"},
-                    },
-                },
-                {
-                    "Id": "2",
-                    "MessageGroupId": message_group_id,
-                    "Message": "Test Message with one attribute",
-                    "Subject": "Subject",
-                    "MessageAttributes": {"attr1": {"DataType": "Number", "StringValue": "19.12"}},
-                },
-                {
-                    "Id": "3",
-                    "MessageGroupId": message_group_id,
-                    "Message": "Test Message without attribute",
-                    "Subject": "Subject",
-                },
-            ],
+            PublishBatchRequestEntries=publish_batch_request_entries,
         )
 
         snapshot.match("publish-batch-response-fifo", publish_batch_response)
@@ -1592,6 +1598,7 @@ class TestSNSProvider:
             "$..Messages..Attributes.SequenceNumber",
         ]
     )
+    @pytest.mark.parametrize("content_based_deduplication", [True, False])
     def test_message_to_fifo_sqs(
         self,
         sns_client,
@@ -1600,39 +1607,48 @@ class TestSNSProvider:
         sqs_create_queue,
         sns_create_sqs_subscription,
         snapshot,
+        content_based_deduplication,
     ):
-        # it is the md5 hash of the body containing a timestamp
-        snapshot.add_transformer(
-            snapshot.transform.key_value(
-                "MessageDeduplicationId",
-                value_replacement="<md5-hash>",
-                reference_replacement=False,
-            )
-        )
         topic_name = f"topic-{short_uid()}.fifo"
         queue_name = f"queue-{short_uid()}.fifo"
+        topic_attributes = {"FifoTopic": "true"}
+        queue_attributes = {"FifoQueue": "true"}
+        if content_based_deduplication:
+            topic_attributes["ContentBasedDeduplication"] = "true"
+            queue_attributes["ContentBasedDeduplication"] = "true"
 
         topic_arn = sns_create_topic(
             Name=topic_name,
-            Attributes={
-                "FifoTopic": "true",
-                "ContentBasedDeduplication": "true",  # todo: not enforced yet
-            },
+            Attributes=topic_attributes,
         )["TopicArn"]
         queue_url = sqs_create_queue(
             QueueName=queue_name,
-            Attributes={
-                "FifoQueue": "true",
-                "ContentBasedDeduplication": "true",
-            },
+            Attributes=queue_attributes,
         )
         # todo check both ContentBasedDeduplication and MessageDeduplicationId when implemented
         # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
 
-        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        # this allows us to have a simplified body not containing timestamp, so we can check MessageDeduplicationId
+        sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription["SubscriptionArn"],
+            AttributeName="RawMessageDelivery",
+            AttributeValue="true",
+        )
 
         message = "Test"
-        sns_client.publish(TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1")
+        if content_based_deduplication:
+            sns_client.publish(
+                TopicArn=topic_arn, Message=message, MessageGroupId="message-group-id-1"
+            )
+        else:
+            sns_client.publish(
+                TopicArn=topic_arn,
+                Message=message,
+                MessageGroupId="message-group-id-1",
+                MessageDeduplicationId="message-deduplication-id-1",
+            )
 
         response = sqs_client.receive_message(
             QueueUrl=queue_url,
@@ -1641,9 +1657,6 @@ class TestSNSProvider:
             AttributeNames=["All"],
         )
         snapshot.match("messages", response)
-
-        msg_body = response["Messages"][0]["Body"]
-        assert json.loads(msg_body)["Message"] == message
 
     @pytest.mark.aws_validated
     def test_validations_for_fifo(
