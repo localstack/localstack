@@ -64,20 +64,21 @@ from localstack.utils.http import (
     parse_chunked_data,
     parse_request_data,
     safe_requests,
-    save_file,
-    short_uid,
-    synchronized,
-    timestamp_millis,
-    to_bytes,
-    to_str,
-    unzip,
 )
-from localstack.utils.container_networking import get_main_container_name
-from localstack.utils.docker_utils import DOCKER_CLIENT
-from localstack.utils.functions import run_safe
-from localstack.utils.http import canonicalize_headers, parse_chunked_data
+from localstack.utils.json import json_safe
 from localstack.utils.patch import patch
-from localstack.utils.run import run_for_max_seconds
+from localstack.utils.run import run, run_for_max_seconds
+from localstack.utils.strings import first_char_to_lower, long_uid, md5, short_uid, to_bytes, to_str
+from localstack.utils.sync import synchronized
+from localstack.utils.time import (
+    TIMESTAMP_FORMAT_MICROS,
+    TIMESTAMP_READABLE_FORMAT,
+    isoformat_milliseconds,
+    mktime,
+    now_utc,
+    timestamp,
+    timestamp_millis,
+)
 
 LOG = logging.getLogger(__name__)
 
