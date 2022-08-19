@@ -225,7 +225,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         firewall_domain_list: FirewallDomainList = region_details.get_firewall_domain_list(
             firewall_domain_list_id
         )
-        firewall_domains = Route53ResolverBackend.get_firewall_domain(firewall_domain_list_id)
+        firewall_domains = region_details.get_firewall_domain(firewall_domain_list_id)
 
         if operation == FirewallDomainUpdateOperation.ADD:
             if not firewall_domains:
