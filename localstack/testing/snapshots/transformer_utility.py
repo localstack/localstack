@@ -176,6 +176,7 @@ class TransformerUtility:
         return [
             TransformerUtility.key_value("ReceiptHandle"),
             TransformerUtility.key_value("SenderId"),
+            TransformerUtility.key_value("SequenceNumber"),
             TransformerUtility.jsonpath("$..MessageAttributes.RequestID.StringValue", "request-id"),
             KeyValueBasedTransformer(_resource_name_transformer, "resource"),
         ]

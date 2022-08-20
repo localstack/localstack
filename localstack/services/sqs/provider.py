@@ -5,9 +5,7 @@ import heapq
 import inspect
 import json
 import logging
-import random
 import re
-import string
 import threading
 import time
 from queue import Empty, PriorityQueue
@@ -69,9 +67,12 @@ from localstack.config import external_service_url
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.aws_stack import parse_arn
-from localstack.utils.common import long_uid, md5, now, start_thread
+from localstack.utils.objects import singleton_factory
 from localstack.utils.run import FuncThread
 from localstack.utils.scheduler import Scheduler
+from localstack.utils.strings import long_uid, md5
+from localstack.utils.threads import start_thread
+from localstack.utils.time import now
 
 LOG = logging.getLogger(__name__)
 
@@ -119,6 +120,16 @@ class InvalidAttributeValue(CommonServiceException):
 class MissingParameter(CommonServiceException):
     def __init__(self, message):
         super().__init__("MissingParameter", message, 400, True)
+
+
+@singleton_factory
+def global_message_sequence():
+    # creates a 20-digit number used as the start for the global sequence
+    counter = int(time.time()) << 33
+
+    while True:
+        counter += 1
+        yield counter
 
 
 def generate_message_id():
@@ -191,6 +202,7 @@ class SqsMessage:
     priority: float
     message_deduplication_id: str
     message_group_id: str
+    sequence_number: str
 
     def __init__(
         self,
@@ -198,6 +210,7 @@ class SqsMessage:
         message: Message,
         message_deduplication_id: str = None,
         message_group_id: str = None,
+        sequence_number: str = None,
     ) -> None:
         self.created = time.time()
         self.message = message
@@ -209,12 +222,15 @@ class SqsMessage:
         self.first_received = None
         self.deleted = False
         self.priority = priority
+        self.sequence_number = sequence_number
 
         attributes = {}
         if message_group_id is not None:
             attributes["MessageGroupId"] = message_group_id
         if message_deduplication_id is not None:
             attributes["MessageDeduplicationId"] = message_deduplication_id
+        if sequence_number is not None:
+            attributes["SequenceNumber"] = sequence_number
 
         if self.message.get("Attributes"):
             self.message["Attributes"].update(attributes)
@@ -473,7 +489,7 @@ class SqsQueue:
         message_deduplication_id: str = None,
         message_group_id: str = None,
         delay_seconds: int = None,
-    ):
+    ) -> SqsMessage:
         raise NotImplementedError
 
     def get(self, block=True, timeout=None, visibility_timeout: int = None) -> SqsMessage:
@@ -574,9 +590,6 @@ class SqsQueue:
             if k not in valid:
                 raise InvalidAttributeName(f"Unknown Attribute {k}.")
 
-    def generate_sequence_number(self):
-        return None
-
 
 class StandardQueue(SqsQueue):
     def put(
@@ -615,6 +628,8 @@ class StandardQueue(SqsQueue):
             self.delayed.add(standard_message)
         else:
             self.visible.put_nowait(standard_message)
+
+        return standard_message
 
 
 class FifoQueue(SqsQueue):
@@ -672,6 +687,7 @@ class FifoQueue(SqsQueue):
             message,
             message_deduplication_id=dedup_id,
             message_group_id=message_group_id,
+            sequence_number=str(self.next_sequence_number()),
         )
         if visibility_timeout is not None:
             fifo_message.visibility_timeout = visibility_timeout
@@ -705,6 +721,8 @@ class FifoQueue(SqsQueue):
                 self.deduplication[message_group_id] = {}
             self.deduplication[message_group_id][dedup_id] = fifo_message
 
+        return fifo_message
+
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):
             raise InvalidParameterValue(
@@ -731,10 +749,8 @@ class FifoQueue(SqsQueue):
                 "Invalid value for the parameter FifoQueue. Reason: Modifying queue type is not supported."
             )
 
-    # TODO: If we ever actually need to do something with this number, it needs to be part of
-    #   SQSMessage. This means changing all *put*() signatures to return the saved message.
-    def generate_sequence_number(self):
-        return _create_mock_sequence_number()
+    def next_sequence_number(self):
+        return next(global_message_sequence())
 
 
 class QueueUpdateWorker:
@@ -1121,7 +1137,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> SendMessageResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        message = self._put_message(
+        queue_item = self._put_message(
             queue,
             context,
             message_body,
@@ -1131,11 +1147,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             message_deduplication_id,
             message_group_id,
         )
+        message = queue_item.message
         return SendMessageResult(
             MessageId=message["MessageId"],
             MD5OfMessageBody=message["MD5OfBody"],
             MD5OfMessageAttributes=message.get("MD5OfMessageAttributes"),
-            SequenceNumber=queue.generate_sequence_number(),
+            SequenceNumber=queue_item.sequence_number,
             MD5OfMessageSystemAttributes=_create_message_attribute_hash(message_system_attributes),
         )
 
@@ -1152,7 +1169,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         with queue.mutex:
             for entry in entries:
                 try:
-                    message = self._put_message(
+                    queue_item = self._put_message(
                         queue,
                         context,
                         message_body=entry.get("MessageBody"),
@@ -1162,6 +1179,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                         message_deduplication_id=entry.get("MessageDeduplicationId"),
                         message_group_id=entry.get("MessageGroupId"),
                     )
+                    message = queue_item.message
 
                     successful.append(
                         SendMessageBatchResultEntry(
@@ -1172,7 +1190,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                             MD5OfMessageSystemAttributes=_create_message_attribute_hash(
                                 message.get("message_system_attributes")
                             ),
-                            SequenceNumber=queue.generate_sequence_number(),
+                            SequenceNumber=queue_item.sequence_number,
                         )
                     )
                 except Exception as e:
@@ -1200,7 +1218,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_system_attributes: MessageBodySystemAttributeMap = None,
         message_deduplication_id: String = None,
         message_group_id: String = None,
-    ) -> Message:
+    ) -> SqsMessage:
         check_message_content(message_body)
         check_attributes(message_attributes)
         check_attributes(message_system_attributes)
@@ -1216,14 +1234,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             MessageAttributes=message_attributes,
         )
 
-        queue.put(
+        return queue.put(
             message=message,
             message_deduplication_id=message_deduplication_id,
             message_group_id=message_group_id,
             delay_seconds=int(delay_seconds) if delay_seconds is not None else None,
         )
-
-        return message
 
     def receive_message(
         self,
@@ -1514,10 +1530,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 raise BatchEntryIdsNotDistinct()
             else:
                 visited.add(entry["Id"])
-
-
-def _create_mock_sequence_number():
-    return "".join(random.choice(string.digits) for _ in range(20))
 
 
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
