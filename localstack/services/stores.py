@@ -25,6 +25,7 @@ Access patterns are as follows
 
 import re
 from collections.abc import Callable
+from threading import RLock
 from typing import Any, Type, TypeVar, Union
 
 from boto3 import Session
@@ -141,12 +142,18 @@ class RegionBundle(dict):
     """
 
     def __init__(
-        self, service_name: str, store: Type[BaseStoreType], account_id: str, validate: bool = True
+        self,
+        service_name: str,
+        store: Type[BaseStoreType],
+        account_id: str,
+        validate: bool = True,
+        lock: RLock = None,
     ):
         self.store = store
         self.account_id = account_id
         self.service_name = service_name
         self.validate = validate
+        self.lock = lock or RLock()
 
         self.valid_regions = Session().get_available_regions(service_name)
 
@@ -154,23 +161,22 @@ class RegionBundle(dict):
         self._global = {}
 
     def __getitem__(self, region_name) -> BaseStoreType:
-        if region_name in self.keys():
-            return super().__getitem__(region_name)
-
         if self.validate and region_name not in self.valid_regions:
             # Tip: Try using a valid region or valid service name
             raise ValueError(
                 f"'{region_name}' is not a valid AWS region name for {self.service_name}"
             )
 
-        store_obj = self.store()
+        with self.lock:
+            if region_name not in self.keys():
+                store_obj = self.store()
 
-        store_obj._global = self._global
-        store_obj._service_name = self.service_name
-        store_obj._account_id = self.account_id
-        store_obj._region_name = region_name
+                store_obj._global = self._global
+                store_obj._service_name = self.service_name
+                store_obj._account_id = self.account_id
+                store_obj._region_name = region_name
 
-        self[region_name] = store_obj
+                self[region_name] = store_obj
 
         return super().__getitem__(region_name)
 
@@ -187,8 +193,11 @@ class RegionBundle(dict):
                 # reset the local attributes
                 elif attr.startswith(LOCAL_ATTR_PREFIX):
                     delattr(store_inst, attr)
+
         self._global.clear()
-        self.clear()
+
+        with self.lock:
+            self.clear()
 
 
 class AccountRegionBundle(dict):
@@ -205,18 +214,22 @@ class AccountRegionBundle(dict):
         self.service_name = service_name
         self.store = store
         self.validate = validate
+        self.lock = RLock()
 
     def __getitem__(self, account_id: str) -> RegionBundle:
         if self.validate and not re.match(r"\d{12}", account_id):
             raise ValueError(f"'{account_id}' is not a valid AWS account ID")
 
-        if account_id not in self.keys():
-            self[account_id] = RegionBundle(
-                service_name=self.service_name,
-                store=self.store,
-                account_id=account_id,
-                validate=self.validate,
-            )
+        with self.lock:
+            if account_id not in self.keys():
+                self[account_id] = RegionBundle(
+                    service_name=self.service_name,
+                    store=self.store,
+                    account_id=account_id,
+                    validate=self.validate,
+                    lock=self.lock,
+                )
+
         return super().__getitem__(account_id)
 
     def reset(self):
@@ -224,4 +237,6 @@ class AccountRegionBundle(dict):
         # For safety, clear all referenced region bundles, if any
         for region_bundle in self.values():
             region_bundle.reset()
-        self.clear()
+
+        with self.lock:
+            self.clear()
