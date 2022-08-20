@@ -312,6 +312,7 @@ class SqsQueue:
     permissions: Set[Permission]
 
     purge_in_progress: bool
+    purge_timestamp: Optional[float]
 
     visible: PriorityQueue
     delayed: Set[SqsMessage]
@@ -336,6 +337,8 @@ class SqsQueue:
             self.attributes.update(attributes)
 
         self.purge_in_progress = False
+        self.purge_timestamp = None
+
         self.permissions = set()
         self.mutex = threading.RLock()
 
@@ -537,6 +540,23 @@ class SqsQueue:
             copied_message.message["ReceiptHandle"] = receipt_handle
 
             return copied_message
+
+    def purge(self):
+        with self.mutex:
+            if self.purge_in_progress:
+                raise PurgeQueueInProgress(
+                    f"Only one PurgeQueue operation on {self.name} is allowed every 60 seconds."
+                )
+
+            self.purge_timestamp = time.time()
+            self.purge_in_progress = True
+            try:
+                self.visible.queue.clear()
+                self.inflight.clear()
+                self.delayed.clear()
+                self.receipts.clear()
+            finally:
+                self.purge_in_progress = False
 
     def create_receipt_handle(self, message: SqsMessage) -> str:
         return encode_receipt_handle(self.arn, message)
@@ -1388,21 +1408,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def purge_queue(self, context: RequestContext, queue_url: String) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
-        with self._mutex:
-            # FIXME: use queue-specific locks
-            if queue.purge_in_progress:
-                raise PurgeQueueInProgress()
-            queue.purge_in_progress = True
+        if config.SQS_DELAY_PURGE_RETRY and queue.purge_timestamp:
+            if (queue.purge_timestamp + 60) > time.time():
+                raise PurgeQueueInProgress(
+                    f"Only one PurgeQueue operation on {queue.name} is allowed every 60 seconds."
+                )
 
-        # TODO: how do other methods behave when purge is in progress?
-
-        try:
-            while True:
-                queue.visible.get_nowait()
-        except Empty:
-            return
-        finally:
-            queue.purge_in_progress = False
+        queue.purge()
 
     def set_queue_attributes(
         self, context: RequestContext, queue_url: String, attributes: QueueAttributeMap
