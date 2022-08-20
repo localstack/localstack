@@ -27,3 +27,4 @@ jobs:
           path-to-document: "https://github.com/localstack/localstack/blob/master/.github/CLA.md"
           branch: "cla-signatures"
           allowlist: "localstack-bot,renovate-bot,renovate"
+          lock-pullrequest-aftermerge: false
