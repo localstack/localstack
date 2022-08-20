@@ -183,6 +183,7 @@ class TestAPIGateway:
         assert test_id == result["id"]
         assert apigw_name == result["name"]
 
+    @pytest.mark.skip
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
         stream = aws_stack.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
@@ -445,7 +446,7 @@ class TestAPIGateway:
                 "method.response.header.Content-Type": "'text/html'",
             },
         )
-        deployment_id = create_rest_api_deployment(apigateway_client, restApiId=api_id)
+        deployment_id, _ = create_rest_api_deployment(apigateway_client, restApiId=api_id)
         stage = create_rest_api_stage(
             apigateway_client, restApiId=api_id, stageName="local", deploymentId=deployment_id
         )
