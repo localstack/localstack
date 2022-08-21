@@ -69,34 +69,35 @@ route53:
     - TestAccRoute53TrafficPolicyDocumentDataSource_basic
     - TestAccRoute53TrafficPolicyDocumentDataSource_complete
 route53resolver:
+    - TestAccRoute53ResolverEndpointDataSource_basic
+    - TestAccRoute53ResolverEndpointDataSource_filter
+    - TestAccRoute53ResolverEndpoint_basicInbound
+    - TestAccRoute53ResolverEndpoint_updateOutbound
+    - TestAccRoute53ResolverFirewallConfig_basic
+    - TestAccRoute53ResolverFirewallConfig_disappears
+    - TestAccRoute53ResolverFirewallDomainList_basic
+    - TestAccRoute53ResolverFirewallDomainList_disappears
+    - TestAccRoute53ResolverFirewallDomainList_domains
+    - TestAccRoute53ResolverFirewallDomainList_tags
+    - TestAccRoute53ResolverFirewallRuleGroupAssociation_basic
+    - TestAccRoute53ResolverFirewallRuleGroupAssociation_disappears
+    - TestAccRoute53ResolverFirewallRuleGroupAssociation_mutationProtection
+    - TestAccRoute53ResolverFirewallRuleGroupAssociation_name
+    - TestAccRoute53ResolverFirewallRuleGroupAssociation_priority
+    - TestAccRoute53ResolverFirewallRuleGroupAssociation_tags
     - TestAccRoute53ResolverFirewallRuleGroup_basic
     - TestAccRoute53ResolverFirewallRuleGroup_disappears
     - TestAccRoute53ResolverFirewallRuleGroup_tags
-    - TestAccRoute53ResolverEndpointDataSource_basic
-    - TestAccRoute53ResolverEndpointDataSource_filter
-    - TestAccRoute53ResolverFirewallRuleGroupAssociation_basic
-    - TestAccRoute53ResolverFirewallRuleGroupAssociation_name
-    - TestAccRoute53ResolverFirewallRuleGroupAssociation_mutationProtection
-    - TestAccRoute53ResolverFirewallRuleGroupAssociation_priority
-    - TestAccRoute53ResolverFirewallRuleGroupAssociation_disappears
-    - TestAccRoute53ResolverFirewallRuleGroupAssociation_tags
-    - TestAccRoute53ResolverRule_forwardEndpointRecreate
-    - TestAccRoute53ResolverEndpoint_basicInbound
-    - TestAccRoute53ResolverEndpoint_updateOutbound
-    - TestAccRoute53ResolverRuleDataSource_sharedByMe
-    - TestAccRoute53ResolverRuleDataSource_sharedWithMe
     - TestAccRoute53ResolverFirewallRule_basic
     - TestAccRoute53ResolverFirewallRule_block
     - TestAccRoute53ResolverFirewallRule_blockOverride
     - TestAccRoute53ResolverFirewallRule_disappears
-    - TestAccRoute53ResolverRuleAssociation_basic
-    - TestAccRoute53ResolverRulesDataSource_resolverEndpointID
-    - TestAccRoute53ResolverRulesDataSource_nameRegex
-    - TestAccRoute53ResolverRulesDataSource_nonExistentNameRegex
-    - TestAccRoute53ResolverFirewallDomainList_basic
-    - TestAccRoute53ResolverFirewallDomainList_domains
-    - TestAccRoute53ResolverFirewallDomainList_disappears
-    - TestAccRoute53ResolverFirewallDomainList_tags
+    - TestAccRoute53ResolverQueryLogConfigAssociation_basic
+    - TestAccRoute53ResolverQueryLogConfigAssociation_disappears
+    - TestAccRoute53ResolverQueryLogConfig_basic
+    - TestAccRoute53ResolverQueryLogConfig_disappears
+    - TestAccRoute53ResolverQueryLogConfig_tags
+    - TestValidResolverName
 s3:
     - TestAccS3BucketVersioning_basic
     - TestAccS3BucketVersioning_disappears

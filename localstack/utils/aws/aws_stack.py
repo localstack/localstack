@@ -1326,3 +1326,8 @@ def get_route53_resolver_firewall_rule_group_associations_arn(
 
 def get_trace_id():
     return f"1-{get_random_hex(8)}-{get_random_hex(24)}"
+
+
+def get_resolver_query_log_config_arn(id: str, account_id: str = None, region_name: str = None):
+    pattern = "arn:aws:route53resolver:%s:%s:resolver-query-log-config/%s"
+    return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
