@@ -28,7 +28,8 @@ source = [
 omit = [
     "localstack/infra/",
     "localstack/node_modules",
-    "localstack/aws/api"
+    "localstack/aws/api",
+    "localstack/extensions/api",
 ]
 [tool.coverage.report]
 exclude_lines = [
