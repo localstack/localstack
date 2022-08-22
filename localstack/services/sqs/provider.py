@@ -3,6 +3,7 @@ import copy
 import hashlib
 import heapq
 import inspect
+import itertools
 import json
 import logging
 import re
@@ -125,11 +126,9 @@ class MissingParameter(CommonServiceException):
 @singleton_factory
 def global_message_sequence():
     # creates a 20-digit number used as the start for the global sequence
-    counter = int(time.time()) << 33
-
-    while True:
-        counter += 1
-        yield counter
+    start = int(time.time()) << 33
+    # itertools.count is thread safe over the GIL since its getAndIncrement operation is a single python bytecode op
+    return itertools.count(start)
 
 
 def generate_message_id():
