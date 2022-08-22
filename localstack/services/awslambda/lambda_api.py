@@ -403,12 +403,17 @@ def process_apigateway_invocation(
 
 
 def process_lambda_url_invocation(lambda_url_config: dict, event: dict):
-    inv_result = run_lambda(
-        func_arn=lambda_url_config["FunctionArn"],
-        event=event,
-        asynchronous=False,
-    )
-    return inv_result.result
+    try:
+        inv_result = run_lambda(
+            func_arn=lambda_url_config["FunctionArn"],
+            event=event,
+            asynchronous=False,
+        )
+        return inv_result.result
+
+    except Exception as e:
+        print(e)
+        raise
 
 
 def construct_invocation_event(
@@ -1239,6 +1244,7 @@ def handle_lambda_url_invocation(
     return response
 
 
+# FIXME: broken for returned json
 def lambda_result_to_response(result: str):
     response = HttpResponse()
     response.headers.update({"Content-Type": "application/json"})
@@ -1612,18 +1618,22 @@ def create_url_config(function):
 
 @app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["GET"])
 def get_url_config(function):
-    arn = func_arn(function)
+    # if there's a qualifier it *must* be an alias
     qualifier = request.args.get("Qualifier")
-    q_arn = func_qualifier(function, qualifier)
-    arn = q_arn or arn
-    lambda_backend = LambdaRegion.get()
-    url_config = lambda_backend.url_configs.get(arn)
 
-    if url_config is None:
-        response = error_response(
-            "The resource you requested does not exist.", 404, "ResourceNotFoundException"
-        )
-        return correct_error_response_for_url_config(response)
+    arn = func_arn(function)
+    lambda_backend = LambdaRegion.get()
+
+    fn = lambda_backend.lambdas.get(arn)
+    if not fn:
+        raise ResourceNotFoundException("The resource you requested does not exist.")
+
+    if qualifier and not fn.aliases.get(qualifier):
+        raise ResourceNotFoundException("The resource you requested does not exist.")
+
+    url_config = lambda_backend.url_configs.get(arn)
+    if not url_config:
+        raise ResourceNotFoundException("The resource you requested does not exist.")
 
     response = url_config.copy()
     response.pop("CustomId")
