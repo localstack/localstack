@@ -44,6 +44,11 @@ from localstack.services.install import (
     TEST_LAMBDA_JAVA,
     download_and_extract,
 )
+from localstack.testing.aws.lambda_utils import (
+    concurrency_update_done,
+    get_invoke_init_type,
+    update_done,
+)
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -71,7 +76,6 @@ from localstack.utils.testutil import (
 )
 
 from .functions import lambda_integration
-from .lambda_test_util import concurrency_update_done, get_invoke_init_type, update_done
 
 LOG = logging.getLogger(__name__)
 
