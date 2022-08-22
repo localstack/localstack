@@ -92,6 +92,26 @@ ACL_ALLOW_PRIVATE_NETWORK = "Access-Control-Allow-Private-Network"
 LOG = logging.getLogger(__name__)
 
 
+def should_enforce_self_managed_service(context: RequestContext) -> bool:
+    """
+    Some services are handling their CORS checks on their own (depending on config vars).
+
+    :param context: context of the request for which to check if the CORS checks should be executed in here or in
+                    the targeting service
+    :return: True if the CORS rules should be enforced in here.
+    """
+    if config.DISABLE_CUSTOM_CORS_S3 and config.DISABLE_CUSTOM_CORS_APIGATEWAY:
+        return True
+    # allow only certain api calls without checking origin
+    if context.service:
+        service_name = context.service.service_name
+        if not config.DISABLE_CUSTOM_CORS_S3 and service_name == "s3":
+            return False
+        if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and service_name == "apigateway":
+            return False
+    return True
+
+
 class CorsEnforcer(Handler):
     """
     Handler which enforces Cross-Origin-Resource-Sharing (CORS) rules.
@@ -100,7 +120,7 @@ class CorsEnforcer(Handler):
     """
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response) -> None:
-        if not self.should_enforce_self_managed_service(context):
+        if not should_enforce_self_managed_service(context):
             return
         if not config.DISABLE_CORS_CHECKS and not self.is_cors_origin_allowed(
             context.request.headers
@@ -115,26 +135,6 @@ class CorsEnforcer(Handler):
             # we want to return immediately here, but we do not want to omit our response chain for cors headers
             response.status_code = 204
             chain.stop()
-
-    @staticmethod
-    def should_enforce_self_managed_service(context: RequestContext) -> bool:
-        """
-        Some services are handling their CORS checks on their own (depending on config vars).
-
-        :param context: context of the request for which to check if the CORS checks should be executed in here or in
-                        the targeting service
-        :return: True if the CORS rules should be enforced in here.
-        """
-        if config.DISABLE_CUSTOM_CORS_S3 and config.DISABLE_CUSTOM_CORS_APIGATEWAY:
-            return True
-        # allow only certain api calls without checking origin
-        if context.service:
-            service_name = context.service.service_name
-            if not config.DISABLE_CUSTOM_CORS_S3 and service_name == "s3":
-                return False
-            if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and service_name == "apigateway":
-                return False
-        return True
 
     @staticmethod
     def is_cors_origin_allowed(headers: Headers) -> bool:
@@ -164,12 +164,18 @@ class CorsResponseEnricher(Handler):
     """
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
-        # use this config to disable returning CORS headers entirely (more restrictive security setting)
-        if config.DISABLE_CORS_HEADERS:
-            return
-        request_headers = context.request.headers
         headers = response.headers
+        # Remove empty CORS headers
+        for header in ALLOWED_CORS_RESPONSE_HEADERS:
+            if headers.get(header) == "":
+                del headers[header]
 
+        # use DISABLE_CORS_HEADERS to disable returning CORS headers entirely (more restrictive security setting)
+        # also don't add CORS response headers if the service manages the CORS handling
+        if config.DISABLE_CORS_HEADERS or not should_enforce_self_managed_service(context):
+            return
+
+        request_headers = context.request.headers
         if ACL_ORIGIN not in headers:
             headers[ACL_ORIGIN] = (
                 request_headers["origin"]
@@ -189,7 +195,3 @@ class CorsResponseEnricher(Handler):
             and ACL_ALLOW_PRIVATE_NETWORK not in headers
         ):
             headers[ACL_ALLOW_PRIVATE_NETWORK] = "true"
-
-        for header in ALLOWED_CORS_RESPONSE_HEADERS:
-            if headers.get(header) == "":
-                del headers[header]
