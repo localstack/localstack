@@ -119,46 +119,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
-    def test_s3_presigned_url_expired(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-
-        # put object and CORS configuration
-        object_key = "key-by-hostname"
-        client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
-
-        # get object and assert headers
-        url = client.generate_presigned_url(
-            "get_object", Params={"Bucket": bucket_name, "Key": object_key}, ExpiresIn=2
-        )
-        # retrieving it before expiry
-        resp = requests.get(url, verify=False)
-        self.assertEqual(200, resp.status_code)
-        self.assertEqual("something", to_str(resp.content))
-
-        actual_time = time.time()
-        with patch("localstack.services.s3.s3_listener.is_expired", lambda v: True):
-            with patch("localstack.services.s3.s3_utils.time") as fake_time:
-                # check expired url
-                fake_time.time.return_value = actual_time + 10
-                resp = requests.get(url, verify=False)
-        self.assertEqual(resp.status_code, 403, resp.content)
-
-        url = client.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": bucket_name, "Key": object_key},
-            ExpiresIn=120,
-        )
-
-        resp = requests.get(url, verify=False)
-        self.assertEqual(200, resp.status_code)
-        self.assertEqual("something", to_str(resp.content))
-
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
-
     def test_bucket_availability(self):
         bucket_name = "test-bucket-lifecycle"
         returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)

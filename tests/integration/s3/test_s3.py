@@ -22,6 +22,7 @@ from localstack.utils.strings import (
     hash_sha256,
     short_uid,
     to_bytes,
+    to_str,
 )
 
 
@@ -955,6 +956,40 @@ class TestS3PresignedUrl:
         )
         response = requests.get(url, verify=False)
         assert response.headers["content-type"] == "binary/octet-stream"
+
+    @pytest.mark.aws_validated
+    def test_s3_presigned_url_expired(self, s3_presigned_client, s3_bucket, monkeypatch):
+        if not is_aws_cloud():
+            monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+
+        object_key = "key-expires-in-2"
+        s3_presigned_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+
+        # get object and assert headers
+        url = s3_presigned_client.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}, ExpiresIn=2
+        )
+        # retrieving it before expiry
+        resp = requests.get(url, verify=False)
+        assert resp.status_code == 200
+        assert to_str(resp.content) == "something"
+
+        time.sleep(3)  # wait for the URL to expire
+        resp = requests.get(url, verify=False)
+        resp_content = to_str(resp.content)
+        assert resp.status_code == 403
+        assert "<Code>AccessDenied</Code>" in resp_content
+        assert "<Message>Request has expired</Message>" in resp_content
+
+        url = s3_presigned_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": s3_bucket, "Key": object_key},
+            ExpiresIn=120,
+        )
+
+        resp = requests.get(url, verify=False)
+        assert resp.status_code == 200
+        assert to_str(resp.content) == "something"
 
 
 class TestS3DeepArchive:
