@@ -626,6 +626,18 @@ class TestS3:
         assert resp["Expires"] > datetime.datetime.now(timezone("GMT"))
         snapshot.match("get-object-not-yet-expired", resp)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="The error format is wrong in s3_listener (is_bucket_available)")
+    def test_bucket_availability(self, s3_client, snapshot):
+        bucket_name = "test-bucket-lifecycle"
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_lifecycle(Bucket=bucket_name)
+        snapshot.match("bucket-lifecycle", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_replication(Bucket=bucket_name)
+        snapshot.match("bucket-replication", e.value.response)
+
 
 class TestS3PresignedUrl:
     """

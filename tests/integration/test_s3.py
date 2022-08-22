@@ -35,7 +35,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS14X,
     LAMBDA_RUNTIME_PYTHON36,
 )
-from localstack.services.s3 import s3_listener, s3_utils
+from localstack.services.s3 import s3_utils
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -118,14 +118,6 @@ class TestS3(unittest.TestCase):
     @property
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
-
-    def test_bucket_availability(self):
-        bucket_name = "test-bucket-lifecycle"
-        returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)
-        self.assertRegex(returned_empty_lifecycle._content, r"The bucket does not exist")
-
-        response = s3_listener.get_replication(bucket_name)
-        self.assertRegex(response._content, r"The bucket does not exist")
 
     def test_delete_bucket_lifecycle_configuration(self):
         bucket_name = "test-bucket-%s" % short_uid()

@@ -630,5 +630,32 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_bucket_availability": {
+    "recorded-date": "22-08-2022, 20:06:27",
+    "recorded-content": {
+      "bucket-lifecycle": {
+        "Error": {
+          "BucketName": "test-bucket-lifecycle",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "bucket-replication": {
+        "Error": {
+          "BucketName": "test-bucket-lifecycle",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
