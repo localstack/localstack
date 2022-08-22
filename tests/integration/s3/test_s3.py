@@ -10,6 +10,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.utils.collections import is_sub_dict
+from localstack.utils.server import http2_server
 from localstack.utils.strings import (
     checksum_crc32,
     checksum_crc32c,
@@ -151,13 +152,13 @@ class TestS3:
         snapshot.add_transformer(snapshot.transform.s3_api())
         key = "my-key"
         # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/s3.html#multipart-transfers
-        config = TransferConfig(multipart_threshold=5 * KB, multipart_chunksize=1 * KB)
+        tranfer_config = TransferConfig(multipart_threshold=5 * KB, multipart_chunksize=1 * KB)
 
         file = tmpdir / "test-file.bin"
         data = b"1" * (6 * KB)  # create 6 kilobytes of ones
         file.write(data=data, mode="w")
         s3_client.upload_file(
-            Bucket=s3_bucket, Key=key, Filename=str(file.realpath()), Config=config
+            Bucket=s3_bucket, Key=key, Filename=str(file.realpath()), Config=tranfer_config
         )
 
         obj = s3_client.get_object(Bucket=s3_bucket, Key=key)
@@ -420,6 +421,8 @@ class TestS3:
                 checksum = hash_sha1(data)
             case "SHA256":
                 checksum = hash_sha256(data)
+            case _:
+                checksum = ""
         params.update({f"Checksum{algorithm}": checksum})
         response = s3_client.put_object(**params)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -528,17 +531,41 @@ class TestS3:
         response = s3_client.get_bucket_acl(Bucket=bucket_name)
         snapshot.match("bucket-acl", response)
 
-        def check_permissions(key, expected_perms):
+        def check_permissions(key):
             acl_response = s3_client.get_object_acl(Bucket=bucket_name, Key=key)
             snapshot.match(f"permission-{key}", acl_response)
 
         # perform uploads (multipart and regular) and check ACLs
         s3_client.put_object(Bucket=bucket_name, Key="acl-key0", Body="something")
-        check_permissions("acl-key0", 1)
+        check_permissions("acl-key0")
         s3_multipart_upload(bucket=bucket_name, key="acl-key1")
-        check_permissions("acl-key1", 1)
+        check_permissions("acl-key1")
         s3_multipart_upload(bucket=bucket_name, key="acl-key2", acl="public-read-write")
-        check_permissions("acl-key2", 2)
+        check_permissions("acl-key2")
+
+    @pytest.mark.only_localstack
+    @pytest.mark.parametrize("case_sensitive_headers", [True, False])
+    def test_s3_get_response_case_sensitive_headers(
+        self, s3_client, s3_bucket, case_sensitive_headers
+    ):
+        # Test that RETURN_CASE_SENSITIVE_HEADERS is respected
+        object_key = "key-by-hostname"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+
+        # get object and assert headers
+        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
+        try:
+            url = s3_client.generate_presigned_url(
+                "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+            )
+            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
+            response = requests.get(url, verify=False)
+            # expect that Etag is contained
+            header_names = list(response.headers.keys())
+            expected_etag = "ETag" if case_sensitive_headers else "etag"
+            assert expected_etag in header_names
+        finally:
+            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
 
 
 class TestS3PresignedUrl:
@@ -698,6 +725,23 @@ class TestS3PresignedUrl:
         assert response.status_code == 200
         assert response.text == body
 
+    @pytest.mark.aws_validated
+    def test_s3_get_response_default_content_type(self, s3_client, s3_bucket):
+        # When no content type is provided by a PUT request
+        # 'binary/octet-stream' should be used
+        # src: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
+
+        # put object
+        object_key = "key-by-hostname"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+
+        # get object and assert headers
+        url = s3_client.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+        )
+        response = requests.get(url, verify=False)
+        assert response.headers["content-type"] == "binary/octet-stream"
+
 
 class TestS3DeepArchive:
     """
@@ -708,7 +752,7 @@ class TestS3DeepArchive:
     def test_storage_class_deep_archive(self, s3_client, s3_resource, s3_bucket, tmpdir):
         key = "my-key"
 
-        config = TransferConfig(multipart_threshold=5 * KB, multipart_chunksize=1 * KB)
+        transfer_config = TransferConfig(multipart_threshold=5 * KB, multipart_chunksize=1 * KB)
 
         def upload_file(size_in_kb: int):
             file = tmpdir / f"test-file-{short_uid()}.bin"
@@ -719,7 +763,7 @@ class TestS3DeepArchive:
                 Key=key,
                 Filename=str(file.realpath()),
                 ExtraArgs={"StorageClass": "DEEP_ARCHIVE"},
-                Config=config,
+                Config=transfer_config,
             )
 
         upload_file(1)

@@ -51,7 +51,6 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
-from localstack.utils.server import http2_server
 
 TEST_BUCKET_NAME_WITH_POLICY = "test-bucket-policy-1"
 TEST_BUCKET_WITH_VERSIONING = "test-bucket-versioning-1"
@@ -121,60 +120,6 @@ class TestS3(unittest.TestCase):
     @property
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
-
-    def test_s3_multipart_upload_acls(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name, ACL="public-read")
-
-        def check_permissions(key, expected_perms):
-            grants = self.s3_client.get_object_acl(Bucket=bucket_name, Key=key)["Grants"]
-            grants = [g for g in grants if "AllUsers" in g.get("Grantee", {}).get("URI", "")]
-            self.assertEqual(1, len(grants))
-            permissions = grants[0]["Permission"]
-            permissions = permissions if isinstance(permissions, list) else [permissions]
-            self.assertEqual(expected_perms, len(permissions))
-
-        # perform uploads (multipart and regular) and check ACLs
-        self.s3_client.put_object(Bucket=bucket_name, Key="acl-key0", Body="something")
-        check_permissions("acl-key0", 1)
-        self._perform_multipart_upload(bucket=bucket_name, key="acl-key1")
-        check_permissions("acl-key1", 1)
-        self._perform_multipart_upload(bucket=bucket_name, key="acl-key2", acl="public-read-write")
-        check_permissions("acl-key2", 2)
-
-    def test_s3_get_response_default_content_type_and_headers(self):
-        # When no content type is provided by a PUT request
-        # 'binary/octet-stream' should be used
-        # src: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
-
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-
-        # put object
-        object_key = "key-by-hostname"
-        client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
-
-        # get object and assert headers
-        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
-        try:
-            for case_sensitive_headers in [True, False]:
-                url = client.generate_presigned_url(
-                    "get_object", Params={"Bucket": bucket_name, "Key": object_key}
-                )
-                http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
-                response = requests.get(url, verify=False)
-                self.assertEqual("binary/octet-stream", response.headers["content-type"])
-
-                # expect that Etag is contained
-                header_names = list(response.headers.keys())
-                expected_etag = "ETag" if case_sensitive_headers else "etag"
-                self.assertIn(expected_etag, header_names)
-        finally:
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
-
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_object_expiry(self):
         # handle s3 object expiry
