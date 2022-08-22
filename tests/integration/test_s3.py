@@ -1,7 +1,6 @@
 # TODO: migrate tests to tests/integration/s3/
 #  DO NOT ADD ADDITIONAL TESTS HERE. USE PYTEST AND RUN TESTS AGAINST AWS!
 import base64
-import datetime
 import gzip
 import hashlib
 import io
@@ -23,7 +22,6 @@ import requests
 from botocore import UNSIGNED
 from botocore.client import Config
 from botocore.exceptions import ClientError
-from pytz import timezone
 
 from localstack import config, constants
 from localstack.constants import (
@@ -120,46 +118,6 @@ class TestS3(unittest.TestCase):
     @property
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
-
-    def test_s3_object_expiry(self):
-        # handle s3 object expiry
-        # https://github.com/localstack/localstack/issues/1685
-        bucket_name = "test-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        # put object
-        object_key = "key-with-metadata"
-        metadata = {"test_meta_1": "foo", "__meta_2": "bar"}
-        self.s3_client.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Metadata=metadata,
-            Body="foo",
-            Expires=datetime.datetime.now(timezone("GMT")) - datetime.timedelta(hours=1),
-        )
-        # try to fetch an object which is already expired
-        self.assertRaises(
-            Exception,
-            self.s3_client.get_object,
-            Bucket=bucket_name,
-            Key=object_key.lower(),
-        )
-
-        self.s3_client.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Metadata=metadata,
-            Body="foo",
-            Expires=datetime.datetime.now(timezone("GMT")) + datetime.timedelta(hours=1),
-        )
-
-        # try to fetch has not been expired yet.
-        resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-
-        self.assertIn("Expires", resp)
-
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
 
     @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
     def test_s3_presigned_url_expired(self):

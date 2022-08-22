@@ -1,3 +1,4 @@
+import datetime
 import gzip
 import json
 import time
@@ -7,8 +8,10 @@ import pytest
 import requests
 from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
+from pytz import timezone
 
 from localstack import config
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.collections import is_sub_dict
 from localstack.utils.server import http2_server
 from localstack.utils.strings import (
@@ -566,6 +569,60 @@ class TestS3:
             assert expected_etag in header_names
         finally:
             http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..AcceptRanges",
+            "$..ContentLanguage",
+            "$..VersionId",
+            "$..Restore",
+        ]
+    )
+    def test_s3_object_expiry(self, s3_client, s3_bucket, snapshot):
+        # AWS only cleans up S3 expired object once a day usually
+        # the object stays accessible for quite a while after being expired
+        # https://stackoverflow.com/questions/38851456/aws-s3-object-expiration-less-than-24-hours
+        # handle s3 object expiry
+        # https://github.com/localstack/localstack/issues/1685
+        # todo: should we have a config var to not deleted immediately in the new provider? and schedule it?
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        # put object
+        short_expire = datetime.datetime.now(timezone("GMT")) + datetime.timedelta(seconds=1)
+        object_key_expired = "key-object-expired"
+        object_key_not_expired = "key-object-not-expired"
+
+        s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=object_key_expired,
+            Body="foo",
+            Expires=short_expire,
+        )
+        time.sleep(3)
+        # head_object does not raise an error for now in LS
+        response = s3_client.head_object(Bucket=s3_bucket, Key=object_key_expired)
+        assert response["Expires"] < datetime.datetime.now(timezone("GMT"))
+        snapshot.match("head-object-expired", response)
+
+        # try to fetch an object which is already expired
+        if not is_aws_cloud():  # fixme for now behaviour differs, have a look at it and discuss
+            with pytest.raises(Exception) as e:  # this does not raise in AWS
+                s3_client.get_object(Bucket=s3_bucket, Key=object_key_expired)
+
+            e.match("NoSuchKey")
+
+        s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=object_key_not_expired,
+            Body="foo",
+            Expires=datetime.datetime.now(timezone("GMT")) + datetime.timedelta(hours=1),
+        )
+
+        # try to fetch has not been expired yet.
+        resp = s3_client.get_object(Bucket=s3_bucket, Key=object_key_not_expired)
+        assert "Expires" in resp
+        assert resp["Expires"] > datetime.datetime.now(timezone("GMT"))
+        snapshot.match("get-object-not-yet-expired", resp)
 
 
 class TestS3PresignedUrl:

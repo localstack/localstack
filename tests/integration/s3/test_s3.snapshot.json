@@ -598,5 +598,37 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_object_expiry": {
+    "recorded-date": "22-08-2022, 18:02:13",
+    "recorded-content": {
+      "head-object-expired": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 3,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
+        "Expires": "datetime",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-not-yet-expired": {
+        "AcceptRanges": "bytes",
+        "Body": "foo",
+        "ContentLength": 3,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
+        "Expires": "datetime",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
