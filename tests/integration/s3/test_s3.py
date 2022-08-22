@@ -3,6 +3,7 @@ import gzip
 import json
 import time
 from io import BytesIO
+from unittest.mock import patch
 
 import pytest
 import requests
@@ -781,6 +782,162 @@ class TestS3PresignedUrl:
         response = requests.get(url, data=b"get body is ignored by AWS")
         assert response.status_code == 200
         assert response.text == body
+
+    @pytest.mark.aws_validated
+    def test_put_object_with_md5_and_chunk_signature_bad_headers(
+        self,
+        s3_client,
+        s3_create_bucket,
+    ):
+        # snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = "bucket-%s" % short_uid()
+        object_key = "test-runtime.properties"
+        content_md5 = "pX8KKuGXS1f2VTcuJpqjkw=="
+        headers = {
+            "Content-Md5": content_md5,
+            "Content-Type": "application/octet-stream",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
+            "X-Amz-Date": "20211122T191045Z",
+            "X-Amz-Decoded-Content-Length": "test",  # string instead of int
+            "Content-Length": "10",
+            "Connection": "Keep-Alive",
+            "Expect": "100-continue",
+        }
+
+        s3_create_bucket(Bucket=bucket_name)
+        url = s3_client.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": bucket_name,
+                "Key": object_key,
+                "ContentType": "application/octet-stream",
+                "ContentMD5": content_md5,
+            },
+        )
+        result = requests.put(url, data="test", headers=headers)
+        assert result.status_code == 403
+        assert b"SignatureDoesNotMatch" in result.content
+
+        # check also no X-Amz-Decoded-Content-Length
+        headers.pop("X-Amz-Decoded-Content-Length")
+        result = requests.put(url, data="test", headers=headers)
+        assert result.status_code == 403, (result, result.content)
+        assert b"SignatureDoesNotMatch" in result.content
+
+    @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
+    def test_cors_with_allowed_origins(self, s3_client, s3_create_bucket):
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": ["https://localhost:4200"],
+                    "AllowedMethods": ["GET", "PUT"],
+                    "MaxAgeSeconds": 3000,
+                    "AllowedHeaders": ["*"],
+                }
+            ]
+        }
+
+        bucket_name = "bucket-%s" % short_uid()
+        object_key = "424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf"
+        s3_create_bucket(Bucket=bucket_name)
+        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+
+        # create signed url
+        url = s3_client.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": bucket_name,
+                "Key": object_key,
+                "ContentType": "application/pdf",
+                "ACL": "bucket-owner-full-control",
+            },
+            ExpiresIn=3600,
+        )
+        result = requests.put(
+            url,
+            data="something",
+            verify=False,
+            headers={
+                "Origin": "https://localhost:4200",
+                "Content-Type": "application/pdf",
+            },
+        )
+        assert result.status_code == 200
+        assert "Access-Control-Allow-Origin" in result.headers
+        assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4200"
+        assert "Access-Control-Allow-Methods" in result.headers
+        assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
+
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": [
+                        "https://localhost:4200",
+                        "https://localhost:4201",
+                    ],
+                    "AllowedMethods": ["GET", "PUT"],
+                    "MaxAgeSeconds": 3000,
+                    "AllowedHeaders": ["*"],
+                }
+            ]
+        }
+
+        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+
+        # create signed url
+        url = s3_client.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": bucket_name,
+                "Key": object_key,
+                "ContentType": "application/pdf",
+                "ACL": "bucket-owner-full-control",
+            },
+            ExpiresIn=3600,
+        )
+
+        # mimic chrome behavior, sending OPTIONS request first for strict-origin-when-cross-origin
+        result = requests.options(
+            url,
+            headers={
+                "Origin": "https://localhost:4200",
+                "Access-Control-Request-Method": "PUT",
+            },
+        )
+        assert "Access-Control-Allow-Origin" in result.headers
+        assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4200"
+        assert "Access-Control-Allow-Methods" in result.headers
+        assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
+
+        result = requests.put(
+            url,
+            data="something",
+            verify=False,
+            headers={
+                "Origin": "https://localhost:4200",
+                "Content-Type": "application/pdf",
+            },
+        )
+        assert result.status_code == 200
+        assert "Access-Control-Allow-Origin" in result.headers
+        assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4200"
+        assert "Access-Control-Allow-Methods" in result.headers
+        assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
+
+        result = requests.put(
+            url,
+            data="something",
+            verify=False,
+            headers={
+                "Origin": "https://localhost:4201",
+                "Content-Type": "application/pdf",
+            },
+        )
+        assert result.status_code == 200
+        assert "Access-Control-Allow-Origin" in result.headers
+        assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4201"
+        assert "Access-Control-Allow-Methods" in result.headers
+        assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
 
     @pytest.mark.aws_validated
     def test_s3_get_response_default_content_type(self, s3_client, s3_bucket):
