@@ -8,6 +8,7 @@ import pytest
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.config import in_docker
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION, OPENSEARCH_PLUGIN_LIST
 from localstack.services.install import install_opensearch
 from localstack.services.opensearch.cluster import EdgeProxiedOpensearchCluster
@@ -585,7 +586,10 @@ class TestSingletonClusterManager:
 
         parts = cluster_0.url.split(":")
         assert parts[0] == "http"
-        assert parts[1] in ("//localhost", "//127.0.0.1")
+        if in_docker():
+            assert parts[1] == "//0.0.0.0"
+        else:
+            assert parts[1] in ("//localhost", "//127.0.0.1")
         assert int(parts[2]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )
