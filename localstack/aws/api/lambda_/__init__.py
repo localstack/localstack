@@ -571,6 +571,10 @@ class AllowedPublishers(TypedDict, total=False):
     SigningProfileVersionArns: SigningProfileVersionArns
 
 
+class AmazonManagedKafkaEventSourceConfig(TypedDict, total=False):
+    ConsumerGroupId: Optional[URI]
+
+
 ArchitecturesList = List[Architecture]
 Blob = bytes
 BlobStream = bytes
@@ -626,6 +630,10 @@ class CreateCodeSigningConfigRequest(ServiceRequest):
 
 class CreateCodeSigningConfigResponse(TypedDict, total=False):
     CodeSigningConfig: CodeSigningConfig
+
+
+class SelfManagedKafkaEventSourceConfig(TypedDict, total=False):
+    ConsumerGroupId: Optional[URI]
 
 
 FunctionResponseTypeList = List[FunctionResponseType]
@@ -694,6 +702,8 @@ class CreateEventSourceMappingRequest(ServiceRequest):
     SourceAccessConfigurations: Optional[SourceAccessConfigurations]
     SelfManagedEventSource: Optional[SelfManagedEventSource]
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
+    AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
+    SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
 
 
 class EphemeralStorage(TypedDict, total=False):
@@ -875,6 +885,8 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     MaximumRetryAttempts: Optional[MaximumRetryAttemptsEventSourceMapping]
     TumblingWindowInSeconds: Optional[TumblingWindowInSeconds]
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
+    AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
+    SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
 
 
 EventSourceMappingsList = List[EventSourceMappingConfiguration]
@@ -1591,6 +1603,8 @@ class LambdaApi:
         source_access_configurations: SourceAccessConfigurations = None,
         self_managed_event_source: SelfManagedEventSource = None,
         function_response_types: FunctionResponseTypeList = None,
+        amazon_managed_kafka_event_source_config: AmazonManagedKafkaEventSourceConfig = None,
+        self_managed_kafka_event_source_config: SelfManagedKafkaEventSourceConfig = None,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
