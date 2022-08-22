@@ -365,7 +365,9 @@ def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) ->
     filter_results = []
     for key, value in filter_rule.items():
         # check if rule exists in event
-        record_value = record.get(key.lower(), record.get(key))
+        record_value = (
+            record.get(key.lower(), record.get(key)) if isinstance(record, Dict) else None
+        )
         append_record = False
         if record_value is not None:
             # check if filter rule value is a list (leaf of rule tree) or a dict (rescursively call function)
@@ -377,7 +379,7 @@ def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) ->
                         append_record = verify_dict_filter(record_value, value[0])
                 else:
                     LOG.warn(f"Empty lambda filter: {key}")
-            if isinstance(value, dict):
+            elif isinstance(value, dict):
                 append_record = filter_stream_record(value, record_value)
         else:
             # special case 'exists'

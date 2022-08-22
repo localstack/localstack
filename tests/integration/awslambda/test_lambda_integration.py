@@ -220,7 +220,7 @@ class TestSQSEventSourceMapping:
             (
                 {"body": {"test2": [{"numeric": [">", 100]}]}},
                 {"test2": 105},
-                {"test2": 15},
+                "this is a test string",  # normal string should be dropped as well aka not fitting to filter
             ),
             # numeric (smaller)
             (
@@ -270,7 +270,12 @@ class TestSQSEventSourceMapping:
             queue_arn_1 = sqs_queue_arn(queue_url_1)
 
             sqs_client.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps(item_matching))
-            sqs_client.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps(item_not_matching))
+            sqs_client.send_message(
+                QueueUrl=queue_url_1,
+                MessageBody=json.dumps(item_not_matching)
+                if not isinstance(item_not_matching, str)
+                else item_not_matching,
+            )
 
             def _assert_qsize():
                 response = sqs_client.get_queue_attributes(
@@ -708,16 +713,11 @@ class TestDynamoDBEventSourceMapping:
                     ]
                 }
             )
-            try:
-                event_source_uuid = lambda_client.create_event_source_mapping(
-                    **event_source_mapping_kwargs
-                )["UUID"]
-            except ClientError as ex:
-                if filter:
-                    raise ex
-                # json.loads serializes None to "FilterCriteria": {"Filters": [{"Pattern": "null"}]}}
-                assert ex.response["Error"]["Code"] == INVALID_PARAMETER_VALUE_EXCEPTION
-                return
+
+            event_source_uuid = lambda_client.create_event_source_mapping(
+                **event_source_mapping_kwargs
+            )["UUID"]
+
             _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
             dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
 
@@ -777,44 +777,37 @@ class TestDynamoDBEventSourceMapping:
 
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
-        event_source_uuid = None
 
-        try:
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=lambda_su_role,
+        )
+        dynamodb_create_table(table_name=table_name, partition_key="id")
+        _await_dynamodb_table_active(dynamodb_client, table_name)
+        stream_arn = dynamodb_client.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+        )["TableDescription"]["LatestStreamArn"]
+        wait_for_dynamodb_stream_ready(stream_arn)
+        event_source_mapping_kwargs = {
+            "FunctionName": function_name,
+            "BatchSize": 1,
+            "StartingPosition": "TRIM_HORIZON",
+            "EventSourceArn": stream_arn,
+            "MaximumBatchingWindowInSeconds": 1,
+            "MaximumRetryAttempts": 1,
+            "FilterCriteria": {
+                "Filters": [
+                    {"Pattern": filter},
+                ]
+            },
+        }
 
-            create_lambda_function(
-                handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                func_name=function_name,
-                runtime=LAMBDA_RUNTIME_PYTHON37,
-                role=lambda_su_role,
-            )
-            dynamodb_create_table(table_name=table_name, partition_key="id")
-            _await_dynamodb_table_active(dynamodb_client, table_name)
-            stream_arn = dynamodb_client.update_table(
-                TableName=table_name,
-                StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
-            )["TableDescription"]["LatestStreamArn"]
-            wait_for_dynamodb_stream_ready(stream_arn)
-            event_source_mapping_kwargs = {
-                "FunctionName": function_name,
-                "BatchSize": 1,
-                "StartingPosition": "TRIM_HORIZON",
-                "EventSourceArn": stream_arn,
-                "MaximumBatchingWindowInSeconds": 1,
-                "MaximumRetryAttempts": 1,
-                "FilterCriteria": {
-                    "Filters": [
-                        {"Pattern": filter},
-                    ]
-                },
-            }
-
-            with pytest.raises(Exception) as expected:
-                lambda_client.create_event_source_mapping(**event_source_mapping_kwargs)
-            expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
-
-        finally:
-            if event_source_uuid:
-                lambda_client.delete_event_source_mapping(UUID=event_source_uuid)
+        with pytest.raises(Exception) as expected:
+            lambda_client.create_event_source_mapping(**event_source_mapping_kwargs)
+        expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
 
 
 class TestLambdaHttpInvocation:

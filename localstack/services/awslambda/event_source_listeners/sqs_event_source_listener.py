@@ -194,11 +194,20 @@ class SQSEventSourceListener(EventSourceListener):
         if len(event_filter_criterias) > 0:
             # convert to json for filtering
             for record in records:
-                record["body"] = json.loads(record["body"])
+                try:
+                    record["body"] = json.loads(record["body"])
+                except json.JSONDecodeError:
+                    LOG.warning(
+                        f"Unable to convert record '{record['body']}' to json... Record might be dropped."
+                    )
             records = filter_stream_records(records, event_filter_criterias)
             # convert them back
             for record in records:
-                record["body"] = json.dumps(record["body"])
+                record["body"] = (
+                    json.dumps(record["body"])
+                    if not isinstance(record["body"], str)
+                    else record["body"]
+                )
 
         # all messages were filtered out
         if not len(records) > 0:
