@@ -1080,6 +1080,39 @@ class TestSqsProvider:
         assert messages[2]["Body"] == "message-3"
 
     @pytest.mark.aws_validated
+    def test_fifo_message_attributes(self, sqs_client, sqs_create_queue, snapshot):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+                "VisibilityTimeout": "0",
+                "DeduplicationScope": "messageGroup",
+                "FifoThroughputLimit": "perMessageGroupId",
+            },
+        )
+
+        response = sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="message-body-1",
+            MessageGroupId="group-1",
+            MessageDeduplicationId="dedup-1",
+        )
+        snapshot.match("send_message", response)
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, AttributeNames=["All"], WaitTimeSeconds=10
+        )
+        snapshot.match("receive_message_0", response)
+        # makes sure that attributes are mutated correctly
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, AttributeNames=["All"], WaitTimeSeconds=10
+        )
+        snapshot.match("receive_message_1", response)
+
+    @pytest.mark.aws_validated
     def test_list_queue_tags(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1274,20 +1307,19 @@ class TestSqsProvider:
             QueueUrl=queue_url, Attributes={"RedrivePolicy": json.dumps(_valid_redrive_policy)}
         )
 
-    @pytest.mark.skip
-    def test_invalid_dead_letter_arn_rejected_before_lookup(self, sqs_create_queue):
-        queue_name = f"queue-{short_uid()}"
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="behavior not implemented yet")
+    def test_invalid_dead_letter_arn_rejected_before_lookup(self, sqs_create_queue, snapshot):
         dl_dummy_arn = "dummy"
         max_receive_count = 42
         _redrive_policy = {
             "deadLetterTargetArn": dl_dummy_arn,
             "maxReceiveCount": max_receive_count,
         }
-        with pytest.raises(Exception) as e:
-            sqs_create_queue(
-                QueueName=queue_name, Attributes={"RedrivePolicy": json.dumps(_redrive_policy)}
-            )
-        e.match("InvalidParameterValue")
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(Attributes={"RedrivePolicy": json.dumps(_redrive_policy)})
+
+        snapshot.match("error_response", e.value.response)
 
     @pytest.mark.aws_validated
     def test_set_queue_policy(self, sqs_client, sqs_create_queue):
@@ -1889,6 +1921,35 @@ class TestSqsProvider:
         queue_url = sqs_create_queue(QueueName=queue_name)
         send_result = sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_content)
         assert "SequenceNumber" not in send_result
+
+    @pytest.mark.aws_validated
+    def test_fifo_sequence_number_increases(self, sqs_client, sqs_create_queue):
+        fifo_queue_name = f"queue-{short_uid()}.fifo"
+        fifo_queue_url = sqs_create_queue(
+            QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"}
+        )
+
+        send_result_1 = sqs_client.send_message(
+            QueueUrl=fifo_queue_url,
+            MessageBody="message-1",
+            MessageGroupId="group",
+            MessageDeduplicationId="m1",
+        )
+        send_result_2 = sqs_client.send_message(
+            QueueUrl=fifo_queue_url,
+            MessageBody="message-2",
+            MessageGroupId="group",
+            MessageDeduplicationId="m2",
+        )
+        send_result_3 = sqs_client.send_message(
+            QueueUrl=fifo_queue_url,
+            MessageBody="message-3",
+            MessageGroupId="group",
+            MessageDeduplicationId="m3",
+        )
+
+        assert int(send_result_1["SequenceNumber"]) < int(send_result_2["SequenceNumber"])
+        assert int(send_result_2["SequenceNumber"]) < int(send_result_3["SequenceNumber"])
 
     @pytest.mark.aws_validated
     def test_posting_to_fifo_requires_deduplicationid_group_id(self, sqs_client, sqs_create_queue):

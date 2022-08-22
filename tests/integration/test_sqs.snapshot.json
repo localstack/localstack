@@ -357,5 +357,86 @@
       "create_queue_01": "An error occurred (QueueAlreadyExists) when calling the CreateQueue operation: A queue already exists with the same name and a different value for attribute DelaySeconds",
       "create_queue_02": "An error occurred (QueueAlreadyExists) when calling the CreateQueue operation: A queue already exists with the same name and a different value for attribute DelaySeconds"
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_message_attributes": {
+    "recorded-date": "21-08-2022, 00:35:54",
+    "recorded-content": {
+      "send_message": {
+        "MD5OfMessageBody": "19c9e282d65f9733bc6b35d50062c7ee",
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "SequenceNumber": "<sequence-number:1>"
+      },
+      "receive_message_0": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "dedup-1",
+              "MessageGroupId": "group-1",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": "message-body-1",
+            "MD5OfBody": "19c9e282d65f9733bc6b35d50062c7ee",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "receive_message_1": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "2",
+              "MessageDeduplicationId": "dedup-1",
+              "MessageGroupId": "group-1",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": "message-body-1",
+            "MD5OfBody": "19c9e282d65f9733bc6b35d50062c7ee",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_sequence_number_increases": {
+    "recorded-date": "21-08-2022, 00:36:25",
+    "recorded-content": {}
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_invalid_dead_letter_arn_rejected_before_lookup": {
+    "recorded-date": "21-08-2022, 00:54:10",
+    "recorded-content": {
+      "error_response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "Value {\"deadLetterTargetArn\": \"dummy\", \"maxReceiveCount\": 42} for parameter RedrivePolicy is invalid. Reason: Invalid value for deadLetterTargetArn.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
