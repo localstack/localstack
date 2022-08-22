@@ -134,7 +134,7 @@ def render_report(result: SnapshotMatchResult):
             if not isinstance(elem, int):
                 json_str += "."
             json_str += _render_path_part(elem)
-        return f'"${json_str}"'
+        return f'"$.{json_str}"'
 
     printstr += f"[{', '.join(sorted([_format_json_path(path) for path in json_paths]))}]"
 
