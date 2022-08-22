@@ -49,6 +49,7 @@ InsightRuleAggregationStatistic = str
 InsightRuleContributorKey = str
 InsightRuleContributorKeyLabel = str
 InsightRuleDefinition = str
+InsightRuleIsManaged = bool
 InsightRuleMaxResults = int
 InsightRuleMetricName = str
 InsightRuleName = str
@@ -86,6 +87,7 @@ StorageResolution = int
 SuppressorPeriod = int
 TagKey = str
 TagValue = str
+TemplateName = str
 Threshold = float
 TreatMissingData = str
 
@@ -586,6 +588,7 @@ class InsightRule(TypedDict, total=False):
     State: InsightRuleState
     Schema: InsightRuleSchema
     Definition: InsightRuleDefinition
+    ManagedRule: Optional[InsightRuleIsManaged]
 
 
 InsightRules = List[InsightRule]
@@ -824,6 +827,31 @@ class ListDashboardsOutput(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class ListManagedInsightRulesInput(ServiceRequest):
+    ResourceARN: AmazonResourceName
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[InsightRuleMaxResults]
+
+
+class ManagedRuleState(TypedDict, total=False):
+    RuleName: InsightRuleName
+    State: InsightRuleState
+
+
+class ManagedRuleDescription(TypedDict, total=False):
+    TemplateName: Optional[TemplateName]
+    ResourceARN: Optional[AmazonResourceName]
+    RuleState: Optional[ManagedRuleState]
+
+
+ManagedRuleDescriptions = List[ManagedRuleDescription]
+
+
+class ListManagedInsightRulesOutput(TypedDict, total=False):
+    ManagedRules: Optional[ManagedRuleDescriptions]
+    NextToken: Optional[NextToken]
+
+
 class ListMetricStreamsInput(ServiceRequest):
     NextToken: Optional[NextToken]
     MaxResults: Optional[ListMetricStreamsMaxResults]
@@ -879,6 +907,13 @@ class ListTagsForResourceOutput(TypedDict, total=False):
     Tags: Optional[TagList]
 
 
+class ManagedRule(TypedDict, total=False):
+    TemplateName: TemplateName
+    ResourceARN: AmazonResourceName
+    Tags: Optional[TagList]
+
+
+ManagedRules = List[ManagedRule]
 Values = List[DatapointValue]
 
 
@@ -951,6 +986,14 @@ class PutInsightRuleInput(ServiceRequest):
 
 class PutInsightRuleOutput(TypedDict, total=False):
     pass
+
+
+class PutManagedInsightRulesInput(ServiceRequest):
+    ManagedRules: ManagedRules
+
+
+class PutManagedInsightRulesOutput(TypedDict, total=False):
+    Failures: Optional[BatchFailures]
 
 
 class PutMetricAlarmInput(ServiceRequest):
@@ -1243,6 +1286,16 @@ class CloudwatchApi:
     ) -> ListDashboardsOutput:
         raise NotImplementedError
 
+    @handler("ListManagedInsightRules")
+    def list_managed_insight_rules(
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        next_token: NextToken = None,
+        max_results: InsightRuleMaxResults = None,
+    ) -> ListManagedInsightRulesOutput:
+        raise NotImplementedError
+
     @handler("ListMetricStreams")
     def list_metric_streams(
         self,
@@ -1317,6 +1370,12 @@ class CloudwatchApi:
         rule_state: InsightRuleState = None,
         tags: TagList = None,
     ) -> PutInsightRuleOutput:
+        raise NotImplementedError
+
+    @handler("PutManagedInsightRules")
+    def put_managed_insight_rules(
+        self, context: RequestContext, managed_rules: ManagedRules
+    ) -> PutManagedInsightRulesOutput:
         raise NotImplementedError
 
     @handler("PutMetricAlarm")
