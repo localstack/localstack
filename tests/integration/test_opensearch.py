@@ -585,7 +585,7 @@ class TestSingletonClusterManager:
 
         parts = cluster_0.url.split(":")
         assert parts[0] == "http"
-        assert parts[1] == "//localhost"
+        assert parts[1] in ("//localhost", "//127.0.0.1")
         assert int(parts[2]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )
