@@ -126,7 +126,7 @@ def render_report(result: SnapshotMatchResult):
         printstr = printstr.replace(f"[{token}]", "".join(f"\x1b[{code}m" for code in replacements))
         printstr = printstr.replace(f"[/{token}]", "\x1b[0m")
 
-    printstr += "\nIgnore list:\n"
+    printstr += "\n\tIgnore list (please keep in mind list indices might not work and should be replaced):\n\t"
 
     def _format_json_path(path: list):
         json_str = ""
