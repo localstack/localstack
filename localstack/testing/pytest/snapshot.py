@@ -20,6 +20,10 @@ from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import SNAPSHOT_BASIC_TRANSFORMER
 
 
+def is_aws():
+    return os.environ.get("TEST_TARGET", "") == "AWS_CLOUD"
+
+
 @pytest.hookimpl
 def pytest_configure(config: Config):
     config.addinivalue_line("markers", "skip_snapshot_verify")
@@ -57,14 +61,21 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> Optional[Test
 def pytest_runtest_call(item: Item) -> None:
     call: CallInfo = yield  # noqa
 
+    if is_aws():
+        return
+
     # TODO: extremely dirty... maybe it would be better to find a way to fail the test itself instead?
     sm = item.funcargs.get("snapshot")
+
     if sm:
         verify = True
         paths = []
-        for m in item.iter_markers(name="skip_snapshot_verify"):
-            verify = False
-            paths = m.kwargs.get("paths", [])
+        if (
+            not is_aws()
+        ):  # would make no sense to skip verifications when running against AWS, use transformers instead
+            for m in item.iter_markers(name="skip_snapshot_verify"):
+                verify = False
+                paths = m.kwargs.get("paths", [])
         sm._assert_all(verify, paths)
 
 
