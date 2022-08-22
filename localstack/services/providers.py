@@ -211,9 +211,10 @@ def awslambda_asf():
 
 @aws_provider()
 def logs():
-    from localstack.services.logs.provider import LogsAwsApiListener
+    from localstack.services.logs.provider import LogsProvider
 
-    listener = LogsAwsApiListener()
+    provider = LogsProvider()
+    listener = AwsApiListener("logs", MotoFallbackDispatcher(provider))
     return Service("logs", listener=listener)
 
 
