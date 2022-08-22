@@ -2087,15 +2087,83 @@ class TestSqsProvider:
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         for i in range(3):
-            message_content = f"test-{i}"
+            message_content = f"test-0-{i}"
             sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_content)
         approx_nr_of_messages = sqs_client.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
         )
         assert int(approx_nr_of_messages["Attributes"]["ApproximateNumberOfMessages"]) > 1
+
         sqs_client.purge_queue(QueueUrl=queue_url)
+
         receive_result = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in receive_result.keys()
+
+        # test that adding messages after purge works
+        for i in range(3):
+            message_content = f"test-1-{i}"
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_content)
+
+        messages = []
+
+        def _collect():
+            result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+            messages.extend(result.get("Messages", []))
+            return len(messages) == 3
+
+        assert poll_condition(_collect)
+        assert {m["Body"] for m in messages} == {"test-1-0", "test-1-1", "test-1-2"}
+
+    @pytest.mark.aws_validated
+    def test_purge_queue_deletes_inflight_messages(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        for i in range(10):
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=f"message-{i}")
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=3, WaitTimeSeconds=5, MaxNumberOfMessages=5
+        )
+        assert "Messages" in response
+
+        sqs_client.purge_queue(QueueUrl=queue_url)
+
+        # wait for visibility timeout to expire
+        time.sleep(3)
+
+        receive_result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert "Messages" not in receive_result.keys()
+
+    @pytest.mark.aws_validated
+    def test_purge_queue_deletes_delayed_messages(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        for i in range(5):
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=f"message-{i}", DelaySeconds=2)
+
+        sqs_client.purge_queue(QueueUrl=queue_url)
+
+        # wait for delay to expire
+        time.sleep(2)
+
+        receive_result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert "Messages" not in receive_result.keys()
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_successive_purge_calls_fail(self, sqs_client, sqs_create_queue, monkeypatch, snapshot):
+        monkeypatch.setattr(config, "SQS_DELAY_PURGE_RETRY", True)
+        queue_name = f"test-queue-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(queue_name, "<queue-name>"))
+
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        sqs_client.purge_queue(QueueUrl=queue_url)
+
+        with pytest.raises(ClientError) as e:
+            sqs_client.purge_queue(QueueUrl=queue_url)
+
+        snapshot.match("purge_queue_error", e.value.response)
 
     @pytest.mark.aws_validated
     def test_remove_message_with_old_receipt_handle(self, sqs_client, sqs_create_queue):

@@ -418,10 +418,6 @@
       }
     }
   },
-  "tests/integration/test_sqs.py::TestSqsProvider::test_fifo_sequence_number_increases": {
-    "recorded-date": "21-08-2022, 00:36:25",
-    "recorded-content": {}
-  },
   "tests/integration/test_sqs.py::TestSqsProvider::test_invalid_dead_letter_arn_rejected_before_lookup": {
     "recorded-date": "21-08-2022, 00:54:10",
     "recorded-content": {
@@ -435,6 +431,23 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_successive_purge_calls_fail": {
+    "recorded-date": "22-08-2022, 21:28:31",
+    "recorded-content": {
+      "purge_queue_error": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.PurgeQueueInProgress",
+          "Detail": null,
+          "Message": "Only one PurgeQueue operation on <queue-name> is allowed every 60 seconds.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
         }
       }
     }
