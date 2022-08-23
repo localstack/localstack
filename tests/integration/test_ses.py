@@ -76,6 +76,8 @@ class TestSES:
         data_dir = config.dirs.data or config.dirs.tmp
         email = f"user-{short_uid()}@example.com"
         ses_client.verify_email_address(EmailAddress=email)
+
+        # Send a regular message and a raw message
         message = ses_client.send_email(
             Source=email,
             Message={
@@ -95,9 +97,12 @@ class TestSES:
                 "ToAddresses": ["success@example.com"],
             },
         )
-
         message_id = message["MessageId"]
 
+        raw_message_data = f"From: {email}\nTo: recipient@example.com\nSubject: test\n\nThis is the message body.\n\n"
+        ses_client.send_raw_email(RawMessage={"Data": raw_message_data})
+
+        # Ensure the message is saved to filesystem for retrospection
         with open(os.path.join(data_dir, "ses", message_id + ".json"), "r") as f:
             message = f.read()
 
@@ -115,7 +120,7 @@ class TestSES:
         assert message_id in api_contents
         assert api_contents[message_id] == contents
 
-        # Ensure messages can be filtered by email source
+        # Ensure messages can be filtered by email source via the REST endpoint
         emails_url = (
             config.get_edge_url()
             + INTERNAL_RESOURCE_PATH
@@ -126,7 +131,7 @@ class TestSES:
         emails_url = (
             config.get_edge_url() + INTERNAL_RESOURCE_PATH + EMAILS_ENDPOINT + f"?email={email}"
         )
-        assert len(requests.get(emails_url).json()["messages"]) == 1
+        assert len(requests.get(emails_url).json()["messages"]) == 2
 
     def test_send_templated_email_can_retrospect(self, ses_client, create_template):
         # Test that sent emails can be retrospected through saved file and API access
