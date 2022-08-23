@@ -18,6 +18,16 @@ def get_main_container_network() -> Optional[str]:
 
     :return: Network name
     """
+    if config.MAIN_DOCKER_NETWORK:
+        if config.is_in_docker:
+            networks = DOCKER_CLIENT.get_networks(get_main_container_name())
+            if config.MAIN_DOCKER_NETWORK not in networks:
+                LOG.warning(
+                    "The specified 'MAIN_DOCKER_NETWORK' is not connected to the LocalStack container! Falling back to %s",
+                    networks[0],
+                )
+                return networks[0]
+        return config.MAIN_DOCKER_NETWORK
     main_container_network = None
     try:
         if config.is_in_docker:

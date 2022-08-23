@@ -68,7 +68,11 @@ from localstack.utils.container_utils.container_client import (
     DockerContainerStatus,
     PortMappings,
 )
-from localstack.utils.docker_utils import DOCKER_CLIENT, get_default_volume_dir_mount
+from localstack.utils.docker_utils import (
+    DOCKER_CLIENT,
+    get_default_volume_dir_mount,
+    get_host_path_for_path_in_docker,
+)
 from localstack.utils.run import FuncThread
 from localstack.utils.time import timestamp_millis
 
@@ -797,7 +801,7 @@ class LambdaExecutorContainers(LambdaExecutor):
             LOG.info("TODO: copy file into container for LAMBDA_REMOTE_DOCKER=1 - %s", local_file)
             return local_file
 
-        mountable_file = Util.get_host_path_for_path_in_docker(local_file)
+        mountable_file = get_host_path_for_path_in_docker(local_file)
         _, extension = os.path.splitext(local_file)
         target_file_name = f"{md5(local_file)}{extension}"
         target_path = f"/tmp/{target_file_name}"
@@ -1031,7 +1035,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             if config.LAMBDA_REMOTE_DOCKER:
                 container_config.required_files.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
             else:
-                lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
+                lambda_cwd_on_host = get_host_path_for_path_in_docker(lambda_cwd)
                 # TODO not necessary after Windows 10. Should be deprecated and removed in the future
                 if ":" in lambda_cwd and "\\" in lambda_cwd:
                     lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
@@ -1262,7 +1266,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 container_config.required_files.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
             else:
                 container_config.required_files.append(
-                    (Util.get_host_path_for_path_in_docker(lambda_cwd), DOCKER_TASK_FOLDER)
+                    (get_host_path_for_path_in_docker(lambda_cwd), DOCKER_TASK_FOLDER)
                 )
 
         # running hooks to modify execution parameters
@@ -1622,7 +1626,7 @@ class Util:
             if volume:
                 if volume.type != "bind":
                     raise ValueError(
-                        f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for lambda code mounting to work"
+                        f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for mounting to work"
                     )
 
                 if not path.startswith(f"{DEFAULT_VOLUME_DIR}/") and path != DEFAULT_VOLUME_DIR:
