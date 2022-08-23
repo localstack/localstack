@@ -1,4 +1,3 @@
-import json
 import logging
 import re
 import time
@@ -313,8 +312,14 @@ class TestKinesis:
             assert response_record.get("Data").decode("utf-8") in records_data
 
     @pytest.mark.aws_validated
-    def test_subscribe_to_shard_timeout(self, kinesis_client, kinesis_create_stream, wait_for_stream_ready,
-                                        wait_for_consumer_ready, monkeypatch):
+    def test_subscribe_to_shard_timeout(
+        self,
+        kinesis_client,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        wait_for_consumer_ready,
+        monkeypatch,
+    ):
 
         monkeypatch.setattr(kinesis_listener, "MAX_SUBSCRIPTION_SECONDS", 5)
 
@@ -366,9 +371,7 @@ class TestKinesis:
     @pytest.mark.aws_validated
     def test_add_tags_to_stream(self, kinesis_client, kinesis_create_stream, wait_for_stream_ready):
         stream_name = "test-%s" % short_uid()
-        test_tags = {
-            "Hello": "world"
-        }
+        test_tags = {"Hello": "world"}
 
         # create stream
         kinesis_create_stream(StreamName=stream_name, ShardCount=1)
@@ -380,13 +383,13 @@ class TestKinesis:
         # reading stream tags
         list_tags_response = kinesis_client.list_tags_for_stream(StreamName=stream_name)
 
-        assert list_tags_response['Tags'][0]['Key'] == "Hello"
-        assert list_tags_response['Tags'][0]['Value'] == test_tags["Hello"]
-        assert not list_tags_response['HasMoreTags']
+        assert list_tags_response["Tags"][0]["Key"] == "Hello"
+        assert list_tags_response["Tags"][0]["Value"] == test_tags["Hello"]
+        assert not list_tags_response["HasMoreTags"]
 
     @pytest.mark.aws_validated
     def test_get_records_next_shard_iterator(
-            self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
     ):
         stream_name = kinesis_create_stream()
         wait_for_stream_ready(stream_name)

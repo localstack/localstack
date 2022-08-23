@@ -24,6 +24,7 @@ ACTION_PUT_RECORDS = "%s.PutRecords" % ACTION_PREFIX
 ACTION_LIST_STREAMS = "%s.ListStreams" % ACTION_PREFIX
 MAX_SUBSCRIPTION_SECONDS = 300
 
+
 class KinesisBackend(RegionBackend):
     def __init__(self):
         # list of stream consumer details
