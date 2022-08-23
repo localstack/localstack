@@ -78,15 +78,13 @@ def scheduled_test_lambda():
 
 @pytest.mark.usefixtures("scheduled_test_lambda")
 class TestIntegration:
-    def test_firehose_s3(self):
-        s3_resource = aws_stack.connect_to_resource("s3")
-        firehose = aws_stack.create_external_boto_client("firehose")
+    def test_firehose_s3(self, s3_resource, firehose_client):
         stream_name = f"fh-stream-{short_uid()}"
 
         s3_prefix = "/testdata"
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
         # create Firehose stream
-        stream = firehose.create_delivery_stream(
+        stream = firehose_client.create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
                 "RoleARN": aws_stack.iam_resource_arn("firehose"),
@@ -96,14 +94,16 @@ class TestIntegration:
             Tags=TEST_TAGS,
         )
         assert stream
-        assert stream_name in firehose.list_delivery_streams()["DeliveryStreamNames"]
-        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
+        assert stream_name in firehose_client.list_delivery_streams()["DeliveryStreamNames"]
+        tags = firehose_client.list_tags_for_delivery_stream(DeliveryStreamName=stream_name)
         assert TEST_TAGS == tags["Tags"]
         # create target S3 bucket
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
 
         # put records
-        firehose.put_record(DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)})
+        firehose_client.put_record(
+            DeliveryStreamName=stream_name, Record={"Data": to_bytes(test_data)}
+        )
         # check records in target bucket
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
@@ -113,7 +113,7 @@ class TestIntegration:
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
         # clean up
-        firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
+        firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
 
     def test_firehose_extended_s3(self):
         s3_resource = aws_stack.connect_to_resource("s3")
@@ -205,18 +205,17 @@ class TestIntegration:
         # clean up
         firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
 
-    def test_lambda_streams_batch_and_transactions(self):
+    def test_lambda_streams_batch_and_transactions(
+        self, dynamodb_client, dynamodbstreams_client, create_lambda_function
+    ):
         ddb_lease_table_suffix = "-kclapp2"
         table_name = TEST_TABLE_NAME + "lsbat" + ddb_lease_table_suffix
         stream_name = TEST_STREAM_NAME
-        lambda_ddb_name = "lambda-ddb-%s" % short_uid()
-        dynamodb = aws_stack.create_external_boto_client("dynamodb", client=True)
-        dynamodb_service = aws_stack.create_external_boto_client("dynamodb")
-        dynamodbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
+        lambda_ddb_name = f"lambda-ddb-{short_uid()}"
 
         LOGGER.info("Creating test streams...")
         run_safe(
-            lambda: dynamodb_service.delete_table(TableName=stream_name + ddb_lease_table_suffix),
+            lambda: dynamodb_client.delete_table(TableName=stream_name + ddb_lease_table_suffix),
             print_error=False,
         )
         aws_stack.create_kinesis_stream(stream_name, delete=True)
@@ -245,7 +244,7 @@ class TestIntegration:
             )
 
             # list DDB streams and make sure the table stream is there
-            streams = dynamodbstreams.list_streams()
+            streams = dynamodbstreams_client.list_streams()
             ddb_event_source_arn = None
             for stream in streams["Streams"]:
                 if stream["TableName"] == table_name:
@@ -253,7 +252,7 @@ class TestIntegration:
             assert ddb_event_source_arn
 
             # deploy test lambda connected to DynamoDB Stream
-            testutil.create_lambda_function(
+            create_lambda_function(
                 handler_file=TEST_LAMBDA_PYTHON,
                 libs=TEST_LAMBDA_LIBS,
                 func_name=lambda_ddb_name,
@@ -263,7 +262,7 @@ class TestIntegration:
             )
 
             # submit a batch with writes
-            dynamodb.batch_write_item(
+            dynamodb_client.batch_write_item(
                 RequestItems={
                     table_name: [
                         {
@@ -295,7 +294,7 @@ class TestIntegration:
             )
 
             # submit a batch with writes and deletes
-            dynamodb.batch_write_item(
+            dynamodb_client.batch_write_item(
                 RequestItems={
                     table_name: [
                         {
@@ -330,7 +329,7 @@ class TestIntegration:
             )
 
             # submit a transaction with writes and delete
-            dynamodb.transact_write_items(
+            dynamodb_client.transact_write_items(
                 TransactItems=[
                     {
                         "Put": {
@@ -381,7 +380,7 @@ class TestIntegration:
             )
 
             # submit a batch with a put over existing item
-            dynamodb.transact_write_items(
+            dynamodb_client.transact_write_items(
                 TransactItems=[
                     {
                         "Put": {
@@ -396,7 +395,7 @@ class TestIntegration:
             )
 
             # submit a transaction with a put over existing item
-            dynamodb.transact_write_items(
+            dynamodb_client.transact_write_items(
                 TransactItems=[
                     {
                         "Put": {
@@ -411,7 +410,7 @@ class TestIntegration:
             )
 
             # submit a transaction with updates
-            dynamodb.transact_write_items(
+            dynamodb_client.transact_write_items(
                 TransactItems=[
                     {
                         "Update": {
@@ -460,7 +459,7 @@ class TestIntegration:
                     LOGGER.warning(msg)
                 assert len(events) == num_events
                 event_items = [json.loads(base64.b64decode(e["data"])) for e in events]
-                # make sure the we have the right amount of expected event types
+                # make sure that we have the right amount of expected event types
                 inserts = [e for e in event_items if e.get("__action_type") == "INSERT"]
                 modifies = [e for e in event_items if e.get("__action_type") == "MODIFY"]
                 removes = [e for e in event_items if e.get("__action_type") == "REMOVE"]
@@ -527,9 +526,8 @@ class TestIntegration:
             # this can take a long time in CI, make sure we give it enough time/retries
             retry(check_events, retries=30, sleep=4)
 
-            # clean up
-            testutil.delete_lambda_function(lambda_ddb_name)
         finally:
+            # cleanup
             process.stop()
 
     def test_scheduled_lambda(self, scheduled_test_lambda):

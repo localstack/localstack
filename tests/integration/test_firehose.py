@@ -433,5 +433,13 @@ class TestFirehoseIntegration:
         cleanups.append(
             lambda: firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
         )
-
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        # make sure the stream will come up at some point, for cleaner cleanup
+        def check_stream_state():
+            stream = firehose_client.describe_delivery_stream(
+                DeliveryStreamName=delivery_stream_name
+            )
+            return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
+
+        assert poll_condition(check_stream_state, 45, 1)
