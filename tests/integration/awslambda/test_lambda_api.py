@@ -1,4 +1,3 @@
-# ALL TESTS IN HERE ARE VALIDATED AGAINST AWS CLOUD
 import logging
 import os.path
 
@@ -6,7 +5,6 @@ import pytest
 
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
-from tests.integration.awslambda.test_lambda import is_old_provider
 
 LOG = logging.Logger(__name__)
 
@@ -74,7 +72,7 @@ def create_lambda_function_aws(
             LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
 
-@pytest.mark.skip_snapshot_verify(condition=is_old_provider)
+@pytest.mark.skip_snapshot_verify
 @pytest.mark.aws_validated
 class TestLambdaAsfApi:
     def test_basic_invoke(
