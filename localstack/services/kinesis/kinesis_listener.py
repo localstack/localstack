@@ -22,7 +22,7 @@ ACTION_PREFIX = "Kinesis_20131202"
 ACTION_PUT_RECORD = "%s.PutRecord" % ACTION_PREFIX
 ACTION_PUT_RECORDS = "%s.PutRecords" % ACTION_PREFIX
 ACTION_LIST_STREAMS = "%s.ListStreams" % ACTION_PREFIX
-
+MAX_SUBSCRIPTION_SECONDS = 300
 
 class KinesisBackend(RegionBackend):
     def __init__(self):
@@ -296,8 +296,9 @@ def subscribe_to_shard(data, headers):
         yield convert_to_binary_event_payload("", event_type="initial-response")
         iter = iterator
         last_sequence_number = starting_sequence_number
-        # TODO: find better way to run loop up to max 5 minutes (until connection terminates)!
-        for i in range(5 * 60):
+        maximum_duration_subscription_timestamp = now_utc() + MAX_SUBSCRIPTION_SECONDS
+
+        while now_utc() < maximum_duration_subscription_timestamp:
             result = None
             try:
                 result = kinesis.get_records(ShardIterator=iter)

@@ -313,6 +313,57 @@ class TestKinesis:
             assert response_record.get("Data").decode("utf-8") in records_data
 
     @pytest.mark.aws_validated
+    def test_subscribe_to_shard_timeout(self, kinesis_client, kinesis_create_stream, wait_for_stream_ready,
+                                        wait_for_consumer_ready, monkeypatch):
+
+        monkeypatch.setattr(kinesis_listener, "MAX_SUBSCRIPTION_SECONDS", 5)
+
+        stream_name = "test-%s" % short_uid()
+
+        # create stream and consumer
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
+            "StreamARN"
+        ]
+        wait_for_stream_ready(stream_name)
+        # create consumer
+        result = kinesis_client.register_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")[
+            "Consumer"
+        ]
+        consumer_arn = result["ConsumerARN"]
+        wait_for_consumer_ready(consumer_arn=consumer_arn)
+
+        # subscribe to shard
+        response = kinesis_client.describe_stream(StreamName=stream_name)
+        shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
+        result = kinesis_client.subscribe_to_shard(
+            ConsumerARN=result["ConsumerARN"],
+            ShardId=shard_id,
+            StartingPosition={"Type": "TRIM_HORIZON"},
+        )
+        stream = result["EventStream"]
+
+        # letting the subscription run out
+        time.sleep(7)
+
+        # put records
+        msg = b"Hello world1"
+        kinesis_client.put_records(
+            StreamName=stream_name, Records=[{"Data": msg, "PartitionKey": "1"}]
+        )
+
+        # due to the subscription being timed out, we should not be able to read out results
+        results = []
+        for entry in stream:
+            records = entry["SubscribeToShardEvent"]["Records"]
+            results.extend(records)
+
+        assert len(results) == 0
+
+        # clean up
+        kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
+
+    @pytest.mark.aws_validated
     def test_add_tags_to_stream(self, kinesis_client, kinesis_create_stream, wait_for_stream_ready):
         stream_name = "test-%s" % short_uid()
         test_tags = {
