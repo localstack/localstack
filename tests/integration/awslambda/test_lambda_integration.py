@@ -283,8 +283,7 @@ class TestSQSEventSourceMapping:
                 )
                 assert int(response["Attributes"]["ApproximateNumberOfMessages"]) == 2
 
-            # sleep_before = 30 to wait for potential lambda invocations
-            retry(_assert_qsize, retries=10, sleep_before=30)
+            retry(_assert_qsize, retries=10)
 
             mapping_uuid = lambda_client.create_event_source_mapping(
                 EventSourceArn=queue_arn_1,
@@ -310,11 +309,7 @@ class TestSQSEventSourceMapping:
                     item_matching_str = json.dumps(item_matching)
                     assert records[0]["body"] == item_matching_str
 
-            retry(
-                _check_lambda_logs,
-                retries=10,
-                sleep_before=30,
-            )
+            retry(_check_lambda_logs, retries=10)
 
             rs = sqs_client.receive_message(QueueUrl=queue_url_1)
             assert rs.get("Messages") is None
@@ -729,8 +724,7 @@ class TestDynamoDBEventSourceMapping:
                     # negative test for 'numeric' filter
                     assert len(events) == 0
 
-            # sleep before to wait for potential record of 'slow AWS' for 'numeric' filter
-            retry(assert_lambda_called, retries=max_retries, sleep_before=30.0 if calls == 0 else 0)
+            retry(assert_lambda_called, retries=max_retries)
 
             # Following lines are relevant if variables are set via parametrize
             if item_to_put2:
