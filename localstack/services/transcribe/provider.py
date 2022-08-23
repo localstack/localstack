@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import os
+import threading
 import wave
 from pathlib import Path
 from typing import Tuple
@@ -63,6 +64,9 @@ from vosk import MODEL_PRE_URL, KaldiRecognizer, Model, SetLogLevel  # noqa
 
 # Suppress Vosk logging
 SetLogLevel(-1)
+
+# Mutex for when downloading models
+_DL_LOCK = threading.Lock()
 
 
 class TranscribeProvider(TranscribeApi):
@@ -162,23 +166,22 @@ class TranscribeProvider(TranscribeApi):
         """
         model_path = LANGUAGE_MODEL_DIR / name
 
-        if (model_path).exists():
-            return
-        else:
-            model_path.mkdir(parents=True)
+        with _DL_LOCK:
+            if (model_path).exists():
+                return
+            else:
+                model_path.mkdir(parents=True)
 
-        model_zip_path = str(model_path) + ".zip"
+            model_zip_path = str(model_path) + ".zip"
 
-        LOG.debug("Downloading language model to: %s", model_zip_path)
+            LOG.debug("Downloading language model to: %s", model_zip_path)
+            urlretrieve(MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path, data=None)
 
-        urlretrieve(MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path, data=None)
+            LOG.debug("Extracting language model: %s", model_path.name)
+            with ZipFile(model_zip_path, "r") as model_ref:
+                model_ref.extractall(model_path.parent)
 
-        LOG.debug("Extracting language model: %s", model_path.name)
-
-        with ZipFile(model_zip_path, "r") as model_ref:
-            model_ref.extractall(model_path.parent)
-
-        Path(str(model_path) + ".zip").unlink()
+            Path(str(model_path) + ".zip").unlink()
 
     #
     # Threads
