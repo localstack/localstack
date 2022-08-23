@@ -439,7 +439,7 @@ class ResponseSerializer(abc.ABC):
     def _get_mime_type(self, headers: Optional[Dict | Headers]) -> str:
         """
         Extracts the accepted mime type from the request headers and returns a matching, supported mime type for the
-        serializer.
+        serializer or the default mime type of the service if there is no match.
         :param headers: to extract the "Accept" header from
         :return: preferred mime type to be used by the serializer (if it is not accepted by the client,
                  an error is logged)
