@@ -675,5 +675,48 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_different_location_constraint": {
+    "recorded-date": "23-08-2022, 18:45:59",
+    "recorded-content": {
+      "get_bucket_location_bucket_1": {
+        "LocationConstraint": null,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_bucket_location_bucket_2": {
+        "LocationConstraint": "us-east-2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_bucket_constraint_exc": {
+        "Error": {
+          "Code": "IllegalLocationConstraintException",
+          "Message": "The unspecified location constraint is incompatible for the region specific endpoint this request was sent to."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create_bucket_bucket_3": {
+        "Location": "<location>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_bucket_location_bucket_3": {
+        "LocationConstraint": "us-east-2",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

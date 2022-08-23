@@ -6,7 +6,6 @@ import hashlib
 import io
 import json
 import os
-import re
 import shutil
 import ssl
 import time
@@ -1638,42 +1637,6 @@ class TestS3(unittest.TestCase):
 
         object = s3_anon_client.get_object(Bucket=bucket_name, Key=object_key)
         self.assertEqual(body, to_str(object["Body"].read()))
-
-    def test_different_location_constraint(self):
-        bucket_1_name = f"bucket-{short_uid()}"
-        self.s3_client.create_bucket(Bucket=bucket_1_name)
-        response = self.s3_client.get_bucket_location(Bucket=bucket_1_name)
-        self.assertEqual(None, response["LocationConstraint"])
-
-        region_2 = "us-east-2"
-        client_2 = self._get_test_client(region_name=region_2)
-        bucket_2_name = f"bucket-{short_uid()}"
-        client_2.create_bucket(
-            Bucket=bucket_2_name,
-            CreateBucketConfiguration={"LocationConstraint": region_2},
-        )
-        response = client_2.get_bucket_location(Bucket=bucket_2_name)
-        self.assertEqual(region_2, response["LocationConstraint"])
-
-        # assert creation fails without location constraint for us-east-2 region
-        with pytest.raises(Exception) as exc:
-            client_2.create_bucket(Bucket=f"bucket-{short_uid()}")
-        exc.match("IllegalLocationConstraintException")
-        bucket_3_name = f"bucket-{short_uid()}"
-        # assert that creation succeeds with utility function that configures the location constraint
-        result = aws_stack.create_s3_bucket(bucket_3_name, s3_client=client_2)
-        assert result.get("Location")
-
-        # make raw request, assert that newline is contained after XML preamble: <?xml ...>\n
-        url = f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_2_name}?location="
-        response = requests.get(url)
-        assert response.ok
-        content = to_str(response.content)
-        assert re.match(r"^<\?xml [^>]+>\n<.*", content, flags=re.MULTILINE)
-
-        # clean up
-        for bucket in [bucket_1_name, bucket_2_name, bucket_3_name]:
-            self.s3_client.delete_bucket(Bucket=bucket)
 
     # ---------------
     # HELPER METHODS

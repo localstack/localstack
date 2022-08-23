@@ -1,6 +1,8 @@
 import datetime
 import gzip
 import json
+import logging
+import re
 import time
 from io import BytesIO
 from unittest.mock import patch
@@ -12,7 +14,9 @@ from botocore.exceptions import ClientError
 from pytz import timezone
 
 from localstack import config
+from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest.fixtures import _client
 from localstack.utils.collections import is_sub_dict
 from localstack.utils.server import http2_server
 from localstack.utils.strings import (
@@ -24,6 +28,43 @@ from localstack.utils.strings import (
     to_bytes,
     to_str,
 )
+
+LOG = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="class")
+def s3_client_for_region():
+    def _s3_client(
+        region_name: str = None,
+    ):
+        return _client("s3", region_name=region_name)
+
+    return _s3_client
+
+
+@pytest.fixture
+def s3_create_bucket_with_client(s3_resource):
+    buckets = []
+
+    def factory(s3_client, **kwargs) -> str:
+        if "Bucket" not in kwargs:
+            kwargs["Bucket"] = "test-bucket-%s" % short_uid()
+
+        response = s3_client.create_bucket(**kwargs)
+        buckets.append(kwargs["Bucket"])
+        return response
+
+    yield factory
+
+    # cleanup
+    for bucket in buckets:
+        try:
+            bucket = s3_resource.Bucket(bucket)
+            bucket.objects.all().delete()
+            bucket.object_versions.all().delete()
+            bucket.delete()
+        except Exception as e:
+            LOG.debug("error cleaning up bucket %s: %s", bucket, e)
 
 
 @pytest.fixture
@@ -644,8 +685,6 @@ class TestS3:
 
         response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("get_object", response)
-        # content = to_str(response["Body"].read())
-        # assert body == content
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(reason="The error format is wrong in s3_listener (is_bucket_available)")
@@ -658,6 +697,72 @@ class TestS3:
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_replication(Bucket=bucket_name)
         snapshot.match("bucket-replication", e.value.response)
+
+    @pytest.mark.only_localstack
+    def test_location_path_url(
+        self,
+        s3_client,
+        s3_create_bucket,
+    ):
+        region = "us-east-2"
+        bucket_name = s3_create_bucket(
+            CreateBucketConfiguration={"LocationConstraint": region},
+        )
+        response = s3_client.get_bucket_location(Bucket=bucket_name)
+        assert region == response["LocationConstraint"]
+        # TODO should this also work against AWS?
+        # make raw request, assert that newline is contained after XML preamble: <?xml ...>\n
+        url = f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_name}?location="
+        response = requests.get(url)
+        assert response.ok
+        content = to_str(response.content)
+        assert re.match(r"^<\?xml [^>]+>\n<.*", content, flags=re.MULTILINE)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.RequestID"])
+    def test_different_location_constraint(
+        self,
+        s3_client,
+        s3_create_bucket,
+        s3_client_for_region,
+        s3_create_bucket_with_client,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            snapshot.transform.key_value("Location", "<location>", reference_replacement=False)
+        )
+        bucket_1_name = f"bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_1_name)
+        response = s3_client.get_bucket_location(Bucket=bucket_1_name)
+        snapshot.match("get_bucket_location_bucket_1", response)
+
+        region_2 = "us-east-2"
+        client_2 = s3_client_for_region(region_name=region_2)
+        bucket_2_name = f"bucket-{short_uid()}"
+        s3_create_bucket_with_client(
+            client_2,
+            Bucket=bucket_2_name,
+            CreateBucketConfiguration={"LocationConstraint": region_2},
+        )
+        response = client_2.get_bucket_location(Bucket=bucket_2_name)
+        snapshot.match("get_bucket_location_bucket_2", response)
+
+        # assert creation fails without location constraint for us-east-2 region
+        with pytest.raises(Exception) as exc:
+            client_2.create_bucket(Bucket=f"bucket-{short_uid()}")
+        snapshot.match("create_bucket_constraint_exc", exc.value.response)
+
+        bucket_3_name = f"bucket-{short_uid()}"
+        response = s3_create_bucket_with_client(
+            client_2,
+            Bucket=bucket_3_name,
+            CreateBucketConfiguration={"LocationConstraint": region_2},
+        )
+        snapshot.match("create_bucket_bucket_3", response)
+
+        response = client_2.get_bucket_location(Bucket=bucket_3_name)
+        snapshot.match("get_bucket_location_bucket_3", response)
 
 
 class TestS3PresignedUrl:
