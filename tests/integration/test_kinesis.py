@@ -44,6 +44,7 @@ class TestKinesis:
         # By default, new streams have a shard count of 4
         assert len(describe_stream["StreamDescription"]["Shards"]) == 4
 
+    @pytest.mark.aws_validated
     def test_stream_consumers(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready
     ):
@@ -101,6 +102,7 @@ class TestKinesis:
 
         retry(assert_consumers, count=0, retries=6, sleep=3.0)
 
+    @pytest.mark.aws_validated
     def test_subscribe_to_shard(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready
     ):
@@ -159,6 +161,7 @@ class TestKinesis:
         # clean up
         kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
+    @pytest.mark.aws_validated
     def test_subscribe_to_shard_with_sequence_number_as_iterator(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready
     ):
@@ -279,6 +282,7 @@ class TestKinesis:
         cbor_records = cbor_records_content.get("Records")
         assert 0 == len(cbor_records)
 
+    @pytest.mark.aws_validated
     def test_record_lifecycle_data_integrity(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
     ):
@@ -305,6 +309,29 @@ class TestKinesis:
         for response_record in response_records:
             assert response_record.get("Data").decode("utf-8") in records_data
 
+    @pytest.mark.aws_validated
+    def test_get_records_next_shard_iterator(
+            self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+    ):
+        stream_name = kinesis_create_stream()
+        wait_for_stream_ready(stream_name)
+
+        first_stream_shard_data = kinesis_client.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["Shards"][0]
+        shard_id = first_stream_shard_data["ShardId"]
+
+        shard_iterator = kinesis_client.get_shard_iterator(
+            StreamName=stream_name, ShardIteratorType="LATEST", ShardId=shard_id
+        )["ShardIterator"]
+
+        get_records_response = kinesis_client.get_records(ShardIterator=shard_iterator)
+        new_shard_iterator = get_records_response["NextShardIterator"]
+        assert shard_iterator != new_shard_iterator
+        get_records_response = kinesis_client.get_records(ShardIterator=new_shard_iterator)
+        assert shard_iterator != get_records_response["NextShardIterator"]
+        assert new_shard_iterator != get_records_response["NextShardIterator"]
+
 
 @pytest.fixture
 def wait_for_consumer_ready(kinesis_client):
@@ -316,29 +343,6 @@ def wait_for_consumer_ready(kinesis_client):
         poll_condition(is_consumer_ready)
 
     return _wait_for_consumer_ready
-
-
-def test_get_records_next_shard_iterator(
-    kinesis_client, kinesis_create_stream, wait_for_stream_ready
-):
-    stream_name = kinesis_create_stream()
-    wait_for_stream_ready(stream_name)
-
-    first_stream_shard_data = kinesis_client.describe_stream(StreamName=stream_name)[
-        "StreamDescription"
-    ]["Shards"][0]
-    shard_id = first_stream_shard_data["ShardId"]
-
-    shard_iterator = kinesis_client.get_shard_iterator(
-        StreamName=stream_name, ShardIteratorType="LATEST", ShardId=shard_id
-    )["ShardIterator"]
-
-    get_records_response = kinesis_client.get_records(ShardIterator=shard_iterator)
-    new_shard_iterator = get_records_response["NextShardIterator"]
-    assert shard_iterator != new_shard_iterator
-    get_records_response = kinesis_client.get_records(ShardIterator=new_shard_iterator)
-    assert shard_iterator != get_records_response["NextShardIterator"]
-    assert new_shard_iterator != get_records_response["NextShardIterator"]
 
 
 class TestKinesisPythonClient:
