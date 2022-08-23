@@ -2,7 +2,6 @@ import os
 from io import BytesIO
 
 import pytest
-from botocore.exceptions import ClientError
 
 from localstack.services.awslambda.lambda_api import LAMBDA_DEFAULT_HANDLER
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
@@ -25,9 +24,11 @@ def generate_sized_python_str(size):
     return py_str
 
 
+@pytest.mark.aws_validated
 class TestLambdaSizeLimits:
-    @pytest.mark.aws_validated
-    def test_oversized_lambda(self, lambda_client, s3_client, s3_bucket, lambda_su_role):
+    def test_oversized_lambda(self, lambda_client, s3_client, s3_bucket, lambda_su_role, snapshot):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
         code_str = generate_sized_python_str(FUNCTION_MAX_UNZIPPED_SIZE)
@@ -39,7 +40,7 @@ class TestLambdaSizeLimits:
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
-        with pytest.raises(ClientError) as e:
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
             lambda_client.create_function(
                 FunctionName=function_name,
                 Runtime=LAMBDA_RUNTIME_PYTHON37,
@@ -48,13 +49,9 @@ class TestLambdaSizeLimits:
                 Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
                 Timeout=10,
             )
-        assert e
-        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
-        e.match(
-            r"An error occurred \(InvalidParameterValueException\) when calling the CreateFunction operation\: Unzipped size must be smaller than [0-9]* bytes"
-        )
+        snapshot.match("invalid_param_exc", e.value.response)
 
-    @pytest.mark.aws_validated
+    # TODO: snapshot
     def test_large_lambda(self, lambda_client, s3_client, s3_bucket, lambda_su_role):
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"

@@ -6,6 +6,7 @@ import pytest
 
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
+from tests.integration.awslambda.test_lambda import is_old_provider
 
 LOG = logging.Logger(__name__)
 
@@ -30,10 +31,6 @@ role_policy = {
         }
     ],
 }
-
-lambda_asf_only = pytest.mark.skipif(
-    os.environ.get("PROVIDER_OVERRIDE_LAMBDA") != "asf", reason="Skip for non-asf provider"
-)
 
 
 # TODO: move this to fixtures / reconcile with other fixture usage
@@ -77,26 +74,17 @@ def create_lambda_function_aws(
             LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
 
-# 1. run test: AWS --snapshot-update
-# 2. (recommended) run test: AWS (to verify transformers and behavior)
-# 3. run test: localstack
-#    a) use marker skip_snapshot_verify(paths=[...]) to exclude paths that do not match yet
-
-
-@pytest.mark.snapshot
-@pytest.mark.aws_compatible
+@pytest.mark.skip_snapshot_verify(condition=is_old_provider)
+@pytest.mark.aws_validated
 class TestLambdaAsfApi:
-    @pytest.mark.skip_snapshot_verify
     def test_basic_invoke(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
         # predefined names
         fn_name = f"ls-fn-{short_uid()}"
         fn_name_2 = f"ls-fn-{short_uid()}"
-
-        # custom transformers -> valid for the whole test
-        # doesn't matter if added before or after a "match"-instruction
-        snapshot.add_transformer(snapshot.transform.lambda_api())
 
         # infra setup (& validations)
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
@@ -123,8 +111,6 @@ class TestLambdaAsfApi:
 
         get_fn_result = lambda_client.get_function(FunctionName=fn_name)
 
-        # match -> registers they key and takes a dict as input
-        # actual assert happens later (pytest-hook)
         snapshot.match("lambda_get_fn", get_fn_result)
 
         get_fn_result_2 = lambda_client.get_function(FunctionName=fn_name_2)

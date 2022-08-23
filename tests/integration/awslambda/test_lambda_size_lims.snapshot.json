@@ -1,0 +1,19 @@
+{
+  "tests/integration/awslambda/test_lambda_size_lims.py::TestLambdaSizeLimits::test_oversized_lambda": {
+    "recorded-date": "23-08-2022, 15:36:11",
+    "recorded-content": {
+      "invalid_param_exc": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Unzipped size must be smaller than 262144000 bytes"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        },
+        "Type": "User",
+        "message": "Unzipped size must be smaller than 262144000 bytes"
+      }
+    }
+  }
+}

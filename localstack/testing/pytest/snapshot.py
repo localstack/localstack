@@ -61,9 +61,6 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> Optional[Test
 def pytest_runtest_call(item: Item) -> None:
     call: CallInfo = yield  # noqa
 
-    if is_aws():
-        return
-
     # TODO: extremely dirty... maybe it would be better to find a way to fail the test itself instead?
     sm = item.funcargs.get("snapshot")
 
@@ -71,7 +68,8 @@ def pytest_runtest_call(item: Item) -> None:
         verify = True
         paths = []
 
-        if not is_aws():  # wrong by definition, use transformers instead
+        if not is_aws():  # only skip for local tests
+
             for m in item.iter_markers(name="skip_snapshot_verify"):
 
                 skip_paths = m.kwargs.get("paths", [])
