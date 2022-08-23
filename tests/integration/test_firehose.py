@@ -429,9 +429,9 @@ class TestFirehoseIntegration:
                 },
             },
         )
-
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-
-        firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
-        kinesis_client.delete_stream(StreamName=stream_name)
-        s3_client.delete_bucket(Bucket=s3_bucket)
+        try:
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        finally:
+            firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+            kinesis_client.delete_stream(StreamName=stream_name)
+            s3_client.delete_bucket(Bucket=s3_bucket)

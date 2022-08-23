@@ -96,6 +96,7 @@ from localstack.utils.common import (
     truncate,
 )
 from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.kinesis.kinesis_connector import KinesisProcessorThread
 from localstack.utils.run import run_for_max_seconds
 from localstack.utils.tagging import TaggingService
 
@@ -117,11 +118,13 @@ def next_sequence_number() -> int:
 class FirehoseBackend(RegionBackend):
     # maps delivery stream names to DeliveryStreamDescription
     delivery_streams: Dict[str, DeliveryStreamDescription]
+    kinesis_listeners: Dict[str, KinesisProcessorThread]
     # static tagging service instance
     TAGS = TaggingService()
 
     def __init__(self):
         self.delivery_streams = {}
+        self.kinesis_listeners = {}
 
 
 def _get_description_or_raise_not_found(
@@ -231,13 +234,14 @@ class FirehoseProvider(FirehoseApi):
             def _startup():
                 stream["DeliveryStreamStatus"] = DeliveryStreamStatus.CREATING
                 try:
-                    kinesis_connector.listen_to_kinesis(
+                    process = kinesis_connector.listen_to_kinesis(
                         stream_name=kinesis_stream_name,
                         fh_d_stream=delivery_stream_name,
                         listener_func=self._process_records,
                         wait_until_started=True,
                         ddb_lease_table_suffix="-firehose",
                     )
+                    region.kinesis_listeners[delivery_stream_name] = process
                     stream["DeliveryStreamStatus"] = DeliveryStreamStatus.ACTIVE
                 except Exception as e:
                     LOG.warning(
@@ -260,6 +264,10 @@ class FirehoseProvider(FirehoseApi):
             raise ResourceNotFoundException(
                 f"Firehose {delivery_stream_name} under account {context.account_id} " f"not found."
             )
+        kinesis_process = region.kinesis_listeners.pop(delivery_stream_name, None)
+        if kinesis_process:
+            LOG.debug("Stopping kinesis listener for %s", delivery_stream_name)
+            kinesis_process.stop()
 
         return DeleteDeliveryStreamOutput()
 

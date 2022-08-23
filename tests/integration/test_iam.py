@@ -1,6 +1,4 @@
 import json
-import logging
-import os
 
 import pytest
 from botocore.exceptions import ClientError
@@ -10,7 +8,6 @@ from localstack.aws.api.iam import Tag
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
 from localstack.testing.aws.util import create_client_with_keys, wait_for_user
 from localstack.utils.common import short_uid
-from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.strings import long_uid
 
 GET_USER_POLICY_DOC = """{
@@ -128,30 +125,6 @@ class TestIAMExtensions:
 
 
 class TestIAMIntegrations:
-
-    # TODO what does this test do?
-    def test_run_kcl_with_iam_assume_role(self):
-        env_vars = {}
-        if os.environ.get("AWS_ASSUME_ROLE_ARN"):
-            env_vars["AWS_ASSUME_ROLE_ARN"] = os.environ.get("AWS_ASSUME_ROLE_ARN")
-            env_vars["AWS_ASSUME_ROLE_SESSION_NAME"] = os.environ.get(
-                "AWS_ASSUME_ROLE_SESSION_NAME"
-            )
-            env_vars["ENV"] = os.environ.get("ENV") or "main"
-
-            def process_records(records):
-                print(records)
-
-            # start Kinesis client
-            stream_name = f"test-foobar-{short_uid()}"
-            kinesis_connector.listen_to_kinesis(
-                stream_name=stream_name,
-                listener_func=process_records,
-                env_vars=env_vars,
-                kcl_log_level=logging.INFO,
-                wait_until_started=True,
-            )
-
     def test_attach_iam_role_to_new_iam_user(self, iam_client):
         test_policy_document = {
             "Version": "2012-10-17",
