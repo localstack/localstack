@@ -11,6 +11,10 @@ from localstack.services.awslambda.event_source_listeners.event_source_listener 
 )
 from localstack.services.awslambda.lambda_api import run_lambda
 from localstack.services.awslambda.lambda_executors import InvocationResult
+from localstack.services.awslambda.lambda_utils import (
+    filter_stream_records,
+    get_lambda_event_filters_for_arn,
+)
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import long_uid, timestamp_millis
 from localstack.utils.threads import FuncThread
@@ -183,6 +187,10 @@ class StreamEventSourceListener(EventSourceListener):
                 ShardIterator=shard_iterator, Limit=batch_size
             )
             records = records_response.get("Records")
+            event_filter_criterias = get_lambda_event_filters_for_arn(function_arn, stream_arn)
+            if len(event_filter_criterias) > 0:
+                records = filter_stream_records(records, event_filter_criterias)
+
             should_get_next_batch = True
             if records:
                 payload = self._create_lambda_event_payload(stream_arn, records, shard_id=shard_id)

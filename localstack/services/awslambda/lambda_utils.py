@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import os
 import re
@@ -7,7 +8,7 @@ import time
 from collections import defaultdict
 from functools import lru_cache
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from flask import Response
 
@@ -300,3 +301,143 @@ def generate_lambda_arn(
         return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}:{qualifier}"
     else:
         return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}"
+
+
+class FilterCriteria(TypedDict):
+    Filters: List[Dict[str, any]]
+
+
+def parse_and_apply_numeric_filter(record_value: Dict, numeric_filter: List[str | int]) -> bool:
+    if len(numeric_filter) % 2 > 0:
+        LOG.warn("Invalid numeric lambda filter given")
+        return True
+
+    if not isinstance(record_value, (int, float)):
+        LOG.warn(f"Record {record_value} seem not to be a valid number")
+        return False
+
+    for idx in range(0, len(numeric_filter), 2):
+
+        try:
+            if numeric_filter[idx] == ">" and not (record_value > float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == ">=" and not (record_value >= float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == "=" and not (record_value == float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == "<" and not (record_value < float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == "<=" and not (record_value <= float(numeric_filter[idx + 1])):
+                return False
+        except ValueError:
+            LOG.warn(
+                f"Could not convert filter value {numeric_filter[idx + 1]} to a valid number value for filtering"
+            )
+    return True
+
+
+def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]) -> bool:
+    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
+    fits_filter = False
+    for key, filter_value in dict_filter.items():
+        if key.lower() == "anything-but":
+            fits_filter = record_value not in filter_value
+        elif key.lower() == "numeric":
+            fits_filter = parse_and_apply_numeric_filter(record_value, filter_value)
+        elif key.lower() == "exists":
+            fits_filter = bool(filter_value)  # exists means that the key exists in the event record
+        elif key.lower() == "prefix":
+            if not isinstance(record_value, str):
+                LOG.warn(f"Record Value {record_value} does not seem to be a valid string.")
+            fits_filter = isinstance(record_value, str) and record_value.startswith(
+                str(filter_value)
+            )
+
+        if fits_filter:
+            return True
+    return fits_filter
+
+
+def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) -> bool:
+    if not filter_rule:
+        return True
+    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
+    filter_results = []
+    for key, value in filter_rule.items():
+        # check if rule exists in event
+        record_value = (
+            record.get(key.lower(), record.get(key)) if isinstance(record, Dict) else None
+        )
+        append_record = False
+        if record_value is not None:
+            # check if filter rule value is a list (leaf of rule tree) or a dict (rescursively call function)
+            if isinstance(value, list):
+                if len(value) > 0:
+                    if isinstance(value[0], (str, int)):
+                        append_record = record_value in value
+                    if isinstance(value[0], dict):
+                        append_record = verify_dict_filter(record_value, value[0])
+                else:
+                    LOG.warn(f"Empty lambda filter: {key}")
+            elif isinstance(value, dict):
+                append_record = filter_stream_record(value, record_value)
+        else:
+            # special case 'exists'
+            if isinstance(value, list) and len(value) > 0:
+                append_record = not value[0].get("exists", True)
+
+        filter_results.append(append_record)
+    return all(filter_results)
+
+
+def filter_stream_records(records, filters: List[FilterCriteria]):
+    filtered_records = []
+    for record in records:
+        for filter in filters:
+            for rule in filter["Filters"]:
+                if filter_stream_record(json.loads(rule["Pattern"]), record):
+                    filtered_records.append(record)
+                    break
+    return filtered_records
+
+
+def contains_list(filter: Dict) -> bool:
+    if isinstance(filter, dict):
+        for key, value in filter.items():
+            if isinstance(value, list) and len(value) > 0:
+                return True
+            return contains_list(value)
+    return False
+
+
+def validate_filters(filter: FilterCriteria) -> bool:
+    # filter needs to be json serializeable
+    for rule in filter["Filters"]:
+        try:
+            if not (filter_pattern := json.loads(rule["Pattern"])):
+                return False
+            return contains_list(filter_pattern)
+        except json.JSONDecodeError:
+            return False
+    # needs to contain on what to filter (some list with citerias)
+    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
+
+    return True
+
+
+def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Dict]:
+    # late import to avoid circular import
+    from localstack.services.awslambda.lambda_api import LambdaRegion
+
+    region_name = lambda_arn.split(":")[3]
+    region = LambdaRegion.get(region_name)
+
+    event_filter_criterias = [
+        event_source_mapping.get("FilterCriteria")
+        for event_source_mapping in region.event_source_mappings
+        if event_source_mapping.get("FunctionArn") == lambda_arn
+        and event_source_mapping.get("EventSourceArn") == event_arn
+        and event_source_mapping.get("FilterCriteria") is not None
+    ]
+
+    return event_filter_criterias

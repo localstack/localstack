@@ -47,6 +47,7 @@ from localstack.services.awslambda.lambda_utils import (
     get_lambda_runtime,
     get_zip_bytes,
     multi_value_dict_for_list,
+    validate_filters,
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
@@ -245,6 +246,16 @@ def build_mapping_obj(data) -> Dict:
     if data.get("FunctionResponseTypes"):
         mapping["FunctionResponseTypes"] = data.get("FunctionResponseTypes")
 
+    if data.get("FilterCriteria"):
+        # validate for valid json
+        if not validate_filters(data.get("FilterCriteria")):
+            # AWS raises following Exception when FilterCriteria is not valid:
+            # An error occurred (InvalidParameterValueException) when calling the CreateEventSourceMapping operation:
+            # Invalid filter pattern definition.
+            raise ValueError(
+                INVALID_PARAMETER_VALUE_EXCEPTION, "Invalid filter pattern definition."
+            )
+        mapping["FilterCriteria"] = data.get("FilterCriteria")
     return mapping
 
 

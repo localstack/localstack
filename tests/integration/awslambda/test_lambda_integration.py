@@ -86,11 +86,8 @@ class TestSQSEventSourceMapping:
         self,
         create_lambda_function,
         lambda_client,
-        sqs_client,
         sqs_create_queue,
         sqs_queue_arn,
-        dynamodb_client,
-        dynamodb_create_table,
         lambda_su_role,
         snapshot,
     ):
@@ -143,6 +140,7 @@ class TestSQSEventSourceMapping:
         finally:
             lambda_client.delete_event_source_mapping(UUID=uuid)
 
+    @pytest.mark.aws_validated
     def test_sqs_event_source_mapping(
         self,
         create_lambda_function,
@@ -155,11 +153,13 @@ class TestSQSEventSourceMapping:
     ):
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
+        mapping_uuid = None
+
         try:
             create_lambda_function(
                 func_name=function_name,
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                runtime=LAMBDA_RUNTIME_PYTHON36,
+                runtime=LAMBDA_RUNTIME_PYTHON37,
                 role=lambda_su_role,
             )
             queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
@@ -185,7 +185,180 @@ class TestSQSEventSourceMapping:
             rs = sqs_client.receive_message(QueueUrl=queue_url_1)
             assert rs.get("Messages") is None
         finally:
-            lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
+            if mapping_uuid:
+                lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "filter, item_matching, item_not_matching",
+        [
+            # test single filter
+            (
+                {"body": {"testItem": ["test24"]}},
+                {"testItem": "test24"},
+                {"testItem": "tesWER"},
+            ),
+            # test OR filter
+            (
+                {"body": {"testItem": ["test24", "test45"]}},
+                {"testItem": "test45"},
+                {"testItem": "WERTD"},
+            ),
+            # test AND filter
+            (
+                {"body": {"testItem": ["test24", "test45"], "test2": ["go"]}},
+                {"testItem": "test45", "test2": "go"},
+                {"testItem": "test67", "test2": "go"},
+            ),
+            # exists
+            (
+                {"body": {"test2": [{"exists": True}]}},
+                {"test2": "7411"},
+                {"test5": "74545"},
+            ),
+            # numeric (bigger)
+            (
+                {"body": {"test2": [{"numeric": [">", 100]}]}},
+                {"test2": 105},
+                "this is a test string",  # normal string should be dropped as well aka not fitting to filter
+            ),
+            # numeric (smaller)
+            (
+                {"body": {"test2": [{"numeric": ["<", 100]}]}},
+                {"test2": 93},
+                {"test2": 105},
+            ),
+            # numeric (range)
+            (
+                {"body": {"test2": [{"numeric": [">=", 100, "<", 200]}]}},
+                {"test2": 105},
+                {"test2": 200},
+            ),
+            # prefix
+            (
+                {"body": {"test2": [{"prefix": "us-1"}]}},
+                {"test2": "us-1-48454"},
+                {"test2": "eu-wert"},
+            ),
+        ],
+    )
+    def test_sqs_event_filter(
+        self,
+        create_lambda_function,
+        lambda_client,
+        sqs_client,
+        sqs_create_queue,
+        sqs_queue_arn,
+        logs_client,
+        lambda_su_role,
+        filter,
+        item_matching,
+        item_not_matching,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        queue_name_1 = f"queue-{short_uid()}-1"
+        mapping_uuid = None
+
+        try:
+            create_lambda_function(
+                func_name=function_name,
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                runtime=LAMBDA_RUNTIME_PYTHON37,
+                role=lambda_su_role,
+            )
+            queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
+            queue_arn_1 = sqs_queue_arn(queue_url_1)
+
+            sqs_client.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps(item_matching))
+            sqs_client.send_message(
+                QueueUrl=queue_url_1,
+                MessageBody=json.dumps(item_not_matching)
+                if not isinstance(item_not_matching, str)
+                else item_not_matching,
+            )
+
+            def _assert_qsize():
+                response = sqs_client.get_queue_attributes(
+                    QueueUrl=queue_url_1, AttributeNames=["ApproximateNumberOfMessages"]
+                )
+                assert int(response["Attributes"]["ApproximateNumberOfMessages"]) == 2
+
+            retry(_assert_qsize, retries=10)
+
+            mapping_uuid = lambda_client.create_event_source_mapping(
+                EventSourceArn=queue_arn_1,
+                FunctionName=function_name,
+                MaximumBatchingWindowInSeconds=1,
+                FilterCriteria={
+                    "Filters": [
+                        {"Pattern": json.dumps(filter)},
+                    ]
+                },
+            )["UUID"]
+            _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
+
+            def _check_lambda_logs():
+                events = get_lambda_log_events(function_name, logs_client=logs_client)
+                # once invoked
+                assert len(events) == 1
+                records = events[0]["Records"]
+                # one record processed
+                assert len(records) == 1
+                # check for correct record presence
+                if "body" in json.dumps(filter):
+                    item_matching_str = json.dumps(item_matching)
+                    assert records[0]["body"] == item_matching_str
+
+            retry(_check_lambda_logs, retries=10)
+
+            rs = sqs_client.receive_message(QueueUrl=queue_url_1)
+            assert rs.get("Messages") is None
+
+        finally:
+            if mapping_uuid:
+                lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "invalid_filter", [None, "simple string", {"eventSource": "aws:sqs"}, {"eventSource": []}]
+    )
+    def test_sqs_invalid_event_filter(
+        self,
+        create_lambda_function,
+        sqs_create_queue,
+        sqs_queue_arn,
+        lambda_su_role,
+        lambda_client,
+        invalid_filter,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+        queue_name_1 = f"queue-{short_uid()}"
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=lambda_su_role,
+        )
+        queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
+        queue_arn_1 = sqs_queue_arn(queue_url_1)
+
+        with pytest.raises(Exception) as expected:
+            lambda_client.create_event_source_mapping(
+                EventSourceArn=queue_arn_1,
+                FunctionName=function_name,
+                MaximumBatchingWindowInSeconds=1,
+                FilterCriteria={
+                    "Filters": [
+                        {
+                            "Pattern": invalid_filter
+                            if isinstance(invalid_filter, str)
+                            else json.dumps(invalid_filter)
+                        },
+                    ]
+                },
+            )
+        expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
 
 
 class TestDynamoDBEventSourceMapping:
@@ -196,7 +369,6 @@ class TestDynamoDBEventSourceMapping:
         create_iam_role_with_policy,
         dynamodb_client,
         dynamodb_create_table,
-        logs_client,
         check_lambda_logs,
     ):
         def check_logs():
@@ -250,12 +422,12 @@ class TestDynamoDBEventSourceMapping:
         finally:
             lambda_client.delete_event_source_mapping(UUID=event_source_uuid)
 
+    @pytest.mark.aws_validated
     def test_disabled_dynamodb_event_source_mapping(
         self,
         create_lambda_function,
         lambda_client,
         dynamodb_resource,
-        dynamodb_client,
         dynamodb_create_table,
         logs_client,
         dynamodbstreams_client,
@@ -276,11 +448,13 @@ class TestDynamoDBEventSourceMapping:
             {"id": short_uid(), "data": "data2"},
         ]
 
+        uuid = None
+
         try:
             create_lambda_function(
                 func_name=function_name,
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                runtime=LAMBDA_RUNTIME_PYTHON36,
+                runtime=LAMBDA_RUNTIME_PYTHON37,
                 role=lambda_su_role,
             )
             latest_stream_arn = dynamodb_create_table(
@@ -317,7 +491,8 @@ class TestDynamoDBEventSourceMapping:
                 expected_length=1, function_name=function_name, logs_client=logs_client
             )
         finally:
-            lambda_client.delete_event_source_mapping(UUID=uuid)
+            if uuid:
+                lambda_client.delete_event_source_mapping(UUID=uuid)
 
     # TODO invalid test against AWS, this behavior just is not correct
     def test_deletion_event_source_mapping_with_dynamodb(
@@ -421,6 +596,212 @@ class TestDynamoDBEventSourceMapping:
             retry(verify_failure_received, retries=5, sleep=5, sleep_before=5)
         finally:
             lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "item_to_put1, item_to_put2, filter, calls",
+        [
+            # Test with filter, and two times same entry
+            (
+                {"id": {"S": "test123"}, "id2": {"S": "test42"}},
+                None,
+                {"eventName": ["INSERT"]},
+                1,
+            ),
+            # Test with OR filter
+            (
+                {"id": {"S": "test123"}},
+                {"id": {"S": "test123"}, "id2": {"S": "42test"}},
+                {"eventName": ["INSERT", "MODIFY"]},
+                2,
+            ),
+            # Test with 2 filters (AND), and two times same entry (second time modified aka MODIFY eventName)
+            (
+                {"id": {"S": "test123"}},
+                {"id": {"S": "test123"}, "id2": {"S": "42test"}},
+                {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]},
+                1,
+            ),
+            # Test exists filter
+            (
+                {"id": {"S": "test123"}},
+                {"id": {"S": "test1234"}, "presentKey": {"S": "test123"}},
+                {"dynamodb": {"NewImage": {"presentKey": [{"exists": False}]}}},
+                1,
+            ),
+            # numeric filters
+            # NOTE: numeric filters seem not to work with DynamoDB as the values are represented as string
+            # and it looks like that there is no conversion happening
+            # I leave the test here in case this changes in future.
+            (
+                {"id": {"S": "test123"}, "numericFilter": {"N": "123"}},
+                {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
+                {"dynamodb": {"NewImage": {"numericFilter": {"N": [{"numeric": [">", 100]}]}}}},
+                0,
+            ),
+            (
+                {"id": {"S": "test123"}, "numericFilter": {"N": "100"}},
+                {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
+                {
+                    "dynamodb": {
+                        "NewImage": {"numericFilter": {"N": [{"numeric": [">=", 100, "<", 200]}]}}
+                    }
+                },
+                0,
+            ),
+            # Prefix
+            (
+                {"id": {"S": "test123"}, "prefix": {"S": "us-1-testtest"}},
+                {"id": {"S": "test1234"}, "prefix": {"S": "testtest"}},
+                {"dynamodb": {"NewImage": {"prefix": {"S": [{"prefix": "us-1"}]}}}},
+                1,
+            ),
+        ],
+    )
+    def test_dynamodb_event_filter(
+        self,
+        create_lambda_function,
+        lambda_client,
+        dynamodb_client,
+        dynamodb_create_table,
+        lambda_su_role,
+        logs_client,
+        wait_for_dynamodb_stream_ready,
+        filter,
+        calls,
+        item_to_put1,
+        item_to_put2,
+    ):
+
+        function_name = f"lambda_func-{short_uid()}"
+        table_name = f"test-table-{short_uid()}"
+        event_source_uuid = None
+        max_retries = 50
+
+        try:
+
+            create_lambda_function(
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                func_name=function_name,
+                runtime=LAMBDA_RUNTIME_PYTHON37,
+                role=lambda_su_role,
+            )
+            dynamodb_create_table(table_name=table_name, partition_key="id")
+            _await_dynamodb_table_active(dynamodb_client, table_name)
+            stream_arn = dynamodb_client.update_table(
+                TableName=table_name,
+                StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+            )["TableDescription"]["LatestStreamArn"]
+            wait_for_dynamodb_stream_ready(stream_arn)
+            event_source_mapping_kwargs = {
+                "FunctionName": function_name,
+                "BatchSize": 1,
+                "StartingPosition": "TRIM_HORIZON",
+                "EventSourceArn": stream_arn,
+                "MaximumBatchingWindowInSeconds": 1,
+                "MaximumRetryAttempts": 1,
+            }
+            event_source_mapping_kwargs.update(
+                FilterCriteria={
+                    "Filters": [
+                        {"Pattern": json.dumps(filter)},
+                    ]
+                }
+            )
+
+            event_source_uuid = lambda_client.create_event_source_mapping(
+                **event_source_mapping_kwargs
+            )["UUID"]
+
+            _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
+            dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
+
+            def assert_lambda_called():
+                events = get_lambda_log_events(function_name, logs_client=logs_client)
+                if calls > 0:
+                    assert len(events) == 1
+                else:
+                    # negative test for 'numeric' filter
+                    assert len(events) == 0
+
+            retry(assert_lambda_called, retries=max_retries)
+
+            # Following lines are relevant if variables are set via parametrize
+            if item_to_put2:
+                # putting a new item (item_to_put2) a second time is a 'INSERT' request
+                dynamodb_client.put_item(TableName=table_name, Item=item_to_put2)
+            else:
+                # putting the same item (item_to_put1) a second time is a 'MODIFY' request (at least in Localstack)
+                dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
+            # depending on the parametrize values the filter (and the items to put) the lambda might be called multiple times
+            if calls > 1:
+
+                def assert_events_called_multiple():
+                    events = get_lambda_log_events(function_name, logs_client=logs_client)
+                    assert len(events) == calls
+
+                # lambda was called a second time, so new records should be found
+                retry(assert_events_called_multiple, retries=max_retries)
+            else:
+                # lambda wasn't called a second time, so no new records should be found
+                retry(assert_lambda_called, retries=max_retries)
+
+        finally:
+            if event_source_uuid:
+                lambda_client.delete_event_source_mapping(UUID=event_source_uuid)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "filter",
+        [
+            "single-string",
+            '[{"eventName": ["INSERT"=123}]',
+        ],
+    )
+    def test_dynamodb_invalid_event_filter(
+        self,
+        create_lambda_function,
+        lambda_client,
+        dynamodb_client,
+        dynamodb_create_table,
+        lambda_su_role,
+        wait_for_dynamodb_stream_ready,
+        filter,
+    ):
+
+        function_name = f"lambda_func-{short_uid()}"
+        table_name = f"test-table-{short_uid()}"
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=lambda_su_role,
+        )
+        dynamodb_create_table(table_name=table_name, partition_key="id")
+        _await_dynamodb_table_active(dynamodb_client, table_name)
+        stream_arn = dynamodb_client.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+        )["TableDescription"]["LatestStreamArn"]
+        wait_for_dynamodb_stream_ready(stream_arn)
+        event_source_mapping_kwargs = {
+            "FunctionName": function_name,
+            "BatchSize": 1,
+            "StartingPosition": "TRIM_HORIZON",
+            "EventSourceArn": stream_arn,
+            "MaximumBatchingWindowInSeconds": 1,
+            "MaximumRetryAttempts": 1,
+            "FilterCriteria": {
+                "Filters": [
+                    {"Pattern": filter},
+                ]
+            },
+        }
+
+        with pytest.raises(Exception) as expected:
+            lambda_client.create_event_source_mapping(**event_source_mapping_kwargs)
+        expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)
 
 
 class TestLambdaHttpInvocation:

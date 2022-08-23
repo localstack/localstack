@@ -721,6 +721,18 @@ def wait_for_delivery_stream_ready(firehose_client):
     return _wait_for_stream_ready
 
 
+@pytest.fixture
+def wait_for_dynamodb_stream_ready(dynamodbstreams_client):
+    def _wait_for_stream_ready(stream_arn: str):
+        def is_stream_ready():
+            describe_stream_response = dynamodbstreams_client.describe_stream(StreamArn=stream_arn)
+            return describe_stream_response["StreamDescription"]["StreamStatus"] == "ENABLED"
+
+        poll_condition(is_stream_ready)
+
+    return _wait_for_stream_ready
+
+
 @pytest.fixture()
 def kms_create_key(kms_client):
     key_ids = []

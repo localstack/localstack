@@ -13,6 +13,10 @@ from localstack.services.awslambda.lambda_api import (
     run_lambda,
 )
 from localstack.services.awslambda.lambda_executors import InvocationResult
+from localstack.services.awslambda.lambda_utils import (
+    filter_stream_records,
+    get_lambda_event_filters_for_arn,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.threads import FuncThread
 
@@ -80,7 +84,7 @@ class SQSEventSourceListener(EventSourceListener):
             finally:
                 time.sleep(self.SQS_POLL_INTERVAL_SEC)
 
-    def _process_messages_for_event_source(self, source, messages):
+    def _process_messages_for_event_source(self, source, messages) -> bool:
         lambda_arn = source["FunctionArn"]
         queue_arn = source["EventSourceArn"]
         # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#services-sqs-batchfailurereporting
@@ -185,6 +189,29 @@ class SQSEventSourceListener(EventSourceListener):
                 record["md5OfMessageAttributes"] = md5OfMessageAttributes
 
             records.append(record)
+
+        event_filter_criterias = get_lambda_event_filters_for_arn(lambda_arn, queue_arn)
+        if len(event_filter_criterias) > 0:
+            # convert to json for filtering
+            for record in records:
+                try:
+                    record["body"] = json.loads(record["body"])
+                except json.JSONDecodeError:
+                    LOG.warning(
+                        f"Unable to convert record '{record['body']}' to json... Record might be dropped."
+                    )
+            records = filter_stream_records(records, event_filter_criterias)
+            # convert them back
+            for record in records:
+                record["body"] = (
+                    json.dumps(record["body"])
+                    if not isinstance(record["body"], str)
+                    else record["body"]
+                )
+
+        # all messages were filtered out
+        if not len(records) > 0:
+            return True
 
         event = {"Records": records}
 
