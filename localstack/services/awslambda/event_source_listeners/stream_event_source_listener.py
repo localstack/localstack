@@ -285,6 +285,10 @@ class StreamEventSourceListener(EventSourceListener):
                     # Temporarily disable polling if no event sources are configured
                     # anymore. The loop will get restarted next time a record
                     # arrives and if an event source is configured.
+                    for thread_id in self._STREAM_LISTENER_THREADS.keys():
+                        self._STREAM_LISTENER_THREADS.pop(thread_id).stop()
+                    if self._COORDINATOR_THREAD:
+                        self._COORDINATOR_THREAD.stop()
                     self._COORDINATOR_THREAD = None
                     self._STREAM_LISTENER_THREADS = {}
                     return
@@ -340,7 +344,7 @@ class StreamEventSourceListener(EventSourceListener):
                 # stop any threads that are listening to a previously defined event source that no longer exists
                 orphaned_threads = set(self._STREAM_LISTENER_THREADS.keys()) - mapped_shard_ids
                 for thread_id in orphaned_threads:
-                    self._STREAM_LISTENER_THREADS.pop(thread_id)
+                    self._STREAM_LISTENER_THREADS.pop(thread_id).stop()
 
             except Exception as e:
                 LOG.exception(e)
