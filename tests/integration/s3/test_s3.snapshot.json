@@ -657,5 +657,23 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_upload_file_with_xml_preamble": {
+    "recorded-date": "23-08-2022, 12:03:04",
+    "recorded-content": {
+      "get_object": {
+        "AcceptRanges": "bytes",
+        "Body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><test/>",
+        "ContentLength": 45,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"8a793423f1e69103a7056b99e4ad6c0b\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

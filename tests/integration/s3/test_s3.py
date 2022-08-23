@@ -627,6 +627,27 @@ class TestS3:
         snapshot.match("get-object-not-yet-expired", resp)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..ContentLanguage",
+            "$..VersionId",
+        ]
+    )
+    def test_upload_file_with_xml_preamble(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-{short_uid()}"
+        object_key = f"key-{short_uid()}"
+        body = '<?xml version="1.0" encoding="UTF-8"?><test/>'
+
+        s3_create_bucket(Bucket=bucket_name)
+        s3_client.put_object(Bucket=bucket_name, Key=object_key, Body=body)
+
+        response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("get_object", response)
+        # content = to_str(response["Body"].read())
+        # assert body == content
+
+    @pytest.mark.aws_validated
     @pytest.mark.xfail(reason="The error format is wrong in s3_listener (is_bucket_available)")
     def test_bucket_availability(self, s3_client, snapshot):
         bucket_name = "test-bucket-lifecycle"
