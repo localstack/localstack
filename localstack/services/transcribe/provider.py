@@ -1,11 +1,14 @@
 import datetime
 import json
 import logging
+import os
 import wave
+from pathlib import Path
 from typing import Tuple
+from urllib.request import urlretrieve
+from zipfile import ZipFile
 
-from vosk import KaldiRecognizer, Model, SetLogLevel
-
+from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.transcribe import (
     BadRequestException,
@@ -30,6 +33,8 @@ from localstack.utils.files import new_tmp_file, save_file
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_thread
 
+LOG = logging.getLogger(__name__)
+
 # Map of language codes to language models
 LANGUAGE_MODELS = {
     "en-IN": "vosk-model-small-en-in-0.4",
@@ -48,6 +53,13 @@ LANGUAGE_MODELS = {
     "fa-IR": "vosk-model-small-fa-0.5",
     "zh-CN": "vosk-model-small-cn-0.3",
 }
+
+LANGUAGE_MODEL_DIR = Path(config.dirs.cache) / "vosk"
+
+os.environ["VOSK_MODEL_PATH"] = str(LANGUAGE_MODEL_DIR)
+
+# Vosk must be imported only after setting the required env vars
+from vosk import MODEL_PRE_URL, KaldiRecognizer, Model, SetLogLevel  # noqa
 
 # Suppress Vosk logging
 SetLogLevel(-1)
@@ -137,6 +149,38 @@ class TranscribeProvider(TranscribeApi):
         store.transcription_jobs.pop(transcription_job_name)
 
     #
+    # Utils
+    #
+
+    @staticmethod
+    def download_model(name: str):
+        """
+        Download a Vosk language model to LocalStack cache directory. Do nothing if model is already downloaded.
+
+        While can Vosk also download a model if not available locally, it saves it to a
+        non-configurable location ~/.cache/vosk.
+        """
+        model_path = LANGUAGE_MODEL_DIR / name
+
+        if (model_path).exists():
+            return
+        else:
+            model_path.mkdir(parents=True)
+
+        model_zip_path = str(model_path) + ".zip"
+
+        LOG.debug("Downloading language model to: %s", model_zip_path)
+
+        urlretrieve(MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path, data=None)
+
+        LOG.debug("Extracting language model: %s", model_path.name)
+
+        with ZipFile(model_zip_path, "r") as model_ref:
+            model_ref.extractall(model_path.parent)
+
+        Path(str(model_path) + ".zip").unlink()
+
+    #
     # Threads
     #
 
@@ -150,6 +194,8 @@ class TranscribeProvider(TranscribeApi):
         failure_reason = None
 
         try:
+            LOG.debug("Starting transcription: %s", job_name)
+
             # Get file from S3
             file_path = new_tmp_file()
             s3_client = aws_stack.connect_to_service("s3")
@@ -172,6 +218,7 @@ class TranscribeProvider(TranscribeApi):
             # Prepare transcriber
             language_code = job["LanguageCode"]
             model_name = LANGUAGE_MODELS[language_code]
+            self.download_model(model_name)
             model = Model(model_name=model_name)
 
             tc = KaldiRecognizer(model, audio.getframerate())
@@ -225,9 +272,11 @@ class TranscribeProvider(TranscribeApi):
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.COMPLETED
             job["Transcript"] = Transcript(TranscriptFileUri=f"s3://{bucket}/{output_key}")
             job["MediaFormat"] = MediaFormat.wav
-            logging.info("Transcription job %s completed", job_name)
+
+            LOG.info("Transcription job completed: %s", job_name)
 
         except Exception as exc:
             job["FailureReason"] = failure_reason or str(exc)
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.FAILED
-            logging.warning("Transcription job %s failed: %s", job_name, job["FailureReason"])
+
+            LOG.warning("Transcription job %s failed: %s", job_name, job["FailureReason"])
