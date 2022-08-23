@@ -1,0 +1,6 @@
+{
+  "tests/integration/cloudformation/test_cloudformation_kinesis.py::test_stream_creation": {
+    "recorded-date": "23-08-2022, 13:48:43",
+    "recorded-content": {}
+  }
+}
