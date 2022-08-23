@@ -50,6 +50,7 @@ from tests.integration.apigateway_fixtures import (
     create_rest_api_integration,
     create_rest_api_integration_response,
     create_rest_api_method_response,
+    create_rest_api_stage,
     create_rest_resource,
     create_rest_resource_method,
     delete_rest_api,
@@ -59,6 +60,7 @@ from tests.integration.awslambda.test_lambda_integration import TEST_STAGE_NAME
 
 from ..unit.test_apigateway import load_test_resource
 from .awslambda.test_lambda import (
+    TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS,
@@ -340,12 +342,13 @@ class TestAPIGateway:
 
     def test_api_gateway_lambda_integration(self, apigateway_client, create_lambda_function):
         """
-        API gateway to lambda integration test returns a response with the same body as the lambda function input.
+        API gateway to lambda integration test returns a response with the same body as the lambda
+        function input event.
         """
         fn_name = f"test-{short_uid()}"
         create_lambda_function(
             func_name=fn_name,
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler_file=TEST_LAMBDA_AWS_PROXY,
             runtime=LAMBDA_RUNTIME_PYTHON39,
         )
         lambda_arn = aws_stack.lambda_function_arn(fn_name)
@@ -369,7 +372,7 @@ class TestAPIGateway:
             resourceId=resource_id,
             httpMethod="GET",
             integrationHttpMethod="GET",
-            type="AWS",
+            type="AWS_PROXY",
             uri=f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path//2015-03-31/functions/{lambda_arn}/invocations",
         )
 
@@ -379,6 +382,92 @@ class TestAPIGateway:
 
         # authorizer contains an object that does not contain the authorizer type ('lambda', 'sns')
         assert body.get("requestContext").get("authorizer") == {"context": {}, "identity": {}}
+
+    @pytest.mark.aws_validated
+    def test_api_gateway_lambda_integration_aws_type(
+        self, apigateway_client, create_lambda_function, lambda_client, sts_client
+    ):
+        region_name = apigateway_client._client_config.region_name
+        fn_name = f"test-{short_uid()}"
+        create_lambda_function(
+            func_name=fn_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=LAMBDA_RUNTIME_PYTHON39,
+        )
+        lambda_arn = lambda_client.get_function(FunctionName=fn_name)["Configuration"][
+            "FunctionArn"
+        ]
+
+        api_id, _, root = create_rest_api(apigateway_client, name="aws lambda api")
+        resource_id, _ = create_rest_resource(
+            apigateway_client, restApiId=api_id, parentId=root, pathPart="test"
+        )
+        create_rest_resource_method(
+            apigateway_client,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            authorizationType="NONE",
+        )
+        create_rest_api_integration(
+            apigateway_client,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            integrationHttpMethod="POST",
+            type="AWS",
+            uri=f"arn:aws:apigateway:{region_name}:lambda:path//2015-03-31/functions/"
+            f"{lambda_arn}/invocations",
+            requestTemplates={
+                "application/json": '#set($allParams = $input.params())\n{\n"body-json" : $input.json("$"),\n"params" : {\n#foreach($type in $allParams.keySet())\n    #set($params = $allParams.get($type))\n"$type" : {\n    #foreach($paramName in $params.keySet())\n    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"\n        #if($foreach.hasNext),#end\n    #end\n}\n    #if($foreach.hasNext),#end\n#end\n},\n"stage-variables" : {\n#foreach($key in $stageVariables.keySet())\n"$key" : "$util.escapeJavaScript($stageVariables.get($key))"\n    #if($foreach.hasNext),#end\n#end\n},\n"context" : {\n    "api-id" : "$context.apiId",\n    "api-key" : "$context.identity.apiKey",\n    "http-method" : "$context.httpMethod",\n    "stage" : "$context.stage",\n    "source-ip" : "$context.identity.sourceIp",\n    "user-agent" : "$context.identity.userAgent",\n    "request-id" : "$context.requestId",\n    "resource-id" : "$context.resourceId",\n    "resource-path" : "$context.resourcePath"\n    }\n}\n'
+            },
+        )
+        create_rest_api_method_response(
+            apigateway_client,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            statusCode="200",
+            responseParameters={
+                "method.response.header.Content-Type": False,
+                "method.response.header.Access-Control-Allow-Origin": False,
+            },
+        )
+        create_rest_api_integration_response(
+            apigateway_client,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            statusCode="200",
+            responseTemplates={"text/html": "$input.path('$')"},
+            responseParameters={
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Content-Type": "'text/html'",
+            },
+        )
+        deployment_id, _ = create_rest_api_deployment(apigateway_client, restApiId=api_id)
+        stage = create_rest_api_stage(
+            apigateway_client, restApiId=api_id, stageName="local", deploymentId=deployment_id
+        )
+
+        aws_account_id = sts_client.get_caller_identity()["Account"]
+        source_arn = f"arn:aws:execute-api:{region_name}:{aws_account_id}:{api_id}/*/*/test"
+
+        lambda_client.add_permission(
+            FunctionName=lambda_arn,
+            StatementId=str(short_uid()),
+            Action="lambda:InvokeFunction",
+            Principal="apigateway.amazonaws.com",
+            SourceArn=source_arn,
+        )
+
+        url = api_invoke_url(api_id, stage=stage, path="/test")
+        response = requests.post(url, json={"test": "test"})
+
+        assert response.headers["Content-Type"] == "text/html"
+        assert response.headers["Access-Control-Allow-Origin"] == "*"
+
+        delete_rest_api(apigateway_client, restApiId=api_id)
 
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
     def test_api_gateway_http_integrations(self, int_type, monkeypatch):
@@ -711,7 +800,7 @@ class TestAPIGateway:
             "contentHandling",
             "requestParameters",
         ]
-        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
+        assert 201 == rs["ResponseMetadata"]["HTTPStatusCode"]
         for key in integration_keys:
             assert key in rs
         assert "responseTemplates" not in rs
@@ -731,17 +820,14 @@ class TestAPIGateway:
         response = requests.get(f"{url}?param1=foobar")
         assert response.status_code < 400
         content = response.json()
-        assert '{"param1": "foobar"}' == content.get("body").get("body")
+        assert '{"param1": "foobar"}' == content.get("event")
 
         # additional checks from https://github.com/localstack/localstack/issues/5041
         # pass Signature param
         response = requests.get(f"{url}?param1=foobar&Signature=1")
         assert response.status_code == 200
         content = response.json()
-        assert '{"param1": "foobar"}' == content.get("body").get("body")
-        assert {"Signature": "1", "param1": "foobar"} == content.get("body").get(
-            "queryStringParameters"
-        )
+        assert '{"param1": "foobar"}' == content.get("event")
 
         # delete integration
         rs = apigw_client.delete_integration(
@@ -1822,7 +1908,7 @@ class TestAPIGateway:
         )
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
         assert 200 == response.get("status")
-        assert "response from" in response.get("body").get("body")
+        assert "response from" in json.loads(response.get("body")).get("body")
 
         # run test_invoke_method API #2
         response = client.test_invoke_method(
@@ -1835,8 +1921,8 @@ class TestAPIGateway:
         )
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
         assert 200 == response.get("status")
-        assert "response from" in response.get("body").get("body")
-        assert "val123" in response.get("body").get("body")
+        assert "response from" in json.loads(response.get("body")).get("body")
+        assert "val123" in json.loads(response.get("body")).get("body")
 
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)

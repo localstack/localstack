@@ -5,7 +5,6 @@ from typing import Any, Dict, Union
 from urllib.parse import urljoin
 
 import requests
-from flask import Response as FlaskResponse
 from jsonschema import ValidationError, validate
 from requests.models import Response
 
@@ -21,6 +20,7 @@ from localstack.services.apigateway.helpers import (
     make_error_response,
 )
 from localstack.services.apigateway.integration import (
+    LambdaIntegration,
     LambdaProxyIntegration,
     MockIntegration,
     RequestTemplates,
@@ -28,17 +28,11 @@ from localstack.services.apigateway.integration import (
     SnsIntegration,
     VtlTemplate,
 )
-from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import (
-    LambdaResponse,
-    flask_to_requests_response,
-    request_response_stream,
-    requests_response,
-)
+from localstack.utils.aws.aws_responses import request_response_stream, requests_response
 from localstack.utils.common import camel_to_snake_case, json_safe
 
 # set up logger
@@ -313,8 +307,6 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     method = invocation_context.method
     data = invocation_context.data
     headers = invocation_context.headers
-    api_id = invocation_context.api_id
-    stage = invocation_context.stage
     resource_path = invocation_context.resource_path
     integration = invocation_context.integration
     integration_response = integration.get("integrationResponses", {})
@@ -341,67 +333,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         if integration_type == "AWS_PROXY":
             return LambdaProxyIntegration().invoke(invocation_context)
         elif integration_type == "AWS":
-            func_arn = uri
-            if ":lambda:path" in uri:
-                func_arn = (
-                    uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
-                )
-
-            headers = helpers.create_invocation_headers(invocation_context)
-            invocation_context.context = helpers.get_event_request_context(invocation_context)
-            invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
-            if invocation_context.authorizer_type:
-                invocation_context.context["authorizer"] = invocation_context.auth_context
-
-            request_templates = RequestTemplates()
-            payload = request_templates.render(invocation_context)
-
-            # TODO: change this signature to InvocationContext as well!
-            result = lambda_api.process_apigateway_invocation(
-                func_arn,
-                relative_path,
-                payload,
-                stage,
-                api_id,
-                headers,
-                is_base64_encoded=invocation_context.is_data_base64_encoded,
-                path_params=path_params,
-                query_string_params=query_string_params,
-                method=method,
-                resource_path=resource_path,
-                request_context=invocation_context.context,
-                stage_variables=invocation_context.stage_variables,
-            )
-
-            if isinstance(result, FlaskResponse):
-                response = flask_to_requests_response(result)
-            elif isinstance(result, Response):
-                response = result
-            else:
-                response = LambdaResponse()
-
-                is_async = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
-
-                if is_async:
-                    response._content = ""
-                    response.status_code = 200
-                else:
-                    parsed_result = (
-                        result if isinstance(result, dict) else json.loads(str(result or "{}"))
-                    )
-                    parsed_result = common.json_safe(parsed_result)
-                    parsed_result = {} if parsed_result is None else parsed_result
-                    response.status_code = 200
-                    response._content = parsed_result
-                    update_content_length(response)
-
-            # apply custom response template
-            invocation_context.response = response
-
-            response_templates = ResponseTemplates()
-            response_templates.render(invocation_context)
-            invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
-            return invocation_context.response
+            return LambdaIntegration().invoke(invocation_context)
 
         raise Exception(
             f'API Gateway integration type "{integration_type}", action "{uri}", method "{method}"'

@@ -118,8 +118,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("CreateRestApi", expand=False)
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
-        result = call_moto(context)
-        return result
+        return call_moto(context)
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
         try:

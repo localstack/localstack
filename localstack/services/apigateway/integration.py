@@ -12,6 +12,7 @@ from requests import Response
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
+from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     extract_path_params,
@@ -268,6 +269,75 @@ class LambdaProxyIntegration(BackendIntegration):
         invocation_context.response = response
 
         self.response_templates.render(invocation_context)
+        return invocation_context.response
+
+
+class LambdaIntegration(BackendIntegration):
+    def invoke(self, invocation_context: ApiInvocationContext):
+        uri = (
+            invocation_context.integration.get("uri")
+            or invocation_context.integration.get("integrationUri")
+            or ""
+        )
+        func_arn = uri
+        if ":lambda:path" in uri:
+            func_arn = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
+
+        headers = helpers.create_invocation_headers(invocation_context)
+        invocation_context.context = helpers.get_event_request_context(invocation_context)
+        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        if invocation_context.authorizer_type:
+            invocation_context.context["authorizer"] = invocation_context.auth_context
+
+        request_templates = RequestTemplates()
+        payload = request_templates.render(invocation_context)
+
+        invocation_result = lambda_api.run_lambda(
+            func_arn=func_arn,
+            event=payload,
+        )
+        result = invocation_result.result
+
+        if isinstance(result, FlaskResponse):
+            response = flask_to_requests_response(result)
+        elif isinstance(result, Response):
+            response = result
+        else:
+            response = LambdaResponse()
+
+            is_async = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
+
+            if is_async:
+                response._content = ""
+                response.status_code = 200
+            else:
+                # depending on the lambda executor sometimes it returns a string and sometimes a dict
+                match result:
+                    case dict():
+                        parsed_result = result
+                    case str():
+                        # try to parse the result as json, if it succeeds we assume it's a valid
+                        # json string and we don't do anything.
+                        if isinstance(json.loads(result or "{}"), dict):
+                            parsed_result = result
+                        else:
+                            # the docker executor returns a string wrapping a json string,
+                            # so we need to remove the outer string
+                            parsed_result = json.loads(result or "{}")
+                    case _:
+                        parsed_result = json.loads(str(result or "{}"))
+
+                parsed_result = common.json_safe(parsed_result)
+                parsed_result = {} if parsed_result is None else parsed_result
+                response.status_code = 200
+                response._content = parsed_result
+
+        # apply custom response template
+        invocation_context.response = response
+
+        response_templates = ResponseTemplates()
+        response_templates.render(invocation_context)
+        invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
         return invocation_context.response
 
 

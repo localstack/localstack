@@ -61,7 +61,7 @@ def delete_rest_api(apigateway_client, **kwargs):
 
 def create_rest_resource(apigateway_client, **kwargs):
     response = apigateway_client.create_resource(**kwargs)
-    assert_response_is_200(response)
+    assert_response_is_201(response)
     return response.get("id"), response.get("parentId")
 
 
@@ -72,7 +72,7 @@ def delete_rest_resource(apigateway_client, **kwargs):
 
 def create_rest_resource_method(apigateway_client, **kwargs):
     response = apigateway_client.put_method(**kwargs)
-    assert_response_is_200(response)
+    assert_response_is_201(response)
     return response.get("httpMethod"), response.get("authorizerId")
 
 
@@ -84,7 +84,7 @@ def create_rest_authorizer(apigateway_client, **kwargs):
 
 def create_rest_api_integration(apigateway_client, **kwargs):
     response = apigateway_client.put_integration(**kwargs)
-    assert_response_is_200(response)
+    assert_response_is_201(response)
     return response.get("uri"), response.get("type")
 
 
@@ -100,13 +100,13 @@ def get_rest_api_integration(apigateway_client, **kwargs):
 
 def create_rest_api_method_response(apigateway_client, **kwargs):
     response = apigateway_client.put_method_response(**kwargs)
-    assert_response_is_200(response)
+    assert_response_is_201(response)
     return response.get("statusCode")
 
 
 def create_rest_api_integration_response(apigateway_client, **kwargs):
     response = apigateway_client.put_integration_response(**kwargs)
-    assert_response_is_200(response)
+    assert_response_is_201(response)
     return response.get("statusCode")
 
 
@@ -123,14 +123,20 @@ def create_base_path_mapping(apigateway_client, **kwargs):
 
 def create_rest_api_deployment(apigateway_client, **kwargs):
     response = apigateway_client.create_deployment(**kwargs)
-    assert_response_is_200(response)
+    assert_response_is_201(response)
     return response.get("id"), response.get("createdDate")
 
 
 def update_rest_api_deployment(apigateway_client, **kwargs):
     response = apigateway_client.update_deployment(**kwargs)
-    assert_response_is_200(response)
+    assert_response_is_201(response)
     return response
+
+
+def create_rest_api_stage(apigateway_client, **kwargs):
+    response = apigateway_client.create_stage(**kwargs)
+    assert_response_is_201(response)
+    return response.get("stageName")
 
 
 def create_cognito_user_pool(cognito_idp, **kwargs):
