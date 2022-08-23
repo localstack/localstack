@@ -17,6 +17,7 @@ from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from requests.models import Response
 
+from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.core import CommonServiceException
 from localstack.aws.api.sns import (
@@ -91,7 +92,6 @@ from localstack.aws.api.sns import (
     topicName,
 )
 from localstack.config import external_service_url
-from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -1000,7 +1000,7 @@ async def message_to_subscriber(
         try:
             external_url = external_service_url("sns")
             unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
-            response = lambda_api.process_sns_notification(
+            response = process_sns_notification_to_lambda(
                 subscriber["Endpoint"],
                 topic_arn,
                 subscriber["SubscriptionArn"],
@@ -1016,8 +1016,8 @@ async def message_to_subscriber(
 
             if response is not None:
                 delivery = {
-                    "statusCode": response.status_code,
-                    "providerResponse": response.get_data(),
+                    "statusCode": response[0],
+                    "providerResponse": response[1],
                 }
                 store_delivery_log(subscriber, True, message, message_id, delivery)
 
@@ -1087,7 +1087,7 @@ async def message_to_subscriber(
                 "Received error on sending SNS message, putting to DLQ (if configured): %s", exc
             )
             store_delivery_log(subscriber, False, message, message_id)
-            # AWS doesnt send to the DLQ if there's an error trying to deliver a UnsubscribeConfirmation msg
+            # AWS doesn't send to the DLQ if there's an error trying to deliver a UnsubscribeConfirmation msg
             if msg_type != "UnsubscribeConfirmation":
                 sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
         return
@@ -1146,6 +1146,66 @@ async def message_to_subscriber(
         return
     else:
         LOG.warning('Unexpected protocol "%s" for SNS subscription', subscriber["Protocol"])
+
+
+def process_sns_notification_to_lambda(
+    func_arn,
+    topic_arn,
+    subscription_arn,
+    message,
+    message_id,
+    message_attributes,
+    unsubscribe_url,
+    subject="",
+) -> tuple[int, bytes] | None:
+    """
+    Process the SNS notification to lambda
+
+    :param func_arn: Arn of the target function
+    :param topic_arn: Arn of the topic invoking the function
+    :param subscription_arn: Arn of the subscription
+    :param message: SNS message
+    :param message_id: SNS message id
+    :param message_attributes: SNS message attributes
+    :param unsubscribe_url: Unsubscribe url
+    :param subject: SNS message subject
+    :return: Tuple (status code, payload) if synchronous call, None otherwise
+    """
+    event = {
+        "Records": [
+            {
+                "EventSource": "aws:sns",
+                "EventVersion": "1.0",
+                "EventSubscriptionArn": subscription_arn,
+                "Sns": {
+                    "Type": "Notification",
+                    "MessageId": message_id,
+                    "TopicArn": topic_arn,
+                    "Subject": subject,
+                    "Message": message,
+                    "Timestamp": timestamp_millis(),
+                    "SignatureVersion": "1",
+                    # TODO Add a more sophisticated solution with an actual signature
+                    # Hardcoded
+                    "Signature": "EXAMPLEpH+..",
+                    "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+                    "UnsubscribeUrl": unsubscribe_url,
+                    "MessageAttributes": message_attributes,
+                },
+            }
+        ]
+    }
+    lambda_client = aws_stack.connect_to_service("lambda")
+    inv_result = lambda_client.invoke(
+        FunctionName=func_arn,
+        Payload=to_bytes(json.dumps(event)),
+        InvocationType="RequestResponse" if config.SYNCHRONOUS_SNS_EVENTS else "Event",
+    )
+    status_code = inv_result.get("StatusCode")
+    payload = inv_result.get("Payload")
+    if payload:
+        return status_code, payload.read()
+    return None
 
 
 def get_subscription_by_arn(sub_arn):

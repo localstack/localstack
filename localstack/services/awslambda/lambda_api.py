@@ -81,7 +81,6 @@ from localstack.utils.time import (
     mktime,
     now_utc,
     timestamp,
-    timestamp_millis,
 )
 
 LOG = logging.getLogger(__name__)
@@ -431,49 +430,6 @@ def construct_invocation_event(
         "queryStringParameters": query_string_params or None,
         "multiValueQueryStringParameters": multi_value_dict_for_list(query_string_params) or None,
     }
-
-
-def process_sns_notification(
-    func_arn,
-    topic_arn,
-    subscription_arn,
-    message,
-    message_id,
-    message_attributes,
-    unsubscribe_url,
-    subject="",
-):
-    event = {
-        "Records": [
-            {
-                "EventSource": "aws:sns",
-                "EventVersion": "1.0",
-                "EventSubscriptionArn": subscription_arn,
-                "Sns": {
-                    "Type": "Notification",
-                    "MessageId": message_id,
-                    "TopicArn": topic_arn,
-                    "Subject": subject,
-                    "Message": message,
-                    "Timestamp": timestamp_millis(),
-                    "SignatureVersion": "1",
-                    # TODO Add a more sophisticated solution with an actual signature
-                    # Hardcoded
-                    "Signature": "EXAMPLEpH+..",
-                    "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
-                    "UnsubscribeUrl": unsubscribe_url,
-                    "MessageAttributes": message_attributes,
-                },
-            }
-        ]
-    }
-    inv_result = run_lambda(
-        func_arn=func_arn,
-        event=event,
-        context={},
-        asynchronous=not config.SYNCHRONOUS_SNS_EVENTS,
-    )
-    return inv_result.result
 
 
 def get_event_sources(func_name=None, source_arn=None):

@@ -34,6 +34,7 @@ from localstack.services.install import GO_LAMBDA_RUNTIME, INSTALL_PATH_LOCALSTA
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
+from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import (
@@ -69,6 +70,7 @@ from localstack.utils.container_utils.container_client import (
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT, get_default_volume_dir_mount
 from localstack.utils.run import FuncThread
+from localstack.utils.time import timestamp_millis
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
@@ -389,6 +391,49 @@ class LambdaExecutor:
 
         return result
 
+    def _lambda_result_to_destination(
+        self,
+        func_details: LambdaFunction,
+        event: Dict,
+        result: InvocationResult,
+        is_async: bool,
+        error: Optional[InvocationException],
+    ):
+        if not func_details.destination_enabled():
+            return
+
+        payload = {
+            "version": "1.0",
+            "timestamp": timestamp_millis(),
+            "requestContext": {
+                "requestId": long_uid(),
+                "functionArn": func_details.arn(),
+                "condition": "RetriesExhausted",
+                "approximateInvokeCount": 1,
+            },
+            "requestPayload": event,
+            "responseContext": {"statusCode": 200, "executedVersion": "$LATEST"},
+            "responsePayload": {},
+        }
+
+        if result and result.result:
+            try:
+                payload["requestContext"]["condition"] = "Success"
+                payload["responsePayload"] = json.loads(result.result)
+            except Exception:
+                payload["responsePayload"] = result.result
+
+        if error:
+            payload["responseContext"]["functionError"] = "Unhandled"
+            # add the result in the response payload
+            if error.result is not None:
+                payload["responsePayload"] = json.loads(error.result)
+            send_event_to_target(func_details.on_failed_invocation, payload)
+            return
+
+        if func_details.on_successful_invocation is not None:
+            send_event_to_target(func_details.on_successful_invocation, payload)
+
     def execute(
         self,
         func_arn: str,  # TODO remove and get from lambda_function
@@ -400,9 +445,6 @@ class LambdaExecutor:
         callback: Callable = None,
         lock_discriminator: str = None,
     ):
-        # note: leave here to avoid circular import issues
-        from localstack.utils.aws.message_forwarding import lambda_result_to_destination
-
         def do_execute(*args):
             @cloudwatched("lambda")
             def _run(func_arn=None):
@@ -433,7 +475,7 @@ class LambdaExecutor:
                         if callback:
                             callback(result, func_arn, event, error=raised_error)
 
-                        lambda_result_to_destination(
+                        self._lambda_result_to_destination(
                             lambda_function, event, result, asynchronous, raised_error
                         )
 
