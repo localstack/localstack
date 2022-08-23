@@ -275,6 +275,30 @@ def get_store(context: RequestContext | None = None) -> DynamoDBStore:
     return dynamodb_stores[_account_id][_region]
 
 
+def get_global_table_region(table_name: str, target_region: str | None = None) -> str | None:
+    """
+    Check if the table is a Version 2019.11.21 table.
+    :param target_region: the region we are looking for
+    :param table_name: the name of the table
+    :return: the original region; `None` if this is not a global table
+    """
+    replicas = get_store().REPLICA_UPDATES.get(table_name)
+    if not replicas:
+        return None
+    # todo: consider a different data structure to keep the list of replicas
+    original_region = list(replicas.keys())[0]
+    return original_region if target_region in replicas[original_region] else None
+
+
+def look_for_global_table(
+    context: RequestContext, table_name: str, region: str | None = None
+) -> None:
+    region: str | None = get_global_table_region(table_name=table_name, target_region=region)
+    if region:
+        # modify the context to query the original region where the table has been created
+        context.region = region
+
+
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def __init__(self):
         self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
@@ -313,13 +337,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         response.headers["x-amz-crc32"] = crc32(response.data) & 0xFFFFFFFF
 
     def forward_request(
-        self, context: RequestContext, service_request: ServiceRequest = None
+        self,
+        context: RequestContext,
+        service_request: ServiceRequest = None,
+        region: str | None = None,
     ) -> ServiceResponse:
         # check rate limiting for this request and raise an error, if provisioned throughput is exceeded
         self.check_provisioned_throughput(context.operation.name)
 
         # note: modifying headers in-place here before forwarding the request
-        self.prepare_request_headers(context.request.headers)
+        self.prepare_request_headers(context.request.headers, region=region)
         return self.request_forwarder(context, service_request)
 
     def get_forward_url(self) -> str:
@@ -422,6 +449,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def describe_table(self, context: RequestContext, table_name: TableName) -> DescribeTableOutput:
         # Check if table exists, to avoid error log output from DynamoDBLocal
+        look_for_global_table(context=context, table_name=table_name, region=context.region)
         if not self.table_exists(table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
@@ -429,9 +457,17 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result = self.forward_request(context)
 
         # update response with additional props
+        # TODO: This description needs to be updated too! (replicas)
         table_props = get_store(context).table_properties.get(table_name)
         if table_props:
             result.get("Table", {}).update(table_props)
+
+        replicas: Dict = get_store().REPLICA_UPDATES.get(table_name)
+        if replicas and replicas.get(context.region):
+            regions = replicas.get(context.region)
+            result.get("Table", {}).update(
+                {"Replicas": [{"RegionName": region} for region in regions]}
+            )
 
         # update only TableId and SSEDescription if present
         table_definitions = get_store(context).table_definitions.get(table_name)
@@ -470,24 +506,31 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
             if update_table_input.get("ReplicaUpdates"):
                 # update local table props (replicas)
-                table_properties = get_store(context).table_properties
-                table_properties[table_name] = table_props = table_properties.get(table_name) or {}
-                table_props["Replicas"] = replicas = table_props.get("Replicas") or []
+                table_properties: Dict = get_store(context).REPLICA_UPDATES
+                table_properties[table_name] = table_replicas = (
+                    table_properties.get(table_name) or {}
+                )
+
+                # get dict of replicas for the table => {original_region: {regions}}
+                original_region = context.region
+                table_replicas[original_region] = region_replicas = (
+                    table_replicas.get(original_region) or set()
+                )
                 for repl_update in update_table_input["ReplicaUpdates"]:
                     for key, details in repl_update.items():
+                        # target region
                         region = details.get("RegionName")
-                        if key == "Create":
-                            details["ReplicaStatus"] = details.get("ReplicaStatus") or "ACTIVE"
-                            replicas.append(details)
-                        if key == "Update":
-                            replica = [r for r in replicas if r.get("RegionName") == region]
-                            if replica:
-                                replica[0].update(details)
-                        if key == "Delete":
-                            table_props["Replicas"] = [
-                                r for r in replicas if r.get("RegionName") != region
-                            ]
-
+                        match key:
+                            case "Create":
+                                table_replicas[original_region].add(region)
+                            case "Update":
+                                table_replicas[original_region] = set(
+                                    [r for r in region_replicas if r == region]
+                                )
+                            case "Delete":
+                                table_replicas[original_region] = set(
+                                    [r for r in region_replicas if r != region]
+                                )
             # update response content
             schema = SchemaExtractor.get_table_schema(table_name)
             return UpdateTableOutput(TableDescription=schema["Table"])
@@ -509,6 +552,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("PutItem", expand=False)
     def put_item(self, context: RequestContext, put_item_input: PutItemInput) -> PutItemOutput:
+        look_for_global_table(
+            context=context, table_name=put_item_input.get("TableName"), region=context.region
+        )
         existing_item = None
         table_name = put_item_input["TableName"]
         event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name)
@@ -615,7 +661,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("GetItem", expand=False)
     def get_item(self, context: RequestContext, get_item_input: GetItemInput) -> GetItemOutput:
-        result = self.forward_request(context)
+        look_for_global_table(
+            context=context, table_name=get_item_input.get("TableName"), region=context.region
+        )
+        result = self.forward_request(context, region=context.region)
         self.fix_consumed_capacity(get_item_input, result)
         return result
 
@@ -1009,7 +1058,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return aws_stack.dynamodb_table_exists(table_name)
 
     @staticmethod
-    def prepare_request_headers(headers):
+    def prepare_request_headers(headers, region: str | None = None):
         def _replace(regex, replace):
             headers["Authorization"] = re.sub(
                 regex, replace, headers.get("Authorization") or "", flags=re.IGNORECASE
@@ -1018,6 +1067,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # Note: We need to ensure that the same access key is used here for all requests,
         # otherwise DynamoDBLocal stores tables/items in separate namespaces
         _replace(r"Credential=[^/]+/", rf"Credential={constants.INTERNAL_AWS_ACCESS_KEY_ID}/")
+
+        # To support global tables Version 2019, we need to replace the region with the one where the original
+        # table has been created.
+        if region:
+            _replace(
+                r"Credential=([^/]+/[^/]+)/(.*?)/",
+                rf"Credential=\1/{region}/",
+            )
+
         # Note: The NoSQL Workbench sends "localhost" or "local" as the region name, which we need to fix here
         _replace(
             r"Credential=([^/]+/[^/]+)/local(host)?/",

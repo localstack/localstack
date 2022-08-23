@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Set
 
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -6,6 +6,10 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
+
+TableName = str
+Region = str
+Replica = Dict[Region, Set[Region]]
 
 
 class DynamoDBStore(BaseStore):
@@ -16,7 +20,10 @@ class DynamoDBStore(BaseStore):
     # maps table names to cached table definitions
     table_definitions: Dict[str, Dict] = LocalAttribute(default=dict)
     # maps table names to additional table properties that are not stored upstream (e.g., ReplicaUpdates)
+    # TODO: replicas are out of here!!
     table_properties: Dict[str, Dict] = LocalAttribute(default=dict)
+    # maps the replicas for the v.2019 tables
+    REPLICA_UPDATES: Dict[TableName, Replica] = CrossRegionAttribute(default=dict)
     # maps table names to TTL specifications
     ttl_specifications: Dict[str, Dict] = LocalAttribute(default=dict)
 
