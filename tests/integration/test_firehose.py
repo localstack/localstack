@@ -379,6 +379,7 @@ class TestFirehoseIntegration:
         s3_client,
         s3_bucket,
         kinesis_create_stream,
+        cleanups,
     ):
 
         bucket_arn = aws_stack.s3_bucket_arn(s3_bucket)
@@ -429,9 +430,8 @@ class TestFirehoseIntegration:
                 },
             },
         )
-        try:
-            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        finally:
-            firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
-            kinesis_client.delete_stream(StreamName=stream_name)
-            s3_client.delete_bucket(Bucket=s3_bucket)
+        cleanups.append(
+            lambda: firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+        )
+
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
