@@ -1,5 +1,7 @@
+import json
 import logging
 import re
+import time
 from datetime import datetime
 
 import cbor2
@@ -7,6 +9,7 @@ import pytest
 import requests
 
 from localstack import config, constants
+from localstack.services.kinesis import kinesis_listener
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import poll_condition, retry, select_attributes, short_uid
 from localstack.utils.kinesis import kinesis_connector
@@ -308,6 +311,27 @@ class TestKinesis:
         assert len(records_data) == len(response_records)
         for response_record in response_records:
             assert response_record.get("Data").decode("utf-8") in records_data
+
+    @pytest.mark.aws_validated
+    def test_add_tags_to_stream(self, kinesis_client, kinesis_create_stream, wait_for_stream_ready):
+        stream_name = "test-%s" % short_uid()
+        test_tags = {
+            "Hello": "world"
+        }
+
+        # create stream
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name)
+
+        # adding tags
+        kinesis_client.add_tags_to_stream(StreamName=stream_name, Tags=test_tags)
+
+        # reading stream tags
+        list_tags_response = kinesis_client.list_tags_for_stream(StreamName=stream_name)
+
+        assert list_tags_response['Tags'][0]['Key'] == "Hello"
+        assert list_tags_response['Tags'][0]['Value'] == test_tags["Hello"]
+        assert not list_tags_response['HasMoreTags']
 
     @pytest.mark.aws_validated
     def test_get_records_next_shard_iterator(
