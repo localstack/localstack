@@ -70,12 +70,26 @@ def pytest_runtest_call(item: Item) -> None:
     if sm:
         verify = True
         paths = []
-        if (
-            not is_aws()
-        ):  # would make no sense to skip verifications when running against AWS, use transformers instead
+
+        if not is_aws():  # wrong by definition, use transformers instead
             for m in item.iter_markers(name="skip_snapshot_verify"):
+
+                skip_paths = m.kwargs.get("paths", [])
+
+                skip_condition = m.kwargs.get("condition")
+                # can optionally include a condition, when this will be skipped
+                # a condition must be a Callable returning something truthy/falsey
+                if skip_condition:
+                    if not callable(skip_condition):
+                        raise ValueError("condition must be a callable")
+
+                    if not skip_condition():
+                        continue  # don't skip
+
+                # we skip verification if no condition has been specified
                 verify = False
-                paths = m.kwargs.get("paths", [])
+                paths.extend(skip_paths)
+
         sm._assert_all(verify, paths)
 
 
@@ -92,6 +106,7 @@ def fixture_region():
 
 
 @pytest.fixture(name="snapshot", scope="function")
+@pytest.mark.skipif(condition="")
 def fixture_snapshot(request: SubRequest, account_id, region):
     update_overwrite = os.environ.get("SNAPSHOT_UPDATE", None) == "1"
 
