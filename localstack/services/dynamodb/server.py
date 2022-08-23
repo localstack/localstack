@@ -105,6 +105,11 @@ def create_dynamodb_server(
     port = port or get_free_tcp_port()
     server = DynamodbServer(port)
     db_path = f"{config.dirs.data}/dynamodb" if not db_path and config.dirs.data else db_path
+
+    if is_env_true("DYNAMODB_IN_MEMORY"):
+        # the DYNAMODB_IN_MEMORY variable takes precedence and will set the DB path to None which forces inMemory=true
+        db_path = None
+
     if db_path:
         if clean_db_path:
             rm_rf(db_path)
