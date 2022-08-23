@@ -104,7 +104,6 @@ def fixture_region():
 
 
 @pytest.fixture(name="snapshot", scope="function")
-@pytest.mark.skipif(condition="")
 def fixture_snapshot(request: SubRequest, account_id, region):
     update_overwrite = os.environ.get("SNAPSHOT_UPDATE", None) == "1"
 
