@@ -457,7 +457,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result = self.forward_request(context)
 
         # update response with additional props
-        # TODO: This description needs to be updated too! (replicas)
         table_props = get_store(context).table_properties.get(table_name)
         if table_props:
             result.get("Table", {}).update(table_props)
