@@ -1,6 +1,45 @@
 {
   "tests/integration/cloudformation/test_cloudformation_kinesis.py::test_stream_creation": {
-    "recorded-date": "23-08-2022, 13:48:43",
-    "recorded-content": {}
+    "recorded-date": "24-08-2022, 14:50:59",
+    "recorded-content": {
+      "stack_output": {
+        "StreamArn": "arn:aws:kinesis:<region>:111111111111:stream/<stream-name:1>"
+      },
+      "stream_description": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "StreamDescription": {
+          "EncryptionType": "NONE",
+          "EnhancedMonitoring": [
+            {
+              "ShardLevelMetrics": []
+            }
+          ],
+          "HasMoreShards": false,
+          "RetentionPeriodHours": 24,
+          "Shards": [
+            {
+              "HashKeyRange": {
+                "EndingHashKey": "<ending-hash-key:1>",
+                "StartingHashKey": "0"
+              },
+              "SequenceNumberRange": {
+                "StartingSequenceNumber": "<sequence-number:1>"
+              },
+              "ShardId": "shard-id"
+            }
+          ],
+          "StreamARN": "arn:aws:kinesis:<region>:111111111111:stream/<stream-name:1>",
+          "StreamCreationTimestamp": "timestamp",
+          "StreamModeDetails": {
+            "StreamMode": "PROVISIONED"
+          },
+          "StreamName": "<stream-name:1>",
+          "StreamStatus": "ACTIVE"
+        }
+      }
+    }
   }
 }
