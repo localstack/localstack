@@ -23,17 +23,18 @@ from localstack.services.apigateway.integration import (
     LambdaIntegration,
     LambdaProxyIntegration,
     MockIntegration,
+    SnsIntegration,
+    StepFunctionIntegration,
+)
+from localstack.services.apigateway.templates import (
     RequestTemplates,
     ResponseTemplates,
-    SnsIntegration,
     VtlTemplate,
 )
 from localstack.services.kinesis import kinesis_listener
-from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import request_response_stream, requests_response
-from localstack.utils.common import camel_to_snake_case, json_safe
 
 # set up logger
 from localstack.utils.http import add_query_params_to_url
@@ -380,60 +381,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             return invocation_context.response
 
         elif "states:action/" in uri:
-            action = uri.split("/")[-1]
-
-            if APPLICATION_JSON in integration.get("requestTemplates", {}):
-                request_templates = RequestTemplates()
-                payload = request_templates.render(invocation_context)
-                payload = json.loads(payload)
-            else:
-                # XXX decoding in py3 sounds wrong, this actually might break
-                payload = json.loads(data.decode("utf-8"))
-            client = aws_stack.connect_to_service("stepfunctions")
-
-            if isinstance(payload.get("input"), dict):
-                payload["input"] = json.dumps(payload["input"])
-
-            # Hot fix since step functions local package responses: Unsupported Operation: 'StartSyncExecution'
-            method_name = (
-                camel_to_snake_case(action) if action != "StartSyncExecution" else "start_execution"
-            )
-
-            try:
-                method = getattr(client, method_name)
-            except AttributeError:
-                msg = "Invalid step function action: %s" % method_name
-                LOG.error(msg)
-                return make_error_response(msg, 400)
-
-            result = method(**payload)
-            result = json_safe({k: result[k] for k in result if k not in "ResponseMetadata"})
-            response = requests_response(
-                content=result,
-                headers=aws_stack.mock_aws_request_headers(),
-            )
-
-            if action == "StartSyncExecution":
-                # poll for the execution result and return it
-                result = await_sfn_execution_result(result["executionArn"])
-                result_status = result.get("status")
-                if result_status != "SUCCEEDED":
-                    return make_error_response(
-                        "StepFunctions execution %s failed with status '%s'"
-                        % (result["executionArn"], result_status),
-                        500,
-                    )
-                result = json_safe(result)
-                response = requests_response(content=result)
-
-            # apply response templates
-            invocation_context.response = response
-            response_templates = ResponseTemplates()
-            response_templates.render(invocation_context)
-            # response = apply_request_response_templates(
-            #     response, response_templates, content_type=APPLICATION_JSON
-            # )
-            return response
+            return StepFunctionIntegration().invoke(invocation_context)
         # https://docs.aws.amazon.com/apigateway/api-reference/resource/integration/
         elif ("s3:path/" in uri or "s3:action/" in uri) and method == "GET":
             s3 = aws_stack.connect_to_service("s3")
