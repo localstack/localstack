@@ -144,7 +144,7 @@ def create_rest_api_deployment(apigateway_client, **kwargs):
 
 def update_rest_api_deployment(apigateway_client, **kwargs):
     response = apigateway_client.update_deployment(**kwargs)
-    assert_response_is_201(response)
+    assert_response_is_200(response)
     return response
 
 
