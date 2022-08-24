@@ -358,7 +358,6 @@ ec2:
     - TestAccVPCSubnet_disappears
     - TestAccVPCSubnet_enableDNS64
     - TestAccVPCSubnet_enableIPv6
-    - TestAccVPCSubnet_ipv6
     - TestAccVPCSubnet_mapPublicIPOnLaunch
     - TestAccVPCSubnet_privateDNSNameOptionsOnLaunch
     - TestAccVPCSubnet_tags
