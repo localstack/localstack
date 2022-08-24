@@ -24,7 +24,7 @@ from localstack.aws.spec import load_service
 from localstack.utils.common import camel_to_snake_case, snake_to_camel_case
 
 # Some minification packages might treat "type" as a keyword, some specs define shapes called like the type "Optional"
-KEYWORDS = list(keyword.kwlist) + ["type", "Optional"]
+KEYWORDS = list(keyword.kwlist) + ["type", "Optional", "Union"]
 is_keyword = KEYWORDS.__contains__
 
 
