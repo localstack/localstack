@@ -703,7 +703,7 @@ class TestS3:
             s3_client.get_bucket_replication(Bucket=bucket_name)
         snapshot.match("bucket-replication", e.value.response)
 
-    @pytest.mark.only_localstack
+    @pytest.mark.aws_validated
     def test_location_path_url(
         self,
         s3_client,
@@ -711,13 +711,17 @@ class TestS3:
     ):
         region = "us-east-2"
         bucket_name = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": region},
+            CreateBucketConfiguration={"LocationConstraint": region}, ACL="public-read"
         )
         response = s3_client.get_bucket_location(Bucket=bucket_name)
         assert region == response["LocationConstraint"]
         # TODO should this also work against AWS?
+        # related PR https://github.com/localstack/localstack/pull/5795
+        # originally tested this url:
+        # url = f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_name}?location="
+
         # make raw request, assert that newline is contained after XML preamble: <?xml ...>\n
-        url = f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_name}?location="
+        url = _bucket_url(bucket_name, region)
         response = requests.get(url)
         assert response.ok
         content = to_str(response.content)
@@ -1196,8 +1200,14 @@ class TestS3DeepArchive:
             assert obj.storage_class == "DEEP_ARCHIVE"
 
 
-def _anon_client(service):
+def _anon_client(service: str):
     conf = Config(signature_version=UNSIGNED)
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client(service, config=conf, region_name=None)
     return aws_stack.create_external_boto_client(service, config=conf)
+
+
+def _bucket_url(bucket_name: str, region: str) -> str:
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return f"http://s3.{region}.amazonaws.com/{bucket_name}"
+    return f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_name}"
