@@ -147,6 +147,9 @@ def create_cluster(
     # FIXME: in AWS, the Endpoint is set once the cluster is running, not before (like here), but our tests and
     #  in particular cloudformation currently relies on the assumption that it is set when the domain is created.
     status = region.opensearch_domains[domain_key.domain_name]
+    # Replacing only 0.0.0.0 here as usage of this bind address mostly means running in docker which is used locally
+    # If another bind address is used we want to keep it in the endpoint as this is a conscious user decision to
+    # access from another device on the network.
     status["Endpoint"] = cluster.url.split("://")[-1].replace("0.0.0.0", LOCALSTACK_HOSTNAME)
     status["EngineVersion"] = engine_version
 
