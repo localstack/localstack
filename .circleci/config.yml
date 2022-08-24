@@ -254,6 +254,49 @@ jobs:
             - repo/target/coverage/
             - repo/target/metric_reports
 
+  capture-not-implemented:
+    parameters:
+      pro:
+        description: "Run tests against Pro?"
+        default: false
+        type: boolean
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker localstack-full image
+          command: docker load -i target/localstack-docker-image-amd64.tar
+      - run:
+          name: Run localstack
+          command: |
+            <<#parameters.pro>>LOCALSTACK_API_KEY=$TEST_LOCALSTACK_API_KEY<</parameters.pro>> IMAGE_NAME="localstack/localstack-full:latest" bin/localstack start -d
+            bin/localstack wait -t 120
+      - run:
+          name: Run capture-not-implemented
+          command: |
+            source .venv/bin/activate
+            cd scripts
+            <<#parameters.pro>>mkdir -p pro<</parameters.pro>>
+            python -m capture_notimplemented_responses <<#parameters.pro>>./pro<</parameters.pro>>
+      - run:
+          name: Print the logs
+          command: |
+            source .venv/bin/activate
+            localstack logs
+      - run:
+          name: Stop localstack
+          command: |
+            source .venv/bin/activate
+            localstack stop
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/scripts/<<#parameters.pro>>pro/<</parameters.pro>>implementation_coverage_aggregated.csv
+            - repo/scripts/<<#parameters.pro>>pro/<</parameters.pro>>implementation_coverage_full.csv
+
   report:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -282,6 +325,18 @@ jobs:
             python -m scripts.metric_aggregator . amd64
       - store_artifacts:
           path: parity_metrics/
+      - store_artifacts:
+          path: scripts/implementation_coverage_aggregated.csv
+          destination: community/implementation_coverage_aggregated.csv
+      - store_artifacts:
+          path: scripts/implementation_coverage_full.csv
+          destination: community/implementation_coverage_full.csv
+      - store_artifacts:
+          path: scripts/pro/implementation_coverage_aggregated.csv
+          destination: pro/implementation_coverage_aggregated.csv
+      - store_artifacts:
+          path: scripts/pro/implementation_coverage_full.csv
+          destination: pro/implementation_coverage_full.csv
 
   docker-push:
     executor: ubuntu-machine-amd64
@@ -384,12 +439,23 @@ workflows:
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           requires:
             - docker-build-amd64
+      - capture-not-implemented:
+          name: collect-not-implemented-community
+          requires:
+            - docker-build-amd64
+      - capture-not-implemented:
+          name: collect-not-implemented-pro
+          pro: true
+          requires:
+            - docker-build-amd64
       - report:
           requires:
             - itest-lambda-docker
             - itest-lambda-provider
             - docker-test-amd64
             - docker-test-arm64
+            - collect-not-implemented-community
+            - collect-not-implemented-pro
             - unit-tests
       - docker-push:
           filters:
