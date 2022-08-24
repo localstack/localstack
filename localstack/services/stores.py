@@ -28,7 +28,7 @@ from collections.abc import Callable
 from threading import RLock
 from typing import Any, Type, TypeVar, Union
 
-from boto3 import Session
+from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 
 LOCAL_ATTR_PREFIX = "attr_"
 
@@ -155,7 +155,7 @@ class RegionBundle(dict):
         self.validate = validate
         self.lock = lock or RLock()
 
-        self.valid_regions = Session().get_available_regions(service_name)
+        self.valid_regions = get_valid_regions_for_service(service_name)
 
         # Keeps track of all cross-region attributes
         self._global = {}
