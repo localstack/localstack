@@ -718,5 +718,23 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_get_object_with_anon_credentials": {
+    "recorded-date": "24-08-2022, 11:01:27",
+    "recorded-content": {
+      "get_object": {
+        "AcceptRanges": "bytes",
+        "Body": "body data",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"53ebc26c3ff5decfe9ffc7bdbaa02459\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

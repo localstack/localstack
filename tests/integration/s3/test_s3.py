@@ -2,14 +2,18 @@ import datetime
 import gzip
 import json
 import logging
+import os
 import re
 import time
 from io import BytesIO
 from unittest.mock import patch
 
+import boto3 as boto3
 import pytest
 import requests
 from boto3.s3.transfer import KB, TransferConfig
+from botocore import UNSIGNED
+from botocore.client import Config
 from botocore.exceptions import ClientError
 from pytz import timezone
 
@@ -17,6 +21,7 @@ from localstack import config
 from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.fixtures import _client
+from localstack.utils.aws import aws_stack
 from localstack.utils.collections import is_sub_dict
 from localstack.utils.server import http2_server
 from localstack.utils.strings import (
@@ -764,6 +769,33 @@ class TestS3:
         response = client_2.get_bucket_location(Bucket=bucket_3_name)
         snapshot.match("get_bucket_location_bucket_3", response)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..ContentLanguage",
+            "$..VersionId",
+        ]
+    )
+    def test_get_object_with_anon_credentials(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        bucket_name = "bucket-%s" % short_uid()
+        object_key = "key-%s" % short_uid()
+        body = "body data"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body=body,
+        )
+        s3_client.put_object_acl(Bucket=bucket_name, Key=object_key, ACL="public-read")
+        s3_anon_client = _anon_client("s3")
+
+        response = s3_anon_client.get_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("get_object", response)
+
 
 class TestS3PresignedUrl:
     """
@@ -1162,3 +1194,10 @@ class TestS3DeepArchive:
         for obj in objects:
             keys.append(obj.key)
             assert obj.storage_class == "DEEP_ARCHIVE"
+
+
+def _anon_client(service):
+    conf = Config(signature_version=UNSIGNED)
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.client(service, config=conf, region_name=None)
+    return aws_stack.create_external_boto_client(service, config=conf)
