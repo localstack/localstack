@@ -31,3 +31,13 @@ repos:
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: check_deps_changes
+        name: Check for dependency changes
+        entry: python -m scripts.githook_deps_check
+        language: system
+        always_run: true
+        stages: [post-checkout, post-merge]
+        verbose: true

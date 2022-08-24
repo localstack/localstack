@@ -274,8 +274,11 @@ format:            		  ## Run black and isort code formatter
 format-modified:   		  ## Run black and isort code formatter on modified files
 	($(VENV_RUN); python -m isort `git ls-files -m | grep '\.py$$' | xargs`; python -m black `git ls-files -m | grep '\.py$$' | xargs` )
 
-init-precommit:    		  ## install te pre-commit hook into your local git repository
+init-precommit:    		  ## install the pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
+
+init-githooks:    		  ## install all githooks into your local git repository
+	($(VENV_RUN); pre-commit install -t pre-commit -t post-checkout -t post-merge)
 
 clean:             		  ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf .filesystem
