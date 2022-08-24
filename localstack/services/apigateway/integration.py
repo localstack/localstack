@@ -3,7 +3,6 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import Any, Dict
 
 from flask import Response as FlaskResponse
 from requests import Response
@@ -31,6 +30,7 @@ from localstack.utils.aws.aws_responses import (
     flask_to_requests_response,
     requests_response,
 )
+from localstack.utils.collections import remove_attributes
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.json import json_safe
 from localstack.utils.strings import camel_to_snake_case, to_bytes
@@ -393,7 +393,7 @@ class StepFunctionIntegration(BackendIntegration):
             )
 
         result = method(**payload)
-        result = json_safe({k: result[k] for k in result if k not in "ResponseMetadata"})
+        result = json_safe(remove_attributes(result, "ResponseMetadata"))
         response = StepFunctionIntegration._create_response(
             HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=result
         )
@@ -420,44 +420,3 @@ class StepFunctionIntegration(BackendIntegration):
         invocation_context.response = response
         response._content = self.response_templates.render(invocation_context)
         return response
-
-
-class IntegrationSubtypes:
-
-    EVENTBRIDGE_PUTEVENTS = "EventBridge-PutEvents"
-    SQS_SENDMESSAGE = "SQS-SendMessage"
-    SQS_RECEIVESMESSAGE = "SQS-ReceiveMessage"
-    SQS_DELETEMESSAGE = "SQS-DeleteMessage"
-    SQS_PURGEQUEUE = "SQS-PurgeQueue"
-    APPCONFIG_GETCONFIGURATION = "AppConfig-GetConfiguration"
-    KINESIS_PUTRECORD = "Kinesis-PutRecord"
-    STEPFUNCTIONS_STARTEXECUTION = "StepFunctions-StartExecution"
-    STEPFUNCTIONS_STARTSYNCEXECUTION = "StepFunctions-StartSyncExecution"
-    STEPFUNCTIONS_STOPEXECUTION = "StepFunctions-StopExecution"
-
-    integration_subtypes: Dict[str, BackendIntegration | None] = {
-        EVENTBRIDGE_PUTEVENTS: None,
-        SQS_SENDMESSAGE: None,
-        SQS_RECEIVESMESSAGE: None,
-        SQS_DELETEMESSAGE: None,
-        SQS_PURGEQUEUE: None,
-        APPCONFIG_GETCONFIGURATION: None,
-        KINESIS_PUTRECORD: None,
-        STEPFUNCTIONS_STARTEXECUTION: StepFunctionIntegration,
-        STEPFUNCTIONS_STARTSYNCEXECUTION: StepFunctionIntegration,
-        STEPFUNCTIONS_STOPEXECUTION: StepFunctionIntegration,
-    }
-
-    @classmethod
-    def invoke(cls, integration_details: Dict[str, Any], api_context: ApiInvocationContext):
-        integration_subtype = integration_details.get("IntegrationSubtype")
-        if backend_integration := cls.integration_subtypes.get(integration_subtype):
-            api_context.integration["uri"] = IntegrationSubtypes.action_from_subtype_name(
-                integration_subtype
-            )
-            return backend_integration().invoke(api_context)
-        raise NotImplementedError(f'Integration subtype "{integration_subtype}" is not implemented')
-
-    @staticmethod
-    def action_from_subtype_name(subtype_name: str):
-        return subtype_name.split("-")[1]
