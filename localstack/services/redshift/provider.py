@@ -1,6 +1,13 @@
 from moto.redshift import responses as redshift_responses
+from moto.redshift.models import redshift_backends
 
-from localstack.aws.api.redshift import RedshiftApi
+from localstack.aws.api import RequestContext, handler
+from localstack.aws.api.redshift import (
+    ClusterSecurityGroupMessage,
+    DescribeClusterSecurityGroupsMessage,
+    RedshiftApi,
+)
+from localstack.services.moto import call_moto
 from localstack.utils.common import recurse_object
 from localstack.utils.patch import patch
 
@@ -24,4 +31,19 @@ def itemize(fn, data, parent_key=None, *args, **kwargs):
 
 
 class RedshiftProvider(RedshiftApi):
-    pass
+    @handler("DescribeClusterSecurityGroups", expand=False)
+    def describe_cluster_security_groups(
+        self,
+        context: RequestContext,
+        request: DescribeClusterSecurityGroupsMessage,
+    ) -> ClusterSecurityGroupMessage:
+        result = call_moto(context)
+        backend = redshift_backends[context.account_id][context.region]
+        for group in result.get("ClusterSecurityGroups", []):
+            if group.get("IPRanges"):
+                continue
+            sgroup = backend.security_groups.get(group["ClusterSecurityGroupName"])
+            group["IPRanges"] = [
+                {"Status": "authorized", "CIDRIP": ip} for ip in sgroup.ingress_rules
+            ]
+        return result
