@@ -8,6 +8,7 @@ import pytest
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.config import EDGE_BIND_HOST, LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION, OPENSEARCH_PLUGIN_LIST
 from localstack.services.install import install_opensearch
 from localstack.services.opensearch.cluster import EdgeProxiedOpensearchCluster
@@ -413,7 +414,7 @@ class TestOpensearchProvider:
         assert "Endpoint" in status
         endpoint = status["Endpoint"]
         parts = endpoint.split(":")
-        assert parts[0] == "localhost"
+        assert parts[0] in ("localhost", "127.0.0.1")
         assert int(parts[1]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )
@@ -585,7 +586,8 @@ class TestSingletonClusterManager:
 
         parts = cluster_0.url.split(":")
         assert parts[0] == "http"
-        assert parts[1] == "//localhost"
+        # either f"//{the bind host}" is used, or in the case of "//0.0.0.0" the localstack hostname instead
+        assert parts[1][2:] in [EDGE_BIND_HOST, LOCALSTACK_HOSTNAME]
         assert int(parts[2]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )
