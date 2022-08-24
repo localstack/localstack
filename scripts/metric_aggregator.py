@@ -208,7 +208,7 @@ def aggregate_recorded_raw_data(
     pathlist = Path(base_dir).rglob("metric-report-raw-data-*.csv")
     recorded = _init_service_metric_counter()
     for path in pathlist:
-        if str(path) == str(Path(collection_raw_csv)):
+        if collection_raw_csv and str(path) == str(Path(collection_raw_csv)):
             continue
         print(f"checking {str(path)}")
         with open(path, "r") as csv_obj:
