@@ -365,13 +365,16 @@ def events():
 
 @aws_provider()
 def stepfunctions():
-    from localstack.services.stepfunctions.provider import StepFunctionsApiListener
+    from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
-    listener = StepFunctionsApiListener()
+    provider = StepFunctionsProvider()
+    listener = AwsApiListener(
+        "stepfunctions", HttpFallbackDispatcher(provider, provider.get_forward_url)
+    )
     return Service(
         "stepfunctions",
         listener=listener,
-        lifecycle_hook=listener.provider,
+        lifecycle_hook=provider,
     )
 
 
