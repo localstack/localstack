@@ -282,7 +282,11 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         )
 
         save_for_retrospection(
-            message.id, context.region, Source=source, Destination=destinations, RawData=raw_data
+            message.id,
+            context.region,
+            Source=source or message.source,
+            Destination=destinations,
+            RawData=raw_data,
         )
 
         return SendRawEmailResponse(MessageId=message.id)
