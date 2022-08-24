@@ -38,7 +38,6 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     get_service_protocol,
-    load_file,
     new_tmp_dir,
     retry,
     run,
@@ -1602,20 +1601,6 @@ class TestS3(unittest.TestCase):
 
         response = requests.get(presign_url)
         self.assertEqual(b"test-value", response._content)
-
-    def test_terraform_request_sequence(self):
-
-        reqs = load_file(os.path.join(os.path.dirname(__file__), "files", "s3.requests.txt"))
-        reqs = reqs.split("---")
-
-        for req in reqs:
-            header, _, body = req.strip().partition("\n\n")
-            req, _, headers = header.strip().partition("\n")
-            headers = {h.split(":")[0]: h.partition(":")[2].strip() for h in headers.split("\n")}
-            method, path, _ = req.split(" ")
-            url = "%s%s" % (config.get_edge_url(), path)
-            result = getattr(requests, method.lower())(url, data=body, headers=headers)
-            self.assertLess(result.status_code, 400)
 
     # ---------------
     # HELPER METHODS

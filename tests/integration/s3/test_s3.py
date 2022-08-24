@@ -23,6 +23,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.fixtures import _client
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import is_sub_dict
+from localstack.utils.files import load_file
 from localstack.utils.server import http2_server
 from localstack.utils.strings import (
     checksum_crc32,
@@ -799,6 +800,23 @@ class TestS3:
 
         response = s3_anon_client.get_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("get_object", response)
+
+
+class TestS3TerraformRawRequests:
+    @pytest.mark.only_localstack
+    def test_terraform_request_sequence(self):
+
+        reqs = load_file(os.path.join(os.path.dirname(__file__), "../files", "s3.requests.txt"))
+        reqs = reqs.split("---")
+
+        for req in reqs:
+            header, _, body = req.strip().partition("\n\n")
+            req, _, headers = header.strip().partition("\n")
+            headers = {h.split(":")[0]: h.partition(":")[2].strip() for h in headers.split("\n")}
+            method, path, _ = req.split(" ")
+            url = "%s%s" % (config.get_edge_url(), path)
+            result = getattr(requests, method.lower())(url, data=body, headers=headers)
+            assert result.status_code < 400
 
 
 class TestS3PresignedUrl:
