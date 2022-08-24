@@ -1529,17 +1529,7 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [key])
         lambda_client.delete_function(FunctionName=function_name)
 
-    def test_putobject_with_multiple_keys(self):
-        client = self._get_test_client()
-        bucket = "bucket-%s" % short_uid()
-        key_by_path = "aws/key1/key2/key3"
-
-        client.create_bucket(Bucket=bucket)
-        client.put_object(Body=b"test", Bucket=bucket, Key=key_by_path)
-
-        # Cleanup
-        self._delete_bucket(bucket, key_by_path)
-
+    # TODO
     @pytest.mark.skip_offline
     def test_s3_lambda_integration(self):
         if not use_docker():
@@ -1574,6 +1564,7 @@ class TestS3(unittest.TestCase):
         s3_client.delete_object(Bucket=function_name, Key="key.png")
         s3_client.delete_bucket(Bucket=function_name)
 
+    # TODO -> not sure if this test makes sense in the future..
     def test_presign_port_permutation(self):
         bucket_name = short_uid()
         port1 = 443

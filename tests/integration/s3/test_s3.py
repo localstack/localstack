@@ -801,6 +801,21 @@ class TestS3:
         response = s3_anon_client.get_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("get_object", response)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..ContentLanguage", "$..VersionId", "$..AcceptRanges"]
+    )
+    def test_putobject_with_multiple_keys(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        bucket = "bucket-%s" % short_uid()
+        key_by_path = "aws/key1/key2/key3"
+
+        s3_create_bucket(Bucket=bucket)
+        s3_client.put_object(Body=b"test", Bucket=bucket, Key=key_by_path)
+        result = s3_client.get_object(Bucket=bucket, Key=key_by_path)
+        snapshot.match("get_object", result)
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack

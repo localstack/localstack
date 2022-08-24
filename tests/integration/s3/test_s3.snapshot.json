@@ -736,5 +736,23 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_putobject_with_multiple_keys": {
+    "recorded-date": "24-08-2022, 19:09:22",
+    "recorded-content": {
+      "get_object": {
+        "AcceptRanges": "bytes",
+        "Body": "test",
+        "ContentLength": 4,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
