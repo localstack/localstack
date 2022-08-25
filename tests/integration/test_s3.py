@@ -116,37 +116,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_s3_get_response_content_type_same_as_upload_and_range(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-
-        # put object
-        object_key = "foo/bar/key-by-hostname"
-        content_type = "foo/bar; charset=utf-8"
-        client.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Body="something " * 20,
-            ContentType=content_type,
-        )
-
-        url = client.generate_presigned_url(
-            "get_object", Params={"Bucket": bucket_name, "Key": object_key}
-        )
-
-        # get object and assert headers
-        response = requests.get(url, verify=False)
-        self.assertEqual(content_type, response.headers["content-type"])
-
-        # get object using range query and assert headers
-        response = requests.get(url, headers={"Range": "bytes=0-18"}, verify=False)
-        self.assertEqual(content_type, response.headers["content-type"])
-        self.assertEqual("something something", to_str(response.content))
-
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
-
     def test_s3_get_get_object_headers(self):
         object_key = "sample.bin"
         bucket_name = "test-%s" % short_uid()

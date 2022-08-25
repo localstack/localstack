@@ -1273,6 +1273,32 @@ class TestS3PresignedUrl:
         assert resp.status_code == 200
         assert to_str(resp.content) == "something"
 
+    @pytest.mark.aws_validated
+    def test_s3_get_response_content_type_same_as_upload_and_range(self, s3_client, s3_bucket):
+        # put object
+        object_key = "foo/bar/key-by-hostname"
+        content_type = "foo/bar; charset=utf-8"
+        s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body="something " * 20,
+            ContentType=content_type,
+        )
+
+        url = s3_client.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+        )
+
+        # get object and assert headers
+        response = requests.get(url, verify=False)
+        assert content_type == response.headers["content-type"]
+
+        # get object using range query and assert headers
+        response = requests.get(url, headers={"Range": "bytes=0-18"}, verify=False)
+        assert content_type == response.headers["content-type"]
+        # test we only get the first 18 bytes from the object
+        assert "something something" == to_str(response.content)
+
 
 class TestS3DeepArchive:
     """
