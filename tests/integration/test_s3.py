@@ -3,7 +3,6 @@
 import base64
 import gzip
 import hashlib
-import io
 import json
 import os
 import shutil
@@ -115,34 +114,6 @@ class TestS3(unittest.TestCase):
     @property
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
-
-    def test_s3_get_get_object_headers(self):
-        object_key = "sample.bin"
-        bucket_name = "test-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        chunk_size = 1024
-
-        with io.BytesIO() as data:
-            data.write(os.urandom(chunk_size * 2))
-            data.seek(0)
-            self.s3_client.upload_fileobj(data, bucket_name, object_key)
-
-        range_header = "bytes=0-%s" % (chunk_size - 1)
-        resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key, Range=range_header)
-        self.assertEqual("bytes", resp.get("AcceptRanges"))
-        self.assertIn("x-amz-request-id", resp["ResponseMetadata"]["HTTPHeaders"])
-        self.assertIn("x-amz-id-2", resp["ResponseMetadata"]["HTTPHeaders"])
-        self.assertIn("content-language", resp["ResponseMetadata"]["HTTPHeaders"])
-        # We used to return `cache-control: no-cache` if the header wasn't set
-        # by the client, but this was a bug because s3 doesn't do that. It simply
-        # omits it.
-        self.assertNotIn("cache-control", resp["ResponseMetadata"]["HTTPHeaders"])
-        # Do not send a content-encoding header as discussed in Issue #3608
-        self.assertNotIn("content-encoding", resp["ResponseMetadata"]["HTTPHeaders"])
-
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_put_object_chunked_newlines(self):
         # Test for https://github.com/localstack/localstack/issues/1571
