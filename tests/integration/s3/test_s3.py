@@ -838,6 +838,33 @@ class TestS3:
             s3_client.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
         snapshot.match("get-bucket-lifecycle-exc", e.value.response)
 
+    @pytest.mark.aws_validated
+    def test_delete_lifecycle_configuration_on_bucket_deletion(
+        self, s3_client, s3_create_bucket, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        bucket_name = f"test-bucket-{short_uid()}"  # keep the same name for both bucket
+        s3_create_bucket(Bucket=bucket_name)
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": "wholebucket",
+                    "Filter": {"Prefix": ""},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        s3_client.put_bucket_lifecycle_configuration(Bucket=bucket_name, LifecycleConfiguration=lfc)
+        result = s3_client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+        s3_client.delete_bucket(Bucket=bucket_name)
+        s3_create_bucket(Bucket=bucket_name)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        snapshot.match("get-bucket-lifecycle-exc", e.value.response)
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
