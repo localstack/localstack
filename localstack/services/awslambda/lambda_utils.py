@@ -5,7 +5,6 @@ import os
 import re
 import tempfile
 import time
-from collections import defaultdict
 from functools import lru_cache
 from io import BytesIO
 from typing import Any, Dict, List, Optional, TypedDict, Union
@@ -16,12 +15,12 @@ from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_responses import flask_error_response_json
-from localstack.utils.common import short_uid, to_str
 from localstack.utils.container_networking import (
     get_endpoint_for_network,
     get_main_container_network,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -99,19 +98,6 @@ def get_executor_mode() -> str:
     :return: the lambda executor mode (e.g., 'local', 'docker', or 'docker-reuse')
     """
     return config.LAMBDA_EXECUTOR or get_default_executor_mode()
-
-
-def multi_value_dict_for_list(elements: Union[List, Dict]) -> Dict:
-    temp_mv_dict = defaultdict(list)
-    for key in elements:
-        if isinstance(key, (list, tuple)):
-            key, value = key
-        else:
-            value = elements[key]
-        key = to_str(key)
-        temp_mv_dict[key].append(value)
-
-    return dict((k, tuple(v)) for k, v in temp_mv_dict.items())
 
 
 def get_lambda_runtime(runtime_details: Union[LambdaFunction, str]) -> str:

@@ -830,14 +830,14 @@ class TestAPIGateway:
         response = requests.get(f"{url}?param1=foobar")
         assert response.status_code < 400
         content = response.json()
-        assert '{"param1": "foobar"}' == content.get("event")
+        assert {"param1": "foobar"} == content.get("event")
 
         # additional checks from https://github.com/localstack/localstack/issues/5041
         # pass Signature param
         response = requests.get(f"{url}?param1=foobar&Signature=1")
         assert response.status_code == 200
         content = response.json()
-        assert '{"param1": "foobar"}' == content.get("event")
+        assert {"param1": "foobar"} == content.get("event")
 
         # delete integration
         rs = apigateway_client.delete_integration(

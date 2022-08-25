@@ -165,13 +165,14 @@ class ApiInvocationContext:
         except UnicodeDecodeError:
             return True
 
-    def data_as_string(self) -> Union[str, bytes]:
+    def data_as_string(self) -> str:
         try:
             return (
                 json.dumps(self.data) if isinstance(self.data, (dict, list)) else to_str(self.data)
             )
         except UnicodeDecodeError:
-            return base64.b64encode(self.data)
+            # we string encode our base64 as string as well
+            return to_str(base64.b64encode(self.data))
 
     def _extract_host_from_header(self):
         host = self.headers.get(HEADER_LOCALSTACK_EDGE_URL) or self.headers.get("host", "")
