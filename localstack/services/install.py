@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import functools
 import glob
+import json
 import logging
 import os
 import platform
@@ -38,7 +39,6 @@ from localstack.constants import (
 )
 from localstack.runtime import hooks
 from localstack.utils.archives import untar, unzip
-from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import (
     chmod_r,
     file_exists_not_empty,
@@ -461,32 +461,37 @@ def install_local_kms():
 
 def install_stepfunctions_local():
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
-        # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
-        if not DOCKER_CLIENT.has_docker():
-            # TODO: works only when a docker socket is available -> add a fallback if running without Docker?
-            LOG.warning("Docker not available - skipping installation of StepFunctions dependency")
-            return
-        log_install_msg("Step Functions")
-        mkdir(INSTALL_DIR_STEPFUNCTIONS)
-        DOCKER_CLIENT.pull_image(IMAGE_NAME_SFN_LOCAL)
-        docker_name = "tmp-ls-sfn"
-        DOCKER_CLIENT.run_container(
-            IMAGE_NAME_SFN_LOCAL,
-            remove=True,
-            entrypoint="",
-            name=docker_name,
-            detach=True,
-            command=["sleep", "15"],
-        )
-        time.sleep(5)
-        DOCKER_CLIENT.copy_from_container(
-            docker_name, local_path=dirs.static_libs, container_path="/home/stepfunctionslocal/"
-        )
 
-        path = Path(f"{dirs.static_libs}/stepfunctionslocal/")
+        image = "amazon/aws-stepfunctions-local"
+        image_digest = "sha256:e7b256bdbc9d58c20436970e8a56bd03581b891a784b00fea7385faff897b777"
+        target_path = dirs.static_libs
+
+        # Download layer that contains the necessary jars
+        def download_stepfunctions_jar(image, image_digest, target_path):
+            registry_base = "https://registry-1.docker.io"
+            auth_base = "https://auth.docker.io"
+            auth_service = "registry.docker.io"
+            token_request = requests.get(
+                f"{auth_base}/token?service={auth_service}&scope=repository:{image}:pull"
+            )
+            token = json.loads(token_request.content.decode("utf-8"))["token"]
+            headers = {"Authorization": f"Bearer {token}"}
+            response = requests.get(
+                headers=headers,
+                url=f"{registry_base}/v2/{image}/blobs/{image_digest}",
+            )
+            temp_path = f"{target_path}/stepfunctions.tar"
+            with open(temp_path, "wb") as f:
+                f.write(response.content)
+            untar(temp_path, target_path)
+            rm_rf(temp_path)
+
+        download_stepfunctions_jar(image, image_digest, target_path)
+        mkdir(INSTALL_DIR_STEPFUNCTIONS)
+        path = Path(f"{target_path}/home/stepfunctionslocal")
         for file in path.glob("*.jar"):
             file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
-        rm_rf(str(path))
+        rm_rf(f"{target_path}/home")
 
     classes = [
         SFN_PATCH_CLASS1,
