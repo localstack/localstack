@@ -169,6 +169,29 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def kinesis_api():
+        """
+        :return: array with Transformers, for s3 api.
+        """
+        return [
+            JsonpathTransformer(
+                jsonpath="$..Records..SequenceNumber",
+                replacement="sequence_number",
+                replace_reference=True,
+            ),
+            TransformerUtility.key_value(
+                "StartingSequenceNumber", "starting_sequence_number", reference_replacement=False
+            ),
+            TransformerUtility.key_value("ShardId", "shard_id", reference_replacement=False),
+            TransformerUtility.key_value(
+                "EndingHashKey", "ending_hash", reference_replacement=False
+            ),
+            TransformerUtility.key_value(
+                "StartingHashKey", "starting_hash", reference_replacement=False
+            ),
+        ]
+
+    @staticmethod
     def sqs_api():
         """
         :return: array with Transformers, for sqs api.
