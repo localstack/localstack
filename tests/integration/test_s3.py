@@ -6,13 +6,12 @@ import hashlib
 import json
 import os
 import shutil
-import ssl
 import time
 import unittest
 from io import BytesIO
 from unittest.mock import patch
 from urllib.parse import parse_qs, quote, urlparse
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 import boto3
 import pytest
@@ -114,44 +113,6 @@ class TestS3(unittest.TestCase):
     @property
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
-
-    def test_s3_put_object_chunked_newlines(self):
-        # Test for https://github.com/localstack/localstack/issues/1571
-        bucket_name = "test-bucket-%s" % short_uid()
-        object_key = "data"
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        body = "Hello\r\n\r\n\r\n\r\n"
-        headers = """
-            Authorization: %s
-            Content-Type: audio/mpeg
-            X-Amz-Content-Sha256: STREAMING-AWS4-HMAC-SHA256-PAYLOAD
-            X-Amz-Date: 20190918T051509Z
-            X-Amz-Decoded-Content-Length: %s
-        """ % (
-            aws_stack.mock_aws_request_headers("s3")["Authorization"],
-            len(body),
-        )
-        headers = dict(
-            [
-                [field.strip() for field in pair.strip().split(":", 1)]
-                for pair in headers.strip().split("\n")
-            ]
-        )
-        data = (
-            "d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
-            + "%s\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
-        ) % body
-        # put object
-        url = f"{config.service_url('s3')}/{bucket_name}/{object_key}"
-        req = PutRequest(url, to_bytes(data), headers)
-        urlopen(req, context=ssl.SSLContext()).read()
-        # get object and assert content length
-        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        download_file_object = to_str(downloaded_object["Body"].read())
-        self.assertEqual(len(body), len(str(download_file_object)))
-        self.assertEqual(body, str(download_file_object))
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_presigned_post_success_action_status_201_response(self):
         # FIXME: does not work against AWS. it complains: "Invalid according to Policy: Extra input fields:

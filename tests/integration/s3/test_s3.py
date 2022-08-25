@@ -917,6 +917,33 @@ class TestS3:
         # Do not send a content-encoding header as discussed in Issue #3608
         assert "content-encoding" not in resp_headers
 
+    @pytest.mark.only_localstack
+    def test_s3_put_object_chunked_newlines(self, s3_client, s3_bucket):
+        # Boto still does not support chunk encoding, which means we can't test with the client nor
+        # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
+        # Test for https://github.com/localstack/localstack/issues/1571
+        object_key = "data"
+        body = "Hello\r\n\r\n\r\n\r\n"
+        headers = {
+            "Authorization": aws_stack.mock_aws_request_headers("s3")["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+        }
+        data = (
+            "d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n"
+            f"{body}\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
+        )
+        # put object
+        url = f"{config.service_url('s3')}/{s3_bucket}/{object_key}"
+        requests.put(url, data, headers=headers, verify=False)
+        # get object and assert content length
+        downloaded_object = s3_client.get_object(Bucket=s3_bucket, Key=object_key)
+        download_file_object = to_str(downloaded_object["Body"].read())
+        assert len(body) == len(str(download_file_object))
+        assert body == str(download_file_object)
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
