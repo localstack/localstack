@@ -29,3 +29,26 @@ class TestRedshift:
         with pytest.raises(Exception) as e:
             redshift_client.describe_clusters(ClusterIdentifier=cluster_id)
         assert "ClusterNotFound" in str(e)
+
+    def test_cluster_security_groups(self, redshift_client, snapshot):
+        # Note: AWS parity testing not easily possible with our account, due to error message
+        #  "VPC-by-Default customers cannot use cluster security groups"
+
+        group_name = f"g-{short_uid()}"
+        redshift_client.create_cluster_security_group(
+            ClusterSecurityGroupName=group_name, Description="test 123"
+        )
+
+        cidr_ip = "192.168.100.101/32"
+        redshift_client.authorize_cluster_security_group_ingress(
+            ClusterSecurityGroupName=group_name, CIDRIP=cidr_ip
+        )
+
+        result = redshift_client.describe_cluster_security_groups(
+            ClusterSecurityGroupName=group_name
+        )
+        groups = result.get("ClusterSecurityGroups", [])
+        assert len(groups) == 1
+        assert groups[0].get("IPRanges")
+        assert groups[0]["IPRanges"][0]["Status"] == "authorized"
+        assert groups[0]["IPRanges"][0]["CIDRIP"] == cidr_ip
