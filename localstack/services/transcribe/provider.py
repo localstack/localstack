@@ -6,7 +6,6 @@ import threading
 import wave
 from pathlib import Path
 from typing import Tuple
-from urllib.request import urlretrieve
 from zipfile import ZipFile
 
 from localstack import config
@@ -31,6 +30,7 @@ from localstack.aws.api.transcribe import (
 from localstack.services.transcribe.models import TranscribeStore, transcribe_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import new_tmp_file, save_file
+from localstack.utils.http import download
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_thread
 
@@ -174,14 +174,14 @@ class TranscribeProvider(TranscribeApi):
 
             model_zip_path = str(model_path) + ".zip"
 
-            LOG.debug("Downloading language model to: %s", model_zip_path)
-            urlretrieve(MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path, data=None)
+            LOG.debug("Downloading language model: %s", model_path.name)
+            download(MODEL_PRE_URL + str(model_path.name) + ".zip", model_zip_path)
 
             LOG.debug("Extracting language model: %s", model_path.name)
             with ZipFile(model_zip_path, "r") as model_ref:
                 model_ref.extractall(model_path.parent)
 
-            Path(str(model_path) + ".zip").unlink()
+            Path(model_zip_path).unlink()
 
     #
     # Threads
