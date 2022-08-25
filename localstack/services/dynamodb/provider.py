@@ -97,7 +97,6 @@ from localstack.services.dynamodb.utils import (
     ItemFinder,
     ItemSet,
     SchemaExtractor,
-    calculate_crc32,
     extract_table_name_from_partiql_update,
 )
 from localstack.services.dynamodbstreams import dynamodbstreams_api
@@ -1364,11 +1363,6 @@ def get_updated_records(table_name: str, existing_items: List) -> List:
     for item in before.items_list:
         _add_record(item, after)
     return result
-
-
-def fix_headers_for_updated_response(response):
-    response.headers["Content-Length"] = len(to_bytes(response.content))
-    response.headers["x-amz-crc32"] = calculate_crc32(response)
 
 
 def create_dynamodb_stream(data, latest_stream_label):

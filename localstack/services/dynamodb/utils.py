@@ -1,6 +1,5 @@
 import logging
 import re
-from binascii import crc32
 from typing import Dict, List, Optional
 
 from cachetools import TTLCache
@@ -8,7 +7,6 @@ from moto.core.exceptions import JsonRESTError
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.json import canonical_json
-from localstack.utils.strings import to_bytes
 from localstack.utils.testutil import list_all_resources
 
 LOG = logging.getLogger(__name__)
@@ -154,7 +152,3 @@ def extract_table_name_from_partiql_update(statement: str) -> Optional[str]:
     regex = r"^\s*(UPDATE|INSERT\s+INTO|DELETE\s+FROM)\s+([^\s]+).*"
     match = re.match(regex, statement, flags=re.IGNORECASE | re.MULTILINE)
     return match and match.group(2)
-
-
-def calculate_crc32(response):
-    return crc32(to_bytes(response.content)) & 0xFFFFFFFF
