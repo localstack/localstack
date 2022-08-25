@@ -12,6 +12,7 @@ from unittest.mock import patch
 import boto3 as boto3
 import pytest
 import requests
+import xmltodict
 from boto3.s3.transfer import KB, TransferConfig
 from botocore import UNSIGNED
 from botocore.client import Config
@@ -1352,6 +1353,45 @@ class TestS3PresignedUrl:
         # test we only get the first 18 bytes from the object
         assert "something something" == to_str(response.content)
 
+    @pytest.mark.aws_validated
+    def test_s3_presigned_post_success_action_status_201_response(self, s3_client, s3_bucket):
+        # a security policy is required if the bucket is not publicly writable
+        # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html#RESTObjectPOST-requests-form-fields
+        body = "something body"
+        # get presigned URL
+        object_key = "key-${filename}"
+        presigned_request = s3_client.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_status": "201"},
+            Conditions=[{"bucket": s3_bucket}, ["eq", "$success_action_status", "201"]],
+            ExpiresIn=60,
+        )
+        files = {"file": ("my-file", body)}
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files=files,
+            verify=False,
+        )
+        # test
+        assert 201 == response.status_code
+        json_response = xmltodict.parse(response.content)
+        assert "PostResponse" in json_response
+        json_response = json_response["PostResponse"]
+        # fixme 201 response is hardcoded
+        # see localstack.services.s3.s3_listener.ProxyListenerS3.get_201_response
+        if is_aws_cloud():
+            location = f"{_bucket_url(s3_bucket, aws_stack.get_region())}/key-my-file"
+            etag = '"43281e21fce675ac3bcb3524b38ca4ed"'  # todo check quoting of etag
+        else:
+            location = "http://localhost/key-my-file"
+            etag = "d41d8cd98f00b204e9800998ecf8427f"
+        assert json_response["Location"] == location
+        assert json_response["Bucket"] == s3_bucket
+        assert json_response["Key"] == "key-my-file"
+        assert json_response["ETag"] == etag
+
 
 class TestS3DeepArchive:
     """
@@ -1396,5 +1436,8 @@ def _anon_client(service: str):
 
 def _bucket_url(bucket_name: str, region: str) -> str:
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return f"http://s3.{region}.amazonaws.com/{bucket_name}"
+        if region == "us-east-1":
+            return f"https://{bucket_name}.s3.amazonaws.com"
+        else:
+            return f"http://s3.{region}.amazonaws.com/{bucket_name}"
     return f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_name}"

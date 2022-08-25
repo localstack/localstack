@@ -114,47 +114,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_s3_presigned_post_success_action_status_201_response(self):
-        # FIXME: does not work against AWS. it complains: "Invalid according to Policy: Extra input fields:
-        #  success_action_status"
-        bucket_name = "test-presigned-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-        body = "something body"
-        # get presigned URL
-        object_key = "key-${filename}"
-        presigned_request = client.generate_presigned_post(
-            Bucket=bucket_name,
-            Key=object_key,
-            Fields={"success_action_status": 201},
-            ExpiresIn=60,
-        )
-        files = {"file": ("my-file", body)}
-        response = requests.post(
-            presigned_request["url"],
-            data=presigned_request["fields"],
-            files=files,
-            verify=False,
-        )
-        # test
-        expected_response_content = """
-                <PostResponse>
-                    <Location>{location}</Location>
-                    <Bucket>{bucket}</Bucket>
-                    <Key>{key}</Key>
-                    <ETag>{etag}</ETag>
-                </PostResponse>
-                """.format(
-            location="http://localhost/key-my-file",
-            bucket=bucket_name,
-            key="key-my-file",
-            etag="d41d8cd98f00b204e9800998ecf8427f",
-        )
-        self.assertEqual(201, response.status_code)
-        self.assertEqual(expected_response_content, response.text)
-        # clean up
-        self._delete_bucket(bucket_name, ["key-my-file"])
-
     def test_delete_object_tagging(self):
         bucket_name = "test-%s" % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name, ACL="public-read")
