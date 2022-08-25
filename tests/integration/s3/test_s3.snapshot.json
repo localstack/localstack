@@ -822,5 +822,24 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_range_header_body_length": {
+    "recorded-date": "25-08-2022, 18:02:59",
+    "recorded-content": {
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "",
+        "ContentLength": 1024,
+        "ContentRange": "bytes 0-1023/2048",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"7be4229686e4047603196e6edb58692d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      }
+    }
   }
 }

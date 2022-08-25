@@ -1,5 +1,6 @@
 import datetime
 import gzip
+import io
 import json
 import logging
 import os
@@ -864,6 +865,31 @@ class TestS3:
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
         snapshot.match("get-bucket-lifecycle-exc", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..ContentLanguage",
+            "$..VersionId",
+            "$..ETag",  # todo ETag should be the same?
+        ]
+    )
+    def test_range_header_body_length(self, s3_client, s3_bucket, snapshot):
+        # Test for https://github.com/localstack/localstack/issues/1952
+
+        object_key = "sample.bin"
+        chunk_size = 1024
+
+        with io.BytesIO() as data:
+            data.write(os.urandom(chunk_size * 2))
+            data.seek(0)
+            s3_client.upload_fileobj(data, s3_bucket, object_key)
+
+        range_header = "bytes=0-%s" % (chunk_size - 1)
+        resp = s3_client.get_object(Bucket=s3_bucket, Key=object_key, Range=range_header)
+        content = resp["Body"].read()
+        assert chunk_size == len(content)
+        snapshot.match("get-object", resp)
 
 
 class TestS3TerraformRawRequests:
