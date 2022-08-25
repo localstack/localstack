@@ -114,23 +114,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_delete_object_tagging(self):
-        bucket_name = "test-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name, ACL="public-read")
-        object_key = "test-key-tagging"
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
-        # get object and assert response
-        url = f"{config.service_url('s3')}/{bucket_name}/{object_key}"
-        response = requests.get(url, verify=False)
-        self.assertEqual(200, response.status_code)
-        # delete object tagging
-        self.s3_client.delete_object_tagging(Bucket=bucket_name, Key=object_key)
-        # assert that the object still exists
-        response = requests.get(url, verify=False)
-        self.assertEqual(200, response.status_code)
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
-
     def test_delete_non_existing_keys(self):
         bucket_name = "test-%s" % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)

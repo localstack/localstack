@@ -945,6 +945,20 @@ class TestS3:
         assert len(body) == len(str(download_file_object))
         assert body == str(download_file_object)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage"])
+    def test_delete_object_tagging(self, s3_client, s3_bucket, snapshot):
+        object_key = "test-key-tagging"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+        # get object and assert response
+        s3_obj = s3_client.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-obj", s3_obj)
+        # delete object tagging
+        s3_client.delete_object_tagging(Bucket=s3_bucket, Key=object_key)
+        # assert that the object still exists
+        s3_obj = s3_client.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-obj-after-tag-deletion", s3_obj)
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
