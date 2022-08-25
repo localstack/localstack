@@ -32,6 +32,8 @@ class KinesisStream(GenericBaseModel):
         return "AWS::Kinesis::Stream"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute == "Ref":
+            return self.props.get("Name")
         return aws_stack.kinesis_stream_arn(self.props.get("Name"))
 
     def fetch_state(self, stack_name, resources):
