@@ -153,6 +153,10 @@ class TestKMS:
         with pytest.raises(InvalidSignature):
             _verify(result["Signature"] + b"foobar")
 
+    def test_get_public_key(self, kms_client, kms_create_key):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_2048")["KeyId"]
+        kms_client.get_public_key(KeyId=key_id)
+
     @pytest.mark.aws_validated
     def test_get_and_list_sign_key(self, kms_client, kms_create_key):
         response = kms_create_key(KeyUsage="SIGN_VERIFY", CustomerMasterKeySpec="ECC_NIST_P256")

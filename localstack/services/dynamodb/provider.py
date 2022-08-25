@@ -513,7 +513,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             existing_item = ItemFinder.find_existing_item(put_item_input)
 
         # forward request to backend
-        result = self.forward_request(context, put_item_input)
+        result = self.forward_request(context)
 
         # Get stream specifications details for the table
         if event_sources_or_streams_enabled:
@@ -550,7 +550,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             existing_item = ItemFinder.find_existing_item(delete_item_input)
 
         # forward request to backend
-        result = self.forward_request(context, delete_item_input)
+        result = self.forward_request(context)
 
         # determine and forward stream record
         if existing_item:
@@ -587,7 +587,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             existing_item = ItemFinder.find_existing_item(update_item_input)
 
         # forward request to backend
-        result = self.forward_request(context, update_item_input)
+        result = self.forward_request(context)
 
         # construct and forward stream record
         if event_sources_or_streams_enabled:

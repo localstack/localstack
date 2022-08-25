@@ -1,3 +1,4 @@
+import pytest
 from pytest import fixture
 
 from localstack.services.stores import (
@@ -119,3 +120,20 @@ class TestStores:
             == id(sample_stores[account2]._global)
             != id(backend1_ap._global)
         )
+
+    def test_valid_regions(self):
+        class SampleStore(BaseStore):
+            pass
+
+        stores = AccountRegionBundle("sns", SampleStore)
+        account1 = "696969696969"
+
+        # assert regular regions work
+        assert stores[account1]["us-east-1"]
+        # assert extended regions work
+        assert stores[account1]["cn-north-1"]
+        assert stores[account1]["us-gov-west-1"]
+        # assert invalid regions don't pass validation
+        with pytest.raises(Exception) as exc:
+            assert stores[account1]["invalid-region"]
+        exc.match("not a valid AWS region")

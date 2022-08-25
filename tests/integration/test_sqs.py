@@ -1080,6 +1080,39 @@ class TestSqsProvider:
         assert messages[2]["Body"] == "message-3"
 
     @pytest.mark.aws_validated
+    def test_fifo_message_attributes(self, sqs_client, sqs_create_queue, snapshot):
+        snapshot.add_transformer(snapshot.transform.sqs_api())
+
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+                "VisibilityTimeout": "0",
+                "DeduplicationScope": "messageGroup",
+                "FifoThroughputLimit": "perMessageGroupId",
+            },
+        )
+
+        response = sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="message-body-1",
+            MessageGroupId="group-1",
+            MessageDeduplicationId="dedup-1",
+        )
+        snapshot.match("send_message", response)
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, AttributeNames=["All"], WaitTimeSeconds=10
+        )
+        snapshot.match("receive_message_0", response)
+        # makes sure that attributes are mutated correctly
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, AttributeNames=["All"], WaitTimeSeconds=10
+        )
+        snapshot.match("receive_message_1", response)
+
+    @pytest.mark.aws_validated
     def test_list_queue_tags(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1274,20 +1307,19 @@ class TestSqsProvider:
             QueueUrl=queue_url, Attributes={"RedrivePolicy": json.dumps(_valid_redrive_policy)}
         )
 
-    @pytest.mark.skip
-    def test_invalid_dead_letter_arn_rejected_before_lookup(self, sqs_create_queue):
-        queue_name = f"queue-{short_uid()}"
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="behavior not implemented yet")
+    def test_invalid_dead_letter_arn_rejected_before_lookup(self, sqs_create_queue, snapshot):
         dl_dummy_arn = "dummy"
         max_receive_count = 42
         _redrive_policy = {
             "deadLetterTargetArn": dl_dummy_arn,
             "maxReceiveCount": max_receive_count,
         }
-        with pytest.raises(Exception) as e:
-            sqs_create_queue(
-                QueueName=queue_name, Attributes={"RedrivePolicy": json.dumps(_redrive_policy)}
-            )
-        e.match("InvalidParameterValue")
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(Attributes={"RedrivePolicy": json.dumps(_redrive_policy)})
+
+        snapshot.match("error_response", e.value.response)
 
     @pytest.mark.aws_validated
     def test_set_queue_policy(self, sqs_client, sqs_create_queue):
@@ -1891,6 +1923,35 @@ class TestSqsProvider:
         assert "SequenceNumber" not in send_result
 
     @pytest.mark.aws_validated
+    def test_fifo_sequence_number_increases(self, sqs_client, sqs_create_queue):
+        fifo_queue_name = f"queue-{short_uid()}.fifo"
+        fifo_queue_url = sqs_create_queue(
+            QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"}
+        )
+
+        send_result_1 = sqs_client.send_message(
+            QueueUrl=fifo_queue_url,
+            MessageBody="message-1",
+            MessageGroupId="group",
+            MessageDeduplicationId="m1",
+        )
+        send_result_2 = sqs_client.send_message(
+            QueueUrl=fifo_queue_url,
+            MessageBody="message-2",
+            MessageGroupId="group",
+            MessageDeduplicationId="m2",
+        )
+        send_result_3 = sqs_client.send_message(
+            QueueUrl=fifo_queue_url,
+            MessageBody="message-3",
+            MessageGroupId="group",
+            MessageDeduplicationId="m3",
+        )
+
+        assert int(send_result_1["SequenceNumber"]) < int(send_result_2["SequenceNumber"])
+        assert int(send_result_2["SequenceNumber"]) < int(send_result_3["SequenceNumber"])
+
+    @pytest.mark.aws_validated
     def test_posting_to_fifo_requires_deduplicationid_group_id(self, sqs_client, sqs_create_queue):
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
@@ -2026,15 +2087,83 @@ class TestSqsProvider:
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         for i in range(3):
-            message_content = f"test-{i}"
+            message_content = f"test-0-{i}"
             sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_content)
         approx_nr_of_messages = sqs_client.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
         )
         assert int(approx_nr_of_messages["Attributes"]["ApproximateNumberOfMessages"]) > 1
+
         sqs_client.purge_queue(QueueUrl=queue_url)
+
         receive_result = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in receive_result.keys()
+
+        # test that adding messages after purge works
+        for i in range(3):
+            message_content = f"test-1-{i}"
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_content)
+
+        messages = []
+
+        def _collect():
+            result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+            messages.extend(result.get("Messages", []))
+            return len(messages) == 3
+
+        assert poll_condition(_collect)
+        assert {m["Body"] for m in messages} == {"test-1-0", "test-1-1", "test-1-2"}
+
+    @pytest.mark.aws_validated
+    def test_purge_queue_deletes_inflight_messages(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        for i in range(10):
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=f"message-{i}")
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=3, WaitTimeSeconds=5, MaxNumberOfMessages=5
+        )
+        assert "Messages" in response
+
+        sqs_client.purge_queue(QueueUrl=queue_url)
+
+        # wait for visibility timeout to expire
+        time.sleep(3)
+
+        receive_result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert "Messages" not in receive_result.keys()
+
+    @pytest.mark.aws_validated
+    def test_purge_queue_deletes_delayed_messages(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        for i in range(5):
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=f"message-{i}", DelaySeconds=2)
+
+        sqs_client.purge_queue(QueueUrl=queue_url)
+
+        # wait for delay to expire
+        time.sleep(2)
+
+        receive_result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        assert "Messages" not in receive_result.keys()
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_successive_purge_calls_fail(self, sqs_client, sqs_create_queue, monkeypatch, snapshot):
+        monkeypatch.setattr(config, "SQS_DELAY_PURGE_RETRY", True)
+        queue_name = f"test-queue-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(queue_name, "<queue-name>"))
+
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        sqs_client.purge_queue(QueueUrl=queue_url)
+
+        with pytest.raises(ClientError) as e:
+            sqs_client.purge_queue(QueueUrl=queue_url)
+
+        snapshot.match("purge_queue_error", e.value.response)
 
     @pytest.mark.aws_validated
     def test_remove_message_with_old_receipt_handle(self, sqs_client, sqs_create_queue):

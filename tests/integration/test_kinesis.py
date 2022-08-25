@@ -352,27 +352,31 @@ class TestKinesisPythonClient:
         # start Kinesis client
         stream_name = f"test-foobar-{short_uid()}"
         aws_stack.create_kinesis_stream(stream_name, delete=True)
-        kinesis_connector.listen_to_kinesis(
+        process = kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
             listener_func=process_records,
             kcl_log_level=logging.INFO,
             wait_until_started=True,
         )
 
-        kinesis = aws_stack.create_external_boto_client("kinesis")
+        try:
+            kinesis = aws_stack.create_external_boto_client("kinesis")
 
-        stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
-        assert 1 == stream_summary["StreamDescriptionSummary"]["OpenShardCount"]
+            stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
+            assert 1 == stream_summary["StreamDescriptionSummary"]["OpenShardCount"]
 
-        num_events_kinesis = 10
-        kinesis.put_records(
-            Records=[
-                {"Data": "{}", "PartitionKey": "test_%s" % i} for i in range(0, num_events_kinesis)
-            ],
-            StreamName=stream_name,
-        )
+            num_events_kinesis = 10
+            kinesis.put_records(
+                Records=[
+                    {"Data": "{}", "PartitionKey": "test_%s" % i}
+                    for i in range(0, num_events_kinesis)
+                ],
+                StreamName=stream_name,
+            )
 
-        def check_events():
-            assert num_events_kinesis == len(result)
+            def check_events():
+                assert num_events_kinesis == len(result)
 
-        retry(check_events, retries=4, sleep=2)
+            retry(check_events, retries=4, sleep=2)
+        finally:
+            process.stop()

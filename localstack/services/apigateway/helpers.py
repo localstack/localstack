@@ -389,7 +389,7 @@ def extract_path_params(path: str, extracted_path: str) -> Dict[str, str]:
     return path_params
 
 
-def extract_query_string_params(path: str) -> list[str, Dict[str, str]]:
+def extract_query_string_params(path: str) -> Tuple[str, Dict[str, str]]:
     parsed_path = urlparse.urlparse(path)
     path = parsed_path.path
     parsed_query_string_params = urlparse.parse_qs(parsed_path.query)
@@ -403,7 +403,7 @@ def extract_query_string_params(path: str) -> list[str, Dict[str, str]]:
 
     # strip trailing slashes from path to fix downstream lookups
     path = path.rstrip("/") or "/"
-    return [path, query_string_params]
+    return path, query_string_params
 
 
 def get_cors_response(headers):

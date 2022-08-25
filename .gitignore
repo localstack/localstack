@@ -60,3 +60,5 @@ api_states
 /integration/lambdas/golang/handler.zip
 /tests/integration/lambdas/golang/handler.zip
 tmp/
+
+volume/

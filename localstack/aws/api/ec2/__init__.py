@@ -28,6 +28,7 @@ CarrierGatewayId = str
 CarrierGatewayMaxResults = int
 ClientVpnAssociationId = str
 ClientVpnEndpointId = str
+CloudWatchLogGroupArn = str
 CoipPoolId = str
 CoipPoolMaxResults = int
 ConnectionNotificationId = str
@@ -4483,6 +4484,18 @@ class ClientVpnRoute(TypedDict, total=False):
 ClientVpnRouteSet = List[ClientVpnRoute]
 
 
+class CloudWatchLogOptions(TypedDict, total=False):
+    LogEnabled: Optional[Boolean]
+    LogGroupArn: Optional[String]
+    LogOutputFormat: Optional[String]
+
+
+class CloudWatchLogOptionsSpecification(TypedDict, total=False):
+    LogEnabled: Optional[Boolean]
+    LogGroupArn: Optional[CloudWatchLogGroupArn]
+    LogOutputFormat: Optional[String]
+
+
 class CoipAddressUsage(TypedDict, total=False):
     AllocationId: Optional[String]
     AwsAccountId: Optional[String]
@@ -7263,6 +7276,10 @@ class CreateVpcResult(TypedDict, total=False):
     Vpc: Optional[Vpc]
 
 
+class VpnTunnelLogOptionsSpecification(TypedDict, total=False):
+    CloudWatchLogOptions: Optional[CloudWatchLogOptionsSpecification]
+
+
 class IKEVersionsRequestListValue(TypedDict, total=False):
     Value: Optional[String]
 
@@ -7331,6 +7348,7 @@ class VpnTunnelOptionsSpecification(TypedDict, total=False):
     Phase2DHGroupNumbers: Optional[Phase2DHGroupNumbersRequestList]
     IKEVersions: Optional[IKEVersionsRequestList]
     StartupAction: Optional[String]
+    LogOptions: Optional[VpnTunnelLogOptionsSpecification]
 
 
 VpnTunnelOptionsSpecificationsList = List[VpnTunnelOptionsSpecification]
@@ -7378,6 +7396,10 @@ class VpnStaticRoute(TypedDict, total=False):
 
 
 VpnStaticRouteList = List[VpnStaticRoute]
+
+
+class VpnTunnelLogOptions(TypedDict, total=False):
+    CloudWatchLogOptions: Optional[CloudWatchLogOptions]
 
 
 class IKEVersionsListValue(TypedDict, total=False):
@@ -7449,6 +7471,7 @@ class TunnelOption(TypedDict, total=False):
     Phase2DHGroupNumbers: Optional[Phase2DHGroupNumbersList]
     IkeVersions: Optional[IKEVersionsList]
     StartupAction: Optional[String]
+    LogOptions: Optional[VpnTunnelLogOptions]
 
 
 TunnelOptionsList = List[TunnelOption]
@@ -14586,6 +14609,7 @@ class ModifyVpnTunnelOptionsSpecification(TypedDict, total=False):
     Phase2DHGroupNumbers: Optional[Phase2DHGroupNumbersRequestList]
     IKEVersions: Optional[IKEVersionsRequestList]
     StartupAction: Optional[String]
+    LogOptions: Optional[VpnTunnelLogOptionsSpecification]
 
 
 class ModifyVpnTunnelOptionsRequest(ServiceRequest):

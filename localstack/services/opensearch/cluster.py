@@ -123,11 +123,10 @@ def build_cluster_run_command(cluster_bin: str, settings: CommandSettings) -> Li
 
 
 class OpensearchCluster(Server):
-    """Manages an OpenSearch cluster which is installed an operated by LocalStack."""
+    """Manages an OpenSearch cluster which is installed and operated by LocalStack."""
 
-    # TODO: legacy default port should be removed here
     def __init__(
-        self, port=4571, host="localhost", version: str = None, directories: Directories = None
+        self, port, host="localhost", version: str = None, directories: Directories = None
     ) -> None:
         super().__init__(port, host)
         self._version = version or self.default_version
@@ -201,6 +200,7 @@ class OpensearchCluster(Server):
             "path.data": f'"{dirs.data}"',
             "path.repo": f'"{dirs.backup}"',
             "plugins.security.disabled": "true",
+            "discovery.type": "single-node",
         }
 
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
@@ -358,6 +358,7 @@ class ElasticsearchCluster(OpensearchCluster):
             "http.compression": "false",
             "path.data": f'"{dirs.data}"',
             "path.repo": f'"{dirs.backup}"',
+            "discovery.type": "single-node",
         }
 
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):

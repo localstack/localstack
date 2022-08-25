@@ -1,7 +1,7 @@
 import json
 import re
 
-from localstack.services.apigateway.integration import ApiGatewayVtlTemplate
+from localstack.services.apigateway.templates import ApiGatewayVtlTemplate
 from localstack.utils.aws.templating import render_velocity_template
 
 # template used to transform incoming requests at the API Gateway (forward to Kinesis)

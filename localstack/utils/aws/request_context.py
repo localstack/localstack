@@ -27,6 +27,8 @@ THREAD_LOCAL = threading.local()
 
 MARKER_APIGW_REQUEST_REGION = "__apigw_request_region__"
 
+AWS_REGION_REGEX = r"(us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\d"
+
 
 def get_proxy_request_for_thread():
     try:

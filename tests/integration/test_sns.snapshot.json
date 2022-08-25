@@ -1167,177 +1167,6 @@
       }
     }
   },
-  "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue": {
-    "recorded-date": "09-08-2022, 11:35:46",
-    "recorded-content": {
-      "topic-attrs": {
-        "Attributes": {
-          "ContentBasedDeduplication": "true",
-          "DisplayName": "",
-          "EffectiveDeliveryPolicy": {
-            "http": {
-              "defaultHealthyRetryPolicy": {
-                "minDelayTarget": 20,
-                "maxDelayTarget": 20,
-                "numRetries": 3,
-                "numMaxDelayRetries": 0,
-                "numNoDelayRetries": 0,
-                "numMinDelayRetries": 0,
-                "backoffFunction": "linear"
-              },
-              "disableSubscriptionOverrides": false
-            }
-          },
-          "FifoTopic": "true",
-          "Owner": "111111111111",
-          "Policy": {
-            "Version": "2008-10-17",
-            "Id": "__default_policy_ID",
-            "Statement": [
-              {
-                "Sid": "__default_statement_ID",
-                "Effect": "Allow",
-                "Principal": {
-                  "AWS": "*"
-                },
-                "Action": [
-                  "SNS:GetTopicAttributes",
-                  "SNS:SetTopicAttributes",
-                  "SNS:AddPermission",
-                  "SNS:RemovePermission",
-                  "SNS:DeleteTopic",
-                  "SNS:Subscribe",
-                  "SNS:ListSubscriptionsByTopic",
-                  "SNS:Publish"
-                ],
-                "Resource": "arn:aws:sns:<region>:111111111111:<resource:1>",
-                "Condition": {
-                  "StringEquals": {
-                    "AWS:SourceOwner": "111111111111"
-                  }
-                }
-              }
-            ]
-          },
-          "SubscriptionsConfirmed": "0",
-          "SubscriptionsDeleted": "0",
-          "SubscriptionsPending": "0",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "sub-attrs-raw-true": {
-        "Attributes": {
-          "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
-          "Owner": "111111111111",
-          "PendingConfirmation": "false",
-          "Protocol": "sqs",
-          "RawMessageDelivery": "true",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "publish-batch-response-fifo": {
-        "Failed": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
-        "Successful": [
-          {
-            "Id": "1",
-            "MessageId": "<uuid:1>",
-            "SequenceNumber": "<sequence-number:1>"
-          },
-          {
-            "Id": "2",
-            "MessageId": "<uuid:2>",
-            "SequenceNumber": "<sequence-number:2>"
-          },
-          {
-            "Id": "3",
-            "MessageId": "<uuid:3>",
-            "SequenceNumber": "<sequence-number:3>"
-          }
-        ]
-      },
-      "messages": {
-        "Messages": [
-          {
-            "Attributes": {
-              "ApproximateFirstReceiveTimestamp": "timestamp",
-              "ApproximateReceiveCount": "1",
-              "MessageDeduplicationId": "47f6d7e2c477469ad670ae3bfee60ed3e79080bb0105fc01a2805a50f8b21358",
-              "MessageGroupId": "complexMessageGroupId",
-              "SenderId": "<sender-id>",
-              "SentTimestamp": "timestamp",
-              "SequenceNumber": "<sequence-number:4>"
-            },
-            "Body": "Test Message with two attributes",
-            "MD5OfBody": "<md5-hash>",
-            "MD5OfMessageAttributes": "9b720b3af309c1c4b0d395c53b08c502",
-            "MessageAttributes": {
-              "attr1": {
-                "DataType": "Number",
-                "StringValue": "99.12"
-              },
-              "attr2": {
-                "DataType": "Number",
-                "StringValue": "109.12"
-              }
-            },
-            "MessageId": "<uuid:4>",
-            "ReceiptHandle": "<receipt-handle:1>"
-          },
-          {
-            "Attributes": {
-              "ApproximateFirstReceiveTimestamp": "timestamp",
-              "ApproximateReceiveCount": "1",
-              "MessageDeduplicationId": "2186166772ec2fb49b7ba9efbda53c6eabf8e785cb00420db531c8eb9287d8e1",
-              "MessageGroupId": "complexMessageGroupId",
-              "SenderId": "<sender-id>",
-              "SentTimestamp": "timestamp",
-              "SequenceNumber": "<sequence-number:5>"
-            },
-            "Body": "Test Message with one attribute",
-            "MD5OfBody": "<md5-hash>",
-            "MD5OfMessageAttributes": "1f07082409022a373fa2a2601f82b3cb",
-            "MessageAttributes": {
-              "attr1": {
-                "DataType": "Number",
-                "StringValue": "19.12"
-              }
-            },
-            "MessageId": "<uuid:5>",
-            "ReceiptHandle": "<receipt-handle:2>"
-          },
-          {
-            "Attributes": {
-              "ApproximateFirstReceiveTimestamp": "timestamp",
-              "ApproximateReceiveCount": "1",
-              "MessageDeduplicationId": "a579d4ebff398c5ad4d5037534a1c1bfab36410100c80d8c7c1029b57c7898fe",
-              "MessageGroupId": "complexMessageGroupId",
-              "SenderId": "<sender-id>",
-              "SentTimestamp": "timestamp",
-              "SequenceNumber": "<sequence-number:6>"
-            },
-            "Body": "Test Message without attribute",
-            "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:6>",
-            "ReceiptHandle": "<receipt-handle:3>"
-          }
-        ]
-      }
-    }
-  },
   "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_exceptions": {
     "recorded-date": "09-08-2022, 11:35:46",
     "recorded-content": {
@@ -1464,42 +1293,6 @@
           "HTTPStatusCode": 200
         },
         "Subscriptions": []
-      }
-    }
-  },
-  "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs": {
-    "recorded-date": "09-08-2022, 11:35:53",
-    "recorded-content": {
-      "messages": {
-        "Messages": [
-          {
-            "Attributes": {
-              "ApproximateFirstReceiveTimestamp": "timestamp",
-              "ApproximateReceiveCount": "1",
-              "MessageDeduplicationId": "<md5-hash>",
-              "MessageGroupId": "message-group-id-1",
-              "SenderId": "<sender-id>",
-              "SentTimestamp": "timestamp",
-              "SequenceNumber": "<sequence-number:1>"
-            },
-            "Body": {
-              "Type": "Notification",
-              "MessageId": "<uuid:1>",
-              "SequenceNumber": "<sequence-number:2>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
-              "Message": "Test",
-              "Timestamp": "date",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
-            },
-            "MD5OfBody": "<md5-hash>",
-            "MessageId": "<uuid:2>",
-            "ReceiptHandle": "<receipt-handle:1>"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
       }
     }
   },
@@ -1816,6 +1609,404 @@
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:6>",
             "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[True]": {
+    "recorded-date": "12-08-2022, 13:43:57",
+    "recorded-content": {
+      "topic-attrs": {
+        "Attributes": {
+          "ContentBasedDeduplication": "true",
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false
+            }
+          },
+          "FifoTopic": "true",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sub-attrs-raw-true": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish-batch-response-fifo": {
+        "Failed": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "Successful": [
+          {
+            "Id": "1",
+            "MessageId": "<uuid:1>",
+            "SequenceNumber": "<sequence-number:1>"
+          },
+          {
+            "Id": "2",
+            "MessageId": "<uuid:2>",
+            "SequenceNumber": "<sequence-number:2>"
+          },
+          {
+            "Id": "3",
+            "MessageId": "<uuid:3>",
+            "SequenceNumber": "<sequence-number:3>"
+          }
+        ]
+      },
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "47f6d7e2c477469ad670ae3bfee60ed3e79080bb0105fc01a2805a50f8b21358",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:4>"
+            },
+            "Body": "Test Message with two attributes",
+            "MD5OfBody": "<md5-hash>",
+            "MD5OfMessageAttributes": "9b720b3af309c1c4b0d395c53b08c502",
+            "MessageAttributes": {
+              "attr1": {
+                "DataType": "Number",
+                "StringValue": "99.12"
+              },
+              "attr2": {
+                "DataType": "Number",
+                "StringValue": "109.12"
+              }
+            },
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "2186166772ec2fb49b7ba9efbda53c6eabf8e785cb00420db531c8eb9287d8e1",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:5>"
+            },
+            "Body": "Test Message with one attribute",
+            "MD5OfBody": "<md5-hash>",
+            "MD5OfMessageAttributes": "1f07082409022a373fa2a2601f82b3cb",
+            "MessageAttributes": {
+              "attr1": {
+                "DataType": "Number",
+                "StringValue": "19.12"
+              }
+            },
+            "MessageId": "<uuid:5>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "a579d4ebff398c5ad4d5037534a1c1bfab36410100c80d8c7c1029b57c7898fe",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:6>"
+            },
+            "Body": "Test Message without attribute",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:6>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_from_fifo_topic_to_fifo_queue[False]": {
+    "recorded-date": "12-08-2022, 13:43:59",
+    "recorded-content": {
+      "topic-attrs": {
+        "Attributes": {
+          "ContentBasedDeduplication": "false",
+          "DisplayName": "",
+          "EffectiveDeliveryPolicy": {
+            "http": {
+              "defaultHealthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "backoffFunction": "linear"
+              },
+              "disableSubscriptionOverrides": false
+            }
+          },
+          "FifoTopic": "true",
+          "Owner": "111111111111",
+          "Policy": {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+              {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "SNS:GetTopicAttributes",
+                  "SNS:SetTopicAttributes",
+                  "SNS:AddPermission",
+                  "SNS:RemovePermission",
+                  "SNS:DeleteTopic",
+                  "SNS:Subscribe",
+                  "SNS:ListSubscriptionsByTopic",
+                  "SNS:Publish"
+                ],
+                "Resource": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "Condition": {
+                  "StringEquals": {
+                    "AWS:SourceOwner": "111111111111"
+                  }
+                }
+              }
+            ]
+          },
+          "SubscriptionsConfirmed": "0",
+          "SubscriptionsDeleted": "0",
+          "SubscriptionsPending": "0",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "sub-attrs-raw-true": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "true",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "publish-batch-response-fifo": {
+        "Failed": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "Successful": [
+          {
+            "Id": "1",
+            "MessageId": "<uuid:1>",
+            "SequenceNumber": "<sequence-number:1>"
+          },
+          {
+            "Id": "2",
+            "MessageId": "<uuid:2>",
+            "SequenceNumber": "<sequence-number:2>"
+          },
+          {
+            "Id": "3",
+            "MessageId": "<uuid:3>",
+            "SequenceNumber": "<sequence-number:3>"
+          }
+        ]
+      },
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "MessageDeduplicationId-0",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:4>"
+            },
+            "Body": "Test Message with two attributes",
+            "MD5OfBody": "<md5-hash>",
+            "MD5OfMessageAttributes": "9b720b3af309c1c4b0d395c53b08c502",
+            "MessageAttributes": {
+              "attr1": {
+                "DataType": "Number",
+                "StringValue": "99.12"
+              },
+              "attr2": {
+                "DataType": "Number",
+                "StringValue": "109.12"
+              }
+            },
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "MessageDeduplicationId-1",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:5>"
+            },
+            "Body": "Test Message with one attribute",
+            "MD5OfBody": "<md5-hash>",
+            "MD5OfMessageAttributes": "1f07082409022a373fa2a2601f82b3cb",
+            "MessageAttributes": {
+              "attr1": {
+                "DataType": "Number",
+                "StringValue": "19.12"
+              }
+            },
+            "MessageId": "<uuid:5>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "MessageDeduplicationId-2",
+              "MessageGroupId": "complexMessageGroupId",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:6>"
+            },
+            "Body": "Test Message without attribute",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:6>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[True]": {
+    "recorded-date": "12-08-2022, 13:52:38",
+    "recorded-content": {
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "532eaabd9574880dbf76b9b8cc00832c20a6ec113d682299550d7a6e0f345e25",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": "Test",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_message_to_fifo_sqs[False]": {
+    "recorded-date": "12-08-2022, 13:52:40",
+    "recorded-content": {
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageDeduplicationId": "message-deduplication-id-1",
+              "MessageGroupId": "message-group-id-1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp",
+              "SequenceNumber": "<sequence-number:1>"
+            },
+            "Body": "Test",
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
           }
         ],
         "ResponseMetadata": {

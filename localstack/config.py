@@ -446,6 +446,7 @@ DISABLE_CUSTOM_CORS_APIGATEWAY = is_env_true("DISABLE_CUSTOM_CORS_APIGATEWAY")
 EXTRA_CORS_ALLOWED_HEADERS = os.environ.get("EXTRA_CORS_ALLOWED_HEADERS", "").strip()
 EXTRA_CORS_EXPOSE_HEADERS = os.environ.get("EXTRA_CORS_EXPOSE_HEADERS", "").strip()
 EXTRA_CORS_ALLOWED_ORIGINS = os.environ.get("EXTRA_CORS_ALLOWED_ORIGINS", "").strip()
+DISABLE_PREFLIGHT_PROCESSING = is_env_true("DISABLE_PREFLIGHT_PROCESSING")
 
 # whether to disable publishing events to the API
 DISABLE_EVENTS = is_env_true("DISABLE_EVENTS")
@@ -581,6 +582,9 @@ DYNAMODB_HEAP_SIZE = os.environ.get("DYNAMODB_HEAP_SIZE", "").strip() or "256m"
 # single DB instance across multiple credentials are regions
 DYNAMODB_SHARE_DB = int(os.environ.get("DYNAMODB_SHARE_DB") or 0)
 
+# Used to toggle PurgeInProgress exceptions when calling purge within 60 seconds
+SQS_DELAY_PURGE_RETRY = is_env_true("SQS_DELAY_PURGE_RETRY")
+
 # Used to toggle QueueDeletedRecently errors when re-creating a queue within 60 seconds of deleting it
 SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 
@@ -707,6 +711,7 @@ CONFIG_ENV_VARS = [
     "DOCKER_BRIDGE_IP",
     "DYNAMODB_ERROR_PROBABILITY",
     "DYNAMODB_HEAP_SIZE",
+    "DYNAMODB_IN_MEMORY",
     "DYNAMODB_SHARE_DB",
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
@@ -759,6 +764,7 @@ CONFIG_ENV_VARS = [
     "SERVICES",
     "SKIP_INFRA_DOWNLOADS",
     "SKIP_SSL_CERT_DOWNLOAD",
+    "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
     "SQS_ENDPOINT_STRATEGY",
     "SQS_PORT_EXTERNAL",

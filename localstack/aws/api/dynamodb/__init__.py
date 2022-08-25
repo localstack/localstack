@@ -21,11 +21,14 @@ BooleanAttributeValue = bool
 BooleanObject = bool
 ClientRequestToken = str
 ClientToken = str
+CloudWatchLogGroupArn = str
 Code = str
 ConditionExpression = str
 ConsistentRead = bool
 ConsumedCapacityUnits = float
 ContributorInsightsRule = str
+CsvDelimiter = str
+CsvHeader = str
 Double = float
 ErrorMessage = str
 ExceptionDescription = str
@@ -38,6 +41,8 @@ ExpressionAttributeValueVariable = str
 FailureCode = str
 FailureMessage = str
 GlobalTableArnString = str
+ImportArn = str
+ImportNextToken = str
 IndexName = str
 Integer = int
 IntegerObject = int
@@ -48,6 +53,7 @@ KeyExpression = str
 KeySchemaAttributeName = str
 ListContributorInsightsLimit = int
 ListExportsMaxLimit = int
+ListImportsMaxLimit = int
 ListTablesInputLimit = int
 NextTokenString = str
 NonKeyAttributeName = str
@@ -192,11 +198,31 @@ class GlobalTableStatus(str):
     UPDATING = "UPDATING"
 
 
+class ImportStatus(str):
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CANCELLING = "CANCELLING"
+    CANCELLED = "CANCELLED"
+    FAILED = "FAILED"
+
+
 class IndexStatus(str):
     CREATING = "CREATING"
     UPDATING = "UPDATING"
     DELETING = "DELETING"
     ACTIVE = "ACTIVE"
+
+
+class InputCompressionType(str):
+    GZIP = "GZIP"
+    ZSTD = "ZSTD"
+    NONE = "NONE"
+
+
+class InputFormat(str):
+    DYNAMODB_JSON = "DYNAMODB_JSON"
+    ION = "ION"
+    CSV = "CSV"
 
 
 class KeyType(str):
@@ -365,6 +391,18 @@ class GlobalTableNotFoundException(ServiceException):
 
 class IdempotentParameterMismatchException(ServiceException):
     code: str = "IdempotentParameterMismatchException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ImportConflictException(ServiceException):
+    code: str = "ImportConflictException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ImportNotFoundException(ServiceException):
+    code: str = "ImportNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -1103,6 +1141,14 @@ class CreateTableOutput(TypedDict, total=False):
     TableDescription: Optional[TableDescription]
 
 
+CsvHeaderList = List[CsvHeader]
+
+
+class CsvOptions(TypedDict, total=False):
+    Delimiter: Optional[CsvDelimiter]
+    HeaderList: Optional[CsvHeaderList]
+
+
 class Delete(TypedDict, total=False):
     Key: Key
     TableName: TableName
@@ -1304,6 +1350,65 @@ ReplicaSettingsDescriptionList = List[ReplicaSettingsDescription]
 class DescribeGlobalTableSettingsOutput(TypedDict, total=False):
     GlobalTableName: Optional[TableName]
     ReplicaSettings: Optional[ReplicaSettingsDescriptionList]
+
+
+class DescribeImportInput(ServiceRequest):
+    ImportArn: ImportArn
+
+
+ImportedItemCount = int
+ProcessedItemCount = int
+ImportEndTime = datetime
+ImportStartTime = datetime
+
+
+class TableCreationParameters(TypedDict, total=False):
+    TableName: TableName
+    AttributeDefinitions: AttributeDefinitions
+    KeySchema: KeySchema
+    BillingMode: Optional[BillingMode]
+    ProvisionedThroughput: Optional[ProvisionedThroughput]
+    SSESpecification: Optional[SSESpecification]
+    GlobalSecondaryIndexes: Optional[GlobalSecondaryIndexList]
+
+
+class InputFormatOptions(TypedDict, total=False):
+    Csv: Optional[CsvOptions]
+
+
+ErrorCount = int
+
+
+class S3BucketSource(TypedDict, total=False):
+    S3BucketOwner: Optional[S3BucketOwner]
+    S3Bucket: S3Bucket
+    S3KeyPrefix: Optional[S3Prefix]
+
+
+class ImportTableDescription(TypedDict, total=False):
+    ImportArn: Optional[ImportArn]
+    ImportStatus: Optional[ImportStatus]
+    TableArn: Optional[TableArn]
+    TableId: Optional[TableId]
+    ClientToken: Optional[ClientToken]
+    S3BucketSource: Optional[S3BucketSource]
+    ErrorCount: Optional[ErrorCount]
+    CloudWatchLogGroupArn: Optional[CloudWatchLogGroupArn]
+    InputFormat: Optional[InputFormat]
+    InputFormatOptions: Optional[InputFormatOptions]
+    InputCompressionType: Optional[InputCompressionType]
+    TableCreationParameters: Optional[TableCreationParameters]
+    StartTime: Optional[ImportStartTime]
+    EndTime: Optional[ImportEndTime]
+    ProcessedSizeBytes: Optional[Long]
+    ProcessedItemCount: Optional[ProcessedItemCount]
+    ImportedItemCount: Optional[ImportedItemCount]
+    FailureCode: Optional[FailureCode]
+    FailureMessage: Optional[FailureMessage]
+
+
+class DescribeImportOutput(TypedDict, total=False):
+    ImportTableDescription: ImportTableDescription
 
 
 class DescribeKinesisStreamingDestinationInput(ServiceRequest):
@@ -1516,6 +1621,35 @@ GlobalTableGlobalSecondaryIndexSettingsUpdateList = List[
     GlobalTableGlobalSecondaryIndexSettingsUpdate
 ]
 GlobalTableList = List[GlobalTable]
+
+
+class ImportSummary(TypedDict, total=False):
+    ImportArn: Optional[ImportArn]
+    ImportStatus: Optional[ImportStatus]
+    TableArn: Optional[TableArn]
+    S3BucketSource: Optional[S3BucketSource]
+    CloudWatchLogGroupArn: Optional[CloudWatchLogGroupArn]
+    InputFormat: Optional[InputFormat]
+    StartTime: Optional[ImportStartTime]
+    EndTime: Optional[ImportEndTime]
+
+
+ImportSummaryList = List[ImportSummary]
+
+
+class ImportTableInput(ServiceRequest):
+    ClientToken: Optional[ClientToken]
+    S3BucketSource: S3BucketSource
+    InputFormat: InputFormat
+    InputFormatOptions: Optional[InputFormatOptions]
+    InputCompressionType: Optional[InputCompressionType]
+    TableCreationParameters: TableCreationParameters
+
+
+class ImportTableOutput(TypedDict, total=False):
+    ImportTableDescription: ImportTableDescription
+
+
 KeyConditions = Dict[AttributeName, Condition]
 
 
@@ -1579,6 +1713,17 @@ class ListGlobalTablesInput(ServiceRequest):
 class ListGlobalTablesOutput(TypedDict, total=False):
     GlobalTables: Optional[GlobalTableList]
     LastEvaluatedGlobalTableName: Optional[TableName]
+
+
+class ListImportsInput(ServiceRequest):
+    TableArn: Optional[TableArn]
+    PageSize: Optional[ListImportsMaxLimit]
+    NextToken: Optional[ImportNextToken]
+
+
+class ListImportsOutput(TypedDict, total=False):
+    ImportSummaryList: Optional[ImportSummaryList]
+    NextToken: Optional[ImportNextToken]
 
 
 class ListTablesInput(ServiceRequest):
@@ -2091,6 +2236,12 @@ class DynamodbApi:
     ) -> DescribeGlobalTableSettingsOutput:
         raise NotImplementedError
 
+    @handler("DescribeImport")
+    def describe_import(
+        self, context: RequestContext, import_arn: ImportArn
+    ) -> DescribeImportOutput:
+        raise NotImplementedError
+
     @handler("DescribeKinesisStreamingDestination")
     def describe_kinesis_streaming_destination(
         self, context: RequestContext, table_name: TableName
@@ -2185,6 +2336,19 @@ class DynamodbApi:
     ) -> GetItemOutput:
         raise NotImplementedError
 
+    @handler("ImportTable")
+    def import_table(
+        self,
+        context: RequestContext,
+        s3_bucket_source: S3BucketSource,
+        input_format: InputFormat,
+        table_creation_parameters: TableCreationParameters,
+        client_token: ClientToken = None,
+        input_format_options: InputFormatOptions = None,
+        input_compression_type: InputCompressionType = None,
+    ) -> ImportTableOutput:
+        raise NotImplementedError
+
     @handler("ListBackups")
     def list_backups(
         self,
@@ -2226,6 +2390,16 @@ class DynamodbApi:
         limit: PositiveIntegerObject = None,
         region_name: RegionName = None,
     ) -> ListGlobalTablesOutput:
+        raise NotImplementedError
+
+    @handler("ListImports")
+    def list_imports(
+        self,
+        context: RequestContext,
+        table_arn: TableArn = None,
+        page_size: ListImportsMaxLimit = None,
+        next_token: ImportNextToken = None,
+    ) -> ListImportsOutput:
         raise NotImplementedError
 
     @handler("ListTables")

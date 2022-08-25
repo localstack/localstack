@@ -1362,17 +1362,22 @@ class TemplateDeployer:
         return physical_id
 
     def get_change_config(self, action, resource, change_set_id=None):
-        return {
+        result = {
             "Type": "Resource",
             "ResourceChange": {
                 "Action": action,
                 "LogicalResourceId": resource.get("LogicalResourceId"),
                 "PhysicalResourceId": resource.get("PhysicalResourceId"),
                 "ResourceType": resource.get("Type"),
-                "Replacement": "False",
-                "ChangeSetId": change_set_id,
+                # TODO ChangeSetId is only set for *nested* change sets
+                # "ChangeSetId": change_set_id,
+                "Scope": [],  # TODO
+                "Details": [],  # TODO
             },
         }
+        if action == "Modify":
+            result["ResourceChange"]["Replacement"] = "False"
+        return result
 
     def resource_config_differs(self, resource_new):
         """Return whether the given resource properties differ from the existing config (for stack updates)."""
