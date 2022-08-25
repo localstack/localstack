@@ -1524,25 +1524,23 @@ class TestCloudFormation:
         stack.destroy()
         _assert(0)
 
+    @pytest.mark.aws_validated
     def test_cfn_statemachine_with_dependencies(self, deploy_cfn_template, stepfunctions_client):
+
         stack = deploy_cfn_template(
-            template_path=os.path.join(THIS_FOLDER, "templates", "statemachine_test.json")
+            template_path=os.path.join(THIS_FOLDER, "templates", "statemachine_test.json"),
+            max_wait=150,
         )
 
         rs = stepfunctions_client.list_state_machines()
-        statemachines = [
-            sm
-            for sm in rs["stateMachines"]
-            if "{}-SFSM22S5Y".format(stack.stack_name) in sm["name"]
-        ]
+        sm_name = "SFSM22S5Y"
+        statemachines = [sm for sm in rs["stateMachines"] if sm_name in sm["name"]]
         assert len(statemachines) == 1
 
         stack.destroy()
 
         rs = stepfunctions_client.list_state_machines()
-        statemachines = [
-            sm for sm in rs["stateMachines"] if f"{stack.stack_name}-SFSM22S5Y" in sm["name"]
-        ]
+        statemachines = [sm for sm in rs["stateMachines"] if sm_name in sm["name"]]
 
         assert not statemachines
 
