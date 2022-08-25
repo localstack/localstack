@@ -754,5 +754,39 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_delete_bucket_lifecycle_configuration": {
+    "recorded-date": "25-08-2022, 17:08:05",
+    "recorded-content": {
+      "get-bucket-lifecycle-conf": {
+        "Rules": [
+          {
+            "Expiration": {
+              "Days": 7
+            },
+            "Filter": {
+              "Prefix": ""
+            },
+            "ID": "wholebucket",
+            "Status": "Enabled"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-lifecycle-exc": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchLifecycleConfiguration",
+          "Message": "The lifecycle configuration does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
