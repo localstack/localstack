@@ -5,12 +5,14 @@ import random
 import re
 import time
 import traceback
+from binascii import crc32
 from typing import Dict, List
 
 import requests
 import werkzeug
 
 from localstack import config, constants
+from localstack.aws import handlers
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import (
     CommonServiceException,
@@ -95,7 +97,6 @@ from localstack.services.dynamodb.utils import (
     ItemFinder,
     ItemSet,
     SchemaExtractor,
-    calculate_crc32,
     extract_table_name_from_partiql_update,
 )
 from localstack.services.dynamodbstreams import dynamodbstreams_api
@@ -261,30 +262,10 @@ class ValidationException(CommonServiceException):
 
 class DynamoDBApiListener(AwsApiListener):
     def __init__(self, provider=None):
+        # TODO: remove once localstack-ext is refactored
         provider = provider or DynamoDBProvider()
         self.provider = provider
         super().__init__("dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url))
-
-    def return_response(self, method, path, data, headers, response):
-        if response._content:
-            response_content = to_str(response._content)
-            # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
-            content_replaced = re.sub(
-                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:([a-z-]+):dynamodb:ddblocal:([^"]+)"',
-                rf'\1: "arn:\2:dynamodb:{aws_stack.get_region()}:\3"',
-                response_content,
-            )
-            if content_replaced != response_content:
-                response._content = content_replaced
-
-        # set x-amz-crc32 headers required by some client
-        fix_headers_for_updated_response(response)
-
-        # update table definitions
-        data = json.loads(to_str(data))
-        if data and "TableName" in data and "KeySchema" in data:
-            table_definitions = get_store().table_definitions
-            table_definitions[data["TableName"]] = data
 
 
 def get_store(context: RequestContext | None = None) -> DynamoDBStore:
@@ -299,6 +280,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
 
     def on_after_init(self):
+        # add response processor specific to ddblocal
+        handlers.modify_service_response.append(self.service, self._modify_ddblocal_arns)
+
+        # routes for the shell ui
         ROUTER.add(
             path="/shell",
             endpoint=self.handle_shell_ui_redirect,
@@ -308,6 +293,24 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             path="/shell/<regex('.*'):req_path>",
             endpoint=self.handle_shell_ui_request,
         )
+
+    def _modify_ddblocal_arns(self, chain, context: RequestContext, response: Response):
+        """A service response handler that modifies the dynamodb backend response."""
+        if response_content := response.get_data(as_text=True):
+            # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
+            content_replaced = re.sub(
+                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:([a-z-]+):dynamodb:ddblocal:([^"]+)"',
+                rf'\1: "arn:\2:dynamodb:{aws_stack.get_region()}:\3"',
+                response_content,
+            )
+            if content_replaced != response_content:
+                response.data = content_replaced
+                context.service_response = (
+                    None  # make sure the service response is parsed again later
+                )
+
+        # update x-amz-crc32 header required by some clients
+        response.headers["x-amz-crc32"] = crc32(response.data) & 0xFFFFFFFF
 
     def forward_request(
         self, context: RequestContext, service_request: ServiceRequest = None
@@ -1360,11 +1363,6 @@ def get_updated_records(table_name: str, existing_items: List) -> List:
     for item in before.items_list:
         _add_record(item, after)
     return result
-
-
-def fix_headers_for_updated_response(response):
-    response.headers["Content-Length"] = len(to_bytes(response.content))
-    response.headers["x-amz-crc32"] = calculate_crc32(response)
 
 
 def create_dynamodb_stream(data, latest_stream_label):

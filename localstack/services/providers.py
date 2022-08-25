@@ -69,13 +69,18 @@ def cloudwatch():
 
 @aws_provider()
 def dynamodb():
-    from localstack.services.dynamodb.provider import DynamoDBApiListener
+    from localstack.aws.forwarder import HttpFallbackDispatcher
+    from localstack.services.dynamodb.provider import DynamoDBProvider
 
-    listener = DynamoDBApiListener()
+    provider = DynamoDBProvider()
+    listener = AwsApiListener(
+        "dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url)
+    )
+
     return Service(
         "dynamodb",
         listener=listener,
-        lifecycle_hook=listener.provider,
+        lifecycle_hook=provider,
     )
 
 

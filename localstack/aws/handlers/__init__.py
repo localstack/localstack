@@ -19,6 +19,7 @@ handle_internal_failure = fallback.InternalFailureHandler()
 serve_custom_service_request_handlers = chain.CompositeHandler()
 serve_localstack_resources = internal.LocalstackResourceHandler()
 run_custom_response_handlers = chain.CompositeResponseHandler()
+modify_service_response = service.ServiceResponseHandlers()
 parse_service_response = service.ServiceResponseParser()
 # legacy compatibility handlers
 serve_edge_router_rules = legacy.EdgeRouterHandler()

@@ -1,6 +1,7 @@
 """A set of common handlers to parse and route AWS service requests."""
 import logging
 import traceback
+from collections import defaultdict
 from functools import lru_cache
 from typing import Any, Dict, Optional, Union
 
@@ -11,7 +12,7 @@ from localstack.http import Response
 
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
-from ..chain import ExceptionHandler, Handler, HandlerChain
+from ..chain import CompositeResponseHandler, ExceptionHandler, Handler, HandlerChain
 from ..client import parse_response, parse_service_exception
 from ..protocol.parser import RequestParser, create_parser
 from ..protocol.serializer import create_serializer
@@ -281,3 +282,30 @@ class ServiceResponseParser(Handler):
         error.code = error_spec.get("code", shape.name)
         error.sender_fault = error_spec.get("senderFault", False)
         error.status_code = error_spec.get("httpStatusCode", 400)
+
+
+class ServiceResponseHandlers(Handler):
+    """
+    A handler that triggers a CompositeResponseHandler based on an association with a particular service. Handlers
+    are only called if the request context has a service, and there are handlers for that particular service.
+    """
+
+    handlers: Dict[str, CompositeResponseHandler]
+
+    def __init__(self):
+        self.handlers = defaultdict(CompositeResponseHandler)
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        if not context.service:
+            return
+
+        if service_handler := self.handlers.get(context.service.service_name):
+            service_handler(chain, context, response)
+
+    def append(self, service: str, handler: Handler):
+        """
+        Appends a given handler to the list of service handlers.
+        :param service: the service name, e.g., "dynamodb", or "sqs"
+        :param handler: the handler to attach
+        """
+        self.handlers[service].append(handler)
