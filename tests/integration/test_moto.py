@@ -53,13 +53,6 @@ def test_call_non_implemented_operation():
         )
 
 
-def test_proxy_non_implemented_operation():
-    with pytest.raises(NotImplementedError):
-        moto.proxy_moto(
-            moto.create_aws_request_context("athena", "DeleteDataCatalog", {"Name": "foo"})
-        )
-
-
 def test_call_with_sqs_modifies_state_in_moto_backend():
     """Whitebox test to check that moto backends are populated correctly"""
     from moto.sqs.models import sqs_backends
@@ -192,9 +185,9 @@ def test_call_multi_region_backends():
     del sqs_backends["eu-central-1"].queues[qname_eu]
 
 
-def test_proxy_with_sqs_invalid_call_raises_exception():
+def test_call_with_sqs_invalid_call_raises_exception():
     with pytest.raises(ServiceException):
-        moto.proxy_moto(
+        moto.call_moto(
             moto.create_aws_request_context(
                 "sqs",
                 "DeleteQueue",
@@ -205,10 +198,10 @@ def test_proxy_with_sqs_invalid_call_raises_exception():
         )
 
 
-def test_proxy_with_sqs_returns_service_response():
+def test_call_with_sqs_returns_service_response():
     qname = f"queue-{short_uid()}"
 
-    create_queue_response = moto.proxy_moto(
+    create_queue_response = moto.call_moto(
         moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname})
     )
 

@@ -3,7 +3,7 @@ This module provides tools to call moto using moto and botocore internals withou
 """
 import sys
 from functools import lru_cache, partial
-from typing import Callable, Optional, Union
+from typing import Callable
 
 from moto.backends import get_backend as get_moto_backend
 from moto.core.exceptions import RESTError
@@ -58,21 +58,6 @@ def call_moto_with_request(
     return call_moto(local_context)
 
 
-def proxy_moto(
-    context: RequestContext, service_request: ServiceRequest = None
-) -> Optional[Union[ServiceResponse]]:
-    """
-    Similar to ``call``, only that ``proxy`` does not parse the HTTP response into a ServiceResponse, but instead
-    returns directly the HTTP response. This can be useful to pass through moto's response directly to the client.
-
-    :param context: the request context
-    :param service_request: currently not being used, added to satisfy ServiceRequestHandler contract
-    :return: the Response from moto or the ServiceResponse dictionary (to be serialized again) in case the Content-Type
-             of the response does not explicitly match the Accept header of the request
-    """
-    return dispatch_to_backend(context, dispatch_to_moto)
-
-
 def MotoFallbackDispatcher(provider: object) -> DispatchTable:
     """
     Wraps a provider with a moto fallthrough mechanism. It does by creating a new DispatchTable from the original
@@ -82,7 +67,7 @@ def MotoFallbackDispatcher(provider: object) -> DispatchTable:
     :param provider: the ASF provider
     :return: a modified DispatchTable
     """
-    return ForwardingFallbackDispatcher(provider, proxy_moto)
+    return ForwardingFallbackDispatcher(provider, call_moto)
 
 
 def dispatch_to_moto(context: RequestContext) -> Response:
