@@ -6,6 +6,7 @@ from moto.core.utils import camelcase_to_underscores, underscores_to_camelcase
 from moto.ec2 import ec2_backends
 from moto.ec2.exceptions import InvalidVpcEndPointIdError
 from moto.ec2.models import SubnetBackend
+from moto.ec2.models.subnets import Subnet
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
@@ -211,16 +212,29 @@ class Ec2Provider(Ec2Api, ABC):
                 raise
             # fix setting subnet attributes currently not supported upstream
             backend = ec2_backends[context.region]
+
             subnet_id = request["SubnetId"]
             host_type = request.get("PrivateDnsHostnameTypeOnLaunch")
+            a_record_on_launch = request.get("EnableResourceNameDnsARecordOnLaunch")
+            aaaa_record_on_launch = request.get("EnableResourceNameDnsAAAARecordOnLaunch")
+            enable_dns64 = request.get("EnableDns64")
+
             if host_type:
                 attr_name = camelcase_to_underscores("PrivateDnsNameOptionsOnLaunch")
                 value = {"HostnameType": host_type}
                 backend.modify_subnet_attribute(subnet_id, attr_name, value)
-            enable_dns64 = request.get("EnableDns64")
-            if enable_dns64:
+            ## explicitly checking None value as this could contain a False value
+            if aaaa_record_on_launch is not None:
+                attr_name = camelcase_to_underscores("PrivateDnsNameOptionsOnLaunch")
+                value = {"EnableResourceNameDnsAAAARecord": aaaa_record_on_launch["Value"]}
+                backend.modify_subnet_attribute(subnet_id, attr_name, value)
+            if a_record_on_launch is not None:
+                attr_name = camelcase_to_underscores("PrivateDnsNameOptionsOnLaunch")
+                value = {"EnableResourceNameDnsARecord": a_record_on_launch["Value"]}
+                backend.modify_subnet_attribute(subnet_id, attr_name, value)
+            if enable_dns64 is not None:
                 attr_name = camelcase_to_underscores("EnableDns64")
-                backend.modify_subnet_attribute(subnet_id, attr_name, enable_dns64)
+                backend.modify_subnet_attribute(subnet_id, attr_name, enable_dns64["Value"])
 
     @handler("CreateSubnet", expand=False)
     def create_subnet(
@@ -262,7 +276,7 @@ class Ec2Provider(Ec2Api, ABC):
         backend = ec2_backends[context.region]
         # add additional/missing attributes in subnet responses
         for subnet in result.get("Subnets", []):
-            subnet_obj = backend.subnets[subnet["AvailabilityZone"]][subnet["SubnetId"]]
+            subnet_obj = backend.subnets[subnet["AvailabilityZone"]].get(subnet["SubnetId"])
             for attr in ADDITIONAL_SUBNET_ATTRS:
                 if hasattr(subnet_obj, attr):
                     attr_name = first_char_to_upper(underscores_to_camelcase(attr))
@@ -275,6 +289,24 @@ class Ec2Provider(Ec2Api, ABC):
 def modify_subnet_attribute(fn, self, subnet_id, attr_name, attr_value):
     subnet = self.get_subnet(subnet_id)
     if attr_name in ADDITIONAL_SUBNET_ATTRS:
+        # private dns name options on launch contains dict with keys EnableResourceNameDnsARecord and EnableResourceNameDnsAAAARecord, HostnameType
+        if attr_name == "private_dns_name_options_on_launch":
+            if hasattr(subnet, attr_name):
+                getattr(subnet, attr_name).update(attr_value)
+                return
+            else:
+                setattr(subnet, attr_name, attr_value)
+                return
         setattr(subnet, attr_name, attr_value)
         return
     return fn(self, subnet_id, attr_name, attr_value)
+
+
+@patch(Subnet.get_filter_value)
+def get_filter_value(fn, self, filter_name):
+    if filter_name in (
+        "ipv6CidrBlockAssociationSet.associationId",
+        "ipv6-cidr-block-association.association-id",
+    ):
+        return self.ipv6_cidr_block_associations
+    return fn(self, filter_name)

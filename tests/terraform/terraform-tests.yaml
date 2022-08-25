@@ -355,3 +355,10 @@ ec2:
     - TestAccVPCSubnet_defaultAndIgnoreTags
     - TestAccVPCSubnet_updateTagsKnownAtApply
     - TestAccVPCSubnet_ignoreTags
+    - TestAccVPCSubnet_availabilityZoneID
+    - TestAccVPCSubnet_disappears
+    - TestAccVPCSubnet_enableDNS64
+    - TestAccVPCSubnet_enableIPv6
+    - TestAccVPCSubnet_mapPublicIPOnLaunch
+    - TestAccVPCSubnet_privateDNSNameOptionsOnLaunch
+    - TestAccVPCSubnet_tags
