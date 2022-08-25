@@ -1,5 +1,4 @@
 import json
-import re
 from datetime import datetime
 from typing import Dict, List
 from urllib.parse import quote
@@ -8,16 +7,17 @@ from moto.iam.models import AWSManagedPolicy, InlinePolicy, Policy
 from moto.iam.models import Role as MotoRole
 from moto.iam.models import aws_managed_policies, filter_items_with_path_prefix
 from moto.iam.models import iam_backends as moto_iam_backends
-from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
-from moto.iam.responses import IamResponse
+from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import CommonServiceException, RequestContext
+from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
     ActionNameListType,
     ActionNameType,
     AttachedPermissionsBoundary,
     ContextEntryListType,
+    CreateRoleRequest,
+    CreateRoleResponse,
     CreateServiceLinkedRoleResponse,
     CreateUserResponse,
     DeleteServiceLinkedRoleResponse,
@@ -93,6 +93,18 @@ ADDITIONAL_MANAGED_POLICIES = {
 class IamProvider(IamApi):
     def __init__(self):
         apply_patches()
+
+    @handler("CreateRole", expand=False)
+    def create_role(
+        self, context: RequestContext, request: CreateRoleRequest
+    ) -> CreateRoleResponse:
+        result = call_moto(context)
+
+        if not request.get("MaxSessionDuration") and result["Role"].get("MaxSessionDuration"):
+            role = iam_global_backend().get_role(request["RoleName"])
+            role.max_session_duration = None
+            result["Role"].pop("MaxSessionDuration")
+        return result
 
     @staticmethod
     def build_evaluation_result(
@@ -440,39 +452,6 @@ def apply_patches():
 
     if "Principal" not in VALID_STATEMENT_ELEMENTS:
         VALID_STATEMENT_ELEMENTS.append("Principal")
-
-    @patch(IAMPolicyDocumentValidator._validate_resource_syntax, pass_target=False)
-    def _validate_resource_syntax(statement, *args, **kwargs):
-        # Note: Serverless generates policies without "Resource" section (only "Effect"/"Principal"/"Action"),
-        # which causes several policy validators in moto to fail
-        if statement.get("Resource") in [None, [None]]:
-            statement["Resource"] = ["*"]
-
-    # patch get_user to include tags
-    # TODO: remove this patch in favour of IamProvider.get_user.
-
-    @patch(IamResponse.get_user)
-    def iam_response_get_user(fn, self):
-        result = fn(self)
-        regex = r"(.*<UserName>\s*)([^\s]+)(\s*</UserName>.*)"
-        flags = re.MULTILINE | re.DOTALL
-
-        user_name = re.match(regex, result, flags=flags).group(2)
-        # replace default user id/name in response
-
-        user = iam_global_backend().users.get(user_name)
-        if not user:
-            return result
-        tags = iam_global_backend().tagger.list_tags_for_resource(user.arn)
-        if tags and "<Tags>" not in result:
-            tags_str = "".join(
-                [
-                    "<member><Key>%s</Key><Value>%s</Value></member>" % (t["Key"], t["Value"])
-                    for t in tags["Tags"]
-                ]
-            )
-            result = result.replace("</Arn>", "</Arn><Tags>%s</Tags>" % tags_str)
-        return result
 
     # patch policy __init__ to set document as attribute
 

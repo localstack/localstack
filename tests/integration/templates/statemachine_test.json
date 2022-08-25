@@ -71,29 +71,7 @@
                             ]
                         }
                     ]
-                },
-                "Policies": [
-                    {
-                        "PolicyName": "SecretsPermissions",
-                        "PolicyDocument": {
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Action": [
-                                        "secretsmanager:*"
-                                    ],
-                                    "Effect": "Allow",
-                                    "Resource": {
-                                        "Fn::GetAtt": [
-                                            "SMS34SSB",
-                                            "Arn"
-                                        ]
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                ]
+                }
             },
             "Metadata": {
                 "AWS::CloudFormation::Designer": {
@@ -124,7 +102,9 @@
         },
         "SFA28OGX": {
             "Type": "AWS::StepFunctions::Activity",
-            "Properties": {},
+            "Properties": {
+                "Name": "activity-SFA28OGX"
+            },
             "Metadata": {
                 "AWS::CloudFormation::Designer": {
                     "id": "c76ef380-8ed9-4566-97dd-49975a40f65d"
