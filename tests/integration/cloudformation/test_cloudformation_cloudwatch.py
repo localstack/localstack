@@ -24,7 +24,10 @@ def test_alarm_creation(deploy_cfn_template, snapshot):
                     },
                 }
             },
-            "Outputs": {"AlarmArnFromAtt": {"Value": {"Fn::GetAtt": "Alarm.Arn"}}},
+            "Outputs": {
+                "AlarmName": {"Value": {"Ref": "Alarm"}},
+                "AlarmArnFromAtt": {"Value": {"Fn::GetAtt": "Alarm.Arn"}},
+            },
         }
     )
 
