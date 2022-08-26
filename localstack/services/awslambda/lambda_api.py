@@ -403,17 +403,12 @@ def process_apigateway_invocation(
 
 
 def process_lambda_url_invocation(lambda_url_config: dict, event: dict):
-    try:
-        inv_result = run_lambda(
-            func_arn=lambda_url_config["FunctionArn"],
-            event=event,
-            asynchronous=False,
-        )
-        return inv_result.result
-
-    except Exception as e:
-        print(e)
-        raise
+    inv_result = run_lambda(
+        func_arn=lambda_url_config["FunctionArn"],
+        event=event,
+        asynchronous=False,
+    )
+    return inv_result.result
 
 
 def construct_invocation_event(
@@ -1624,17 +1619,37 @@ def get_url_config(function):
     arn = func_arn(function)
     lambda_backend = LambdaRegion.get()
 
+    # function doesn't exist
     fn = lambda_backend.lambdas.get(arn)
     if not fn:
-        raise ResourceNotFoundException("The resource you requested does not exist.")
+        return correct_error_response_for_url_config(
+            error_response(
+                "The resource you requested does not exist.",
+                404,
+                error_type="ResourceNotFoundException",
+            )
+        )
 
+    # alias doesn't exist
     if qualifier and not fn.aliases.get(qualifier):
-        raise ResourceNotFoundException("The resource you requested does not exist.")
+        return correct_error_response_for_url_config(
+            error_response(
+                "The resource you requested does not exist.",
+                404,
+                error_type="ResourceNotFoundException",
+            )
+        )
 
+    # function url doesn't exit
     url_config = lambda_backend.url_configs.get(arn)
     if not url_config:
-        raise ResourceNotFoundException("The resource you requested does not exist.")
-
+        return correct_error_response_for_url_config(
+            error_response(
+                "The resource you requested does not exist.",
+                404,
+                error_type="ResourceNotFoundException",
+            )
+        )
     response = url_config.copy()
     response.pop("CustomId")
     return response
