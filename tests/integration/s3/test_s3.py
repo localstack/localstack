@@ -1103,6 +1103,20 @@ class TestS3:
         )
 
     @pytest.mark.aws_validated
+    # TODO LocalStack adds this RequestID to the error response
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.RequestID"])
+    def test_precondition_failed_error(self, s3_client, s3_create_bucket, snapshot):
+        bucket = "bucket-%s" % short_uid()
+
+        s3_create_bucket(Bucket=bucket)
+        s3_client.put_object(Bucket=bucket, Key="foo", Body=b'{"foo": "bar"}')
+
+        with pytest.raises(ClientError) as e:
+            s3_client.get_object(Bucket=bucket, Key="foo", IfMatch='"not good etag"')
+
+        snapshot.match("get-object-if-match", e.value.response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.xfail(reason="Error format is wrong and missing keys")
     def test_s3_invalid_content_md5(self, s3_client, s3_bucket, snapshot):
         # put object with invalid content MD5

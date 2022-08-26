@@ -961,6 +961,22 @@
       }
     }
   },
+  "tests/integration/s3/test_s3.py::TestS3::test_precondition_failed_error": {
+    "recorded-date": "26-08-2022, 17:06:05",
+    "recorded-content": {
+      "get-object-if-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
+  },
   "tests/integration/s3/test_s3.py::TestS3::test_delete_non_existing_keys_in_non_existing_bucket": {
     "recorded-date": "26-08-2022, 15:41:56",
     "recorded-content": {

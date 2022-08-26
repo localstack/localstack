@@ -931,26 +931,6 @@ class TestS3(unittest.TestCase):
         response = requests.get(presigned_url)
         self.assertEqual(response._content, b"test-value")
 
-    def test_precondition_failed_error(self):
-        bucket = "bucket-%s" % short_uid()
-        client = self._get_test_client()
-
-        client.create_bucket(Bucket=bucket)
-        client.put_object(Bucket=bucket, Key="foo", Body=b'{"foo": "bar"}')
-
-        # this line makes localstack crash:
-        try:
-            client.get_object(Bucket=bucket, Key="foo", IfMatch='"not good etag"')
-        except ClientError as e:
-            self.assertEqual("PreconditionFailed", e.response["Error"]["Code"])
-            self.assertEqual(
-                "At least one of the pre-conditions you specified did not hold",
-                e.response["Error"]["Message"],
-            )
-
-        client.delete_object(Bucket=bucket, Key="foo")
-        client.delete_bucket(Bucket=bucket)
-
     # TODO
     @pytest.mark.skip_offline
     def test_s3_lambda_integration(self):
