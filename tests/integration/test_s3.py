@@ -27,17 +27,13 @@ from localstack.constants import (
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.awslambda.lambda_api import use_docker
-from localstack.services.awslambda.lambda_utils import (
-    LAMBDA_RUNTIME_NODEJS14X,
-    LAMBDA_RUNTIME_PYTHON36,
-)
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_NODEJS14X
 from localstack.services.s3 import s3_utils
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     get_service_protocol,
     new_tmp_dir,
-    retry,
     run,
     safe_requests,
     short_uid,
@@ -1257,42 +1253,6 @@ class TestS3(unittest.TestCase):
         # cleaning
         client.delete_object(Bucket=bucket, Key=object_key)
         client.delete_bucket(Bucket=bucket)
-
-    def test_s3_download_object_with_lambda(self):
-        bucket_name = "bucket-%s" % short_uid()
-        function_name = "func-%s" % short_uid()
-        key = "key-%s" % short_uid()
-
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        self.s3_client.put_object(Bucket=bucket_name, Key=key, Body="something..")
-
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_DOWNLOAD_FROM_S3,
-            func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
-            envvars=dict(
-                {
-                    "BUCKET_NAME": bucket_name,
-                    "OBJECT_NAME": key,
-                    "LOCAL_FILE_NAME": "/tmp/" + key,
-                }
-            ),
-        )
-
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        lambda_client.invoke(FunctionName=function_name, InvocationType="Event")
-
-        retry(
-            testutil.check_expected_lambda_log_events_length,
-            retries=10,
-            sleep=3,
-            function_name=function_name,
-            expected_length=1,
-        )
-
-        # clean up
-        self._delete_bucket(bucket_name, [key])
-        lambda_client.delete_function(FunctionName=function_name)
 
     # TODO
     @pytest.mark.skip_offline

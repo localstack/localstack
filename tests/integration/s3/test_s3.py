@@ -21,6 +21,7 @@ from pytz import timezone
 
 from localstack import config
 from localstack.constants import S3_VIRTUAL_HOSTNAME
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.fixtures import _client
 from localstack.utils.aws import aws_stack
@@ -36,6 +37,8 @@ from localstack.utils.strings import (
     to_bytes,
     to_str,
 )
+from localstack.utils.sync import retry
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 LOG = logging.getLogger(__name__)
 
@@ -958,6 +961,55 @@ class TestS3:
         # assert that the object still exists
         s3_obj = s3_client.get_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("get-obj-after-tag-deletion", s3_obj)
+
+    @pytest.mark.aws_validated
+    def test_s3_download_object_with_lambda(
+        self,
+        s3_client,
+        s3_create_bucket,
+        create_lambda_function,
+        lambda_client,
+        lambda_su_role,
+        logs_client,
+    ):
+
+        bucket_name = "bucket-%s" % short_uid()
+        function_name = "func-%s" % short_uid()
+        key = "key-%s" % short_uid()
+
+        s3_create_bucket(Bucket=bucket_name)
+        s3_client.put_object(Bucket=bucket_name, Key=key, Body="something..")
+
+        create_lambda_function(
+            handler_file=os.path.join(
+                os.path.dirname(__file__),
+                "../awslambda",
+                "functions",
+                "lambda_triggered_by_sqs_download_s3_file.py",
+            ),
+            func_name=function_name,
+            role=lambda_su_role,
+            runtime=LAMBDA_RUNTIME_PYTHON39,
+            envvars=dict(
+                {
+                    "BUCKET_NAME": bucket_name,
+                    "OBJECT_NAME": key,
+                    "LOCAL_FILE_NAME": "/tmp/" + key,
+                }
+            ),
+        )
+        lambda_client.invoke(FunctionName=function_name, InvocationType="Event")
+
+        # TODO maybe this check can be improved (do not rely on logs)
+        retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=1,
+            function_name=function_name,
+            regex_filter="success",
+            expected_length=1,
+            logs_client=logs_client,
+        )
 
 
 class TestS3TerraformRawRequests:
