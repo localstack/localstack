@@ -14,8 +14,8 @@ from localstack import config
 from localstack.services.infra import start_moto_server
 from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.aws import aws_stack
+from localstack.utils.collections import get_safe
 from localstack.utils.common import get_free_tcp_port, wait_for_port_open
-from localstack.utils.generic.dict_utils import get_safe
 from localstack.utils.patch import patch
 from localstack.utils.server import multiserver
 

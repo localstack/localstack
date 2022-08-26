@@ -51,53 +51,6 @@ class BytesEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-class JsonObject:
-    """Generic JSON serializable object for simplified subclassing"""
-
-    def to_json(self, indent=None):
-        return json.dumps(
-            self,
-            default=lambda o: (
-                (float(o) if o % 1 > 0 else int(o))
-                if isinstance(o, decimal.Decimal)
-                else o.__dict__
-            ),
-            sort_keys=True,
-            indent=indent,
-        )
-
-    def apply_json(self, j):
-        if isinstance(j, str):
-            j = json.loads(j)
-        self.__dict__.update(j)
-
-    def to_dict(self):
-        return json.loads(self.to_json())
-
-    @classmethod
-    def from_json(cls, j):
-        j = JsonObject.as_dict(j)
-        result = cls()
-        result.apply_json(j)
-        return result
-
-    @classmethod
-    def from_json_list(cls, json_list):
-        return [cls.from_json(j) for j in json_list]
-
-    @classmethod
-    def as_dict(cls, obj):
-        if isinstance(obj, dict):
-            return obj
-        return obj.to_dict()
-
-    def __str__(self):
-        return self.to_json()
-
-    def __repr__(self):
-        return self.__str__()
-
-
 class FileMappedDocument(dict):
     """A dictionary that is mapped to a json document on disk.
 

@@ -81,6 +81,14 @@ def pytest_runtest_call(item: Item) -> None:
                     if not callable(skip_condition):
                         raise ValueError("condition must be a callable")
 
+                    # special case where one of the marks has a skip condition but no paths
+                    # since we interpret a missing paths key as "all paths",
+                    # this should skip all paths, no matter what the other marks say
+                    if skip_condition() and not skip_paths:
+                        verify = False
+                        paths.clear()  # in case some other marker already added paths
+                        break
+
                     if not skip_condition():
                         continue  # don't skip
 

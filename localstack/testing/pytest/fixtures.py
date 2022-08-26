@@ -934,6 +934,7 @@ def deploy_cfn_template(
         parameters: Optional[Dict[str, str]] = None,
         max_wait: Optional[int] = None,
     ) -> DeployResult:
+
         if is_update:
             assert stack_name
         stack_name = stack_name or f"stack-{short_uid()}"
@@ -980,7 +981,7 @@ def deploy_cfn_template(
                     == "DELETE_COMPLETE"
                 )
 
-            assert wait_until(_await_stack_delete, _max_wait=60)
+            assert wait_until(_await_stack_delete, _max_wait=max_wait or 60)
             # TODO: fix in localstack. stack should only be in DELETE_COMPLETE state after all resources have been deleted
             time.sleep(2)
 
