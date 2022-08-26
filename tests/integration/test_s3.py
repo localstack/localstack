@@ -110,19 +110,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_s3_request_payer(self):
-        bucket_name = "test-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        response = self.s3_client.put_bucket_request_payment(
-            Bucket=bucket_name, RequestPaymentConfiguration={"Payer": "Requester"}
-        )
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-
-        response = self.s3_client.get_bucket_request_payment(Bucket=bucket_name)
-        self.assertEqual("Requester", response["Payer"])
-        self._delete_bucket(bucket_name)
-
     def test_bucket_exists(self):
         # Test setup
         bucket = "test-bucket-%s" % short_uid()

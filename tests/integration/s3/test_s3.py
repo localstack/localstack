@@ -991,6 +991,18 @@ class TestS3:
         snapshot.match("error-non-existent-bucket", e.value.response)
 
     @pytest.mark.aws_validated
+    def test_s3_request_payer(self, s3_client, s3_bucket, snapshot):
+        response = s3_client.put_bucket_request_payment(
+            Bucket=s3_bucket, RequestPaymentConfiguration={"Payer": "Requester"}
+        )
+        snapshot.match("put-bucket-request-payment", response)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        response = s3_client.get_bucket_request_payment(Bucket=s3_bucket)
+        snapshot.match("get-bucket-request-payment", response)
+        assert "Requester" == response["Payer"]
+
+    @pytest.mark.aws_validated
     def test_s3_download_object_with_lambda(
         self,
         s3_client,

@@ -976,5 +976,23 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_request_payer": {
+    "recorded-date": "26-08-2022, 15:48:13",
+    "recorded-content": {
+      "put-bucket-request-payment": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-request-payment": {
+        "Payer": "Requester",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
