@@ -1433,6 +1433,7 @@ class TestS3PresignedUrl:
         assert json_response["ETag"] == etag
 
     @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="Access-Control-Allow-Origin returns Origin value in LS")
     def test_s3_get_response_headers(self, s3_client, s3_bucket, snapshot):
         # put object and CORS configuration
         object_key = "key-by-hostname"
@@ -1460,6 +1461,38 @@ class TestS3PresignedUrl:
         # as CORS is made for browsers
         response = requests.get(url, verify=False, headers={"Origin": "http://localhost"})
         assert response.headers["Access-Control-Expose-Headers"] == "ETag, x-amz-version-id"
+        assert response.headers["Access-Control-Allow-Methods"] == "GET, PUT, POST"
+        assert (
+            response.headers["Access-Control-Allow-Origin"] == "*"
+        )  # returns http://localhost in LS
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="Behaviour diverges from AWS, Access-Control-* headers always added")
+    def test_s3_get_response_headers_without_origin(self, s3_client, s3_bucket):
+        # put object and CORS configuration
+        object_key = "key-by-hostname"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+        s3_client.put_bucket_cors(
+            Bucket=s3_bucket,
+            CORSConfiguration={
+                "CORSRules": [
+                    {
+                        "AllowedMethods": ["GET", "PUT", "POST"],
+                        "AllowedOrigins": ["*"],
+                        "ExposeHeaders": ["ETag", "x-amz-version-id"],
+                    }
+                ]
+            },
+        )
+
+        # get object and assert headers
+        url = s3_client.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+        )
+        response = requests.get(url, verify=False)
+        assert "Access-Control-Expose-Headers" not in response.headers
+        assert "Access-Control-Allow-Methods" not in response.headers
+        assert "Access-Control-Allow-Origin" not in response.headers
 
 
 class TestS3Cors:
