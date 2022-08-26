@@ -30,10 +30,6 @@ jobs:
           name: Setup environment
           command: |
             make install
-            # DO NOT MERGE
-            . .venv/bin/activate; pip uninstall -y moto-ext || true
-            . .venv/bin/activate; pip install "git+https://github.com/localstack/moto.git@moto-v4#egg=moto-ext"
-            # DO NOT MERGE
             mkdir -p target/reports
             mkdir -p target/coverage
       - save_cache:
