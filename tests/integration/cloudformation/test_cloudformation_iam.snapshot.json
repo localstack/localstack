@@ -30,6 +30,9 @@
         "Status": "Active",
         "UserName": "<user-name:1>"
       }
-    }
+    },
+  "tests/integration/cloudformation/test_cloudformation_iam.py::test_managed_policy_with_empty_resource": {
+    "recorded-date": "26-08-2022, 11:02:39",
+    "recorded-content": {}
   }
 }

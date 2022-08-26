@@ -172,3 +172,35 @@ def test_iam_user_access_key(deploy_cfn_template, iam_client, snapshot):
 
     keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
     snapshot.match("access_key", keys[0])
+
+
+@pytest.mark.aws_validated
+def test_managed_policy_with_empty_resource(iam_client, deploy_cfn_template, snapshot):
+    snapshot.add_transformer(snapshot.transform.iam_api())
+
+    policy_name = f"managed-policy-{short_uid()}"
+
+    template = json.dumps(
+        {
+            "Resources": {
+                "ManagedPolicy": {
+                    "Type": "AWS::IAM::ManagedPolicy",
+                    "Properties": {
+                        "PolicyDocument": {
+                            "ManagedPolicyName": policy_name,
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {"Action": "*", "Effect": "Allow", "Resource": "*"},
+                                {"Ref": "AWS::NoValue"},
+                            ],
+                        }
+                    },
+                }
+            },
+            "Outputs": {"PolicyArn": {"Value": {"Ref": "ManagedPolicy"}}},
+        }
+    )
+    stack = deploy_cfn_template(template=template)
+    policy_arn = stack.outputs["PolicyArn"]
+    policy = iam_client.get_policy(PolicyArn=policy_arn)
+    snapshot.match("managed_policy", policy)
