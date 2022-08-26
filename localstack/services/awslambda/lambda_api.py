@@ -1242,24 +1242,37 @@ def handle_lambda_url_invocation(
 # FIXME: broken for returned json
 def lambda_result_to_response(result: str):
     response = HttpResponse()
-    response.headers.update({"Content-Type": "application/json"})
+
+    # Set default headers
+    response.headers.update(
+        {
+            "Content-Type": "application/json",
+            "Connection": "keep-alive",
+            "x-amzn-requestid": long_uid(),
+            "x-amzn-trace-id": long_uid(),
+        }
+    )
 
     parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
     parsed_result = json_safe(parsed_result)
     parsed_result = {} if parsed_result is None else parsed_result
-    parsed_headers = parsed_result.get("headers", {})
 
+    if "body" not in parsed_result:
+        response.data = result
+        return response
+
+    parsed_headers = parsed_result.get("headers", {})
     if parsed_headers is not None:
         response.headers.update(parsed_headers)
     try:
         result_body = parsed_result.get("body")
         if isinstance(result_body, dict):
-            response.set_data(json.dumps(result_body))
+            response.data = json.dumps(result_body)
         else:
             body_bytes = to_bytes(to_str(result_body or ""))
             if parsed_result.get("isBase64Encoded", False):
                 body_bytes = base64.b64decode(body_bytes)
-            response.set_data(body_bytes)
+            response.data = body_bytes
     except Exception as e:
         LOG.warning("Couldn't set Lambda response content: %s", e)
         response._content = "{}"
@@ -1534,6 +1547,19 @@ def generate_policy(sid, action, arn, sourcearn, principal, url_auth_type):
     return policy
 
 
+def cors_config_from_dict(cors: Dict):
+    return {
+        "Cors": {
+            "AllowCredentials": cors.get("AllowCredentials", ["*"]),
+            "AllowHeaders": cors.get("AllowHeaders", ["*"]),
+            "AllowMethods": cors.get("AllowMethods", ["*"]),
+            "AllowOrigins": cors.get("AllowOrigins", ["*"]),
+            "ExposeHeaders": cors.get("ExposeHeaders", []),
+            "MaxAge": cors.get("MaxAge", 0),
+        }
+    }
+
+
 @app.route("%s/functions/<function>/policy" % API_PATH_ROOT, methods=["POST"])
 def add_permission(function):
     arn = func_arn(function)
@@ -1590,19 +1616,7 @@ def create_url_config(function):
     }
 
     if "Cors" in data:
-        cors = data.get("Cors", {})
-        url_config.update(
-            {
-                "Cors": {
-                    "AllowCredentials": cors.get("AllowCredentials", ["*"]),
-                    "AllowHeaders": cors.get("AllowHeaders", ["*"]),
-                    "AllowMethods": cors.get("AllowMethods", ["*"]),
-                    "AllowOrigins": cors.get("AllowOrigins", ["*"]),
-                    "ExposeHeaders": cors.get("ExposeHeaders", []),
-                    "MaxAge": cors.get("MaxAge", 0),
-                }
-            }
-        )
+        url_config.update(cors_config_from_dict(data.get("Cors", {})))
 
     lambda_backend.url_configs.update({arn: url_config})
     response = url_config.copy()
@@ -1674,19 +1688,8 @@ def update_url_config(function):
         "LastModifiedTime": timestamp(format=TIMESTAMP_FORMAT_MICROS),
     }
     if "Cors" in data:
-        cors = data.get("Cors", {})
-        new_url_config.update(
-            {
-                "Cors": {
-                    "AllowCredentials": cors.get("AllowCredentials", ["*"]),
-                    "AllowHeaders": cors.get("AllowHeaders", ["*"]),
-                    "AllowMethods": cors.get("AllowMethods", ["*"]),
-                    "AllowOrigins": cors.get("AllowOrigins", ["*"]),
-                    "ExposeHeaders": cors.get("ExposeHeaders", []),
-                    "MaxAge": cors.get("MaxAge", 0),
-                }
-            }
-        )
+        new_url_config.update(cors_config_from_dict(data.get("Cors", {})))
+
     prev_url_config.update(new_url_config)
 
     response = prev_url_config.copy()

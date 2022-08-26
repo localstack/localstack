@@ -154,6 +154,11 @@ def test_lambda_w_dynamodb_event_filter(
         "$..DriftInformation",
         "$..Type",
         "$..Message",
+        "$..access-control-allow-headers",
+        "$..access-control-allow-methods",
+        "$..access-control-allow-origin",
+        "$..access-control-expose-headers",
+        "$..server",
     ]
 )
 def test_cfn_function_url(deploy_cfn_template, cfn_client, lambda_client, snapshot):
