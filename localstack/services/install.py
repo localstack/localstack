@@ -94,6 +94,22 @@ SFN_PATCH_CLASS_ASYNC2SERVICEAPI = "cloud/localstack/Async2ServiceApi.class"
 SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED = "cloud/localstack/DescribeExecutionParsed.class"
 SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
 
+SFN_IMAGE = "amazon/aws-stepfunctions-local"
+SFN_IMAGE_LAYER_DIGEST = "sha256:e7b256bdbc9d58c20436970e8a56bd03581b891a784b00fea7385faff897b777"
+"""
+Digest of the Docker layer which adds the StepFunctionsLocal JAR files to the Docker image.
+This digest pin defines the version of StepFunctionsLocal used in LocalStack.
+
+The Docker image layer digest can be determined by:
+- Use regclient: regctl image manifest amazon/aws-stepfunctions-local:1.7.9 --platform local
+- Inspect the manifest in the Docker registry manually:
+  - Get the auth bearer token (see download code).
+  - Download the manifest (/v2/<image/name>/manifests/<tag>) with the bearer token
+  - Follow any platform link
+  - Extract the layer digest
+Since the JAR files are platform-independent, you can use the layer digest of any platform's image.
+"""
+
 SFN_AWS_SDK_URL_PREFIX = (
     f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-internal-awssdk"
 )
@@ -460,10 +476,14 @@ def install_local_kms():
 
 
 def install_stepfunctions_local():
+    """
+    The StepFunctionsLocal JAR files are downloaded using the artifacts in DockerHub (because AWS only provides an
+    HTTP link to the most recent version). Installers are executed when building Docker, this means they _cannot_ use
+    the Docker socket. Therefore, this installer downloads a pinned Docker Layer Digest (i.e. only the data for a single
+    Docker build step which adds the JAR files of the desired version to a Docker image) using plain HTTP requests.
+    """
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
 
-        image = "amazon/aws-stepfunctions-local"
-        image_digest = "sha256:e7b256bdbc9d58c20436970e8a56bd03581b891a784b00fea7385faff897b777"
         target_path = dirs.static_libs
 
         # Download layer that contains the necessary jars
@@ -480,13 +500,12 @@ def install_stepfunctions_local():
                 headers=headers,
                 url=f"{registry_base}/v2/{image}/blobs/{image_digest}",
             )
-            temp_path = f"{target_path}/stepfunctions.tar"
+            temp_path = new_tmp_file()
             with open(temp_path, "wb") as f:
                 f.write(response.content)
             untar(temp_path, target_path)
-            rm_rf(temp_path)
 
-        download_stepfunctions_jar(image, image_digest, target_path)
+        download_stepfunctions_jar(SFN_IMAGE, SFN_IMAGE_LAYER_DIGEST, target_path)
         mkdir(INSTALL_DIR_STEPFUNCTIONS)
         path = Path(f"{target_path}/home/stepfunctionslocal")
         for file in path.glob("*.jar"):
