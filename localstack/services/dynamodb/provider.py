@@ -293,7 +293,7 @@ def get_global_table_region(table_name: str, target_region: str | None = None) -
 def look_for_global_table(
     context: RequestContext, table_name: str, region: str | None = None
 ) -> None:
-    region: str | None = get_global_table_region(table_name=table_name, target_region=region)
+    region = get_global_table_region(table_name=table_name, target_region=region)
     if region:
         # modify the context to query the original region where the table has been created
         context.region = region
