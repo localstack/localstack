@@ -1422,7 +1422,7 @@ class TestS3PresignedUrl:
         # fixme 201 response is hardcoded
         # see localstack.services.s3.s3_listener.ProxyListenerS3.get_201_response
         if is_aws_cloud():
-            location = f"{_bucket_url(s3_bucket, aws_stack.get_region())}/key-my-file"
+            location = f"{_bucket_url_vhost(s3_bucket, aws_stack.get_region())}/key-my-file"
             etag = '"43281e21fce675ac3bcb3524b38ca4ed"'  # todo check quoting of etag
         else:
             location = "http://localhost/key-my-file"
@@ -1748,7 +1748,19 @@ def _bucket_url(bucket_name: str, region: str = "") -> str:
         region = config.DEFAULT_REGION
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         if region == "us-east-1":
-            return f"https://{bucket_name}.s3.amazonaws.com"
+            return f"https://s3.amazonaws.com/{bucket_name}"
         else:
             return f"http://s3.{region}.amazonaws.com/{bucket_name}"
     return f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_name}"
+
+
+def _bucket_url_vhost(bucket_name: str, region: str = "") -> str:
+    if not region:
+        region = config.DEFAULT_REGION
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        if region == "us-east-1":
+            return f"https://{bucket_name}.s3.amazonaws.com"
+        else:
+            return f"https://{bucket_name}.s3.{region}.amazonaws.com"
+    s3_edge_url = config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)
+    return s3_edge_url.replace("://s3.", f"://{bucket_name}.s3.")
