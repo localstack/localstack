@@ -77,7 +77,6 @@ from localstack.utils.http import (  # noqa
 from localstack.utils.json import (  # noqa
     CustomEncoder,
     FileMappedDocument,
-    JsonObject,
     assign_to_path,
     canonical_json,
     clone,

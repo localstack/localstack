@@ -2,7 +2,6 @@ import binascii
 import datetime
 import json
 import re
-import xml.etree.ElementTree as ET
 from binascii import crc32
 from struct import pack
 from typing import Dict, Optional, Union
@@ -20,13 +19,7 @@ from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.utils.aws import aws_stack
 from localstack.utils.http import replace_response_content
 from localstack.utils.json import json_safe
-from localstack.utils.strings import (
-    short_uid,
-    str_startswith_ignore_case,
-    to_bytes,
-    to_str,
-    truncate,
-)
+from localstack.utils.strings import short_uid, str_startswith_ignore_case, to_bytes, to_str
 
 REGEX_FLAGS = re.MULTILINE | re.DOTALL
 
@@ -84,57 +77,6 @@ def requests_error_response_xml(
     )
     response.status_code = code
     return response
-
-
-def to_xml(data: dict, memberize: bool = True) -> ET.Element:
-    """Generate XML element hierarchy out of dict. Wraps list items in <member> tags by default"""
-    if not isinstance(data, dict) or len(data.keys()) != 1:
-        raise Exception("Expected data to be a dict with a single root element")
-
-    def _to_xml(parent_el: ET.Element, data_rest) -> None:
-        if isinstance(data_rest, list):
-            for i in data_rest:
-                member_el = ET.SubElement(parent_el, "member") if memberize else parent_el
-                _to_xml(member_el, i)
-        elif isinstance(data_rest, dict):
-            for key in data_rest:
-                value = data_rest[key]
-                curr_el = ET.SubElement(parent_el, key)
-                _to_xml(curr_el, value)
-        elif isinstance(data_rest, str):
-            parent_el.text = data_rest
-        elif isinstance(data_rest, bool):
-            parent_el.text = str(data_rest).lower()
-        elif any(
-            isinstance(data_rest, i) for i in [int, float]
-        ):  # limit types for text serialization
-            parent_el.text = str(data_rest)
-        else:
-            if data_rest is not None:  # None is just ignored and omitted
-                raise Exception(f"Unexpected type for value encountered: {type(data_rest)}")
-
-    root_key = list(data.keys())[0]
-    root = ET.Element(root_key)
-    _to_xml(root, data[root_key])
-    return root
-
-
-def requests_response_xml(action, response, xmlns=None, service=None, memberize=True):
-    xmlns = xmlns or "http://%s.amazonaws.com/doc/2010-03-31/" % service
-    response = json_safe(response)
-    response = {"{action}Result".format(action=action): response}
-    response = ET.tostring(to_xml(response, memberize=memberize), short_empty_elements=True)
-    response = to_str(response)
-    result = (
-        """
-        <{action}Response xmlns="{xmlns}">
-            {response}
-        </{action}Response>
-        """
-    ).strip()
-    result = result.format(action=action, xmlns=xmlns, response=response)
-    result = requests_response(result)
-    return result
 
 
 def requests_error_response_xml_signature_calculation(
@@ -227,19 +169,6 @@ def is_invalid_html_response(headers, content) -> bool:
     return "text/html" in content_type and not str_startswith_ignore_case(content, "<!doctype html")
 
 
-def raise_exception_if_error_response(response):
-    if not is_response_obj(response):
-        return
-    if response.status_code < 400:
-        return
-    content = "..."
-    try:
-        content = truncate(to_str(response.content or ""))
-    except Exception:
-        pass  # ignore if content has non-printable bytes
-    raise Exception("Received error response (code %s): %s" % (response.status_code, content))
-
-
 def is_response_obj(result, include_lambda_response=False):
     types = (RequestsResponse, FlaskResponse)
     if include_lambda_response:
@@ -297,16 +226,6 @@ def requests_to_flask_response(r):
     return FlaskResponse(r.content, status=r.status_code, headers=dict(r.headers))
 
 
-def flask_not_found_error(msg=None):
-    msg = msg or "The specified resource doesnt exist."
-    return flask_error_response_json(msg, code=404, error_type="ResourceNotFoundException")
-
-
-def response_regex_replace(response, search, replace):
-    content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
-    set_response_content(response, content)
-
-
 def set_response_content(response, content, headers=None):
     if isinstance(content, dict):
         content = json.dumps(json_safe(content))
@@ -322,10 +241,6 @@ def make_requests_error(*args, **kwargs):
     return flask_to_requests_response(flask_error_response_xml(*args, **kwargs))
 
 
-def make_error(*args, **kwargs):
-    return flask_error_response_xml(*args, **kwargs)
-
-
 def create_sqs_system_attributes(headers):
     system_attributes = {}
     if "X-Amzn-Trace-Id" in headers:
@@ -334,55 +249,6 @@ def create_sqs_system_attributes(headers):
             "StringValue": str(headers["X-Amzn-Trace-Id"]),
         }
     return system_attributes
-
-
-def extract_tags(req_data):
-    for param_name in ["Tag", "member"]:
-        keys = extract_url_encoded_param_list(req_data, "Tags.{}.%s.Key".format(param_name))
-        values = extract_url_encoded_param_list(req_data, "Tags.{}.%s.Value".format(param_name))
-        if keys and values:
-            break
-    entries = zip(keys, values)
-    tags = [{"Key": entry[0], "Value": entry[1]} for entry in entries]
-    return tags
-
-
-def extract_url_encoded_param_list(req_data, pattern):
-    result = []
-    for i in range(1, 200):
-        key = pattern % i
-        value = req_data.get(key)
-        if value is None:
-            break
-        result.append(value)
-    return result
-
-
-def parse_urlencoded_data(
-    qs_data: Union[Dict, str, bytes], top_level_attribute: str, second_level_attribute: str = ""
-):
-    # TODO: potentially find a better way than calling moto here...
-    from moto.core.responses import BaseResponse
-
-    if qs_data and isinstance(qs_data, dict):
-        # make sure we're using the array form of query string dict here
-        qs_data = {k: v if isinstance(v, list) else [v] for k, v in qs_data.items()}
-    if isinstance(qs_data, (str, bytes)):
-        qs_data = parse_qs(qs_data)
-    response = BaseResponse()
-    response.querystring = qs_data
-    result = response._get_multi_param(top_level_attribute, skip_result_conversion=True)
-    if second_level_attribute:
-        for r in range(len(result)):
-            second_level_result = response._get_multi_param(
-                f"{top_level_attribute}.{r+1}.{second_level_attribute}", skip_result_conversion=True
-            )
-            inner_key = second_level_attribute.split(".")[
-                0
-            ]  # "MessageAttributes.entry".split('.')[0]
-            if second_level_result:
-                result[r][inner_key] = second_level_result
-    return result
 
 
 def parse_query_string(url_or_qs: str, multi_values=False) -> Dict:

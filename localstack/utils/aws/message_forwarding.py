@@ -9,6 +9,7 @@ from moto.events.models import events_backends as moto_events_backends
 
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.services.awslambda.lambda_executors import InvocationException, InvocationResult
+from localstack.utils import collections
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_stack import (
     connect_to_service,
@@ -16,7 +17,6 @@ from localstack.utils.aws.aws_stack import (
     firehose_name,
     get_sqs_queue_url,
 )
-from localstack.utils.generic import dict_utils
 from localstack.utils.http import add_path_parameters_to_url, add_query_params_to_url
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import long_uid, to_bytes, to_str
@@ -95,7 +95,7 @@ def send_event_to_target(
     elif ":sqs:" in target_arn:
         sqs_client = connect_to_service("sqs", region_name=region)
         queue_url = get_sqs_queue_url(target_arn)
-        msg_group_id = dict_utils.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
+        msg_group_id = collections.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
         sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
 
@@ -130,14 +130,14 @@ def send_event_to_target(
             )
 
     elif ":kinesis:" in target_arn:
-        partition_key_path = dict_utils.get_safe(
+        partition_key_path = collections.get_safe(
             target_attributes,
             "$.KinesisParameters.PartitionKeyPath",
             default_value="$.id",
         )
 
         stream_name = target_arn.split("/")[-1]
-        partition_key = dict_utils.get_safe(event, partition_key_path, event["id"])
+        partition_key = collections.get_safe(event, partition_key_path, event["id"])
         kinesis_client = connect_to_service("kinesis", region_name=region)
 
         kinesis_client.put_record(
