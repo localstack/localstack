@@ -321,8 +321,9 @@ def subscribe_to_shard(data, headers):
                 record["Data"] = to_str(base64.b64encode(record["Data"]))
                 last_sequence_number = record["SequenceNumber"]
             if not records:
-                time.sleep(1)
-                continue
+                # on AWS this is approximately 5 sec, however since this is not async, it's a blocking call
+                # putting temporarily to 3 seconds until ASF migration or an async call
+                time.sleep(3)
 
             response = {
                 "ChildShards": [],
