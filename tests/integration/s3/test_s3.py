@@ -7,6 +7,7 @@ import os
 import re
 import time
 from io import BytesIO
+from operator import itemgetter
 from unittest.mock import patch
 
 import boto3 as boto3
@@ -961,6 +962,20 @@ class TestS3:
         # assert that the object still exists
         s3_obj = s3_client.get_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("get-obj-after-tag-deletion", s3_obj)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId"])
+    def test_delete_non_existing_keys(self, s3_client, s3_bucket, snapshot):
+        object_key = "test-key-nonexistent"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+        response = s3_client.delete_objects(
+            Bucket=s3_bucket,
+            Delete={"Objects": [{"Key": object_key}, {"Key": "dummy1"}, {"Key": "dummy2"}]},
+        )
+        response["Deleted"].sort(key=itemgetter("Key"))
+        snapshot.match("deleted-resp", response)
+        assert len(response["Deleted"]) == 3
+        assert "Errors" not in response
 
     @pytest.mark.aws_validated
     def test_s3_download_object_with_lambda(
