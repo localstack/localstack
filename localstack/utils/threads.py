@@ -3,9 +3,10 @@ import inspect
 import logging
 import threading
 import traceback
+from collections import defaultdict
 from concurrent.futures import Future
 from multiprocessing.dummy import Pool
-from typing import Callable, List, MutableMapping
+from typing import Callable, List
 
 LOG = logging.getLogger(__name__)
 
@@ -135,48 +136,35 @@ def parallelize(func: Callable, arr: List, size: int = None):
         return pool.map(func, arr)
 
 
-class SynchronizedDict(MutableMapping):
+class SynchronizedDefaultDict(defaultdict):
     def __init__(self, *args, **kwargs):
-        self._map = {}
-        self.update(dict(*args, **kwargs))
+        super().__init__(*args, **kwargs)
         self._lock = threading.RLock()
 
-    @classmethod
-    def fromkeys(cls, iterable, value=None):
-        sync_dict = SynchronizedDict()
-
-        sync_dict._map = dict.fromkeys(iterable, value)
-
-        return sync_dict
+    def fromkeys(self, keys, value=None):
+        with self._lock:
+            return super().fromkeys(keys, value)
 
     def __getitem__(self, key):
         with self._lock:
-            item = self._map[key]
-
-        return item
+            return super().__getitem__(key)
 
     def __setitem__(self, key, value):
         with self._lock:
-            self._map[key] = value
+            super().__setitem__(key, value)
 
     def __delitem__(self, key):
         with self._lock:
-            del self._map[key]
+            super().__delitem__(key)
 
     def __iter__(self):
         with self._lock:
-            it = iter(self._map)
-
-        return it
+            return super().__iter__()
 
     def __len__(self):
         with self._lock:
-            length = len(self._map)
-
-        return length
+            return super().__len__()
 
     def __str__(self):
         with self._lock:
-            s = str(self._map)
-
-        return s
+            return super().__str__()
