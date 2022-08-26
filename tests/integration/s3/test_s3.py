@@ -1554,6 +1554,32 @@ class TestS3PresignedUrl:
         assert "Access-Control-Allow-Origin" not in response.headers
 
     @pytest.mark.aws_validated
+    def test_presigned_url_with_session_token(self, s3_create_bucket_with_client, sts_client):
+        bucket_name = "bucket-%s" % short_uid()
+        key_name = "key"
+        response = sts_client.get_session_token()
+
+        client = boto3.client(
+            "s3",
+            config=Config(signature_version="s3v4"),
+            endpoint_url=None
+            if os.environ.get("TEST_TARGET") == "AWS_CLOUD"
+            else "http://127.0.0.1:4566",
+            aws_access_key_id=response["Credentials"]["AccessKeyId"],
+            aws_secret_access_key=response["Credentials"]["SecretAccessKey"],
+            aws_session_token=response["Credentials"]["SessionToken"],
+        )
+        s3_create_bucket_with_client(s3_client=client, Bucket=bucket_name)
+        client.put_object(Body="test-value", Bucket=bucket_name, Key=key_name)
+        presigned_url = client.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": bucket_name, "Key": key_name},
+            ExpiresIn=600,
+        )
+        response = requests.get(presigned_url)
+        assert response._content == b"test-value"
+
+    @pytest.mark.aws_validated
     def test_s3_get_response_header_overrides(self, s3_client, s3_bucket):
         # Signed requests may include certain header overrides in the querystring
         # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
