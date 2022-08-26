@@ -295,7 +295,7 @@ class TestKinesis:
         snapshot.match("Records", response_records)
 
     @pytest.mark.aws_validated
-    @patch.object(kinesis_listener, "MAX_SUBSCRIPTION_SECONDS", 5)
+    @patch.object(kinesis_listener, "MAX_SUBSCRIPTION_SECONDS", 3)
     def test_subscribe_to_shard_timeout(
         self,
         kinesis_client,
