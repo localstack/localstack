@@ -110,38 +110,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_s3_get_response_headers(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-
-        # put object and CORS configuration
-        object_key = "key-by-hostname"
-        client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
-        client.put_bucket_cors(
-            Bucket=bucket_name,
-            CORSConfiguration={
-                "CORSRules": [
-                    {
-                        "AllowedMethods": ["GET", "PUT", "POST"],
-                        "AllowedOrigins": ["*"],
-                        "ExposeHeaders": ["ETag", "x-amz-version-id"],
-                    }
-                ]
-            },
-        )
-
-        # get object and assert headers
-        url = client.generate_presigned_url(
-            "get_object", Params={"Bucket": bucket_name, "Key": object_key}
-        )
-        response = requests.get(url, verify=False)
-        self.assertEqual(
-            "ETag, x-amz-version-id", response.headers["Access-Control-Expose-Headers"]
-        )
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
-
     def test_s3_get_response_header_overrides(self):
         # Signed requests may include certain header overrides in the querystring
         # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html

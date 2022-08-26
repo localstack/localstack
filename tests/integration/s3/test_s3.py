@@ -1432,6 +1432,35 @@ class TestS3PresignedUrl:
         assert json_response["Key"] == "key-my-file"
         assert json_response["ETag"] == etag
 
+    @pytest.mark.aws_validated
+    def test_s3_get_response_headers(self, s3_client, s3_bucket, snapshot):
+        # put object and CORS configuration
+        object_key = "key-by-hostname"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+        s3_client.put_bucket_cors(
+            Bucket=s3_bucket,
+            CORSConfiguration={
+                "CORSRules": [
+                    {
+                        "AllowedMethods": ["GET", "PUT", "POST"],
+                        "AllowedOrigins": ["*"],
+                        "ExposeHeaders": ["ETag", "x-amz-version-id"],
+                    }
+                ]
+            },
+        )
+        bucket_cors_res = s3_client.get_bucket_cors(Bucket=s3_bucket)
+        snapshot.match("bucket-cors-response", bucket_cors_res)
+
+        # get object and assert headers
+        url = s3_client.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+        )
+        # need to add Origin headers for S3 to send back the Access-Control-* headers
+        # as CORS is made for browsers
+        response = requests.get(url, verify=False, headers={"Origin": "http://localhost"})
+        assert response.headers["Access-Control-Expose-Headers"] == "ETag, x-amz-version-id"
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
