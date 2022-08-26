@@ -63,7 +63,6 @@ from tests.integration.apigateway_fixtures import (
     get_rest_api,
     update_rest_api_deployment,
 )
-from tests.integration.awslambda.test_lambda_integration import TEST_STAGE_NAME
 
 from ..unit.test_apigateway import load_test_resource
 from .awslambda.test_lambda import (
@@ -1710,10 +1709,10 @@ class TestAPIGateway:
             "test_gateway",
             target_uri,
             path=lambda_resource,
-            stage_name=TEST_STAGE_NAME,
+            stage_name=self.TEST_STAGE_NAME,
         )
         api_id = result["id"]
-        url = path_based_url(api_id=api_id, stage_name=TEST_STAGE_NAME, path=lambda_path)
+        url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=lambda_path)
         result = requests.get(url)
 
         assert result.status_code == 300

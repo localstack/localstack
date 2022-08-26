@@ -15,6 +15,7 @@ from werkzeug import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import SNSBackend
 from localstack.testing.aws.util import is_aws_cloud
@@ -26,8 +27,6 @@ from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import (
-    LAMBDA_RUNTIME_PYTHON37,
-    TEST_LAMBDA_FUNCTION_PREFIX,
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
@@ -55,7 +54,7 @@ class TestSNSSubscription:
         logs_client,
         snapshot,
     ):
-        function_name = f"{TEST_LAMBDA_FUNCTION_PREFIX}-{short_uid()}"
+        function_name = f"lambda-function-{short_uid()}"
         permission_id = f"test-statement-{short_uid()}"
         subject = "[Subject] Test subject"
         message = "Hello world."
@@ -64,7 +63,7 @@ class TestSNSSubscription:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=LAMBDA_RUNTIME_PYTHON37,
+            runtime=Runtime.python3_7,
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
@@ -653,7 +652,7 @@ class TestSNSProvider:
         # create an SNS topic that will be used to invoke the lambda
         lambda_topic_arn = sns_create_topic()["TopicArn"]
 
-        function_name = f"{TEST_LAMBDA_FUNCTION_PREFIX}-{short_uid()}"
+        function_name = f"lambda-function-{short_uid()}"
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON,
