@@ -110,28 +110,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_delete_non_existing_keys(self):
-        bucket_name = "test-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        object_key = "test-key-nonexistent"
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
-        response = self.s3_client.delete_objects(
-            Bucket=bucket_name,
-            Delete={"Objects": [{"Key": object_key}, {"Key": "dummy1"}, {"Key": "dummy2"}]},
-        )
-        self.assertEqual(3, len(response["Deleted"]))
-        self.assertNotIn("Errors", response)
-        # clean up
-        self._delete_bucket(bucket_name)
-
-    def test_delete_non_existing_keys_in_non_existing_bucket(self):
-        with self.assertRaises(ClientError) as ctx:
-            self.s3_client.delete_objects(
-                Bucket="non-existent-bucket",
-                Delete={"Objects": [{"Key": "dummy1"}, {"Key": "dummy2"}]},
-            )
-        self.assertEqual("NoSuchBucket", ctx.exception.response["Error"]["Code"])
-
     def test_s3_request_payer(self):
         bucket_name = "test-%s" % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)

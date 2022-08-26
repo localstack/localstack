@@ -978,6 +978,19 @@ class TestS3:
         assert "Errors" not in response
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Error.RequestID"]
+    )  # fixme RequestID not in AWS response
+    def test_delete_non_existing_keys_in_non_existing_bucket(self, s3_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            s3_client.delete_objects(
+                Bucket="non-existent-bucket",
+                Delete={"Objects": [{"Key": "dummy1"}, {"Key": "dummy2"}]},
+            )
+        assert "NoSuchBucket" == e.value.response["Error"]["Code"]
+        snapshot.match("error-non-existent-bucket", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_s3_download_object_with_lambda(
         self,
         s3_client,
