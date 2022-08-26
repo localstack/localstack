@@ -1,7 +1,5 @@
 import logging
-import re
 import time
-from datetime import datetime
 from unittest.mock import patch
 
 import cbor2
@@ -54,15 +52,13 @@ class TestKinesis:
 
     @pytest.mark.aws_validated
     def test_stream_consumers(
-        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready
+        self,
+        kinesis_client,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        wait_for_consumer_ready,
+        snapshot,
     ):
-        def assert_consumers(**kwargs):
-            consumer_list = kinesis_client.list_stream_consumers(StreamARN=stream_arn).get(
-                "Consumers"
-            )
-            assert kwargs["count"] == len(consumer_list)
-            return consumer_list
-
         # create stream and assert 0 consumers
         stream_name = kinesis_create_stream(ShardCount=1)
         stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
@@ -70,47 +66,40 @@ class TestKinesis:
         ]
         wait_for_stream_ready(stream_name)
 
-        assert_consumers(count=0)
+        # no consumer snapshot
+        consumer_list = kinesis_client.list_stream_consumers(StreamARN=stream_arn).get("Consumers")
+        assert len(consumer_list) == 0
 
-        # create consumer and assert 1 consumer
-        consumer_name = "cons1"
+        # create consumer and snapshot 1 consumer by list_stream_consumers
+        consumer_name = "consumer"
         response = kinesis_client.register_stream_consumer(
             StreamARN=stream_arn, ConsumerName=consumer_name
         )
         consumer_arn = response["Consumer"]["ConsumerARN"]
         wait_for_consumer_ready(consumer_arn=consumer_arn)
-        assert consumer_name == response["Consumer"]["ConsumerName"]
-        # boto3 converts the timestamp to datetime
-        assert isinstance(response["Consumer"]["ConsumerCreationTimestamp"], datetime)
-        consumers = assert_consumers(count=1)
-        consumer_arn = consumers[0]["ConsumerARN"]
-        assert consumer_name == consumers[0]["ConsumerName"]
-        assert "/%s" % consumer_name in consumer_arn
-        assert isinstance(consumers[0]["ConsumerCreationTimestamp"], datetime)
 
-        # lookup stream consumer by describe calls, assert response
+        consumer_list = kinesis_client.list_stream_consumers(StreamARN=stream_arn).get("Consumers")
+        snapshot.match("One_consumer_by_list_stream", consumer_list)
+
+        # lookup stream consumer by describe_stream_consumer
         consumer_description_by_arn = kinesis_client.describe_stream_consumer(
             StreamARN=stream_arn, ConsumerARN=consumer_arn
         )["ConsumerDescription"]
-        assert consumer_name == consumer_description_by_arn["ConsumerName"]
-        assert consumer_arn == consumer_description_by_arn["ConsumerARN"]
-        assert stream_arn == consumer_description_by_arn["StreamARN"]
-        assert "ACTIVE", consumer_description_by_arn["ConsumerStatus"]
-        assert isinstance(consumer_description_by_arn["ConsumerCreationTimestamp"], datetime)
 
-        consumer_description_by_name = kinesis_client.describe_stream_consumer(
-            StreamARN=stream_arn, ConsumerName=consumer_name
-        )["ConsumerDescription"]
-        assert consumer_description_by_arn == consumer_description_by_name
+        snapshot.match("One_consumer_by_describe_stream", consumer_description_by_arn)
 
         # delete existing consumer and assert 0 remaining consumers
         kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
 
-        retry(assert_consumers, count=0, retries=6, sleep=3.0)
-
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard(
-        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready
+        self,
+        kinesis_client,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        wait_for_consumer_ready,
+        snapshot,
     ):
         # create stream and consumer
         stream_name = kinesis_create_stream(ShardCount=1)
@@ -138,39 +127,36 @@ class TestKinesis:
 
         # put records
         num_records = 5
-        msg = b"Hello world"
+        msg = "Hello world"
         for i in range(num_records):
             kinesis_client.put_records(
-                StreamName=stream_name, Records=[{"Data": msg, "PartitionKey": "1"}]
+                StreamName=stream_name, Records=[{"Data": f"{msg}_{i}", "PartitionKey": "1"}]
             )
 
-        # assert results
+        # read out results
         results = []
         for entry in stream:
             records = entry["SubscribeToShardEvent"]["Records"]
-            continuation_sequence_number = entry["SubscribeToShardEvent"][
-                "ContinuationSequenceNumber"
-            ]
-            # https://docs.aws.amazon.com/kinesis/latest/APIReference/API_SubscribeToShardEvent.html
-            assert re.fullmatch("^0|([1-9][0-9]{0,128})$", continuation_sequence_number)
             results.extend(records)
             if len(results) >= num_records:
                 break
 
-        # assert results
-        assert num_records == len(results)
-        for record in results:
-            assert msg == record["Data"]
+        results.sort(key=lambda k: k.get("Data"))
+        snapshot.match("Records", results)
 
         # clean up
         kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard_with_sequence_number_as_iterator(
-        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready
+        self,
+        kinesis_client,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        wait_for_consumer_ready,
+        snapshot,
     ):
-        record_data = "Hello world"
-
         # create stream and consumer
         stream_name = kinesis_create_stream(ShardCount=1)
         stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
@@ -203,14 +189,16 @@ class TestKinesis:
             },
         )
         stream = result["EventStream"]
+
         # put records
         num_records = 5
+        msg = "Hello world"
         for i in range(num_records):
             kinesis_client.put_records(
-                StreamName=stream_name,
-                Records=[{"Data": record_data, "PartitionKey": "1"}],
+                StreamName=stream_name, Records=[{"Data": f"{msg}_{i}", "PartitionKey": "1"}]
             )
 
+        # read out results
         results = []
         for entry in stream:
             records = entry["SubscribeToShardEvent"]["Records"]
@@ -218,10 +206,8 @@ class TestKinesis:
             if len(results) >= num_records:
                 break
 
-        # assert results
-        assert num_records == len(results)
-        for record in results:
-            assert str.encode(record_data) == record["Data"]
+        results.sort(key=lambda k: k.get("Data"))
+        snapshot.match("Records", results)
 
         # clean up
         kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
@@ -283,8 +269,9 @@ class TestKinesis:
         assert 0 == len(cbor_records)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_record_lifecycle_data_integrity(
-        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, snapshot
     ):
         """
         kinesis records should contain the same data from when they are sent to when they are received
@@ -304,19 +291,17 @@ class TestKinesis:
 
         response = kinesis_client.get_records(ShardIterator=iterator)
         response_records = response.get("Records")
-        assert len(records_data) == len(response_records)
-        for response_record in response_records:
-            assert response_record.get("Data").decode("utf-8") in records_data
+        response_records.sort(key=lambda k: k.get("Data"))
+        snapshot.match("Records", response_records)
 
     @pytest.mark.aws_validated
-    @patch.object(kinesis_listener, "MAX_SUBSCRIPTION_SECONDS", 3)
+    @patch.object(kinesis_listener, "MAX_SUBSCRIPTION_SECONDS", 5)
     def test_subscribe_to_shard_timeout(
         self,
         kinesis_client,
         kinesis_create_stream,
         wait_for_stream_ready,
         wait_for_consumer_ready,
-        snapshot,
     ):
         # create stream and consumer
         stream_name = kinesis_create_stream(ShardCount=1)
@@ -356,13 +341,10 @@ class TestKinesis:
             records = entry["SubscribeToShardEvent"]["Records"]
             results.extend(records)
 
-        snapshot.match("Records", results)
+        assert len(results) == 0
 
         # clean up
         kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
-
-    def test_subscribe_to_shard_pings(self):
-        pass
 
     @pytest.mark.aws_validated
     def test_add_tags_to_stream(

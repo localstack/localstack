@@ -171,7 +171,7 @@ class TransformerUtility:
     @staticmethod
     def kinesis_api():
         """
-        :return: array with Transformers, for s3 api.
+        :return: array with Transformers, for kinesis api.
         """
         return [
             JsonpathTransformer(
@@ -179,15 +179,25 @@ class TransformerUtility:
                 replacement="sequence_number",
                 replace_reference=True,
             ),
-            TransformerUtility.key_value(
-                "StartingSequenceNumber", "starting_sequence_number", reference_replacement=False
-            ),
-            TransformerUtility.key_value("ShardId", "shard_id", reference_replacement=False),
+            TransformerUtility.key_value("StartingSequenceNumber", "starting_sequence_number"),
+            TransformerUtility.key_value("ShardId", "shard_id"),
             TransformerUtility.key_value(
                 "EndingHashKey", "ending_hash", reference_replacement=False
             ),
             TransformerUtility.key_value(
                 "StartingHashKey", "starting_hash", reference_replacement=False
+            ),
+            TransformerUtility.key_value(_resource_name_transformer, "ConsumerARN"),
+            RegexTransformer(
+                r"([a-zA-Z0-9-_.]*)?\/consumer:([0-9-_.]*)?",
+                replacement="<stream-consumer>",
+            ),
+            RegexTransformer(
+                r"([a-zA-Z0-9-_.]*)?\/test-stream-([a-zA-Z0-9-_.]*)?",
+                replacement="<stream-name>",
+            ),
+            TransformerUtility.key_value(
+                "ContinuationSequenceNumber", "<continuation_sequence_number>"
             ),
         ]
 
