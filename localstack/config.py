@@ -554,7 +554,7 @@ KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 # Delay between data persistence (in seconds)
 KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
 
-# Kinesis provider - either "kinesis-mock" or "kinesalite"
+# Kinesis provider - either "kinesis-mock" or "kinesalite" (deprecated, kinesalite support will be removed)
 KINESIS_PROVIDER = os.environ.get("KINESIS_PROVIDER") or "kinesis-mock"
 
 # Whether or not to handle lambda event sources as synchronous invocations

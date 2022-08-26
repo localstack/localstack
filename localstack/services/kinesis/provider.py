@@ -211,6 +211,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         consumer_name: ConsumerName = "",
         consumer_arn: ConsumerARN = "",
     ) -> None:
+        # TODO remove this method when deleting kinesalite support
         if config.KINESIS_PROVIDER == "kinesalite":
 
             def consumer_filter(consumer: ConsumerDescription):
@@ -237,6 +238,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         max_results: ListStreamConsumersInputLimit = None,
         stream_creation_timestamp: Timestamp = None,
     ) -> ListStreamConsumersOutput:
+        # TODO remove this method when deleting kinesalite support
         if config.KINESIS_PROVIDER == "kinesalite":
             stream_consumers = KinesisBackend.get().stream_consumers
             consumers: List[Consumer] = []
@@ -260,6 +262,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         consumer_name: ConsumerName = None,
         consumer_arn: ConsumerARN = None,
     ) -> DescribeStreamConsumerOutput:
+        # TODO remove this method when deleting kinesalite support
         if config.KINESIS_PROVIDER == "kinesalite":
             consumer_to_locate = find_consumer(consumer_arn, consumer_name, stream_arn)
             if not consumer_to_locate:
@@ -274,6 +277,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
     def enable_enhanced_monitoring(
         self, context: RequestContext, stream_name: StreamName, shard_level_metrics: MetricsNameList
     ) -> EnhancedMonitoringOutput:
+        # TODO remove this method when deleting kinesalite support
         if config.KINESIS_PROVIDER == "kinesalite":
             stream_metrics = KinesisBackend.get().enhanced_metrics[stream_name]
             stream_metrics.update(shard_level_metrics)
@@ -290,6 +294,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
     def disable_enhanced_monitoring(
         self, context: RequestContext, stream_name: StreamName, shard_level_metrics: MetricsNameList
     ) -> EnhancedMonitoringOutput:
+        # TODO remove this method when deleting kinesalite support
         if config.KINESIS_PROVIDER == "kinesalite":
             region = KinesisBackend.get()
             region.enhanced_metrics[stream_name] = region.enhanced_metrics[stream_name] - set(
@@ -312,6 +317,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         target_shard_count: PositiveIntegerObject,
         scaling_type: ScalingType,
     ) -> UpdateShardCountOutput:
+        # TODO remove this method when deleting kinesalite support
         if config.KINESIS_PROVIDER == "kinesalite":
             # Currently, kinesalite - which backs the Kinesis implementation for localstack - does
             # not support UpdateShardCount: https://github.com/mhart/kinesalite/issues/61
