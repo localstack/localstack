@@ -872,5 +872,93 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3Cors::test_cors_with_allowed_origins": {
+    "recorded-date": "26-08-2022, 15:10:47",
+    "recorded-content": {
+      "raw-response-headers": {
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, PUT",
+        "Access-Control-Allow-Origin": "https://localhost:4200",
+        "Access-Control-Max-Age": "3000",
+        "Content-Length": "0",
+        "Date": "<date>",
+        "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+        "Server": "<server>",
+        "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+        "x-amz-id-2": "<id>",
+        "x-amz-request-id": "<request-id>"
+      },
+      "raw-response-headers-2": {
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, PUT",
+        "Access-Control-Allow-Origin": "https://localhost:4200",
+        "Access-Control-Max-Age": "3000",
+        "Content-Length": "0",
+        "Date": "<date>",
+        "Server": "<server>",
+        "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+        "x-amz-id-2": "<id>",
+        "x-amz-request-id": "<request-id>"
+      },
+      "raw-response-headers-3": {
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, PUT",
+        "Access-Control-Allow-Origin": "https://localhost:4200",
+        "Access-Control-Max-Age": "3000",
+        "Content-Length": "0",
+        "Date": "<date>",
+        "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+        "Server": "<server>",
+        "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+        "x-amz-id-2": "<id>",
+        "x-amz-request-id": "<request-id>"
+      },
+      "raw-response-headers-4": {
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, PUT",
+        "Access-Control-Allow-Origin": "https://localhost:4201",
+        "Access-Control-Max-Age": "3000",
+        "Content-Length": "0",
+        "Date": "<date>",
+        "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+        "Server": "<server>",
+        "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+        "x-amz-id-2": "<id>",
+        "x-amz-request-id": "<request-id>"
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3Cors::test_cors_configurations": {
+    "recorded-date": "26-08-2022, 16:34:52",
+    "recorded-content": {
+      "raw-response-headers": {
+        "Accept-Ranges": "bytes",
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, PUT",
+        "Access-Control-Allow-Origin": "http://localhost:4566",
+        "Access-Control-Max-Age": "3000",
+        "Content-Length": "16",
+        "Content-Type": "binary/octet-stream",
+        "Date": "<date>",
+        "ETag": "\"aa4315fde513528bf6580028d3341f0b\"",
+        "Last-Modified": "<date>",
+        "Server": "<server>",
+        "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+        "x-amz-id-2": "<id>",
+        "x-amz-request-id": "<request-id>"
+      },
+      "raw-response-headers-2": {
+        "Accept-Ranges": "bytes",
+        "Content-Length": "16",
+        "Content-Type": "binary/octet-stream",
+        "Date": "<date>",
+        "ETag": "\"aa4315fde513528bf6580028d3341f0b\"",
+        "Last-Modified": "<date>",
+        "Server": "<server>",
+        "x-amz-id-2": "<id>",
+        "x-amz-request-id": "<request-id>"
+      }
+    }
   }
 }

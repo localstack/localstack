@@ -1192,7 +1192,6 @@ class TestS3PresignedUrl:
         s3_client,
         s3_create_bucket,
     ):
-        # snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = "bucket-%s" % short_uid()
         object_key = "test-runtime.properties"
         content_md5 = "pX8KKuGXS1f2VTcuJpqjkw=="
@@ -1226,121 +1225,6 @@ class TestS3PresignedUrl:
         result = requests.put(url, data="test", headers=headers)
         assert result.status_code == 403, (result, result.content)
         assert b"SignatureDoesNotMatch" in result.content
-
-    @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
-    def test_cors_with_allowed_origins(self, s3_client, s3_create_bucket):
-        bucket_cors_config = {
-            "CORSRules": [
-                {
-                    "AllowedOrigins": ["https://localhost:4200"],
-                    "AllowedMethods": ["GET", "PUT"],
-                    "MaxAgeSeconds": 3000,
-                    "AllowedHeaders": ["*"],
-                }
-            ]
-        }
-
-        bucket_name = "bucket-%s" % short_uid()
-        object_key = "424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf"
-        s3_create_bucket(Bucket=bucket_name)
-        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
-
-        # create signed url
-        url = s3_client.generate_presigned_url(
-            ClientMethod="put_object",
-            Params={
-                "Bucket": bucket_name,
-                "Key": object_key,
-                "ContentType": "application/pdf",
-                "ACL": "bucket-owner-full-control",
-            },
-            ExpiresIn=3600,
-        )
-        result = requests.put(
-            url,
-            data="something",
-            verify=False,
-            headers={
-                "Origin": "https://localhost:4200",
-                "Content-Type": "application/pdf",
-            },
-        )
-        assert result.status_code == 200
-        assert "Access-Control-Allow-Origin" in result.headers
-        assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4200"
-        assert "Access-Control-Allow-Methods" in result.headers
-        assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
-
-        bucket_cors_config = {
-            "CORSRules": [
-                {
-                    "AllowedOrigins": [
-                        "https://localhost:4200",
-                        "https://localhost:4201",
-                    ],
-                    "AllowedMethods": ["GET", "PUT"],
-                    "MaxAgeSeconds": 3000,
-                    "AllowedHeaders": ["*"],
-                }
-            ]
-        }
-
-        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
-
-        # create signed url
-        url = s3_client.generate_presigned_url(
-            ClientMethod="put_object",
-            Params={
-                "Bucket": bucket_name,
-                "Key": object_key,
-                "ContentType": "application/pdf",
-                "ACL": "bucket-owner-full-control",
-            },
-            ExpiresIn=3600,
-        )
-
-        # mimic chrome behavior, sending OPTIONS request first for strict-origin-when-cross-origin
-        result = requests.options(
-            url,
-            headers={
-                "Origin": "https://localhost:4200",
-                "Access-Control-Request-Method": "PUT",
-            },
-        )
-        assert "Access-Control-Allow-Origin" in result.headers
-        assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4200"
-        assert "Access-Control-Allow-Methods" in result.headers
-        assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
-
-        result = requests.put(
-            url,
-            data="something",
-            verify=False,
-            headers={
-                "Origin": "https://localhost:4200",
-                "Content-Type": "application/pdf",
-            },
-        )
-        assert result.status_code == 200
-        assert "Access-Control-Allow-Origin" in result.headers
-        assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4200"
-        assert "Access-Control-Allow-Methods" in result.headers
-        assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
-
-        result = requests.put(
-            url,
-            data="something",
-            verify=False,
-            headers={
-                "Origin": "https://localhost:4201",
-                "Content-Type": "application/pdf",
-            },
-        )
-        assert result.status_code == 200
-        assert "Access-Control-Allow-Origin" in result.headers
-        assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4201"
-        assert "Access-Control-Allow-Methods" in result.headers
-        assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
 
     @pytest.mark.aws_validated
     def test_s3_get_response_default_content_type(self, s3_client, s3_bucket):
@@ -1459,6 +1343,213 @@ class TestS3PresignedUrl:
         assert json_response["ETag"] == etag
 
 
+class TestS3Cors:
+    @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
+    @pytest.mark.aws_validated
+    # TODO x-amzn-requestid should be 'x-amz-request-id'
+    # TODO "Vary" contains more in AWS, other params are added additional in LocalStack
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Access-Control-Allow-Headers",
+            "$..Connection",
+            "$..Location",
+            "$..Vary",
+            "$..Content-Type",
+            "$..x-amzn-requestid",
+            "$..last-modified",
+            "$..Last-Modified",
+        ]
+    )
+    def test_cors_with_allowed_origins(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(self._get_cors_result_header_snapshot_transformer(snapshot))
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": ["https://localhost:4200"],
+                    "AllowedMethods": ["GET", "PUT"],
+                    "MaxAgeSeconds": 3000,
+                    "AllowedHeaders": ["*"],
+                }
+            ]
+        }
+
+        bucket_name = "bucket-%s" % short_uid()
+        object_key = "424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf"
+        s3_create_bucket(Bucket=bucket_name)
+        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+
+        # create signed url
+        url = s3_client.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": bucket_name,
+                "Key": object_key,
+                "ContentType": "application/pdf",
+                "ACL": "bucket-owner-full-control",
+            },
+            ExpiresIn=3600,
+        )
+        result = requests.put(
+            url,
+            data="something",
+            verify=False,
+            headers={
+                "Origin": "https://localhost:4200",
+                "Content-Type": "application/pdf",
+            },
+        )
+        assert result.status_code == 200
+        # result.headers is type CaseInsensitiveDict and needs to be converted first
+        snapshot.match("raw-response-headers", dict(result.headers))
+
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": [
+                        "https://localhost:4200",
+                        "https://localhost:4201",
+                    ],
+                    "AllowedMethods": ["GET", "PUT"],
+                    "MaxAgeSeconds": 3000,
+                    "AllowedHeaders": ["*"],
+                }
+            ]
+        }
+
+        s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+
+        # create signed url
+        url = s3_client.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": bucket_name,
+                "Key": object_key,
+                "ContentType": "application/pdf",
+                "ACL": "bucket-owner-full-control",
+            },
+            ExpiresIn=3600,
+        )
+
+        # mimic chrome behavior, sending OPTIONS request first for strict-origin-when-cross-origin
+        result = requests.options(
+            url,
+            headers={
+                "Origin": "https://localhost:4200",
+                "Access-Control-Request-Method": "PUT",
+            },
+        )
+        snapshot.match("raw-response-headers-2", dict(result.headers))
+
+        result = requests.put(
+            url,
+            data="something",
+            verify=False,
+            headers={
+                "Origin": "https://localhost:4200",
+                "Content-Type": "application/pdf",
+            },
+        )
+        assert result.status_code == 200
+        snapshot.match("raw-response-headers-3", dict(result.headers))
+
+        result = requests.put(
+            url,
+            data="something",
+            verify=False,
+            headers={
+                "Origin": "https://localhost:4201",
+                "Content-Type": "application/pdf",
+            },
+        )
+        assert result.status_code == 200
+        snapshot.match("raw-response-headers-4", dict(result.headers))
+
+    @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Access-Control-Allow-Headers",
+            "$..Connection",
+            "$..Location",
+            "$..Vary",
+            "$..Content-Type",
+            "$..x-amzn-requestid",
+            "$..last-modified",
+            "$..accept-ranges",
+            "$..content-language",
+            "$..content-md5",
+            "$..content-type",
+            "$..x-amz-version-id",
+            "$..Last-Modified",
+            "$..Accept-Ranges",
+            "$..raw-response-headers-2.Access-Control-Allow-Credentials",
+        ]
+    )
+    def test_cors_configurations(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(self._get_cors_result_header_snapshot_transformer(snapshot))
+
+        bucket = f"test-cors-{short_uid()}"
+        object_key = "index.html"
+
+        url = "{}/{}".format(_bucket_url(bucket), object_key)
+
+        BUCKET_CORS_CONFIG = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": [config.get_edge_url()],
+                    "AllowedMethods": ["GET", "PUT"],
+                    "MaxAgeSeconds": 3000,
+                    "AllowedHeaders": ["x-amz-tagging"],
+                }
+            ]
+        }
+
+        s3_create_bucket(Bucket=bucket, ACL="public-read")
+        s3_client.put_bucket_cors(Bucket=bucket, CORSConfiguration=BUCKET_CORS_CONFIG)
+
+        s3_client.put_object(
+            Bucket=bucket, Key=object_key, Body="<h1>Index</html>", ACL="public-read"
+        )
+
+        response = requests.get(
+            url, headers={"Origin": config.get_edge_url(), "Content-Type": "text/html"}
+        )
+        assert 200 == response.status_code
+        # TODO this is not contained in AWS but was asserted for LocalStack
+        #  assert "Access-Control-Allow-Headers" in response.headers
+        #  assert "x-amz-tagging" == response.headers["Access-Control-Allow-Headers"]
+        snapshot.match("raw-response-headers", dict(response.headers))
+
+        BUCKET_CORS_CONFIG = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": ["https://anydomain.com"],
+                    "AllowedMethods": ["GET", "PUT"],
+                    "MaxAgeSeconds": 3000,
+                    "AllowedHeaders": ["x-amz-tagging"],
+                }
+            ]
+        }
+
+        s3_client.put_bucket_cors(Bucket=bucket, CORSConfiguration=BUCKET_CORS_CONFIG)
+        response = requests.get(
+            url, headers={"Origin": config.get_edge_url(), "Content-Type": "text/html"}
+        )
+        assert 200 == response.status_code
+        snapshot.match("raw-response-headers-2", dict(response.headers))
+
+    def _get_cors_result_header_snapshot_transformer(self, snapshot):
+        return [
+            snapshot.transform.key_value("x-amz-id-2", "<id>", reference_replacement=False),
+            snapshot.transform.key_value(
+                "x-amz-request-id", "<request-id>", reference_replacement=False
+            ),
+            snapshot.transform.key_value("Date", "<date>", reference_replacement=False),
+            snapshot.transform.key_value("Server", "<server>", reference_replacement=False),
+            snapshot.transform.key_value("Last-Modified", "<date>", reference_replacement=False),
+        ]
+
+
 class TestS3DeepArchive:
     """
     Test to cover DEEP_ARCHIVE Storage Class functionality.
@@ -1500,7 +1591,9 @@ def _anon_client(service: str):
     return aws_stack.create_external_boto_client(service, config=conf)
 
 
-def _bucket_url(bucket_name: str, region: str) -> str:
+def _bucket_url(bucket_name: str, region: str = "") -> str:
+    if not region:
+        region = config.DEFAULT_REGION
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"
