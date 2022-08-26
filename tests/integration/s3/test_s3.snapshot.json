@@ -1049,5 +1049,34 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_uppercase_key_names": {
+    "recorded-date": "26-08-2022, 16:13:42",
+    "recorded-content": {
+      "response": {
+        "AcceptRanges": "bytes",
+        "Body": "something",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "wrong-case-key": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "camelcasekey",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

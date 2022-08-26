@@ -110,18 +110,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_s3_uppercase_key_names(self):
-        # bucket name should be case-sensitive
-        bucket_name = "testuppercase-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        # key name should be case-sensitive
-        object_key = "camelCaseKey"
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
-        self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        res = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        self.assertEqual(200, res["ResponseMetadata"]["HTTPStatusCode"])
-
     def test_s3_get_response_headers(self):
         bucket_name = "test-bucket-%s" % short_uid()
         client = self._get_test_client()

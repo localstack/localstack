@@ -1035,6 +1035,23 @@ class TestS3:
             s3_client.get_bucket_acl(Bucket="bucket-not-exists")
         snapshot.match("get-bucket-not-exists", e.value.response)
 
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..VersionId", "$..ContentLanguage", "$..Error.RequestID"]
+    )
+    def test_s3_uppercase_key_names(self, s3_client, s3_create_bucket, snapshot):
+        # bucket name should be case-sensitive
+        bucket_name = "testuppercase-%s" % short_uid()
+        s3_create_bucket(Bucket=bucket_name)
+
+        # key name should be case-sensitive
+        object_key = "camelCaseKey"
+        s3_client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
+        res = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("response", res)
+        with pytest.raises(ClientError) as e:
+            s3_client.get_object(Bucket=bucket_name, Key="camelcasekey")
+        snapshot.match("wrong-case-key", e.value.response)
+
     @pytest.mark.aws_validated
     def test_s3_download_object_with_lambda(
         self,
