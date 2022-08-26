@@ -107,6 +107,12 @@ class IamProvider(IamApi):
             role = backend.get_role(request["RoleName"])
             role.max_session_duration = None
             result["Role"].pop("MaxSessionDuration")
+
+        if "RoleLastUsed" in result["Role"] and not result["Role"]["RoleLastUsed"]:
+            # not part of the AWS response if it's empty
+            # FIXME: RoleLastUsed did not seem well supported when this check was added
+            result["Role"].pop("RoleLastUsed")
+
         return result
 
     @staticmethod
