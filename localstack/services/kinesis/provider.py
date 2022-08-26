@@ -5,6 +5,7 @@ from datetime import datetime
 from random import random
 from typing import Dict, List, Set
 
+import localstack.services.kinesis.kinesis_starter as starter
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.kinesis import (
@@ -46,7 +47,6 @@ from localstack.aws.api.kinesis import (
 )
 from localstack.constants import LOCALHOST
 from localstack.services.generic_proxy import RegionBackend
-from localstack.services.kinesis.kinesis_starter import check_kinesis, start_kinesis
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 
@@ -83,16 +83,13 @@ def find_consumer(consumer_arn="", consumer_name="", stream_arn=""):
 
 
 class KinesisProvider(KinesisApi, ServiceLifecycleHook):
-    def __init__(self):
-        self._server = None
-
     def on_before_start(self):
-        self._server = start_kinesis()
-        check_kinesis()
+        starter.start_kinesis()
+        starter.check_kinesis()
 
     def get_forward_url(self):
         """Return the URL of the backend Kinesis server to forward requests to"""
-        return f"http://{LOCALHOST}:{self._server.port}"
+        return f"http://{LOCALHOST}:{starter._server.port}"
 
     def subscribe_to_shard(
         self,
