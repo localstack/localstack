@@ -110,41 +110,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_bucket_exists(self):
-        # Test setup
-        bucket = "test-bucket-%s" % short_uid()
-
-        s3_client = aws_stack.create_external_boto_client("s3")
-        s3_client.create_bucket(Bucket=bucket)
-        s3_client.put_bucket_cors(
-            Bucket=bucket,
-            CORSConfiguration={
-                "CORSRules": [
-                    {
-                        "AllowedMethods": ["GET", "POST", "PUT", "DELETE"],
-                        "AllowedOrigins": ["localhost"],
-                    }
-                ]
-            },
-        )
-
-        response = s3_client.get_bucket_cors(Bucket=bucket)
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-
-        result = s3_client.get_bucket_acl(Bucket=bucket)
-        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
-
-        with self.assertRaises(ClientError) as ctx:
-            self.s3_client.get_bucket_acl(Bucket="bucket-not-exists")
-            self.assertEqual("NoSuchBucket", ctx.exception.response["Error"]["Code"])
-            self.assertEqual(
-                "The specified bucket does not exist",
-                ctx.exception.response["Error"]["Message"],
-            )
-
-        # Cleanup
-        s3_client.delete_bucket(Bucket=bucket)
-
     def test_s3_uppercase_key_names(self):
         # bucket name should be case-sensitive
         bucket_name = "testuppercase-%s" % short_uid()

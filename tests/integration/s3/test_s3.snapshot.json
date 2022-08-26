@@ -994,5 +994,60 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_bucket_exists": {
+    "recorded-date": "26-08-2022, 15:53:56",
+    "recorded-content": {
+      "get-bucket-cors": {
+        "CORSRules": [
+          {
+            "AllowedMethods": [
+              "GET",
+              "POST",
+              "PUT",
+              "DELETE"
+            ],
+            "AllowedOrigins": [
+              "localhost"
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-acl": {
+        "Grants": [
+          {
+            "Grantee": {
+              "DisplayName": "<display-name:1>",
+              "ID": "<owner-id:1>",
+              "Type": "CanonicalUser"
+            },
+            "Permission": "FULL_CONTROL"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name:1>",
+          "ID": "<owner-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-bucket-not-exists": {
+        "Error": {
+          "BucketName": "bucket-not-exists",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

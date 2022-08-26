@@ -1003,6 +1003,39 @@ class TestS3:
         assert "Requester" == response["Payer"]
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Error.RequestID", "$..Grants..Grantee.DisplayName"]
+    )
+    def test_bucket_exists(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("DisplayName"),
+                snapshot.transform.key_value("ID", value_replacement="owner-id"),
+            ]
+        )
+        s3_client.put_bucket_cors(
+            Bucket=s3_bucket,
+            CORSConfiguration={
+                "CORSRules": [
+                    {
+                        "AllowedMethods": ["GET", "POST", "PUT", "DELETE"],
+                        "AllowedOrigins": ["localhost"],
+                    }
+                ]
+            },
+        )
+
+        response = s3_client.get_bucket_cors(Bucket=s3_bucket)
+        snapshot.match("get-bucket-cors", response)
+
+        result = s3_client.get_bucket_acl(Bucket=s3_bucket)
+        snapshot.match("get-bucket-acl", result)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_acl(Bucket="bucket-not-exists")
+        snapshot.match("get-bucket-not-exists", e.value.response)
+
+    @pytest.mark.aws_validated
     def test_s3_download_object_with_lambda(
         self,
         s3_client,
