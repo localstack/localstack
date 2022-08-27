@@ -1161,7 +1161,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         # Have to check the message size here, rather than in _put_message
         # to avoid multiple calls for batch messages. Otherwise, design
         # of calling _put_message must be changed (addresses issue #6740)
-        max_message_size = self.get_queue_attributes(context, queue_url)[QueueAttributeName.MaximumMessageSize]
+        max_message_size = int(self.get_queue_attributes(context, queue_url)[QueueAttributeName.MaximumMessageSize])
         check_message_size(message_body, max_message_size)
 
         queue_item = self._put_message(
@@ -1194,7 +1194,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         failed = []
         # added to address maximum batch message size (issue #6740)
         batch_message_size = 0
-        max_message_size = self.get_queue_attributes(context, queue_url)[QueueAttributeName.MaximumMessageSize]
+        max_message_size = int(self.get_queue_attributes(context, queue_url)[QueueAttributeName.MaximumMessageSize])
 
         with queue.mutex:
             for entry in entries:
