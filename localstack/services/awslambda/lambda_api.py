@@ -1253,12 +1253,17 @@ def lambda_result_to_response(result: str):
         }
     )
 
-    parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
-    parsed_result = json_safe(parsed_result)
-    parsed_result = {} if parsed_result is None else parsed_result
+    parsed_result = {}
+    if isinstance(result, dict):
+        parsed_result = result
+    else:
+        try:
+            parsed_result = json.loads((str(result or "{}")))
+        except Exception as e:
+            LOG.warning("Error while parsing response from lambda", e)
 
     if "body" not in parsed_result:
-        response.data = result
+        response.data = str(result)
         return response
 
     parsed_headers = parsed_result.get("headers", {})
