@@ -3,7 +3,6 @@ from localstack.services.sqs import provider
 from localstack.services.sqs.utils import get_message_attributes_md5
 from localstack.utils.common import convert_to_printable_chars
 
-
 MAXIMUM_MESSAGE_SIZE = 262144
 
 
@@ -55,7 +54,7 @@ def test_except_check_message_size():
     message_body = "".join(("a" for _ in range(262145)))
     result = False
     try:
-        provider.check_message_size(message_body)
+        provider.check_message_size(message_body, MAXIMUM_MESSAGE_SIZE)
     except provider.InvalidMessageContents:
         result = True
 
@@ -66,7 +65,7 @@ def test_noexc_check_message_size():
     message_body = "a"
     result = True
     try:
-        provider.check_message_size(message_body)
+        provider.check_message_size(message_body, MAXIMUM_MESSAGE_SIZE)
     except provider.InvalidMessageContents:
         result = False
 
