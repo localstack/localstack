@@ -383,21 +383,23 @@ class TestSqsProvider:
 
     @pytest.mark.aws_validated
     def test_receive_message_wait_time_seconds_and_max_number_of_messages_does_not_block(
-        self, sqs_client, sqs_queue
+        self, sqs_client, sqs_create_queue
     ):
         """
         this test makes sure that `WaitTimeSeconds` does not block when messages are in the queue, even when
         `MaxNumberOfMessages` is provided.
         """
-        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foobar1")
-        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foobar2")
+        queue_url = sqs_create_queue()
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar1")
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar2")
 
         # wait for the two messages to be in the queue
-        assert poll_condition(lambda: get_qsize(sqs_client, sqs_queue) == 2)
+        assert poll_condition(lambda: get_qsize(sqs_client, queue_url) == 2, timeout=10)
 
         then = time.time()
         response = sqs_client.receive_message(
-            QueueUrl=sqs_queue, MaxNumberOfMessages=3, WaitTimeSeconds=5
+            QueueUrl=queue_url, MaxNumberOfMessages=3, WaitTimeSeconds=5
         )
         took = time.time() - then
         assert took < 2  # should take much less than 5 seconds
@@ -2111,7 +2113,7 @@ class TestSqsProvider:
             messages.extend(result.get("Messages", []))
             return len(messages) == 3
 
-        assert poll_condition(_collect)
+        assert poll_condition(_collect, timeout=10)
         assert {m["Body"] for m in messages} == {"test-1-0", "test-1-1", "test-1-2"}
 
     @pytest.mark.aws_validated
