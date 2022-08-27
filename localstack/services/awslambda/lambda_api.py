@@ -1,3 +1,4 @@
+import ast
 import base64
 import functools
 import hashlib
@@ -1258,26 +1259,22 @@ def lambda_result_to_response(result: str):
         parsed_result = result
     else:
         try:
-            parsed_result = json.loads((str(result or "{}")))
+            parsed_result = ast.literal_eval(result)
         except Exception as e:
             LOG.warning("Error while parsing response from lambda", e)
-
-    if "body" not in parsed_result:
-        response.data = str(result)
-        return response
 
     parsed_headers = parsed_result.get("headers", {})
     if parsed_headers is not None:
         response.headers.update(parsed_headers)
     try:
-        result_body = parsed_result.get("body")
-        if isinstance(result_body, dict):
-            response.data = json.dumps(result_body)
-        else:
-            body_bytes = to_bytes(to_str(result_body or ""))
-            if parsed_result.get("isBase64Encoded", False):
-                body_bytes = base64.b64decode(body_bytes)
-            response.data = body_bytes
+        if "body" not in parsed_result:
+            response.data = json.dumps(parsed_result)
+        elif isinstance(parsed_result.get("body"), dict):
+            response.data = json.dumps(parsed_result.get("body"))
+        elif parsed_result.get("isBase64Encoded", False):
+            body_bytes = to_bytes(to_str(parsed_result.get("body") or ""))
+            decoded_body_bytes = base64.b64decode(body_bytes)
+            response.data = decoded_body_bytes
     except Exception as e:
         LOG.warning("Couldn't set Lambda response content: %s", e)
         response._content = "{}"
