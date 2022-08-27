@@ -154,11 +154,12 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
 
 def check_message_size(message_body: str, max_message_size: int):
     # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
-    error = "Invalid message size found. Valid message size 262,144 bytes = 256KiB"
+    error = "InvalidParameterValue. One or more parameters are invalid. "
+    error += "Reason: Message must be shorter than 262144 bytes."
 
     # must encode as utf8 to get correct bytes with len
     if len(message_body.encode("utf8")) > max_message_size:
-        raise InvalidMessageContents(error)
+        raise InvalidParameterValue(error)
 
 
 def check_message_content(message_body: str):
@@ -457,6 +458,10 @@ class SqsQueue:
                 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
                 self.inflight.remove(standard_message)
                 self.visible.put_nowait(standard_message)
+
+    @propery
+    def maximum_message_size(self):
+        return int(self.attributes[QueueAttributeName.MaximumMessageSize])
 
     def remove(self, receipt_handle: str):
         with self.mutex:
@@ -1159,11 +1164,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue = self._resolve_queue(context, queue_url=queue_url)
 
         # Have to check the message size here, rather than in _put_message
-        # to avoid multiple calls for batch messages. Otherwise, design
-        # of calling _put_message must be changed (addresses issue #6740)
-        max_message_size = queue.default_attributes()[QueueAttributeName.MaximumMessageSize]
-        max_message_size = int(max_message_size)
-        check_message_size(message_body, max_message_size)
+        # to avoid multiple calls for batch messages.
+        check_message_size(message_body, queue.maximum_message_size)
 
         queue_item = self._put_message(
             queue,
@@ -1193,10 +1195,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         successful = []
         failed = []
-        # added to address maximum batch message size (issue #6740)
         batch_message_size = 0
-        max_message_size = queue.default_attributes()[QueueAttributeName.MaximumMessageSize]
-        max_message_size = int(max_message_size)
+        max_message_size = queue.maximum_message_size
 
         with queue.mutex:
             for entry in entries:
@@ -1204,8 +1204,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     # must convert to unicode to get actual bytes
                     batch_message_size += len(entry.get("MessageBody").encode("utf8"))
                     if batch_message_size > max_message_size:
-                        error = "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
-                        raise InvalidMessageContents(error)
+                        error = "InvalidParameterValue. One or more parameters are invalid. "
+                        error += "Reason: Message must be shorter than 262144 bytes."
+                        raise InvalidParameterValue(error)
 
                     queue_item = self._put_message(
                         queue,

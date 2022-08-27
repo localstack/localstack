@@ -3,6 +3,8 @@ from localstack.services.sqs import provider
 from localstack.services.sqs.utils import get_message_attributes_md5
 from localstack.utils.common import convert_to_printable_chars
 
+import pytest
+
 MAXIMUM_MESSAGE_SIZE = 262144
 
 
@@ -51,56 +53,11 @@ def test_handle_string_max_receive_count_in_dead_letter_check():
 
 
 def test_except_check_message_size():
-    message_body = "".join(("a" for _ in range(262145)))
-    result = False
-    try:
+    message_body = "".join(("a" for _ in range(MAXIMUM_MESSAGE_SIZE + 1)))
+    with pytest.raises(provider.InvalidMessageContents):
         provider.check_message_size(message_body, MAXIMUM_MESSAGE_SIZE)
-    except provider.InvalidMessageContents:
-        result = True
-
-    assert result
 
 
-def test_noexc_check_message_size():
+def test_check_message_size():
     message_body = "a"
-    result = True
-    try:
-        provider.check_message_size(message_body, MAXIMUM_MESSAGE_SIZE)
-    except provider.InvalidMessageContents:
-        result = False
-
-    assert result
-
-
-def test_except_batch_message_size():
-    batch_message_size = 0
-    result = False
-    try:
-        for i in range(10):
-            batch_message_size += len((26215 * "b").encode("utf8"))
-            if batch_message_size > MAXIMUM_MESSAGE_SIZE:
-                error = (
-                    "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
-                )
-                raise provider.InvalidMessageContents(error)
-    except provider.InvalidMessageContents:
-        result = True
-
-    assert result
-
-
-def test_noexc_batch_message_size():
-    batch_message_size = 0
-    result = True
-    try:
-        for i in range(10):
-            batch_message_size += len("a".encode("utf8"))
-            if batch_message_size > MAXIMUM_MESSAGE_SIZE:
-                error = (
-                    "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
-                )
-                raise provider.InvalidMessageContents(error)
-    except provider.InvalidMessageContents:
-        result = False
-
-    assert result
+    provider.check_message_size(message_body, MAXIMUM_MESSAGE_SIZE)

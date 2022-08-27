@@ -204,10 +204,12 @@ class TestSqsProvider:
     @pytest.mark.aws_validated
     def test_send_oversized_message(self, sqs_client, sqs_queue):
         try:
-            sqs_client.send_message(QueueUrl=sqs_queue, Message=(262145 * "a"))
+            sqs_client.send_message(
+                QueueUrl=sqs_queue, Message=((sqs_queue.maximum_message_size + 1) * "a")
+            )
         except ClientError as e:
             assert "InvalidMessageContents" in e.response["Error"]["Code"]
-            assert e.response["ResponseMetadata"]["HTTPStatusCode"] in [400, 404]
+            assert e.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
     @pytest.mark.aws_validated
     def test_receive_message_attributes_timestamp_types(self, sqs_client, sqs_queue):
@@ -307,13 +309,13 @@ class TestSqsProvider:
             sqs_client.send_message_batch(
                 QueueUrl=sqs_queue,
                 Entries=[
-                    {"Id": "1", "MessageBody": "a" * 262144},
+                    {"Id": "1", "MessageBody": "a" * sqs_queue.maximum_message_size},
                     {"Id": "2", "MessageBody": "a"},
                 ],
             )
         except ClientError as e:
             assert "InvalidMessageContents" in e.response["Error"]["Code"]
-            assert e.response["ResponseMetadata"]["HTTPStatusCode"] in [400, 404]
+            assert e.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
     @pytest.mark.aws_validated
     def test_tag_untag_queue(self, sqs_client, sqs_create_queue):
@@ -590,6 +592,16 @@ class TestSqsProvider:
 
         response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
         snapshot.match("get_updated_queue_attributes", response)
+
+    @pytest.mark.aws_validated
+    def test_set_maximum_message_size_queue_attribute(self, sqs_client, sqs_queue, snapshot):
+        new_max_message_size = 128000
+        sqs_client.set_queue_attributes(
+            QueueUrl=sqs_queue.url,
+            Attributes={"MaximumMessageSize": new_max_message_size},
+        )
+
+        snapshot.match("set_maximum_message_size", sqs_queue.maximum_message_size)
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5938")
