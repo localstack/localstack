@@ -1,6 +1,9 @@
 from localstack.aws.api.sqs import Message
 from localstack.services.sqs import provider
 from localstack.services.sqs.utils import get_message_attributes_md5
+from localstack.services.sqs.provider import check_message_size
+from localstack.services.sqs.provider import QueueAttributeName
+from localstack.services.sqs.provider import InvalidMessageContents
 from localstack.utils.common import convert_to_printable_chars
 
 
@@ -46,3 +49,51 @@ def test_handle_string_max_receive_count_in_dead_letter_check():
     sqs_message = provider.SqsMessage(Message(), {})
     result = provider.SqsProvider()._dead_letter_check(queue, sqs_message, None)
     assert result is False
+
+def test_except_check_message_size():
+    message_body = "".join(("a" for _ in range(262145)))
+    result = False
+    try:
+        check_message_size(message_body)
+    except:
+        result = True
+
+    assert result
+
+def test_noexc_check_message_size():
+    message_body = "a"
+    result = True
+    try:
+        check_message_size(message_body)
+    except:
+        result = False
+
+    assert result
+
+def test_except_batch_message_size():
+    batch_message_size = 0
+    result = False
+    try:
+        for i in range(10):
+            batch_message_size += len((26215 * "a").encode("utf8"))
+            if batch_message_size > QueueAttributeName.MaximumMessageSize:
+                error = "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
+                raise InvalidMessageContents(error)
+    except:
+        result = True
+
+    assert result
+
+def test_noexc_batch_message_size():
+    batch_message_size = 0
+    result = True
+    try:
+        for i in range(10):
+            batch_message_size += len("a".encode("utf8"))
+            if batch_message_size > QueueAttributeName.MaximumMessageSize:
+                error = "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
+                raise InvalidMessageContents(error)
+    except:
+        result = False
+
+    assert result

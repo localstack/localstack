@@ -202,6 +202,14 @@ class TestSqsProvider:
         assert message["MD5OfBody"] == send_result["MD5OfMessageBody"]
 
     @pytest.mark.aws_validated
+    def test_send_oversized_message(self, sqs_client, sqs_queue):
+        try:
+            sqs_client.send_message(QueueUrl=sqs_queue, Message=(262145*"a"))
+        except ClientError as e:
+            assert "InvalidMessageContents" in e.response["Error"]["Code"]
+            assert e.response["ResponseMetadata"]["HTTPStatusCode"] in [400, 404]
+
+    @pytest.mark.aws_validated
     def test_receive_message_attributes_timestamp_types(self, sqs_client, sqs_queue):
         sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="message")
 
@@ -289,6 +297,22 @@ class TestSqsProvider:
             sqs_client.send_message_batch(QueueUrl=queue_url, Entries=[])
         except ClientError as e:
             assert "EmptyBatchRequest" in e.response["Error"]["Code"]
+            assert e.response["ResponseMetadata"]["HTTPStatusCode"] in [400, 404]
+
+    @pytest.mark.aws_validated
+    def test_send_message_batch_with_oversized_contents(self, sqs_client, sqs_queue):
+        # Send two messages, one of max message size and a second with
+        # message body of size 1
+        try:
+            sqs_client.send_message_batch(
+                QueueUrl=sqs_queue,
+                Entries=[
+                    {"Id": "1", "MessageBody": "a" * 262144},
+                    {"Id": "2", "MessageBody": "a"},
+                ],
+            )
+        except ClientError as e:
+            assert "InvalidMessageContents" in e.response["Error"]["Code"]
             assert e.response["ResponseMetadata"]["HTTPStatusCode"] in [400, 404]
 
     @pytest.mark.aws_validated

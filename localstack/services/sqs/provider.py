@@ -152,6 +152,15 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
         )
 
 
+def check_message_size(message_body: str):
+    # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
+    error = "Invalid message size found. Valid message size 262,144 bytes = 256KiB"
+
+    # must encode as utf8 to get correct bytes with len
+    if len(message_body.encode("utf8")) > QueueAttributeName.MaximumMessageSize:
+        raise InvalidMessageContents(error)
+
+
 def check_message_content(message_body: str):
     error = "Invalid characters found. Valid unicode characters are #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF"
 
@@ -1149,6 +1158,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> SendMessageResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
+        # Have to check the message size here, rather than in _put_message
+        # to avoid multiple calls for batch messages. Otherwise, design
+        # of calling _put_message must be changed (addresses issue #6740)
+        check_message_size(message_body)
+
         queue_item = self._put_message(
             queue,
             context,
@@ -1177,10 +1191,18 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         successful = []
         failed = []
+        # added to address maximum batch message size (issue #6740)
+        batch_message_size = 0
 
         with queue.mutex:
             for entry in entries:
                 try:
+                    # must convert to unicode to get actual bytes
+                    batch_message_size += len(entry.get("MessageBody").encode("utf8"))
+                    if batch_message_size > QueueAttributeName.MaximumMessageSize:
+                        error = "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
+                        raise InvalidMessageContents(error)
+
                     queue_item = self._put_message(
                         queue,
                         context,
