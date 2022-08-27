@@ -4,6 +4,9 @@ from localstack.services.sqs.utils import get_message_attributes_md5
 from localstack.utils.common import convert_to_printable_chars
 
 
+MAXIMUM_MESSAGE_SIZE = 262144
+
+
 def test_sqs_message_attrs_md5():
     msg_attrs = {
         "MessageAttribute.1.Name": "timestamp",
@@ -76,7 +79,7 @@ def test_except_batch_message_size():
     try:
         for i in range(10):
             batch_message_size += len((26215 * "a").encode("utf8"))
-            if batch_message_size > 262144:
+            if batch_message_size > MAXIMUM_MESSAGE_SIZE:
                 error = (
                     "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
                 )
@@ -93,12 +96,12 @@ def test_noexc_batch_message_size():
     try:
         for i in range(10):
             batch_message_size += len("a".encode("utf8"))
-            if batch_message_size > provider.QueueAttributeName.MaximumMessageSize:
+            if batch_message_size > MAXIMUM_MESSAGE_SIZE:
                 error = (
                     "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
                 )
                 raise provider.InvalidMessageContents(error)
-    except provider.Exception:
+    except provider.InvalidMessageContents:
         result = False
 
     assert result
