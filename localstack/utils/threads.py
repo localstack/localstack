@@ -3,6 +3,7 @@ import inspect
 import logging
 import threading
 import traceback
+from collections import defaultdict
 from concurrent.futures import Future
 from multiprocessing.dummy import Pool
 from typing import Callable, List
@@ -133,3 +134,37 @@ def parallelize(func: Callable, arr: List, size: int = None):
 
     with Pool(size) as pool:
         return pool.map(func, arr)
+
+
+class SynchronizedDefaultDict(defaultdict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._lock = threading.RLock()
+
+    def fromkeys(self, keys, value=None):
+        with self._lock:
+            return super().fromkeys(keys, value)
+
+    def __getitem__(self, key):
+        with self._lock:
+            return super().__getitem__(key)
+
+    def __setitem__(self, key, value):
+        with self._lock:
+            super().__setitem__(key, value)
+
+    def __delitem__(self, key):
+        with self._lock:
+            super().__delitem__(key)
+
+    def __iter__(self):
+        with self._lock:
+            return super().__iter__()
+
+    def __len__(self):
+        with self._lock:
+            return super().__len__()
+
+    def __str__(self):
+        with self._lock:
+            return super().__str__()
