@@ -15,6 +15,7 @@ import urllib.parse
 import uuid
 from datetime import datetime
 from io import StringIO
+from json import JSONDecodeError
 from random import random
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
@@ -1240,6 +1241,16 @@ def handle_lambda_url_invocation(
     return response
 
 
+def json_or_eval(body: str):
+    try:
+        return json.loads(body)
+    except JSONDecodeError:
+        try:
+            return ast.literal_eval(body)
+        except Exception as e:
+            LOG.error(f"Error parsing {body}", e)
+
+
 # FIXME: broken for returned json
 def lambda_result_to_response(result: str):
     response = HttpResponse()
@@ -1254,30 +1265,24 @@ def lambda_result_to_response(result: str):
         }
     )
 
-    parsed_result = {}
     if isinstance(result, dict):
         parsed_result = result
     else:
-        try:
-            parsed_result = ast.literal_eval(result)
-        except Exception as e:
-            LOG.warning("Error while parsing response from lambda", e)
+        parsed_result = json_or_eval(result) or {}
 
-    parsed_headers = parsed_result.get("headers", {})
-    if parsed_headers is not None:
-        response.headers.update(parsed_headers)
-    try:
-        if "body" not in parsed_result:
-            response.data = json.dumps(parsed_result)
-        elif isinstance(parsed_result.get("body"), dict):
-            response.data = json.dumps(parsed_result.get("body"))
-        elif parsed_result.get("isBase64Encoded", False):
-            body_bytes = to_bytes(to_str(parsed_result.get("body") or ""))
-            decoded_body_bytes = base64.b64decode(body_bytes)
-            response.data = decoded_body_bytes
-    except Exception as e:
-        LOG.warning("Couldn't set Lambda response content: %s", e)
-        response._content = "{}"
+    if isinstance(parsed_result.get("headers"), dict):
+        response.headers.update(parsed_result.get("headers"))
+
+    if "body" not in parsed_result:
+        response.data = json.dumps(parsed_result)
+    elif isinstance(parsed_result.get("body"), dict):
+        response.data = json.dumps(parsed_result.get("body"))
+    elif parsed_result.get("isBase64Encoded", False):
+        body_bytes = to_bytes(to_str(parsed_result.get("body", "")))
+        decoded_body_bytes = base64.b64decode(body_bytes)
+        response.data = decoded_body_bytes
+    else:
+        response.data = parsed_result.get("body")
 
     return response
 

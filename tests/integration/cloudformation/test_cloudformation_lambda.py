@@ -159,6 +159,7 @@ def test_lambda_w_dynamodb_event_filter(
         "$..access-control-allow-origin",
         "$..access-control-expose-headers",
         "$..server",
+        "$..content-length",
     ]
 )
 def test_cfn_function_url(deploy_cfn_template, cfn_client, lambda_client, snapshot):
