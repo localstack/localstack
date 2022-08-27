@@ -1,8 +1,9 @@
+import pytest
+
 from localstack.aws.api.sqs import Message
 from localstack.services.sqs import provider
 from localstack.services.sqs.utils import get_message_attributes_md5
 from localstack.utils.common import convert_to_printable_chars
-import pytest
 
 MAXIMUM_MESSAGE_SIZE = 262144
 
