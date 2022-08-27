@@ -76,7 +76,7 @@ def test_except_batch_message_size():
     try:
         for i in range(10):
             batch_message_size += len((26215 * "a").encode("utf8"))
-            if batch_message_size > provider.QueueAttributeName.MaximumMessageSize:
+            if batch_message_size > 262144:
                 error = (
                     "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
                 )
