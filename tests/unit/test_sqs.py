@@ -1,9 +1,6 @@
 from localstack.aws.api.sqs import Message
 from localstack.services.sqs import provider
 from localstack.services.sqs.utils import get_message_attributes_md5
-from localstack.services.sqs.provider import check_message_size
-from localstack.services.sqs.provider import QueueAttributeName
-from localstack.services.sqs.provider import InvalidMessageContents
 from localstack.utils.common import convert_to_printable_chars
 
 
@@ -55,8 +52,8 @@ def test_except_check_message_size():
     message_body = "".join(("a" for _ in range(262145)))
     result = False
     try:
-        check_message_size(message_body)
-    except Exception:
+        provider.check_message_size(message_body)
+    except provider.InvalidMessageContents:
         result = True
 
     assert result
@@ -66,8 +63,8 @@ def test_noexc_check_message_size():
     message_body = "a"
     result = True
     try:
-        check_message_size(message_body)
-    except Exception:
+        provider.check_message_size(message_body)
+    except provider.InvalidMessageContents:
         result = False
 
     assert result
@@ -79,10 +76,12 @@ def test_except_batch_message_size():
     try:
         for i in range(10):
             batch_message_size += len((26215 * "a").encode("utf8"))
-            if batch_message_size > QueueAttributeName.MaximumMessageSize:
-                error = "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
-                raise InvalidMessageContents(error)
-    except Exception:
+            if batch_message_size > provider.QueueAttributeName.MaximumMessageSize:
+                error = (
+                    "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
+                )
+                raise provider.InvalidMessageContents(error)
+    except provider.InvalidMessageContents:
         result = True
 
     assert result
@@ -94,10 +93,12 @@ def test_noexc_batch_message_size():
     try:
         for i in range(10):
             batch_message_size += len("a".encode("utf8"))
-            if batch_message_size > QueueAttributeName.MaximumMessageSize:
-                error = "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
-                raise InvalidMessageContents(error)
-    except Exception:
+            if batch_message_size > provider.QueueAttributeName.MaximumMessageSize:
+                error = (
+                    "Invalid batch message size found. Valid message size 262,144 bytes = 256KiB"
+                )
+                raise provider.InvalidMessageContents(error)
+    except provider.Exception:
         result = False
 
     assert result
