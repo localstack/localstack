@@ -1251,7 +1251,6 @@ def json_or_eval(body: str):
             LOG.error(f"Error parsing {body}", e)
 
 
-# FIXME: broken for returned json
 def lambda_result_to_response(result: str):
     response = HttpResponse()
 
