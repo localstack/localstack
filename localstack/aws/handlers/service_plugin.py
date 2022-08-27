@@ -4,6 +4,7 @@ import threading
 
 from localstack.http import Response
 from localstack.services.plugins import Service, ServiceManager
+from localstack.utils.threads import SynchronizedDefaultDict
 
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
@@ -27,7 +28,7 @@ class ServiceLoader(Handler):
         """
         self.service_manager = service_manager
         self.service_request_router = service_request_router
-        self.mutex = threading.RLock()
+        self.service_locks = SynchronizedDefaultDict(threading.RLock)
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         return self.require_service(chain, context, response)
@@ -43,8 +44,7 @@ class ServiceLoader(Handler):
         if service_operation in request_router.handlers:
             return
 
-        # FIXME: this blocks all requests to other services, so a mutex list per-service would be useful
-        with self.mutex:
+        with self.service_locks[context.service.service_name]:
             # try again to avoid race conditions
             if service_operation in request_router.handlers:
                 return

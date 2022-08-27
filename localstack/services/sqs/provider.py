@@ -353,7 +353,7 @@ class SqsQueue:
 
     def default_attributes(self) -> QueueAttributeMap:
         return {
-            QueueAttributeName.ApproximateNumberOfMessages: self.visible._qsize,
+            QueueAttributeName.ApproximateNumberOfMessages: lambda: self.visible._qsize(),
             QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: len(self.inflight),
             QueueAttributeName.ApproximateNumberOfMessagesDelayed: lambda: len(self.delayed),
             QueueAttributeName.CreatedTimestamp: str(now()),
