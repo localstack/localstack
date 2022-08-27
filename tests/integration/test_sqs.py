@@ -204,7 +204,7 @@ class TestSqsProvider:
     @pytest.mark.aws_validated
     def test_send_oversized_message(self, sqs_client, sqs_queue):
         try:
-            sqs_client.send_message(QueueUrl=sqs_queue, Message=(262145*"a"))
+            sqs_client.send_message(QueueUrl=sqs_queue, Message=(262145 * "a"))
         except ClientError as e:
             assert "InvalidMessageContents" in e.response["Error"]["Code"]
             assert e.response["ResponseMetadata"]["HTTPStatusCode"] in [400, 404]
