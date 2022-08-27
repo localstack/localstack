@@ -16,8 +16,14 @@ LOG = logging.getLogger(__name__)
 class State(Enum):
     UNKNOWN = "UNKNOWN"
     RUNNING = "RUNNING"
-    OK = "OK"
+    SUCCESSFUL = "SUCCESSFUL"
     ERROR = "ERROR"
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
 
 
 class Stage(Enum):
@@ -25,6 +31,12 @@ class Stage(Enum):
     START = 1
     READY = 2
     SHUTDOWN = 3
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
 
 
 @dataclasses.dataclass
@@ -45,7 +57,7 @@ class ScriptRunner:
 
         :param path: the path to the script
         """
-        pass
+        raise NotImplementedError
 
 
 class ShellScriptRunner(ScriptRunner):
@@ -129,7 +141,7 @@ class InitScriptManager:
                     else:
                         LOG.exception("Error while running script %s: %s", script, e)
                 else:
-                    script.state = State.OK
+                    script.state = State.SUCCESSFUL
 
         finally:
             self.stage_completed[stage] = True
@@ -150,7 +162,7 @@ class InitScriptManager:
             if not os.path.isdir(stage_path):
                 continue
 
-            for file in os.listdir(stage_path):
+            for file in sorted(os.listdir(stage_path)):
                 script_path = os.path.join(stage_path, file)
                 if not os.path.isfile(script_path):
                     continue
