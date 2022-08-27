@@ -913,7 +913,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     queues: Dict[str, SqsQueue]
 
-
     def __init__(self) -> None:
         super().__init__()
         self._mutex = threading.RLock()
