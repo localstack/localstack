@@ -426,6 +426,10 @@ class SqsQueue:
     def wait_time_seconds(self) -> int:
         return int(self.attributes[QueueAttributeName.ReceiveMessageWaitTimeSeconds])
 
+    @property
+    def maximum_message_size(self):
+        return int(self.attributes[QueueAttributeName.MaximumMessageSize])
+
     def validate_receipt_handle(self, receipt_handle: str):
         if self.arn != decode_receipt_handle(receipt_handle):
             raise ReceiptHandleIsInvalid(
@@ -458,10 +462,6 @@ class SqsQueue:
                 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
                 self.inflight.remove(standard_message)
                 self.visible.put_nowait(standard_message)
-
-    @propery
-    def maximum_message_size(self):
-        return int(self.attributes[QueueAttributeName.MaximumMessageSize])
 
     def remove(self, receipt_handle: str):
         with self.mutex:
