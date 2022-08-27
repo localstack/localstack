@@ -50,6 +50,7 @@ def test_handle_string_max_receive_count_in_dead_letter_check():
     result = provider.SqsProvider()._dead_letter_check(queue, sqs_message, None)
     assert result is False
 
+
 def test_except_check_message_size():
     message_body = "".join(("a" for _ in range(262145)))
     result = False
@@ -60,6 +61,7 @@ def test_except_check_message_size():
 
     assert result
 
+
 def test_noexc_check_message_size():
     message_body = "a"
     result = True
@@ -69,6 +71,7 @@ def test_noexc_check_message_size():
         result = False
 
     assert result
+
 
 def test_except_batch_message_size():
     batch_message_size = 0
@@ -83,6 +86,7 @@ def test_except_batch_message_size():
         result = True
 
     assert result
+
 
 def test_noexc_batch_message_size():
     batch_message_size = 0
