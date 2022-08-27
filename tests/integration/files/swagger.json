@@ -1,20 +1,10 @@
 {
-  "openapi": "3.0.1",
+  "swagger": "2.0",
   "info": {
     "title": "test",
-    "version": "2020-07-23T23:02:57Z"
+    "version": "2"
   },
   "basePath": "/base",
-  "servers": [
-    {
-      "url": "https://rei6t36l9d.execute-api.us-east-1.amazonaws.com/{basePath}",
-      "variables": {
-        "basePath": {
-          "default": "/test"
-        }
-      }
-    }
-  ],
   "paths": {
     "/test": {
       "get": {
@@ -28,16 +18,7 @@
             "description": "200 response",
             "headers": {
               "Access-Control-Allow-Origin": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Empty"
-                }
+                "type": "string"
               }
             }
           }
@@ -66,31 +47,18 @@
         ],
         "responses": {
           "200": {
-            "description": "200 response",
             "headers": {
               "Access-Control-Allow-Origin": {
-                "schema": {
-                  "type": "string"
-                }
+                "type": "string"
               },
               "Access-Control-Allow-Methods": {
-                "schema": {
-                  "type": "string"
-                }
+                "type": "string"
               },
               "Access-Control-Allow-Headers": {
-                "schema": {
-                  "type": "string"
-                }
+                "type": "string"
               }
             },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Empty"
-                }
-              }
-            }
+            "description": ""
           }
         },
         "x-amazon-apigateway-integration": {
@@ -113,12 +81,10 @@
       }
     }
   },
-  "components": {
-    "schemas": {
-      "Empty": {
-        "title": "Empty Schema",
-        "type": "object"
-      }
+  "definitions": {
+    "Empty": {
+      "title": "Empty Schema",
+      "type": "object"
     }
   },
   "securityDefinitions": {

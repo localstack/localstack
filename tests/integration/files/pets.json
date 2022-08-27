@@ -1,7 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Simple PetStore (Swagger)"
+    "title": "Simple PetStore (Swagger)",
+    "version": "1.0.0"
   },
   "schemes": [
     "https"

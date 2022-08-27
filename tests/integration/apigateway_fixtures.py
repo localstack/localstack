@@ -63,6 +63,12 @@ def get_rest_api(apigateway_client, **kwargs):
     return response.get("id"), response.get("name")
 
 
+def put_rest_api(apigateway_client, **kwargs):
+    response = apigateway_client.put_rest_api(**kwargs)
+    assert_response_is_200(response)
+    return response.get("id"), response.get("name")
+
+
 def get_rest_apis(apigateway_client, **kwargs):
     response = apigateway_client.get_rest_apis(**kwargs)
     assert_response_is_200(response)
@@ -101,6 +107,12 @@ def create_rest_api_integration(apigateway_client, **kwargs):
     response = apigateway_client.put_integration(**kwargs)
     assert_response_is_201(response)
     return response.get("uri"), response.get("type")
+
+
+def get_rest_api_resources(apigateway_client, **kwargs):
+    response = apigateway_client.get_resources(**kwargs)
+    assert_response_is_200(response)
+    return response.get("items")
 
 
 def delete_rest_api_integration(apigateway_client, **kwargs):
