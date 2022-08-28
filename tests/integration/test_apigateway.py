@@ -2260,16 +2260,13 @@ def test_mock_integration_response(
     assert result.status_code == 200
     assert to_str(result.content) == '{"statusCode": 200, "id": 42}'
 
-    delete_rest_api(apigateway_client, restApiId=api_id)
-
 
 def test_tag_api(apigateway_client, create_apigateway_function):
     api_name = f"api-{short_uid()}"
     tags = {"foo": "bar"}
 
     # add resource tags
-    result = create_apigateway_function(name=api_name)
-    api_id = result["id"]
+    api_id, _, _ = create_apigateway_function(name=api_name)
     api_arn = aws_stack.apigateway_restapi_arn(api_id=api_id)
     apigateway_client.tag_resource(resourceArn=api_arn, tags=tags)
 
