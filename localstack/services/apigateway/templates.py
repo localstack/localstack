@@ -8,6 +8,7 @@ from urllib.parse import quote_plus, unquote_plus
 from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
+from localstack.services.apigateway.helpers import body_as_string
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
@@ -90,12 +91,12 @@ class VelocityUtilApiGateway(VelocityUtil):
         try:
             return json.dumps(json.loads(s))
         except Exception:
-            primitive_types = (str, int, bool, float, type(None))
-            s = s if isinstance(s, primitive_types) else str(s)
-        if str(s).strip() in {"true", "false"}:
-            s = bool(s)
-        elif s not in [True, False] and is_number(s):
-            s = to_number(s)
+            if str(s).strip() in {"true", "false"}:
+                s = bool(s)
+            elif s not in [True, False] and is_number(s):
+                s = to_number(s)
+            elif isinstance(s, str):
+                return s
         return json.dumps(s)
 
 
@@ -167,21 +168,21 @@ class Templates:
     def render(self, api_context: ApiInvocationContext) -> Union[bytes, str]:
         pass
 
-    def render_vtl(self, template, variables):
+    def render_vtl(self, template, variables) -> str:
         return self.vtl.render_vtl(template, variables=variables)
 
     @staticmethod
-    def build_variables_mapping(api_context: ApiInvocationContext):
+    def build_variables_mapping(api_context: ApiInvocationContext, data: str) -> Dict[str, Any]:
         # TODO: make this (dict) an object so usages of "render_vtl" variables are defined
         return {
             "context": api_context.context or {},
             "stage_variables": api_context.stage_variables or {},
             "input": {
-                "body": api_context.data_as_string(),
+                "body": data,
                 "params": {
                     "path": api_context.path_params,
-                    "querystring": api_context.query_params(),
-                    "header": api_context.headers,
+                    "querystring": dict(api_context.query_params),
+                    "header": dict(api_context.headers),
                 },
             },
         }
@@ -189,19 +190,24 @@ class Templates:
 
 class RequestTemplates(Templates):
     """
-    Handles request template rendering
+    Handles request template rendering. Before making a request to the backend, the request
+    template is rendered to generate the request body.
     """
 
     def render(self, api_context: ApiInvocationContext) -> Union[bytes, str]:
-        LOG.info(
-            "Method request body before transformations: %s", to_str(api_context.data_as_string())
-        )
+        # the body data needs to be a string, so we need to convert it and also look out for
+        # possible encoding issues like binary data (e.g. images)
+        data = body_as_string(api_context.data)
+        LOG.info("Method request body before transformations: %s", data)
+        # we determine the template to use based on the content type. We only support
+        # "application/json" type for now.
         request_templates = api_context.integration.get("requestTemplates", {})
         template = request_templates.get(APPLICATION_JSON, {})
         if not template:
-            return api_context.data_as_string()
+            return data
 
-        variables = self.build_variables_mapping(api_context)
+        # build the variables mapping for the template and render it
+        variables = self.build_variables_mapping(api_context, data=data)
         result = self.render_vtl(template, variables=variables)
         LOG.info(f"Endpoint request body after transformations:\n{result}")
         return result
@@ -212,34 +218,28 @@ class ResponseTemplates(Templates):
     Handles response template rendering
     """
 
-    def render(self, api_context: ApiInvocationContext, **kwargs) -> Union[bytes, str]:
+    def render(self, api_context: ApiInvocationContext) -> Union[bytes, str]:
         # XXX: keep backwards compatibility until we migrate all integrations to this new classes
         # api_context contains a response object that we want slowly remove from it
-        data = kwargs.get("response", "")
-        response = data or api_context.response
+        response = api_context.response.get_data()
         integration = api_context.integration
-        # we set context data with the response content because later on we use context data as
-        # the body field in the template. We need to improve this by using the right source
-        # depending on the type of templates.
-
-        api_context.data = response.get_data()
 
         integration_responses = integration.get("integrationResponses") or {}
         if not integration_responses:
-            return response.get_data()
+            return api_context.response.get_data()
         entries = list(integration_responses.keys())
-        return_code = str(response.status_code)
+        return_code = str(api_context.response.status_code)
         if return_code not in entries and len(entries) > 1:
             LOG.info("Found multiple integration response status codes: %s", entries)
-            return response.get_data()
+            return api_context.response.get_data()
         return_code = entries[0]
 
         response_templates = integration_responses[return_code].get("responseTemplates", {})
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
-            return response.get_data()
+            return response
 
-        variables = self.build_variables_mapping(api_context)
-        response.set_response(self.render_vtl(template, variables=variables))
-        LOG.info("Endpoint response body after transformations:\n%s", response.response)
-        return response.get_data()
+        variables = self.build_variables_mapping(api_context, data=to_str(response))
+        rendered_tpl = self.render_vtl(template, variables=variables)
+        LOG.info("Endpoint response body after transformations:\n%s", rendered_tpl)
+        return rendered_tpl

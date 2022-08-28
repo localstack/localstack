@@ -8,6 +8,7 @@ import pytest
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
+from localstack.http import Request, Response
 from localstack.services.apigateway.helpers import (
     Resolver,
     apply_json_patch_safe,
@@ -27,7 +28,6 @@ from localstack.services.apigateway.templates import (
     ResponseTemplates,
     VelocityUtilApiGateway,
 )
-from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
 from localstack.utils.files import load_file
 
@@ -127,18 +127,21 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertEqual("https://httpbin.org/anything/foo/bar/baz?param=foobar", uri)
 
     def test_if_request_is_valid_with_no_resource_methods(self):
-        ctx = ApiInvocationContext("POST", "/", b"", {})
+        request = Request(method="POST", path="/", body=b"", headers={})
+        ctx = ApiInvocationContext(request, url_params={})
         validator = RequestValidator(ctx, None)
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_is_valid_with_no_matching_method(self):
-        ctx = ApiInvocationContext("POST", "/", b"", {})
+        request = Request(method="POST", path="/", body=b"", headers={})
+        ctx = ApiInvocationContext(request, url_params={})
         ctx.resource = {"resourceMethods": {"GET": {}}}
         validator = RequestValidator(ctx, None)
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_is_valid_with_no_validator(self):
-        ctx = ApiInvocationContext("POST", "/", b"", {})
+        request = Request(method="POST", path="/", body=b"", headers={})
+        ctx = ApiInvocationContext(request, url_params={})
         ctx.api_id = "deadbeef"
         ctx.resource = {"resourceMethods": {"POST": {"requestValidatorId": " "}}}
         validator = RequestValidator(ctx, None)
@@ -148,7 +151,8 @@ class ApiGatewayPathsTest(unittest.TestCase):
         apigateway_client = self._mock_client()
         apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
         apigateway_client.get_model.return_value = {"schema": '{"type": "object"}'}
-        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        request = Request(method="POST", path="/", body='{"id":"1"}', headers={})
+        ctx = ApiInvocationContext(request, url_params={})
         ctx.api_id = "deadbeef"
         ctx.resource = {
             "resourceMethods": {
@@ -164,7 +168,9 @@ class ApiGatewayPathsTest(unittest.TestCase):
     def test_request_validate_body_with_no_request_model(self):
         apigateway_client = self._mock_client()
         apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
-        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        request = Request(method="POST", path="/", body='{"id":"1"}', headers={})
+        ctx = ApiInvocationContext(request, url_params={})
+
         ctx.api_id = "deadbeef"
         ctx.resource = {
             "resourceMethods": {
@@ -181,7 +187,8 @@ class ApiGatewayPathsTest(unittest.TestCase):
         apigateway_client = self._mock_client()
         apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
         apigateway_client.get_model.return_value = None
-        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        request = Request(method="POST", path="/", body='{"id":"1"}', headers={})
+        ctx = ApiInvocationContext(request, url_params={})
         ctx.api_id = "deadbeef"
         ctx.resource = {
             "resourceMethods": {
@@ -255,14 +262,20 @@ class TestJSONPatch(unittest.TestCase):
 
 class TestApplyTemplate(unittest.TestCase):
     def test_apply_template(self):
-        api_context = ApiInvocationContext(
+        request = Request(
             method="POST",
             path="/foo/bar?baz=test",
-            data='{"action":"$default","message":"foobar"}',
+            body='{"action":"$default","message":"foobar"}',
             headers={"content-type": APPLICATION_JSON},
-            stage="local",
         )
-        api_context.response = requests_response({})
+        api_context = ApiInvocationContext(
+            request,
+            url_params={
+                "stage": "local",
+            },
+        )
+
+        api_context.response = Response(json.dumps({}))
         api_context.integration = {
             "requestTemplates": {
                 APPLICATION_JSON: "$util.escapeJavaScript($input.json('$.message'))"
@@ -274,13 +287,15 @@ class TestApplyTemplate(unittest.TestCase):
         self.assertEqual('"foobar"', rendered_request)
 
     def test_apply_template_no_json_payload(self):
+
+        request = Request(method="POST", path="/foo/bar?baz=test", body=b'"#foobar123"')
         api_context = ApiInvocationContext(
-            method="POST",
-            path="/foo/bar?baz=test",
-            data=b'"#foobar123"',
-            headers={"content-type": APPLICATION_JSON},
-            stage="local",
+            request,
+            url_params={
+                "stage": "local",
+            },
         )
+
         api_context.integration = {
             "requestTemplates": {
                 APPLICATION_JSON: "$util.escapeJavaScript($input.json('$.message'))"
@@ -339,22 +354,30 @@ RESPONSE_TEMPLATE = """
 class TestTemplates:
     @pytest.mark.parametrize("template", [RequestTemplates(), ResponseTemplates()])
     def test_render_custom_template(self, template):
-        api_context = ApiInvocationContext(
+
+        request = Request(
             method="POST",
-            path="/foo/bar?baz=test",
-            data=b'{"spam": "eggs"}',
+            path="/foo/bar",
+            body=b'{"spam": "eggs"}',
+            query_string="baz=test",
             headers={"content-type": APPLICATION_JSON},
-            stage="local",
         )
+        api_context = ApiInvocationContext(
+            request,
+            url_params={
+                "stage": "local",
+            },
+        )
+
         api_context.integration = {
             "requestTemplates": {APPLICATION_JSON: RESPONSE_TEMPLATE},
             "integrationResponses": {
                 "200": {"responseTemplates": {APPLICATION_JSON: RESPONSE_TEMPLATE}}
             },
         }
-        api_context.resource_path = "/{proxy+}"
+        api_context.resource = {"path": "/{proxy+}"}
         api_context.path_params = {"id": "bar"}
-        api_context.response = requests_response({"spam": "eggs"})
+        api_context.response = Response(json.dumps({"spam": "eggs"}))
         api_context.context = {
             "httpMethod": api_context.method,
             "stage": api_context.stage,
@@ -373,7 +396,10 @@ class TestTemplates:
         assert result_as_json.get("stage") == "local"
         assert result_as_json.get("enhancedAuthContext") == {"principalId": "12233"}
         assert result_as_json.get("identity") == {"accountId": "00000", "apiKey": "11111"}
-        assert result_as_json.get("headers") == {"content-type": APPLICATION_JSON}
+        assert result_as_json.get("headers") == {
+            "content-type": APPLICATION_JSON,
+            "content-length": "16",
+        }
         assert result_as_json.get("query") == {"baz": "test"}
         assert result_as_json.get("path") == {"id": "bar"}
         assert result_as_json.get("stageVariables") == {
@@ -413,20 +439,22 @@ def test_openapi_resolver_given_list_references():
 
 
 def test_create_invocation_headers():
-    invocation_context = ApiInvocationContext(
-        method="GET", path="/", data="", headers={"X-Header": "foobar"}
-    )
+    request = Request(method="GET", path="/", headers={"X-Header": "foobar"})
+    invocation_context = ApiInvocationContext(request, url_params={})
+
     invocation_context.integration = {
         "requestParameters": {"integration.request.header.X-Custom": "'Event'"}
     }
-    headers = create_invocation_headers(invocation_context)
-    assert headers == {"X-Header": "foobar", "X-Custom": "'Event'"}
+    expected = {"X-Header": "foobar", "X-Custom": "'Event'"}
+    actual = create_invocation_headers(invocation_context)
+    assert all(item in actual.items() for item in expected.items())
 
     invocation_context.integration = {
         "requestParameters": {"integration.request.path.foobar": "'CustomValue'"}
     }
-    headers = create_invocation_headers(invocation_context)
-    assert headers == {"X-Header": "foobar", "X-Custom": "'Event'"}
+    expected = {"X-Header": "foobar"}
+    actual = create_invocation_headers(invocation_context)
+    assert all(item in actual.items() for item in expected.items())
 
 
 class TestApigatewayEvents:

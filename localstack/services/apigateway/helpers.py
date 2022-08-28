@@ -1,3 +1,4 @@
+import base64
 import contextlib
 import datetime
 import json
@@ -8,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib import parse as urlparse
 
 import pytz
+import werkzeug
 from apispec import APISpec
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
@@ -18,12 +20,7 @@ from werkzeug.datastructures import Headers
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import (
-    APPLICATION_JSON,
-    HEADER_LOCALSTACK_EDGE_URL,
-    LOCALHOST_HOSTNAME,
-    PATH_USER_REQUEST,
-)
+from localstack.constants import APPLICATION_JSON, LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Response
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
@@ -31,8 +28,7 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse, requests_error_response_json
 from localstack.utils.aws.aws_stack import parse_arn
-from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import long_uid, to_str
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
@@ -409,7 +405,7 @@ def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Optional[Tupl
     for api_path, details in path_map.items():
         api_path_regex = re.sub(r"{[^+]+\+}", r"[^\?#]+", api_path)
         api_path_regex = re.sub(r"{[^}]+}", r"[^/]+", api_path_regex)
-        if re.match(r"^%s$" % api_path_regex, path):
+        if re.match(f"^{api_path_regex}$", path):
             matches.append((api_path, details))
 
     # if there are no matches, it's not worth to proceed, bail here!
@@ -741,9 +737,11 @@ def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tup
     path_map = get_rest_api_paths(
         rest_api_id=invocation_context.api_id, region_name=invocation_context.region_name
     )
-    relative_path = invocation_context.invocation_path.rstrip("/") or "/"
+
     try:
-        extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
+        extracted_path, resource = get_resource_for_path(
+            path=invocation_context.invocation_path, path_map=path_map
+        )
         invocation_context.resource = resource
         return extracted_path, resource
     except Exception:
@@ -767,11 +765,6 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     integration_uri = invocation_context.integration_uri
     resource_path = invocation_context.resource_path
     resource_id = invocation_context.resource_id
-
-    set_api_id_stage_invocation_path(invocation_context)
-    relative_path, query_string_params = extract_query_string_params(
-        path=invocation_context.path_with_query_string
-    )
     api_id = invocation_context.api_id
     stage = invocation_context.stage
 
@@ -782,7 +775,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     request_context = {
         "accountId": account_id,
         "apiId": api_id,
-        "resourcePath": resource_path or relative_path,
+        "resourcePath": resource_path,
         "domainPrefix": invocation_context.domain_prefix,
         "domainName": invocation_context.domain_name,
         "resourceId": resource_id,
@@ -801,78 +794,79 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
         "authorizer": {},
     }
 
-    # set "authorizer" and "identity" event attributes from request context
-    auth_context = invocation_context.auth_context
-    if auth_context:
+    if auth_context := invocation_context.auth_context:
         request_context["authorizer"] = auth_context
     request_context["identity"].update(invocation_context.auth_identity or {})
 
     if not is_test_invoke_method(method, path):
-        request_context["path"] = (f"/{stage}" if stage else "") + relative_path
+        request_context["path"] = (
+            f"/{stage}" if stage else ""
+        ) + invocation_context.invocation_path
         request_context["stage"] = stage
     return request_context
 
 
-def set_api_id_stage_invocation_path(
-    invocation_context: ApiInvocationContext,
-) -> ApiInvocationContext:
-    # skip if all details are already available
-    values = (
-        invocation_context.api_id,
-        invocation_context.stage,
-        invocation_context.path_with_query_string,
-    )
-    if all(values):
-        return invocation_context
-
-    # skip if this is a websocket request
-    if invocation_context.is_websocket_request():
-        return invocation_context
-
-    path = invocation_context.path
-    headers = invocation_context.headers
-
-    path_match = re.search(PATH_REGEX_USER_REQUEST, path)
-    host_header = headers.get(HEADER_LOCALSTACK_EDGE_URL, "") or headers.get("Host") or ""
-    host_match = re.search(HOST_REGEX_EXECUTE_API, host_header)
-    test_invoke_match = re.search(PATH_REGEX_TEST_INVOKE_API, path)
-    if path_match:
-        api_id = path_match.group(1)
-        stage = path_match.group(2)
-        relative_path_w_query_params = "/%s" % path_match.group(3)
-    elif host_match:
-        api_id = extract_api_id_from_hostname_in_url(host_header)
-        stage = path.strip("/").split("/")[0]
-        relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
-    elif test_invoke_match:
-        # special case: fetch the resource details for TestInvokeApi invocations
-        stage = None
-        region_name = invocation_context.region_name
-        api_id = test_invoke_match.group(1)
-        resource_id = test_invoke_match.group(2)
-        query_string = test_invoke_match.group(4) or ""
-        apigateway = aws_stack.connect_to_service(
-            service_name="apigateway", region_name=region_name
-        )
-        resource = apigateway.get_resource(restApiId=api_id, resourceId=resource_id)
-        resource_path = resource.get("path")
-        relative_path_w_query_params = f"{resource_path}{query_string}"
-    else:
-        raise Exception(
-            f"Unable to extract API Gateway details from request: {path} {dict(headers)}"
-        )
-    if api_id:
-        # set current region in request thread local, to ensure aws_stack.get_region() works properly
-        # TODO: replace with RequestContextManager
-        if getattr(THREAD_LOCAL, "request_context", None) is not None:
-            _, api_region = get_api_account_id_and_region(api_id)
-            THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = api_region
-
-    # set details in invocation context
-    invocation_context.api_id = api_id
-    invocation_context.stage = stage
-    invocation_context.path_with_query_string = relative_path_w_query_params
-    return invocation_context
+# def set_api_id_stage_invocation_path(
+#     invocation_context: ApiInvocationContext,
+# ) -> ApiInvocationContext:
+#     # skip if all details are already available
+#     values = (
+#         invocation_context.api_id,
+#         invocation_context.stage,
+#         invocation_context.path_with_query_string,
+#     )
+#     if all(values):
+#         return invocation_context
+#
+#     # skip if this is a websocket request
+#     if invocation_context.is_websocket_request():
+#         return invocation_context
+#
+#
+#     path = invocation_context.path
+#     headers = invocation_context.headers
+#
+#     path_match = re.search(PATH_REGEX_USER_REQUEST, path)
+#     host_header = headers.get(HEADER_LOCALSTACK_EDGE_URL, "") or headers.get("Host") or ""
+#     host_match = re.search(HOST_REGEX_EXECUTE_API, host_header)
+#     test_invoke_match = re.search(PATH_REGEX_TEST_INVOKE_API, path)
+#     if path_match:
+#         api_id = path_match.group(1)
+#         stage = path_match.group(2)
+#         relative_path_w_query_params = "/%s" % path_match.group(3)
+#     elif host_match:
+#         api_id = extract_api_id_from_hostname_in_url(host_header)
+#         stage = path.strip("/").split("/")[0]
+#         relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
+#     elif test_invoke_match:
+#         # special case: fetch the resource details for TestInvokeApi invocations
+#         stage = None
+#         region_name = invocation_context.region_name
+#         api_id = test_invoke_match.group(1)
+#         resource_id = test_invoke_match.group(2)
+#         query_string = test_invoke_match.group(4) or ""
+#         apigateway = aws_stack.connect_to_service(
+#             service_name="apigateway", region_name=region_name
+#         )
+#         resource = apigateway.get_resource(restApiId=api_id, resourceId=resource_id)
+#         resource_path = resource.get("path")
+#         relative_path_w_query_params = f"{resource_path}{query_string}"
+#     else:
+#         raise Exception(
+#             f"Unable to extract API Gateway details from request: {path} {dict(headers)}"
+#         )
+#     if api_id:
+#         # set current region in request thread local, to ensure aws_stack.get_region() works properly
+#         # TODO: replace with RequestContextManager
+#         if getattr(THREAD_LOCAL, "request_context", None) is not None:
+#             _, api_region = get_api_account_id_and_region(api_id)
+#             THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = api_region
+#
+#     # set details in invocation context
+#     invocation_context.api_id = api_id
+#     invocation_context.stage = stage
+#     invocation_context.path_with_query_string = relative_path_w_query_params
+#     return invocation_context
 
 
 def get_api_account_id_and_region(api_id: str) -> Tuple[Optional[str], Optional[str]]:
@@ -893,7 +887,7 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
 
 # This need to be extended to handle mappings and not just literal values.
 def create_invocation_headers(invocation_context: ApiInvocationContext) -> Dict[str, Any]:
-    headers = invocation_context.headers
+    headers = dict(invocation_context.headers)
     integration = invocation_context.integration
 
     if request_parameters := integration.get("requestParameters"):
@@ -903,7 +897,7 @@ def create_invocation_headers(invocation_context: ApiInvocationContext) -> Dict[
                 if "integration.request.header." in req_parameter_key
                 else None
             ):
-                headers.update({header_name: req_parameter_value})
+                headers[header_name] = req_parameter_value
     return headers
 
 
@@ -992,6 +986,9 @@ def convert_response(result: Response) -> Response:
     if result is None:
         return Response()
 
+    if isinstance(result, werkzeug.Response):
+        return result
+
     if isinstance(result, LambdaResponse):
         headers = Headers(dict(result.headers))
         for k, values in result.multi_value_headers.items():
@@ -1010,3 +1007,20 @@ def convert_response(result: Response) -> Response:
         raise ValueError(f"Unhandled content type {type(result.content)}")
 
     return response
+
+
+def body_as_string(body: Union[bytes, str, dict, list]) -> str:
+    """
+    Utility function to convert a request body to a string. It handles encoding of UTF-8 bytes
+    and encodes strings in base64 if necessary.
+    """
+    if isinstance(body, str):
+        return body
+    if isinstance(body, bytes):
+        try:
+            return body.decode("utf-8")
+        except UnicodeDecodeError:
+            return to_str(base64.b64encode(body))
+    if isinstance(body, (dict, list)):
+        return json.dumps(body)
+    raise ValueError(f"Unhandled body type {type(body)}")

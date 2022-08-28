@@ -6,8 +6,6 @@ from collections import defaultdict
 from http import HTTPStatus
 from typing import Dict, List, Union
 
-from requests import Response
-
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
 from localstack.http import Response
@@ -27,7 +25,7 @@ from localstack.services.apigateway.templates import (
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import LambdaResponse, requests_response
+from localstack.utils.aws.aws_responses import LambdaResponse
 from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.collections import remove_attributes
 from localstack.utils.common import make_http_request, to_str
@@ -58,27 +56,25 @@ class BackendIntegration(ABC):
         return response
 
     @classmethod
-    def apply_response_parameters(
-        cls, invocation_context: ApiInvocationContext, response: Response
-    ):
+    def apply_response_parameters(cls, invocation_context: ApiInvocationContext):
         integration = invocation_context.integration
         integration_responses = integration.get("integrationResponses") or {}
         if not integration_responses:
-            return response
+            return invocation_context.response
         entries = list(integration_responses.keys())
-        return_code = str(response.status_code)
+        return_code = str(invocation_context.response.status_code)
         if return_code not in entries:
             if len(entries) > 1:
                 LOG.info("Found multiple integration response status codes: %s", entries)
-                return response
+                return invocation_context.response
             return_code = entries[0]
         response_params = integration_responses[return_code].get("responseParameters", {})
         for key, value in response_params.items():
             # TODO: add support for method.response.body, etc ...
             if str(key).lower().startswith("method.response.header."):
                 header_name = key[len("method.response.header.") :]
-                response.headers[header_name] = value.strip("'")
-        return response
+                invocation_context.response.headers[header_name] = value.strip("'")
+        return invocation_context.response
 
 
 class SnsIntegration(BackendIntegration):
@@ -105,13 +101,12 @@ def call_lambda(function_arn: str, event: bytes, asynchronous: bool) -> str:
     lambda_client = aws_stack.connect_to_service(
         "lambda", region_name=extract_region_from_arn(function_arn)
     )
-    inv_result = lambda_client.invoke(
+    lambda_result = lambda_client.invoke(
         FunctionName=function_arn,
         Payload=event,
         InvocationType="Event" if asynchronous else "RequestResponse",
     )
-    payload = inv_result.get("Payload")
-    if payload:
+    if payload := lambda_result.get("Payload"):
         payload = to_str(payload.read())
         return payload
     return ""
@@ -191,7 +186,7 @@ class LambdaProxyIntegration(BackendIntegration):
             "path": path,
             "headers": dict(headers),
             "multiValueHeaders": cls.multi_value_dict_for_list(headers),
-            "body": data,
+            "body": to_str(data),
             "isBase64Encoded": is_base64_encoded,
             "httpMethod": method,
             "queryStringParameters": query_string_params or None,
@@ -246,11 +241,7 @@ class LambdaProxyIntegration(BackendIntegration):
                 LOG.warning("Unable to run Lambda function on API Gateway message: %s", e)
 
     def invoke(self, invocation_context: ApiInvocationContext):
-        uri = (
-            invocation_context.integration.get("uri")
-            or invocation_context.integration.get("integrationUri")
-            or ""
-        )
+        uri = invocation_context.integration_uri or ""
         relative_path, query_string_params = extract_query_string_params(
             path=invocation_context.path_with_query_string
         )
@@ -294,7 +285,7 @@ class LambdaProxyIntegration(BackendIntegration):
             )
             response.status_code = 502
             response._content = json.dumps({"message": "Internal server error"})
-            return response
+            return convert_response(response)
 
         response.status_code = int(parsed_result.get("statusCode", 200))
         parsed_headers = parsed_result.get("headers", {})
@@ -324,11 +315,7 @@ class LambdaProxyIntegration(BackendIntegration):
 
 class LambdaIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
-        uri = (
-            invocation_context.integration.get("uri")
-            or invocation_context.integration.get("integrationUri")
-            or ""
-        )
+        uri = invocation_context.integration_uri or ""
         func_arn = uri
         if ":lambda:path" in uri:
             func_arn = uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
@@ -349,25 +336,25 @@ class LambdaIntegration(BackendIntegration):
         response = Response()
 
         if asynchronous:
-                response.status_code = 200
-            else:
-                # depending on the lambda executor sometimes it returns a string and sometimes a dict
-                match result:
-                    case str():
+            response.status_code = 200
+        else:
+            # depending on the lambda executor sometimes it returns a string and sometimes a dict
+            match result:
+                case str():
                     # try to parse the result as json, if it succeeds we assume it's a valid
-                    # json string, and we don't do anything.
+                    # json string
                     if isinstance(json.loads(result or "{}"), dict):
-                        parsed_result = result
+                        parsed_result = json.loads(result or "{}")
                     else:
                         # the docker executor returns a string wrapping a json string,
                         # so we need to remove the outer string
-                        parsed_result = json.loads(result or "{}")
+                        parsed_result = common.json_safe(result)
                 case _:
-                    parsed_result = json.loads(str(result or "{}"))
-            parsed_result = common.json_safe(parsed_result)
+                    parsed_result = common.json_safe(to_str(result) or "{}")
+
             parsed_result = {} if parsed_result is None else parsed_result
             response.status_code = 200
-            response.set_response(parsed_result)
+            response.set_response(json.dumps(parsed_result))
 
         # apply custom response template
         invocation_context.response = response
@@ -419,12 +406,12 @@ class MockIntegration(BackendIntegration):
                 )
 
         # response template
-        response = MockIntegration._create_response(
+        invocation_context.response = MockIntegration._create_response(
             status_code, invocation_context.headers, data=request_payload
         )
-        response._content = self.response_templates.render(invocation_context, response=response)
+        invocation_context.response.set_response(self.response_templates.render(invocation_context))
         # apply response parameters
-        response = self.apply_response_parameters(invocation_context, response)
+        response = self.apply_response_parameters(invocation_context)
         if not invocation_context.headers.get(HEADER_CONTENT_TYPE):
             invocation_context.headers.update({HEADER_CONTENT_TYPE: APPLICATION_JSON})
         return response
@@ -432,11 +419,7 @@ class MockIntegration(BackendIntegration):
 
 class StepFunctionIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
-        uri = (
-            invocation_context.integration.get("uri")
-            or invocation_context.integration.get("integrationUri")
-            or ""
-        )
+        uri = invocation_context.integration_uri or ""
         action = uri.split("/")[-1]
 
         if APPLICATION_JSON in invocation_context.integration.get("requestTemplates", {}):
@@ -468,7 +451,7 @@ class StepFunctionIntegration(BackendIntegration):
         result = method(**payload)
         result = json_safe(remove_attributes(result, "ResponseMetadata"))
         response = StepFunctionIntegration._create_response(
-            HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=result
+            HTTPStatus.OK.value, aws_stack.mock_aws_request_headers(), data=json.dumps(result)
         )
         if action == "StartSyncExecution":
             # poll for the execution result and return it

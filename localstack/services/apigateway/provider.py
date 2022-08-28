@@ -42,6 +42,7 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.forwarder import create_aws_request_context
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
+from localstack.http import Response
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
@@ -56,7 +57,6 @@ from localstack.services.apigateway.invocations import invoke_rest_api_from_requ
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.collections import PaginatedList, ensure_list
 from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import short_uid, str_to_bool, to_str
@@ -109,7 +109,7 @@ class ApigatewayApiListener(AwsApiListener):
             re.match(r"/restapis/[^/]+/documentation/versions", path)
             and response.status_code == 404
         ):
-            return requests_response({"position": "1", "items": []})
+            return Response(json.dumps({"position": "1", "items": []}))
 
 
 class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):

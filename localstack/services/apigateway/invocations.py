@@ -180,8 +180,8 @@ def is_api_key_valid(is_api_key_required: bool, headers: Dict[str, str], stage: 
 
 
 def update_content_length(response: Response):
-    if response and response.response is not None:
-        response.headers["Content-Length"] = str(len(response.response))
+    if response and response.get_data() is not None:
+        response.headers["Content-Length"] = str(len(response.get_data()))
 
 
 def apply_request_parameters(
@@ -231,7 +231,6 @@ def apply_response_parameters(invocation_context: ApiInvocationContext):
 
 
 def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
-    helpers.set_api_id_stage_invocation_path(invocation_context)
     try:
         return invoke_rest_api(invocation_context)
     except AuthorizationError as e:
@@ -240,8 +239,7 @@ def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
 
 
 def invoke_rest_api(invocation_context: ApiInvocationContext):
-    invocation_path = invocation_context.path_with_query_string
-    raw_path = invocation_context.path or invocation_path
+    invocation_path = invocation_context.invocation_path
     method = invocation_context.method
     headers = invocation_context.headers
 
@@ -275,12 +273,12 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
             # default to returning CORS headers if this is an OPTIONS request
             return get_cors_response(headers)
         return make_error_response(
-            "Unable to find integration for: %s %s (%s)" % (method, invocation_path, raw_path),
+            "Unable to find integration for: %s %s (%s)"
+            % (method, invocation_path, invocation_context.path),
             404,
         )
 
     # update fields in invocation context, then forward request to next handler
-    invocation_context.resource_path = extracted_path
     invocation_context.integration = method_integration
 
     return invoke_rest_api_integration(invocation_context)
@@ -303,8 +301,7 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
 # TODO: refactor this to have a class per integration type to make it easy to
 # test the encapsulated logic
 def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext):
-    # define local aliases from invocation context
-    invocation_path = invocation_context.path_with_query_string
+    invocation_path = invocation_context.invocation_path
     method = invocation_context.method
     data = invocation_context.data
     headers = invocation_context.headers
@@ -313,7 +310,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     integration_response = integration.get("integrationResponses", {})
     response_templates = integration_response.get("200", {}).get("responseTemplates", {})
     # extract integration type and path parameters
-    relative_path, query_string_params = extract_query_string_params(path=invocation_path)
+    relative_path, query_string_params = extract_query_string_params(
+        path=invocation_context.path_with_query_string
+    )
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
     integration_type = integration_type_orig.upper()
     uri = integration.get("uri") or integration.get("integrationUri") or ""
@@ -324,6 +323,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     except Exception:
         path_params = {}
 
+    #
+    # Lambda backend integration
+    #
     if (uri.startswith("arn:aws:apigateway:") and ":lambda:path" in uri) or uri.startswith(
         "arn:aws:lambda"
     ):
@@ -337,6 +339,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         )
 
     elif integration_type == "AWS":
+        #
+        # Kinesis backend integration
+        #
         if "kinesis:action/" in uri:
             if uri.endswith("kinesis:action/PutRecord"):
                 target = kinesis_listener.ACTION_PUT_RECORD
@@ -375,10 +380,14 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             response_templates = ResponseTemplates()
             response_templates.render(invocation_context)
             return invocation_context.response
-
+        #
+        # Step Functions backend integration
+        #
         elif "states:action/" in uri:
             return StepFunctionIntegration().invoke(invocation_context)
-        # https://docs.aws.amazon.com/apigateway/api-reference/resource/integration/
+        #
+        # S3 backend integration
+        #
         elif ("s3:path/" in uri or "s3:action/" in uri) and method == "GET":
             s3 = aws_stack.connect_to_service("s3")
             uri = apply_request_parameters(
@@ -413,6 +422,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 return make_error_response(msg, 400)
 
         if method == "POST":
+            #
+            # SQS backend integration
+            #
             if uri.startswith("arn:aws:apigateway:") and ":sqs:path" in uri:
                 template = integration["requestTemplates"][APPLICATION_JSON]
                 account_id, queue = uri.split("/")[-2:]
@@ -433,6 +445,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                     url, method="POST", headers=headers, data=new_request
                 )
                 return convert_response(result)
+            #
+            # SNS backend integration
+            #
             elif uri.startswith("arn:aws:apigateway:") and ":sns:path" in uri:
                 invocation_context.context = helpers.get_event_request_context(invocation_context)
                 invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
@@ -448,6 +463,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         )
 
     elif integration_type == "AWS_PROXY":
+        #
+        # DynamoDB backend integration
+        #
         if uri.startswith("arn:aws:apigateway:") and ":dynamodb:action" in uri:
             # arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
             table_name = uri.split(":dynamodb:action")[1].split("&Table=")[1]
@@ -497,6 +515,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         # apply custom request template
         invocation_context.context = helpers.get_event_request_context(invocation_context)
         invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+
         request_templates = RequestTemplates()
         payload = request_templates.render(invocation_context)
 
@@ -544,7 +563,7 @@ def apply_request_response_templates(
     template = templates.get(content_type)
     if not template:
         return data
-    content = (data.response if is_response else data) or ""
+    content = (data.get_data() if is_response else data) or ""
     result = VtlTemplate().render_vtl(template, content, as_json=as_json)
     if is_response:
         data.set_response(result)

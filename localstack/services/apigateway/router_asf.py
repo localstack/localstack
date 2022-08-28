@@ -1,13 +1,11 @@
 import logging
 from typing import Any, Dict
 
-from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
 
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
-from localstack.http.request import restore_payload
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import get_api_account_id_and_region
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
@@ -28,26 +26,16 @@ def to_invocation_context(
     if url_params is None:
         url_params = {}
 
-    method = request.method
-    path = request.full_path if request.query_string else request.path
-    data = restore_payload(request)
-    headers = Headers(request.headers)
-
     # adjust the X-Forwarded-For header
-    x_forwarded_for = headers.getlist("X-Forwarded-For")
+    x_forwarded_for = request.headers.getlist("X-Forwarded-For")
     x_forwarded_for.append(request.remote_addr)
     x_forwarded_for.append(request.host)
-    headers["X-Forwarded-For"] = ", ".join(x_forwarded_for)
+    request.headers["X-Forwarded-For"] = ", ".join(x_forwarded_for)
 
     # set the x-localstack-edge header, it is used to parse the domain
-    headers[HEADER_LOCALSTACK_EDGE_URL] = request.host_url.strip("/")
+    request.headers[HEADER_LOCALSTACK_EDGE_URL] = request.host_url.strip("/")
 
-    # FIXME: Use the already parsed url params instead of parsing them into the ApiInvocationContext part-by-part.
-    #   We already would have all params at hand to avoid _all_ the parsing, but the parsing
-    #   has side-effects (f.e. setting the region in a thread local)!
-    #   It would be best to use a small (immutable) context for the already parsed params and the Request object
-    #   and use it everywhere.
-    return ApiInvocationContext(method, path, data, headers, stage=url_params.get("stage"))
+    return ApiInvocationContext(request=request, url_params=url_params)
 
 
 class ApigatewayRouter:
@@ -75,12 +63,17 @@ class ApigatewayRouter:
             endpoint=self.invoke_rest_api,
             defaults={"path": "", "stage": None},
         )
+        # For API Gateway v2 this can be <stage> and root "/" or default stage "$default" and
+        # root "/my/path2". We do further check in the handler.
+        # http://0v1p6q6.execute-api.localhost.localstack.cloud:4566/<stage>/my/path2
+        # http://0v1p6q6.execute-api.localhost.localstack.cloud:4566/my/path2
         self.router.add(
             "/<stage>/",
             host="<api_id>.execute-api.<regex('.*'):server>",
             endpoint=self.invoke_rest_api,
             defaults={"path": ""},
         )
+        # e.g, http://<apiId>.execute-api.localhost.localstack.cloud:4566/<stage>/<path>
         self.router.add(
             "/<stage>/<path:path>",
             host="<api_id>.execute-api.<regex('.*'):server>",
@@ -102,6 +95,9 @@ class ApigatewayRouter:
         if not get_api_account_id_and_region(url_params["api_id"])[1]:
             return Response(status=404)
         invocation_context = to_invocation_context(request, url_params)
+        _, region_name = get_api_account_id_and_region(url_params.get("api_id"))
+        invocation_context.region_name = region_name
+
         result = invoke_rest_api_from_request(invocation_context)
         if result is not None:
             return result

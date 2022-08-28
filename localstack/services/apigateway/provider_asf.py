@@ -3,11 +3,12 @@ import logging
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.apigateway import TestInvokeMethodRequest, TestInvokeMethodResponse
+from localstack.http import Request
+from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.provider import ApigatewayProvider
-from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
+from localstack.services.apigateway.router_asf import ApigatewayRouter
 from localstack.services.edge import ROUTER
-from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -32,16 +33,24 @@ class AsfApigatewayProvider(ApigatewayProvider):
     def test_invoke_method(
         self, context: RequestContext, request: TestInvokeMethodRequest
     ) -> TestInvokeMethodResponse:
+        method = request.get("httpMethod")
+        path_query_string = request.get("pathWithQueryString")
+        api_id = request.get("restApiId")
 
-        invocation_context = to_invocation_context(context.request)
-        invocation_context.method = request["httpMethod"]
+        path = "/"
+        query_string = ""
+        headers = request.get("headers")
+        body = request.get("body")
 
-        if data := parse_json_or_yaml(to_str(invocation_context.data or b"")):
-            orig_data = data
-            if path_with_query_string := orig_data.get("pathWithQueryString"):
-                invocation_context.path_with_query_string = path_with_query_string
-            invocation_context.data = data.get("body")
-            invocation_context.headers = orig_data.get("headers", {})
+        url_params = {"api_id": api_id}
+        if path_query_string:
+            path, query_string = path_query_string.split("?", 1)
+            url_params |= {"path": path}
+
+        http_request = Request(
+            method=method, path=path, query_string=query_string, body=body, headers=headers
+        )
+        invocation_context = ApiInvocationContext(http_request, url_params=url_params)
 
         result = invoke_rest_api_from_request(invocation_context)
 

@@ -166,6 +166,12 @@ def create_rest_api_stage(apigateway_client, **kwargs):
     return response.get("stageName")
 
 
+def create_rest_api_model(apigateway_client, **kwargs):
+    responses = apigateway_client.create_model(**kwargs)
+    assert_response_is_201(responses)
+    return responses.get("id")
+
+
 def create_cognito_user_pool(cognito_idp, **kwargs):
     response = cognito_idp.create_user_pool(**kwargs)
     assert_response_is_200(response)
