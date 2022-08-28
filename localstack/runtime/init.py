@@ -192,6 +192,8 @@ def init_script_manager() -> InitScriptManager:
 
 @hooks.on_infra_start()
 def _run_init_scripts_on_start():
+    # this is a hack since we currently cannot know whether boot scripts have been executed or not
+    init_script_manager().stage_completed[Stage.BOOT] = True
     _run_and_log(Stage.START)
 
 

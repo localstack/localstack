@@ -5,7 +5,7 @@ shopt -s nullglob
 
 if [[ ! $INIT_SCRIPTS_PATH ]]
 then
-  # FIXME: move to /etc/localstack/init/ready.d
+  # FIXME: deprecate and use /etc/localstack/init/ready.d
   INIT_SCRIPTS_PATH=/docker-entrypoint-initaws.d
 fi
 if [[ ! $EDGE_PORT ]]
