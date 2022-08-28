@@ -27,34 +27,6 @@ def _client(service, region_name=None, aws_access_key_id=None):
     )
 
 
-@pytest.fixture
-def create_rest_apigw(apigateway_client):
-    rest_api_ids = []
-
-    def _create_apigateway_function(*args, **kwargs):
-        api_id, name, root_id = create_rest_api(apigateway_client, **kwargs)
-        rest_api_ids.append(api_id)
-        return api_id, name, root_id
-
-    yield _create_apigateway_function
-
-    for rest_api_id in rest_api_ids:
-        delete_rest_api(apigateway_client, restApiId=rest_api_id)
-
-
-@pytest.fixture
-def import_apigateway_function(apigateway_client):
-    rest_api_ids = []
-
-    def _import_apigateway_function(*args, **kwargs):
-        api_id, name, root_id = import_rest_api(apigateway_client, **kwargs)
-        rest_api_ids.append(api_id)
-        return api_id, name, root_id
-
-    yield _import_apigateway_function
-
-    for rest_api_id in rest_api_ids:
-        delete_rest_api(apigateway_client, restApiId=rest_api_id)
 
 
 def assert_response_status(response: Dict, status: int):
