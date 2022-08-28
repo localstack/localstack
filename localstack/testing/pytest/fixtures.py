@@ -33,7 +33,6 @@ from localstack.utils.functions import run_safe
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.testutil import start_http_server
-from tests.integration.apigateway_fixtures import create_rest_api, delete_rest_api, import_rest_api
 
 if TYPE_CHECKING:
     from mypy_boto3_acm import ACMClient
@@ -1135,36 +1134,6 @@ role_policy = """
     ]
 }
 """.strip()
-
-
-@pytest.fixture
-def create_apigateway_function(apigateway_client):
-    rest_api_ids = []
-
-    def _create_apigateway_function(*args, **kwargs):
-        api_id, name, root_id = create_rest_api(apigateway_client, **kwargs)
-        rest_api_ids.append(api_id)
-        return api_id, name, root_id
-
-    yield _create_apigateway_function
-
-    for rest_api_id in rest_api_ids:
-        delete_rest_api(apigateway_client, restApiId=rest_api_id)
-
-
-@pytest.fixture
-def import_apigateway_function(apigateway_client):
-    rest_api_ids = []
-
-    def _import_apigateway_function(*args, **kwargs):
-        api_id, name, root_id = import_rest_api(apigateway_client, **kwargs)
-        rest_api_ids.append(api_id)
-        return api_id, name, root_id
-
-    yield _import_apigateway_function
-
-    for rest_api_id in rest_api_ids:
-        delete_rest_api(apigateway_client, restApiId=rest_api_id)
 
 
 @pytest.fixture
