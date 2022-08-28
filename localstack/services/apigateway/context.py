@@ -3,9 +3,8 @@ import json
 from enum import Enum
 from typing import Any, Dict, Optional, Union
 
-from responses import Response
-
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
+from localstack.http import Response
 from localstack.utils.aws.aws_responses import parse_query_string
 from localstack.utils.strings import short_uid, to_str
 

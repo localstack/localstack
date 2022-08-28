@@ -215,30 +215,31 @@ class ResponseTemplates(Templates):
     def render(self, api_context: ApiInvocationContext, **kwargs) -> Union[bytes, str]:
         # XXX: keep backwards compatibility until we migrate all integrations to this new classes
         # api_context contains a response object that we want slowly remove from it
-        data = kwargs["response"] if "response" in kwargs else ""
+        data = kwargs.get("response", "")
         response = data or api_context.response
         integration = api_context.integration
         # we set context data with the response content because later on we use context data as
         # the body field in the template. We need to improve this by using the right source
         # depending on the type of templates.
-        api_context.data = response._content
+
+        api_context.data = response.get_data()
 
         integration_responses = integration.get("integrationResponses") or {}
         if not integration_responses:
-            return response._content
+            return response.get_data()
         entries = list(integration_responses.keys())
         return_code = str(response.status_code)
         if return_code not in entries and len(entries) > 1:
             LOG.info("Found multiple integration response status codes: %s", entries)
-            return response._content
+            return response.get_data()
         return_code = entries[0]
 
         response_templates = integration_responses[return_code].get("responseTemplates", {})
         template = response_templates.get(APPLICATION_JSON, {})
         if not template:
-            return response._content
+            return response.get_data()
 
         variables = self.build_variables_mapping(api_context)
-        response._content = self.render_vtl(template, variables=variables)
-        LOG.info("Endpoint response body after transformations:\n%s", response._content)
-        return response._content
+        response.set_response(self.render_vtl(template, variables=variables))
+        LOG.info("Endpoint response body after transformations:\n%s", response.response)
+        return response.get_data()

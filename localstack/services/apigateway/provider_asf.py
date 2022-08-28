@@ -53,5 +53,5 @@ class AsfApigatewayProvider(ApigatewayProvider):
         return TestInvokeMethodResponse(
             status=result.status_code,
             headers=dict(result.headers),
-            body=to_str(result.content),
+            body=to_str(result.get_data()),
         )

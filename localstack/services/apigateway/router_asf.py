@@ -1,7 +1,6 @@
 import logging
 from typing import Any, Dict
 
-from requests.models import Response as RequestsResponse
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
 
@@ -12,7 +11,6 @@ from localstack.http.request import restore_payload
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import get_api_account_id_and_region
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
-from localstack.utils.aws.aws_responses import LambdaResponse
 
 LOG = logging.getLogger(__name__)
 
@@ -50,33 +48,6 @@ def to_invocation_context(
     #   It would be best to use a small (immutable) context for the already parsed params and the Request object
     #   and use it everywhere.
     return ApiInvocationContext(method, path, data, headers, stage=url_params.get("stage"))
-
-
-def convert_response(result: RequestsResponse) -> Response:
-    """
-    Utility function to convert a response for the requests library to our internal (Werkzeug based) Response object.
-    """
-    if result is None:
-        return Response()
-
-    if isinstance(result, LambdaResponse):
-        headers = Headers(dict(result.headers))
-        for k, values in result.multi_value_headers.items():
-            for value in values:
-                headers.add(k, value)
-    else:
-        headers = dict(result.headers)
-
-    response = Response(status=result.status_code, headers=headers)
-
-    if isinstance(result.content, dict):
-        response.set_json(result.content)
-    elif isinstance(result.content, (str, bytes)):
-        response.data = result.content
-    else:
-        raise ValueError(f"Unhandled content type {type(result.content)}")
-
-    return response
 
 
 class ApigatewayRouter:
@@ -133,5 +104,5 @@ class ApigatewayRouter:
         invocation_context = to_invocation_context(request, url_params)
         result = invoke_rest_api_from_request(invocation_context)
         if result is not None:
-            return convert_response(result)
+            return result
         raise NotFound()

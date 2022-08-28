@@ -6,14 +6,15 @@ from urllib.parse import urljoin
 
 import requests
 from jsonschema import ValidationError, validate
-from requests.models import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import APPLICATION_JSON
+from localstack.http import Response
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    convert_response,
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
@@ -34,7 +35,6 @@ from localstack.services.apigateway.templates import (
 from localstack.services.kinesis import kinesis_listener
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import request_response_stream, requests_response
 
 # set up logger
 from localstack.utils.http import add_query_params_to_url
@@ -180,8 +180,8 @@ def is_api_key_valid(is_api_key_required: bool, headers: Dict[str, str], stage: 
 
 
 def update_content_length(response: Response):
-    if response and response.content is not None:
-        response.headers["Content-Length"] = str(len(response.content))
+    if response and response.response is not None:
+        response.headers["Content-Length"] = str(len(response.response))
 
 
 def apply_request_parameters(
@@ -371,7 +371,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             )
 
             # apply response template
-            invocation_context.response = result
+            invocation_context.response = convert_response(result)
             response_templates = ResponseTemplates()
             response_templates.render(invocation_context)
             return invocation_context.response
@@ -406,8 +406,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                     headers["Content-Type"] = object["ContentType"]
 
                 # stream used so large files do not fill memory
-                response = request_response_stream(stream=object["Body"], headers=headers)
-                return response
+                return Response(object["Body"], headers=headers)
             else:
                 msg = "Request URI does not match s3 specifications"
                 LOG.warning(msg)
@@ -433,7 +432,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 result = common.make_http_request(
                     url, method="POST", headers=headers, data=new_request
                 )
-                return result
+                return convert_response(result)
             elif uri.startswith("arn:aws:apigateway:") and ":sns:path" in uri:
                 invocation_context.context = helpers.get_event_request_context(invocation_context)
                 invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
@@ -476,7 +475,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                     event_data[key] = data_dict[key]
 
                 table.put_item(Item=event_data)
-                response = requests_response(event_data)
+                response = Response(json.dumps(event_data))
                 return response
         else:
             raise Exception(
@@ -512,7 +511,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
         )
         result = requests.request(method=method, url=uri, data=payload, headers=headers)
         # apply custom response template
-        invocation_context.response = result
+        invocation_context.response = convert_response(result)
         response_templates = ResponseTemplates()
         response_templates.render(invocation_context)
         return invocation_context.response
@@ -545,10 +544,10 @@ def apply_request_response_templates(
     template = templates.get(content_type)
     if not template:
         return data
-    content = (data.content if is_response else data) or ""
+    content = (data.response if is_response else data) or ""
     result = VtlTemplate().render_vtl(template, content, as_json=as_json)
     if is_response:
-        data._content = result
+        data.set_response(result)
         update_content_length(data)
         return data
     return result

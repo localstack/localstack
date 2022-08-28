@@ -769,7 +769,7 @@ class TestAPIGateway:
 
         url = path_based_url(api_id=rest_api_id, stage_name="latest", path="/echo/foobar")
         response = requests.get(url)
-        assert response._content == b'{"echo": "foobar", "response": "mocked"}'
+        assert response.content == b'{"echo": "foobar", "response": "mocked"}'
 
     def test_api_gateway_authorizer_crud(self):
         apig = aws_stack.create_external_boto_client("apigateway")

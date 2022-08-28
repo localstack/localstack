@@ -14,7 +14,7 @@ from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
 from moto.apigateway.models import Authorizer, Integration, Resource, RestAPI, apigateway_backends
 from moto.apigateway.utils import create_id as create_resource_id
-from requests.models import Response
+from werkzeug.datastructures import Headers
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
@@ -24,11 +24,12 @@ from localstack.constants import (
     LOCALHOST_HOSTNAME,
     PATH_USER_REQUEST,
 )
+from localstack.http import Response
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.models import ApiGatewayStore, apigateway_stores
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
+from localstack.utils.aws.aws_responses import LambdaResponse, requests_error_response_json
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.strings import long_uid
@@ -146,15 +147,11 @@ def resolve_references(data: dict, allow_recursive=True) -> dict:
     return resolver.resolve_references()
 
 
-def make_json_response(message):
-    return requests_response(json.dumps(message), headers={"Content-Type": APPLICATION_JSON})
-
-
 def make_error_response(message, code=400, error_type=None):
     if code == 404 and not error_type:
         error_type = "NotFoundException"
     error_type = error_type or "InvalidRequest"
-    return requests_error_response_json(message, code=code, error_type=error_type)
+    return convert_response(requests_error_response_json(message, code=code, error_type=error_type))
 
 
 def make_accepted_response():
@@ -986,3 +983,30 @@ class OpenApiExporter:
         self._add_paths(spec, resources)
 
         return getattr(spec, self.export_formats.get(export_format))()
+
+
+def convert_response(result: Response) -> Response:
+    """
+    Utility function to convert a response for the requests library to our internal (Werkzeug based) Response object.
+    """
+    if result is None:
+        return Response()
+
+    if isinstance(result, LambdaResponse):
+        headers = Headers(dict(result.headers))
+        for k, values in result.multi_value_headers.items():
+            for value in values:
+                headers.add(k, value)
+    else:
+        headers = dict(result.headers)
+
+    response = Response(status=result.status_code, headers=headers)
+
+    if isinstance(result.content, dict):
+        response.set_json(result.content)
+    elif isinstance(result.content, (str, bytes)):
+        response.data = result.content
+    else:
+        raise ValueError(f"Unhandled content type {type(result.content)}")
+
+    return response

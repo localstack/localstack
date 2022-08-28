@@ -10,9 +10,11 @@ from requests import Response
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, HEADER_CONTENT_TYPE
+from localstack.http import Response
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
+    convert_response,
     extract_path_params,
     extract_query_string_params,
     get_event_request_context,
@@ -52,7 +54,7 @@ class BackendIntegration(ABC):
         response = Response()
         response.status_code = status_code
         response.headers = headers
-        response._content = data
+        response.set_response(data)
         return response
 
     @classmethod
@@ -314,7 +316,7 @@ class LambdaProxyIntegration(BackendIntegration):
 
         # apply custom response template
         self.update_content_length(response)
-        invocation_context.response = response
+        invocation_context.response = convert_response(response)
 
         self.response_templates.render(invocation_context)
         return invocation_context.response
@@ -344,15 +346,14 @@ class LambdaIntegration(BackendIntegration):
             function_arn=func_arn, event=to_bytes(event), asynchronous=asynchronous
         )
 
-        response = LambdaResponse()
+        response = Response()
 
         if asynchronous:
-            response._content = ""
-            response.status_code = 200
-        else:
-            # depending on the lambda executor sometimes it returns a string and sometimes a dict
-            match result:
-                case str():
+                response.status_code = 200
+            else:
+                # depending on the lambda executor sometimes it returns a string and sometimes a dict
+                match result:
+                    case str():
                     # try to parse the result as json, if it succeeds we assume it's a valid
                     # json string, and we don't do anything.
                     if isinstance(json.loads(result or "{}"), dict):
@@ -366,14 +367,14 @@ class LambdaIntegration(BackendIntegration):
             parsed_result = common.json_safe(parsed_result)
             parsed_result = {} if parsed_result is None else parsed_result
             response.status_code = 200
-            response._content = parsed_result
+            response.set_response(parsed_result)
 
         # apply custom response template
         invocation_context.response = response
 
         response_templates = ResponseTemplates()
         response_templates.render(invocation_context)
-        invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
+        invocation_context.response.headers["Content-Length"] = str(len(response.get_data() or ""))
         return invocation_context.response
 
 
@@ -486,9 +487,11 @@ class StepFunctionIntegration(BackendIntegration):
                 )
 
             result = json_safe(result)
-            response = requests_response(content=result)
+            response = StepFunctionIntegration._create_response(
+                HTTPStatus.OK.value, {"Content-Type": APPLICATION_JSON}, json.dumps(result)
+            )
 
         # apply response templates
         invocation_context.response = response
-        response._content = self.response_templates.render(invocation_context)
+        response.set_response(self.response_templates.render(invocation_context))
         return response
