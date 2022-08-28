@@ -5,7 +5,7 @@ shopt -s nullglob
 
 if [[ ! $INIT_SCRIPTS_PATH ]]
 then
-  # FIXME: move to /etc/localstack/init/ready.d
+  # FIXME: deprecate and use /etc/localstack/init/ready.d
   INIT_SCRIPTS_PATH=/docker-entrypoint-initaws.d
 fi
 if [[ ! $EDGE_PORT ]]
@@ -76,6 +76,9 @@ cat /dev/null > ${LOG_DIR}/localstack_infra.err
 # FIXME for backwards compatibility with LEGACY_DIRECTORIES=1
 test -f /tmp/localstack_infra.log || ln -s ${LOG_DIR}/localstack_infra.log /tmp/localstack_infra.log
 test -f /tmp/localstack_infra.err || ln -s ${LOG_DIR}/localstack_infra.err /tmp/localstack_infra.err
+
+# run modern runtime init scripts before starting localstack
+test -d /etc/localstack/init/boot.d && /opt/code/localstack/.venv/bin/python -m localstack.runtime.init BOOT
 
 supervisord -c /etc/supervisord.conf &
 suppid="$!"

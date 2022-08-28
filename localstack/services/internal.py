@@ -176,6 +176,52 @@ class PluginsResource:
         }
 
 
+class InitScriptsResource:
+    def on_get(self, request):
+        from localstack.runtime.init import init_script_manager
+
+        manager = init_script_manager()
+
+        return {
+            "completed": {
+                stage.name: completed for stage, completed in manager.stage_completed.items()
+            },
+            "scripts": [
+                {
+                    "stage": script.stage.name,
+                    "name": os.path.basename(script.path),
+                    "state": script.state.name,
+                }
+                for scripts in manager.scripts.values()
+                for script in scripts
+            ],
+        }
+
+
+class InitScriptsStageResource:
+    def on_get(self, request, stage: str):
+        from localstack.runtime.init import Stage, init_script_manager
+
+        manager = init_script_manager()
+
+        try:
+            stage = Stage[stage.upper()]
+        except KeyError as e:
+            raise NotFound(f"no such stage {stage}") from e
+
+        return {
+            "completed": manager.stage_completed.get(stage),
+            "scripts": [
+                {
+                    "stage": script.stage.name,
+                    "name": os.path.basename(script.path),
+                    "state": script.state.name,
+                }
+                for script in manager.scripts.get(stage)
+            ],
+        }
+
+
 class LocalstackResources(Router):
     """
     Router for localstack-internal HTTP resources.
@@ -197,6 +243,8 @@ class LocalstackResources(Router):
 
         self.add("/health", health_resource)
         self.add("/plugins", plugins_resource)
+        self.add("/init", InitScriptsResource())
+        self.add("/init/<stage>", InitScriptsStageResource())
         self.add("/cloudformation/deploy", CloudFormationUi())
 
         if config.DEBUG:

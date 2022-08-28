@@ -280,6 +280,10 @@ def start_local_api(name, port, api, method, asynchronous=False, listener=None):
 def stop_infra():
     if events.infra_stopping.is_set():
         return
+
+    # run plugin hooks for infra shutdown
+    hooks.on_infra_shutdown.run()
+
     # also used to signal shutdown for edge proxy so that any further requests will be rejected
     events.infra_stopping.set()
 
