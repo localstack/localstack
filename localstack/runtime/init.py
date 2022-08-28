@@ -139,7 +139,7 @@ class InitScriptManager:
                     if LOG.isEnabledFor(logging.DEBUG):
                         LOG.exception("Error while running script %s", script)
                     else:
-                        LOG.warning("Error while running script %s: %s", script, e)
+                        LOG.error("Error while running script %s: %s", script, e)
                 else:
                     script.state = State.SUCCESSFUL
 
