@@ -54,7 +54,7 @@ def test_handle_string_max_receive_count_in_dead_letter_check():
 
 def test_except_check_message_size():
     message_body = "".join(("a" for _ in range(MAXIMUM_MESSAGE_SIZE + 1)))
-    with pytest.raises(provider.InvalidMessageContents):
+    with pytest.raises(provider.InvalidParameterValue):
         provider.check_message_size(message_body, MAXIMUM_MESSAGE_SIZE)
 
 

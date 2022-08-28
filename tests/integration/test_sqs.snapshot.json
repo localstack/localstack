@@ -451,5 +451,79 @@
         }
       }
     }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_send_oversized_message": {
+    "recorded-date": "28-08-2022, 13:58:06",
+    "recorded-content": {
+      "send_oversized_message": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 262144 bytes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_send_message_with_updated_maximum_message_size": {
+    "recorded-date": "28-08-2022, 13:58:12",
+    "recorded-content": {
+      "send_oversized_message": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Detail": null,
+          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 1024 bytes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents": {
+    "recorded-date": "28-08-2022, 13:58:18",
+    "recorded-content": {
+      "send_oversized_message_batch": {
+        "Error": {
+          "Code": "AWS.SimpleQueueService.BatchRequestTooLong",
+          "Detail": null,
+          "Message": "Batch requests cannot be longer than 262144 bytes. You have sent 262145 bytes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size": {
+    "recorded-date": "28-08-2022, 14:04:48",
+    "recorded-content": {
+      "send_oversized_message_batch": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "Successful": [
+          {
+            "Id": "1",
+            "MD5OfMessageBody": "b7ea2d21ad2ef3e28085d30247603e0b",
+            "MessageId": "<uuid:1>"
+          },
+          {
+            "Id": "2",
+            "MD5OfMessageBody": "0cc175b9c0f1b6a831c399e269772661",
+            "MessageId": "<uuid:2>"
+          }
+        ]
+      }
+    }
   }
 }

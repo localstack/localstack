@@ -94,6 +94,9 @@ DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
 # see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteQueue.html
 RECENTLY_DELETED_TIMEOUT = 60
 
+# the default maximum message size in SQS
+DEFAULT_MAXIMUM_MESSAGE_SIZE = 262144
+
 INTERNAL_QUEUE_ATTRIBUTES = [
     # these attributes cannot be changed by set_queue_attributes and should
     # therefore be ignored when comparing queue attributes for create_queue
@@ -360,7 +363,7 @@ class SqsQueue:
             QueueAttributeName.CreatedTimestamp: str(now()),
             QueueAttributeName.DelaySeconds: "0",
             QueueAttributeName.LastModifiedTimestamp: str(now()),
-            QueueAttributeName.MaximumMessageSize: "262144",
+            QueueAttributeName.MaximumMessageSize: str(DEFAULT_MAXIMUM_MESSAGE_SIZE),
             QueueAttributeName.MessageRetentionPeriod: "345600",
             QueueAttributeName.QueueArn: self.arn,
             QueueAttributeName.ReceiveMessageWaitTimeSeconds: "0",
