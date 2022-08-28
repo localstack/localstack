@@ -4,7 +4,6 @@ from typing import Dict
 
 import boto3
 import botocore
-import pytest
 
 from localstack.services.apigateway.helpers import host_based_url, path_based_url
 from localstack.testing.aws.util import is_aws_cloud
@@ -25,8 +24,6 @@ def _client(service, region_name=None, aws_access_key_id=None):
     return aws_stack.create_external_boto_client(
         service, config=config, region_name=region_name, aws_access_key_id=aws_access_key_id
     )
-
-
 
 
 def assert_response_status(response: Dict, status: int):
