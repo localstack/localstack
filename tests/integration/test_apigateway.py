@@ -1324,7 +1324,7 @@ class TestAPIGateway:
         self,
         base_path_type,
         create_rest_apigw,
-        import_apigateway_function,
+        import_apigw,
         apigateway_client,
     ):
         rest_api_name = f"restapi-{short_uid()}"
@@ -1369,7 +1369,7 @@ class TestAPIGateway:
         # clean up
 
         spec_file = load_file(TEST_IMPORT_REST_API_FILE)
-        rest_api_id, _, _ = import_apigateway_function(body=spec_file, parameters=api_params)
+        rest_api_id, _, _ = import_apigw(body=spec_file, parameters=api_params)
 
         rs = apigateway_client.get_resources(restApiId=rest_api_id)
         resources = rs["items"]

@@ -196,7 +196,7 @@ def create_rest_apigw(apigateway_client):
 
 
 @pytest.fixture
-def import_apigateway_function(apigateway_client):
+def import_apigw(apigateway_client):
     rest_api_ids = []
 
     def _import_apigateway_function(*args, **kwargs):
