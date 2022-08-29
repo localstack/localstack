@@ -2,8 +2,8 @@
 This module provides tools to call moto using moto and botocore internals without going through the moto HTTP server.
 """
 import sys
-from functools import lru_cache, partial
-from typing import Callable
+from functools import lru_cache
+from typing import Callable, Optional, Union
 
 from moto.backends import get_backend as get_moto_backend
 from moto.core.exceptions import RESTError
@@ -34,6 +34,17 @@ MotoDispatcher = Callable[[HttpRequest, str, dict], Response]
 user_agent = f"Localstack/{localstack_version} Python/{sys.version.split(' ')[0]}"
 
 
+def call_moto(context: RequestContext, include_response_metadata=False) -> ServiceResponse:
+    """
+    Call moto with the given request context and receive a parsed ServiceResponse.
+
+    :param context: the request context
+    :param include_response_metadata: whether to include botocore's "ResponseMetadata" attribute
+    :return: a serialized AWS ServiceResponse (same as boto3 would return)
+    """
+    return dispatch_to_backend(context, dispatch_to_moto, include_response_metadata)
+
+
 def call_moto_with_request(
     context: RequestContext, service_request: ServiceRequest
 ) -> ServiceResponse:
@@ -58,6 +69,19 @@ def call_moto_with_request(
     return call_moto(local_context)
 
 
+def _proxy_moto(
+    context: RequestContext, request: ServiceRequest
+) -> Optional[Union[ServiceResponse, Response]]:
+    """
+    Wraps `call_moto` such that the interface is compliant with a ServiceRequestHandler.
+
+    :param context: the request context
+    :param service_request: currently not being used, added to satisfy ServiceRequestHandler contract
+    :return: the Response from moto
+    """
+    return call_moto(context)
+
+
 def MotoFallbackDispatcher(provider: object) -> DispatchTable:
     """
     Wraps a provider with a moto fallthrough mechanism. It does by creating a new DispatchTable from the original
@@ -67,7 +91,7 @@ def MotoFallbackDispatcher(provider: object) -> DispatchTable:
     :param provider: the ASF provider
     :return: a modified DispatchTable
     """
-    return ForwardingFallbackDispatcher(provider, call_moto)
+    return ForwardingFallbackDispatcher(provider, _proxy_moto)
 
 
 def dispatch_to_moto(context: RequestContext) -> Response:
@@ -144,14 +168,3 @@ def load_moto_routing_table(service: str) -> Map:
         url_map.add(Rule(url_path, endpoint=endpoint, strict_slashes=strict_slashes))
 
     return url_map
-
-
-call_moto = partial(dispatch_to_backend, http_request_dispatcher=dispatch_to_moto)
-"""
-Call moto with the given request context and receive a parsed ServiceResponse.
-
-:param context: the request context
-:param include_response_metadata: whether to include botocore's "ResponseMetadata" attribute
-:return: an AWS ServiceResponse (same as a service provider would return)
-:raises ServiceException: if moto returned an error response
-"""
