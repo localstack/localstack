@@ -1102,6 +1102,21 @@ class TestS3:
             logs_client=logs_client,
         )
 
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="Error format is wrong and missing keys")
+    def test_s3_invalid_content_md5(self, s3_client, s3_bucket, snapshot):
+        # put object with invalid content MD5
+        hashes = ["__invalid__", "000", "not base64 encoded checksum", "MTIz"]
+        for index, md5hash in enumerate(hashes):
+            with pytest.raises(ClientError) as e:
+                s3_client.put_object(
+                    Bucket=s3_bucket,
+                    Key="test-key",
+                    Body="something",
+                    ContentMD5=md5hash,
+                )
+            snapshot.match(f"md5-error-{index}", e.value.response)
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
@@ -1529,6 +1544,7 @@ class TestS3PresignedUrl:
         possible_date_formats = ["2015-10-21T07:28:00Z", expiry_date]
         assert headers["expires"] in possible_date_formats
 
+    @pytest.mark.aws_validated
     def test_s3_copy_md5(self, s3_client, s3_bucket, snapshot):
         src_key = "src"
         s3_client.put_object(Bucket=s3_bucket, Key=src_key, Body="something")

@@ -1115,5 +1115,54 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_invalid_content_md5": {
+    "recorded-date": "29-08-2022, 12:15:05",
+    "recorded-content": {
+      "md5-error-0": {
+        "Error": {
+          "Code": "InvalidDigest",
+          "Content-MD5": "__invalid__",
+          "Message": "The Content-MD5 you specified was invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "md5-error-1": {
+        "Error": {
+          "Code": "InvalidDigest",
+          "Content-MD5": "000",
+          "Message": "The Content-MD5 you specified was invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "md5-error-2": {
+        "Error": {
+          "Code": "InvalidDigest",
+          "Content-MD5": "not base64 encoded checksum",
+          "Message": "The Content-MD5 you specified was invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "md5-error-3": {
+        "Error": {
+          "Code": "InvalidDigest",
+          "Content-MD5": "MTIz",
+          "Message": "The Content-MD5 you specified was invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

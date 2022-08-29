@@ -110,30 +110,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_s3_invalid_content_md5(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        # put object with invalid content MD5
-        hashes = {
-            "__invalid__": "InvalidDigest",
-            "000": "InvalidDigest",
-            "not base64 encoded checksum": "InvalidDigest",  # InvalidDigest
-            "MTIz": "BadDigest",  # "123" base64 encoded
-        }
-        for md5hash, error in hashes.items():
-            with self.assertRaises(Exception) as ctx:
-                self.s3_client.put_object(
-                    Bucket=bucket_name,
-                    Key="test-key",
-                    Body="something",
-                    ContentMD5=md5hash,
-                )
-            self.assertIn(error, str(ctx.exception))
-
-        # Cleanup
-        self.s3_client.delete_bucket(Bucket=bucket_name)
-
     def test_s3_upload_download_gzip(self):
         bucket_name = "test-bucket-%s" % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
