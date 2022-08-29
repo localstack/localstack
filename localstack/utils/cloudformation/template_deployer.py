@@ -885,12 +885,19 @@ def execute_resource_action(resource_id: str, stack, action_name: str):
     func_details = func_details if isinstance(func_details, list) else [func_details]
     results = []
     for func in func_details:
+<<<<<<< HEAD
         if callable(func.get("function")):
+=======
+        result = None
+        executed = False
+        if callable(func["function"]):
+>>>>>>> 04fbf180 (result handler for Kms Key)
             result = func["function"](resource_id, resources, resource_type, func, stack_name)
             results.append(result)
-            continue
+            executed = True
+
         client = get_client(resource, func)
-        if client:
+        if client and not executed:
             result = configure_resource_via_sdk(
                 stack,
                 resource_id,
@@ -899,6 +906,12 @@ def execute_resource_action(resource_id: str, stack, action_name: str):
                 action_name,
             )
             results.append(result)
+            executed = True
+
+        if "result_handler" in func and executed:
+            LOG.debug(f"Executing callback method for {resource_type}:{resource_id}")
+            func["callback"](result, resource_id, resources, resource_type)
+
     return (results or [None])[0]
 
 
@@ -1123,9 +1136,6 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == "ApiGateway::RestApi":
         resource_props["id"] = details["id"]
-
-    if resource_type == "KMS::Key":
-        resource["PhysicalResourceId"] = details["KeyMetadata"]["KeyId"]
 
     if resource_type == "EC2::Instance":
         if details and isinstance(details, list) and hasattr(details[0], "id"):

@@ -72,7 +72,6 @@ class KMSKey(GenericBaseModel):
 
             new_key = kms_client.create_key(**params)
             key_id = new_key["KeyMetadata"]["KeyId"]
-            resource.resource_json["PhysicalResourceId"] = key_id
 
             # key is created but some fields map to separate api calls
             if props.get("EnableKeyRotation", False):
@@ -85,9 +84,14 @@ class KMSKey(GenericBaseModel):
             else:
                 kms_client.disable_key(KeyId=key_id)
 
+            return new_key
+
+        def _handle_key_result(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["KeyMetadata"]["KeyId"]
+
         return {
             "create": [
-                {"function": _create},
+                {"function": _create, "result_handler": _handle_key_result},
             ],
             "delete": {
                 # TODO Key needs to be deleted in KMS backend
