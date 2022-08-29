@@ -1160,6 +1160,30 @@ class TestS3:
 
         assert downloaded_data == data
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId"])
+    def test_multipart_copy_object_etag(self, s3_client, s3_bucket, s3_multipart_upload, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("Bucket"),
+            ]
+        )
+        key = "test.file"
+        copy_key = "copy.file"
+        src_object_path = f"{s3_bucket}/{key}"
+        content = "test content 123"
+
+        response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content)
+        snapshot.match("multipart-upload", response)
+        multipart_etag = response["ETag"]
+
+        response = s3_client.copy_object(Bucket=s3_bucket, CopySource=src_object_path, Key=copy_key)
+        snapshot.match("copy-object", response)
+        copy_etag = response["CopyObjectResult"]["ETag"]
+        # etags should be different
+        assert copy_etag != multipart_etag
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack

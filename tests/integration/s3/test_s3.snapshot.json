@@ -1206,5 +1206,30 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_multipart_copy_object_etag": {
+    "recorded-date": "29-08-2022, 12:32:37",
+    "recorded-content": {
+      "multipart-upload": {
+        "Bucket": "<bucket:1>",
+        "ETag": "\"b972025bc34adf8d76d6d51e93c035cc-1\"",
+        "Key": "test.file",
+        "Location": "<location:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-object": {
+        "CopyObjectResult": {
+          "ETag": "\"eee506dd7ada7ded524c77e359a0e7c6\"",
+          "LastModified": "datetime"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
