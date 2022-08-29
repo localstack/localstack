@@ -7,6 +7,7 @@ HOOKS_CONFIGURE_LOCALSTACK_CONTAINER = "localstack.hooks.configure_localstack_co
 HOOKS_INSTALL = "localstack.hooks.install"
 HOOKS_ON_INFRA_READY = "localstack.hooks.on_infra_ready"
 HOOKS_ON_INFRA_START = "localstack.hooks.on_infra_start"
+HOOKS_ON_INFRA_SHUTDOWN = "localstack.hooks.on_infra_shutdown"
 HOOKS_PREPARE_HOST = "localstack.hooks.prepare_host"
 
 
@@ -83,4 +84,7 @@ on_infra_start = hook_spec(HOOKS_ON_INFRA_START)
 
 on_infra_ready = hook_spec(HOOKS_ON_INFRA_READY)
 """Hooks that are execute after all startup hooks have been executed, and the LocalStack infrastructure has become
-available. """
+available."""
+
+on_infra_shutdown = hook_spec(HOOKS_ON_INFRA_SHUTDOWN)
+"""Hooks that are execute when localstack shuts down."""
