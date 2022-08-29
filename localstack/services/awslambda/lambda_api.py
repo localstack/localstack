@@ -1,3 +1,4 @@
+import ast
 import base64
 import functools
 import hashlib
@@ -14,6 +15,7 @@ import urllib.parse
 import uuid
 from datetime import datetime
 from io import StringIO
+from json import JSONDecodeError
 from random import random
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
@@ -1239,29 +1241,47 @@ def handle_lambda_url_invocation(
     return response
 
 
+def json_or_eval(body: str):
+    try:
+        return json.loads(body)
+    except JSONDecodeError:
+        try:
+            return ast.literal_eval(body)
+        except Exception as e:
+            LOG.error(f"Error parsing {body}", e)
+
+
 def lambda_result_to_response(result: str):
     response = HttpResponse()
-    response.headers.update({"Content-Type": "application/json"})
 
-    parsed_result = result if isinstance(result, dict) else json.loads(str(result or "{}"))
-    parsed_result = json_safe(parsed_result)
-    parsed_result = {} if parsed_result is None else parsed_result
-    parsed_headers = parsed_result.get("headers", {})
+    # Set default headers
+    response.headers.update(
+        {
+            "Content-Type": "application/json",
+            "Connection": "keep-alive",
+            "x-amzn-requestid": long_uid(),
+            "x-amzn-trace-id": long_uid(),
+        }
+    )
 
-    if parsed_headers is not None:
-        response.headers.update(parsed_headers)
-    try:
-        result_body = parsed_result.get("body")
-        if isinstance(result_body, dict):
-            response.set_data(json.dumps(result_body))
-        else:
-            body_bytes = to_bytes(to_str(result_body or ""))
-            if parsed_result.get("isBase64Encoded", False):
-                body_bytes = base64.b64decode(body_bytes)
-            response.set_data(body_bytes)
-    except Exception as e:
-        LOG.warning("Couldn't set Lambda response content: %s", e)
-        response._content = "{}"
+    if isinstance(result, dict):
+        parsed_result = result
+    else:
+        parsed_result = json_or_eval(result) or {}
+
+    if isinstance(parsed_result.get("headers"), dict):
+        response.headers.update(parsed_result.get("headers"))
+
+    if "body" not in parsed_result:
+        response.data = json.dumps(parsed_result)
+    elif isinstance(parsed_result.get("body"), dict):
+        response.data = json.dumps(parsed_result.get("body"))
+    elif parsed_result.get("isBase64Encoded", False):
+        body_bytes = to_bytes(to_str(parsed_result.get("body", "")))
+        decoded_body_bytes = base64.b64decode(body_bytes)
+        response.data = decoded_body_bytes
+    else:
+        response.data = parsed_result.get("body")
 
     return response
 
@@ -1533,6 +1553,19 @@ def generate_policy(sid, action, arn, sourcearn, principal, url_auth_type):
     return policy
 
 
+def cors_config_from_dict(cors: Dict):
+    return {
+        "Cors": {
+            "AllowCredentials": cors.get("AllowCredentials", ["*"]),
+            "AllowHeaders": cors.get("AllowHeaders", ["*"]),
+            "AllowMethods": cors.get("AllowMethods", ["*"]),
+            "AllowOrigins": cors.get("AllowOrigins", ["*"]),
+            "ExposeHeaders": cors.get("ExposeHeaders", []),
+            "MaxAge": cors.get("MaxAge", 0),
+        }
+    }
+
+
 @app.route("%s/functions/<function>/policy" % API_PATH_ROOT, methods=["POST"])
 def add_permission(function):
     arn = func_arn(function)
@@ -1589,19 +1622,7 @@ def create_url_config(function):
     }
 
     if "Cors" in data:
-        cors = data.get("Cors", {})
-        url_config.update(
-            {
-                "Cors": {
-                    "AllowCredentials": cors.get("AllowCredentials", ["*"]),
-                    "AllowHeaders": cors.get("AllowHeaders", ["*"]),
-                    "AllowMethods": cors.get("AllowMethods", ["*"]),
-                    "AllowOrigins": cors.get("AllowOrigins", ["*"]),
-                    "ExposeHeaders": cors.get("ExposeHeaders", []),
-                    "MaxAge": cors.get("MaxAge", 0),
-                }
-            }
-        )
+        url_config.update(cors_config_from_dict(data.get("Cors", {})))
 
     lambda_backend.url_configs.update({arn: url_config})
     response = url_config.copy()
@@ -1612,19 +1633,43 @@ def create_url_config(function):
 
 @app.route("%s/functions/<function>/url" % API_PATH_ROOT_2, methods=["GET"])
 def get_url_config(function):
-    arn = func_arn(function)
+    # if there's a qualifier it *must* be an alias
     qualifier = request.args.get("Qualifier")
-    q_arn = func_qualifier(function, qualifier)
-    arn = q_arn or arn
+
+    arn = func_arn(function)
     lambda_backend = LambdaRegion.get()
-    url_config = lambda_backend.url_configs.get(arn)
 
-    if url_config is None:
-        response = error_response(
-            "The resource you requested does not exist.", 404, "ResourceNotFoundException"
+    # function doesn't exist
+    fn = lambda_backend.lambdas.get(arn)
+    if not fn:
+        return correct_error_response_for_url_config(
+            error_response(
+                "The resource you requested does not exist.",
+                404,
+                error_type="ResourceNotFoundException",
+            )
         )
-        return correct_error_response_for_url_config(response)
 
+    # alias doesn't exist
+    if qualifier and not fn.aliases.get(qualifier):
+        return correct_error_response_for_url_config(
+            error_response(
+                "The resource you requested does not exist.",
+                404,
+                error_type="ResourceNotFoundException",
+            )
+        )
+
+    # function url doesn't exit
+    url_config = lambda_backend.url_configs.get(arn)
+    if not url_config:
+        return correct_error_response_for_url_config(
+            error_response(
+                "The resource you requested does not exist.",
+                404,
+                error_type="ResourceNotFoundException",
+            )
+        )
     response = url_config.copy()
     response.pop("CustomId")
     return response
@@ -1649,19 +1694,8 @@ def update_url_config(function):
         "LastModifiedTime": timestamp(format=TIMESTAMP_FORMAT_MICROS),
     }
     if "Cors" in data:
-        cors = data.get("Cors", {})
-        new_url_config.update(
-            {
-                "Cors": {
-                    "AllowCredentials": cors.get("AllowCredentials", ["*"]),
-                    "AllowHeaders": cors.get("AllowHeaders", ["*"]),
-                    "AllowMethods": cors.get("AllowMethods", ["*"]),
-                    "AllowOrigins": cors.get("AllowOrigins", ["*"]),
-                    "ExposeHeaders": cors.get("ExposeHeaders", []),
-                    "MaxAge": cors.get("MaxAge", 0),
-                }
-            }
-        )
+        new_url_config.update(cors_config_from_dict(data.get("Cors", {})))
+
     prev_url_config.update(new_url_config)
 
     response = prev_url_config.copy()

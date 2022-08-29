@@ -307,3 +307,54 @@ class LambdaEventInvokeConfig(GenericBaseModel):
                 },
             },
         }
+
+
+class LambdaUrl(GenericBaseModel):
+    @classmethod
+    def cloudformation_type(cls):
+        return "AWS::Lambda::Url"
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get(
+            "TargetFunctionArn"
+        )  # TODO: if this isn't an ARN we need to resolve the full ARN here
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service("lambda")
+
+        kwargs = {"FunctionName": self.props.get("TargetFunctionArn")}
+        qualifier = self.props.get("Qualifier")
+        if qualifier:
+            kwargs["Qualifier"] = qualifier
+
+        return client.get_function_url_config(**kwargs)
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == "FunctionArn":
+            return self.props.get("TargetFunctionArn")
+        if attribute_name == "FunctionUrl":
+            client = aws_stack.connect_to_service("lambda")
+            url_config = client.get_function_url_config(
+                FunctionName=self.props.get("TargetFunctionArn"),
+                Qualifier=self.props.get("Qualifier", "$LATEST"),
+            )
+            return url_config["FunctionUrl"]
+        return super(LambdaUrl, self).get_cfn_attribute(attribute_name)
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_function_url_config",
+                "parameters": {
+                    "Qualifier": "Qualifier",
+                    "Cors": "Cors",
+                    "FunctionName": "TargetFunctionArn",
+                    "AuthType": "AuthType",
+                },
+            },
+            "delete": {
+                "function": "delete_function_url_config",
+                "parameters": {"FunctionName": "TargetFunctionArn", "Qualifier": "Qualifier"},
+            },
+        }
