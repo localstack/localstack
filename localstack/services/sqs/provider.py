@@ -1196,21 +1196,17 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue = self._resolve_queue(context, queue_url=queue_url)
 
         self._assert_batch(entries)
+        # check the total batch size first and raise BatchRequestTooLong id > DEFAULT_MAXIMUM_MESSAGE_SIZE.
+        # This is checked before any messages in the batch are sent.  Raising the exception here should
+        # cause error response, rather than batching error results and returning
+        self._assert_valid_batch_size(entries, DEFAULT_MAXIMUM_MESSAGE_SIZE)
 
         successful = []
         failed = []
 
         with queue.mutex:
-            batch_message_size = 0
             for entry in entries:
                 try:
-                    # must convert to unicode to get actual bytes
-                    batch_message_size += len(entry.get("MessageBody").encode("utf8"))
-                    if batch_message_size > DEFAULT_MAXIMUM_MESSAGE_SIZE:
-                        error = f"Batch requests cannot be longer than {DEFAULT_MAXIMUM_MESSAGE_SIZE} bytes."
-                        error += f" You have sent {batch_message_size} bytes."
-                        raise BatchRequestTooLong(error)
-
                     queue_item = self._put_message(
                         queue,
                         context,
@@ -1565,6 +1561,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 raise BatchEntryIdsNotDistinct()
             else:
                 visited.add(entry["Id"])
+
+    def _assert_valid_batch_size(self, batch: List, max_message_size: int):
+        batch_message_size = sum([len(entry.get("MessageBody").encode("utf8")) for entry in batch])
+        if batch_message_size > max_message_size:
+            error = f"Batch requests cannot be longer than {DEFAULT_MAXIMUM_MESSAGE_SIZE} bytes."
+            error += f" You have sent {batch_message_size} bytes."
+            raise BatchRequestTooLong(error)
 
 
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
