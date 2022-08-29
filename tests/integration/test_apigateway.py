@@ -54,6 +54,7 @@ from tests.integration.apigateway_fixtures import (
     create_rest_resource,
     create_rest_resource_method,
     delete_rest_api,
+    get_rest_api,
     update_rest_api_deployment,
 )
 from tests.integration.awslambda.test_lambda_integration import TEST_STAGE_NAME
@@ -90,7 +91,6 @@ TEST_IMPORT_PETSTORE_SWAGGER = os.path.join(THIS_FOLDER, "files", "petstore-swag
 TEST_IMPORT_MOCK_INTEGRATION = os.path.join(THIS_FOLDER, "files", "openapi-mock.json")
 TEST_IMPORT_REST_API_ASYNC_LAMBDA = os.path.join(THIS_FOLDER, "files", "api_definition.yaml")
 
-
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
     "ApiGatewayLambdaProxyIntegrationTestResult",
     [
@@ -104,7 +104,8 @@ ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
 
 
 class TestAPIGateway:
-    # template used to transform incoming requests at the API Gateway (stream name to be filled in later)
+    # template used to transform incoming requests at the API Gateway (stream name to be filled
+    # in later)
     APIGATEWAY_DATA_INBOUND_TEMPLATE = """{
         "StreamName": "%s",
         "Records": [
@@ -155,7 +156,8 @@ class TestAPIGateway:
         "providerARNs": ["arn:aws:cognito-idp:us-east-1:123412341234:userpool/us-east-1_123412341"],
         "authType": "custom",
         "authorizerUri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/"
-        + "arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer/invocations",
+        + "arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer"
+        "/invocations",
         "authorizerCredentials": "arn:aws:iam::123456789012:role/apigAwsProxyRole",
         "identitySource": "method.request.header.Authorization",
         "identityValidationExpression": ".*",
@@ -172,16 +174,15 @@ class TestAPIGateway:
         assert "Invalid API identifier specified" in e.value.response["Error"]["Message"]
         assert "foobar" in e.value.response["Error"]["Message"]
 
-    def test_create_rest_api_with_custom_id(self):
-        client = aws_stack.create_external_boto_client("apigateway")
+    def test_create_rest_api_with_custom_id(self, apigateway_client, create_rest_apigw):
         apigw_name = f"gw-{short_uid()}"
         test_id = "testId123"
-        result = client.create_rest_api(name=apigw_name, tags={TAG_KEY_CUSTOM_ID: test_id})
-        assert test_id == result["id"]
-        assert apigw_name == result["name"]
-        result = client.get_rest_api(restApiId=test_id)
-        assert test_id == result["id"]
-        assert apigw_name == result["name"]
+        api_id, name, _ = create_rest_apigw(name=apigw_name, tags={TAG_KEY_CUSTOM_ID: test_id})
+        assert test_id == api_id
+        assert apigw_name == name
+        api_id, name = get_rest_api(apigateway_client, restApiId=test_id)
+        assert test_id == api_id
+        assert apigw_name == name
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
@@ -298,8 +299,8 @@ class TestAPIGateway:
         assert 1 == len(messages)
         assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
 
-    def test_update_rest_api_deployment(self, apigateway_client):
-        api_id, _, root = create_rest_api(apigateway_client, name="aws lambda api")
+    def test_update_rest_api_deployment(self, apigateway_client, create_rest_apigw):
+        api_id, _, root = create_rest_apigw(name="test_gateway5")
 
         create_rest_resource_method(
             apigateway_client,
@@ -340,7 +341,9 @@ class TestAPIGateway:
         )
         assert deployment["description"] == "new-description"
 
-    def test_api_gateway_lambda_integration(self, apigateway_client, create_lambda_function):
+    def test_api_gateway_lambda_integration(
+        self, apigateway_client, create_rest_apigw, create_lambda_function
+    ):
         """
         API gateway to lambda integration test returns a response with the same body as the lambda
         function input event.
@@ -353,7 +356,7 @@ class TestAPIGateway:
         )
         lambda_arn = aws_stack.lambda_function_arn(fn_name)
 
-        api_id, _, root = create_rest_api(apigateway_client, name="aws lambda api")
+        api_id, _, root = create_rest_apigw(name="aws lambda api")
         resource_id, _ = create_rest_resource(
             apigateway_client, restApiId=api_id, parentId=root, pathPart="test"
         )
@@ -373,7 +376,8 @@ class TestAPIGateway:
             httpMethod="GET",
             integrationHttpMethod="GET",
             type="AWS_PROXY",
-            uri=f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path//2015-03-31/functions/{lambda_arn}/invocations",
+            uri=f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path//2015-03-31/function"
+            f"s/{lambda_arn}/invocations",
         )
 
         url = api_invoke_url(api_id=api_id, stage="local", path="/test")
@@ -385,7 +389,12 @@ class TestAPIGateway:
 
     @pytest.mark.aws_validated
     def test_api_gateway_lambda_integration_aws_type(
-        self, apigateway_client, create_lambda_function, lambda_client, sts_client
+        self,
+        apigateway_client,
+        create_lambda_function,
+        create_rest_apigw,
+        lambda_client,
+        sts_client,
     ):
         region_name = apigateway_client._client_config.region_name
         fn_name = f"test-{short_uid()}"
@@ -398,7 +407,7 @@ class TestAPIGateway:
             "FunctionArn"
         ]
 
-        api_id, _, root = create_rest_api(apigateway_client, name="aws lambda api")
+        api_id, _, root = create_rest_apigw(name="aws lambda api")
         resource_id, _ = create_rest_resource(
             apigateway_client, restApiId=api_id, parentId=root, pathPart="test"
         )
@@ -466,8 +475,6 @@ class TestAPIGateway:
 
         assert response.headers["Content-Type"] == "text/html"
         assert response.headers["Access-Control-Allow-Origin"] == "*"
-
-        delete_rest_api(apigateway_client, restApiId=api_id)
 
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
     def test_api_gateway_http_integrations(self, int_type, monkeypatch):
@@ -682,9 +689,9 @@ class TestAPIGateway:
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
         )
 
-    def test_api_gateway_lambda_asynchronous_invocation(self, apigateway_client):
+    def test_api_gateway_lambda_asynchronous_invocation(self, apigateway_client, create_rest_apigw):
         api_gateway_name = f"api_gateway_{short_uid()}"
-        rest_api_id = apigateway_client.create_rest_api(name=api_gateway_name)["id"]
+        rest_api_id, _, _ = create_rest_apigw(name=api_gateway_name)
 
         fn_name = f"test-{short_uid()}"
         testutil.create_lambda_function(
@@ -701,9 +708,9 @@ class TestAPIGateway:
         assert result.status_code == 200
         assert result.content == b""
 
-    def test_api_gateway_mock_integration(self, apigateway_client):
+    def test_api_gateway_mock_integration(self, apigateway_client, create_rest_apigw):
         rest_api_name = f"apigw-{short_uid()}"
-        rest_api_id = apigateway_client.create_rest_api(name=rest_api_name)["id"]
+        rest_api_id, _, _ = create_rest_apigw(name=rest_api_name)
 
         spec_file = load_file(TEST_IMPORT_MOCK_INTEGRATION)
         apigateway_client.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
@@ -755,9 +762,7 @@ class TestAPIGateway:
         with pytest.raises(Exception):
             apig.get_authorizer(self.TEST_API_GATEWAY_ID, authorizer_id)
 
-    def test_apigateway_with_lambda_integration(self):
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
-
+    def test_apigateway_with_lambda_integration(self, apigateway_client, create_rest_apigw):
         # create Lambda function
         lambda_name = f"apigw-lambda-{short_uid()}"
         self.create_lambda_function(lambda_name)
@@ -765,21 +770,20 @@ class TestAPIGateway:
         target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
 
         # create REST API
-        api = apigw_client.create_rest_api(name="test-api", description="")
-        api_id = api["id"]
-        root_res_id = apigw_client.get_resources(restApiId=api_id)["items"][0]["id"]
-        api_resource = apigw_client.create_resource(
+        api_id, _, _ = create_rest_apigw(name="test-api", description="")
+        root_res_id = apigateway_client.get_resources(restApiId=api_id)["items"][0]["id"]
+        api_resource = apigateway_client.create_resource(
             restApiId=api_id, parentId=root_res_id, pathPart="test"
         )
 
-        apigw_client.put_method(
+        apigateway_client.put_method(
             restApiId=api_id,
             resourceId=api_resource["id"],
             httpMethod="GET",
             authorizationType="NONE",
         )
 
-        rs = apigw_client.put_integration(
+        rs = apigateway_client.put_integration(
             restApiId=api_id,
             resourceId=api_resource["id"],
             httpMethod="GET",
@@ -805,9 +809,9 @@ class TestAPIGateway:
             assert key in rs
         assert "responseTemplates" not in rs
 
-        apigw_client.create_deployment(restApiId=api_id, stageName=self.TEST_STAGE_NAME)
+        apigateway_client.create_deployment(restApiId=api_id, stageName=self.TEST_STAGE_NAME)
 
-        rs = apigw_client.get_integration(
+        rs = apigateway_client.get_integration(
             restApiId=api_id, resourceId=api_resource["id"], httpMethod="GET"
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
@@ -830,7 +834,7 @@ class TestAPIGateway:
         assert '{"param1": "foobar"}' == content.get("event")
 
         # delete integration
-        rs = apigw_client.delete_integration(
+        rs = apigateway_client.delete_integration(
             restApiId=api_id,
             resourceId=api_resource["id"],
             httpMethod="GET",
@@ -839,7 +843,7 @@ class TestAPIGateway:
 
         with pytest.raises(ClientError) as ctx:
             # This call should not be successful as the integration is deleted
-            apigw_client.get_integration(
+            apigateway_client.get_integration(
                 restApiId=api_id, resourceId=api_resource["id"], httpMethod="GET"
             )
         assert ctx.value.response["Error"]["Code"] == "NotFoundException"
@@ -847,20 +851,15 @@ class TestAPIGateway:
         # clean up
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=lambda_name)
-        apigw_client.delete_rest_api(restApiId=api_id)
 
     def test_api_gateway_handle_domain_name(self):
-        domain_name = "%s.example.com" % short_uid()
+        domain_name = f"{short_uid()}.example.com"
         apigw_client = aws_stack.create_external_boto_client("apigateway")
-
         rs = apigw_client.create_domain_name(domainName=domain_name)
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
-
         rs = apigw_client.get_domain_name(domainName=domain_name)
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
         assert domain_name == rs["domainName"]
-
-        # clean up
         apigw_client.delete_domain_name(domainName=domain_name)
 
     def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
@@ -893,21 +892,21 @@ class TestAPIGateway:
             else:
                 assert 204 == result.status_code
 
-    def test_apigateway_with_custom_authorization_method(self):
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
+    def test_apigateway_with_custom_authorization_method(
+        self, apigateway_client, create_rest_apigw
+    ):
 
         # create Lambda function
-        lambda_name = "apigw-lambda-%s" % short_uid()
+        lambda_name = f"apigw-lambda-{short_uid()}"
         self.create_lambda_function(lambda_name)
         lambda_uri = aws_stack.lambda_function_arn(lambda_name)
 
         # create REST API
-        api = apigw_client.create_rest_api(name="test-api", description="")
-        api_id = api["id"]
-        root_res_id = apigw_client.get_resources(restApiId=api_id)["items"][0]["id"]
+        api_id, _, _ = create_rest_apigw(name="test-api", description="")
+        root_res_id = apigateway_client.get_resources(restApiId=api_id)["items"][0]["id"]
 
         # create authorizer at root resource
-        authorizer = apigw_client.create_authorizer(
+        authorizer = apigateway_client.create_authorizer(
             restApiId=api_id,
             name="lambda_authorizer",
             type="TOKEN",
@@ -920,7 +919,7 @@ class TestAPIGateway:
 
         # create method with custom authorizer
         is_api_key_required = True
-        method_response = apigw_client.put_method(
+        method_response = apigateway_client.put_method(
             restApiId=api_id,
             resourceId=root_res_id,
             httpMethod="GET",
@@ -934,19 +933,16 @@ class TestAPIGateway:
         # clean up
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=lambda_name)
-        apigw_client.delete_rest_api(restApiId=api_id)
 
-    def test_create_model(self):
-        client = aws_stack.create_external_boto_client("apigateway")
-        response = client.create_rest_api(name="my_api", description="this is my api")
-        rest_api_id = response["id"]
+    def test_create_model(self, create_rest_apigw, apigateway_client):
+        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
         dummy_rest_api_id = "_non_existing_"
         model_name = "testModel"
         description = "test model"
         content_type = "application/json"
 
         # success case with valid params
-        response = client.create_model(
+        response = apigateway_client.create_model(
             restApiId=rest_api_id,
             name=model_name,
             description=description,
@@ -956,7 +952,7 @@ class TestAPIGateway:
         assert description == response["description"]
 
         with pytest.raises(Exception) as ctx:
-            client.create_model(
+            apigateway_client.create_model(
                 restApiId=dummy_rest_api_id,
                 name=model_name,
                 description=description,
@@ -966,7 +962,7 @@ class TestAPIGateway:
         assert "Invalid Rest API Id specified" == ctx.value.response["Error"]["Message"]
 
         with pytest.raises(Exception) as ctx:
-            client.create_model(
+            apigateway_client.create_model(
                 restApiId=dummy_rest_api_id,
                 name="",
                 description=description,
@@ -975,21 +971,16 @@ class TestAPIGateway:
         assert "BadRequestException" == ctx.value.response["Error"]["Code"]
         assert "No Model Name specified" == ctx.value.response["Error"]["Message"]
 
-        # clean up
-        client.delete_rest_api(restApiId=rest_api_id)
-
-    def test_get_api_models(self):
-        client = aws_stack.create_external_boto_client("apigateway")
-        response = client.create_rest_api(name="my_api", description="this is my api")
-        rest_api_id = response["id"]
+    def test_get_api_models(self, apigateway_client, create_rest_apigw):
+        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
         model_name = "testModel"
         description = "test model"
         content_type = "application/json"
         # when no models are present
-        result = client.get_models(restApiId=rest_api_id)
+        result = apigateway_client.get_models(restApiId=rest_api_id)
         assert [] == result["items"]
         # add a model
-        client.create_model(
+        apigateway_client.create_model(
             restApiId=rest_api_id,
             name=model_name,
             description=description,
@@ -997,68 +988,64 @@ class TestAPIGateway:
         )
 
         # get models after adding
-        result = client.get_models(restApiId=rest_api_id)
+        result = apigateway_client.get_models(restApiId=rest_api_id)
         assert model_name == result["items"][0]["name"]
         assert description == result["items"][0]["description"]
 
-        # clean up
-        client.delete_rest_api(restApiId=rest_api_id)
-
-    def test_request_validator(self):
-        client = aws_stack.create_external_boto_client("apigateway")
-        response = client.create_rest_api(name="my_api", description="this is my api")
-        rest_api_id = response["id"]
+    def test_request_validator(self, apigateway_client, create_rest_apigw):
+        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
         # CREATE
         name = "validator123"
-        result = client.create_request_validator(restApiId=rest_api_id, name=name)
+        result = apigateway_client.create_request_validator(restApiId=rest_api_id, name=name)
         assert 201 == result["ResponseMetadata"]["HTTPStatusCode"]
         validator_id = result["id"]
         # LIST
-        result = client.get_request_validators(restApiId=rest_api_id)
+        result = apigateway_client.get_request_validators(restApiId=rest_api_id)
         assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
         assert [{"id": validator_id, "name": name}] == result["items"]
         # GET
-        result = client.get_request_validator(
+        result = apigateway_client.get_request_validator(
             restApiId=rest_api_id, requestValidatorId=validator_id
         )
         assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
         assert select_attributes(result, ["id", "name"]) == {"id": validator_id, "name": name}
         # UPDATE
-        result = client.update_request_validator(
+        result = apigateway_client.update_request_validator(
             restApiId=rest_api_id, requestValidatorId=validator_id, patchOperations=[]
         )
         # DELETE
-        client.delete_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+        apigateway_client.delete_request_validator(
+            restApiId=rest_api_id, requestValidatorId=validator_id
+        )
         with pytest.raises(Exception):
-            client.get_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+            apigateway_client.get_request_validator(
+                restApiId=rest_api_id, requestValidatorId=validator_id
+            )
         with pytest.raises(Exception):
-            client.delete_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+            apigateway_client.delete_request_validator(
+                restApiId=rest_api_id, requestValidatorId=validator_id
+            )
 
-        # clean up
-        client.delete_rest_api(restApiId=rest_api_id)
-
-    def test_base_path_mapping(self):
-        client = aws_stack.create_external_boto_client("apigateway")
-        response = client.create_rest_api(name="my_api", description="this is my api")
-        rest_api_id = response["id"]
+    def test_base_path_mapping(self, apigateway_client, create_rest_apigw):
+        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
 
         # CREATE
         domain_name = "domain1.example.com"
-        client.create_domain_name(domainName=domain_name)
-        root_res_id = client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
-        res_id = client.create_resource(
+        apigateway_client.create_domain_name(domainName=domain_name)
+        root_res_id = apigateway_client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
+        res_id = apigateway_client.create_resource(
             restApiId=rest_api_id, parentId=root_res_id, pathPart="path"
         )["id"]
-        client.put_method(
+        apigateway_client.put_method(
             restApiId=rest_api_id, resourceId=res_id, httpMethod="GET", authorizationType="NONE"
         )
-        client.put_integration(
+        apigateway_client.put_integration(
             restApiId=rest_api_id, resourceId=res_id, httpMethod="GET", type="MOCK"
         )
-        depl_id = client.create_deployment(restApiId=rest_api_id)["id"]
-        client.create_stage(restApiId=rest_api_id, deploymentId=depl_id, stageName="dev")
+        depl_id = apigateway_client.create_deployment(restApiId=rest_api_id)["id"]
+        apigateway_client.create_stage(restApiId=rest_api_id, deploymentId=depl_id, stageName="dev")
         base_path = "foo"
-        result = client.create_base_path_mapping(
+        result = apigateway_client.create_base_path_mapping(
             domainName=domain_name,
             basePath=base_path,
             restApiId=rest_api_id,
@@ -1067,28 +1054,28 @@ class TestAPIGateway:
         assert result["ResponseMetadata"]["HTTPStatusCode"] in [200, 201]
 
         # LIST
-        result = client.get_base_path_mappings(domainName=domain_name)
+        result = apigateway_client.get_base_path_mappings(domainName=domain_name)
         assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
         expected = {"basePath": base_path, "restApiId": rest_api_id, "stage": "dev"}
         assert [expected] == result["items"]
 
         # GET
-        result = client.get_base_path_mapping(domainName=domain_name, basePath=base_path)
+        result = apigateway_client.get_base_path_mapping(domainName=domain_name, basePath=base_path)
         assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
         assert expected == select_attributes(result, ["basePath", "restApiId", "stage"])
 
         # UPDATE
-        result = client.update_base_path_mapping(
+        result = apigateway_client.update_base_path_mapping(
             domainName=domain_name, basePath=base_path, patchOperations=[]
         )
         assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
 
         # DELETE
-        client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
+        apigateway_client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
         with pytest.raises(Exception):
-            client.get_base_path_mapping(domainName=domain_name, basePath=base_path)
+            apigateway_client.get_base_path_mapping(domainName=domain_name, basePath=base_path)
         with pytest.raises(Exception):
-            client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
+            apigateway_client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
 
     def test_base_path_mapping_root(self):
         client = aws_stack.create_external_boto_client("apigateway")
@@ -1143,31 +1130,24 @@ class TestAPIGateway:
         with pytest.raises(Exception):
             client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
 
-    def test_api_account(self):
-        client = aws_stack.create_external_boto_client("apigateway")
-        response = client.create_rest_api(name="my_api", description="test 123")
-        rest_api_id = response["id"]
+    def test_api_account(self, apigateway_client, create_rest_apigw):
+        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="test 123")
 
-        result = client.get_account()
+        result = apigateway_client.get_account()
         assert "UsagePlans" in result["features"]
-        result = client.update_account(
+        result = apigateway_client.update_account(
             patchOperations=[{"op": "add", "path": "/features/-", "value": "foobar"}]
         )
         assert "foobar" in result["features"]
 
-        # clean up
-        client.delete_rest_api(restApiId=rest_api_id)
-
-    def test_get_model_by_name(self):
-        client = aws_stack.create_external_boto_client("apigateway")
-        response = client.create_rest_api(name="my_api", description="this is my api")
-        rest_api_id = response["id"]
+    def test_get_model_by_name(self, apigateway_client, create_rest_apigw):
+        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
         dummy_rest_api_id = "_non_existing_"
         model_name = "testModel"
         description = "test model"
         content_type = "application/json"
         # add a model
-        client.create_model(
+        apigateway_client.create_model(
             restApiId=rest_api_id,
             name=model_name,
             description=description,
@@ -1175,33 +1155,27 @@ class TestAPIGateway:
         )
 
         # get models after adding
-        result = client.get_model(restApiId=rest_api_id, modelName=model_name)
+        result = apigateway_client.get_model(restApiId=rest_api_id, modelName=model_name)
         assert model_name == result["name"]
         assert description == result["description"]
 
         try:
-            client.get_model(restApiId=dummy_rest_api_id, modelName=model_name)
+            apigateway_client.get_model(restApiId=dummy_rest_api_id, modelName=model_name)
             self.fail("This call should not be successful as the model is not created.")
-
         except ClientError as e:
             assert "NotFoundException" == e.response["Error"]["Code"]
             assert "Invalid Rest API Id specified" == e.response["Error"]["Message"]
 
-    def test_get_model_with_invalid_name(self):
-        client = aws_stack.create_external_boto_client("apigateway")
-        response = client.create_rest_api(name="my_api", description="this is my api")
-        rest_api_id = response["id"]
+    def test_get_model_with_invalid_name(self, apigateway_client, create_rest_apigw):
+        rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
 
         # test with an invalid model name
         try:
-            client.get_model(restApiId=rest_api_id, modelName="fake")
+            apigateway_client.get_model(restApiId=rest_api_id, modelName="fake")
             self.fail("This call should not be successful as the model is not created.")
 
         except ClientError as e:
             assert "NotFoundException" == e.response["Error"]["Code"]
-
-        # clean up
-        client.delete_rest_api(restApiId=rest_api_id)
 
     def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
         api_id = self.create_api_gateway_and_deploy({})
@@ -1288,7 +1262,7 @@ class TestAPIGateway:
         # when the api key is passed as part of the header
         assert 200 == response.status_code
 
-    def test_multiple_api_keys_validate(self):
+    def test_multiple_api_keys_validate(self, apigateway_client):
         response_templates = {
             "application/json": json.dumps(
                 {
@@ -1301,8 +1275,6 @@ class TestAPIGateway:
         api_id = self.create_api_gateway_and_deploy(response_templates, True)
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
-        client = aws_stack.create_external_boto_client("apigateway")
-
         # Create multiple usage plans
         usage_plan_ids = []
         for i in range(2):
@@ -1314,20 +1286,20 @@ class TestAPIGateway:
                 "apiStages": [{"apiId": api_id, "stage": "staging"}],
                 "tags": {"tag_key": "tag_value"},
             }
-            usage_plan_ids.append(client.create_usage_plan(**payload)["id"])
+            usage_plan_ids.append(apigateway_client.create_usage_plan(**payload)["id"])
 
         api_keys = []
         key_type = "API_KEY"
         # Create multiple API Keys in each usage plan
         for usage_plan_id in usage_plan_ids:
             for i in range(2):
-                api_key = client.create_api_key(name="testMultipleApiKeys{}".format(i))
+                api_key = apigateway_client.create_api_key(name="testMultipleApiKeys{}".format(i))
                 payload = {
                     "usagePlanId": usage_plan_id,
                     "keyId": api_key["id"],
                     "keyType": key_type,
                 }
-                client.create_usage_plan_key(**payload)
+                apigateway_client.create_usage_plan_key(**payload)
                 api_keys.append(api_key["value"])
 
         response = requests.put(
@@ -1348,32 +1320,37 @@ class TestAPIGateway:
             assert 200 == response.status_code
 
     @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
-    def test_import_rest_api(self, base_path_type):
+    def test_import_rest_api(
+        self,
+        base_path_type,
+        create_rest_apigw,
+        import_apigw,
+        apigateway_client,
+    ):
         rest_api_name = f"restapi-{short_uid()}"
 
-        client = aws_stack.create_external_boto_client("apigateway")
-        rest_api_id = client.create_rest_api(name=rest_api_name)["id"]
+        rest_api_id, _, _ = create_rest_apigw(name=rest_api_name)
 
         spec_file = load_file(TEST_SWAGGER_FILE_JSON)
         api_params = {"basepath": base_path_type}
-        rs = client.put_rest_api(
+        rs = apigateway_client.put_rest_api(
             restApiId=rest_api_id, body=spec_file, mode="overwrite", parameters=api_params
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-        resources = client.get_resources(restApiId=rest_api_id)
+        resources = apigateway_client.get_resources(restApiId=rest_api_id)
         for rv in resources.get("items"):
             for method in rv.get("resourceMethods", {}).values():
                 assert method.get("authorizationType") == "request"
                 assert method.get("authorizerId") is not None
 
         spec_file = load_file(TEST_SWAGGER_FILE_YAML)
-        rs = client.put_rest_api(
+        rs = apigateway_client.put_rest_api(
             restApiId=rest_api_id, body=spec_file, mode="overwrite", parameters=api_params
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-        rs = client.get_resources(restApiId=rest_api_id)
+        rs = apigateway_client.get_resources(restApiId=rest_api_id)
         expected_resources = 2 if base_path_type == "ignore" else 3
         assert len(rs["items"]) == expected_resources
 
@@ -1390,15 +1367,11 @@ class TestAPIGateway:
         assert 200 == response.status_code
 
         # clean up
-        client.delete_rest_api(restApiId=rest_api_id)
 
         spec_file = load_file(TEST_IMPORT_REST_API_FILE)
-        rs = client.import_rest_api(body=spec_file, parameters=api_params)
-        assert 201 == rs["ResponseMetadata"]["HTTPStatusCode"]
+        rest_api_id, _, _ = import_apigw(body=spec_file, parameters=api_params)
 
-        rest_api_id = rs["id"]
-
-        rs = client.get_resources(restApiId=rest_api_id)
+        rs = apigateway_client.get_resources(restApiId=rest_api_id)
         resources = rs["items"]
         assert 3 == len(resources)
 
@@ -1407,11 +1380,7 @@ class TestAPIGateway:
         assert "/pets" in paths
         assert "/pets/{petId}" in paths
 
-        # clean up
-        client.delete_rest_api(restApiId=rest_api_id)
-
-    def test_step_function_integrations(self):
-        client = aws_stack.create_external_boto_client("apigateway")
+    def test_step_function_integrations(self, create_rest_apigw, apigateway_client):
         sfn_client = aws_stack.create_external_boto_client("stepfunctions")
         lambda_client = aws_stack.create_external_boto_client("lambda")
 
@@ -1446,11 +1415,11 @@ class TestAPIGateway:
         sm_arn = result["stateMachineArn"]
 
         # create REST API and method
-        rest_api = client.create_rest_api(name="test", description="test")
-        resources = client.get_resources(restApiId=rest_api["id"])
+        rest_api, _, _ = create_rest_apigw(name="test", description="test")
+        resources = apigateway_client.get_resources(restApiId=rest_api)
         root_resource_id = resources["items"][0]["id"]
-        client.put_method(
-            restApiId=rest_api["id"],
+        apigateway_client.put_method(
+            restApiId=rest_api,
             resourceId=root_resource_id,
             httpMethod="POST",
             authorizationType="NONE",
@@ -1464,14 +1433,14 @@ class TestAPIGateway:
             if resp_templates is None:
                 resp_templates = {}
             if overwrite:
-                client.delete_integration(
-                    restApiId=rest_api["id"],
+                apigateway_client.delete_integration(
+                    restApiId=rest_api,
                     resourceId=resources["items"][0]["id"],
                     httpMethod="POST",
                 )
             uri = f"arn:aws:apigateway:{aws_stack.get_region()}:states:action/{action}"
-            client.put_integration(
-                restApiId=rest_api["id"],
+            apigateway_client.put_integration(
+                restApiId=rest_api,
                 resourceId=root_resource_id,
                 httpMethod="POST",
                 integrationHttpMethod="POST",
@@ -1480,8 +1449,8 @@ class TestAPIGateway:
                 **integr_kwargs,
             )
             if resp_templates:
-                client.put_integration_response(
-                    restApiId=rest_api["id"],
+                apigateway_client.put_integration_response(
+                    restApiId=rest_api,
                     resourceId=root_resource_id,
                     selectionPattern="",
                     responseTemplates=resp_templates,
@@ -1504,8 +1473,8 @@ class TestAPIGateway:
         )
 
         # invoke stepfunction via API GW, assert results
-        client.create_deployment(restApiId=rest_api["id"], stageName="dev")
-        url = path_based_url(api_id=rest_api["id"], stage_name="dev", path="/")
+        apigateway_client.create_deployment(restApiId=rest_api, stageName="dev")
+        url = path_based_url(api_id=rest_api, stage_name="dev", path="/")
         test_data = {"test": "test-value"}
         resp = requests.post(url, data=json.dumps(test_data))
         assert 200 == resp.status_code
@@ -1561,10 +1530,10 @@ class TestAPIGateway:
 
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)
-        client.delete_rest_api(restApiId=rest_api["id"])
 
-    def test_api_gateway_http_integration_with_path_request_parameter(self):
-        client = aws_stack.create_external_boto_client("apigateway")
+    def test_api_gateway_http_integration_with_path_request_parameter(
+        self, apigateway_client, create_rest_apigw
+    ):
         test_port = get_free_tcp_port()
         backend_url = "http://localhost:%s/person/{id}" % test_port
 
@@ -1572,17 +1541,18 @@ class TestAPIGateway:
         proxy = self.start_http_backend(test_port)
 
         # create rest api
-        api_rest = client.create_rest_api(name="test")
-        api_id = api_rest["id"]
-        parent_response = client.get_resources(restApiId=api_id)
+        api_id, _, _ = create_rest_apigw(name="test")
+        parent_response = apigateway_client.get_resources(restApiId=api_id)
         parent_id = parent_response["items"][0]["id"]
-        resource_1 = client.create_resource(restApiId=api_id, parentId=parent_id, pathPart="person")
+        resource_1 = apigateway_client.create_resource(
+            restApiId=api_id, parentId=parent_id, pathPart="person"
+        )
         resource_1_id = resource_1["id"]
-        resource_2 = client.create_resource(
+        resource_2 = apigateway_client.create_resource(
             restApiId=api_id, parentId=resource_1_id, pathPart="{id}"
         )
         resource_2_id = resource_2["id"]
-        client.put_method(
+        apigateway_client.put_method(
             restApiId=api_id,
             resourceId=resource_2_id,
             httpMethod="GET",
@@ -1590,7 +1560,7 @@ class TestAPIGateway:
             apiKeyRequired=False,
             requestParameters={"method.request.path.id": True},
         )
-        client.put_integration(
+        apigateway_client.put_integration(
             restApiId=api_id,
             resourceId=resource_2_id,
             httpMethod="GET",
@@ -1601,7 +1571,7 @@ class TestAPIGateway:
             contentHandling="CONVERT_TO_BINARY",
             requestParameters={"integration.request.path.id": "method.request.path.id"},
         )
-        client.create_deployment(restApiId=api_id, stageName="test")
+        apigateway_client.create_deployment(restApiId=api_id, stageName="test")
 
         def _test_invoke(url):
             result = requests.get(url)
@@ -1623,8 +1593,6 @@ class TestAPIGateway:
                 )
                 _test_invoke(url)
 
-        # clean up
-        client.delete_rest_api(restApiId=api_id)
         proxy.stop()
 
     def _get_invoke_endpoint(
@@ -1634,13 +1602,15 @@ class TestAPIGateway:
         path = path if path.startswith(path) else f"/{path}"
         proto = "https" if use_ssl else "http"
         if use_hostname:
-            return f"{proto}://{api_id}.execute-api.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}/{stage}{path}"
+            return (
+                f"{proto}://{api_id}.execute-api.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}/"
+                f"{stage}{path}"
+            )
         return (
             f"{proto}://localhost:{config.EDGE_PORT}/restapis/{api_id}/{stage}/_user_request_{path}"
         )
 
-    def test_api_gateway_s3_get_integration(self):
-        apigw_client = aws_stack.create_external_boto_client("apigateway")
+    def test_api_gateway_s3_get_integration(self, apigateway_client, create_rest_apigw):
         s3_client = aws_stack.create_external_boto_client("s3")
 
         bucket_name = f"test-bucket-{short_uid()}"
@@ -1649,8 +1619,7 @@ class TestAPIGateway:
         object_content = '{ "success": "true" }'
         object_content_type = "application/json"
 
-        api = apigw_client.create_rest_api(name=apigateway_name)
-        api_id = api["id"]
+        api_id, _, _ = create_rest_apigw(name=apigateway_name)
 
         try:
             aws_stack.get_or_create_bucket(bucket_name)
@@ -1663,15 +1632,13 @@ class TestAPIGateway:
 
             self.connect_api_gateway_to_s3(bucket_name, object_name, api_id, "GET")
 
-            apigw_client.create_deployment(restApiId=api_id, stageName="test")
+            apigateway_client.create_deployment(restApiId=api_id, stageName="test")
             url = path_based_url(api_id, "test", f"/{object_name}")
             result = requests.get(url)
             assert 200 == result.status_code
             assert object_content == result.text
             assert object_content_type == result.headers["content-type"]
         finally:
-            # clean up
-            apigw_client.delete_rest_api(restApiId=api_id)
             s3_client.delete_object(Bucket=bucket_name, Key=object_name)
             s3_client.delete_bucket(Bucket=bucket_name)
 
@@ -1696,16 +1663,14 @@ class TestAPIGateway:
         assert "Origin" == result.headers.get("vary")
         assert "POST,OPTIONS" == result.headers.get("Access-Control-Allow-Methods")
 
-    def test_api_gateway_update_resource_path_part(self):
-        apigw_client = aws_stack.connect_to_service("apigateway")
-        api = apigw_client.create_rest_api(name="test-api", description="")
-        api_id = api["id"]
-        root_res_id = apigw_client.get_resources(restApiId=api_id)["items"][0]["id"]
-        api_resource = apigw_client.create_resource(
+    def test_api_gateway_update_resource_path_part(self, apigateway_client, create_rest_apigw):
+        api_id, _, _ = create_rest_apigw(name="test-api", description="")
+        root_res_id = apigateway_client.get_resources(restApiId=api_id)["items"][0]["id"]
+        api_resource = apigateway_client.create_resource(
             restApiId=api_id, parentId=root_res_id, pathPart="test"
         )
 
-        response = apigw_client.update_resource(
+        response = apigateway_client.update_resource(
             restApiId=api_id,
             resourceId=api_resource.get("id"),
             patchOperations=[
@@ -1713,11 +1678,10 @@ class TestAPIGateway:
             ],
         )
         assert response.get("pathPart") == "demo1"
-        response = apigw_client.get_resource(restApiId=api_id, resourceId=api_resource.get("id"))
+        response = apigateway_client.get_resource(
+            restApiId=api_id, resourceId=api_resource.get("id")
+        )
         assert response.get("pathPart") == "demo1"
-
-        # clean up
-        apigw_client.delete_rest_api(restApiId=api_id)
 
     def test_response_headers_invocation_with_apigw(self, create_lambda_function, lambda_client):
         lambda_name = f"test_lambda_{short_uid()}"
@@ -1863,8 +1827,7 @@ class TestAPIGateway:
             handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
         )
 
-    def test_apigw_test_invoke_method_api(self):
-        client = aws_stack.create_external_boto_client("apigateway")
+    def test_apigw_test_invoke_method_api(self, apigateway_client, create_rest_apigw):
         lambda_client = aws_stack.create_external_boto_client("lambda")
 
         # create test Lambda
@@ -1875,21 +1838,21 @@ class TestAPIGateway:
         lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
 
         # create REST API and test resource
-        rest_api = client.create_rest_api(name="test", description="test")
-        root_resource = client.get_resources(restApiId=rest_api["id"])
-        resource = client.create_resource(
-            restApiId=rest_api["id"], parentId=root_resource["items"][0]["id"], pathPart="foo"
+        rest_api_id, _, _ = create_rest_apigw(name="test", description="test")
+        root_resource = apigateway_client.get_resources(restApiId=rest_api_id)
+        resource = apigateway_client.create_resource(
+            restApiId=rest_api_id, parentId=root_resource["items"][0]["id"], pathPart="foo"
         )
 
         # create method and integration
-        client.put_method(
-            restApiId=rest_api["id"],
+        apigateway_client.put_method(
+            restApiId=rest_api_id,
             resourceId=resource["id"],
             httpMethod="GET",
             authorizationType="NONE",
         )
-        client.put_integration(
-            restApiId=rest_api["id"],
+        apigateway_client.put_integration(
+            restApiId=rest_api_id,
             resourceId=resource["id"],
             httpMethod="GET",
             integrationHttpMethod="GET",
@@ -1900,8 +1863,8 @@ class TestAPIGateway:
         )
 
         # run test_invoke_method API #1
-        response = client.test_invoke_method(
-            restApiId=rest_api["id"],
+        response = apigateway_client.test_invoke_method(
+            restApiId=rest_api_id,
             resourceId=resource["id"],
             httpMethod="GET",
             pathWithQueryString="/foo",
@@ -1911,8 +1874,8 @@ class TestAPIGateway:
         assert "response from" in json.loads(response.get("body")).get("body")
 
         # run test_invoke_method API #2
-        response = client.test_invoke_method(
-            restApiId=rest_api["id"],
+        response = apigateway_client.test_invoke_method(
+            restApiId=rest_api_id,
             resourceId=resource["id"],
             httpMethod="GET",
             pathWithQueryString="/foo",
@@ -1926,7 +1889,6 @@ class TestAPIGateway:
 
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)
-        client.delete_rest_api(restApiId=rest_api["id"])
 
     @staticmethod
     def start_http_backend(test_port):
@@ -1972,7 +1934,6 @@ class TestAPIGateway:
             integration_responses = [{"httpMethod": "PUT", "statusCode": "200"}]
 
         for resp_details in integration_responses:
-
             apigw_client.put_method(
                 restApiId=api_id,
                 resourceId=root_id,
@@ -2006,7 +1967,6 @@ class TestAPIGateway:
             )
 
         apigw_client.create_deployment(restApiId=api_id, stageName="staging")
-
         return api_id
 
 
@@ -2066,7 +2026,10 @@ def test_import_swagger_api(apigateway_client):
 
 @pytest.mark.skipif(not use_docker(), reason="Rust lambdas cannot be executed in local executor")
 def test_apigateway_rust_lambda(
-    apigateway_client, create_lambda_function, create_iam_role_with_policy
+    apigateway_client,
+    create_rest_apigw,
+    create_lambda_function,
+    create_iam_role_with_policy,
 ):
     function_name = f"test-rust-function-{short_uid()}"
     api_gateway_name = f"api_gateway_{short_uid()}"
@@ -2087,38 +2050,36 @@ def test_apigateway_rust_lambda(
         PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
     )
     lambda_arn = lambda_create_response["CreateFunctionResponse"]["FunctionArn"]
-    rest_api_id = apigateway_client.create_rest_api(name=api_gateway_name)["id"]
-    try:
-        root_resource_id = apigateway_client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
-        apigateway_client.put_method(
-            restApiId=rest_api_id,
-            resourceId=root_resource_id,
-            httpMethod="GET",
-            authorizationType="NONE",
-        )
-        apigateway_client.put_method_response(
-            restApiId=rest_api_id, resourceId=root_resource_id, httpMethod="GET", statusCode="200"
-        )
-        lambda_target_uri = aws_stack.apigateway_invocations_arn(
-            lambda_uri=lambda_arn, region_name=apigateway_client.meta.region_name
-        )
-        apigateway_client.put_integration(
-            restApiId=rest_api_id,
-            resourceId=root_resource_id,
-            httpMethod="GET",
-            type="AWS_PROXY",
-            integrationHttpMethod="POST",
-            uri=lambda_target_uri,
-            credentials=role_arn,
-        )
-        apigateway_client.create_deployment(restApiId=rest_api_id, stageName=stage_name)
-        url = path_based_url(
-            api_id=rest_api_id, stage_name=stage_name, path=f"/?first_name={first_name}"
-        )
-        result = requests.get(url)
-        assert result.text == f"Hello, {first_name}!"
-    finally:
-        apigateway_client.delete_rest_api(restApiId=rest_api_id)
+    rest_api_id, _, _ = create_rest_apigw(name=api_gateway_name)
+
+    root_resource_id = apigateway_client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
+    apigateway_client.put_method(
+        restApiId=rest_api_id,
+        resourceId=root_resource_id,
+        httpMethod="GET",
+        authorizationType="NONE",
+    )
+    apigateway_client.put_method_response(
+        restApiId=rest_api_id, resourceId=root_resource_id, httpMethod="GET", statusCode="200"
+    )
+    lambda_target_uri = aws_stack.apigateway_invocations_arn(
+        lambda_uri=lambda_arn, region_name=apigateway_client.meta.region_name
+    )
+    apigateway_client.put_integration(
+        restApiId=rest_api_id,
+        resourceId=root_resource_id,
+        httpMethod="GET",
+        type="AWS_PROXY",
+        integrationHttpMethod="POST",
+        uri=lambda_target_uri,
+        credentials=role_arn,
+    )
+    apigateway_client.create_deployment(restApiId=rest_api_id, stageName=stage_name)
+    url = path_based_url(
+        api_id=rest_api_id, stage_name=stage_name, path=f"/?first_name={first_name}"
+    )
+    result = requests.get(url)
+    assert result.text == f"Hello, {first_name}!"
 
 
 def test_apigw_call_api_with_aws_endpoint_url():
@@ -2218,8 +2179,10 @@ def test_rest_api_multi_region(method, url_function):
 @pytest.mark.parametrize("method", ["GET", "POST"])
 @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
 @pytest.mark.parametrize("passthrough_behaviour", ["WHEN_NO_MATCH", "NEVER", "WHEN_NO_TEMPLATES"])
-def test_mock_integration_response(apigateway_client, method, url_function, passthrough_behaviour):
-    api_id, _, root_resource_id = create_rest_api(apigateway_client, name="mock-api")
+def test_mock_integration_response(
+    apigateway_client, method, url_function, passthrough_behaviour, create_rest_apigw
+):
+    api_id, _, root_resource_id = create_rest_apigw(name="mock-api")
     resource_id, _ = create_rest_resource(
         apigateway_client, restApiId=api_id, parentId=root_resource_id, pathPart="{id}"
     )
@@ -2269,23 +2232,16 @@ def test_mock_integration_response(apigateway_client, method, url_function, pass
     assert result.status_code == 200
     assert to_str(result.content) == '{"statusCode": 200, "id": 42}'
 
-    delete_rest_api(apigateway_client, restApiId=api_id)
 
-
-def test_tag_api():
-    client = aws_stack.connect_to_service("apigateway")
+def test_tag_api(apigateway_client, create_rest_apigw):
     api_name = f"api-{short_uid()}"
     tags = {"foo": "bar"}
 
     # add resource tags
-    result = client.create_rest_api(name=api_name)
-    api_id = result["id"]
+    api_id, _, _ = create_rest_apigw(name=api_name)
     api_arn = aws_stack.apigateway_restapi_arn(api_id=api_id)
-    client.tag_resource(resourceArn=api_arn, tags=tags)
+    apigateway_client.tag_resource(resourceArn=api_arn, tags=tags)
 
     # receive and assert tags
-    tags_saved = client.get_tags(resourceArn=api_arn)["tags"]
+    tags_saved = apigateway_client.get_tags(resourceArn=api_arn)["tags"]
     assert tags == tags_saved
-
-    # clean up
-    client.delete_rest_api(restApiId=api_id)

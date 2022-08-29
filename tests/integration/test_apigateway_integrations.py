@@ -8,7 +8,6 @@ from localstack.utils.strings import short_uid
 from localstack.utils.testutil import create_lambda_function
 from tests.integration.apigateway_fixtures import (
     api_invoke_url,
-    create_rest_api,
     create_rest_api_integration,
     create_rest_resource,
     create_rest_resource_method,
@@ -17,12 +16,8 @@ from tests.integration.awslambda.test_lambda import TEST_LAMBDA_HELLO_WORLD
 
 
 @pytest.mark.skip_offline
-def test_http_integration(apigateway_client):
-    response = apigateway_client.create_rest_api(name="my_api", description="this is my api")
-    api_id = response["id"]
-
-    resources = apigateway_client.get_resources(restApiId=api_id)
-    root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
+def test_http_integration(apigateway_client, create_rest_apigw):
+    api_id, _, root_id = create_rest_apigw(name="my_api", description="this is my api")
 
     apigateway_client.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="none"
@@ -50,7 +45,7 @@ def test_http_integration(apigateway_client):
     assert response.status_code == 200
 
 
-def test_lambda_aws_integration(apigateway_client):
+def test_lambda_aws_integration(apigateway_client, create_rest_apigw):
     fn_name = f"test-{short_uid()}"
     create_lambda_function(
         func_name=fn_name,
@@ -60,7 +55,7 @@ def test_lambda_aws_integration(apigateway_client):
     )
     lambda_arn = aws_stack.lambda_function_arn(fn_name)
 
-    api_id, _, root = create_rest_api(apigateway_client, name="aws lambda api")
+    api_id, _, root = create_rest_apigw(name="aws lambda api")
     resource_id, _ = create_rest_resource(
         apigateway_client, restApiId=api_id, parentId=root, pathPart="test"
     )
