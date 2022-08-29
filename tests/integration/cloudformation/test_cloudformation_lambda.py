@@ -7,6 +7,7 @@ import pytest
 from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.utils.common import short_uid, to_str
 from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.http import safe_requests
 from localstack.utils.sync import retry
 from localstack.utils.testutil import get_lambda_log_events
 
@@ -144,3 +145,66 @@ def test_lambda_w_dynamodb_event_filter(
     finally:
         # cleanup
         cleanup_stacks([stack_name])
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..Metadata",
+        "$..DriftInformation",
+        "$..Type",
+        "$..Message",
+        "$..access-control-allow-headers",
+        "$..access-control-allow-methods",
+        "$..access-control-allow-origin",
+        "$..access-control-expose-headers",
+        "$..server",
+        "$..content-length",
+    ]
+)
+def test_cfn_function_url(deploy_cfn_template, cfn_client, lambda_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+
+    deploy = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/lambda_url.yaml")
+    )
+
+    url_logical_resource_id = "UrlD4FAABD0"
+    snapshot.add_transformer(
+        snapshot.transform.regex(url_logical_resource_id, "<url_logical_resource_id>")
+    )
+    snapshot.add_transformer(
+        snapshot.transform.key_value(
+            "FunctionUrl",
+        )
+    )
+    snapshot.add_transformer(
+        snapshot.transform.key_value("x-amzn-trace-id", reference_replacement=False)
+    )
+    snapshot.add_transformer(snapshot.transform.key_value("date", reference_replacement=False))
+
+    url_resource = cfn_client.describe_stack_resource(
+        StackName=deploy.stack_name, LogicalResourceId=url_logical_resource_id
+    )
+    snapshot.match("url_resource", url_resource)
+
+    url_config = lambda_client.get_function_url_config(FunctionName=deploy.outputs["LambdaName"])
+    snapshot.match("url_config", url_config)
+
+    with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+        lambda_client.get_function_url_config(
+            FunctionName=deploy.outputs["LambdaName"], Qualifier="unknownalias"
+        )
+
+    snapshot.match("exception_url_config_nonexistent_version", e.value.response)
+
+    url_config_arn = lambda_client.get_function_url_config(FunctionName=deploy.outputs["LambdaArn"])
+    snapshot.match("url_config_arn", url_config_arn)
+
+    response = safe_requests.get(deploy.outputs["LambdaUrl"])
+    assert response.ok
+    assert response.json() == {"hello": "world"}
+
+    lowered_headers = {k.lower(): v for k, v in response.headers.items()}
+    snapshot.match("response_headers", lowered_headers)
