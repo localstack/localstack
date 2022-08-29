@@ -1100,5 +1100,20 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_copy_md5": {
+    "recorded-date": "29-08-2022, 12:07:36",
+    "recorded-content": {
+      "copy-obj": {
+        "CopyObjectResult": {
+          "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+          "LastModified": "datetime"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

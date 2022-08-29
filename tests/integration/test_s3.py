@@ -110,41 +110,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_s3_copy_md5(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
-
-        # put object
-        src_key = "src"
-        client.put_object(Bucket=bucket_name, Key=src_key, Body="something")
-
-        # copy object
-        dest_key = "dest"
-        response = client.copy_object(
-            Bucket=bucket_name,
-            CopySource={"Bucket": bucket_name, "Key": src_key},
-            Key=dest_key,
-        )
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-
-        # Create copy object to try to match s3a setting Content-MD5
-        dest_key2 = "dest"
-        url = client.generate_presigned_url(
-            "copy_object",
-            Params={
-                "Bucket": bucket_name,
-                "CopySource": {"Bucket": bucket_name, "Key": src_key},
-                "Key": dest_key2,
-            },
-        )
-
-        request_response = requests.put(url, verify=False)
-        self.assertEqual(200, request_response.status_code)
-
-        # Cleanup
-        self._delete_bucket(bucket_name, [src_key, dest_key, dest_key2])
-
     def test_s3_invalid_content_md5(self):
         bucket_name = "test-bucket-%s" % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)

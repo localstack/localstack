@@ -1529,6 +1529,33 @@ class TestS3PresignedUrl:
         possible_date_formats = ["2015-10-21T07:28:00Z", expiry_date]
         assert headers["expires"] in possible_date_formats
 
+    def test_s3_copy_md5(self, s3_client, s3_bucket, snapshot):
+        src_key = "src"
+        s3_client.put_object(Bucket=s3_bucket, Key=src_key, Body="something")
+
+        # copy object
+        dest_key = "dest"
+        response = s3_client.copy_object(
+            Bucket=s3_bucket,
+            CopySource={"Bucket": s3_bucket, "Key": src_key},
+            Key=dest_key,
+        )
+        snapshot.match("copy-obj", response)
+
+        # Create copy object to try to match s3a setting Content-MD5
+        dest_key2 = "dest"
+        url = s3_client.generate_presigned_url(
+            "copy_object",
+            Params={
+                "Bucket": s3_bucket,
+                "CopySource": {"Bucket": s3_bucket, "Key": src_key},
+                "Key": dest_key2,
+            },
+        )
+
+        request_response = requests.put(url, verify=False)
+        assert request_response.status_code == 200
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
