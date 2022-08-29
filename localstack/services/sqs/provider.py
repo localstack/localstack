@@ -21,6 +21,7 @@ from localstack.aws.api.sqs import (
     ActionNameList,
     AttributeNameList,
     AWSAccountIdList,
+    BatchRequestTooLong,
     BatchEntryIdsNotDistinct,
     BatchResultErrorEntry,
     BoxedInteger,
@@ -157,8 +158,8 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
 
 def check_message_size(message_body: str, max_message_size: int):
     # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
-    error = "InvalidParameterValue. One or more parameters are invalid. "
-    error += "Reason: Message must be shorter than 262144 bytes."
+    error = "One or more parameters are invalid. "
+    error += f"Reason: Message must be shorter than {max_message_size} bytes."
 
     # must encode as utf8 to get correct bytes with len
     if len(message_body.encode("utf8")) > max_message_size:
@@ -1198,18 +1199,17 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         successful = []
         failed = []
-        batch_message_size = 0
-        max_message_size = queue.maximum_message_size
 
         with queue.mutex:
+            batch_message_size = 0
             for entry in entries:
                 try:
                     # must convert to unicode to get actual bytes
                     batch_message_size += len(entry.get("MessageBody").encode("utf8"))
-                    if batch_message_size > max_message_size:
-                        error = "InvalidParameterValue. One or more parameters are invalid. "
-                        error += "Reason: Message must be shorter than 262144 bytes."
-                        raise InvalidParameterValue(error)
+                    if batch_message_size > DEFAULT_MAXIMUM_MESSAGE_SIZE:
+                        error = f"Batch requests cannot be longer than {DEFAULT_MAXIMUM_MESSAGE_SIZE} bytes."
+                        error += f" You have sent {batch_message_size} bytes."
+                        raise BatchRequestTooLong(error)
 
                     queue_item = self._put_message(
                         queue,
