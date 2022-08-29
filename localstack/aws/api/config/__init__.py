@@ -69,6 +69,8 @@ ResourceTypeString = str
 RetentionConfigurationName = str
 RetentionPeriodInDays = int
 RuleLimit = int
+SSMDocumentName = str
+SSMDocumentVersion = str
 SchemaVersionId = str
 StackArn = str
 String = str
@@ -1194,6 +1196,11 @@ class ConformancePackComplianceSummary(TypedDict, total=False):
 ConformancePackComplianceSummaryList = List[ConformancePackComplianceSummary]
 
 
+class TemplateSSMDocumentDetails(TypedDict, total=False):
+    DocumentName: SSMDocumentName
+    DocumentVersion: Optional[SSMDocumentVersion]
+
+
 class ConformancePackInputParameter(TypedDict, total=False):
     ParameterName: ParameterName
     ParameterValue: ParameterValue
@@ -1211,6 +1218,7 @@ class ConformancePackDetail(TypedDict, total=False):
     ConformancePackInputParameters: Optional[ConformancePackInputParameters]
     LastUpdateRequestedTime: Optional[Date]
     CreatedBy: Optional[StringWithCharLimit256]
+    TemplateSSMDocumentDetails: Optional[TemplateSSMDocumentDetails]
 
 
 ConformancePackDetailList = List[ConformancePackDetail]
@@ -2342,6 +2350,7 @@ class PutConformancePackRequest(ServiceRequest):
     DeliveryS3Bucket: Optional[DeliveryS3Bucket]
     DeliveryS3KeyPrefix: Optional[DeliveryS3KeyPrefix]
     ConformancePackInputParameters: Optional[ConformancePackInputParameters]
+    TemplateSSMDocumentDetails: Optional[TemplateSSMDocumentDetails]
 
 
 class PutConformancePackResponse(TypedDict, total=False):
@@ -3153,6 +3162,7 @@ class ConfigApi:
         delivery_s3_bucket: DeliveryS3Bucket = None,
         delivery_s3_key_prefix: DeliveryS3KeyPrefix = None,
         conformance_pack_input_parameters: ConformancePackInputParameters = None,
+        template_ssm_document_details: TemplateSSMDocumentDetails = None,
     ) -> PutConformancePackResponse:
         raise NotImplementedError
 
