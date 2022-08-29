@@ -92,8 +92,6 @@ TAG ?= $(IMAGE_NAME_FULL)
 DOCKER_BUILD_FLAGS ?= "--load"
 DOCKERFILE ?= "./Dockerfile"
 docker-build: 			  ## Build Docker image
-	# prepare
-	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
 	# start build
 	# --add-host: Fix for Centos host OS
 	# --build-arg BUILDKIT_INLINE_CACHE=1: Instruct buildkit to inline the caching information into the image

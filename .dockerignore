@@ -2,9 +2,6 @@
 .venv*
 
 .filesystem
-# these files are required to be in the build context (see Dockerfile)
-!.filesystem/usr/lib/localstack/stepfunctions
-!.filesystem/usr/lib/localstack/localstack-*.jar
 
 # ignore files generated in CI build
 tests/integration/**/node_modules

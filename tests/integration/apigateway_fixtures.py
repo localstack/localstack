@@ -49,9 +49,24 @@ def create_rest_api(apigateway_client, **kwargs):
     return response.get("id"), response.get("name"), root_id
 
 
+def import_rest_api(apigateway_client, **kwargs):
+    response = apigateway_client.import_rest_api(**kwargs)
+    assert_response_is_201(response)
+    resources = apigateway_client.get_resources(restApiId=response.get("id"))
+    root_id = next(item for item in resources["items"] if item["path"] == "/")["id"]
+    return response.get("id"), response.get("name"), root_id
+
+
+def get_rest_api(apigateway_client, **kwargs):
+    response = apigateway_client.get_rest_api(**kwargs)
+    assert_response_is_200(response)
+    return response.get("id"), response.get("name")
+
+
 def get_rest_apis(apigateway_client, **kwargs):
     response = apigateway_client.get_rest_apis(**kwargs)
     assert_response_is_200(response)
+    return response.get("items")
 
 
 def delete_rest_api(apigateway_client, **kwargs):
