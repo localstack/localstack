@@ -192,7 +192,25 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
-    def test_call_lists_secrets_multiple_times(self, sm_client, sm_snapshot):
+    def test_call_lists_secrets_multiple_times(self, sm_client):
+        secret_name = f"s-{short_uid()}"
+        sm_client.create_secret(
+            Name=secret_name,
+            SecretString="my_secret",
+            Description="testing creation of secrets",
+        )
+
+        # call list_secrets multiple times
+        for i in range(3):
+            rs = sm_client.list_secrets()
+            secrets = [secret for secret in rs["SecretList"] if secret["Name"] == secret_name]
+            assert 1 == len(secrets)
+
+        # clean up
+        sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+
+    @pytest.mark.skip("In CI transformers are not applied for this test.")
+    def test_call_lists_secrets_multiple_times_snapshots(self, sm_client, sm_snapshot):
         secret_name = f"s-{short_uid()}"
         create_secret_rs_1: CreateSecretResponse = self._typed_response_of(
             typ=CreateSecretResponse,
@@ -223,7 +241,34 @@ class TestSecretsManager:
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
-    def test_create_multi_secrets(self, sm_client, sm_snapshot):
+    def test_create_multi_secrets(self, sm_client):
+        secret_names = [short_uid(), short_uid(), short_uid()]
+        arns = []
+        for secret_name in secret_names:
+            rs = sm_client.create_secret(
+                Name=secret_name,
+                SecretString="my_secret_{}".format(secret_name),
+                Description="testing creation of secrets",
+            )
+            arns.append(rs["ARN"])
+
+        rs = sm_client.list_secrets()
+        secrets = {
+            secret["Name"]: secret["ARN"]
+            for secret in rs["SecretList"]
+            if secret["Name"] in secret_names
+        }
+
+        assert len(secrets.keys()) == len(secret_names)
+        for arn in arns:
+            assert arn in secrets.values()
+
+        # clean up
+        for secret_name in secret_names:
+            sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+
+    @pytest.mark.skip("In CI transformers are not applied for this test.")
+    def test_create_multi_secrets_snapshot(self, sm_client, sm_snapshot):
         secret_names = [short_uid() for _ in range(3)]
         for i, secret_name in enumerate(secret_names):
             create_secret_rs_1: CreateSecretResponse = self._typed_response_of(
