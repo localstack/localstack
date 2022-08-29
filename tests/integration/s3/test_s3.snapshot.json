@@ -1078,5 +1078,27 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_delete_non_existing_keys": {
+    "recorded-date": "29-08-2022, 10:23:50",
+    "recorded-content": {
+      "deleted-resp": {
+        "Deleted": [
+          {
+            "Key": "dummy1"
+          },
+          {
+            "Key": "dummy2"
+          },
+          {
+            "Key": "test-key-nonexistent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

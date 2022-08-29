@@ -1035,6 +1035,7 @@ class TestS3:
             s3_client.get_bucket_acl(Bucket="bucket-not-exists")
         snapshot.match("get-bucket-not-exists", e.value.response)
 
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=["$..VersionId", "$..ContentLanguage", "$..Error.RequestID"]
     )
@@ -1763,4 +1764,5 @@ def _bucket_url_vhost(bucket_name: str, region: str = "") -> str:
         else:
             return f"https://{bucket_name}.s3.{region}.amazonaws.com"
     s3_edge_url = config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)
+    # todo might add the region here
     return s3_edge_url.replace("://s3.", f"://{bucket_name}.s3.")
