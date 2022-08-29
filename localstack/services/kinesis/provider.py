@@ -49,8 +49,10 @@ from localstack.constants import LOCALHOST
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
+from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
+MAX_SUBSCRIPTION_SECONDS = 300
 
 
 class KinesisBackend(RegionBackend):
@@ -116,8 +118,10 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         def event_generator():
             shard_iterator = initial_shard_iterator
             last_sequence_number = starting_sequence_number
-            # TODO: find better way to run loop up to max 5 minutes (until connection terminates)!
-            for i in range(5 * 60):
+
+            maximum_duration_subscription_timestamp = now_utc() + MAX_SUBSCRIPTION_SECONDS
+
+            while now_utc() < maximum_duration_subscription_timestamp:
                 try:
                     result = kinesis.get_records(ShardIterator=shard_iterator)
                 except Exception as e:
@@ -131,8 +135,10 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
                 shard_iterator = result.get("NextShardIterator")
                 records = result.get("Records", [])
                 if not records:
-                    time.sleep(1)
-                    continue
+                    # On AWS there is *at least* 1 event every 5 seconds
+                    # but this is not possible in this structure.
+                    # In order to avoid a 5-second blocking call, we make the compromise of 3 seconds.
+                    time.sleep(3)
 
                 yield SubscribeToShardEventStream(
                     SubscribeToShardEvent=SubscribeToShardEvent(
