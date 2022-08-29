@@ -324,12 +324,11 @@ def route53_client() -> "Route53Client":
 
 @pytest.fixture
 def dynamodb_wait_for_table_active(dynamodb_client):
-    def wait_for_table_active(table_name: str):
+    def wait_for_table_active(table_name: str, client=None):
         def wait():
-            return (
-                dynamodb_client.describe_table(TableName=table_name)["Table"]["TableStatus"]
-                == "ACTIVE"
-            )
+            return (client or dynamodb_client).describe_table(TableName=table_name)["Table"][
+                "TableStatus"
+            ] == "ACTIVE"
 
         poll_condition(wait, timeout=30)
 
