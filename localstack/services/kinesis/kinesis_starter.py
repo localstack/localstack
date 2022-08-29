@@ -81,3 +81,7 @@ def is_kinesis_running() -> bool:
     if _server is None:
         return False
     return _server.is_running()
+
+
+def get_server():
+    return _server

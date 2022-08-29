@@ -91,7 +91,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
 
     def get_forward_url(self):
         """Return the URL of the backend Kinesis server to forward requests to"""
-        return f"http://{LOCALHOST}:{starter._server.port}"
+        return f"http://{LOCALHOST}:{starter.get_server().port}"
 
     def subscribe_to_shard(
         self,
