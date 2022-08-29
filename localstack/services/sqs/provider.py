@@ -1565,7 +1565,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def _assert_valid_batch_size(self, batch: List, max_message_size: int):
         batch_message_size = sum([len(entry.get("MessageBody").encode("utf8")) for entry in batch])
         if batch_message_size > max_message_size:
-            error = f"Batch requests cannot be longer than {DEFAULT_MAXIMUM_MESSAGE_SIZE} bytes."
+            error = f"Batch requests cannot be longer than {max_message_size} bytes."
             error += f" You have sent {batch_message_size} bytes."
             raise BatchRequestTooLong(error)
 
