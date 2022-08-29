@@ -1231,5 +1231,30 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_set_external_hostname": {
+    "recorded-date": "29-08-2022, 15:12:54",
+    "recorded-content": {
+      "multipart-upload": {
+        "Bucket": "<bucket:1>",
+        "ETag": "\"b972025bc34adf8d76d6d51e93c035cc-1\"",
+        "Key": "test.file",
+        "Location": "<location:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object": {
+        "Bucket": "<bucket:1>",
+        "ETag": "\"b972025bc34adf8d76d6d51e93c035cc-1\"",
+        "Key": "test.file",
+        "Location": "<location:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -35,7 +35,6 @@ from localstack.utils.common import (
     get_service_protocol,
     new_tmp_dir,
     run,
-    safe_requests,
     short_uid,
     to_bytes,
     to_str,
@@ -109,42 +108,6 @@ class TestS3(unittest.TestCase):
     @property
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
-
-    def test_set_external_hostname(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        key = "test.file"
-        hostname_before = config.HOSTNAME_EXTERNAL
-        config.HOSTNAME_EXTERNAL = "foobar"
-        try:
-            content = "test content 123"
-            acl = "public-read"
-            self.s3_client.create_bucket(Bucket=bucket_name)
-            # upload file
-            response = self._perform_multipart_upload(
-                bucket=bucket_name, key=key, data=content, acl=acl
-            )
-            expected_url = "%s://%s:%s/%s/%s" % (
-                get_service_protocol(),
-                config.HOSTNAME_EXTERNAL,
-                config.service_port("s3"),
-                bucket_name,
-                key,
-            )
-            self.assertEqual(expected_url, response["Location"])
-            # fix object ACL - currently not directly support for multipart uploads
-            self.s3_client.put_object_acl(Bucket=bucket_name, Key=key, ACL=acl)
-            # download object via API
-            downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=key)
-            self.assertEqual(content, to_str(downloaded_object["Body"].read()))
-            # download object directly from download link
-            download_url = response["Location"].replace(
-                "%s:" % config.HOSTNAME_EXTERNAL, "localhost:"
-            )
-            response = safe_requests.get(download_url)
-            self.assertEqual(200, response.status_code)
-            self.assertEqual(content, to_str(response.content))
-        finally:
-            config.HOSTNAME_EXTERNAL = hostname_before
 
     def test_s3_static_website_hosting(self):
 

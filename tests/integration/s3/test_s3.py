@@ -1184,6 +1184,42 @@ class TestS3:
         # etags should be different
         assert copy_etag != multipart_etag
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId"])
+    def test_set_external_hostname(
+        self, s3_client, s3_bucket, s3_multipart_upload, monkeypatch, snapshot
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("Bucket"),
+            ]
+        )
+        monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", "foobar")
+        key = "test.file"
+        content = "test content 123"
+        acl = "public-read"
+        # upload file
+        response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content, acl=acl)
+        snapshot.match("multipart-upload", response)
+
+        if is_aws_cloud():  # todo: default addressing is vhost for AWS
+            expected_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
+        else:  # LS default is path addressing
+            expected_url = f"{_bucket_url(bucket_name=s3_bucket, localstack_host=config.HOSTNAME_EXTERNAL)}/{key}"
+        assert response["Location"] == expected_url
+
+        # download object via API
+        downloaded_object = s3_client.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-object", response)
+        assert content == to_str(downloaded_object["Body"].read())
+
+        # download object directly from download link
+        download_url = response["Location"].replace(f"{config.HOSTNAME_EXTERNAL}:", "localhost:")
+        response = requests.get(download_url)
+        assert response.status_code == 200
+        assert to_str(response.content) == content
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
@@ -1914,7 +1950,7 @@ def _anon_client(service: str):
     return aws_stack.create_external_boto_client(service, config=conf)
 
 
-def _bucket_url(bucket_name: str, region: str = "") -> str:
+def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
         region = config.DEFAULT_REGION
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
@@ -1922,10 +1958,10 @@ def _bucket_url(bucket_name: str, region: str = "") -> str:
             return f"https://s3.amazonaws.com/{bucket_name}"
         else:
             return f"http://s3.{region}.amazonaws.com/{bucket_name}"
-    return f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_name}"
+    return f"{config.get_edge_url(localstack_hostname=localstack_host or S3_VIRTUAL_HOSTNAME)}/{bucket_name}"
 
 
-def _bucket_url_vhost(bucket_name: str, region: str = "") -> str:
+def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
         region = config.DEFAULT_REGION
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
@@ -1933,6 +1969,7 @@ def _bucket_url_vhost(bucket_name: str, region: str = "") -> str:
             return f"https://{bucket_name}.s3.amazonaws.com"
         else:
             return f"https://{bucket_name}.s3.{region}.amazonaws.com"
-    s3_edge_url = config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)
+    host = localstack_host or S3_VIRTUAL_HOSTNAME
+    s3_edge_url = config.get_edge_url(localstack_hostname=host)
     # todo might add the region here
-    return s3_edge_url.replace("://s3.", f"://{bucket_name}.s3.")
+    return s3_edge_url.replace(f"://{host}", f"://{bucket_name}.{host}")
