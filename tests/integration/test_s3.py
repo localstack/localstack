@@ -110,33 +110,6 @@ class TestS3(unittest.TestCase):
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
-    def test_s3_upload_download_gzip(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        data = "1234567890 " * 100
-
-        # Write contents to memory rather than a file.
-        upload_file_object = BytesIO()
-        with gzip.GzipFile(fileobj=upload_file_object, mode="w") as filestream:
-            filestream.write(data.encode("utf-8"))
-
-        # Upload gzip
-        self.s3_client.put_object(
-            Bucket=bucket_name,
-            Key="test.gz",
-            ContentEncoding="gzip",
-            Body=upload_file_object.getvalue(),
-        )
-
-        # Download gzip
-        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key="test.gz")
-        download_file_object = BytesIO(downloaded_object["Body"].read())
-        with gzip.GzipFile(fileobj=download_file_object, mode="rb") as filestream:
-            downloaded_data = filestream.read().decode("utf-8")
-
-        self.assertEqual(data, downloaded_data)
-
     def test_multipart_copy_object_etag(self):
         bucket_name = "test-bucket-%s" % short_uid()
         key = "test.file"

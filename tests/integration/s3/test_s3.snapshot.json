@@ -1164,5 +1164,31 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_upload_download_gzip": {
+    "recorded-date": "29-08-2022, 12:18:22",
+    "recorded-content": {
+      "put-object": {
+        "ETag": "\"f84006d978dfac9da356af8c41b83150\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "",
+        "ContentEncoding": "gzip",
+        "ContentLength": 41,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"f84006d978dfac9da356af8c41b83150\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

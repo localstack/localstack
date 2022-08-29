@@ -1117,6 +1117,35 @@ class TestS3:
                 )
             snapshot.match(f"md5-error-{index}", e.value.response)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage", "$..ETag"])
+    def test_s3_upload_download_gzip(self, s3_client, s3_bucket, snapshot):
+        data = "1234567890 " * 100
+
+        # Write contents to memory rather than a file.
+        upload_file_object = BytesIO()
+        with gzip.GzipFile(fileobj=upload_file_object, mode="w") as filestream:
+            filestream.write(data.encode("utf-8"))
+
+        # Upload gzip
+        response = s3_client.put_object(
+            Bucket=s3_bucket,
+            Key="test.gz",
+            ContentEncoding="gzip",
+            Body=upload_file_object.getvalue(),
+        )
+        snapshot.match("put-object", response)
+        # todo: check why ETag is different
+
+        # Download gzip
+        downloaded_object = s3_client.get_object(Bucket=s3_bucket, Key="test.gz")
+        snapshot.match("get-object", downloaded_object)
+        download_file_object = BytesIO(downloaded_object["Body"].read())
+        with gzip.GzipFile(fileobj=download_file_object, mode="rb") as filestream:
+            downloaded_data = filestream.read().decode("utf-8")
+
+        assert downloaded_data == data
+
 
 class TestS3TerraformRawRequests:
     @pytest.mark.only_localstack
