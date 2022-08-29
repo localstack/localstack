@@ -910,7 +910,7 @@ def execute_resource_action(resource_id: str, stack, action_name: str):
 
         if "result_handler" in func and executed:
             LOG.debug(f"Executing callback method for {resource_type}:{resource_id}")
-            func["callback"](result, resource_id, resources, resource_type)
+            func["result_handler"](result, resource_id, resources, resource_type)
 
     return (results or [None])[0]
 
