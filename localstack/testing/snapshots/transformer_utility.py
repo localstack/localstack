@@ -131,6 +131,24 @@ class TransformerUtility:
         return [TransformerUtility.key_value("UserName"), TransformerUtility.key_value("UserId")]
 
     @staticmethod
+    def transcribe_api():
+        """
+        :return: array with Transformers, for iam api.
+        """
+        return [
+            RegexTransformer(
+                r"([a-zA-Z0-9-_.]*)?\/test-bucket-([a-zA-Z0-9-_.]*)?", replacement="<test-bucket>"
+            ),
+            TransformerUtility.key_value("TranscriptionJobName", "transcription-job"),
+            TransformerUtility.jsonpath(
+                jsonpath="$..Transcript..TranscriptFileUri",
+                value_replacement="<transcript-file-uri>",
+                reference_replacement=False,
+            ),
+            TransformerUtility.key_value("NextToken", "token", reference_replacement=False),
+        ]
+
+    @staticmethod
     def s3_api():
         """
         :return: array with Transformers, for s3 api.

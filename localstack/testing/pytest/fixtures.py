@@ -66,6 +66,7 @@ if TYPE_CHECKING:
     from mypy_boto3_ssm import SSMClient
     from mypy_boto3_stepfunctions import SFNClient
     from mypy_boto3_sts import STSClient
+    from mypy_boto3_transcribe import TranscribeClient
 
 LOG = logging.getLogger(__name__)
 
@@ -320,6 +321,11 @@ def rgsa_client() -> "ResourceGroupsTaggingAPIClient":
 @pytest.fixture(scope="class")
 def route53_client() -> "Route53Client":
     return _client("route53")
+
+
+@pytest.fixture(scope="class")
+def transcribe_client() -> "TranscribeClient":
+    return _client("transcribe")
 
 
 @pytest.fixture
@@ -666,6 +672,30 @@ def route53_hosted_zone(route53_client):
             route53_client.delete_hosted_zone(Id=zone)
         except Exception as e:
             LOG.debug(f"error cleaning up route53 HostedZone {zone}: {e}")
+
+
+@pytest.fixture
+def transcribe_create_job(transcribe_client, s3_client, s3_bucket):
+    def _create_job(**kwargs):
+        if "TranscriptionJobName" not in kwargs:
+            kwargs["TranscriptionJobName"] = f"test-transcribe-{short_uid()}"
+
+        if "LanguageCode" not in kwargs:
+            kwargs["LanguageCode"] = "en-GB"
+
+        if "Media" not in kwargs:
+            test_key = "test-clip.wav"
+            kwargs["Media"] = {"MediaFileUri": f"s3://{s3_bucket}/{test_key}"}
+
+        # upload test wav to a s3 bucket
+        with open(kwargs["test_file"], "rb") as f:
+            s3_client.upload_fileobj(f, s3_bucket, test_key)
+        kwargs.pop("test_file")
+
+        transcribe_client.start_transcription_job(**kwargs)
+        return kwargs["TranscriptionJobName"]
+
+    yield _create_job
 
 
 @pytest.fixture
