@@ -1,9 +1,6 @@
 import json
-import time
 
 import pytest
-
-from localstack.testing.aws.util import is_aws_cloud
 
 
 # TODO fix service so it returns the stream mode
@@ -37,9 +34,6 @@ def test_stream_creation(kinesis_client, deploy_cfn_template, snapshot):
 
     outputs = deploy_cfn_template(template=template).outputs
     snapshot.match("stack_output", outputs)
-
-    if not is_aws_cloud():
-        time.sleep(1)
 
     stream_name = outputs.get("StreamNameFromRef")
     description = kinesis_client.describe_stream(StreamName=stream_name)

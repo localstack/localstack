@@ -1,3 +1,5 @@
+import time
+
 from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
@@ -34,7 +36,7 @@ class KinesisStream(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         if attribute == "Ref":
             return self.props.get("Name")
-        return aws_stack.kinesis_stream_arn(self.props.get("Name"))
+        return self.physical_resource_id
 
     def fetch_state(self, stack_name, resources):
         stream_name = self.resolve_refs_recursively(stack_name, self.props["Name"], resources)
@@ -54,15 +56,27 @@ class KinesisStream(GenericBaseModel):
         def get_delete_params(params, **kwargs):
             return {"StreamName": params["Name"], "EnforceConsumerDeletion": True}
 
-        def _store_arn_and_wait_until_ready():
-            pass
+        def _store_arn_and_wait_until_ready(result, resource_id, resources, resource_type):
+            client = aws_stack.connect_to_service("kinesis")
+            stream_name = resources[resource_id]["Properties"]["Name"]
+
+            description = client.describe_stream(StreamName=stream_name)
+
+            resources[resource_id]["PhysicalResourceId"] = description["StreamDescription"][
+                "StreamARN"
+            ]
+            latest_status = description["StreamDescription"]["StreamStatus"]
+            while latest_status == "CREATING":
+                time.sleep(0.5)
+                description = client.describe_stream(StreamName=stream_name)
+                latest_status = description["StreamDescription"]["StreamStatus"]
 
         return {
             "create": {
                 "function": "create_stream",
                 "parameters": {"StreamName": "Name", "ShardCount": "ShardCount"},
                 "defaults": {"ShardCount": 1},
-                "result_handler": _store_arn_and_wait_until_ready
+                "result_handler": _store_arn_and_wait_until_ready,
             },
             "delete": {"function": "delete_stream", "parameters": get_delete_params},
         }
