@@ -677,6 +677,8 @@ def route53_hosted_zone(route53_client):
 @pytest.fixture
 def transcribe_create_job(transcribe_client, s3_client, s3_bucket):
     def _create_job(**kwargs):
+        test_key = "test-clip.wav"
+
         if "TranscriptionJobName" not in kwargs:
             kwargs["TranscriptionJobName"] = f"test-transcribe-{short_uid()}"
 
@@ -684,7 +686,6 @@ def transcribe_create_job(transcribe_client, s3_client, s3_bucket):
             kwargs["LanguageCode"] = "en-GB"
 
         if "Media" not in kwargs:
-            test_key = "test-clip.wav"
             kwargs["Media"] = {"MediaFileUri": f"s3://{s3_bucket}/{test_key}"}
 
         # upload test wav to a s3 bucket
