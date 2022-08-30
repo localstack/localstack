@@ -35,10 +35,16 @@ def cli():
     setup_logging()
 
 
-def _do_install(pkg):
+def _do_install(pkg, version):
     console.print(f"installing... [bold]{pkg}[/bold]")
     try:
-        InstallerManager().get_installers()[pkg]()
+        package_installer = InstallerManager().get_installers()[pkg]
+        if callable(package_installer):
+            # old way
+            package_installer()
+        else:
+            # new way
+            package_installer.get_installer(version=version).install()
         console.print(f"[green]installed[/green] [bold]{pkg}[/bold]")
     except Exception as e:
         console.print(f"[red]error[/red] installing {pkg}: {e}")
@@ -54,7 +60,14 @@ def _do_install(pkg):
     required=False,
     help="how many installers to run in parallel processes",
 )
-def install(package, parallel):
+@click.option(
+    "--version",
+    type=str,
+    default=None,
+    required=False,
+    help="WIP!! which version you want to install, just for testing!",
+)
+def install(package, parallel, version):
     """
     Install one or more packages.
     """
@@ -71,6 +84,10 @@ def install(package, parallel):
 
     # collect installers and install in parallel:
     try:
+        if version:
+            # TODO: this is just to test installing 1 package with a version
+            for pkg in package:
+                _do_install(pkg, version)
         with Pool(processes=parallel) as pool:
             pool.map(_do_install, package)
     except Exception:

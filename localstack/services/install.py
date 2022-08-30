@@ -12,6 +12,7 @@ import sys
 import tempfile
 import threading
 import time
+from abc import ABC
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple, Union
 
@@ -846,7 +847,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("dynamodb-local", install_dynamodb_local),
             ("elasticmq", install_elasticmq),
             ("elasticsearch", install_elasticsearch),
-            ("opensearch", install_opensearch),
+            ("opensearch", OpensearchPackage()),
             ("kinesalite", install_kinesalite),
             ("kinesis-mock", install_kinesis_mock),
             ("lambda-java-libs", install_lambda_java_libs),
@@ -878,6 +879,47 @@ class InstallerManager:
             raise ValueError("no installer for package %s" % package)
 
         return installer(*args, **kwargs)
+
+
+class Package(ABC):
+    def __init__(self):
+        self.default_version = None
+
+    def _do_get_installer(self, version):
+        raise NotImplementedError()
+
+    def get_installer(self, version=None):
+        if not version:
+            version = self.default_version
+        return self._do_get_installer(version)
+
+
+class PackageInstaller(ABC):
+    def install(self):
+        raise NotImplementedError()
+
+
+class OpensearchPackage(Package):
+    def __init__(self):
+        super().__init__()
+        self.installers = dict[str, PackageInstaller]()
+
+    def _do_get_installer(self, version):
+        installer = installers.get(version)
+        if not installer:
+            installers[version] = installer = OpensearchPackageInstaller(version)
+        return installer
+
+
+class OpensearchPackageInstaller(PackageInstaller):
+    def __init__(self, version=None, default_version=None):
+        if not default_version:
+            default_version = OPENSEARCH_DEFAULT_VERSION
+        self.default_version = default_version
+        self.version = version
+
+    def install(self):
+        install_opensearch(self.version)
 
 
 def main():
