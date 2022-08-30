@@ -9,7 +9,6 @@ from moto.events.models import events_backends
 
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.utils import collections
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (
     connect_to_service,
     extract_account_id_from_arn,
@@ -41,7 +40,7 @@ def send_event_to_target(
         target = {}
 
     if ":lambda:" in target_arn:
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = connect_to_service("lambda")
         lambda_client.invoke(
             FunctionName=target_arn,
             Payload=to_bytes(json.dumps(event)),

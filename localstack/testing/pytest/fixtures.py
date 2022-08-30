@@ -1540,6 +1540,11 @@ def cleanups(ec2_client):
             LOG.warning("Failed to execute cleanup", exc_info=e)
 
 
+@pytest.fixture
+def account_id(sts_client):
+    return sts_client.get_caller_identity()["Account"]
+
+
 @pytest.hookimpl
 def pytest_configure(config: Config):
     # TODO: migrate towards "whitebox" or similar structure
