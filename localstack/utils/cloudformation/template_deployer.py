@@ -885,13 +885,9 @@ def execute_resource_action(resource_id: str, stack, action_name: str):
     func_details = func_details if isinstance(func_details, list) else [func_details]
     results = []
     for func in func_details:
-<<<<<<< HEAD
-        if callable(func.get("function")):
-=======
         result = None
         executed = False
-        if callable(func["function"]):
->>>>>>> 04fbf180 (result handler for Kms Key)
+        if callable(func.get("function")):
             result = func["function"](resource_id, resources, resource_type, func, stack_name)
             results.append(result)
             executed = True
