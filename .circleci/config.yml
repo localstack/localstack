@@ -79,6 +79,8 @@ jobs:
   itest-lambda-docker:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      LOCALSTACK_API_KEY=test
     steps:
       - attach_workspace:
           at: /tmp/workspace
