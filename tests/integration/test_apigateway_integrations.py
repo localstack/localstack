@@ -113,7 +113,6 @@ def format_apigateway_url(api_id: str, region: str, stage: str, path: str):
         "$..headers.CloudFront-Viewer-Country",
         "$..headers.Connection",
         "$..headers.Host",
-        "$..headers.Remote-Addr",
         "$..headers.Via",
         "$..headers.X-Amz-Cf-Id",
         "$..headers.X-Amzn-Trace-Id",
@@ -123,7 +122,6 @@ def format_apigateway_url(api_id: str, region: str, stage: str, path: str):
         "$..headers.accept",
         "$..headers.accept-encoding",
         "$..headers.x-localstack-edge",
-        "$..headers.x-localstack-request-url",
         "$..headers.x-localstack-tgt-api",
         "$..multiValueHeaders.Accept",
         "$..multiValueHeaders.Accept-Encoding",
@@ -137,7 +135,6 @@ def format_apigateway_url(api_id: str, region: str, stage: str, path: str):
         "$..multiValueHeaders.CloudFront-Viewer-Country",
         "$..multiValueHeaders.Connection",
         "$..multiValueHeaders.Host",
-        "$..multiValueHeaders.Remote-Addr",
         "$..multiValueHeaders.Via",
         "$..multiValueHeaders.X-Amz-Cf-Id",
         "$..multiValueHeaders.X-Amzn-Trace-Id",
@@ -147,7 +144,6 @@ def format_apigateway_url(api_id: str, region: str, stage: str, path: str):
         "$..multiValueHeaders.accept",
         "$..multiValueHeaders.accept-encoding",
         "$..multiValueHeaders.x-localstack-edge",
-        "$..multiValueHeaders.x-localstack-request-url",
         "$..multiValueHeaders.x-localstack-tgt-api",
         "$..pathParameters",
         "$..requestContext.authorizer",
@@ -249,8 +245,11 @@ def test_lambda_proxy_integration(
         )
 
         def invoke_api(url):
+            # use test header with different casing to check if it is preserved in the proxy payload
             response = requests.get(
-                url, headers={"User-Agent": "python-requests/testing"}, verify=False
+                url,
+                headers={"User-Agent": "python-requests/testing", "tEsT-HEADeR": "aValUE"},
+                verify=False,
             )
             assert 200 == response.status_code
             return response

@@ -1,6 +1,6 @@
 {
   "tests/integration/test_apigateway_integrations.py::test_lambda_proxy_integration": {
-    "recorded-date": "18-08-2022, 17:30:18",
+    "recorded-date": "30-08-2022, 14:23:53",
     "recorded-content": {
       "rest-api-creation": {
         "ResponseMetadata": {
@@ -38,7 +38,8 @@
           "X-Amzn-Trace-Id": "<trace-id:1>",
           "X-Forwarded-For": "<source-ip:1>, <ip>",
           "X-Forwarded-Port": "443",
-          "X-Forwarded-Proto": "https"
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
         },
         "httpMethod": "GET",
         "isBase64Encoded": false,
@@ -93,6 +94,9 @@
           ],
           "X-Forwarded-Proto": [
             "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
           ]
         },
         "multiValueQueryStringParameters": null,
@@ -151,7 +155,8 @@
           "X-Amzn-Trace-Id": "<trace-id:2>",
           "X-Forwarded-For": "<source-ip:1>, <ip>",
           "X-Forwarded-Port": "443",
-          "X-Forwarded-Proto": "https"
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
         },
         "httpMethod": "GET",
         "isBase64Encoded": false,
@@ -206,6 +211,9 @@
           ],
           "X-Forwarded-Proto": [
             "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
           ]
         },
         "multiValueQueryStringParameters": null,
@@ -264,7 +272,8 @@
           "X-Amzn-Trace-Id": "<trace-id:3>",
           "X-Forwarded-For": "<source-ip:1>, <ip>",
           "X-Forwarded-Port": "443",
-          "X-Forwarded-Proto": "https"
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
         },
         "httpMethod": "GET",
         "isBase64Encoded": false,
@@ -319,6 +328,9 @@
           ],
           "X-Forwarded-Proto": [
             "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
           ]
         },
         "multiValueQueryStringParameters": {
@@ -383,7 +395,8 @@
           "X-Amzn-Trace-Id": "<trace-id:4>",
           "X-Forwarded-For": "<source-ip:1>, <ip>",
           "X-Forwarded-Port": "443",
-          "X-Forwarded-Proto": "https"
+          "X-Forwarded-Proto": "https",
+          "tEsT-HEADeR": "aValUE"
         },
         "httpMethod": "GET",
         "isBase64Encoded": false,
@@ -438,6 +451,9 @@
           ],
           "X-Forwarded-Proto": [
             "https"
+          ],
+          "tEsT-HEADeR": [
+            "aValUE"
           ]
         },
         "multiValueQueryStringParameters": {
