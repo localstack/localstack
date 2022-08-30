@@ -1540,7 +1540,7 @@ def cleanups(ec2_client):
             LOG.warning("Failed to execute cleanup", exc_info=e)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def account_id(sts_client):
     return sts_client.get_caller_identity()["Account"]
 
