@@ -1781,20 +1781,17 @@ class TestCloudFormation:
         new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name_new]
         assert len(new_role) == 1
 
+    @pytest.mark.aws_validated
     def test_cfn_with_multiple_route_tables(self, ec2_client, deploy_cfn_template):
-        resp = ec2_client.describe_vpcs()
-        # TODO: remove/change assertion, to make tests parallelizable!
-        vpcs_before = [vpc["VpcId"] for vpc in resp["Vpcs"]]
 
-        deploy_cfn_template(template_path=os.path.join(THIS_FOLDER, "templates/template36.yaml"))
+        result = deploy_cfn_template(
+            template_path=os.path.join(THIS_FOLDER, "templates/template36.yaml"), max_wait=180
+        )
+        vpc_id = result.outputs["VPC"]
 
-        resp = ec2_client.describe_vpcs()
-        vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
-        assert len(vpcs) == 1
-
-        resp = ec2_client.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpcs[0]]}])
-        # CloudFormation will create more than one route table 2 in template + default
-        assert len(resp["RouteTables"]) == 3
+        resp = ec2_client.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])
+        # 4 route tables being created (validated against AWS): 3 in template + 1 default = 4
+        assert len(resp["RouteTables"]) == 4
 
     def test_cfn_with_multiple_route_table_associations(self, ec2_client, deploy_cfn_template):
         stack = deploy_cfn_template(

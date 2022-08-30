@@ -23,10 +23,7 @@ from localstack.aws.api.logs import (
     PutLogEventsResponse,
     SequenceToken,
 )
-from localstack.aws.proxy import AwsApiListener
-from localstack.constants import APPLICATION_AMZ_JSON_1_1
-from localstack.services.messages import Request, Response
-from localstack.services.moto import MotoFallbackDispatcher, call_moto
+from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import is_number
@@ -73,22 +70,6 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
                                 "Unable to put metric data for matching CloudWatch log events", e
                             )
         return call_moto(context)
-
-
-class LogsAwsApiListener(AwsApiListener):
-    def __init__(self):
-        self.provider = self._create_provider()
-        super().__init__("logs", MotoFallbackDispatcher(self.provider))
-
-    def _create_provider(self):
-        return LogsProvider()
-
-    def request(self, request: Request) -> Response:
-        response = super().request(request)
-        # Fix Incorrect response content-type header from cloudwatch logs #1343.
-        # True for all logs api responses.
-        response.headers["content-type"] = APPLICATION_AMZ_JSON_1_1
-        return response
 
 
 def get_pattern_matcher(pattern: str) -> Callable[[str, Dict], bool]:

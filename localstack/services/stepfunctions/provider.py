@@ -9,23 +9,13 @@ from localstack.aws.api.stepfunctions import (
     LogLevel,
     StepfunctionsApi,
 )
-from localstack.aws.forwarder import HttpFallbackDispatcher, get_request_forwarder_http
-from localstack.aws.proxy import AwsApiListener
+from localstack.aws.forwarder import get_request_forwarder_http
 from localstack.constants import LOCALHOST
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.stepfunctions.stepfunctions_starter import (
     start_stepfunctions,
     wait_for_stepfunctions,
 )
-
-
-class StepFunctionsApiListener(AwsApiListener):
-    def __init__(self, provider=None):
-        provider = provider or StepFunctionsProvider()
-        self.provider = provider
-        super().__init__(
-            "stepfunctions", HttpFallbackDispatcher(provider, provider.get_forward_url)
-        )
 
 
 class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):

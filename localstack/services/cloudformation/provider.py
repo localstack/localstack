@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -71,7 +72,7 @@ from localstack.utils.cloudformation.template_preparer import (
     prepare_template_body,
     template_to_json,
 )
-from localstack.utils.collections import select_attributes
+from localstack.utils.collections import remove_attributes, select_attributes
 from localstack.utils.json import clone, clone_safe
 from localstack.utils.objects import recurse_object
 from localstack.utils.strings import long_uid, short_uid
@@ -221,7 +222,7 @@ class Stack:
     def _set_resource_status_details(self, resource_id: str, physical_res_id: str = None):
         """Helper function to ensure that the status details for the given resource ID are up-to-date."""
         resource = self.resources.get(resource_id)
-        if resource is None:
+        if resource is None or resource.get("Type") == "Parameter":
             # make sure we delete the states for any non-existing/deleted resources
             self._resource_states.pop(resource_id, None)
             return
@@ -236,6 +237,7 @@ class Stack:
         state["StackName"] = state.get("StackName") or self.stack_name
         state["StackId"] = state.get("StackId") or self.stack_id
         state["ResourceType"] = state.get("ResourceType") or self.resources[resource_id].get("Type")
+        state["Timestamp"] = timestamp_millis()
         return state
 
     def resource_status(self, resource_id: str):
@@ -980,7 +982,15 @@ class CloudformationProvider(CloudformationApi):
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 
-        return change_set.metadata
+        attrs = [
+            "ChangeSetType",
+            "StackStatus",
+            "LastUpdatedTime",
+            "DisableRollback",
+            "EnableTerminationProtection",
+        ]
+        result = remove_attributes(deepcopy(change_set.metadata), attrs)
+        return result
 
     @handler("DeleteChangeSet")
     def delete_change_set(
@@ -1196,6 +1206,8 @@ class CloudformationProvider(CloudformationApi):
             for res_id, res_status in stack.resource_states.items()
             if logical_resource_id in [res_id, None]
         ]
+        for status in statuses:
+            status.setdefault("DriftInformation", {"StackResourceDriftStatus": "NOT_CHECKED"})
         return DescribeStackResourcesOutput(StackResources=statuses)
 
     @handler("ListStackResources")
@@ -1203,7 +1215,13 @@ class CloudformationProvider(CloudformationApi):
         self, context: RequestContext, stack_name: StackName, next_token: NextToken = None
     ) -> ListStackResourcesOutput:
         result = self.describe_stack_resources(context, stack_name)
-        return ListStackResourcesOutput(StackResourceSummaries=result.pop("StackResources"))
+
+        resources = deepcopy(result.get("StackResources", []))
+        for resource in resources:
+            attrs = ["StackName", "StackId", "Timestamp", "PreviousResourceStatus"]
+            remove_attributes(resource, attrs)
+
+        return ListStackResourcesOutput(StackResourceSummaries=resources)
 
     @handler("DescribeStackSetOperation")
     def describe_stack_set_operation(
