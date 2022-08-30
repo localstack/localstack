@@ -80,6 +80,7 @@ def populate_wsgi_environment(environ: "WSGIEnvironment", scope: "HTTPScope"):
     headers = scope.get("headers")
     environ["asgi.headers"] = headers
     if not isinstance(headers, list):
+        # TODO: apparently dead code with hypercorn>=0.14.1, see https://github.com/localstack/localstack/pull/6778
         try:
             # these are h11 headers from which we extract the raw list
             environ["asgi.headers"] = headers.raw_items()

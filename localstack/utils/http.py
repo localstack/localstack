@@ -60,7 +60,7 @@ def canonicalize_headers(headers: Union[Dict, CaseInsensitiveDict]) -> Dict:
     def _normalize(name):
         if name.lower().startswith(ACCEPT):
             return name.lower()
-        return name
+        return name.title()
 
     result = {_normalize(k): v for k, v in headers.items()}
     return result
