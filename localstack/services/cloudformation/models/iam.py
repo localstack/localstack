@@ -172,15 +172,18 @@ class IAMAccessKey(GenericBaseModel):
         return "AWS::IAM::AccessKey"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get("UserName")
+        if attribute == "SecretAccessKey":
+            return self.props("SecretAccessKey")
+        return self.props.get("PhysicalResourceId")
 
     def fetch_state(self, stack_name, resources):
         user_name = self.resolve_refs_recursively(stack_name, self.props.get("UserName"), resources)
-        keys = aws_stack.connect_to_service("iam").list_access_keys(UserName=user_name)[
-            "AccessKeyMetadata"
-        ]
+        access_key_id = self.get_physical_resource_id()
+        keys = aws_stack.connect_to_service("iam").list_access_keys(
+            UserName=user_name, AccessKeyId=access_key_id
+        )["AccessKeyMetadata"]
 
-        return keys[-1]
+        return keys[0]
 
     @staticmethod
     def get_deploy_templates():
@@ -189,7 +192,7 @@ class IAMAccessKey(GenericBaseModel):
             resource = resources[resource_id]
             props = resource["Properties"]
             user_name = props["UserName"]
-            access_key_id = props["AccessKeyId"]
+            access_key_id = resource["PhysicalResourceId"]
 
             try:
                 iam_client.delete_access_key(UserName=user_name, AccessKeyId=access_key_id)
@@ -197,10 +200,17 @@ class IAMAccessKey(GenericBaseModel):
                 if "NotSuchEntity" not in err.response["Error"]["Code"]:
                     raise
 
+        def _store_key_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["AccessKey"]["AccessKeyId"]
+            resources[resource_id]["Properties"]["SecretAccessKey"] = result["AccessKey"][
+                "SecretAccessKey"
+            ]
+
         return {
             "create": {
                 "function": "create_access_key",
                 "parameters": ["UserName", "Serial", "Status"],
+                "result_handler": _store_key_id,
             },
             "delete": {"function": _delete},
         }

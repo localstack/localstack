@@ -15,3 +15,10 @@ Resources:
       UserName: 
         Ref: UserName
     DependsOn: User
+
+Outputs:
+  AccessKeyId:
+    Value:
+      !Ref Credentials
+  SecretAccessKey:
+    Value: !GetAtt Credentials.SecretAccessKey
