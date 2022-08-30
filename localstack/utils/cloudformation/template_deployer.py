@@ -885,7 +885,7 @@ def execute_resource_action(resource_id: str, stack, action_name: str):
     func_details = func_details if isinstance(func_details, list) else [func_details]
     results = []
     for func in func_details:
-        if callable(func["function"]):
+        if callable(func.get("function")):
             result = func["function"](resource_id, resources, resource_type, func, stack_name)
             results.append(result)
             continue
@@ -1029,7 +1029,7 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
     return result
 
 
-def get_action_name_for_resource_change(res_change):
+def get_action_name_for_resource_change(res_change: str) -> str:
     return {"Add": "CREATE", "Remove": "DELETE", "Modify": "UPDATE"}.get(res_change)
 
 
@@ -1206,7 +1206,6 @@ class TemplateDeployer:
             self.apply_changes(
                 self.stack,
                 self.stack,
-                stack_name=self.stack.stack_name,
                 initialize=True,
                 action="CREATE",
             )
@@ -1216,13 +1215,16 @@ class TemplateDeployer:
             raise
 
     def apply_change_set(self, change_set):
-        action = "CREATE"
+        action = "UPDATE" if change_set.stack.status == "CREATE_COMPLETE" else "CREATE"
         change_set.stack.set_stack_status(f"{action}_IN_PROGRESS")
+
+        # update attributes that the stack inherits from the changeset
+        change_set.stack.metadata["Capabilities"] = change_set.metadata.get("Capabilities")
+
         try:
             self.apply_changes(
                 change_set.stack,
                 change_set,
-                stack_name=change_set.stack_name,
                 action=action,
             )
         except Exception as e:
@@ -1236,7 +1238,7 @@ class TemplateDeployer:
     def update_stack(self, new_stack):
         self.stack.set_stack_status("UPDATE_IN_PROGRESS")
         # apply changes
-        self.apply_changes(self.stack, new_stack, stack_name=self.stack.stack_name, action="UPDATE")
+        self.apply_changes(self.stack, new_stack, action="UPDATE")
         self.stack.set_time_attribute("LastUpdatedTime")
 
     def delete_stack(self):
@@ -1340,7 +1342,7 @@ class TemplateDeployer:
         resources = resources or self.resources
         stack = stack or self.stack
         for resource_id, resource in resources.items():
-            stack.set_resource_status(resource_id, "%s_IN_PROGRESS" % action)
+            stack.set_resource_status(resource_id, f"{action}_IN_PROGRESS")
 
     def update_resource_details(self, resource_id, result, stack=None, action="CREATE"):
         stack = stack or self.stack
@@ -1357,7 +1359,7 @@ class TemplateDeployer:
                 resource["PhysicalResourceId"] = physical_id
 
         # set resource status
-        stack.set_resource_status(resource_id, "%s_COMPLETE" % action, physical_res_id=physical_id)
+        stack.set_resource_status(resource_id, f"{action}_COMPLETE", physical_res_id=physical_id)
 
         return physical_id
 
@@ -1470,11 +1472,12 @@ class TemplateDeployer:
         #   Change Set Executions.
         old_stack.metadata["Parameters"] = [v for v in parameters.values() if v]
 
-    # TODO: fix circular import with cloudformation_api.py when importing Stack here
+    # TODO: fix circular import with provider.py when importing Stack here
     def construct_changes(
         self,
         existing_stack,
         new_stack,
+        # TODO: remove initialize argument from here, and determine action based on resource status
         initialize=False,
         change_set_id=None,
         append_to_changeset=False,
@@ -1486,7 +1489,9 @@ class TemplateDeployer:
         new_resources = new_stack.template["Resources"]
         deletes = [val for key, val in old_resources.items() if key not in new_resources]
         adds = [val for key, val in new_resources.items() if initialize or key not in old_resources]
-        modifies = [val for key, val in new_resources.items() if key in old_resources]
+        modifies = [
+            val for key, val in new_resources.items() if not initialize and key in old_resources
+        ]
 
         changes = []
         for action, items in (("Remove", deletes), ("Add", adds), ("Modify", modifies)):
@@ -1510,7 +1515,6 @@ class TemplateDeployer:
         self,
         existing_stack,
         new_stack,
-        stack_name,
         change_set_id=None,
         initialize=False,
         action=None,
@@ -1549,15 +1553,15 @@ class TemplateDeployer:
 
         # start deployment loop
         return self.apply_changes_in_loop(
-            changes, existing_stack, stack_name, action=action, new_stack=new_stack
+            changes, existing_stack, action=action, new_stack=new_stack
         )
 
-    def apply_changes_in_loop(self, changes, stack, stack_name, action=None, new_stack=None):
+    def apply_changes_in_loop(self, changes, stack, action=None, new_stack=None):
         from localstack.services.cloudformation.provider import StackChangeSet
 
         def _run(*args):
             try:
-                self.do_apply_changes_in_loop(changes, stack, stack_name)
+                self.do_apply_changes_in_loop(changes, stack)
                 status = f"{action}_COMPLETE"
             except Exception as e:
                 LOG.debug(
@@ -1578,7 +1582,7 @@ class TemplateDeployer:
         # run deployment in background loop, to avoid client network timeouts
         return start_worker_thread(_run)
 
-    def do_apply_changes_in_loop(self, changes, stack, stack_name: str):
+    def do_apply_changes_in_loop(self, changes, stack):
         # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
         changes_done = []
         max_iters = 30
@@ -1622,7 +1626,7 @@ class TemplateDeployer:
                         if not should_deploy:
                             del changes[j]
                             stack_action = get_action_name_for_resource_change(action)
-                            stack.set_resource_status(resource_id, "%s_COMPLETE" % stack_action)
+                            stack.set_resource_status(resource_id, f"{stack_action}_COMPLETE")
                             continue
                         if not self.all_resource_dependencies_satisfied(resource):
                             j += 1
@@ -1675,12 +1679,15 @@ class TemplateDeployer:
         resolve_refs_recursively(stack, resource)
 
         if action in ["Add", "Modify"]:
+            if action == "Add" and not self.is_deployable_resource(resource):
+                return False
             is_deployed = self.is_deployed(resource)
-            if action == "Modify" and not is_deployed:
-                action = res_change["Action"] = "Add"
-            if action == "Add":
-                if not self.is_deployable_resource(resource) or is_deployed:
-                    return False
+            # TODO: Attaching the cached _deployed info here, as we should not change the "Add"/"Modify" attribute
+            #  here, which is used further down the line to determine the resource action CREATE/UPDATE. This is a
+            #  temporary workaround for now - to be refactored once we introduce proper stack resource state models.
+            res_change["_deployed"] = is_deployed
+            if not is_deployed:
+                return True
             if action == "Modify" and not self.is_updateable(resource):
                 LOG.debug(
                     'Action "update" not yet implemented for CF resource type %s',
@@ -1701,12 +1708,13 @@ class TemplateDeployer:
         action = change_details["Action"]
         resource_id = change_details["LogicalResourceId"]
         resource = stack.resources[resource_id]
+        is_deployed = change_details.pop("_deployed", None)
         if not evaluate_resource_condition(stack, resource):
             return
 
         # execute resource action
         result = None
-        if action == "Add":
+        if action == "Add" or is_deployed is False:
             result = deploy_resource(self, resource_id)
         elif action == "Remove":
             result = delete_resource(self, resource_id)
