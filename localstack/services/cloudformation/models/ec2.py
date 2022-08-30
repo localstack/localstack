@@ -43,7 +43,7 @@ class EC2RouteTable(GenericBaseModel):
             },
             "delete": {
                 "function": "delete_route_table",
-                "parameters": {"RouteTableId": "RouteTableId"},
+                "parameters": {"RouteTableId": "PhysicalResourceId"},
             },
         }
 

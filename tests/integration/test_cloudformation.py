@@ -1793,8 +1793,8 @@ class TestCloudFormation:
         assert len(vpcs) == 1
 
         resp = ec2_client.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpcs[0]]}])
-        # CloudFormation will create more than one route table 2 in template + default
-        assert len(resp["RouteTables"]) == 3
+        # CloudFormation will create more than one route table: 3 in template + default = 4
+        assert len(resp["RouteTables"]) == 4
 
     def test_cfn_with_multiple_route_table_associations(self, ec2_client, deploy_cfn_template):
         stack = deploy_cfn_template(
