@@ -1100,7 +1100,7 @@ def handle_lambda_url_invocation(
         return response
 
     event = event_for_lambda_url(
-        api_id, request.full_path, request.data, dict(request.headers), request.method
+        api_id, request.full_path, request.data, request.headers, request.method
     )
 
     try:
