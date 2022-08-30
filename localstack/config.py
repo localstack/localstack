@@ -97,7 +97,7 @@ class Directories:
             data=f"{DEFAULT_VOLUME_DIR}/state",
             logs=f"{DEFAULT_VOLUME_DIR}/logs",
             config="/etc/localstack/conf.d",  # for future use
-            init="/etc/localstack/init",  # for future use
+            init="/etc/localstack/init",
         )
 
     @staticmethod
@@ -119,7 +119,7 @@ class Directories:
             data=defaults.data if PERSISTENCE else os.path.join(defaults.tmp, "state"),
             config=defaults.config,
             logs=defaults.logs,
-            init="/docker-entrypoint-initaws.d",  # FIXME should be reworked with lifecycle hooks
+            init=defaults.init,
         )
 
     @staticmethod

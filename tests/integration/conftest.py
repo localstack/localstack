@@ -18,6 +18,7 @@ from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.runtime import events
 from localstack.services import infra
 from localstack.utils.common import safe_requests
+from tests.integration.apigateway_fixtures import create_rest_api, delete_rest_api, import_rest_api
 from tests.integration.test_es import install_async as es_install_async
 from tests.integration.test_opensearch import install_async as opensearch_install_async
 from tests.integration.test_terraform import TestTerraform
@@ -177,3 +178,33 @@ def localstack_runtime():
     localstack_started.wait()
     yield
     return
+
+
+@pytest.fixture
+def create_rest_apigw(apigateway_client):
+    rest_api_ids = []
+
+    def _create_apigateway_function(*args, **kwargs):
+        api_id, name, root_id = create_rest_api(apigateway_client, **kwargs)
+        rest_api_ids.append(api_id)
+        return api_id, name, root_id
+
+    yield _create_apigateway_function
+
+    for rest_api_id in rest_api_ids:
+        delete_rest_api(apigateway_client, restApiId=rest_api_id)
+
+
+@pytest.fixture
+def import_apigw(apigateway_client):
+    rest_api_ids = []
+
+    def _import_apigateway_function(*args, **kwargs):
+        api_id, name, root_id = import_rest_api(apigateway_client, **kwargs)
+        rest_api_ids.append(api_id)
+        return api_id, name, root_id
+
+    yield _import_apigateway_function
+
+    for rest_api_id in rest_api_ids:
+        delete_rest_api(apigateway_client, restApiId=rest_api_id)

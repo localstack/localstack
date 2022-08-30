@@ -1497,6 +1497,38 @@ def firehose_create_delivery_stream(firehose_client, wait_for_delivery_stream_re
 
 
 @pytest.fixture
+def events_create_rule(events_client):
+    rules = []
+
+    def _create_rule(**kwargs):
+        rule_name = kwargs["Name"]
+        bus_name = kwargs.get("EventBusName", "")
+        pattern = kwargs.get("EventPattern", {})
+        schedule = kwargs.get("ScheduleExpression", "")
+        rule_arn = events_client.put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+            EventPattern=json.dumps(pattern),
+            ScheduleExpression=schedule,
+        )["RuleArn"]
+        rules.append({"name": rule_name, "bus": bus_name})
+        return rule_arn
+
+    yield _create_rule
+
+    for rule in rules:
+        targets = events_client.list_targets_by_rule(Rule=rule["name"], EventBusName=rule["bus"])[
+            "Targets"
+        ]
+
+        targetIds = [target["Id"] for target in targets]
+        if len(targetIds) > 0:
+            events_client.remove_targets(Rule=rule["name"], EventBusName=rule["bus"], Ids=targetIds)
+
+        events_client.delete_rule(Name=rule["name"], EventBusName=rule["bus"])
+
+
+@pytest.fixture
 def cleanups(ec2_client):
     cleanup_fns = []
 
