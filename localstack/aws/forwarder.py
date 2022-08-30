@@ -84,7 +84,7 @@ class RegionContextModifier(ContextModifier):
         self.region = region
 
     def modify_context(self, context: RequestContext) -> RequestContext:
-        _context = copy.deepcopy(context)
+        _context = copy.copy(context)
         _context.region = self.region
         _headers = _context.request.headers
 

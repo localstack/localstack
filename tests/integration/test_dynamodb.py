@@ -893,6 +893,7 @@ class TestDynamoDB:
             ],
             BillingMode="PAY_PER_REQUEST",
         )
+        cleanups.append(lambda: dynamodb_us_east_2.delete_table(TableName=table_name))
         dynamodb_wait_for_table_active(table_name=table_name, client=dynamodb_us_east_2)
         # replica table on us-east-1
         dynamodb_us_east_2.update_table(
@@ -932,7 +933,6 @@ class TestDynamoDB:
                 Key={"Artist": {"S": "item_1"}, "SongTitle": {"S": "Song Value 1"}},
             )
         ctx.match("ResourceNotFoundException")
-        cleanups.append(lambda: dynamodb_us_east_2.delete_table(TableName=table_name))
 
     def test_global_tables(self):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
