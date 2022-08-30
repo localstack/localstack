@@ -54,11 +54,15 @@ class KinesisStream(GenericBaseModel):
         def get_delete_params(params, **kwargs):
             return {"StreamName": params["Name"], "EnforceConsumerDeletion": True}
 
+        def _store_arn_and_wait_until_ready():
+            pass
+
         return {
             "create": {
                 "function": "create_stream",
                 "parameters": {"StreamName": "Name", "ShardCount": "ShardCount"},
                 "defaults": {"ShardCount": 1},
+                "result_handler": _store_arn_and_wait_until_ready
             },
             "delete": {"function": "delete_stream", "parameters": get_delete_params},
         }
