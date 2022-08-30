@@ -22,6 +22,7 @@ from localstack.aws.api.sqs import (
     AttributeNameList,
     AWSAccountIdList,
     BatchEntryIdsNotDistinct,
+    BatchRequestTooLong,
     BatchResultErrorEntry,
     BoxedInteger,
     ChangeMessageVisibilityBatchRequestEntryList,
@@ -94,6 +95,9 @@ DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
 # see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteQueue.html
 RECENTLY_DELETED_TIMEOUT = 60
 
+# the default maximum message size in SQS
+DEFAULT_MAXIMUM_MESSAGE_SIZE = 262144
+
 INTERNAL_QUEUE_ATTRIBUTES = [
     # these attributes cannot be changed by set_queue_attributes and should
     # therefore be ignored when comparing queue attributes for create_queue
@@ -150,6 +154,16 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
         raise InvalidParameterValue(
             "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
         )
+
+
+def check_message_size(message_body: str, max_message_size: int):
+    # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
+    error = "One or more parameters are invalid. "
+    error += f"Reason: Message must be shorter than {max_message_size} bytes."
+
+    # must encode as utf8 to get correct bytes with len
+    if len(message_body.encode("utf8")) > max_message_size:
+        raise InvalidParameterValue(error)
 
 
 def check_message_content(message_body: str):
@@ -350,7 +364,7 @@ class SqsQueue:
             QueueAttributeName.CreatedTimestamp: str(now()),
             QueueAttributeName.DelaySeconds: "0",
             QueueAttributeName.LastModifiedTimestamp: str(now()),
-            QueueAttributeName.MaximumMessageSize: "262144",
+            QueueAttributeName.MaximumMessageSize: str(DEFAULT_MAXIMUM_MESSAGE_SIZE),
             QueueAttributeName.MessageRetentionPeriod: "345600",
             QueueAttributeName.QueueArn: self.arn,
             QueueAttributeName.ReceiveMessageWaitTimeSeconds: "0",
@@ -415,6 +429,10 @@ class SqsQueue:
     @property
     def wait_time_seconds(self) -> int:
         return int(self.attributes[QueueAttributeName.ReceiveMessageWaitTimeSeconds])
+
+    @property
+    def maximum_message_size(self):
+        return int(self.attributes[QueueAttributeName.MaximumMessageSize])
 
     def validate_receipt_handle(self, receipt_handle: str):
         if self.arn != decode_receipt_handle(receipt_handle):
@@ -1149,6 +1167,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> SendMessageResult:
         queue = self._resolve_queue(context, queue_url=queue_url)
 
+        # Have to check the message size here, rather than in _put_message
+        # to avoid multiple calls for batch messages.
+        check_message_size(message_body, queue.maximum_message_size)
+
         queue_item = self._put_message(
             queue,
             context,
@@ -1174,6 +1196,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue = self._resolve_queue(context, queue_url=queue_url)
 
         self._assert_batch(entries)
+        # check the total batch size first and raise BatchRequestTooLong id > DEFAULT_MAXIMUM_MESSAGE_SIZE.
+        # This is checked before any messages in the batch are sent.  Raising the exception here should
+        # cause error response, rather than batching error results and returning
+        self._assert_valid_batch_size(entries, DEFAULT_MAXIMUM_MESSAGE_SIZE)
 
         successful = []
         failed = []
@@ -1535,6 +1561,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 raise BatchEntryIdsNotDistinct()
             else:
                 visited.add(entry["Id"])
+
+    def _assert_valid_batch_size(self, batch: List, max_message_size: int):
+        batch_message_size = sum([len(entry.get("MessageBody").encode("utf8")) for entry in batch])
+        if batch_message_size > max_message_size:
+            error = f"Batch requests cannot be longer than {max_message_size} bytes."
+            error += f" You have sent {batch_message_size} bytes."
+            raise BatchRequestTooLong(error)
 
 
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
