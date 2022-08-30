@@ -152,3 +152,7 @@ class TestCliContainerLifecycle:
         inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
         binds = inspect["HostConfig"]["Binds"]
         assert f"{volume_dir}:{constants.DEFAULT_VOLUME_DIR}" in binds
+
+    def test_container_starts_non_root(self, runner):
+        # TODO: add test to start container with non-root user, as soon as new Docker image is published
+        pass
