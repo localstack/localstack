@@ -26,9 +26,8 @@ class TestTranscribe:
         ]
     )
     def test_transcribe_happy_path(self, transcribe_client, transcribe_create_job, snapshot):
-        file_path = os.path.join(BASEDIR, os.path.abspath("files/en-gb.wav"))
+        file_path = os.path.join(BASEDIR, "files/en-gb.wav")
         job_name = transcribe_create_job(test_file=file_path)
-
         transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
 
         def is_transcription_done():
@@ -61,7 +60,7 @@ class TestTranscribe:
         paths=["$..TranscriptionJob..Settings", "$..TranscriptionJob..Transcript", "$..Error..Code"]
     )
     def test_get_transcription_job(self, transcribe_client, transcribe_create_job, snapshot):
-        file_path = os.path.join(BASEDIR, os.path.abspath("files/en-gb.wav"))
+        file_path = os.path.join(BASEDIR, "files/en-gb.wav")
         job_name = transcribe_create_job(test_file=file_path)
 
         job = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
@@ -78,7 +77,7 @@ class TestTranscribe:
         paths=["$..NextToken", "$..TranscriptionJobSummaries..OutputLocationType"]
     )
     def test_list_transcription_jobs(self, transcribe_client, transcribe_create_job, snapshot):
-        file_path = os.path.join(BASEDIR, os.path.abspath("files/en-gb.wav"))
+        file_path = os.path.join(BASEDIR, "files/en-gb.wav")
         transcribe_create_job(test_file=file_path)
 
         jobs = transcribe_client.list_transcription_jobs()
@@ -108,7 +107,7 @@ class TestTranscribe:
     ):
         transcription_job = f"test-transcribe-{short_uid()}"
         test_key = "test-clip.wav"
-        file_path = os.path.join(BASEDIR, os.path.abspath("files/en-gb.wav"))
+        file_path = os.path.join(BASEDIR, "files/en-gb.wav")
 
         with open(file_path, "rb") as f:
             s3_client.upload_fileobj(f, s3_bucket, test_key)
