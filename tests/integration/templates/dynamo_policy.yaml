@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  dbTable:
+    Type: String
+    Default: name
+Resources:
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+          - Ref: tableName
+      AttributeDefinitions:
+      - AttributeName: name
+        AttributeType: S
+      - AttributeName: startTime
+        AttributeType: S
+      KeySchema:
+      - AttributeName: name
+        KeyType: HASH
+      - AttributeName: startTime
+        KeyType: RANGE
+  ManagedPolicy:
+
+Outputs:
+  Name:
+    Value:
+      Ref: DynamoDBTable

@@ -16,6 +16,7 @@
         }
       }
     }
+<<<<<<< Updated upstream
   },
   "tests/integration/cloudformation/test_cloudformation_iam.py::test_iam_user_access_key": {
     "recorded-date": "30-08-2022, 13:42:39",
@@ -34,5 +35,14 @@
   "tests/integration/cloudformation/test_cloudformation_iam.py::test_managed_policy_with_empty_resource": {
     "recorded-date": "26-08-2022, 11:02:39",
     "recorded-content": {}
+=======
+<<<<<<< Updated upstream
+=======
+  },
+  "tests/integration/cloudformation/test_cloudformation_iam.py::test_managed_policy_with_empty_resource": {
+    "recorded-date": "29-08-2022, 09:48:54",
+    "recorded-content": {}
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
   }
 }
