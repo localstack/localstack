@@ -90,6 +90,7 @@ ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
 
 # content types / encodings
 HEADER_CONTENT_TYPE = "Content-Type"
+TEXT_XML = "text/xml"
 APPLICATION_AMZ_JSON_1_0 = "application/x-amz-json-1.0"
 APPLICATION_AMZ_JSON_1_1 = "application/x-amz-json-1.1"
 APPLICATION_AMZ_CBOR_1_1 = "application/x-amz-cbor-1.1"

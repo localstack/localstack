@@ -3,7 +3,7 @@ This module provides tools to call moto using moto and botocore internals withou
 """
 import sys
 from functools import lru_cache
-from typing import Callable
+from typing import Callable, Optional, Union
 
 from moto.backends import get_backend as get_moto_backend
 from moto.core.exceptions import RESTError
@@ -21,8 +21,11 @@ from localstack.aws.api import (
     ServiceRequest,
     ServiceResponse,
 )
-from localstack.aws.client import parse_response, raise_service_exception
-from localstack.aws.forwarder import ForwardingFallbackDispatcher, create_aws_request_context
+from localstack.aws.forwarder import (
+    ForwardingFallbackDispatcher,
+    create_aws_request_context,
+    dispatch_to_backend,
+)
 from localstack.aws.skeleton import DispatchTable
 from localstack.http import Response
 
@@ -37,15 +40,9 @@ def call_moto(context: RequestContext, include_response_metadata=False) -> Servi
 
     :param context: the request context
     :param include_response_metadata: whether to include botocore's "ResponseMetadata" attribute
-    :return: an AWS ServiceResponse (same as a service provider would return)
-    :raises ServiceException: if moto returned an error response
+    :return: a serialized AWS ServiceResponse (same as boto3 would return)
     """
-    status, headers, content = dispatch_to_moto(context)
-    response = Response(content, status, headers)
-    parsed_response = parse_response(context.operation, response, include_response_metadata)
-    raise_service_exception(response, parsed_response)
-
-    return parsed_response
+    return dispatch_to_backend(context, dispatch_to_moto, include_response_metadata)
 
 
 def call_moto_with_request(
@@ -72,18 +69,17 @@ def call_moto_with_request(
     return call_moto(local_context)
 
 
-def proxy_moto(context: RequestContext, service_request: ServiceRequest = None) -> Response:
+def _proxy_moto(
+    context: RequestContext, request: ServiceRequest
+) -> Optional[Union[ServiceResponse, Response]]:
     """
-    Similar to ``call``, only that ``proxy`` does not parse the HTTP response into a ServiceResponse, but instead
-    returns directly the HTTP response. This can be useful to pass through moto's response directly to the client.
+    Wraps `call_moto` such that the interface is compliant with a ServiceRequestHandler.
 
     :param context: the request context
     :param service_request: currently not being used, added to satisfy ServiceRequestHandler contract
     :return: the Response from moto
     """
-    status, headers, content = dispatch_to_moto(context)
-
-    return Response(response=content, status=status, headers=headers)
+    return call_moto(context)
 
 
 def MotoFallbackDispatcher(provider: object) -> DispatchTable:
@@ -95,7 +91,7 @@ def MotoFallbackDispatcher(provider: object) -> DispatchTable:
     :param provider: the ASF provider
     :return: a modified DispatchTable
     """
-    return ForwardingFallbackDispatcher(provider, proxy_moto)
+    return ForwardingFallbackDispatcher(provider, _proxy_moto)
 
 
 def dispatch_to_moto(context: RequestContext) -> Response:
@@ -111,7 +107,8 @@ def dispatch_to_moto(context: RequestContext) -> Response:
     dispatch = get_dispatcher(service.service_name, request.path)
 
     try:
-        return dispatch(request, request.url, request.headers)
+        status, headers, content = dispatch(request, request.url, request.headers)
+        return Response(content, status, headers)
     except RESTError as e:
         raise CommonServiceException(e.error_type, e.message, status_code=e.code) from e
 

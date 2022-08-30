@@ -6,7 +6,7 @@ from localstack import config
 from localstack.aws.api import ServiceException, handler
 from localstack.services import moto
 from localstack.services.moto import MotoFallbackDispatcher
-from localstack.utils.common import short_uid, to_str
+from localstack.utils.common import short_uid
 
 
 def test_call_with_sqs_creates_state_correctly():
@@ -49,13 +49,6 @@ def test_call_non_implemented_operation():
     with pytest.raises(NotImplementedError):
         # we'll need to keep finding methods that moto doesn't implement ;-)
         moto.call_moto(
-            moto.create_aws_request_context("athena", "DeleteDataCatalog", {"Name": "foo"})
-        )
-
-
-def test_proxy_non_implemented_operation():
-    with pytest.raises(NotImplementedError):
-        moto.proxy_moto(
             moto.create_aws_request_context("athena", "DeleteDataCatalog", {"Name": "foo"})
         )
 
@@ -192,31 +185,28 @@ def test_call_multi_region_backends():
     del sqs_backends["eu-central-1"].queues[qname_eu]
 
 
-def test_proxy_with_sqs_invalid_call_returns_error():
-    response = moto.proxy_moto(
-        moto.create_aws_request_context(
-            "sqs",
-            "DeleteQueue",
-            {
-                "QueueUrl": "http://0.0.0.0/nonexistingqueue",
-            },
+def test_call_with_sqs_invalid_call_raises_exception():
+    with pytest.raises(ServiceException):
+        moto.call_moto(
+            moto.create_aws_request_context(
+                "sqs",
+                "DeleteQueue",
+                {
+                    "QueueUrl": "http://0.0.0.0/nonexistingqueue",
+                },
+            )
         )
-    )
-
-    assert response.status_code == 400
-    assert "NonExistentQueue" in to_str(response.data)
 
 
-def test_proxy_with_sqs_returns_http_response():
+def test_call_with_sqs_returns_service_response():
     qname = f"queue-{short_uid()}"
 
-    response = moto.proxy_moto(
+    create_queue_response = moto.call_moto(
         moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname})
     )
 
-    assert response.status_code == 200
-    assert f"{qname}</QueueUrl>" in to_str(response.data)
-    assert "x-amzn-requestid" in response.headers
+    assert "QueueUrl" in create_queue_response
+    assert create_queue_response["QueueUrl"].endswith(qname)
 
 
 class FakeSqsApi:
@@ -252,14 +242,14 @@ def test_moto_fallback_dispatcher():
         return dispatcher[action](context, params)
 
     qname = f"queue-{short_uid()}"
-    # when falling through the dispatcher returns an HTTP response
-    http_response = _dispatch("CreateQueue", {"QueueName": qname})
-    assert http_response.status_code == 200
+    # when falling through the dispatcher returns the appropriate ServiceResponse (in this case a CreateQueueResult)
+    create_queue_response = _dispatch("CreateQueue", {"QueueName": qname})
+    assert "QueueUrl" in create_queue_response
 
-    # this returns an
-    response = _dispatch("ListQueues", None)
+    # this returns a ListQueuesResult
+    list_queues_response = _dispatch("ListQueues", None)
     assert len(provider.calls) == 1
-    assert len([url for url in response["QueueUrls"] if qname in url])
+    assert len([url for url in list_queues_response["QueueUrls"] if qname in url])
 
 
 def test_request_with_response_header_location_fields():

@@ -1,4 +1,5 @@
 from localstack import config
+from localstack.aws.forwarder import HttpFallbackDispatcher
 from localstack.aws.proxy import AwsApiListener
 from localstack.services.moto import MotoFallbackDispatcher
 from localstack.services.plugins import Service, aws_provider
@@ -141,14 +142,14 @@ def iam():
 
 @aws_provider()
 def sts():
-    from localstack.services.sts.provider import StsAwsApiListener
+    from localstack.services.sts.provider import StsProvider
 
-    listener = StsAwsApiListener()
-    return Service("sts", listener=listener)
+    provider = StsProvider()
+    return Service("sts", listener=AwsApiListener("sts", MotoFallbackDispatcher(provider)))
 
 
-@aws_provider()
-def kinesis():
+@aws_provider(api="kinesis", name="legacy")
+def kinesis_legacy():
     from localstack.services.kinesis import kinesis_listener, kinesis_starter
 
     return Service(
@@ -156,6 +157,19 @@ def kinesis():
         listener=kinesis_listener.UPDATE_KINESIS,
         start=kinesis_starter.start_kinesis,
         check=kinesis_starter.check_kinesis,
+    )
+
+
+@aws_provider()
+def kinesis():
+    from localstack.services.kinesis.provider import KinesisProvider
+
+    provider = KinesisProvider()
+    listener = AwsApiListener("kinesis", HttpFallbackDispatcher(provider, provider.get_forward_url))
+    return Service(
+        "kinesis",
+        listener=listener,
+        lifecycle_hook=provider,
     )
 
 
@@ -197,9 +211,10 @@ def awslambda_asf():
 
 @aws_provider()
 def logs():
-    from localstack.services.logs.provider import LogsAwsApiListener
+    from localstack.services.logs.provider import LogsProvider
 
-    listener = LogsAwsApiListener()
+    provider = LogsProvider()
+    listener = AwsApiListener("logs", MotoFallbackDispatcher(provider))
     return Service("logs", listener=listener)
 
 
@@ -350,13 +365,16 @@ def events():
 
 @aws_provider()
 def stepfunctions():
-    from localstack.services.stepfunctions.provider import StepFunctionsApiListener
+    from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
-    listener = StepFunctionsApiListener()
+    provider = StepFunctionsProvider()
+    listener = AwsApiListener(
+        "stepfunctions", HttpFallbackDispatcher(provider, provider.get_forward_url)
+    )
     return Service(
         "stepfunctions",
         listener=listener,
-        lifecycle_hook=listener.provider,
+        lifecycle_hook=provider,
     )
 
 

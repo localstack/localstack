@@ -74,7 +74,12 @@ def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> Service
                 parameters=service_request,
                 region=context.region,
             )
-            local_context.request.headers.update(context.request.headers)
+            # update the newly created context with non-payload specific request headers (the payload can differ from
+            # the original request, f.e. it could be JSON encoded now while the initial request was CBOR encoded)
+            headers = Headers(context.request.headers)
+            headers.pop("Content-Type", None)
+            headers.pop("Content-Length", None)
+            local_context.request.headers.update(headers)
             context = local_context
         return forward_request(context, forward_url_getter)
 

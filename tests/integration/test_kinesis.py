@@ -7,7 +7,7 @@ import pytest
 import requests
 
 from localstack import config, constants
-from localstack.services.kinesis import kinesis_listener
+from localstack.services.kinesis import provider as kinesis_provider
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import poll_condition, retry, select_attributes, short_uid
 from localstack.utils.kinesis import kinesis_connector
@@ -295,7 +295,7 @@ class TestKinesis:
         snapshot.match("Records", response_records)
 
     @pytest.mark.aws_validated
-    @patch.object(kinesis_listener, "MAX_SUBSCRIPTION_SECONDS", 3)
+    @patch.object(kinesis_provider, "MAX_SUBSCRIPTION_SECONDS", 3)
     def test_subscribe_to_shard_timeout(
         self,
         kinesis_client,

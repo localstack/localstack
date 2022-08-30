@@ -150,7 +150,7 @@ class ServiceRequestRouter(Handler):
         message = f"no handler for operation '{operation_name}' on service '{service_name}'"
         error = CommonServiceException("InternalFailure", message, status_code=501)
         serializer = create_serializer(context.service)
-        return serializer.serialize_error_to_response(error, operation)
+        return serializer.serialize_error_to_response(error, operation, context.request.headers)
 
 
 class ServiceExceptionSerializer(ExceptionHandler):
@@ -225,7 +225,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
             context.service_exception = error
 
         serializer = create_serializer(context.service)  # TODO: serializer cache
-        return serializer.serialize_error_to_response(error, operation)
+        return serializer.serialize_error_to_response(error, operation, context.request.headers)
 
 
 class ServiceResponseParser(Handler):
