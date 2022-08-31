@@ -18,12 +18,14 @@ default_log_levels = {
     "s3transfer": logging.INFO,
     "urllib3": logging.WARNING,
     "werkzeug": logging.WARNING,
+    "localstack.aws.protocol.serializer": logging.INFO,
     "localstack.aws.serving.wsgi": logging.WARNING,
     "localstack.request": logging.INFO,
     "localstack.request.internal": logging.WARNING,
 }
 
 trace_log_levels = {
+    "localstack.aws.protocol.serializer": logging.DEBUG,
     "localstack.aws.serving.wsgi": logging.DEBUG,
     "localstack.request": logging.DEBUG,
     "localstack.request.internal": logging.INFO,

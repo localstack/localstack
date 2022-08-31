@@ -461,10 +461,12 @@ class ResponseSerializer(abc.ABC):
         mime_type = mime_accept.best_match(self.SUPPORTED_MIME_TYPES)
         if not mime_type:
             # There is no match between the supported mime types and the requested one(s)
-            LOG.debug(
-                "Determined accept type (%s) is not supported by this serializer.", accept_header
-            )
             mime_type = self.SUPPORTED_MIME_TYPES[0]
+            LOG.debug(
+                "Determined accept type (%s) is not supported by this serializer. Using default of this serializer: %s",
+                accept_header,
+                mime_type,
+            )
         return mime_type
 
     # Some extra utility methods subclasses can use.
@@ -480,6 +482,10 @@ class ResponseSerializer(abc.ABC):
     @staticmethod
     def _timestamp_unixtimestamp(value: datetime) -> float:
         return value.timestamp()
+
+    @staticmethod
+    def _timestamp_unixtimestampmillis(value: datetime) -> int:
+        return int(value.timestamp() * 1000)
 
     def _timestamp_rfc822(self, value: datetime) -> str:
         if isinstance(value, datetime):
@@ -1288,10 +1294,16 @@ class JSONResponseSerializer(ResponseSerializer):
     def _default_serialize(self, body: dict, value: Any, _, key: str, __):
         body[key] = value
 
-    def _serialize_type_timestamp(self, body: dict, value: Any, shape: Shape, key: str, _):
-        body[key] = self._convert_timestamp_to_str(
-            value, shape.serialization.get("timestampFormat")
+    def _serialize_type_timestamp(
+        self, body: dict, value: Any, shape: Shape, key: str, mime_type: str
+    ):
+        timestamp_format = (
+            shape.serialization.get("timestampFormat")
+            # CBOR always uses unix timestamp milliseconds
+            if mime_type not in self.CBOR_TYPES
+            else "unixtimestampmillis"
         )
+        body[key] = self._convert_timestamp_to_str(value, timestamp_format)
 
     def _serialize_type_blob(
         self, body: dict, value: Union[str, bytes], _, key: str, mime_type: str

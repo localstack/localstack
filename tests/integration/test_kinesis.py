@@ -5,6 +5,8 @@ from unittest.mock import patch
 import cbor2
 import pytest
 import requests
+from botocore.config import Config as BotoConfig
+from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.services.kinesis import provider as kinesis_provider
@@ -37,6 +39,13 @@ def kinesis_snapshot_transformer(snapshot):
 
 
 class TestKinesis:
+    def test_create_stream_without_stream_name_raises(self):
+        boto_config = BotoConfig(parameter_validation=False)
+        kinesis_client = aws_stack.create_external_boto_client("kinesis", config=boto_config)
+        with pytest.raises(ClientError) as e:
+            kinesis_client.create_stream()
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
     @pytest.mark.aws_validated
     def test_create_stream_without_shard_count(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready, snapshot
@@ -242,6 +251,11 @@ class TestKinesis:
         attrs = ("Data", "EncryptionType", "PartitionKey", "SequenceNumber")
         assert select_attributes(json_records[0], attrs) == select_attributes(
             result["Records"][0], attrs
+        )
+        # ensure that the CBOR datetime format is unix timestamp millis
+        assert (
+            int(json_records[0]["ApproximateArrivalTimestamp"].timestamp() * 1000)
+            == result["Records"][0]["ApproximateArrivalTimestamp"]
         )
 
     def test_get_records_empty_stream(
