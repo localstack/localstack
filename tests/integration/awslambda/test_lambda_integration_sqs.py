@@ -70,6 +70,7 @@ def _snapshot_transformers(snapshot):
         "$..StateTransitionReason",
     ]
 )
+@pytest.mark.aws_validated
 def test_failing_lambda_retries_after_visibility_timeout(
     create_lambda_function,
     lambda_client,
@@ -170,6 +171,7 @@ def test_failing_lambda_retries_after_visibility_timeout(
         "$..StateTransitionReason",
     ]
 )
+@pytest.mark.aws_validated
 def test_redrive_policy_with_failing_lambda(
     create_lambda_function,
     lambda_client,
@@ -263,6 +265,7 @@ def test_redrive_policy_with_failing_lambda(
     snapshot.match("dlq_response", dlq_response)
 
 
+@pytest.mark.aws_validated
 def test_sqs_queue_as_lambda_dead_letter_queue(
     sqs_client,
     lambda_client,
@@ -348,6 +351,7 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
         "$..create_event_source_mapping.ResponseMetadata",
     ]
 )
+@pytest.mark.aws_validated
 def test_report_batch_item_failures(
     create_lambda_function,
     lambda_client,
@@ -502,6 +506,7 @@ def test_report_batch_item_failures(
     snapshot.match("dlq_response", dlq_response)
 
 
+@pytest.mark.aws_validated
 def test_report_batch_item_failures_on_lambda_error(
     create_lambda_function,
     lambda_client,
@@ -586,6 +591,7 @@ def test_report_batch_item_failures_on_lambda_error(
     snapshot.match("dlq_messages", messages)
 
 
+@pytest.mark.aws_validated
 def test_report_batch_item_failures_invalid_result_json_batch_fails(
     create_lambda_function,
     lambda_client,
@@ -679,6 +685,7 @@ def test_report_batch_item_failures_invalid_result_json_batch_fails(
     snapshot.match("dlq_response", dlq_response)
 
 
+@pytest.mark.aws_validated
 def test_report_batch_item_failures_empty_json_batch_succeeds(
     create_lambda_function,
     lambda_client,
