@@ -24,7 +24,6 @@ from localstack.testing.aws.cloudformation_utils import load_template_file, rend
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.common import ensure_list, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
@@ -368,19 +367,20 @@ def dynamodb_create_table_with_parameters(dynamodb_client, dynamodb_wait_for_tab
 
 @pytest.fixture
 def dynamodb_create_table(dynamodb_client, dynamodb_wait_for_table_active):
-    # beware, this swallows exception in create_dynamodb_table utility function
     tables = []
 
     def factory(**kwargs):
-        kwargs["client"] = dynamodb_client
-        if "table_name" not in kwargs:
-            kwargs["table_name"] = "test-table-%s" % short_uid()
-        if "partition_key" not in kwargs:
-            kwargs["partition_key"] = "id"
+        if "TableName" not in kwargs:
+            kwargs["TableName"] = f"test-table-{short_uid()}"
+        if "BillingMode" not in kwargs:
+            kwargs["BillingMode"] = "PAY_PER_REQUEST"
 
-        tables.append(kwargs["table_name"])
+        tables.append(kwargs["TableName"])
+        response = dynamodb_client.create_table(**kwargs)
+        dynamodb_wait_for_table_active(kwargs["TableName"])
+        return response
 
-        return create_dynamodb_table(**kwargs)
+        return dynamodb_create_table(**kwargs)
 
     yield factory
 

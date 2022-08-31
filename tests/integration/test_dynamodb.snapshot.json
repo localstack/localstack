@@ -1,0 +1,25 @@
+{
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_binary_data_with_stream": {
+    "recorded-date": "31-08-2022, 13:17:40",
+    "recorded-content": {}
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_non_ascii_chars": {
+    "recorded-date": "31-08-2022, 15:09:57",
+    "recorded-content": {
+      "Items": [
+        {
+          "id": "id1",
+          "data": "foobar123 \u2713"
+        },
+        {
+          "id": "id2",
+          "data": "foobar123 \u00a3"
+        },
+        {
+          "id": "id3",
+          "data": "foobar123 \u00a2"
+        }
+      ]
+    }
+  }
+}

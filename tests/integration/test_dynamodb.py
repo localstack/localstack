@@ -13,7 +13,7 @@ from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import json_safe, long_uid, retry, short_uid
+from localstack.utils.common import long_uid, retry, short_uid
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
@@ -37,8 +37,20 @@ def dynamodb(dynamodb_resource):
 
 
 class TestDynamoDB:
-    def test_non_ascii_chars(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+    @pytest.mark.aws_validated
+    def test_non_ascii_chars(self, dynamodb, dynamodb_create_table, snapshot):
+
+        key_schema = [{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}]
+        attr_defs = [{"AttributeName": PARTITION_KEY, "AttributeType": "S"}]
+        stream_spec = {"StreamEnabled": False}
+
+        dynamodb_create_table(
+            TableName=TEST_DDB_TABLE_NAME,
+            KeySchema=key_schema,
+            AttributeDefinitions=attr_defs,
+            StreamSpecification=stream_spec,
+        )
+
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
         # write some items containing non-ASCII characters
@@ -50,16 +62,13 @@ class TestDynamoDB:
         for k, item in items.items():
             table.put_item(Item=item)
 
+        result = []
         for item_id in items.keys():
             item = table.get_item(Key={PARTITION_KEY: item_id})["Item"]
+            result.append(item)
 
-            # need to fix up the JSON and convert str to unicode for Python 2
-            item1 = json_safe(item)
-            item2 = json_safe(items[item_id])
-            assert item1 == item2
-
-        # clean up
-        delete_table(TEST_DDB_TABLE_NAME)
+        result.sort(key=lambda k: k.get("id"))
+        snapshot.match("Items", result)
 
     def test_large_data_download(self, dynamodb):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY)
@@ -529,6 +538,7 @@ class TestDynamoDB:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    @pytest.mark.only_localstack
     def test_binary_data_with_stream(
         self,
         wait_for_stream_ready,
