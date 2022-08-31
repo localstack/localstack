@@ -116,6 +116,10 @@ def dispatch_to_backend(
     return parsed_response
 
 
+# boto config deactivating param validation to forward to backends (backends are responsible for validating params)
+_non_validating_boto_config = BotoConfig(parameter_validation=False)
+
+
 def create_aws_request_context(
     service_name: str,
     action: str,
@@ -153,7 +157,7 @@ def create_aws_request_context(
         service_name,
         endpoint_url=endpoint_url,
         region_name=region,
-        config=BotoConfig(parameter_validation=False),
+        config=_non_validating_boto_config,
     )
     request_context = {
         "client_region": region,
