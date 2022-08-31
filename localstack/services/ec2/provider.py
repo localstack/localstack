@@ -63,7 +63,7 @@ class Ec2Provider(Ec2Api, ABC):
         context: RequestContext,
         describe_availability_zones_request: DescribeAvailabilityZonesRequest,
     ) -> DescribeAvailabilityZonesResult:
-        backend = ec2_backends[context.region]
+        backend = ec2_backends[context.account_id][context.region]
 
         availability_zones = []
         zone_names = describe_availability_zones_request.get("ZoneNames")
@@ -171,7 +171,7 @@ class Ec2Provider(Ec2Api, ABC):
         remove_security_group_ids: VpcEndpointSecurityGroupIdList = None,
         private_dns_enabled: Boolean = None,
     ) -> ModifyVpcEndpointResult:
-        backend = ec2_backends[context.region]
+        backend = ec2_backends[context.account_id][context.region]
 
         vpc_endpoint = backend.vpc_end_points.get(vpc_endpoint_id)
         if not vpc_endpoint:
@@ -210,9 +210,10 @@ class Ec2Provider(Ec2Api, ABC):
         except Exception as e:
             if not isinstance(e, ResponseParserError) and "InvalidParameterValue" not in str(e):
                 raise
-            # fix setting subnet attributes currently not supported upstream
-            backend = ec2_backends[context.region]
 
+            backend = ec2_backends[context.account_id][context.region]
+
+            # fix setting subnet attributes currently not supported upstream
             subnet_id = request["SubnetId"]
             host_type = request.get("PrivateDnsHostnameTypeOnLaunch")
             a_record_on_launch = request.get("EnableResourceNameDnsARecordOnLaunch")
@@ -241,7 +242,7 @@ class Ec2Provider(Ec2Api, ABC):
         self, context: RequestContext, request: CreateSubnetRequest
     ) -> CreateSubnetResult:
         response = call_moto(context)
-        backend = ec2_backends[context.region]
+        backend = ec2_backends[context.account_id][context.region]
         subnet_id = response["Subnet"]["SubnetId"]
         host_type = request.get("PrivateDnsHostnameTypeOnLaunch", "ip-name")
         attr_name = camelcase_to_underscores("PrivateDnsNameOptionsOnLaunch")
@@ -259,7 +260,7 @@ class Ec2Provider(Ec2Api, ABC):
             return call_moto(context)
         except Exception as e:
             if "specified rule does not exist" in str(e):
-                backend = ec2_backends[context.region]
+                backend = ec2_backends[context.account_id][context.region]
                 group_id = revoke_security_group_egress_request["GroupId"]
                 group = backend.get_security_group_by_name_or_id(group_id)
                 if group and not group.egress_rules:
@@ -273,7 +274,7 @@ class Ec2Provider(Ec2Api, ABC):
         request: DescribeSubnetsRequest,
     ) -> DescribeSubnetsResult:
         result = call_moto(context)
-        backend = ec2_backends[context.region]
+        backend = ec2_backends[context.account_id][context.region]
         # add additional/missing attributes in subnet responses
         for subnet in result.get("Subnets", []):
             subnet_obj = backend.subnets[subnet["AvailabilityZone"]].get(subnet["SubnetId"])

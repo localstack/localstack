@@ -5,7 +5,7 @@ import re
 import uuid
 from typing import Dict, Optional
 
-from moto.events.models import events_backends as moto_events_backends
+from moto.events.models import events_backends
 
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.services.awslambda.lambda_executors import InvocationException, InvocationResult
@@ -13,6 +13,7 @@ from localstack.utils import collections
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_stack import (
     connect_to_service,
+    extract_account_id_from_arn,
     extract_region_from_arn,
     firehose_name,
     get_sqs_queue_url,
@@ -79,7 +80,7 @@ def send_event_to_target(
     asynchronous: bool = True,
     target: Dict = {},
 ):
-    region = target_arn.split(":")[3]
+    region = extract_region_from_arn(target_arn)
 
     if ":lambda:" in target_arn:
         from localstack.services.awslambda import lambda_api
@@ -226,7 +227,7 @@ def send_event_to_api_destination(target_arn, event, http_parameters: Optional[D
     See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
 
     # ARN format: ...:api-destination/{name}/{uuid}
-    region = target_arn.split(":")[3]
+    region = extract_region_from_arn(target_arn)
     api_destination_name = target_arn.split(":")[-1].split("/")[1]
     events_client = connect_to_service("events", region_name=region)
     destination = events_client.describe_api_destination(Name=api_destination_name)
@@ -262,10 +263,12 @@ def send_event_to_api_destination(target_arn, event, http_parameters: Optional[D
 def add_api_destination_authorization(destination, headers, event):
     connection_arn = destination.get("ConnectionArn", "")
     connection_name = re.search(r"connection\/([a-zA-Z0-9-_]+)\/", connection_arn).group(1)
-    connection_region = extract_region_from_arn(connection_arn)
+
+    account_id = extract_account_id_from_arn(connection_arn)
+    region = extract_region_from_arn(connection_arn)
 
     # Using backend directly due to boto hiding passwords, keys and secret values
-    event_backend = moto_events_backends.get(connection_region)
+    event_backend = events_backends[account_id][region]
     connection = event_backend.describe_connection(name=connection_name)
 
     headers.update(auth_keys_from_connection(connection))

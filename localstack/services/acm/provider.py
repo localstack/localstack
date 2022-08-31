@@ -66,7 +66,7 @@ class AcmProvider(AcmApi):
         response: RequestCertificateResponse = moto.call_moto(context)
 
         cert_arn = response["CertificateArn"]
-        backend = acm_backends[context.region]
+        backend = acm_backends[context.account_id][context.region]
         cert = backend._certificates[cert_arn]
         if not hasattr(cert, "domain_validation_options"):
             cert.domain_validation_options = request.get("DomainValidationOptions")

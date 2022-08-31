@@ -1,7 +1,9 @@
 from io import BytesIO
 
 import pytest
+from moto.core import DEFAULT_ACCOUNT_ID
 
+import localstack.aws.accounts
 from localstack import config
 from localstack.aws.api import ServiceException, handler
 from localstack.services import moto
@@ -63,9 +65,9 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
         moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname})
     )
     url = response["QueueUrl"]
-    assert qname in sqs_backends[config.AWS_REGION_US_EAST_1].queues
+    assert qname in sqs_backends[DEFAULT_ACCOUNT_ID][config.AWS_REGION_US_EAST_1].queues
     moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
-    assert qname not in sqs_backends[config.AWS_REGION_US_EAST_1].queues
+    assert qname not in sqs_backends[DEFAULT_ACCOUNT_ID][config.AWS_REGION_US_EAST_1].queues
 
 
 @pytest.mark.parametrize(
@@ -74,8 +76,16 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
 def test_call_s3_with_streaming_trait(payload, monkeypatch):
     monkeypatch.setenv("MOTO_S3_CUSTOM_ENDPOINTS", "s3.localhost.localstack.cloud:4566")
 
+    # In this test we use low-level interface with Moto and skip the standard setup
+    # In the absence of below patch, Moto and LocalStack uses difference AWS Account IDs causing the test to fail
+    monkeypatch.setattr(
+        localstack.aws.accounts,
+        "account_id_resolver",
+        localstack.aws.accounts.get_moto_default_account_id,
+    )
+
     bucket_name = f"bucket-{short_uid()}"
-    key_name = "foobared"
+    key_name = f"key-{short_uid()}"
 
     # create the bucket
     moto.call_moto(moto.create_aws_request_context("s3", "CreateBucket", {"Bucket": bucket_name}))
@@ -124,8 +134,8 @@ def test_call_with_modified_request():
     response = moto.call_moto_with_request(context, {"QueueName": qname2})  # overwrite old request
 
     url = response["QueueUrl"]
-    assert qname2 in sqs_backends[config.AWS_REGION_US_EAST_1].queues
-    assert qname1 not in sqs_backends[config.AWS_REGION_US_EAST_1].queues
+    assert qname2 in sqs_backends[DEFAULT_ACCOUNT_ID][config.AWS_REGION_US_EAST_1].queues
+    assert qname1 not in sqs_backends[DEFAULT_ACCOUNT_ID][config.AWS_REGION_US_EAST_1].queues
 
     moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
 
@@ -175,14 +185,14 @@ def test_call_multi_region_backends():
         )
     )
 
-    assert qname_us in sqs_backends["us-east-1"].queues
-    assert qname_eu not in sqs_backends["us-east-1"].queues
+    assert qname_us in sqs_backends[DEFAULT_ACCOUNT_ID]["us-east-1"].queues
+    assert qname_eu not in sqs_backends[DEFAULT_ACCOUNT_ID]["us-east-1"].queues
 
-    assert qname_us not in sqs_backends["eu-central-1"].queues
-    assert qname_eu in sqs_backends["eu-central-1"].queues
+    assert qname_us not in sqs_backends[DEFAULT_ACCOUNT_ID]["eu-central-1"].queues
+    assert qname_eu in sqs_backends[DEFAULT_ACCOUNT_ID]["eu-central-1"].queues
 
-    del sqs_backends["us-east-1"].queues[qname_us]
-    del sqs_backends["eu-central-1"].queues[qname_eu]
+    del sqs_backends[DEFAULT_ACCOUNT_ID]["us-east-1"].queues[qname_us]
+    del sqs_backends[DEFAULT_ACCOUNT_ID]["eu-central-1"].queues[qname_eu]
 
 
 def test_call_with_sqs_invalid_call_raises_exception():

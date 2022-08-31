@@ -9,7 +9,7 @@ from functools import lru_cache
 from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
-from localstack.aws.accounts import get_aws_account_id, get_ctx_aws_access_key_id
+from localstack.aws.accounts import get_aws_access_key_id, get_aws_account_id
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -555,6 +555,13 @@ def parse_arn(arn: str) -> ArnData:
     return _arn_parser.parse_arn(arn)
 
 
+def extract_account_id_from_arn(arn: str) -> Optional[str]:
+    try:
+        return parse_arn(arn).get("account")
+    except InvalidArnException:
+        return None
+
+
 def extract_region_from_arn(arn: str) -> Optional[str]:
     try:
         return parse_arn(arn).get("region")
@@ -875,7 +882,7 @@ def mock_aws_request_headers(
     # For S3 presigned URLs, we require that the client and server use the same
     # access key ID to sign requests. So try to use the access key ID for the
     # current request if available
-    access_key = access_key or get_ctx_aws_access_key_id() or TEST_AWS_ACCESS_KEY_ID
+    access_key = access_key or get_aws_access_key_id() or TEST_AWS_ACCESS_KEY_ID
     region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,

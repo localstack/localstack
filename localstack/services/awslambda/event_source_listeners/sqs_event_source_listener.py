@@ -18,6 +18,7 @@ from localstack.services.awslambda.lambda_utils import (
     get_lambda_event_filters_for_arn,
 )
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.threads import FuncThread
 
 LOG = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ class SQSEventSourceListener(EventSourceListener):
 
                 for source in sources:
                     queue_arn = source["EventSourceArn"]
-                    region_name = queue_arn.split(":")[3]
+                    region_name = extract_region_from_arn(queue_arn)
                     sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
 
@@ -91,7 +92,7 @@ class SQSEventSourceListener(EventSourceListener):
         report_partial_failures = "ReportBatchItemFailures" in source.get(
             "FunctionResponseTypes", []
         )
-        region_name = queue_arn.split(":")[3]
+        region_name = extract_region_from_arn(queue_arn)
         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
         LOG.debug("Sending event from event source %s to Lambda %s", queue_arn, lambda_arn)
         res = self._send_event_to_lambda(
@@ -117,7 +118,7 @@ class SQSEventSourceListener(EventSourceListener):
                 # Even if ReportBatchItemFailures is set, the entire batch fails if an error is raised.
                 return
 
-            region_name = queue_arn.split(":")[3]
+            region_name = extract_region_from_arn(queue_arn)
             sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
 
             if report_partial_failures:

@@ -13,7 +13,6 @@ from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
 from localstack.services.infra import start_moto_server
 from localstack.services.s3 import s3_listener, s3_utils
-from localstack.services.s3.s3_listener import s3_global_backend
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import get_safe
 from localstack.utils.common import get_free_tcp_port, wait_for_port_open
@@ -116,7 +115,7 @@ def apply_patches():
     @patch(s3_responses.S3Response._bucket_response_head)
     def _bucket_response_head(fn, self, bucket_name, *args, **kwargs):
         code, headers, body = fn(self, bucket_name, *args, **kwargs)
-        bucket = s3_global_backend().get_bucket(bucket_name)
+        bucket = self.backend.get_bucket(bucket_name)
         headers["x-amz-bucket-region"] = bucket.region_name
         return code, headers, body
 
@@ -126,7 +125,7 @@ def apply_patches():
         # for some reason in the "get-bucket-location" call, moto doesn't return a code/headers/body triple as a result
         if isinstance(result, tuple) and len(result) == 3:
             code, headers, body = result
-            bucket = s3_global_backend().get_bucket(bucket_name)
+            bucket = self.backend.get_bucket(bucket_name)
             headers["x-amz-bucket-region"] = bucket.region_name
         return result
 

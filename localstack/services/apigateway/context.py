@@ -37,6 +37,7 @@ class ApiInvocationContext:
     apigw_version: ApiGatewayVersion
     api_id: str
     stage: str
+    account_id: str
     region_name: str
     # resource path, including any path parameter placeholders (e.g., "/my/path/{id}")
     resource_path: str
@@ -82,6 +83,7 @@ class ApiInvocationContext:
         self.api_id = api_id
         self.stage = stage
         self.region_name = None
+        self.account_id = None
         self.integration = None
         self.resource = None
         self.resource_path = None

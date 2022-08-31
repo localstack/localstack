@@ -53,10 +53,12 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
-from localstack.utils.archives import get_unzipped_size, is_zip_file, unzip
+from localstack.utils.archives import unzip
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
+from localstack.utils.aws.aws_stack import extract_region_from_arn
+from localstack.utils.common import get_unzipped_size, is_zip_file
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import TMP_FILES, ensure_readable, load_file, mkdir, save_file
@@ -551,7 +553,7 @@ def run_lambda(
         aws_stack.connect_to_service("lambda").list_functions()
         run_lambda._provider_initialized = True
 
-    region_name = func_arn.split(":")[3]
+    region_name = extract_region_from_arn(func_arn)
     region = LambdaRegion.get(region_name)
     if suppress_output:
         stdout_ = sys.stdout
@@ -947,7 +949,7 @@ def do_list_functions():
             continue
 
         # filter out functions of current region
-        func_region = f_arn.split(":")[3]
+        func_region = extract_region_from_arn(f_arn)
         if func_region != this_region:
             continue
 

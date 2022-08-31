@@ -22,12 +22,14 @@ from localstack.aws.api.cloudwatch import (
     TagResourceOutput,
     UntagResourceOutput,
 )
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Request
 from localstack.services import moto
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.patch import patch
 from localstack.utils.sync import poll_condition
 from localstack.utils.tagging import TaggingService
@@ -191,7 +193,7 @@ class ValidationError(CommonServiceException):
 
 
 def _set_alarm_actions(context, alarm_names, enabled):
-    backend = cloudwatch_backends[context.region]
+    backend = cloudwatch_backends[context.account_id][context.region]
     for name in alarm_names:
         alarm = backend.alarms.get(name)
         if alarm:
@@ -244,7 +246,10 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
     def get_raw_metrics(self, request: Request):
         region = aws_stack.extract_region_from_auth_header(request.headers)
-        backend = cloudwatch_backends[region]
+        account_id = (
+            extract_access_key_id_from_auth_header(request.headers) or DEFAULT_AWS_ACCOUNT_ID
+        )
+        backend = cloudwatch_backends[account_id][region]
         if backend:
             result = backend.metric_data
         else:
@@ -329,7 +334,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutCompositeAlarmInput,
     ) -> None:
-        backend = cloudwatch_backends[context.region]
+        backend = cloudwatch_backends[context.account_id][context.region]
         backend.put_metric_alarm(
             name=request.get("AlarmName"),
             namespace=None,

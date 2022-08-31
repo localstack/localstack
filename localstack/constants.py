@@ -38,14 +38,16 @@ DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
 
+# Fallback Account ID if not available in the client request
+DEFAULT_AWS_ACCOUNT_ID = "000000000000"
+
 # AWS user account ID used for tests - TODO move to config.py
 if "TEST_AWS_ACCOUNT_ID" not in os.environ:
-    os.environ["TEST_AWS_ACCOUNT_ID"] = "000000000000"
+    os.environ["TEST_AWS_ACCOUNT_ID"] = DEFAULT_AWS_ACCOUNT_ID
 
-# WARNING:
-# Do not use this constant to access the Account ID.
-# Use `localstack.aws.accounts.get_aws_account_id()` instead.
-_TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
+# Values used by tests
+TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
+TEST_AWS_REGION_NAME = "us-west-2"
 
 # root code folder
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))

@@ -5,7 +5,7 @@ import sys
 from functools import lru_cache
 from typing import Callable, Optional, Union
 
-from moto.backends import get_backend as get_moto_backend
+import moto.backends as moto_backends
 from moto.core.exceptions import RESTError
 from moto.core.utils import BackendDict
 from moto.moto_server.utilities import RegexConverter
@@ -27,6 +27,7 @@ from localstack.aws.forwarder import (
     dispatch_to_backend,
 )
 from localstack.aws.skeleton import DispatchTable
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Response
 
 MotoDispatcher = Callable[[HttpRequest, str, dict], Response]
@@ -146,9 +147,14 @@ def load_moto_routing_table(service: str) -> Map:
     :return: a new Map object
     """
     # code from moto.moto_server.werkzeug_app.create_backend_app
-    backend_dict: BackendDict = get_moto_backend(service)
-    if "us-east-1" in backend_dict:
-        backend = backend_dict["us-east-1"]
+    backend_dict = moto_backends.get_backend(service)
+    # Get an instance of this backend.
+    # We'll only use this backend to resolve the URL's, so the exact region/account_id is irrelevant
+    if isinstance(backend_dict, BackendDict):
+        if "us-east-1" in backend_dict[DEFAULT_AWS_ACCOUNT_ID]:
+            backend = backend_dict[DEFAULT_AWS_ACCOUNT_ID]["us-east-1"]
+        else:
+            backend = backend_dict[DEFAULT_AWS_ACCOUNT_ID]["global"]
     else:
         backend = backend_dict["global"]
 
