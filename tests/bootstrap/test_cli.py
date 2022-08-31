@@ -1,3 +1,5 @@
+import json
+
 import pytest
 import requests
 from click.testing import CliRunner
@@ -6,7 +8,6 @@ import localstack.utils.container_utils.docker_cmd_client
 from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
 from localstack.config import DOCKER_SOCK, get_edge_url, in_docker
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import poll_condition
 from localstack.utils.run import to_str
 
@@ -166,10 +167,10 @@ class TestCliContainerLifecycle:
         runner.invoke(cli, ["start", "-d"])
         runner.invoke(cli, ["wait", "-t", "60"])
 
-        client = aws_stack.connect_to_service(
-            "stepfunctions", aws_access_key_id="test", aws_secret_access_key="test"
-        )
-        assert client.list_state_machines()
+        cmd = ["awslocal", "stepfunctions", "list-state-machines"]
+        output = container_client.exec_in_container(config.MAIN_CONTAINER_NAME, cmd)
+        result = json.loads(output[0])
+        assert "stateMachines" in result
 
         output = container_client.exec_in_container(config.MAIN_CONTAINER_NAME, ["ps", "-u", user])
         assert "supervisord" in to_str(output[0])

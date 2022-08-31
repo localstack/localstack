@@ -613,7 +613,7 @@ def update_jar_manifest(
         run(["unzip", "-o", jar_path, manifest_file_path], cwd=tmp_dir)
         manifest = load_file(tmp_manifest_file)
 
-    # return if the search pattern does not match (to make the logic idempotent), otherwise replace the content
+    # return if the search pattern does not match (for idempotence, to avoid file permission issues further below)
     if isinstance(search, re.Pattern):
         if not search.search(manifest):
             return
