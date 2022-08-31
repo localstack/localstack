@@ -171,6 +171,11 @@ def legacy_rules(request: Request) -> Optional[str]:
     if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
         return "dynamodb"
 
+    # TODO Remove once fallback to S3 is disabled (after S3 ASF and Cors rework)
+    # necessary for correct handling of cors for internal endpoints
+    if path == "/health" or path.startswith("/_localstack"):
+        return None
+
     # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
     #      Some are similar to other rules and not that greedy, others are nearly general fallbacks.
     stripped = path.strip("/")
