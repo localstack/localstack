@@ -30,7 +30,6 @@ API_PATH_ROOT = "/2015-03-31"
 API_PATH_ROOT_2 = "/2021-10-31"
 
 
-
 # Lambda runtime constants (LEGACY, use values in Runtime class instead)
 LAMBDA_RUNTIME_PYTHON36 = Runtime.python3_6
 LAMBDA_RUNTIME_PYTHON37 = Runtime.python3_7
@@ -53,7 +52,7 @@ LAMBDA_RUNTIME_PROVIDED_AL2 = Runtime.provided_al2
 
 # default handler and runtime
 LAMBDA_DEFAULT_HANDLER = "handler.handler"
-LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON37 # FIXME (?)
+LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON37  # FIXME (?)
 LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 
 # List of Dotnet Lambda runtime names

@@ -4,14 +4,24 @@ import time
 import pytest
 
 from localstack.services.awslambda.lambda_api import INVALID_PARAMETER_VALUE_EXCEPTION
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_PYTHON39
+from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_RUNTIME_PYTHON37,
+    LAMBDA_RUNTIME_PYTHON39,
+)
+from localstack.testing.aws.lambda_utils import (
+    _await_dynamodb_table_active,
+    _await_event_source_mapping_enabled,
+    lambda_role,
+    s3_lambda_permission,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import retry, poll_condition
+from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBDA_PYTHON_UNHANDLED_ERROR
-from localstack.testing.aws.lambda_utils import lambda_role, s3_lambda_permission, _await_event_source_mapping_enabled, \
-    _await_dynamodb_table_active
+from tests.integration.awslambda.test_lambda import (
+    TEST_LAMBDA_PYTHON_ECHO,
+    TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
+)
 
 
 class TestDynamoDBEventSourceMapping:

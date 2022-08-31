@@ -16,6 +16,7 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import SNSBackend
 from localstack.testing.aws.util import is_aws_cloud
@@ -26,11 +27,7 @@ from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import (
-    TEST_LAMBDA_LIBS,
-    TEST_LAMBDA_PYTHON,
-    TEST_LAMBDA_PYTHON_ECHO,
-)
+from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
 PUBLICATION_TIMEOUT = 0.500
 PUBLICATION_RETRIES = 4

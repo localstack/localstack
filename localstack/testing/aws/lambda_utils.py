@@ -86,11 +86,17 @@ s3_lambda_permission = {
 }
 
 
-def _await_event_source_mapping_enabled(lambda_client, uuid, retries=30):
-    def assert_mapping_enabled():
-        assert lambda_client.get_event_source_mapping(UUID=uuid)["State"] == "Enabled"
+def _await_event_source_mapping_state(lambda_client, uuid, state, retries=30):
+    def assert_mapping_disabled():
+        assert lambda_client.get_event_source_mapping(UUID=uuid)["State"] == state
 
-    retry(assert_mapping_enabled, sleep_before=2, retries=retries)
+    retry(assert_mapping_disabled, sleep_before=2, retries=retries)
+
+
+def _await_event_source_mapping_enabled(lambda_client, uuid, retries=30):
+    return _await_event_source_mapping_state(
+        lambda_client=lambda_client, uuid=uuid, retries=retries, state="Enabled"
+    )
 
 
 def _await_dynamodb_table_active(dynamodb_client, table_name, retries=6):
