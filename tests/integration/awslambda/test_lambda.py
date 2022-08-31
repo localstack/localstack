@@ -1,25 +1,19 @@
 import json
 import logging
 import os
-from io import BytesIO
 from typing import Dict, TypeVar
 
 import pytest
 from botocore.response import StreamingBody
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.awslambda.lambda_api import LAMBDA_DEFAULT_HANDLER
-from localstack.testing.aws.lambda_utils import (
-    concurrency_update_done,
-    get_invoke_init_type,
-    update_done,
-)
 from localstack.utils import testutil
 from localstack.utils.common import load_file, retry, safe_requests, short_uid, to_bytes, to_str
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.testutil import create_lambda_archive
 
 LOG = logging.getLogger(__name__)
+FUNCTION_MAX_UNZIPPED_SIZE = 262144000
 
 
 # TODO: find a better way to manage these handler files
@@ -122,6 +116,7 @@ class TestLambdaBaseFeatures:
         result_data = json.loads(to_str(result_data))
         assert payload == result_data
 
+    # TODO
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify  # skipped - the diff is too big
     @pytest.mark.skipif(
@@ -311,186 +306,6 @@ class TestLambdaBehavior:
 
         wait_until(_assert_log_output, strategy="linear")
 
-    @pytest.mark.skip(reason="very slow (only execute when needed)")
-    def test_lambda_provisioned_concurrency_moves_with_alias(
-        self, lambda_client, logs_client, create_lambda_function, snapshot
-    ):
-        """
-        create fn ⇒ publish version ⇒ create alias for version ⇒ put concurrency on alias
-        ⇒ new version with change ⇒ change alias to new version ⇒ concurrency moves with alias? same behavior for calls to alias/version?
-        """
-        snapshot.add_transformer(snapshot.transform.lambda_api())
-
-        func_name = f"test_lambda_{short_uid()}"
-        alias_name = f"test_alias_{short_uid()}"
-
-        create_result = create_lambda_function(
-            func_name=func_name,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_8,
-            client=lambda_client,
-            timeout=2,
-        )
-        snapshot.match("create-result", create_result)
-
-        fn = lambda_client.get_function_configuration(FunctionName=func_name, Qualifier="$LATEST")
-        snapshot.match("get-function-configuration", fn)
-        assert fn["State"] == "Active"
-
-        first_ver = lambda_client.publish_version(
-            FunctionName=func_name, RevisionId=fn["RevisionId"], Description="my-first-version"
-        )
-        snapshot.match("publish_version_1", first_ver)
-        assert first_ver["State"] == "Active"
-        assert fn["RevisionId"] != first_ver["RevisionId"]
-
-        get_function_configuration = lambda_client.get_function_configuration(
-            FunctionName=func_name, Qualifier=first_ver["Version"]
-        )
-        snapshot.match("get_function_configuration_version_1", first_ver)
-        assert get_function_configuration["RevisionId"] == first_ver["RevisionId"]
-
-        # There's no ProvisionedConcurrencyConfiguration yet
-        assert get_invoke_init_type(lambda_client, func_name, first_ver["Version"]) == "on-demand"
-
-        # Create Alias and add ProvisionedConcurrencyConfiguration to it
-        alias = lambda_client.create_alias(
-            FunctionName=func_name, FunctionVersion=first_ver["Version"], Name=alias_name
-        )
-        snapshot.match("create_alias", alias)
-        assert alias["FunctionVersion"] == first_ver["Version"]
-        assert alias["RevisionId"] != first_ver["RevisionId"]
-        get_function_result = lambda_client.get_function(
-            FunctionName=func_name, Qualifier=first_ver["Version"]
-        )
-        versioned_revision_id_before = get_function_result["Configuration"]["RevisionId"]
-        snapshot.match("get_function_before_provisioned", get_function_result)
-        lambda_client.put_provisioned_concurrency_config(
-            FunctionName=func_name, Qualifier=alias_name, ProvisionedConcurrentExecutions=1
-        )
-        assert wait_until(concurrency_update_done(lambda_client, func_name, alias_name))
-        get_function_result = lambda_client.get_function(
-            FunctionName=func_name, Qualifier=alias_name
-        )
-        snapshot.match("get_function_after_provisioned", get_function_result)
-        versioned_revision_id_after = get_function_result["Configuration"]["RevisionId"]
-        assert versioned_revision_id_before != versioned_revision_id_after
-
-        # Alias AND Version now both use provisioned-concurrency (!)
-        assert (
-            get_invoke_init_type(lambda_client, func_name, first_ver["Version"])
-            == "provisioned-concurrency"
-        )
-        assert (
-            get_invoke_init_type(lambda_client, func_name, alias_name) == "provisioned-concurrency"
-        )
-
-        # Update lambda configuration and publish new version
-        lambda_client.update_function_configuration(FunctionName=func_name, Timeout=10)
-        assert wait_until(update_done(lambda_client, func_name))
-        lambda_conf = lambda_client.get_function_configuration(FunctionName=func_name)
-        snapshot.match("get_function_after_update", lambda_conf)
-
-        # Move existing alias to the new version
-        new_version = lambda_client.publish_version(
-            FunctionName=func_name, RevisionId=lambda_conf["RevisionId"]
-        )
-        snapshot.match("publish_version_2", new_version)
-        new_alias = lambda_client.update_alias(
-            FunctionName=func_name, FunctionVersion=new_version["Version"], Name=alias_name
-        )
-        snapshot.match("update_alias", new_alias)
-        assert new_alias["RevisionId"] != new_version["RevisionId"]
-
-        # lambda should now be provisioning new "hot" execution environments for this new alias->version pointer
-        # the old one should be de-provisioned
-        get_provisioned_config_result = lambda_client.get_provisioned_concurrency_config(
-            FunctionName=func_name, Qualifier=alias_name
-        )
-        snapshot.match("get_provisioned_config_after_alias_move", get_provisioned_config_result)
-        assert wait_until(
-            concurrency_update_done(lambda_client, func_name, alias_name),
-            strategy="linear",
-            wait=30,
-            max_retries=20,
-            _max_wait=600,
-        )  # this is SLOW (~6-8 min)
-
-        # concurrency should still only work for the alias now
-        # NOTE: the old version has been de-provisioned and will run 'on-demand' now!
-        assert get_invoke_init_type(lambda_client, func_name, first_ver["Version"]) == "on-demand"
-        assert (
-            get_invoke_init_type(lambda_client, func_name, new_version["Version"])
-            == "provisioned-concurrency"
-        )
-        assert (
-            get_invoke_init_type(lambda_client, func_name, alias_name) == "provisioned-concurrency"
-        )
-
-        # ProvisionedConcurrencyConfig should only be "registered" to the alias, not the referenced version
-        with pytest.raises(Exception) as e:
-            lambda_client.get_provisioned_concurrency_config(
-                FunctionName=func_name, Qualifier=new_version["Version"]
-            )
-        e.match("ProvisionedConcurrencyConfigNotFoundException")
-
-    @pytest.mark.skip(reason="very slow (only execute when needed)")
-    def test_lambda_provisioned_concurrency_doesnt_apply_to_latest(
-        self, lambda_client, logs_client, create_lambda_function
-    ):
-        """create fn ⇒ publish version ⇒ provisioned concurrency @version ⇒ test if it applies to call to $LATEST"""
-
-        func_name = f"test_lambda_{short_uid()}"
-        create_lambda_function(
-            func_name=func_name,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_8,
-            client=lambda_client,
-            timeout=2,
-        )
-
-        fn = lambda_client.get_function_configuration(FunctionName=func_name, Qualifier="$LATEST")
-        assert fn["State"] == "Active"
-
-        first_ver = lambda_client.publish_version(
-            FunctionName=func_name, RevisionId=fn["RevisionId"], Description="my-first-version"
-        )
-        assert first_ver["State"] == "Active"
-        assert fn["RevisionId"] != first_ver["RevisionId"]
-        assert (
-            lambda_client.get_function_configuration(
-                FunctionName=func_name, Qualifier=first_ver["Version"]
-            )["RevisionId"]
-            == first_ver["RevisionId"]
-        )
-
-        # Normal published version without ProvisionedConcurrencyConfiguration
-        assert get_invoke_init_type(lambda_client, func_name, first_ver["Version"]) == "on-demand"
-
-        # Create ProvisionedConcurrencyConfiguration for this Version
-        versioned_revision_id_before = lambda_client.get_function(
-            FunctionName=func_name, Qualifier=first_ver["Version"]
-        )["Configuration"]["RevisionId"]
-        lambda_client.put_provisioned_concurrency_config(
-            FunctionName=func_name,
-            Qualifier=first_ver["Version"],
-            ProvisionedConcurrentExecutions=1,
-        )
-        assert wait_until(concurrency_update_done(lambda_client, func_name, first_ver["Version"]))
-        versioned_revision_id_after = lambda_client.get_function(
-            FunctionName=func_name, Qualifier=first_ver["Version"]
-        )["Configuration"]["RevisionId"]
-        assert versioned_revision_id_before != versioned_revision_id_after
-        assert (
-            get_invoke_init_type(lambda_client, func_name, first_ver["Version"])
-            == "provisioned-concurrency"
-        )
-
-        # $LATEST does *NOT* use provisioned concurrency
-        assert get_invoke_init_type(lambda_client, func_name, "$LATEST") == "on-demand"
-        # TODO: why is this flaky?
-        # assert lambda_client.get_function(FunctionName=func_name, Qualifier='$LATEST')['Configuration']['RevisionId'] == lambda_client.get_function(FunctionName=func_name, Qualifier=first_ver['Version'])['Configuration']['RevisionId']
-
 
 # features
 class TestLambdaURL:
@@ -602,115 +417,6 @@ class TestLambdaURL:
         event = json.loads(result.content)["event"]
         assert "Body" not in event
         assert event["isBase64Encoded"] is False
-
-
-FUNCTION_MAX_UNZIPPED_SIZE = 262144000
-
-
-def generate_sized_python_str(filepath: str, size: int) -> str:
-    """Generate a text of the specified size by appending #s at the end of the file"""
-    with open(filepath, "r") as f:
-        py_str = f.read()
-    py_str += "#" * (size - len(py_str))
-    return py_str
-
-
-@pytest.mark.aws_validated
-class TestLambdaSizeLimits:
-    def test_oversized_lambda(self, lambda_client, s3_client, s3_bucket, lambda_su_role, snapshot):
-        snapshot.add_transformer(snapshot.transform.lambda_api())
-
-        function_name = f"test_lambda_{short_uid()}"
-        bucket_key = "test_lambda.zip"
-        code_str = generate_sized_python_str(FUNCTION_MAX_UNZIPPED_SIZE)
-
-        # upload zip file to S3
-        zip_file = testutil.create_lambda_archive(
-            code_str, get_content=True, runtime=Runtime.python3_7
-        )
-        s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
-
-        # create lambda function
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
-            lambda_client.create_function(
-                FunctionName=function_name,
-                Runtime=Runtime.python3_7,
-                Handler=LAMBDA_DEFAULT_HANDLER,
-                Role=lambda_su_role,
-                Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
-                Timeout=10,
-            )
-        snapshot.match("invalid_param_exc", e.value.response)
-
-    # TODO: snapshot
-    def test_large_lambda(self, lambda_client, s3_client, s3_bucket, lambda_su_role, cleanups):
-        function_name = f"test_lambda_{short_uid()}"
-        cleanups.append(lambda: lambda_client.delete_function(FunctionName=function_name))
-        bucket_key = "test_lambda.zip"
-        code_str = generate_sized_python_str(FUNCTION_MAX_UNZIPPED_SIZE - 1000)
-
-        # upload zip file to S3
-        zip_file = testutil.create_lambda_archive(
-            code_str, get_content=True, runtime=Runtime.python3_7
-        )
-        s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
-
-        # create lambda function
-        result = lambda_client.create_function(
-            FunctionName=function_name,
-            Runtime=Runtime.python3_7,
-            Handler=LAMBDA_DEFAULT_HANDLER,
-            Role=lambda_su_role,
-            Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
-            Timeout=10,
-        )
-
-        function_arn = result["FunctionArn"]
-        assert testutil.response_arn_matches_partition(lambda_client, function_arn)
-
-
-LOG = logging.Logger(__name__)
-
-
-# TODO: move this to fixtures / reconcile with other fixture usage
-@pytest.fixture
-def create_lambda_function_aws(
-    lambda_client,
-):
-    lambda_arns = []
-
-    def _create_lambda_function(**kwargs):
-        def _create_function():
-            resp = lambda_client.create_function(**kwargs)
-            lambda_arns.append(resp["FunctionArn"])
-
-            def _is_not_pending():
-                try:
-                    result = (
-                        lambda_client.get_function(FunctionName=resp["FunctionName"])[
-                            "Configuration"
-                        ]["State"]
-                        != "Pending"
-                    )
-                    return result
-                except Exception as e:
-                    LOG.error(e)
-                    raise
-
-            wait_until(_is_not_pending)
-            return resp
-
-        # @AWS, takes about 10s until the role/policy is "active", until then it will fail
-        # localstack should normally not require the retries and will just continue here
-        return retry(_create_function, retries=3, sleep=4)
-
-    yield _create_lambda_function
-
-    for arn in lambda_arns:
-        try:
-            lambda_client.delete_function(FunctionName=arn)
-        except Exception:
-            LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
 
 @pytest.mark.skip_snapshot_verify

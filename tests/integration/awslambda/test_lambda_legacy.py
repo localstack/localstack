@@ -6,10 +6,12 @@ from botocore.exceptions import ClientError
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.apigateway.helpers import path_based_url
+from localstack.services.awslambda import lambda_api
 from localstack.services.awslambda.lambda_api import (
     BATCH_SIZE_RANGES,
     INVALID_PARAMETER_VALUE_EXCEPTION,
     LAMBDA_TEST_ROLE,
+    get_lambda_policy_name,
 )
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
@@ -17,12 +19,12 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON37,
     LAMBDA_RUNTIME_PYTHON39,
 )
-from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
+from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled, is_old_provider
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from localstack.utils.testutil import (
     check_expected_lambda_log_events_length,
@@ -385,6 +387,120 @@ class TestSQSEventSourceMapping:
 
 
 class TestLambdaLegacyProvider:
+    @pytest.mark.skipif(
+        not is_old_provider(), reason="test does not make valid assertions against AWS"
+    )
+    def test_add_lambda_multiple_permission(
+        self, iam_client, lambda_client, create_lambda_function
+    ):
+        """Test adding multiple permissions"""
+        function_name = f"lambda_func-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        # create lambda permissions
+        action = "lambda:InvokeFunction"
+        principal = "s3.amazonaws.com"
+        statement_ids = ["s4", "s5"]
+        for sid in statement_ids:
+            resp = lambda_client.add_permission(
+                FunctionName=function_name,
+                Action=action,
+                StatementId=sid,
+                Principal=principal,
+                SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+            )
+            assert "Statement" in resp
+
+        # fetch IAM policy
+        # this is not a valid assertion in general (especially against AWS)
+        policies = iam_client.list_policies(Scope="Local", MaxItems=500)["Policies"]
+        policy_name = get_lambda_policy_name(function_name)
+        matching = [p for p in policies if p["PolicyName"] == policy_name]
+        assert 1 == len(matching)
+        assert ":policy/" in matching[0]["Arn"]
+
+        # validate both statements
+        policy = matching[0]
+        versions = iam_client.list_policy_versions(PolicyArn=policy["Arn"])["Versions"]
+        assert 1 == len(versions)
+        statements = versions[0]["Document"]["Statement"]
+        for i in range(len(statement_ids)):
+            assert action == statements[i]["Action"]
+            assert lambda_api.func_arn(function_name) == statements[i]["Resource"]
+            assert principal == statements[i]["Principal"]["Service"]
+            assert (
+                aws_stack.s3_bucket_arn("test-bucket")
+                == statements[i]["Condition"]["ArnLike"]["AWS:SourceArn"]
+            )
+            # check statement_ids in reverse order
+            assert statement_ids[abs(i - 1)] == statements[i]["Sid"]
+
+        # remove permission that we just added
+        resp = lambda_client.remove_permission(
+            FunctionName=function_name,
+            StatementId=sid,
+            Qualifier="qual1",
+            RevisionId="r1",
+        )
+        assert 200 == resp["ResponseMetadata"]["HTTPStatusCode"]
+
+    @pytest.mark.skipif(
+        not is_old_provider(), reason="test does not make valid assertions against AWS"
+    )
+    def test_add_lambda_permission(self, lambda_client, iam_client, create_lambda_function):
+        function_name = f"lambda_func-{short_uid()}"
+        lambda_create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+        lambda_arn = lambda_create_response["CreateFunctionResponse"]["FunctionArn"]
+        # create lambda permission
+        action = "lambda:InvokeFunction"
+        sid = "s3"
+        principal = "s3.amazonaws.com"
+        resp = lambda_client.add_permission(
+            FunctionName=function_name,
+            Action=action,
+            StatementId=sid,
+            Principal=principal,
+            SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
+        )
+
+        # fetch lambda policy
+        policy = lambda_client.get_policy(FunctionName=function_name)["Policy"]
+        assert isinstance(policy, str)
+        policy = json.loads(to_str(policy))
+        assert action == policy["Statement"][0]["Action"]
+        assert sid == policy["Statement"][0]["Sid"]
+        assert lambda_arn == policy["Statement"][0]["Resource"]
+        assert principal == policy["Statement"][0]["Principal"]["Service"]
+        assert (
+            aws_stack.s3_bucket_arn("test-bucket")
+            == policy["Statement"][0]["Condition"]["ArnLike"]["AWS:SourceArn"]
+        )
+
+        # fetch IAM policy
+        # this is not a valid assertion in general (especially against AWS)
+        policies = iam_client.list_policies(Scope="Local", MaxItems=500)["Policies"]
+        policy_name = get_lambda_policy_name(function_name)
+        matching = [p for p in policies if p["PolicyName"] == policy_name]
+        assert len(matching) == 1
+        assert ":policy/" in matching[0]["Arn"]
+
+        # remove permission that we just added
+        resp = lambda_client.remove_permission(
+            FunctionName=function_name,
+            StatementId=sid,
+            Qualifier="qual1",
+            RevisionId="r1",
+        )
+        assert 200 == resp["ResponseMetadata"]["HTTPStatusCode"]
+
     @pytest.mark.only_localstack
     def test_create_lambda_function(self, lambda_client):
         """Basic test that creates and deletes a Lambda function"""

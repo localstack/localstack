@@ -16,6 +16,7 @@ from tests.integration.awslambda.test_lambda import (
 
 class TestLambdaDLQ:
     @pytest.mark.skip_snapshot_verify
+    # @pytest.mark.aws_validated
     def test_dead_letter_queue(
         self,
         lambda_client,
@@ -102,6 +103,7 @@ class TestLambdaDestinationSqs:
         ],
     )
     @pytest.mark.skip_snapshot_verify
+    # @pytest.mark.aws_validated
     def test_assess_lambda_destination_invocation(
         self,
         condition,
@@ -158,13 +160,13 @@ class TestLambdaDestinationSqs:
         retry(receive_message, retries=120, sleep=3)
 
 
-class TestLambdaDestinationSns:
-    ...  # TODO
-
-
-class TestLambdaDestinationLambda:
-    ...  # TODO
-
-
-class TestLambdaDestinationEventbridge:
-    ...  # TODO
+# class TestLambdaDestinationSns:
+#     ...  # TODO
+#
+#
+# class TestLambdaDestinationLambda:
+#     ...  # TODO
+#
+#
+# class TestLambdaDestinationEventbridge:
+#     ...  # TODO
