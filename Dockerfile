@@ -41,8 +41,8 @@ ARG TARGETARCH
 RUN apt-get update && \
         # Install dependencies to add additional repos
         apt-get install -y --no-install-recommends ca-certificates curl && \
-        # Setup Node 14 Repo
-        curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
+        # Setup Node 18 Repo
+        curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
         # Install Packages
         apt-get update && \
         apt-get install -y --no-install-recommends \
