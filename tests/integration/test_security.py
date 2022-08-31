@@ -32,6 +32,13 @@ class TestCSRF:
         assert response.headers["access-control-allow-origin"] == "https://app.localstack.cloud"
         assert "GET" in response.headers["access-control-allow-methods"].split(",")
 
+    def test_internal_route_cors_headers(self):
+        headers = {"Origin": "https://app.localstack.cloud"}
+        response = requests.get(f"{config.get_edge_url()}/health", headers=headers)
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == "https://app.localstack.cloud"
+        assert "GET" in response.headers["access-control-allow-methods"].split(",")
+
     def test_cors_s3_override(self, s3_client, s3_bucket, monkeypatch):
         monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", True)
 
