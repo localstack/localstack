@@ -1541,7 +1541,8 @@ def cleanups(ec2_client):
 
 
 @pytest.fixture(scope="session")
-def account_id(sts_client):
+def account_id():
+    sts_client = _client("sts")
     return sts_client.get_caller_identity()["Account"]
 
 
