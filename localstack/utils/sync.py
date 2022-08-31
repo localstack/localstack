@@ -1,8 +1,11 @@
 """Concurrency synchronization utilities"""
+import dataclasses
 import functools
 import sys
 import time
-from typing import Callable
+from typing import Callable, TypeVar, ParamSpec, Optional, Generic
+
+import mypy_boto3_lambda
 
 if sys.version_info >= (3, 8):
     from typing import Literal
@@ -47,6 +50,39 @@ def wait_until(
         elif strategy == "exponential":
             next_wait = wait * 2
         return wait_until(fn, next_wait, max_retries, strategy, _retries + 1, _max_wait)
+
+
+
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
+class WaitResult(Generic[T]):
+    success: bool  # TODO
+    retries: int  # TODO
+    short_circuited: bool  # TODO
+    result: T
+
+    def __bool__(self):
+        return self.success
+
+
+def wait_until2(
+    fn: Callable[P, T],
+    # TODO: retry params
+) -> Callable[P, WaitResult[T]]:
+    """waits until a given condition is true, rechecking it periodically"""
+
+    def _inner(*args, **kwargs):
+        # TODO: retry loop
+        result = fn(*args, **kwargs)
+        returned_result = WaitResult[T]()
+        returned_result.result = result
+        return returned_result
+
+    return _inner
+
+# TODO: map all other sync utils to this one :)
 
 
 def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
