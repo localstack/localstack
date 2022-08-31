@@ -252,6 +252,11 @@ class TestKinesis:
         assert select_attributes(json_records[0], attrs) == select_attributes(
             result["Records"][0], attrs
         )
+        # ensure that the CBOR datetime format is unix timestamp millis
+        assert (
+            int(json_records[0]["ApproximateArrivalTimestamp"].timestamp() * 1000)
+            == result["Records"][0]["ApproximateArrivalTimestamp"]
+        )
 
     def test_get_records_empty_stream(
         self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
