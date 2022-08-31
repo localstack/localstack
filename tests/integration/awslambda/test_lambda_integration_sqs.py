@@ -329,6 +329,7 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
     snapshot.match("messages", messages)
 
 
+# TODO: flaky against AWS
 @pytest.mark.skip_snapshot_verify(
     paths=[
         # FIXME: we don't seem to be returning SQS FIFO sequence numbers correctly

@@ -6,20 +6,35 @@ from botocore.exceptions import ClientError
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.apigateway.helpers import path_based_url
-from localstack.services.awslambda.lambda_api import BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_NODEJS14X, LAMBDA_RUNTIME_PYTHON39, \
-    LAMBDA_RUNTIME_PYTHON37, LAMBDA_DEFAULT_HANDLER
+from localstack.services.awslambda.lambda_api import (
+    BATCH_SIZE_RANGES,
+    INVALID_PARAMETER_VALUE_EXCEPTION,
+    LAMBDA_TEST_ROLE,
+)
+from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_DEFAULT_HANDLER,
+    LAMBDA_RUNTIME_NODEJS14X,
+    LAMBDA_RUNTIME_PYTHON37,
+    LAMBDA_RUNTIME_PYTHON39,
+)
+from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
-from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events, \
-    create_lambda_archive
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS, TEST_LAMBDA_NODEJS_APIGW_502, \
-    TEST_LAMBDA_PYTHON_ECHO
-from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
+from localstack.utils.testutil import (
+    check_expected_lambda_log_events_length,
+    create_lambda_archive,
+    get_lambda_log_events,
+)
+from tests.integration.awslambda.test_lambda import (
+    TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_NODEJS_APIGW_502,
+    TEST_LAMBDA_PYTHON,
+    TEST_LAMBDA_PYTHON_ECHO,
+)
 
 
 class TestLambdaHttpInvocation:

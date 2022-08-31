@@ -8,28 +8,16 @@ import pytest
 from botocore.response import StreamingBody
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.awslambda.lambda_api import (
-    LAMBDA_DEFAULT_HANDLER,
-)
+from localstack.services.awslambda.lambda_api import LAMBDA_DEFAULT_HANDLER
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
     get_invoke_init_type,
-    update_done, )
+    update_done,
+)
 from localstack.utils import testutil
-from localstack.utils.common import (
-    load_file,
-    retry,
-    safe_requests,
-    short_uid,
-    to_bytes,
-    to_str,
-)
+from localstack.utils.common import load_file, retry, safe_requests, short_uid, to_bytes, to_str
 from localstack.utils.generic.wait_utils import wait_until
-from localstack.utils.testutil import (
-    create_lambda_archive,
-)
-
-from .functions import lambda_integration
+from localstack.utils.testutil import create_lambda_archive
 
 LOG = logging.getLogger(__name__)
 
@@ -96,6 +84,7 @@ TEST_LAMBDA_LIBS = [
 
 T = TypeVar("T")
 
+
 def read_streams(payload: T) -> T:
     new_payload = {}
     for k, v in payload.items():
@@ -109,8 +98,6 @@ def read_streams(payload: T) -> T:
 
 
 class TestLambdaBaseFeatures:
-
-
     @pytest.mark.skip_snapshot_verify(paths=["$..LogResult"])
     def test_large_payloads(self, caplog, lambda_client, create_lambda_function, snapshot):
         """Testing large payloads sent to lambda functions (~5MB)"""
@@ -178,9 +165,6 @@ class TestLambdaBaseFeatures:
                 lambda_client.delete_function(FunctionName=function_name)
             except Exception:
                 LOG.debug("Unable to delete function %s", function_name)
-
-
-
 
 
 class TestLambdaBehavior:
@@ -578,7 +562,7 @@ class TestLambdaURL:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
-            runtime=Runtime.nodejs14X,
+            runtime=Runtime.nodejs14_x,
             handler="lambda_url.handler",
         )
 
@@ -622,6 +606,7 @@ class TestLambdaURL:
 
 FUNCTION_MAX_UNZIPPED_SIZE = 262144000
 
+
 def generate_sized_python_str(filepath: str, size: int) -> str:
     """Generate a text of the specified size by appending #s at the end of the file"""
     with open(filepath, "r") as f:
@@ -656,7 +641,6 @@ class TestLambdaSizeLimits:
                 Timeout=10,
             )
         snapshot.match("invalid_param_exc", e.value.response)
-
 
     # TODO: snapshot
     def test_large_lambda(self, lambda_client, s3_client, s3_bucket, lambda_su_role, cleanups):

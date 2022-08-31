@@ -10,12 +10,13 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.sqs.provider import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 
 from .awslambda.functions import lambda_integration
-from .awslambda.test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
+from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 
 TEST_POLICY = """
 {
@@ -908,7 +909,7 @@ class TestSqsProvider:
             func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
+            runtime=Runtime.python3_9,
         )
         delete_batch_payload = {lambda_integration.MSG_BODY_DELETE_BATCH: queue_url}
         batch = []
@@ -2117,7 +2118,7 @@ class TestSqsProvider:
             func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
+            runtime=Runtime.python3_9,
         )
         # create arn
         url_parts = queue_url.split("/")

@@ -1,4 +1,18 @@
+import base64
+import json
+
 import pytest
+
+from localstack.aws.api.lambda_ import Runtime
+from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import retry
+from tests.integration.awslambda.functions import lambda_integration
+from tests.integration.awslambda.test_lambda import (
+    TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_PYTHON,
+    read_streams,
+)
+
 
 class TestLambdaDLQ:
     @pytest.mark.skip_snapshot_verify
@@ -144,6 +158,13 @@ class TestLambdaDestinationSqs:
         retry(receive_message, retries=120, sleep=3)
 
 
-class TestLambdaDestinationSns: ... # TODO
-class TestLambdaDestinationLambda: ... # TODO
-class TestLambdaDestinationEventbridge: ... # TODO
+class TestLambdaDestinationSns:
+    ...  # TODO
+
+
+class TestLambdaDestinationLambda:
+    ...  # TODO
+
+
+class TestLambdaDestinationEventbridge:
+    ...  # TODO

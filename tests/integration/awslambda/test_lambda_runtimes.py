@@ -11,25 +11,48 @@ import pytest
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_api import use_docker
-from localstack.services.install import GO_RUNTIME_VERSION, download_and_extract, TEST_LAMBDA_JAVA, \
-    INSTALL_PATH_LOCALSTACK_FAT_JAR
+from localstack.services.install import (
+    GO_RUNTIME_VERSION,
+    INSTALL_PATH_LOCALSTACK_FAT_JAR,
+    TEST_LAMBDA_JAVA,
+    download_and_extract,
+)
+from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.utils import testutil
 from localstack.utils.archives import unzip
-from localstack.utils.files import load_file, mkdir, cp_r, save_file, new_tmp_dir
+from localstack.utils.files import cp_r, load_file, mkdir, new_tmp_dir, save_file
 from localstack.utils.functions import run_safe
-from localstack.utils.platform import get_os, get_arch
-from localstack.utils.strings import short_uid, to_str, to_bytes
-from localstack.utils.sync import retry, poll_condition
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_CUSTOM_RUNTIME
-from localstack.utils.testutil import get_lambda_log_events, check_expected_lambda_log_events_length, \
-    create_lambda_archive
-from tests.integration.awslambda.test_lambda import read_streams, TEST_LAMBDA_INTEGRATION_NODEJS, \
-    TEST_LAMBDA_NODEJS, TEST_LAMBDA_NODEJS_ES6, TEST_LAMBDA_RUBY, TEST_LAMBDA_DOTNETCORE31, TEST_LAMBDA_DOTNET6, \
-    TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS, TEST_LAMBDA_SEND_MESSAGE_FILE, \
-    TEST_LAMBDA_PUT_ITEM_FILE, TEST_LAMBDA_START_EXECUTION_FILE, TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBDA_PYTHON_VERSION, \
-    TEST_LAMBDA_PYTHON_UNHANDLED_ERROR, TEST_LAMBDA_ENV, TEST_LAMBDA_JAVA_WITH_LIB, TEST_GOLANG_LAMBDA_URL_TEMPLATE, \
-    THIS_FOLDER
-from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.utils.platform import get_arch, get_os
+from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.sync import poll_condition, retry
+from localstack.utils.testutil import (
+    check_expected_lambda_log_events_length,
+    create_lambda_archive,
+    get_lambda_log_events,
+)
+from tests.integration.awslambda.test_lambda import (
+    TEST_GOLANG_LAMBDA_URL_TEMPLATE,
+    TEST_LAMBDA_CUSTOM_RUNTIME,
+    TEST_LAMBDA_DOTNET6,
+    TEST_LAMBDA_DOTNETCORE31,
+    TEST_LAMBDA_ENV,
+    TEST_LAMBDA_INTEGRATION_NODEJS,
+    TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS,
+    TEST_LAMBDA_JAVA_WITH_LIB,
+    TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_NODEJS,
+    TEST_LAMBDA_NODEJS_ES6,
+    TEST_LAMBDA_PUT_ITEM_FILE,
+    TEST_LAMBDA_PYTHON,
+    TEST_LAMBDA_PYTHON_ECHO,
+    TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
+    TEST_LAMBDA_PYTHON_VERSION,
+    TEST_LAMBDA_RUBY,
+    TEST_LAMBDA_SEND_MESSAGE_FILE,
+    TEST_LAMBDA_START_EXECUTION_FILE,
+    THIS_FOLDER,
+    read_streams,
+)
 
 PYTHON_TEST_RUNTIMES = (
     [
@@ -42,13 +65,9 @@ PYTHON_TEST_RUNTIMES = (
     else [Runtime.python3_9]
 )
 NODE_TEST_RUNTIMES = (
-    [
-        Runtime.nodejs12X,
-        Runtime.nodejs14X,
-        Runtime.nodejs16X
-    ]
+    [Runtime.nodejs12_x, Runtime.nodejs14_x, Runtime.nodejs16_x]
     if use_docker()
-    else [Runtime.nodejs16X]
+    else [Runtime.nodejs16_x]
 )
 JAVA_TEST_RUNTIMES = (
     [
@@ -162,7 +181,7 @@ class TestNodeJSRuntimes:
 
         retry(assert_events, retries=10)
 
-    @pytest.mark.parametrize("runtime", (Runtime.nodejs14X, Runtime.nodejs16X))
+    @pytest.mark.parametrize("runtime", (Runtime.nodejs14_x, Runtime.nodejs16_x))
     @pytest.mark.skip_snapshot_verify
     @pytest.mark.skipif(
         not use_docker(), reason="ES6 support is only guaranteed when using the docker executor"
@@ -459,7 +478,7 @@ class TestJavaRuntimes:
         java_zip_with_lib_gradle = load_file(
             os.path.join(
                 THIS_FOLDER,
-                "functions/java/lambda_echo/build/distributions/lambda-function-built-by-gradle.zip"
+                "functions/java/lambda_echo/build/distributions/lambda-function-built-by-gradle.zip",
             ),
             mode="rb",
         )
@@ -1282,4 +1301,3 @@ class TestCustomRuntimes:
             check_lambda_logs(function_name, expected_lines=expected)
 
         retry(check_logs, retries=20)
-
