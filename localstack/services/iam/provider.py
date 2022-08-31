@@ -496,3 +496,21 @@ def apply_patches():
         except Exception:
             # Actually role can be deleted before policy being deleted in cloudformation
             pass
+
+    @patch(IAMBackend.create_policy)
+    def clean_policy_document_from_no_values(
+        fn, self, description, path, policy_document, policy_name, tags
+    ):
+        # Sometime CDK adds this resources to the policy doc that should be ignored
+        doc = json.loads(policy_document)
+
+        def _remove_no_values(statement):
+            statement["Resource"] = [
+                statement_resource
+                for statement_resource in statement["Resource"]
+                if statement_resource != "__aws_no_value__"
+            ]
+            return statement
+
+        doc["Statement"] = [_remove_no_values(statement) for statement in doc["Statement"]]
+        return fn(self, description, path, json.dumps(doc), policy_name, tags)

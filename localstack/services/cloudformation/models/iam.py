@@ -48,9 +48,11 @@ class IAMManagedPolicy(GenericBaseModel):
             resource = resources[resource_id]
             props = resource["Properties"]
             cls.resolve_refs_recursively(stack_name, props, resources)
-            policy_doc = json.dumps(props["PolicyDocument"])
+
+            json_policy_doc = json.dumps(props["PolicyDocument"])
+
             policy = iam.create_policy(
-                PolicyName=props["ManagedPolicyName"], PolicyDocument=policy_doc
+                PolicyName=props["ManagedPolicyName"], PolicyDocument=json_policy_doc
             )
             policy_arn = policy["Policy"]["Arn"]
             for role in resource.get("Roles", []):

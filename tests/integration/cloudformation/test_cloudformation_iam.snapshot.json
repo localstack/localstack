@@ -1,22 +1,33 @@
 {
-  "tests/integration/cloudformation/test_cloudformation_iam.py::test_iam_username_defaultname": {
-    "recorded-date": "31-05-2022, 11:29:45",
+  "tests/integration/cloudformation/test_cloudformation_iam.py::test_managed_policy_with_empty_resource": {
+    "recorded-date": "31-08-2022, 09:42:47",
     "recorded-content": {
-      "get_iam_user": {
-        "User": {
+      "outputs": {
+        "PolicyArn": "arn:aws:iam::111111111111:policy/<resource:1>",
+        "StreamARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:3>/stream/<resource:2>",
+        "TableARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:3>",
+        "TableName": "<resource:3>"
+      },
+      "managed_policy": {
+        "Policy": {
+          "Arn": "arn:aws:iam::111111111111:policy/<resource:1>",
+          "AttachmentCount": 0,
+          "CreateDate": "datetime",
+          "DefaultVersionId": "v1",
+          "IsAttachable": true,
           "Path": "/",
-          "UserName": "<user-name:1>",
-          "UserId": "<user-id:1>",
-          "Arn": "arn:aws:iam::111111111111:user/<user-name:1>",
-          "CreateDate": "datetime"
+          "PermissionsBoundaryUsageCount": 0,
+          "PolicyId": "<policy-id:1>",
+          "PolicyName": "<resource:1>",
+          "Tags": [],
+          "UpdateDate": "datetime"
         },
         "ResponseMetadata": {
-          "HTTPStatusCode": 200,
-          "HTTPHeaders": {}
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
-<<<<<<< Updated upstream
   },
   "tests/integration/cloudformation/test_cloudformation_iam.py::test_iam_user_access_key": {
     "recorded-date": "30-08-2022, 13:42:39",
@@ -31,18 +42,10 @@
         "Status": "Active",
         "UserName": "<user-name:1>"
       }
-    },
+    }
+  },
   "tests/integration/cloudformation/test_cloudformation_iam.py::test_managed_policy_with_empty_resource": {
     "recorded-date": "26-08-2022, 11:02:39",
     "recorded-content": {}
-=======
-<<<<<<< Updated upstream
-=======
-  },
-  "tests/integration/cloudformation/test_cloudformation_iam.py::test_managed_policy_with_empty_resource": {
-    "recorded-date": "29-08-2022, 09:48:54",
-    "recorded-content": {}
->>>>>>> Stashed changes
->>>>>>> Stashed changes
   }
 }
