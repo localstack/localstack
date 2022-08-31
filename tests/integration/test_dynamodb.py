@@ -31,6 +31,11 @@ TEST_DDB_TAGS = [
 ]
 
 
+@pytest.fixture(autouse=True)
+def dynamodb_snapshot_transformer(snapshot):
+    snapshot.add_transformer(snapshot.transform.dynamodb_api())
+
+
 @pytest.fixture()
 def dynamodb(dynamodb_resource):
     return dynamodb_resource
@@ -38,20 +43,16 @@ def dynamodb(dynamodb_resource):
 
 class TestDynamoDB:
     @pytest.mark.aws_validated
-    def test_non_ascii_chars(self, dynamodb, dynamodb_create_table, snapshot):
-
+    def test_non_ascii_chars(self, dynamodb_create_table, snapshot):
         key_schema = [{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}]
         attr_defs = [{"AttributeName": PARTITION_KEY, "AttributeType": "S"}]
         stream_spec = {"StreamEnabled": False}
 
-        dynamodb_create_table(
-            TableName=TEST_DDB_TABLE_NAME,
+        table = dynamodb_create_table(
             KeySchema=key_schema,
             AttributeDefinitions=attr_defs,
             StreamSpecification=stream_spec,
         )
-
-        table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
         # write some items containing non-ASCII characters
         items = {
@@ -70,9 +71,17 @@ class TestDynamoDB:
         result.sort(key=lambda k: k.get("id"))
         snapshot.match("Items", result)
 
-    def test_large_data_download(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY)
-        table = dynamodb.Table(TEST_DDB_TABLE_NAME_2)
+    @pytest.mark.aws_validated
+    def test_large_data_download(self, dynamodb_create_table, snapshot):
+        key_schema = [{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}]
+        attr_defs = [{"AttributeName": PARTITION_KEY, "AttributeType": "S"}]
+        stream_spec = {"StreamEnabled": False}
+
+        table = dynamodb_create_table(
+            KeySchema=key_schema,
+            AttributeDefinitions=attr_defs,
+            StreamSpecification=stream_spec,
+        )
 
         # Create a large amount of items
         num_items = 20
@@ -81,11 +90,10 @@ class TestDynamoDB:
             table.put_item(Item=item)
 
         # Retrieve the items. The data will be transmitted to the client with chunked transfer encoding
-        result = table.scan(TableName=TEST_DDB_TABLE_NAME_2)
-        assert len(result["Items"]) == num_items
-
-        # clean up
-        delete_table(TEST_DDB_TABLE_NAME_2)
+        result = table.scan(TableName=table.name)
+        sorted_items = result["Items"]
+        sorted_items.sort(key=lambda k: k.get("id"))
+        snapshot.match("Items", sorted_items)
 
     def test_time_to_live(self, dynamodb):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
@@ -146,41 +154,39 @@ class TestDynamoDB:
         # clean up
         delete_table(TEST_DDB_TABLE_NAME_3)
 
-    def test_list_tags_of_resource(self, dynamodb):
-        table_name = "ddb-table-%s" % short_uid()
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    @pytest.mark.aws_validated
+    def test_list_tags_of_resource(self, dynamodb_client, dynamodb_create_table, snapshot):
 
-        rs = dynamodb.create_table(
-            TableName=table_name,
-            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
-            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+        key_schema = [{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}]
+        attr_defs = [{"AttributeName": PARTITION_KEY, "AttributeType": "S"}]
+        stream_spec = {"StreamEnabled": False}
+
+        table = dynamodb_create_table(
+            KeySchema=key_schema,
+            AttributeDefinitions=attr_defs,
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            BillingMode="PROVISIONED",
+            StreamSpecification=stream_spec,
             Tags=TEST_DDB_TAGS,
         )
-        table_arn = rs["TableDescription"]["TableArn"]
 
-        rs = dynamodb.list_tags_of_resource(ResourceArn=table_arn)
+        rs = dynamodb_client.list_tags_of_resource(ResourceArn=table.table_arn)["Tags"]
+        rs.sort(key=lambda k: k.get("Key"))
+        snapshot.match("ResourceTags", rs)
 
-        assert rs["Tags"] == TEST_DDB_TAGS
+        dynamodb_client.tag_resource(
+            ResourceArn=table.table_arn, Tags=[{"Key": "NewKey", "Value": "TestValue"}]
+        )
 
-        dynamodb.tag_resource(ResourceArn=table_arn, Tags=[{"Key": "NewKey", "Value": "TestValue"}])
+        rs = dynamodb_client.list_tags_of_resource(ResourceArn=table.table_arn)["Tags"]
+        rs.sort(key=lambda k: k.get("Key"))
+        snapshot.match("ResourceTagsOneAdded", rs)
 
-        rs = dynamodb.list_tags_of_resource(ResourceArn=table_arn)
+        dynamodb_client.untag_resource(ResourceArn=table.table_arn, TagKeys=["Name", "NewKey"])
 
-        assert len(rs["Tags"]) == len(TEST_DDB_TAGS) + 1
-
-        tags = {tag["Key"]: tag["Value"] for tag in rs["Tags"]}
-        assert "NewKey" in tags.keys()
-        assert tags["NewKey"] == "TestValue"
-
-        dynamodb.untag_resource(ResourceArn=table_arn, TagKeys=["Name", "NewKey"])
-
-        rs = dynamodb.list_tags_of_resource(ResourceArn=table_arn)
-        tags = {tag["Key"]: tag["Value"] for tag in rs["Tags"]}
-        assert "Name" not in tags.keys()
-        assert "NewKey" not in tags.keys()
-
-        delete_table(table_name)
+        rs = dynamodb_client.list_tags_of_resource(ResourceArn=table.table_arn)["Tags"]
+        rs.sort(key=lambda k: k.get("Key"))
+        snapshot.match("UntaggedResource", rs)
 
     def test_stream_spec_and_region_replacement(self, dynamodb):
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")

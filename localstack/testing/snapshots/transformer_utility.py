@@ -220,6 +220,18 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def dynamodb_api():
+        """
+        :return: array with Transformers, for sqs api.
+        """
+        return [
+            RegexTransformer(
+                r"([a-zA-Z0-9-_.]*)?\/test-table-([a-zA-Z0-9-_.]*)?",
+                replacement="<table-name>",
+            ),
+        ]
+
+    @staticmethod
     def sqs_api():
         """
         :return: array with Transformers, for sqs api.

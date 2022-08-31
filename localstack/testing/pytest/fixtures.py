@@ -366,7 +366,7 @@ def dynamodb_create_table_with_parameters(dynamodb_client, dynamodb_wait_for_tab
 
 
 @pytest.fixture
-def dynamodb_create_table(dynamodb_client, dynamodb_wait_for_table_active):
+def dynamodb_create_table(dynamodb_client, dynamodb_resource, dynamodb_wait_for_table_active):
     tables = []
 
     def factory(**kwargs):
@@ -376,11 +376,10 @@ def dynamodb_create_table(dynamodb_client, dynamodb_wait_for_table_active):
             kwargs["BillingMode"] = "PAY_PER_REQUEST"
 
         tables.append(kwargs["TableName"])
-        response = dynamodb_client.create_table(**kwargs)
+        dynamodb_client.create_table(**kwargs)
         dynamodb_wait_for_table_active(kwargs["TableName"])
-        return response
 
-        return dynamodb_create_table(**kwargs)
+        return dynamodb_resource.Table(kwargs["TableName"])
 
     yield factory
 
