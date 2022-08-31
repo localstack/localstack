@@ -615,7 +615,7 @@ def update_jar_manifest(
 
     # return if the search pattern does not match (to make the logic idempotent), otherwise replace the content
     if isinstance(search, re.Pattern):
-        if not search.match(manifest):
+        if not search.search(manifest):
             return
         manifest = search.sub(replace, manifest, 1)
     else:
