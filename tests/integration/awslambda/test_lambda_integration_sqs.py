@@ -588,6 +588,10 @@ def test_report_batch_item_failures_on_lambda_error(
     wait_time = retry_timeout * retries
     retry(_collect_message, retries=10, sleep=1, sleep_before=wait_time)
 
+    messages.sort(
+        key=lambda m: m["MD5OfBody"]
+    )  # otherwise the two messages are switched around sometimes (not deterministic)
+
     snapshot.match("dlq_messages", messages)
 
 

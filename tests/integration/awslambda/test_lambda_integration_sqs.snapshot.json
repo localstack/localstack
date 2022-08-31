@@ -529,23 +529,23 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_sqs.py::test_report_batch_item_failures_on_lambda_error": {
-    "recorded-date": "31-08-2022, 06:42:42",
+    "recorded-date": "31-08-2022, 09:10:51",
     "recorded-content": {
       "dlq_messages": [
         {
           "MessageId": "<uuid:1>",
           "ReceiptHandle": "<receipt-handle:1>",
           "MD5OfBody": "<m-d5-of-body:1>",
-          "Body": {
-            "message": 2,
-            "fail_attempts": 0
-          }
+          "Body": "{not a json body"
         },
         {
           "MessageId": "<uuid:2>",
           "ReceiptHandle": "<receipt-handle:2>",
           "MD5OfBody": "<m-d5-of-body:2>",
-          "Body": "{not a json body"
+          "Body": {
+            "message": 2,
+            "fail_attempts": 0
+          }
         }
       ]
     }
