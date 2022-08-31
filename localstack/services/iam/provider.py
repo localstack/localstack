@@ -505,12 +505,14 @@ def apply_patches():
         doc = json.loads(policy_document)
 
         def _remove_no_values(statement):
-            statement["Resource"] = [
-                statement_resource
-                for statement_resource in statement["Resource"]
-                if statement_resource != "__aws_no_value__"
-            ]
+            if isinstance(statement["Resource"], list):
+                statement["Resource"] = [
+                    statement_resource
+                    for statement_resource in statement["Resource"]
+                    if statement_resource != "__aws_no_value__"
+                ]
             return statement
 
-        doc["Statement"] = [_remove_no_values(statement) for statement in doc["Statement"]]
+        if isinstance(doc["Statement"], list):
+            doc["Statement"] = [_remove_no_values(statement) for statement in doc["Statement"]]
         return fn(self, description, path, json.dumps(doc), policy_name, tags)
