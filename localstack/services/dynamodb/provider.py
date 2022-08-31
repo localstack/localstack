@@ -6,6 +6,7 @@ import re
 import time
 import traceback
 from binascii import crc32
+from contextlib import contextmanager
 from typing import Dict, List
 
 import requests
@@ -85,12 +86,7 @@ from localstack.aws.api.dynamodb import (
     UpdateTableOutput,
     UpdateTimeToLiveOutput,
 )
-from localstack.aws.forwarder import (
-    ContextModifier,
-    HttpFallbackDispatcher,
-    RegionContextModifier,
-    get_request_forwarder_http,
-)
+from localstack.aws.forwarder import HttpFallbackDispatcher, get_request_forwarder_http
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import LOCALHOST
 from localstack.http import Response
@@ -294,6 +290,34 @@ def find_global_table_region(table_name: str, target_region: str | None = None) 
     return original_region if target_region in replicas[original_region] else None
 
 
+@contextmanager
+def modify_context_region(context: RequestContext, region: str):
+    """
+    Context manager that modifies the region of a `RequestContext`. At the exit, the context is restored to its
+    original state.
+
+    :param context: the context to modify
+    :param region: the modified region
+    :return: a modified `RequestContext`
+    """
+    original_region = context.region
+    original_authorization = context.request.headers.get("Authorization")
+
+    context.region = region
+    context.request.headers["Authorization"] = re.sub(
+        r"Credential=([^/]+/[^/]+)/(.*?)/",
+        rf"Credential=\1/{region}/",
+        original_authorization or "",
+        flags=re.IGNORECASE,
+    )
+
+    yield context
+
+    # revert the original context
+    context.region = original_region
+    context.request.headers["Authorization"] = original_authorization
+
+
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def __init__(self):
         self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
@@ -339,16 +363,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # note: modifying headers in-place here before forwarding the request
         self.prepare_request_headers(context.request.headers)
         return self.request_forwarder(context, service_request)
-
-    def modify_and_forward_request(
-        self,
-        context: RequestContext,
-        service_request: ServiceRequest = None,
-        modifier: ContextModifier = None,
-    ) -> ServiceResponse:
-        """Apply a local modification to the context and forward the request."""
-        local_context = modifier.modify_context(context=context)
-        return self.forward_request(context=local_context, service_request=service_request)
 
     def get_forward_url(self) -> str:
         """Return the URL of the backend DynamoDBLocal server to forward requests to"""
@@ -448,6 +462,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         return result
 
+    def _forward_request(self, context: RequestContext, region: str | None) -> ServiceResponse:
+        if region:
+            with modify_context_region(context, region):
+                return self.forward_request(context)
+        return self.forward_request(context)
+
     def describe_table(self, context: RequestContext, table_name: TableName) -> DescribeTableOutput:
         global_table_region: str | None = find_global_table_region(
             table_name=table_name, target_region=context.region
@@ -456,8 +476,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if not self.table_exists(table_name) and not global_table_region:
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
-        # forward request to backend
-        result = self.forward_request(context)
+        result = self._forward_request(context=context, region=global_table_region)
 
         # update response with additional props
         table_props = get_store(context).table_properties.get(table_name)
@@ -563,14 +582,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if event_sources_or_streams_enabled:
             existing_item = ItemFinder.find_existing_item(put_item_input)
 
-        # forward request to backend
-        result = (
-            self.forward_request(context)
-            if not global_table_region
-            else self.modify_and_forward_request(
-                context=context, modifier=RegionContextModifier(global_table_region)
-            )
-        )
+        result = self._forward_request(context=context, region=global_table_region)
 
         # Get stream specifications details for the table
         if event_sources_or_streams_enabled:
@@ -672,13 +684,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region: str | None = find_global_table_region(
             table_name=get_item_input.get("TableName"), target_region=context.region
         )
-        result = (
-            self.forward_request(context)
-            if not global_table_region
-            else self.modify_and_forward_request(
-                context=context, modifier=RegionContextModifier(global_table_region)
-            )
-        )
+        result = self._forward_request(context=context, region=global_table_region)
         self.fix_consumed_capacity(get_item_input, result)
         return result
 

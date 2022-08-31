@@ -2,9 +2,7 @@
 This module contains utilities to call a backend (e.g., an external service process like
 DynamoDBLocal) from a service provider.
 """
-import copy
-import re
-from typing import Any, Callable, Mapping, Optional, Protocol
+from typing import Any, Callable, Mapping, Optional
 from urllib.parse import urlsplit
 
 from botocore.awsrequest import AWSPreparedRequest
@@ -65,36 +63,6 @@ def _wrap_with_fallthrough(
 
 def HttpFallbackDispatcher(provider: object, forward_url_getter: Callable[[], str]):
     return ForwardingFallbackDispatcher(provider, get_request_forwarder_http(forward_url_getter))
-
-
-class ContextModifier(Protocol):
-    """
-    This protocol is used to apply a specific modification to a request context.
-    It does not modify the original context; it creates a newly one instead.
-    """
-
-    def modify_context(self, context: RequestContext) -> RequestContext:
-        ...
-
-
-class RegionContextModifier(ContextModifier):
-    """It modifies a `RequestContext` by changing its region."""
-
-    def __init__(self, region: str):
-        self.region = region
-
-    def modify_context(self, context: RequestContext) -> RequestContext:
-        _context = copy.copy(context)
-        _context.region = self.region
-        _headers = _context.request.headers
-
-        _headers["Authorization"] = re.sub(
-            r"Credential=([^/]+/[^/]+)/(.*?)/",
-            rf"Credential=\1/{self.region}/",
-            _headers.get("Authorization") or "",
-            flags=re.IGNORECASE,
-        )
-        return _context
 
 
 def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> ServiceRequestHandler:
