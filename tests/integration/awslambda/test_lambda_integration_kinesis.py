@@ -191,6 +191,7 @@ class TestKinesisSource:
 
         assert (invocation_events[1]["executionStart"] - invocation_events[0]["executionStart"]) > 5
 
+    @pytest.mark.aws_validated
     def test_kinesis_event_source_trim_horizon(
         self,
         lambda_client,
@@ -255,6 +256,7 @@ class TestKinesisSource:
         )
         snapshot.match("invocation_events", invocation_events)
 
+    @pytest.mark.aws_validated
     def test_disable_kinesis_event_source_mapping(
         self,
         lambda_client,
@@ -340,6 +342,7 @@ class TestKinesisSource:
         ],
         condition=is_old_provider,
     )
+    @pytest.mark.aws_validated
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
         lambda_client,

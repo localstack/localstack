@@ -1319,7 +1319,7 @@ def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_la
 
 @pytest.fixture
 def check_lambda_logs(logs_client):
-    def _check_logs(func_name: str, expected_lines: List[str] = None):
+    def _check_logs(func_name: str, expected_lines: List[str] = None) -> List[str]:
         if not expected_lines:
             expected_lines = []
         log_events = get_lambda_logs(func_name, logs_client=logs_client)
@@ -1330,6 +1330,7 @@ def check_lambda_logs(logs_client):
                 if any(found):
                     continue
             assert line in log_messages
+        return log_messages
 
     return _check_logs
 
