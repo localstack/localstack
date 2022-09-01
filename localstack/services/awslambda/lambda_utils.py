@@ -307,7 +307,9 @@ class FilterCriteria(TypedDict):
     Filters: List[Dict[str, any]]
 
 
-def parse_and_apply_numeric_filter(record_value: Dict, numeric_filter: List[str | int]) -> bool:
+def parse_and_apply_numeric_filter(
+    record_value: Dict, numeric_filter: List[Union[str, int]]
+) -> bool:
     if len(numeric_filter) % 2 > 0:
         LOG.warn("Invalid numeric lambda filter given")
         return True

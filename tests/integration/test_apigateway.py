@@ -1390,7 +1390,7 @@ class TestAPIGateway:
         sfn_client = aws_stack.create_external_boto_client("stepfunctions")
         lambda_client = aws_stack.create_external_boto_client("lambda")
 
-        state_machine_name = "test"
+        state_machine_name = f"test-{short_uid()}"
         state_machine_def = {
             "Comment": "Hello World example",
             "StartAt": "step1",
@@ -1400,7 +1400,7 @@ class TestAPIGateway:
         }
 
         # create state machine
-        fn_name = "test-stepfunctions-apigw"
+        fn_name = f"sfn-apigw-{short_uid()}"
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=fn_name,
