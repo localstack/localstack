@@ -87,6 +87,13 @@ def render_report(result: SnapshotMatchResult):
                     f"[replace](~)[/replace] {change_path} {expected!r} → {actual!r} ... (expected → actual)",
                 )
             ]
+        elif c.report_type == "type_changes":
+            return [
+                (
+                    change_path,
+                    f"[replace](~)[/replace] {change_path} {expected!r} (type: {type(expected)}) → {actual!r} (type: {type(actual)})... (expected → actual)",
+                )
+            ]
         else:
             LOG.warning(
                 f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support. {expected=} | {actual=}"
