@@ -4,6 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.transcribe import BadRequestException, NotFoundException
+from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
@@ -15,6 +16,10 @@ def transcribe_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.transcribe_api())
 
 
+@pytest.mark.skipif(
+    "arm" in get_arch(),
+    reason="Vosk transcription library has issues running on Circle CI arm64 executors.",
+)
 class TestTranscribe:
     @pytest.mark.skip_offline
     @pytest.mark.aws_validated
@@ -27,7 +32,7 @@ class TestTranscribe:
     )
     def test_transcribe_happy_path(self, transcribe_client, transcribe_create_job, snapshot):
         file_path = os.path.join(BASEDIR, "files/en-gb.wav")
-        job_name = transcribe_create_job(test_file=file_path)
+        job_name = transcribe_create_job(audio_file=file_path)
         transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
 
         def is_transcription_done():
@@ -61,7 +66,7 @@ class TestTranscribe:
     )
     def test_get_transcription_job(self, transcribe_client, transcribe_create_job, snapshot):
         file_path = os.path.join(BASEDIR, "files/en-gb.wav")
-        job_name = transcribe_create_job(test_file=file_path)
+        job_name = transcribe_create_job(audio_file=file_path)
 
         job = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
 
@@ -78,7 +83,7 @@ class TestTranscribe:
     )
     def test_list_transcription_jobs(self, transcribe_client, transcribe_create_job, snapshot):
         file_path = os.path.join(BASEDIR, "files/en-gb.wav")
-        transcribe_create_job(test_file=file_path)
+        transcribe_create_job(audio_file=file_path)
 
         jobs = transcribe_client.list_transcription_jobs()
 
