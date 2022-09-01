@@ -376,10 +376,10 @@ def dynamodb_create_table(dynamodb_client, dynamodb_resource, dynamodb_wait_for_
             kwargs["BillingMode"] = "PAY_PER_REQUEST"
 
         tables.append(kwargs["TableName"])
-        dynamodb_client.create_table(**kwargs)
+        resp = dynamodb_client.create_table(**kwargs)
         dynamodb_wait_for_table_active(kwargs["TableName"])
 
-        return dynamodb_resource.Table(kwargs["TableName"])
+        return resp
 
     yield factory
 

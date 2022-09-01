@@ -143,5 +143,257 @@
         }
       ]
     }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_batch_write_not_matching_schema": {
+    "recorded-date": "31-08-2022, 17:45:00",
+    "recorded-content": {
+      "ValidationException": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "The provided key element does not match the schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_stream_spec_and_region_replacement": {
+    "recorded-date": "01-09-2022, 09:31:30",
+    "recorded-content": {
+      "StreamARN": {
+        "latestARN": "arn:aws:dynamodb:<region>:111111111111:<table-name>/stream/2022-09-01T07:15:25.632",
+        "tableARN": "arn:aws:dynamodb:<region>:111111111111:<table-name>"
+      }
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_multiple_update_expressions": {
+    "recorded-date": "01-09-2022, 09:34:18",
+    "recorded-content": {}
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_query_index": {
+    "recorded-date": "01-09-2022, 11:25:26",
+    "recorded-content": {}
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_more_than_20_global_secondary_indexes": {
+    "recorded-date": "01-09-2022, 13:51:15",
+    "recorded-content": {}
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_empty_and_binary_values": {
+    "recorded-date": "01-09-2022, 13:54:49",
+    "recorded-content": {
+      "PutFirstItem": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "PutSecondItem": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_transaction": {
+    "recorded-date": "01-09-2022, 14:14:16",
+    "recorded-content": {
+      "ExecutedTransaction": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "Responses": []
+      },
+      "TableScan": {
+        "Count": 2,
+        "Items": [
+          {
+            "Username": {
+              "S": "user01"
+            }
+          },
+          {
+            "Username": {
+              "S": "user02"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "ScannedCount": 2
+      }
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_batch_execute_statement": {
+    "recorded-date": "01-09-2022, 14:24:38",
+    "recorded-content": {
+      "ExecutedStatement": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "Responses": [
+          {
+            "TableName": "<table_name:1>"
+          },
+          {
+            "TableName": "<table_name:1>"
+          }
+        ]
+      },
+      "ItemUser2": {
+        "Item": {
+          "Age": {
+            "N": "20"
+          },
+          "Username": {
+            "S": "user02"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "ItemUser1": {
+        "Item": {
+          "Username": {
+            "S": "user01"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_batch_write_items": {
+    "recorded-date": "01-09-2022, 15:54:28",
+    "recorded-content": {
+      "BatchWriteResponse": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "UnprocessedItems": {}
+      }
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_transact_get_items": {
+    "recorded-date": "01-09-2022, 15:57:57",
+    "recorded-content": {
+      "TransactGetItems": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "Responses": [
+          {
+            "Item": {
+              "id": {
+                "S": "John"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_transaction_write_binary_data": {
+    "recorded-date": "01-09-2022, 16:02:24",
+    "recorded-content": {
+      "WriteResponse": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "GetItem": {
+        "binaryData": {
+          "B": "b'foobar'"
+        },
+        "id": {
+          "S": "someUser"
+        }
+      }
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_transaction_write_canceled": {
+    "recorded-date": "01-09-2022, 16:11:10",
+    "recorded-content": {
+      "Error": "An error occurred (TransactionCanceledException) when calling the TransactWriteItems operation: Transaction cancelled, please refer cancellation reasons for specific reasons [ConditionalCheckFailed, None]"
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_transaction_write_items": {
+    "recorded-date": "01-09-2022, 16:15:25",
+    "recorded-content": {
+      "Response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_delete_table": {
+    "recorded-date": "01-09-2022, 16:55:57",
+    "recorded-content": {
+      "TablesBefore": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "TableNames": []
+      },
+      "ListTables": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "TableNames": [
+          "test-table"
+        ]
+      },
+      "DeletedTable": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "TableNames": [
+          "test-table"
+        ]
+      },
+      "ErrorFailedDelete": "An error occurred (ResourceInUseException) when calling the DeleteTable operation: Attempt to change a resource which is still in use: Table is being deleted: test-table"
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_batch_write_binary": {
+    "recorded-date": "01-09-2022, 17:05:29",
+    "recorded-content": {
+      "Response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "UnprocessedItems": {}
+      }
+    }
+  },
+  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_batch_write_item": {
+    "recorded-date": "01-09-2022, 17:10:26",
+    "recorded-content": {
+      "Result": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        },
+        "UnprocessedItems": {}
+      }
+    }
   }
 }

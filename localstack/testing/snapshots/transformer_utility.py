@@ -229,6 +229,7 @@ class TransformerUtility:
                 r"([a-zA-Z0-9-_.]*)?\/test-table-([a-zA-Z0-9-_.]*)?",
                 replacement="<table-name>",
             ),
+            TransformerUtility.key_value("TableName", "table_name"),
         ]
 
     @staticmethod
