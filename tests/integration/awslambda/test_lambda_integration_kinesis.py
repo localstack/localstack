@@ -17,6 +17,7 @@ from localstack.testing.aws.lambda_utils import (
     lambda_role,
     s3_lambda_permission,
 )
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import retry
@@ -283,7 +284,7 @@ class TestKinesisSource:
             )
 
             return _get_lambda_invocation_events(
-                logs_client, function_name, expected_num_events=1, retries=5
+                logs_client, function_name, expected_num_events=1, retries=10
             )
 
         invocation_events = retry(_send_and_receive_messages, retries=3)
@@ -291,19 +292,19 @@ class TestKinesisSource:
 
         lambda_client.update_event_source_mapping(UUID=event_source_uuid, Enabled=False)
         _await_event_source_mapping_state(lambda_client, event_source_uuid, state="Disabled")
+        # we need to wait here, so the event source mapping is for sure disabled, sadly the state is no real indication
+        if is_aws_cloud():
+            time.sleep(60)
         kinesis_client.put_records(
             Records=[
-                {"Data": json.dumps({"record_id": i}), "PartitionKey": "test"}
+                {"Data": json.dumps({"record_id_disabled": i}), "PartitionKey": "test"}
                 for i in range(0, num_records_per_batch)
             ],
             StreamName=stream_name,
         )
         time.sleep(7)  # wait for records to pass through stream
         # should still only get the first batch from before mapping was disabled
-        events = _get_lambda_invocation_events(
-            logs_client, function_name, expected_num_events=1, retries=5
-        )
-        assert len(events) == 1
+        _get_lambda_invocation_events(logs_client, function_name, expected_num_events=1, retries=10)
 
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
@@ -316,7 +317,12 @@ class TestKinesisSource:
         kinesis_client,
         wait_for_stream_ready,
         cleanups,
+        snapshot,
     ):
+        # snapshot setup
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
+        snapshot.add_transformer(snapshot.transform.key_value("ReceiptHandle"))
+        snapshot.add_transformer(snapshot.transform.key_value("startSequenceNumber"))
         function_name = f"lambda_func-{short_uid()}"
         role = f"test-lambda-role-{short_uid()}"
         policy_name = f"test-lambda-policy-{short_uid()}"
@@ -352,10 +358,10 @@ class TestKinesisSource:
             lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
         }
 
-        result = lambda_client.create_event_source_mapping(
+        create_event_source_mapping_response = lambda_client.create_event_source_mapping(
             FunctionName=function_name,
             BatchSize=1,
-            StartingPosition="LATEST",
+            StartingPosition="TRIM_HORIZON",
             EventSourceArn=kinesis_arn,
             MaximumBatchingWindowInSeconds=1,
             MaximumRetryAttempts=1,
@@ -364,7 +370,8 @@ class TestKinesisSource:
         cleanups.append(
             lambda: lambda_client.delete_event_source_mapping(UUID=event_source_mapping_uuid)
         )
-        event_source_mapping_uuid = result["UUID"]
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        event_source_mapping_uuid = create_event_source_mapping_response["UUID"]
         _await_event_source_mapping_enabled(lambda_client, event_source_mapping_uuid)
         kinesis_client.put_record(
             StreamName=kinesis_name, Data=to_bytes(json.dumps(message)), PartitionKey="custom"
@@ -372,10 +379,8 @@ class TestKinesisSource:
 
         def verify_failure_received():
             result = sqs_client.receive_message(QueueUrl=queue_event_source_mapping)
-            msg = result["Messages"][0]
-            body = json.loads(msg["Body"])
-            assert body["requestContext"]["condition"] == "RetryAttemptsExhausted"
-            assert body["KinesisBatchInfo"]["batchSize"] == 1
-            assert body["KinesisBatchInfo"]["streamArn"] == kinesis_arn
+            assert result["Messages"]
+            return result
 
-        retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
+        sqs_payload = retry(verify_failure_received, retries=50, sleep=5, sleep_before=5)
+        snapshot.match("sqs_payload", sqs_payload)

@@ -1093,7 +1093,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_integration_kinesis.py::TestKinesisSource::test_disable_kinesis_event_source_mapping": {
-    "recorded-date": "31-08-2022, 18:01:51",
+    "recorded-date": "01-09-2022, 11:31:14",
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
@@ -1286,6 +1286,75 @@
           ]
         }
       ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_kinesis.py::TestKinesisSource::test_kinesis_event_source_mapping_with_on_failure_destination_config": {
+    "recorded-date": "01-09-2022, 12:38:29",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:1>"
+          }
+        },
+        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:2>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        },
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:1>"
+      },
+      "sqs_payload": {
+        "Messages": [
+          {
+            "Body": {
+              "requestContext": {
+                "requestId": "<uuid:2>",
+                "functionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+                "condition": "RetryAttemptsExhausted",
+                "approximateInvokeCount": 2
+              },
+              "responseContext": {
+                "statusCode": 200,
+                "executedVersion": "$LATEST",
+                "functionError": "Unhandled"
+              },
+              "version": "1.0",
+              "timestamp": "date",
+              "KinesisBatchInfo": {
+                "shardId": "shardId-000000000000",
+                "startSequenceNumber": "<start-sequence-number:1>",
+                "endSequenceNumber": "<start-sequence-number:1>",
+                "approximateArrivalOfFirstRecord": "date",
+                "approximateArrivalOfLastRecord": "date",
+                "batchSize": 1,
+                "streamArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:2>"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
     }
   }
 }
