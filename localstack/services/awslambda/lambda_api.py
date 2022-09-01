@@ -48,7 +48,6 @@ from localstack.services.awslambda.lambda_utils import (
     get_lambda_extraction_dir,
     get_lambda_runtime,
     get_zip_bytes,
-    multi_value_dict_for_list,
     validate_filters,
 )
 from localstack.services.generic_proxy import RegionBackend
@@ -63,12 +62,7 @@ from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import TMP_FILES, ensure_readable, load_file, mkdir, save_file
 from localstack.utils.functions import empty_context_manager, run_safe
-from localstack.utils.http import (
-    canonicalize_headers,
-    parse_chunked_data,
-    parse_request_data,
-    safe_requests,
-)
+from localstack.utils.http import parse_chunked_data, safe_requests
 from localstack.utils.json import json_safe
 from localstack.utils.patch import patch
 from localstack.utils.run import run, run_for_max_seconds
@@ -81,7 +75,6 @@ from localstack.utils.time import (
     mktime,
     now_utc,
     timestamp,
-    timestamp_millis,
 )
 
 LOG = logging.getLogger(__name__)
@@ -336,14 +329,6 @@ def use_docker():
     return DO_USE_DOCKER
 
 
-def fix_proxy_path_params(path_params):
-    proxy_path_param_value = path_params.get("proxy+")
-    if not proxy_path_param_value:
-        return
-    del path_params["proxy+"]
-    path_params["proxy"] = proxy_path_param_value
-
-
 def message_attributes_to_lower(message_attrs):
     """Convert message attribute details (first characters) to lower case (e.g., stringValue, dataType)."""
     message_attrs = message_attrs or {}
@@ -355,123 +340,11 @@ def message_attributes_to_lower(message_attrs):
     return message_attrs
 
 
-# TODO - refactor to use ApiInvocationContext as input
-def process_apigateway_invocation(
-    func_arn,
-    path,
-    payload,
-    stage,
-    api_id,
-    headers=None,
-    is_base64_encoded=False,
-    resource_path=None,
-    method=None,
-    path_params=None,
-    query_string_params=None,
-    stage_variables=None,
-    request_context=None,
-):
-    if path_params is None:
-        path_params = {}
-    if request_context is None:
-        request_context = {}
-    try:
-        resource_path = resource_path or path
-        event = construct_invocation_event(
-            method, path, headers, payload, query_string_params, is_base64_encoded
-        )
-        path_params = dict(path_params)
-        fix_proxy_path_params(path_params)
-        event["pathParameters"] = path_params
-        event["resource"] = resource_path
-        event["requestContext"] = request_context
-        event["stageVariables"] = stage_variables
-        LOG.debug(
-            "Running Lambda function %s from API Gateway invocation: %s %s",
-            func_arn,
-            method or "GET",
-            path,
-        )
-        asynchronous = headers.get("X-Amz-Invocation-Type") == "'Event'"
-        inv_result = run_lambda(
-            func_arn=func_arn,
-            event=event,
-            context=request_context,
-            asynchronous=asynchronous,
-        )
-        return inv_result.result
-    except Exception as e:
-        LOG.warning(
-            "Unable to run Lambda function on API Gateway message: %s %s", e, traceback.format_exc()
-        )
-
-
 def process_lambda_url_invocation(lambda_url_config: dict, event: dict):
     inv_result = run_lambda(
         func_arn=lambda_url_config["FunctionArn"],
         event=event,
         asynchronous=False,
-    )
-    return inv_result.result
-
-
-def construct_invocation_event(
-    method, path, headers, data, query_string_params=None, is_base64_encoded=False
-):
-    query_string_params = query_string_params or parse_request_data(method, path, "")
-    # AWS canonical header names, converting them to lower-case
-    headers = canonicalize_headers(headers)
-    return {
-        "path": path,
-        "headers": dict(headers),
-        "multiValueHeaders": multi_value_dict_for_list(headers),
-        "body": data,
-        "isBase64Encoded": is_base64_encoded,
-        "httpMethod": method,
-        "queryStringParameters": query_string_params or None,
-        "multiValueQueryStringParameters": multi_value_dict_for_list(query_string_params) or None,
-    }
-
-
-def process_sns_notification(
-    func_arn,
-    topic_arn,
-    subscription_arn,
-    message,
-    message_id,
-    message_attributes,
-    unsubscribe_url,
-    subject="",
-):
-    event = {
-        "Records": [
-            {
-                "EventSource": "aws:sns",
-                "EventVersion": "1.0",
-                "EventSubscriptionArn": subscription_arn,
-                "Sns": {
-                    "Type": "Notification",
-                    "MessageId": message_id,
-                    "TopicArn": topic_arn,
-                    "Subject": subject,
-                    "Message": message,
-                    "Timestamp": timestamp_millis(),
-                    "SignatureVersion": "1",
-                    # TODO Add a more sophisticated solution with an actual signature
-                    # Hardcoded
-                    "Signature": "EXAMPLEpH+..",
-                    "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
-                    "UnsubscribeUrl": unsubscribe_url,
-                    "MessageAttributes": message_attributes,
-                },
-            }
-        ]
-    }
-    inv_result = run_lambda(
-        func_arn=func_arn,
-        event=event,
-        context={},
-        asynchronous=not config.SYNCHRONOUS_SNS_EVENTS,
     )
     return inv_result.result
 

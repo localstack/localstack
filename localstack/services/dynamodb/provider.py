@@ -90,7 +90,6 @@ from localstack.aws.forwarder import HttpFallbackDispatcher, get_request_forward
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import LOCALHOST
 from localstack.http import Response
-from localstack.services.awslambda import lambda_api
 from localstack.services.dynamodb import server
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
 from localstack.services.dynamodb.server import start_dynamodb, wait_for_dynamodb
@@ -1358,7 +1357,10 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
     cached = cache.get(table_arn)
     if isinstance(cached, bool):
         return cached
-    sources = lambda_api.get_event_sources(source_arn=table_arn)
+    lambda_client = aws_stack.connect_to_service("lambda")
+    sources = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)[
+        "EventSourceMappings"
+    ]
     result = False
     if sources:
         result = True

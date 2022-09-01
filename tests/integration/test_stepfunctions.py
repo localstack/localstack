@@ -4,7 +4,6 @@ import os
 
 import pytest
 
-from localstack.services.awslambda import lambda_api
 from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -18,6 +17,8 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_NAME_1 = "lambda_sfn_1"
 TEST_LAMBDA_NAME_2 = "lambda_sfn_2"
 TEST_RESULT_VALUE = "testresult1"
+TEST_RESULT_VALUE_2 = "testresult2"
+TEST_RESULT_VALUE_4 = "testresult4"
 STATE_MACHINE_BASIC = {
     "Comment": "Hello World example",
     "StartAt": "step1",
@@ -180,7 +181,7 @@ def setup_and_tear_down():
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_2,
         zip_file=zip_file,
-        envvars={"Hello": TEST_RESULT_VALUE},
+        envvars={"Hello": TEST_RESULT_VALUE_2},
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_3,
@@ -190,7 +191,7 @@ def setup_and_tear_down():
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_4,
         zip_file=zip_file,
-        envvars={"Hello": TEST_RESULT_VALUE},
+        envvars={"Hello": TEST_RESULT_VALUE_4},
     )
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_5, zip_file=zip_file2)
 
@@ -285,7 +286,7 @@ class TestStateMachine:
         assert result.get("executionArn")
 
         # define expected output
-        test_output = {**input, "added": {"Hello": TEST_RESULT_VALUE}}
+        test_output = {**input, "added": {"Hello": TEST_RESULT_VALUE_4}}
 
         def check_result():
             result = _get_execution_results(sm_arn, stepfunctions_client)
@@ -320,14 +321,12 @@ class TestStateMachine:
 
         # run state machine
         sm_arn = get_machine_arn(sm_name, stepfunctions_client)
-        lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
         result = stepfunctions_client.start_execution(
             stateMachineArn=sm_arn, input=json.dumps(test_input)
         )
         assert result.get("executionArn")
 
         def check_invocations():
-            assert lambda_arn_3 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
             result = _get_execution_results(sm_arn, stepfunctions_client)
             assert test_output == result
@@ -359,16 +358,13 @@ class TestStateMachine:
 
         # run state machine
         sm_arn = get_machine_arn(sm_name, stepfunctions_client)
-        lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
         result = stepfunctions_client.start_execution(stateMachineArn=sm_arn)
         assert result.get("executionArn")
 
         def check_invocations():
-            assert lambda_arn_1 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
-            assert lambda_arn_2 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
             result = _get_execution_results(sm_arn, stepfunctions_client)
-            assert {"Hello": TEST_RESULT_VALUE} == result["result_value"]
+            assert {"Hello": TEST_RESULT_VALUE_2} == result["result_value"]
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=0.7, retries=25)
@@ -398,16 +394,13 @@ class TestStateMachine:
 
         # run state machine
         sm_arn = get_machine_arn(sm_name, stepfunctions_client)
-        lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
         result = stepfunctions_client.start_execution(stateMachineArn=sm_arn)
         assert result.get("executionArn")
 
         def check_invocations():
-            assert lambda_arn_1 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
-            assert lambda_arn_2 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
             result = _get_execution_results(sm_arn, stepfunctions_client)
-            assert {"Hello": TEST_RESULT_VALUE} == result.get("handled")
+            assert {"Hello": TEST_RESULT_VALUE_2} == result.get("handled")
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
@@ -439,7 +432,6 @@ class TestStateMachine:
 
         # run state machine
         sm_arn = get_machine_arn(sm_name, stepfunctions_client)
-        lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
         input = {}
         result = stepfunctions_client.start_execution(
             stateMachineArn=sm_arn, input=json.dumps(input)
@@ -447,8 +439,6 @@ class TestStateMachine:
         assert result.get("executionArn")
 
         def check_invocations():
-            assert lambda_arn_1 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
-            assert lambda_arn_2 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
             result = _get_execution_results(sm_arn, stepfunctions_client)
             assert {"payload": {"values": [1, "v2"]}} == result.get("result_value")

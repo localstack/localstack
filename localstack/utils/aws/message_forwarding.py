@@ -8,9 +8,7 @@ from typing import Dict, Optional
 from moto.events.models import events_backends
 
 from localstack.services.apigateway.helpers import extract_query_string_params
-from localstack.services.awslambda.lambda_executors import InvocationException, InvocationResult
 from localstack.utils import collections
-from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_stack import (
     connect_to_service,
     extract_account_id_from_arn,
@@ -20,8 +18,8 @@ from localstack.utils.aws.aws_stack import (
 )
 from localstack.utils.http import add_path_parameters_to_url, add_query_params_to_url
 from localstack.utils.http import safe_requests as requests
-from localstack.utils.strings import long_uid, to_bytes, to_str
-from localstack.utils.time import now_utc, timestamp_millis
+from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
 
@@ -30,63 +28,23 @@ AUTH_API_KEY = "API_KEY"
 AUTH_OAUTH = "OAUTH_CLIENT_CREDENTIALS"
 
 
-def lambda_result_to_destination(
-    func_details: LambdaFunction,
-    event: Dict,
-    result: InvocationResult,
-    is_async: bool,
-    error: Optional[InvocationException],
-):
-    if not func_details.destination_enabled():
-        return
-
-    payload = {
-        "version": "1.0",
-        "timestamp": timestamp_millis(),
-        "requestContext": {
-            "requestId": long_uid(),
-            "functionArn": func_details.arn(),
-            "condition": "RetriesExhausted",
-            "approximateInvokeCount": 1,
-        },
-        "requestPayload": event,
-        "responseContext": {"statusCode": 200, "executedVersion": "$LATEST"},
-        "responsePayload": {},
-    }
-
-    if result and result.result:
-        try:
-            payload["requestContext"]["condition"] = "Success"
-            payload["responsePayload"] = json.loads(result.result)
-        except Exception:
-            payload["responsePayload"] = result.result
-
-    if error:
-        payload["responseContext"]["functionError"] = "Unhandled"
-        # add the result in the response payload
-        if error.result is not None:
-            payload["responsePayload"] = json.loads(error.result)
-        send_event_to_target(func_details.on_failed_invocation, payload)
-        return
-
-    if func_details.on_successful_invocation is not None:
-        send_event_to_target(func_details.on_successful_invocation, payload)
-
-
 def send_event_to_target(
     target_arn: str,
     event: Dict,
     target_attributes: Dict = None,
     asynchronous: bool = True,
-    target: Dict = {},
+    target: Dict = None,
 ):
     region = extract_region_from_arn(target_arn)
+    if target is None:
+        target = {}
 
     if ":lambda:" in target_arn:
-        from localstack.services.awslambda import lambda_api
-
-        lambda_api.run_lambda(
-            func_arn=target_arn, event=event, context={}, asynchronous=asynchronous
+        lambda_client = connect_to_service("lambda")
+        lambda_client.invoke(
+            FunctionName=target_arn,
+            Payload=to_bytes(json.dumps(event)),
+            InvocationType="Event" if asynchronous else "RequestResponse",
         )
 
     elif ":sns:" in target_arn:
