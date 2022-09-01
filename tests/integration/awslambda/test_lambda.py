@@ -1,12 +1,15 @@
 import json
 import logging
 import os
+import re
 from typing import Dict, TypeVar
 
 import pytest
 from botocore.response import StreamingBody
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.aws.lambda_utils import is_old_provider
+from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
 from localstack.utils.common import load_file, retry, safe_requests, short_uid, to_bytes, to_str
 from localstack.utils.generic.wait_utils import wait_until
@@ -57,10 +60,10 @@ TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions/lambda_send
 TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions/lambda_put_item.py")
 TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, "functions/lambda_start_execution.py")
 TEST_LAMBDA_URL = os.path.join(THIS_FOLDER, "functions/lambda_url.js")
-TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_cache.js")
-TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_cache.py")
-TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_timeout.py")
-TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_introspect.py")
+TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_cache.js")
+TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_cache.py")
+TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout.py")
+TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_introspect.py")
 
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
 
@@ -91,12 +94,38 @@ def read_streams(payload: T) -> T:
     return new_payload
 
 
+@pytest.fixture(autouse=True)
+def fixture_snapshot(snapshot):
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+    snapshot.add_transformer(
+        snapshot.transform.key_value("CodeSha256", reference_replacement=False)
+    )
+
+
+# some more common ones that usually don't work in the old provider
+pytestmark = pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        "$..Architectures",
+        "$..EphemeralStorage",
+        "$..LastUpdateStatus",
+        "$..MemorySize",
+        "$..State",
+        "$..StateReason",
+        "$..StateReasonCode",
+        "$..VpcConfig",
+        "$..CodeSigningConfig",
+        "$..Environment",  # missing
+        "$..HTTPStatusCode",  # 201 vs 200
+    ],
+)
+
+
 class TestLambdaBaseFeatures:
     @pytest.mark.skip_snapshot_verify(paths=["$..LogResult"])
+    @pytest.mark.aws_validated
     def test_large_payloads(self, caplog, lambda_client, create_lambda_function, snapshot):
         """Testing large payloads sent to lambda functions (~5MB)"""
-
-        snapshot.add_transformer(snapshot.transform.lambda_api())
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         caplog.set_level(logging.INFO)
 
@@ -106,80 +135,56 @@ class TestLambdaBaseFeatures:
             func_name=function_name,
             runtime=Runtime.python3_9,
         )
-        payload = {"test": "test123456" * 100 * 1000 * 5}  # 5MB payload
-        payload_bytes = to_bytes(json.dumps(payload))
-        result = lambda_client.invoke(FunctionName=function_name, Payload=payload_bytes)
-        result = read_streams(result)
+        large_value = "test123456" * 100 * 1000 * 5
+        snapshot.add_transformer(snapshot.transform.regex(large_value, "<large-value>"))
+        payload = {"test": large_value}  # 5MB payload
+        result = lambda_client.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
         snapshot.match("invocation_response", result)
-        assert 200 == result["ResponseMetadata"]["HTTPStatusCode"]
-        result_data = result["Payload"]
-        result_data = json.loads(to_str(result_data))
-        assert payload == result_data
 
-    # TODO
-    @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify  # skipped - the diff is too big
-    @pytest.mark.skipif(
-        os.environ.get("TEST_TARGET") != "AWS_CLOUD",
-        reason="Lambda function state pending for small lambdas not supported on localstack",
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=["$..Tags", "$..Configuration.RevisionId", "$..Code.RepositoryType"],
     )
-    def test_function_state(self, lambda_client, lambda_su_role, snapshot):
+    @pytest.mark.aws_validated
+    def test_function_state(
+        self, lambda_client, lambda_su_role, snapshot, create_lambda_function_aws
+    ):
         """Tests if a lambda starts in state "Pending" but moves to "Active" at some point"""
-        snapshot.add_transformer(snapshot.transform.lambda_api())
-        # necessary due to changing zip timestamps. We might need a reproducible archive method for this
-        snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
+
         function_name = f"test-function-{short_uid()}"
         zip_file = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
 
-        try:
+        # create_response is the original create call response, even though the fixture waits until it's not pending
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Runtime=Runtime.python3_9,
+            Handler="handler.handler",
+            Role=lambda_su_role,
+            Code={"ZipFile": zip_file},
+        )
+        snapshot.match("create-fn-response", create_response)
 
-            def create_function():
-                return lambda_client.create_function(
-                    FunctionName=function_name,
-                    Runtime="python3.9",
-                    Handler="handler.handler",
-                    Role=lambda_su_role,
-                    Code={"ZipFile": zip_file},
-                )
-
-            response = retry(create_function, sleep=3, retries=5)
-
-            snapshot.match("create-fn-response", response)
-            assert response["State"] == "Pending"
-
-            # lambda has to get active at some point
-            def _check_lambda_state():
-                response = lambda_client.get_function(FunctionName=function_name)
-                assert response["Configuration"]["State"] == "Active"
-                return response
-
-            response = retry(_check_lambda_state)
-            snapshot.match("get-fn-response", response)
-        finally:
-            try:
-                lambda_client.delete_function(FunctionName=function_name)
-            except Exception:
-                LOG.debug("Unable to delete function %s", function_name)
+        response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-fn-response", response)
 
 
 class TestLambdaBehavior:
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Payload", "$..LogResult"]
+    )
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],
         [
-            (
-                TEST_LAMBDA_CACHE_NODEJS,
-                Runtime.nodejs12_x,
-            ),  # TODO: can we do some kind of nested parametrize here?
+            (TEST_LAMBDA_CACHE_NODEJS, Runtime.nodejs12_x),
             (TEST_LAMBDA_CACHE_PYTHON, Runtime.python3_8),
         ],
         ids=["nodejs", "python"],
     )
-    @pytest.mark.xfail(
-        os.environ.get("TEST_TARGET") != "AWS_CLOUD",
-        reason="lambda caching not supported currently",
-    )  # TODO: should be removed after the lambda rework
+    @pytest.mark.aws_validated
     def test_lambda_cache_local(
-        self, lambda_client, create_lambda_function, lambda_fn, lambda_runtime
+        self, lambda_client, create_lambda_function, lambda_fn, lambda_runtime, snapshot
     ):
         """tests the local context reuse of packages in AWS lambda"""
 
@@ -191,16 +196,16 @@ class TestLambdaBehavior:
             client=lambda_client,
         )
 
-        result = lambda_client.invoke(FunctionName=func_name)
-        result_data = result["Payload"].read()
-        assert result["StatusCode"] == 200
-        assert json.loads(result_data)["counter"] == 0
+        first_invoke_result = lambda_client.invoke(FunctionName=func_name)
+        snapshot.match("first_invoke_result", first_invoke_result)
 
-        result = lambda_client.invoke(FunctionName=func_name)
-        result_data = result["Payload"].read()
-        assert result["StatusCode"] == 200
-        assert json.loads(result_data)["counter"] == 1
+        second_invoke_result = lambda_client.invoke(FunctionName=func_name)
+        snapshot.match("second_invoke_result", second_invoke_result)
 
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..FunctionError", "$..LogResult", "$..Payload"]
+    )
+    @pytest.mark.skipif(is_old_provider())
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],
         [
@@ -208,11 +213,8 @@ class TestLambdaBehavior:
         ],
         ids=["python"],
     )
-    @pytest.mark.xfail(
-        os.environ.get("TEST_TARGET") != "AWS_CLOUD",
-        reason="lambda timeouts not supported currently",
-    )  # TODO: should be removed after the lambda rework
-    def test_lambda_timeout_logs(
+    @pytest.mark.aws_validated
+    def test_lambda_invoke_with_timeout(
         self,
         lambda_client,
         create_lambda_function,
@@ -221,8 +223,14 @@ class TestLambdaBehavior:
         logs_client,
         snapshot,
     ):
-        """tests the local context reuse of packages in AWS lambda"""
-        snapshot.add_transformer(snapshot.transform.lambda_api())
+        regex = re.compile(r".*\s(?P<uuid>[-a-z0-9]+) Task timed out after \d.\d+ seconds")
+        snapshot.add_transformer(
+            KeyValueBasedTransformer(
+                lambda k, v: regex.search(v).group("uuid") if k == "errorMessage" else None,
+                "<timeout_error_msg>",
+                replace_reference=False,
+            )
+        )
 
         func_name = f"test_lambda_{short_uid()}"
         create_result = create_lambda_function(
@@ -236,7 +244,6 @@ class TestLambdaBehavior:
 
         result = lambda_client.invoke(FunctionName=func_name, Payload=json.dumps({"wait": 2}))
         snapshot.match("invoke-result", result)
-        assert result["StatusCode"] == 200
 
         log_group_name = f"/aws/lambda/{func_name}"
         ls_result = logs_client.describe_log_streams(logGroupName=log_group_name)
@@ -248,10 +255,14 @@ class TestLambdaBehavior:
             )["events"]
 
             assert any(["starting wait" in e["message"] for e in log_events])
+            # TODO: this part is a bit flaky, at least locally with old provider
             assert not any(["done waiting" in e["message"] for e in log_events])
 
         retry(assert_events, retries=15)
 
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Payload", "$..LogResult"]
+    )
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],
         [
@@ -259,8 +270,8 @@ class TestLambdaBehavior:
         ],
         ids=["python"],
     )
-    @pytest.mark.skip_snapshot_verify
-    def test_lambda_no_timeout_logs(
+    @pytest.mark.aws_validated
+    def test_lambda_invoke_no_timeout(
         self,
         lambda_client,
         create_lambda_function,
@@ -269,8 +280,6 @@ class TestLambdaBehavior:
         logs_client,
         snapshot,
     ):
-        """tests the local context reuse of packages in AWS lambda"""
-        snapshot.add_transformer(snapshot.transform.lambda_api())
 
         func_name = f"test_lambda_{short_uid()}"
         create_result = create_lambda_function(
@@ -284,7 +293,6 @@ class TestLambdaBehavior:
 
         result = lambda_client.invoke(FunctionName=func_name, Payload=json.dumps({"wait": 1}))
         snapshot.match("invoke-result", result)
-        assert result["StatusCode"] == 200
         log_group_name = f"/aws/lambda/{func_name}"
 
         def _log_stream_available():
@@ -309,8 +317,8 @@ class TestLambdaBehavior:
 
 # features
 class TestLambdaURL:
-    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
         paths=[
             "$..context",
             "$..event.headers.x-forwarded-proto",
@@ -321,57 +329,57 @@ class TestLambdaURL:
             "$..event.headers.x-amzn-lambda-proxy-auth",
             "$..event.headers.x-amzn-lambda-proxying-cell",
             "$..event.headers.x-amzn-trace-id",
-        ]
+        ],
     )
+    @pytest.mark.aws_validated
     def test_lambda_url_invocation(self, lambda_client, create_lambda_function, snapshot):
-        snapshot.add_transformer(snapshot.transform.lambda_api())
         snapshot.add_transformers_list(
             [
-                snapshot.transform.key_value("requestId", "uuid", reference_replacement=False),
-                snapshot.transform.key_value(
-                    "FunctionUrl", "lambda-url", reference_replacement=False
+                snapshot.transform.key_value("requestId", reference_replacement=False),
+                snapshot.transform.key_value("FunctionUrl", reference_replacement=False),
+                snapshot.transform.jsonpath(
+                    "$..headers.x-forwarded-for", "ip-address", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.requestContext.http.sourceIp",
+                    "$..headers.x-amzn-trace-id", "x-amzn-trace-id", reference_replacement=False
+                ),
+                snapshot.transform.jsonpath(
+                    "$..headers.x-amzn-lambda-forwarded-client-ip",
                     "ip-address",
                     reference_replacement=False,
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.headers.x-forwarded-for", "ip-address", reference_replacement=False
+                    "$..headers.x-amzn-lambda-forwarded-host",
+                    "forwarded-host",
+                    reference_replacement=False,
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.headers.x-amzn-lambda-forwarded-client-ip",
+                    "$..requestContext.http.sourceIp",
                     "ip-address",
                     reference_replacement=False,
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.headers.x-amzn-lambda-forwarded-host",
-                    "lambda-url",
-                    reference_replacement=False,
+                    "$..headers.host", "lambda-url", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.headers.host", "lambda-url", reference_replacement=False
+                    "$..requestContext.apiId", "api-id", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.requestContext.apiId", "api-id", reference_replacement=False
+                    "$..requestContext.domainName", "lambda-url", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.requestContext.domainName", "lambda-url", reference_replacement=False
+                    "$..requestContext.domainPrefix", "api-id", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.requestContext.domainPrefix", "api-id", reference_replacement=False
+                    "$..requestContext.time", "readable-date", reference_replacement=False
                 ),
                 snapshot.transform.jsonpath(
-                    "$..event.requestContext.time", "readable-date", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath(
-                    "$..event.requestContext.timeEpoch",
+                    "$..requestContext.timeEpoch",
                     "epoch-milliseconds",
                     reference_replacement=False,
                 ),
             ]
         )
-
         function_name = f"test-function-{short_uid()}"
 
         create_lambda_function(
@@ -419,19 +427,18 @@ class TestLambdaURL:
         assert event["isBase64Encoded"] is False
 
 
-@pytest.mark.skip_snapshot_verify
-@pytest.mark.aws_validated
 class TestLambdaFeatures:
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=["$..Tags", "$..LogResult", "$..RevisionId", "$..RepositoryType"],
+    )
+    @pytest.mark.aws_validated
     def test_basic_invoke(
         self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
     ):
-        snapshot.add_transformer(snapshot.transform.lambda_api())
-
-        # predefined names
         fn_name = f"ls-fn-{short_uid()}"
         fn_name_2 = f"ls-fn-{short_uid()}"
 
-        # infra setup (& validations)
         with open(os.path.join(os.path.dirname(__file__), "functions/echo.zip"), "rb") as f:
             response = create_lambda_function_aws(
                 FunctionName=fn_name,
@@ -439,7 +446,7 @@ class TestLambdaFeatures:
                 Code={"ZipFile": f.read()},
                 PackageType="Zip",
                 Role=lambda_su_role,
-                Runtime="python3.9",
+                Runtime=Runtime.python3_9,
             )
             snapshot.match("lambda_create_fn", response)
 
@@ -450,12 +457,11 @@ class TestLambdaFeatures:
                 Code={"ZipFile": f.read()},
                 PackageType="Zip",
                 Role=lambda_su_role,
-                Runtime="python3.9",
+                Runtime=Runtime.python3_9,
             )
             snapshot.match("lambda_create_fn_2", response)
 
         get_fn_result = lambda_client.get_function(FunctionName=fn_name)
-
         snapshot.match("lambda_get_fn", get_fn_result)
 
         get_fn_result_2 = lambda_client.get_function(FunctionName=fn_name_2)
