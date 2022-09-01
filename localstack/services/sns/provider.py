@@ -472,6 +472,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                         "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
                     )
 
+        sns_backend = SNSBackend.get()
+        if topic_arn not in sns_backend.sns_subscriptions:
+            raise NotFoundException(
+                "Topic does not exist",
+            )
+
         response = {"Successful": [], "Failed": []}
         for entry in publish_batch_request_entries:
             message_id = str(uuid.uuid4())
