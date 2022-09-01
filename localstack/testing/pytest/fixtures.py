@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import time
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 import boto3
 import botocore.auth
@@ -66,6 +66,7 @@ if TYPE_CHECKING:
     from mypy_boto3_ssm import SSMClient
     from mypy_boto3_stepfunctions import SFNClient
     from mypy_boto3_sts import STSClient
+    from mypy_boto3_transcribe import TranscribeClient
 
 LOG = logging.getLogger(__name__)
 
@@ -320,6 +321,11 @@ def rgsa_client() -> "ResourceGroupsTaggingAPIClient":
 @pytest.fixture(scope="class")
 def route53_client() -> "Route53Client":
     return _client("route53")
+
+
+@pytest.fixture(scope="class")
+def transcribe_client() -> "TranscribeClient":
+    return _client("transcribe")
 
 
 @pytest.fixture
@@ -666,6 +672,34 @@ def route53_hosted_zone(route53_client):
             route53_client.delete_hosted_zone(Id=zone)
         except Exception as e:
             LOG.debug(f"error cleaning up route53 HostedZone {zone}: {e}")
+
+
+@pytest.fixture
+def transcribe_create_job(transcribe_client, s3_client, s3_bucket):
+    def _create_job(audio_file: str, params: Optional[dict[str, Any]] = None) -> str:
+        s3_key = "test-clip.wav"
+
+        if not params:
+            params = {}
+
+        if "TranscriptionJobName" not in params:
+            params["TranscriptionJobName"] = f"test-transcribe-{short_uid()}"
+
+        if "LanguageCode" not in params:
+            params["LanguageCode"] = "en-GB"
+
+        if "Media" not in params:
+            params["Media"] = {"MediaFileUri": f"s3://{s3_bucket}/{s3_key}"}
+
+        # upload test wav to a s3 bucket
+        with open(audio_file, "rb") as f:
+            s3_client.upload_fileobj(f, s3_bucket, s3_key)
+
+        transcribe_client.start_transcription_job(**params)
+
+        return params["TranscriptionJobName"]
+
+    yield _create_job
 
 
 @pytest.fixture

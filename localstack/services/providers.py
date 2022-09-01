@@ -426,3 +426,15 @@ def support():
         "support",
         listener=AwsApiListener("support", MotoFallbackDispatcher(provider)),
     )
+
+
+@aws_provider()
+def transcribe():
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.transcribe.provider import TranscribeProvider
+
+    provider = TranscribeProvider()
+    return Service(
+        "transcribe",
+        listener=AwsApiListener("transcribe", MotoFallbackDispatcher(provider)),
+    )
