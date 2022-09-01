@@ -156,10 +156,6 @@ class TestCliContainerLifecycle:
         binds = inspect["HostConfig"]["Binds"]
         assert f"{volume_dir}:{constants.DEFAULT_VOLUME_DIR}" in binds
 
-    # TODO: remove xfail marker as soon as new Docker image is published and test passes
-    @pytest.mark.xfail(
-        reason="Test should pass once the new Docker image is available after fixes in #6785"
-    )
     def test_container_starts_non_root(self, runner, monkeypatch, container_client):
         user = "localstack"
         monkeypatch.setattr(config, "DOCKER_FLAGS", f"--user={user}")
