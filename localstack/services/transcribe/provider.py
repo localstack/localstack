@@ -29,7 +29,7 @@ from localstack.aws.api.transcribe import (
 )
 from localstack.services.transcribe.models import TranscribeStore, transcribe_stores
 from localstack.utils.aws import aws_stack
-from localstack.utils.files import new_tmp_file, save_file
+from localstack.utils.files import new_tmp_file
 from localstack.utils.http import download
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_thread
@@ -204,8 +204,7 @@ class TranscribeProvider(TranscribeApi):
             s3_client = aws_stack.connect_to_service("s3")
             s3_path = job["Media"]["MediaFileUri"]
             bucket, _, key = s3_path.removeprefix("s3://").partition("/")
-            content = s3_client.get_object(Bucket=bucket, Key=key)["Body"].read()
-            save_file(file_path, content)
+            s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
 
             # Check if file is valid wav
             audio = wave.open(file_path, "rb")
