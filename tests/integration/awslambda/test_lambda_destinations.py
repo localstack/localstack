@@ -4,19 +4,16 @@ import json
 import pytest
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from tests.integration.awslambda.functions import lambda_integration
-from tests.integration.awslambda.test_lambda import (
-    TEST_LAMBDA_LIBS,
-    TEST_LAMBDA_PYTHON,
-    read_streams,
-)
+from tests.integration.awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 
 
 class TestLambdaDLQ:
-    @pytest.mark.skip_snapshot_verify
-    # @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
+    @pytest.mark.aws_validated
     def test_dead_letter_queue(
         self,
         lambda_client,
@@ -31,6 +28,11 @@ class TestLambdaDLQ:
         # create DLQ and Lambda function
         snapshot.add_transformer(snapshot.transform.lambda_api())
         snapshot.add_transformer(snapshot.transform.sqs_api())
+        snapshot.add_transformer(snapshot.transform.key_value("CodeSha256"))
+        snapshot.add_transformer(snapshot.transform.key_value("MD5OfMessageAttributes"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("LogResult")
+        )  # will be handled separately
 
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
@@ -58,55 +60,53 @@ class TestLambdaDLQ:
         def receive_dlq():
             result = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
             assert len(result["Messages"]) > 0
-            msg_attrs = result["Messages"][0]["MessageAttributes"]
-            assert "RequestID" in msg_attrs
-            assert "ErrorCode" in msg_attrs
-            assert "ErrorMessage" in msg_attrs
-            snapshot.match("sqs_dlq_message", result)
+            return result
 
         # on AWS, event retries can be quite delayed, so we have to wait up to 6 minutes here, potential flakes
-        retry(receive_dlq, retries=120, sleep=3)
+        receive_result = retry(receive_dlq, retries=120, sleep=3)
+        snapshot.match("receive_result", receive_result)
 
         # update DLQ config
         update_function_config_response = lambda_client.update_function_configuration(
             FunctionName=lambda_name, DeadLetterConfig={}
         )
         snapshot.match("delete_dlq", update_function_config_response)
-        # invoke Lambda again, assert that status code is 200 and error details contained in the payload
-        result = lambda_client.invoke(
+        invoke_result = lambda_client.invoke(
             FunctionName=lambda_name, Payload=json.dumps(payload), LogType="Tail"
         )
-        result = read_streams(result)
-        payload = json.loads(to_str(result["Payload"]))
-        snapshot.match("result_payload", payload)
-        assert 200 == result["StatusCode"]
-        assert "Unhandled" == result["FunctionError"]
-        assert "$LATEST" == result["ExecutedVersion"]
-        assert "Test exception" in payload["errorMessage"]
-        assert "Exception" in payload["errorType"]
-        assert isinstance(payload["stackTrace"], list)
-        log_result = result.get("LogResult")
-        assert log_result
-        logs = to_str(base64.b64decode(to_str(log_result)))
-        assert "START" in logs
-        assert "Test exception" in logs
-        assert "END" in logs
-        assert "REPORT" in logs
+        snapshot.match("invoke_result", invoke_result)
+
+        log_result = invoke_result["LogResult"]
+        raw_logs = to_str(base64.b64decode(to_str(log_result)))
+        log_lines = raw_logs.splitlines()
+        snapshot.match(
+            "log_result",
+            {"log_result": [line for line in log_lines if not line.startswith("REPORT")]},
+        )
 
 
 class TestLambdaDestinationSqs:
-    @pytest.mark.parametrize(
-        "condition,payload",
-        [
-            ("Success", {}),
-            ("RetriesExhausted", {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}),
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..context",
+            "$..MessageId",
+            "$..functionArn",
+            "$..FunctionArn",
+            "$..approximateInvokeCount",
+            "$..stackTrace",
         ],
     )
-    @pytest.mark.skip_snapshot_verify
-    # @pytest.mark.aws_validated
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {},
+            {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1},
+        ],
+    )
+    @pytest.mark.aws_validated
     def test_assess_lambda_destination_invocation(
         self,
-        condition,
         payload,
         lambda_client,
         sqs_client,
@@ -116,12 +116,11 @@ class TestLambdaDestinationSqs:
         lambda_su_role,
         snapshot,
     ):
+        """Testing the destination config API and operation (for the OnSuccess case)"""
         snapshot.add_transformer(snapshot.transform.lambda_api())
         snapshot.add_transformer(snapshot.transform.sqs_api())
-        # message body contains ARN
         snapshot.add_transformer(snapshot.transform.key_value("MD5OfBody"))
 
-        """Testing the destination config API and operation (for the OnSuccess case)"""
         # create DLQ and Lambda function
         queue_name = f"test-{short_uid()}"
         lambda_name = f"test-{short_uid()}"
@@ -152,12 +151,10 @@ class TestLambdaDestinationSqs:
         def receive_message():
             rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
             assert len(rs["Messages"]) > 0
-            msg = rs["Messages"][0]["Body"]
-            msg = json.loads(msg)
-            assert condition == msg["requestContext"]["condition"]
-            snapshot.match("destination_message", rs)
+            return rs
 
-        retry(receive_message, retries=120, sleep=3)
+        receive_message_result = retry(receive_message, retries=120, sleep=3)
+        snapshot.match("receive_message_result", receive_message_result)
 
 
 # class TestLambdaDestinationSns:
