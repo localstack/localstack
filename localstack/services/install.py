@@ -267,79 +267,78 @@ def install_elasticsearch(version=None):
         if jvm_options != jvm_options_replaced:
             save_file(jvm_options_file, jvm_options_replaced)
 
+    # def get_opensearch_install_version(version: str) -> str:
+    #     from localstack.services.opensearch import versions
+    #
+    #     if config.SKIP_INFRA_DOWNLOADS:
+    #         version = OPENSEARCH_DEFAULT_VERSION
+    #
+    #     return versions.get_install_version(version)
+    #
+    #
+    # def get_opensearch_install_dir(version: str) -> str:
+    #     return os.path.join(config.dirs.var_libs, "opensearch", version)
 
-def get_opensearch_install_version(version: str) -> str:
-    from localstack.services.opensearch import versions
-
-    if config.SKIP_INFRA_DOWNLOADS:
-        version = OPENSEARCH_DEFAULT_VERSION
-
-    return versions.get_install_version(version)
-
-
-def get_opensearch_install_dir(version: str) -> str:
-    return os.path.join(config.dirs.var_libs, "opensearch", version)
-
-
-def install_opensearch(version=None):
-    # locally import to avoid having a dependency on ASF when starting the CLI
-    from localstack.aws.api.opensearch import EngineType
-    from localstack.services.opensearch import versions
-
-    if not version:
-        version = OPENSEARCH_DEFAULT_VERSION
-
-    version = get_opensearch_install_version(version)
-    install_dir = get_opensearch_install_dir(version)
-    installed_executable = os.path.join(install_dir, "bin", "opensearch")
-    if not os.path.exists(installed_executable):
-        with OS_INSTALL_LOCKS.setdefault(version, threading.Lock()):
-            if not os.path.exists(installed_executable):
-                log_install_msg(f"OpenSearch ({version})")
-                opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
-                install_dir_parent = os.path.dirname(install_dir)
-                mkdir(install_dir_parent)
-                # download and extract archive
-                tmp_archive = os.path.join(
-                    config.dirs.cache, f"localstack.{os.path.basename(opensearch_url)}"
-                )
-                download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
-                opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
-                if not opensearch_dir:
-                    raise Exception(f"Unable to find OpenSearch folder in {install_dir_parent}")
-                shutil.move(opensearch_dir[0], install_dir)
-
-                for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
-                    dir_path = os.path.join(install_dir, dir_name)
-                    mkdir(dir_path)
-                    chmod_r(dir_path, 0o777)
-
-                # install default plugins for opensearch 1.1+
-                # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
-                parsed_version = semver.VersionInfo.parse(version)
-                if parsed_version >= "1.1.0":
-                    for plugin in OPENSEARCH_PLUGIN_LIST:
-                        plugin_binary = os.path.join(install_dir, "bin", "opensearch-plugin")
-                        plugin_dir = os.path.join(install_dir, "plugins", plugin)
-                        if not os.path.exists(plugin_dir):
-                            LOG.info("Installing OpenSearch plugin %s", plugin)
-
-                            def try_install():
-                                output = run([plugin_binary, "install", "-b", plugin])
-                                LOG.debug("Plugin installation output: %s", output)
-
-                            # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
-                            download_attempts = 3
-                            try:
-                                retry(try_install, retries=download_attempts - 1, sleep=2)
-                            except Exception:
-                                LOG.warning(
-                                    "Unable to download OpenSearch plugin '%s' after %s attempts",
-                                    plugin,
-                                    download_attempts,
-                                )
-                                if not os.environ.get("IGNORE_OS_DOWNLOAD_ERRORS"):
-                                    raise
+    #
+    # def install_opensearch(version=None):
+    #     # locally import to avoid having a dependency on ASF when starting the CLI
+    #     from localstack.aws.api.opensearch import EngineType
+    #     from localstack.services.opensearch import versions
+    #
+    #     if not version:
+    #         version = OPENSEARCH_DEFAULT_VERSION
+    #
+    #     version = get_opensearch_install_version(version)
+    #     install_dir = get_opensearch_install_dir(version)
+    #     installed_executable = os.path.join(install_dir, "bin", "opensearch")
+    #     if not os.path.exists(installed_executable):
+    #         with OS_INSTALL_LOCKS.setdefault(version, threading.Lock()):
+    #             if not os.path.exists(installed_executable):
+    #                 log_install_msg(f"OpenSearch ({version})")
+    #                 opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
+    #                 install_dir_parent = os.path.dirname(install_dir)
+    #                 mkdir(install_dir_parent)
+    #                 # download and extract archive
+    #                 tmp_archive = os.path.join(
+    #                     config.dirs.cache, f"localstack.{os.path.basename(opensearch_url)}"
+    #                 )
+    #                 download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
+    #                 opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
+    #                 if not opensearch_dir:
+    #                     raise Exception(f"Unable to find OpenSearch folder in {install_dir_parent}")
+    #                 shutil.move(opensearch_dir[0], install_dir)
+    #
+    #                 for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
+    #                     dir_path = os.path.join(install_dir, dir_name)
+    #                     mkdir(dir_path)
+    #                     chmod_r(dir_path, 0o777)
+    #
+    #                 # install default plugins for opensearch 1.1+
+    #                 # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
+    #                 parsed_version = semver.VersionInfo.parse(version)
+    #                 if parsed_version >= "1.1.0":
+    #                     for plugin in OPENSEARCH_PLUGIN_LIST:
+    #                         plugin_binary = os.path.join(install_dir, "bin", "opensearch-plugin")
+    #                         plugin_dir = os.path.join(install_dir, "plugins", plugin)
+    #                         if not os.path.exists(plugin_dir):
+    #                             LOG.info("Installing OpenSearch plugin %s", plugin)
+    #
+    #                             def try_install():
+    #                                 output = run([plugin_binary, "install", "-b", plugin])
+    #                                 LOG.debug("Plugin installation output: %s", output)
+    #
+    #                             # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
+    #                             download_attempts = 3
+    #                             try:
+    #                                 retry(try_install, retries=download_attempts - 1, sleep=2)
+    #                             except Exception:
+    #                                 LOG.warning(
+    #                                     "Unable to download OpenSearch plugin '%s' after %s attempts",
+    #                                     plugin,
+    #                                     download_attempts,
+    #                                 )
+    #                                 if not os.environ.get("IGNORE_OS_DOWNLOAD_ERRORS"):
+    #                                     raise
 
     # patch JVM options file - replace hardcoded heap size settings
     jvm_options_file = os.path.join(install_dir, "config", "jvm.options")
@@ -881,45 +880,199 @@ class InstallerManager:
         return installer(*args, **kwargs)
 
 
-class Package(ABC):
-    def __init__(self):
-        self.default_version = None
+class NoSuchInstallTargetException(Exception):
+    pass
 
-    def _do_get_installer(self, version):
-        raise NotImplementedError()
 
-    def get_installer(self, version=None):
-        if not version:
-            version = self.default_version
-        return self._do_get_installer(version)
+class InstallTarget:
+    VAR_LIBS = "var"
+    STATIC_LIBS = "static"
+
+    _targets = {VAR_LIBS: config.dirs.var_libs, STATIC_LIBS: config.dirs.static_libs}
+
+    @staticmethod
+    def get_install_targets() -> [str]:
+        # return [InstallTarget.VAR_LIBS, InstallTarget.STATIC_LIBS]
+        return InstallTarget._targets.values()
+
+    @staticmethod
+    def get_install_target(target_string) -> str:
+        target_string = InstallTarget._targets.get(target_string)
+        if not target_string:
+            raise NoSuchInstallTargetException()
+        return target_string
 
 
 class PackageInstaller(ABC):
+    def __init__(self):
+        self.default_target = InstallTarget.get_install_target(InstallTarget.VAR_LIBS)
+
+    """
+    The method that is called to execute all steps necessary to install the specified version of a package
+    into the specified target
+    """
+
     def install(self):
         raise NotImplementedError()
 
+    """
+    The method that returns the path of the directory where the necessary files should be written to.
+    """
+    # TODO: The typical pattern will be <target>/<name>/<version>. Should  we enforce this already on this level?
+    #   e.g. return path.join(self.target, self.name, self.version), while declaring these variables in the constructor
+    #   with None values?
+    def get_install_dir(self) -> str:
+        raise NotImplementedError()
 
-class OpensearchPackage(Package):
-    def __init__(self):
-        super().__init__()
+    """
+    The method that returns a path under which the necessary executables have been installed. It must consider all
+    locations specified in InstallTarget. It will return the first path that matches the lookup.
+    If no path is returned, no installation was found.
+    """
+    # TODO: this is more or less supposed to be a "is_installed()" method that returns the path in the process.
+    #   Is there a cleaner way to achieve that?
+    def get_installed_executables_path(self) -> str | None:
+        raise NotImplementedError()
+
+
+class Package(ABC):
+    def __init__(self, default_version=None):
+        self.default_version = default_version
         self.installers = dict[str, PackageInstaller]()
 
-    def _do_get_installer(self, version):
-        installer = installers.get(version)
+    def _do_get_installer(self, version, target) -> PackageInstaller:
+        raise NotImplementedError()
+
+    def get_installer(self, version=None, target=None):
+        if not version:
+            version = self.default_version
+        if target:
+            # TODO: should this translation be moved to Installer, so it has the sole responsibility over targets?
+            target = InstallTarget.get_install_target(target)
+        # Save different installers under <version_name>_<target>
+        # If no target is passed, the installer uses the default target, and only the version is used
+        # TODO: Side effect: the package might fetch the installer for the default version twice if it is fetched
+        #   implicitly (without target -> key="<version>") and explicitly (target=<default_target> ->
+        #   key="<version>_<default_target>"). To avoid this, always set the target explicitly.
+        #   This means the Package gets awareness of the default target.
+        # TODO: Is this even necessary? 90% of the time we will have 1 Installer per Package, simply creating the
+        #   wanted objects might be simpler with the same efficiency.
+        installer_name = str.join("_", [s for s in [version, target] if s])
+        installer = installers.get(installer_name)
         if not installer:
-            installers[version] = installer = OpensearchPackageInstaller(version)
+            self.installers[installer_name] = installer = self._do_get_installer(
+                version=version, target=target
+            )
         return installer
 
 
+class OpensearchPackage(Package):
+    def __init__(self, default_version=None):
+        super().__init__(default_version)
+        if default_version is None:
+            self.default_version = OPENSEARCH_DEFAULT_VERSION
+
+    def _do_get_installer(self, version, target):
+
+        print(f"DEBUG: OpensearchPackageInstaller init with version {version}; target {target} ")
+        return OpensearchPackageInstaller(version, target)
+
+
 class OpensearchPackageInstaller(PackageInstaller):
-    def __init__(self, version=None, default_version=None):
-        if not default_version:
-            default_version = OPENSEARCH_DEFAULT_VERSION
-        self.default_version = default_version
+    def __init__(self, version, target=None):
+        super().__init__()
+
         self.version = version
+        if not target:
+            target = self.default_target
+        self.target = target
 
     def install(self):
-        install_opensearch(self.version)
+        self._install_opensearch()
+
+    def get_install_dir(self, target=None) -> str:
+        if not target:
+            target = self.target
+        return os.path.join(target, "opensearch", self.version)
+
+    def get_installed_executables_path(self) -> str | None:
+
+        targets = InstallTarget.get_install_targets()
+        # TODO: necessary? Start with the set one
+        targets = [self.target] + [t for t in targets if t != self.target]
+        for t in targets:
+            installed_executable = self._get_opensearch_installed_executables_path(t)
+            if os.path.exists(installed_executable):
+                return installed_executable
+
+    def _get_opensearch_install_version(self) -> str:
+        from localstack.services.opensearch import versions
+
+        if config.SKIP_INFRA_DOWNLOADS:
+            self.version = OPENSEARCH_DEFAULT_VERSION
+
+        return versions.get_install_version(self.version)
+
+    def _get_opensearch_installed_executables_path(self, target):
+        return os.path.join(self.get_install_dir(target), "bin", "opensearch")
+
+    def _install_opensearch(self):
+        # locally import to avoid having a dependency on ASF when starting the CLI
+        from localstack.aws.api.opensearch import EngineType
+        from localstack.services.opensearch import versions
+
+        version = self._get_opensearch_install_version()
+        install_dir = self.get_install_dir()
+        installed_executable = self._get_opensearch_installed_executables_path(self.target)
+        if not os.path.exists(installed_executable):
+            with OS_INSTALL_LOCKS.setdefault(version, threading.Lock()):
+                if not os.path.exists(installed_executable):
+                    log_install_msg(f"OpenSearch ({version})")
+                    opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
+                    install_dir_parent = os.path.dirname(install_dir)
+                    mkdir(install_dir_parent)
+                    # download and extract archive
+                    tmp_archive = os.path.join(
+                        config.dirs.cache, f"localstack.{os.path.basename(opensearch_url)}"
+                    )
+                    print(f"DEBUG: installing opensearch to path {install_dir_parent}")
+                    download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
+                    opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
+                    if not opensearch_dir:
+                        raise Exception(f"Unable to find OpenSearch folder in {install_dir_parent}")
+                    shutil.move(opensearch_dir[0], install_dir)
+
+                    for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
+                        dir_path = os.path.join(install_dir, dir_name)
+                        mkdir(dir_path)
+                        chmod_r(dir_path, 0o777)
+
+                    # install default plugins for opensearch 1.1+
+                    # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
+                    parsed_version = semver.VersionInfo.parse(version)
+                    if parsed_version >= "1.1.0":
+                        for plugin in OPENSEARCH_PLUGIN_LIST:
+                            plugin_binary = os.path.join(install_dir, "bin", "opensearch-plugin")
+                            plugin_dir = os.path.join(install_dir, "plugins", plugin)
+                            if not os.path.exists(plugin_dir):
+                                LOG.info("Installing OpenSearch plugin %s", plugin)
+
+                                def try_install():
+                                    output = run([plugin_binary, "install", "-b", plugin])
+                                    LOG.debug("Plugin installation output: %s", output)
+
+                                # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
+                                download_attempts = 3
+                                try:
+                                    retry(try_install, retries=download_attempts - 1, sleep=2)
+                                except Exception:
+                                    LOG.warning(
+                                        "Unable to download OpenSearch plugin '%s' after %s attempts",
+                                        plugin,
+                                        download_attempts,
+                                    )
+                                    if not os.environ.get("IGNORE_OS_DOWNLOAD_ERRORS"):
+                                        raise
 
 
 def main():

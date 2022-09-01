@@ -35,7 +35,7 @@ def cli():
     setup_logging()
 
 
-def _do_install(pkg, version):
+def _do_install(pkg, version=None, target=None):
     console.print(f"installing... [bold]{pkg}[/bold]")
     try:
         package_installer = InstallerManager().get_installers()[pkg]
@@ -44,7 +44,7 @@ def _do_install(pkg, version):
             package_installer()
         else:
             # new way
-            package_installer.get_installer(version=version).install()
+            package_installer.get_installer(version=version, target=target).install()
         console.print(f"[green]installed[/green] [bold]{pkg}[/bold]")
     except Exception as e:
         console.print(f"[red]error[/red] installing {pkg}: {e}")
@@ -67,7 +67,10 @@ def _do_install(pkg, version):
     required=False,
     help="WIP!! which version you want to install, just for testing!",
 )
-def install(package, parallel, version):
+@click.option(
+    "--target", type=str, default=None, required=False, help="WIP, where to install the package"
+)
+def install(package, parallel, version, target):
     """
     Install one or more packages.
     """
@@ -84,14 +87,15 @@ def install(package, parallel, version):
 
     # collect installers and install in parallel:
     try:
-        if version:
-            # TODO: this is just to test installing 1 package with a version
+        if version or target:
+            # TODO: this is just to test installing 1 package with the new installer hierarchy
             for pkg in package:
-                _do_install(pkg, version)
+                _do_install(pkg, version, target)
         with Pool(processes=parallel) as pool:
             pool.map(_do_install, package)
-    except Exception:
-        raise ClickException("one or more package installations failed.")
+    except Exception as e:
+        # raise ClickException("one or more package installations failed.")
+        raise e
 
 
 @cli.command(name="list")
