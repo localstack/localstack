@@ -2015,5 +2015,21 @@
         }
       }
     }
+  },
+  "tests/integration/test_sns.py::TestSNSProvider::test_publish_batch_messages_without_topic": {
+    "recorded-date": "01-09-2022, 20:49:54",
+    "recorded-content": {
+      "publish-batch-no-topic": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Topic does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
