@@ -14,6 +14,7 @@ from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
     _get_lambda_invocation_events,
+    is_old_provider,
     lambda_role,
     s3_lambda_permission,
 )
@@ -43,6 +44,24 @@ def _snapshot_transformers(snapshot):
     )
 
 
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..Records..eventID",
+        "$..Records..kinesis.encryptionType",
+        "$..Records..kinesis.kinesisSchemaVersion",
+        "$..BisectBatchOnFunctionError",
+        "$..DestinationConfig",
+        "$..FunctionResponseTypes",
+        "$..LastProcessingResult",
+        "$..MaximumBatchingWindowInSeconds",
+        "$..MaximumRecordAgeInSeconds",
+        "$..ResponseMetadata.HTTPStatusCode",
+        "$..State",
+        "$..Topics",
+        "$..TumblingWindowInSeconds",
+    ],
+    condition=is_old_provider,
+)
 class TestKinesisSource:
     @pytest.mark.aws_validated
     def test_create_kinesis_event_source_mapping(
@@ -306,6 +325,21 @@ class TestKinesisSource:
         # should still only get the first batch from before mapping was disabled
         _get_lambda_invocation_events(logs_client, function_name, expected_num_events=1, retries=10)
 
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfFirstRecord",
+            "$..Messages..Body.KinesisBatchInfo.approximateArrivalOfLastRecord",
+            "$..Messages..Body.KinesisBatchInfo.shardId",
+            "$..Messages..Body.KinesisBatchInfo.streamArn",
+            "$..Messages..Body.requestContext.approximateInvokeCount",
+            "$..Messages..Body.requestContext.functionArn",
+            "$..Messages..Body.responseContext.statusCode",
+            # destination config arn missing, which leads to those having wrong resource ids
+            "$..EventSourceArn",
+            "$..FunctionArn",
+        ],
+        condition=is_old_provider,
+    )
     def test_kinesis_event_source_mapping_with_on_failure_destination_config(
         self,
         lambda_client,
