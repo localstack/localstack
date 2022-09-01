@@ -39,8 +39,7 @@ class KinesisStream(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         stream_name = self.resolve_refs_recursively(stack_name, self.props["Name"], resources)
         result = aws_stack.connect_to_service("kinesis").describe_stream(StreamName=stream_name)
-        if result["StreamDescription"]["StreamStatus"] == "ACTIVE":
-            return result
+        return result
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
@@ -60,6 +59,8 @@ class KinesisStream(GenericBaseModel):
             stream_name = resources[resource_id]["Properties"]["Name"]
 
             description = client.describe_stream(StreamName=stream_name)
+            while description["StreamDescription"]["StreamStatus"] != "ACTIVE":
+                description = client.describe_stream(StreamName=stream_name)
 
             resources[resource_id]["PhysicalResourceId"] = description["StreamDescription"][
                 "StreamARN"

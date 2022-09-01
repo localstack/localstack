@@ -3,7 +3,6 @@ import json
 import pytest
 
 
-# TODO fix service so it returns the stream mode
 @pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(paths=["$..StreamDescription.StreamModeDetails"])
 def test_stream_creation(kinesis_client, deploy_cfn_template, snapshot):
