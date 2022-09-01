@@ -59,8 +59,4 @@ jobs:
         env:
           PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -s"
         run: |
-          # make sure that the logs dir is writable by a non-root user (required by the tests)
-          logs_dir=/home/runner/.cache/localstack/volume/logs; \
-            mkdir -p $logs_dir; \
-            sudo chmod -R 777 $logs_dir
           python -m pytest tests/bootstrap/
