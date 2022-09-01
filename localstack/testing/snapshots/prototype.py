@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 
 from botocore.response import StreamingBody
 from deepdiff import DeepDiff
+from jsonpath_ng import DatumInContext
 from jsonpath_ng.ext import parse
 
 from localstack.testing.snapshots.transformer import (
@@ -276,10 +277,21 @@ class SnapshotSession:
 
     def _remove_skip_verification_paths(self, tmp: Dict):
         """Removes all keys from the dict, that match the given json-paths in self.skip_verification_path"""
+
+        def build_full_path_nodes(field_match: DatumInContext):
+            """Traverse the matched Datum to build the path field by field"""
+            full_path_nodes = [str(field_match.path)]
+            next_node = field_match
+            while next_node.context is not None:
+                full_path_nodes.append(str(next_node.context.path))
+                next_node = next_node.context
+
+            return full_path_nodes[::-1][1:]  # reverse the list and remove Root()/$
+
         for path in self.skip_verification_paths:
             matches = parse(path).find(tmp) or []
             for m in matches:
-                full_path = str(m.full_path).split(".")
+                full_path = build_full_path_nodes(m)
                 helper = tmp
                 if len(full_path) > 1:
                     for p in full_path[:-1]:
