@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import time
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 import boto3
 import botocore.auth
@@ -676,25 +676,28 @@ def route53_hosted_zone(route53_client):
 
 @pytest.fixture
 def transcribe_create_job(transcribe_client, s3_client, s3_bucket):
-    def _create_job(**kwargs):
-        test_key = "test-clip.wav"
+    def _create_job(audio_file: str, params: Optional[dict[str, Any]] = None) -> str:
+        s3_key = "test-clip.wav"
 
-        if "TranscriptionJobName" not in kwargs:
-            kwargs["TranscriptionJobName"] = f"test-transcribe-{short_uid()}"
+        if not params:
+            params = {}
 
-        if "LanguageCode" not in kwargs:
-            kwargs["LanguageCode"] = "en-GB"
+        if "TranscriptionJobName" not in params:
+            params["TranscriptionJobName"] = f"test-transcribe-{short_uid()}"
 
-        if "Media" not in kwargs:
-            kwargs["Media"] = {"MediaFileUri": f"s3://{s3_bucket}/{test_key}"}
+        if "LanguageCode" not in params:
+            params["LanguageCode"] = "en-GB"
+
+        if "Media" not in params:
+            params["Media"] = {"MediaFileUri": f"s3://{s3_bucket}/{s3_key}"}
 
         # upload test wav to a s3 bucket
-        with open(kwargs["test_file"], "rb") as f:
-            s3_client.upload_fileobj(f, s3_bucket, test_key)
-        kwargs.pop("test_file")
+        with open(audio_file, "rb") as f:
+            s3_client.upload_fileobj(f, s3_bucket, s3_key)
 
-        transcribe_client.start_transcription_job(**kwargs)
-        return kwargs["TranscriptionJobName"]
+        transcribe_client.start_transcription_job(**params)
+
+        return params["TranscriptionJobName"]
 
     yield _create_job
 
