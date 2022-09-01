@@ -8,7 +8,9 @@ import re
 import time
 from io import BytesIO
 from operator import itemgetter
+from typing import TYPE_CHECKING
 from unittest.mock import patch
+from urllib.parse import parse_qs, quote, urlparse
 
 import boto3 as boto3
 import pytest
@@ -21,7 +23,11 @@ from botocore.exceptions import ClientError
 from pytz import timezone
 
 from localstack import config
-from localstack.constants import S3_VIRTUAL_HOSTNAME
+from localstack.constants import (
+    S3_VIRTUAL_HOSTNAME,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.fixtures import _client
@@ -40,6 +46,9 @@ from localstack.utils.strings import (
 )
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
+
+if TYPE_CHECKING:
+    from mypy_boto3_s3 import S3Client
 
 LOG = logging.getLogger(__name__)
 
@@ -1908,6 +1917,217 @@ class TestS3Cors:
             snapshot.transform.key_value("Last-Modified", "<date>", reference_replacement=False),
         ]
 
+    @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+    @pytest.mark.parametrize(
+        "signature_version, use_virtual_address",
+        [
+            ("s3", False),
+            ("s3", True),
+            ("s3v4", False),
+            ("s3v4", True),
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_presigned_url_signature_authentication_multi_part(
+        self, s3_client, s3_create_bucket, signature_version, use_virtual_address
+    ):
+        bucket_name = "presign-%s" % short_uid()
+
+        s3_endpoint_path_style = _endpoint_url()
+
+        s3_create_bucket(Bucket=bucket_name)
+        object_key = "temp.txt"
+
+        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
+        client = _s3_client_custom_config(
+            Config(signature_version=signature_version, s3=s3_config),
+            endpoint_url=s3_endpoint_path_style,
+        )
+        upload_id = client.create_multipart_upload(
+            Bucket=bucket_name,
+            Key=object_key,
+        )["UploadId"]
+
+        data = to_bytes("hello this is a upload test")
+        upload_file_object = BytesIO(data)
+
+        signed_url = _generate_presigned_url(
+            client,
+            {
+                "Bucket": bucket_name,
+                "Key": object_key,
+                "UploadId": upload_id,
+                "PartNumber": 1,
+            },
+            expires=4,
+            client_method="upload_part",
+        )
+
+        response = requests.put(signed_url, data=upload_file_object)
+        assert response.status_code == 200
+        multipart_upload_parts = [{"ETag": response.headers["ETag"], "PartNumber": 1}]
+
+        response = client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=object_key,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+
+        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+
+        simple_params = {"Bucket": bucket_name, "Key": object_key}
+        response = requests.get(_generate_presigned_url(client, simple_params, 4))
+        assert 200 == response.status_code
+        assert response.content == data
+
+    @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+    @pytest.mark.parametrize(
+        "signature_version, use_virtual_address",
+        [
+            ("s3", False),
+            ("s3", True),
+            ("s3v4", False),
+            ("s3v4", True),
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_presigned_url_signature_authentication_expired(
+        self, s3_client, s3_create_bucket, signature_version, use_virtual_address
+    ):
+        bucket_name = "presign-%s" % short_uid()
+
+        s3_endpoint_path_style = _endpoint_url()
+
+        s3_create_bucket(Bucket=bucket_name)
+        object_key = "temp.txt"
+        s3_client.put_object(Key=object_key, Bucket=bucket_name, Body="123")
+
+        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
+        client = _s3_client_custom_config(
+            Config(signature_version=signature_version, s3=s3_config),
+            endpoint_url=s3_endpoint_path_style,
+        )
+
+        url = _generate_presigned_url(client, {"Bucket": bucket_name, "Key": object_key}, expires=1)
+        time.sleep(1)
+
+        assert 403 == requests.get(url).status_code
+
+    @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+    @pytest.mark.parametrize(
+        "signature_version, use_virtual_address",
+        [
+            ("s3", False),
+            ("s3", True),
+            ("s3v4", False),
+            ("s3v4", True),
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_presigned_url_signature_authentication(
+        self, s3_client, s3_create_bucket, signature_version, use_virtual_address
+    ):
+        bucket_name = "presign-%s" % short_uid()
+
+        s3_endpoint_path_style = _endpoint_url()
+        s3_url = _bucket_url_vhost(bucket_name) if use_virtual_address else _bucket_url(bucket_name)
+
+        s3_create_bucket(Bucket=bucket_name)
+        object_key = "temp.txt"
+        s3_client.put_object(Key=object_key, Bucket=bucket_name, Body="123")
+
+        s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
+        client = _s3_client_custom_config(
+            Config(signature_version=signature_version, s3=s3_config),
+            endpoint_url=s3_endpoint_path_style,
+        )
+
+        expires = 4
+
+        # GET requests
+        simple_params = {"Bucket": bucket_name, "Key": object_key}
+        response = requests.get(_generate_presigned_url(client, simple_params, expires))
+        assert 200 == response.status_code
+        assert response.content == b"123"
+
+        params = {
+            "Bucket": bucket_name,
+            "Key": object_key,
+            "ResponseContentType": "text/plain",
+            "ResponseContentDisposition": "attachment;  filename=test.txt",
+        }
+
+        presigned = _generate_presigned_url(client, params, expires)
+        response = requests.get(_generate_presigned_url(client, params, expires))
+        assert 200 == response.status_code
+        assert response.content == b"123"
+
+        object_data = "this should be found in when you download {}.".format(object_key)
+
+        # invalid requests
+        # TODO check how much sense it makes to make this url "invalid"...
+        assert (
+            403
+            == requests.get(
+                _make_url_invalid(s3_url, object_key, presigned),
+                data=object_data,
+                headers={"Content-Type": "my-fake-content/type"},
+            ).status_code
+        )
+
+        # put object valid
+        assert (
+            200
+            == requests.put(
+                _generate_presigned_url(client, simple_params, expires, client_method="put_object"),
+                data=object_data,
+            ).status_code
+        )
+
+        params = {
+            "Bucket": bucket_name,
+            "Key": object_key,
+            "ContentType": "text/plain",
+        }
+        presigned_put_url = _generate_presigned_url(
+            client, params, expires, client_method="put_object"
+        )
+
+        assert (
+            200
+            == requests.put(
+                presigned_put_url,
+                data=object_data,
+                headers={"Content-Type": "text/plain"},
+            ).status_code
+        )
+
+        # Invalid request
+        response = requests.put(
+            _make_url_invalid(s3_url, object_key, presigned_put_url),
+            data=object_data,
+            headers={"Content-Type": "my-fake-content/type"},
+        )
+        assert 403 == response.status_code
+
+        # DELETE requests
+        presigned_delete_url = _generate_presigned_url(
+            client, simple_params, expires, client_method="delete_object"
+        )
+        response = requests.delete(presigned_delete_url)
+        assert 204 == response.status_code
+
+        # TODO this does not work on AWS (not even if the first delete was not executed)
+        # presigned_delete_url_2 = _generate_presigned_url(
+        #     client,
+        #     {"Bucket": bucket_name, "Key": object_key, "VersionId": "1"},
+        #     expires,
+        #     client_method="delete_object",
+        # )
+        # response = requests.delete(presigned_delete_url_2)
+        # assert 204 == response.status_code
+
 
 class TestS3DeepArchive:
     """
@@ -1950,15 +2170,40 @@ def _anon_client(service: str):
     return aws_stack.create_external_boto_client(service, config=conf)
 
 
-def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
+def _s3_client_custom_config(conf: Config, endpoint_url: str):
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.client("s3", config=conf, endpoint_url=endpoint_url)
+
+    # TODO in future this should work with aws_stack.create_external_boto_client
+    #      currently it doesn't as authenticate_presign_url_signv2 requires the secret_key to be 'test'
+    # return aws_stack.create_external_boto_client(
+    #     "s3",
+    #     config=conf,
+    #     endpoint_url=endpoint_url,
+    #     aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+    # )
+    return boto3.client(
+        "s3",
+        endpoint_url=endpoint_url,
+        config=conf,
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+    )
+
+
+def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
     if not region:
         region = config.DEFAULT_REGION
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         if region == "us-east-1":
-            return f"https://s3.amazonaws.com/{bucket_name}"
+            return "https://s3.amazonaws.com"
         else:
-            return f"http://s3.{region}.amazonaws.com/{bucket_name}"
-    return f"{config.get_edge_url(localstack_hostname=localstack_host or S3_VIRTUAL_HOSTNAME)}/{bucket_name}"
+            return f"http://s3.{region}.amazonaws.com"
+    return f"{config.get_edge_url(localstack_hostname=localstack_host or S3_VIRTUAL_HOSTNAME)}"
+
+
+def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
+    return f"{_endpoint_url(region, localstack_host)}/{bucket_name}"
 
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
@@ -1973,3 +2218,42 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
     s3_edge_url = config.get_edge_url(localstack_hostname=host)
     # todo might add the region here
     return s3_edge_url.replace(f"://{host}", f"://{bucket_name}.{host}")
+
+
+def _generate_presigned_url(
+    client: "S3Client", params: dict, expires: int, client_method: str = "get_object"
+) -> str:
+    return client.generate_presigned_url(
+        client_method,
+        Params=params,
+        ExpiresIn=expires,
+    )
+
+
+def _make_url_invalid(url_prefix: str, object_key: str, url: str) -> str:
+    parsed = urlparse(url)
+    query_params = parse_qs(parsed.query)
+    if "Signature" in query_params:
+        # v2 style
+        return "{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}".format(
+            url_prefix,
+            object_key,
+            query_params["AWSAccessKeyId"][0],
+            query_params["Signature"][0],
+            query_params["Expires"][0],
+        )
+    else:
+        # v4 style
+        return (
+            "{}/{}?X-Amz-Algorithm=AWS4-HMAC-SHA256&"
+            "X-Amz-Credential={}&X-Amz-Date={}&"
+            "X-Amz-Expires={}&X-Amz-SignedHeaders=host&"
+            "X-Amz-Signature={}"
+        ).format(
+            url_prefix,
+            object_key,
+            quote(query_params["X-Amz-Credential"][0]).replace("/", "%2F"),
+            query_params["X-Amz-Date"][0],
+            query_params["X-Amz-Expires"][0],
+            query_params["X-Amz-Signature"][0],
+        )
