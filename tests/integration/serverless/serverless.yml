@@ -139,8 +139,10 @@ functions:
       - cloudwatchEvent:
           name: sls-test-cf-event
           event:
-            source: aws.cloudformation
-            detail-type: AWS API Call from CloudFormation
+            source:
+              - aws.cloudformation
+            detail-type:
+              - "AWS API Call from CloudFormation"
             detail:
               eventName:
                 - CreateStack
