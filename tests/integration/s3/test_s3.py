@@ -1903,6 +1903,9 @@ class TestS3PresignedUrl:
 
         bucket_name = "version-order-%s" % short_uid()
         s3_create_bucket(Bucket=bucket_name)
+        rs = s3_client.list_object_versions(Bucket=bucket_name, EncodingType="url")
+        snapshot.match("list_object_versions_before", rs)
+
         rs = s3_client.put_bucket_versioning(
             Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
         )

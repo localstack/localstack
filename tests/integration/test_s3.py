@@ -302,18 +302,6 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(TEST_BUCKET_NAME_2, [TEST_KEY_2])
 
-    def test_get_object_versioning(self):
-        bucket_name = "bucket-%s" % short_uid()
-
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        rs = self.s3_client.list_object_versions(Bucket=bucket_name, EncodingType="url")
-
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertEqual(bucket_name, rs["Name"])
-
-        # clean up
-        self._delete_bucket(bucket_name, [])
-
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # may not be suitable for parallel execution
