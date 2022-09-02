@@ -2022,6 +2022,120 @@ class TestS3PresignedUrl:
         assert 200 == response.status_code
         assert "index" == response.text
 
+    @pytest.mark.aws_validated
+    def test_s3_static_website_hosting(self, s3_client, s3_create_bucket):
+
+        bucket_name = "test-%s" % short_uid()
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        index_obj = s3_client.put_object(
+            Bucket=bucket_name,
+            Key="test/index.html",
+            Body="index",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+        error_obj = s3_client.put_object(
+            Bucket=bucket_name,
+            Key="test/error.html",
+            Body="error",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+        actual_key_obj = s3_client.put_object(
+            Bucket=bucket_name,
+            Key="actual/key.html",
+            Body="key",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+        with_content_type_obj = s3_client.put_object(
+            Bucket=bucket_name,
+            Key="with-content-type/key.js",
+            Body="some js",
+            ContentType="application/javascript; charset=utf-8",
+            ACL="public-read",
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="to-be-redirected.html",
+            WebsiteRedirectLocation="/actual/key.html",
+            ACL="public-read",
+        )
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "test/error.html"},
+            },
+        )
+        website_url = _website_bucket_url(bucket_name)
+        # actual key
+        url = f"{website_url}/actual/key.html"
+        response = requests.get(url, verify=False)
+        assert 200 == response.status_code
+        assert "key" == response.text
+        assert "content-type" in response.headers
+        assert "text/html" == response.headers["content-type"]
+        assert "etag" in response.headers
+        assert actual_key_obj["ETag"] in response.headers["etag"]
+
+        # If-None-Match and Etag
+        response = requests.get(
+            url, headers={"If-None-Match": actual_key_obj["ETag"]}, verify=False
+        )
+        assert 304 == response.status_code
+
+        # key with specified content-type
+        url = f"{website_url}/with-content-type/key.js"
+        response = requests.get(url, verify=False)
+        assert 200 == response.status_code
+        assert "some js" == response.text
+        assert "content-type" in response.headers
+        assert "application/javascript; charset=utf-8" == response.headers["content-type"]
+        assert "etag" in response.headers
+        assert with_content_type_obj["ETag"] == response.headers["etag"]
+
+        # index document
+        url = f"{website_url}/test"
+        response = requests.get(url, verify=False)
+        assert 200 == response.status_code
+        assert "index" == response.text
+        assert "content-type" in response.headers
+        assert "text/html" in response.headers["content-type"]
+        assert "etag" in response.headers
+        assert index_obj["ETag"] == response.headers["etag"]
+
+        # root path test
+        url = f"{website_url}/"
+        response = requests.get(url, verify=False)
+        assert 404 == response.status_code
+        assert "error" == response.text
+        assert "content-type" in response.headers
+        assert "text/html" in response.headers["content-type"]
+        assert "etag" in response.headers
+        assert error_obj["ETag"] == response.headers["etag"]
+
+        # error document
+        url = f"{website_url}/something"
+        assert 404 == response.status_code
+        assert "error" == response.text
+        assert "content-type" in response.headers
+        assert "text/html" in response.headers["content-type"]
+        assert "etag" in response.headers
+        assert error_obj["ETag"] == response.headers["etag"]
+
+        # redirect object
+        url = f"{website_url}/to-be-redirected.html"
+        response = requests.get(url, verify=False, allow_redirects=False)
+        assert 301 == response.status_code
+        assert "location" in response.headers
+        assert "actual/key.html" in response.headers["location"]
+
+        response = requests.get(url, verify=False)
+        assert 200 == response.status_code
+        assert actual_key_obj["ETag"] == response.headers["etag"]
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)

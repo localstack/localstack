@@ -15,7 +15,7 @@ import pytest
 import requests
 from botocore.client import Config
 
-from localstack import config, constants
+from localstack import config
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     TEST_AWS_ACCESS_KEY_ID,
@@ -23,7 +23,6 @@ from localstack.constants import (
 )
 from localstack.services.awslambda.lambda_api import use_docker
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_NODEJS14X
-from localstack.services.s3 import s3_utils
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import new_tmp_dir, run, short_uid, to_bytes, to_str
@@ -96,120 +95,6 @@ class TestS3(unittest.TestCase):
     @property
     def s3_client(self):
         return TestS3.OVERWRITTEN_CLIENT or self._s3_client
-
-    def test_s3_static_website_hosting(self):
-
-        bucket_name = "test-%s" % short_uid()
-
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        index_obj = self.s3_client.put_object(
-            Bucket=bucket_name, Key="test/index.html", Body="index", ContentType="text/html"
-        )
-        error_obj = self.s3_client.put_object(
-            Bucket=bucket_name, Key="test/error.html", Body="error", ContentType="text/html"
-        )
-        actual_key_obj = self.s3_client.put_object(
-            Bucket=bucket_name, Key="actual/key.html", Body="key", ContentType="text/html"
-        )
-        with_content_type_obj = self.s3_client.put_object(
-            Bucket=bucket_name,
-            Key="with-content-type/key.js",
-            Body="some js",
-            ContentType="application/javascript; charset=utf-8",
-        )
-        self.s3_client.put_object(
-            Bucket=bucket_name,
-            Key="to-be-redirected.html",
-            WebsiteRedirectLocation="actual/key.html",
-        )
-        self.s3_client.put_bucket_website(
-            Bucket=bucket_name,
-            WebsiteConfiguration={
-                "IndexDocument": {"Suffix": "index.html"},
-                "ErrorDocument": {"Key": "test/error.html"},
-            },
-        )
-
-        headers = aws_stack.mock_aws_request_headers("s3")
-        headers["Host"] = s3_utils.get_bucket_website_hostname(bucket_name)
-
-        # actual key
-        url = "https://{}.{}:{}/actual/key.html".format(
-            bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
-        )
-        response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(200, response.status_code)
-        self.assertEqual("key", response.text)
-        self.assertIn("content-type", response.headers)
-        self.assertEqual("text/html", response.headers["content-type"])
-        self.assertIn("etag", response.headers)
-        self.assertEqual(actual_key_obj["ETag"], response.headers["etag"])
-
-        # If-None-Match and Etag
-        response = requests.get(
-            url, headers={**headers, "If-None-Match": actual_key_obj["ETag"]}, verify=False
-        )
-        self.assertEqual(304, response.status_code)
-
-        # key with specified content-type
-        url = "https://{}.{}:{}/with-content-type/key.js".format(
-            bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
-        )
-        response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(200, response.status_code)
-        self.assertEqual("some js", response.text)
-        self.assertIn("content-type", response.headers)
-        self.assertEqual("application/javascript; charset=utf-8", response.headers["content-type"])
-        self.assertIn("etag", response.headers)
-        self.assertEqual(with_content_type_obj["ETag"], response.headers["etag"])
-
-        # index document
-        url = "https://{}.{}:{}/test".format(
-            bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
-        )
-        response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(200, response.status_code)
-        self.assertEqual("index", response.text)
-        self.assertIn("content-type", response.headers)
-        self.assertEqual("text/html", response.headers["content-type"])
-        self.assertIn("etag", response.headers)
-        self.assertEqual(index_obj["ETag"], response.headers["etag"])
-
-        # root path test
-        url = "https://{}.{}:{}/".format(
-            bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
-        )
-        response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(404, response.status_code)
-        self.assertEqual("error", response.text)
-        self.assertIn("content-type", response.headers)
-        self.assertEqual("text/html", response.headers["content-type"])
-        self.assertIn("etag", response.headers)
-        self.assertEqual(error_obj["ETag"], response.headers["etag"])
-
-        # error document
-        url = "https://{}.{}:{}/something".format(
-            bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
-        )
-        response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(404, response.status_code)
-        self.assertEqual("error", response.text)
-        self.assertIn("content-type", response.headers)
-        self.assertEqual("text/html", response.headers["content-type"])
-        self.assertIn("etag", response.headers)
-        self.assertEqual(error_obj["ETag"], response.headers["etag"])
-
-        # redirect object
-        url = "https://{}.{}:{}/to-be-redirected.html".format(
-            bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
-        )
-        response = requests.get(url, headers=headers, verify=False, allow_redirects=False)
-        self.assertEqual(301, response.status_code)
-        self.assertIn("location", response.headers)
-        self.assertEqual("actual/key.html", response.headers["location"])
-        response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(actual_key_obj["ETag"], response.headers["etag"])
 
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
