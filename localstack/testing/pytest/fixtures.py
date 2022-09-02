@@ -341,44 +341,23 @@ def dynamodb_wait_for_table_active(dynamodb_client):
 
 
 @pytest.fixture
-def dynamodb_create_table_with_parameters(dynamodb_client, dynamodb_wait_for_table_active):
+def dynamodb_create_table(
+    dynamodb_client, dynamodb_wait_for_table_active, dynamodb_wait_for_stream_ready
+):
     tables = []
 
     def factory(**kwargs):
         if "TableName" not in kwargs:
-            kwargs["TableName"] = f"test-table-{short_uid()}"
+            kwargs["TableName"] = f"test_table_{short_uid()}"
+        if "StreamSpecification" not in kwargs:
+            kwargs["StreamSpecification"] = {"StreamEnabled": False}
 
         tables.append(kwargs["TableName"])
-        response = dynamodb_client.create_table(**kwargs)
-        dynamodb_wait_for_table_active(kwargs["TableName"])
-        return response
 
-    yield factory
-
-    # cleanup
-    for table in tables:
-        try:
-            # table has to be in ACTIVE state before deletion
-            dynamodb_wait_for_table_active(table)
-            dynamodb_client.delete_table(TableName=table)
-        except Exception as e:
-            LOG.debug("error cleaning up table %s: %s", table, e)
-
-
-@pytest.fixture
-def dynamodb_create_table(dynamodb_client, dynamodb_resource, dynamodb_wait_for_table_active):
-    tables = []
-
-    def factory(**kwargs):
-        if "TableName" not in kwargs:
-            kwargs["TableName"] = f"test-table-{short_uid()}"
-        if "BillingMode" not in kwargs:
-            kwargs["BillingMode"] = "PAY_PER_REQUEST"
-
-        tables.append(kwargs["TableName"])
         resp = dynamodb_client.create_table(**kwargs)
         dynamodb_wait_for_table_active(kwargs["TableName"])
-
+        if kwargs["StreamSpecification"]["StreamEnabled"]:
+            dynamodb_wait_for_stream_ready(resp["TableDescription"]["LatestStreamArn"])
         return resp
 
     yield factory
@@ -754,7 +733,7 @@ def wait_for_delivery_stream_ready(firehose_client):
 
 
 @pytest.fixture
-def wait_for_dynamodb_stream_ready(dynamodbstreams_client):
+def dynamodb_wait_for_stream_ready(dynamodbstreams_client):
     def _wait_for_stream_ready(stream_arn: str):
         def is_stream_ready():
             describe_stream_response = dynamodbstreams_client.describe_stream(StreamArn=stream_arn)

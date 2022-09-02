@@ -666,7 +666,7 @@ class TestDynamoDBEventSourceMapping:
         dynamodb_create_table,
         lambda_su_role,
         logs_client,
-        wait_for_dynamodb_stream_ready,
+        dynamodb_wait_for_stream_ready,
         filter,
         calls,
         item_to_put1,
@@ -692,7 +692,7 @@ class TestDynamoDBEventSourceMapping:
                 TableName=table_name,
                 StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
             )["TableDescription"]["LatestStreamArn"]
-            wait_for_dynamodb_stream_ready(stream_arn)
+            dynamodb_wait_for_stream_ready(stream_arn)
             event_source_mapping_kwargs = {
                 "FunctionName": function_name,
                 "BatchSize": 1,
@@ -765,7 +765,7 @@ class TestDynamoDBEventSourceMapping:
         dynamodb_client,
         dynamodb_create_table,
         lambda_su_role,
-        wait_for_dynamodb_stream_ready,
+        dynamodb_wait_for_stream_ready,
         filter,
     ):
 
@@ -784,7 +784,7 @@ class TestDynamoDBEventSourceMapping:
             TableName=table_name,
             StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )["TableDescription"]["LatestStreamArn"]
-        wait_for_dynamodb_stream_ready(stream_arn)
+        dynamodb_wait_for_stream_ready(stream_arn)
         event_source_mapping_kwargs = {
             "FunctionName": function_name,
             "BatchSize": 1,
