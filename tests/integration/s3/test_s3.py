@@ -1870,6 +1870,30 @@ class TestS3PresignedUrl:
         snapshot.match("list-objects-next_marker", resp)
         assert 10 == len(resp["Contents"])
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
+    def test_upload_big_file(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = "bucket-big-file-%s" % short_uid()
+        key1 = "test_key1"
+        key2 = "test_key1"
+
+        s3_create_bucket(Bucket=bucket_name)
+
+        body1 = "\x01" * 10000000
+        rs = s3_client.put_object(Bucket=bucket_name, Key=key1, Body=body1)
+        snapshot.match("put_object_key1", rs)
+
+        body2 = "a" * 10000000
+        rs = s3_client.put_object(Bucket=bucket_name, Key=key2, Body=body2)
+        snapshot.match("put_object_key2", rs)
+
+        rs = s3_client.head_object(Bucket=bucket_name, Key=key1)
+        snapshot.match("head_object_key1", rs)
+
+        rs = s3_client.head_object(Bucket=bucket_name, Key=key2)
+        snapshot.match("head_object_key2", rs)
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)

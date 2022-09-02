@@ -1493,5 +1493,48 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_upload_big_file": {
+    "recorded-date": "02-09-2022, 15:06:55",
+    "recorded-content": {
+      "put_object_key1": {
+        "ETag": "\"a649c4228b2b9e8bfca3510ed9d9a764\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_object_key2": {
+        "ETag": "\"7095bae098259e0dda4b7acc624de4e2\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head_object_key1": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 10000000,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"7095bae098259e0dda4b7acc624de4e2\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head_object_key2": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 10000000,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"7095bae098259e0dda4b7acc624de4e2\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

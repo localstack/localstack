@@ -342,30 +342,6 @@ class TestS3(unittest.TestCase):
         self.assertTrue(rs["Versions"][0]["IsLatest"])
         self.assertTrue(rs["Versions"][2]["IsLatest"])
 
-    def test_upload_big_file(self):
-        bucket_name = "bucket-big-file-%s" % short_uid()
-        key1 = "test_key1"
-        key2 = "test_key1"
-
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        body1 = "\x01" * 10000000
-        rs = self.s3_client.put_object(Bucket=bucket_name, Key=key1, Body=body1)
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
-
-        body2 = "a" * 10000000
-        rs = self.s3_client.put_object(Bucket=bucket_name, Key=key2, Body=body2)
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
-
-        rs = self.s3_client.head_object(Bucket=bucket_name, Key=key1)
-        self.assertEqual(len(body1), rs["ContentLength"])
-
-        rs = self.s3_client.head_object(Bucket=bucket_name, Key=key2)
-        self.assertEqual(len(body2), rs["ContentLength"])
-
-        # clean up
-        self._delete_bucket(bucket_name, [key1, key2])
-
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # may not be suitable for parallel execution
