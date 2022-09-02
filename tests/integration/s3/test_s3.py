@@ -1923,6 +1923,28 @@ class TestS3PresignedUrl:
 
         snapshot.match("list_object_versions", rs)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..ContentLanguage", "$..VersionId"])
+    def test_etag_on_get_object_call(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-{short_uid()}"
+        object_key = "my-key"
+        s3_create_bucket(Bucket=bucket_name)
+
+        body = "Lorem ipsum dolor sit amet, ... " * 30
+        rs = s3_client.put_object(Bucket=bucket_name, Key=object_key, Body=body)
+
+        rs = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("get_object", rs)
+
+        range = 17
+        rs = s3_client.get_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Range=f"bytes=0-{range-1}",
+        )
+        snapshot.match("get_object_range", rs)
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)

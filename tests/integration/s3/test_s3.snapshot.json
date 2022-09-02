@@ -1621,5 +1621,37 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_etag_on_get_object_call": {
+    "recorded-date": "02-09-2022, 15:32:43",
+    "recorded-content": {
+      "get_object": {
+        "AcceptRanges": "bytes",
+        "Body": "Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... Lorem ipsum dolor sit amet, ... ",
+        "ContentLength": 960,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"c289c6e309be295fe68af649d1e6c6ec\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_object_range": {
+        "AcceptRanges": "bytes",
+        "Body": "Lorem ipsum dolor",
+        "ContentLength": 17,
+        "ContentRange": "bytes 0-16/960",
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"c289c6e309be295fe68af649d1e6c6ec\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 206
+        }
+      }
+    }
   }
 }

@@ -278,30 +278,6 @@ class TestS3(unittest.TestCase):
         )
         self._delete_bucket(TEST_BUCKET_WITH_VERSIONING, [test_1st_key, test_2nd_key])
 
-    def test_etag_on_get_object_call(self):
-        self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_2)
-
-        body = "Lorem ipsum dolor sit amet, ... " * 30
-        rs = self.s3_client.put_object(Bucket=TEST_BUCKET_NAME_2, Key=TEST_KEY_2, Body=body)
-        etag = rs["ETag"]
-
-        rs = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key=TEST_KEY_2)
-        self.assertIn("ETag", rs)
-        self.assertEqual(etag, rs["ETag"])
-        self.assertEqual(len(body), rs["ContentLength"])
-
-        rs = self.s3_client.get_object(
-            Bucket=TEST_BUCKET_NAME_2,
-            Key=TEST_KEY_2,
-            Range="bytes=0-{}".format(TEST_GET_OBJECT_RANGE - 1),
-        )
-        self.assertIn("ETag", rs)
-        self.assertEqual(etag, rs["ETag"])
-        self.assertEqual(TEST_GET_OBJECT_RANGE, rs["ContentLength"])
-
-        # clean up
-        self._delete_bucket(TEST_BUCKET_NAME_2, [TEST_KEY_2])
-
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # may not be suitable for parallel execution
