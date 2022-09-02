@@ -1821,6 +1821,15 @@ class TestS3PresignedUrl:
             e.match("BucketAlreadyOwnedByYou")
             snapshot.match(f"create-bucket-{loc_constraint}", e.value.response)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Prefix"])
+    def test_s3_list_objects_empty_marker(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = "test" + short_uid()
+        s3_create_bucket(Bucket=bucket_name)
+        resp = s3_client.list_objects(Bucket=bucket_name, Marker="")
+        snapshot.match("list-objects", resp)
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)

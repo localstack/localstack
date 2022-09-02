@@ -1306,5 +1306,22 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_list_objects_empty_marker": {
+    "recorded-date": "02-09-2022, 13:13:55",
+    "recorded-content": {
+      "list-objects": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "Marker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

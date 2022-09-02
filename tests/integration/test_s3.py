@@ -392,12 +392,6 @@ class TestS3(unittest.TestCase):
         resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, Marker=next_marker)
         self.assertEqual(10, len(resp["Contents"]))
 
-    def test_s3_list_objects_empty_marker(self):
-        bucket_name = "test" + short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        resp = self.s3_client.list_objects(Bucket=bucket_name, Marker="")
-        self.assertEqual("", resp["Marker"])
-
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # may not be suitable for parallel execution
