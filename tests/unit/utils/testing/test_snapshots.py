@@ -97,3 +97,25 @@ class TestSnapshotManager:
         }
         sm.match("key_a", {"aaa": "helloo", "aab": "this is a test", "b": {"aaa": "another test"}})
         sm._assert_all()
+
+    def test_dot_in_skip_verification_path(self):
+        sm = SnapshotSession(scope_key="A", verify=True, file_path="", update=False)
+        sm.recorded_state = {
+            "key_a": {"aaa": "hello", "aab": "this is a test", "b": {"a.aa": "another test"}}
+        }
+        sm.match(
+            "key_a",
+            {"aaa": "hello", "aab": "this is a test-fail", "b": {"a.aa": "another test-fail"}},
+        )
+
+        with pytest.raises(Exception) as ctx:  # asserts it fail without skipping
+            sm._assert_all()
+        ctx.match("Parity snapshot failed")
+
+        skip_path = ["$..aab", "$..b.a.aa"]
+        with pytest.raises(Exception) as ctx:  # asserts it fails if fields are not escaped
+            sm._assert_all(skip_verification_paths=skip_path)
+        ctx.match("Parity snapshot failed")
+
+        skip_path_escaped = ["$..aab", "$..b.'a.aa'"]
+        sm._assert_all(skip_verification_paths=skip_path_escaped)
