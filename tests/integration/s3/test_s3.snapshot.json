@@ -1538,8 +1538,21 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_get_bucket_versioning_order": {
-    "recorded-date": "02-09-2022, 15:13:45",
+    "recorded-date": "02-09-2022, 15:17:35",
     "recorded-content": {
+      "put_bucket_versioning": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_bucket_versioning": {
+        "Status": "Enabled",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "list_object_versions": {
         "EncodingType": "url",
         "IsTruncated": false,

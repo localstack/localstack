@@ -314,16 +314,6 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [])
 
-    def test_bucket_versioning(self):
-        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_VERSIONING)
-        self.s3_client.put_bucket_versioning(
-            Bucket=TEST_BUCKET_WITH_VERSIONING,
-            VersioningConfiguration={"Status": "Enabled"},
-        )
-
-        result = self.s3_client.get_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING)
-        self.assertEqual("Enabled", result["Status"])
-
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # may not be suitable for parallel execution
