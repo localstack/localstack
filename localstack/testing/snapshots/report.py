@@ -79,7 +79,7 @@ def render_report(result: SnapshotMatchResult):
             return [(change_path, f"[remove](-)[/remove] {change_path} ( {expected!r} )")]
         elif c.report_type in ["dictionary_item_added", "iterable_item_added"]:
             return [(change_path, f"[add](+)[/add] {change_path} ( {actual!r} )")]
-        elif c.report_type in ["values_changed"]:
+        elif c.report_type in ["values_changed", "type_changes"]:
             # TODO: more fancy change detection and visualization (e.g. parts of a string)
             return [
                 (
@@ -88,9 +88,14 @@ def render_report(result: SnapshotMatchResult):
                 )
             ]
         else:
-            LOG.warning(
-                f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support. {expected=} | {actual=}"
-            )
+            resp = f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support. {expected=} | {actual=}"
+            LOG.warning(resp)
+            return [
+                (
+                    change_path,
+                    resp,
+                )
+            ]
         return []
 
     lines = []
