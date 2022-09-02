@@ -1,4 +1,5 @@
 import json
+import os.path
 
 import pytest
 import requests
@@ -8,8 +9,10 @@ import localstack.utils.container_utils.docker_cmd_client
 from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
 from localstack.config import DOCKER_SOCK, get_edge_url, in_docker
+from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import poll_condition
-from localstack.utils.run import to_str
+from localstack.utils.files import mkdir
+from localstack.utils.run import run, to_str
 
 
 @pytest.fixture
@@ -156,13 +159,14 @@ class TestCliContainerLifecycle:
         binds = inspect["HostConfig"]["Binds"]
         assert f"{volume_dir}:{constants.DEFAULT_VOLUME_DIR}" in binds
 
-    # TODO: remove xfail marker as soon as new Docker image is published and test passes
-    @pytest.mark.xfail(
-        reason="Test should pass once the new Docker image is available after fixes in #6785"
-    )
     def test_container_starts_non_root(self, runner, monkeypatch, container_client):
         user = "localstack"
         monkeypatch.setattr(config, "DOCKER_FLAGS", f"--user={user}")
+
+        if in_ci() and os.path.exists("/home/runner"):
+            logs_dir = "/home/runner/.cache/localstack/volume/logs"
+            mkdir(logs_dir)
+            run(["sudo", "chmod", "-R", "777", logs_dir])
 
         runner.invoke(cli, ["start", "-d"])
         runner.invoke(cli, ["wait", "-t", "60"])
