@@ -1945,6 +1945,57 @@ class TestS3PresignedUrl:
         )
         snapshot.match("get_object_range", rs)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
+    )
+    def test_s3_delete_object_with_version_id(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-{short_uid()}"
+
+        test_1st_key = "aws/s3/testkey1.txt"
+        test_2nd_key = "aws/s3/testkey2.txt"
+
+        body = "Lorem ipsum dolor sit amet, ... " * 30
+
+        s3_create_bucket(Bucket=bucket_name)
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_name,
+            VersioningConfiguration={"Status": "Enabled"},
+        )
+        rs = s3_client.get_bucket_versioning(Bucket=bucket_name)
+        snapshot.match("get_bucket_versioning", rs)
+
+        # put 2 objects
+        rs = s3_client.put_object(Bucket=bucket_name, Key=test_1st_key, Body=body)
+        s3_client.put_object(Bucket=bucket_name, Key=test_2nd_key, Body=body)
+        version_id = rs["VersionId"]
+
+        # delete 1st object with version
+        rs = s3_client.delete_objects(
+            Bucket=bucket_name,
+            Delete={"Objects": [{"Key": test_1st_key, "VersionId": version_id}]},
+        )
+
+        deleted = rs["Deleted"][0]
+        assert test_1st_key == deleted["Key"]
+        assert version_id == deleted["VersionId"]
+        snapshot.match("delete_objects", rs)
+
+        rs = s3_client.list_object_versions(Bucket=bucket_name)
+        object_versions = [object["VersionId"] for object in rs["Versions"]]
+        snapshot.match("list_object_versions_after_delete", rs)
+
+        assert version_id not in object_versions
+
+        # disable versioning
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_name,
+            VersioningConfiguration={"Status": "Suspended"},
+        )
+        rs = s3_client.get_bucket_versioning(Bucket=bucket_name)
+        snapshot.match("get_bucket_versioning_suspended", rs)
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)

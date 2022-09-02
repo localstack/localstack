@@ -236,48 +236,6 @@ class TestS3(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("index", response.text)
 
-    def test_s3_delete_object_with_version_id(self):
-        test_1st_key = "aws/s3/testkey1.txt"
-        test_2nd_key = "aws/s3/testkey2.txt"
-
-        body = "Lorem ipsum dolor sit amet, ... " * 30
-
-        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_VERSIONING)
-        self.s3_client.put_bucket_versioning(
-            Bucket=TEST_BUCKET_WITH_VERSIONING,
-            VersioningConfiguration={"Status": "Enabled"},
-        )
-
-        # put 2 objects
-        rs = self.s3_client.put_object(
-            Bucket=TEST_BUCKET_WITH_VERSIONING, Key=test_1st_key, Body=body
-        )
-        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_VERSIONING, Key=test_2nd_key, Body=body)
-
-        version_id = rs["VersionId"]
-
-        # delete 1st object with version
-        rs = self.s3_client.delete_objects(
-            Bucket=TEST_BUCKET_WITH_VERSIONING,
-            Delete={"Objects": [{"Key": test_1st_key, "VersionId": version_id}]},
-        )
-
-        deleted = rs["Deleted"][0]
-        self.assertEqual(test_1st_key, deleted["Key"])
-        self.assertEqual(version_id, deleted["VersionId"])
-
-        rs = self.s3_client.list_object_versions(Bucket=TEST_BUCKET_WITH_VERSIONING)
-        object_versions = [object["VersionId"] for object in rs["Versions"]]
-
-        self.assertNotIn(version_id, object_versions)
-
-        # clean up
-        self.s3_client.put_bucket_versioning(
-            Bucket=TEST_BUCKET_WITH_VERSIONING,
-            VersioningConfiguration={"Status": "Disabled"},
-        )
-        self._delete_bucket(TEST_BUCKET_WITH_VERSIONING, [test_1st_key, test_2nd_key])
-
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # may not be suitable for parallel execution
