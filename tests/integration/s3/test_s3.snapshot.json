@@ -1536,5 +1536,64 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_get_bucket_versioning_order": {
+    "recorded-date": "02-09-2022, 15:13:45",
+    "recorded-content": {
+      "list_object_versions": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"841a2d689ad86bd1611447453c22c6fc\"",
+            "IsLatest": true,
+            "Key": "test",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 4,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ETag": "\"841a2d689ad86bd1611447453c22c6fc\"",
+            "IsLatest": false,
+            "Key": "test",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 4,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          },
+          {
+            "ETag": "\"841a2d689ad86bd1611447453c22c6fc\"",
+            "IsLatest": true,
+            "Key": "test2",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 4,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

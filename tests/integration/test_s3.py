@@ -324,24 +324,6 @@ class TestS3(unittest.TestCase):
         result = self.s3_client.get_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING)
         self.assertEqual("Enabled", result["Status"])
 
-    def test_get_bucket_versioning_order(self):
-        bucket_name = "version-order-%s" % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        self.s3_client.put_bucket_versioning(
-            Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
-        )
-        self.s3_client.put_object(Bucket=bucket_name, Key="test", Body="body")
-        self.s3_client.put_object(Bucket=bucket_name, Key="test", Body="body")
-        self.s3_client.put_object(Bucket=bucket_name, Key="test2", Body="body")
-        rs = self.s3_client.list_object_versions(
-            Bucket=bucket_name,
-        )
-
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertEqual(bucket_name, rs["Name"])
-        self.assertTrue(rs["Versions"][0]["IsLatest"])
-        self.assertTrue(rs["Versions"][2]["IsLatest"])
-
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # may not be suitable for parallel execution

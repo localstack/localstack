@@ -1894,6 +1894,27 @@ class TestS3PresignedUrl:
         rs = s3_client.head_object(Bucket=bucket_name, Key=key2)
         snapshot.match("head_object_key2", rs)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Delimiter", "$..EncodingType", "$..VersionIdMarker"]
+    )
+    def test_get_bucket_versioning_order(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        bucket_name = "version-order-%s" % short_uid()
+        s3_create_bucket(Bucket=bucket_name)
+        s3_client.put_bucket_versioning(
+            Bucket=bucket_name, VersioningConfiguration={"Status": "Enabled"}
+        )
+        s3_client.put_object(Bucket=bucket_name, Key="test", Body="body")
+        s3_client.put_object(Bucket=bucket_name, Key="test", Body="body")
+        s3_client.put_object(Bucket=bucket_name, Key="test2", Body="body")
+        rs = s3_client.list_object_versions(
+            Bucket=bucket_name,
+        )
+
+        snapshot.match("list_object_versions", rs)
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
