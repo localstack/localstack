@@ -445,43 +445,6 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
-    def test_s3_get_deep_archive_object_restore(self):
-        bucket_name = f"bucket-{short_uid()}"
-        object_key = f"key-{short_uid()}"
-
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        # put DEEP_ARCHIVE object
-        self.s3_client.put_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            Body="body data",
-            StorageClass="DEEP_ARCHIVE",
-        )
-
-        with self.assertRaises(ClientError) as ctx:
-            self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-
-        self.assertIn("InvalidObjectState", str(ctx.exception))
-
-        # put DEEP_ARCHIVE object
-        self.s3_client.restore_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            RestoreRequest={
-                "Days": 30,
-                "GlacierJobParameters": {"Tier": "Bulk"},
-                "Tier": "Bulk",
-            },
-        )
-
-        response = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-
-        self.assertIn("etag", response.get("ResponseMetadata").get("HTTPHeaders"))
-
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
-
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # may not be suitable for parallel execution

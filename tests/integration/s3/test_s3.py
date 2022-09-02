@@ -1755,6 +1755,54 @@ class TestS3PresignedUrl:
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
         assert "Contents" not in response
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Error.Message",  # TODO AWS does not include dot at the end
+            "$..Error.RequestID",  # AWS has no RequestID here
+            "$..Error.StorageClass",  # Missing in Localstack
+            "$..StorageClass",  # Missing in Localstack
+        ]
+    )
+    def test_s3_get_deep_archive_object_restore(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        bucket_name = f"bucket-{short_uid()}"
+        object_key = f"key-{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name)
+
+        # put DEEP_ARCHIVE object
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body="body data",
+            StorageClass="DEEP_ARCHIVE",
+        )
+        with pytest.raises(ClientError) as e:
+            s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        e.match("InvalidObjectState")
+
+        snapshot.match("get_object_invalid_state", e.value.response)
+        response = s3_client.restore_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            RestoreRequest={
+                "Days": 30,
+                "GlacierJobParameters": {
+                    "Tier": "Bulk",
+                },
+            },
+        )
+        snapshot.match("restore_object", response)
+
+        # AWS tier is currently configured to retrieve within 48 hours, so we cannot test the get-object here
+        response = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+        if 'ongoing-request="false"' in response.get("Restore", ""):
+            # if the restoring happens in LocalStack (or was fast in AWS) we can retrieve the object
+            response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+            assert "etag" in response.get("ResponseMetadata").get("HTTPHeaders")
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
