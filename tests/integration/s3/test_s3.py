@@ -1803,6 +1803,24 @@ class TestS3PresignedUrl:
             response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
             assert "etag" in response.get("ResponseMetadata").get("HTTPHeaders")
 
+    @pytest.mark.aws_validated
+    def test_create_bucket_with_existing_name(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = "bucket-%s" % short_uid()
+        s3_create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
+        )
+
+        for loc_constraint in ["us-west-1", "us-east-2"]:
+            with pytest.raises(ClientError) as e:
+                s3_client.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={"LocationConstraint": loc_constraint},
+                )
+            e.match("BucketAlreadyOwnedByYou")
+            snapshot.match(f"create-bucket-{loc_constraint}", e.value.response)
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)

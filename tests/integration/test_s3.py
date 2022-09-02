@@ -14,7 +14,6 @@ import boto3
 import pytest
 import requests
 from botocore.client import Config
-from botocore.exceptions import ClientError
 
 from localstack import config, constants
 from localstack.constants import (
@@ -398,30 +397,6 @@ class TestS3(unittest.TestCase):
         self.s3_client.create_bucket(Bucket=bucket_name)
         resp = self.s3_client.list_objects(Bucket=bucket_name, Marker="")
         self.assertEqual("", resp["Marker"])
-
-    def test_create_bucket_with_existing_name(self):
-        bucket_name = "bucket-%s" % short_uid()
-        self.s3_client.create_bucket(
-            Bucket=bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
-        )
-
-        for loc_constraint in ["us-west-1", "us-east-1"]:
-            with self.assertRaises(ClientError) as error:
-                self.s3_client.create_bucket(
-                    Bucket=bucket_name,
-                    CreateBucketConfiguration={"LocationConstraint": loc_constraint},
-                )
-            self.assertIn("BucketAlreadyOwnedByYou", str(error.exception))
-
-        self.s3_client.delete_bucket(Bucket=bucket_name)
-        bucket_name = "bucket-%s" % short_uid()
-        response = self.s3_client.create_bucket(
-            Bucket=bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": "us-east-1"},
-        )
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-        self.s3_client.delete_bucket(Bucket=bucket_name)
 
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
