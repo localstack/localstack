@@ -24,7 +24,7 @@ from botocore.client import Config
 from botocore.exceptions import ClientError
 from pytz import timezone
 
-from localstack import config
+from localstack import config, constants
 from localstack.constants import (
     S3_VIRTUAL_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
@@ -1996,6 +1996,32 @@ class TestS3PresignedUrl:
         rs = s3_client.get_bucket_versioning(Bucket=bucket_name)
         snapshot.match("get_bucket_versioning_suspended", rs)
 
+    @pytest.mark.aws_validated
+    def test_s3_static_website_index(self, s3_client, s3_create_bucket):
+        bucket_name = "test-%s" % short_uid()
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="index.html",
+            Body="index",
+            ContentType="text/html",
+            ACL="public-read",
+        )
+
+        s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+
+        url = _website_bucket_url(bucket_name)
+
+        response = requests.get(url, verify=False)
+        assert 200 == response.status_code
+        assert "index" == response.text
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
@@ -2490,6 +2516,14 @@ def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
 
 def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     return f"{_endpoint_url(region, localstack_host)}/{bucket_name}"
+
+
+def _website_bucket_url(bucket_name: str):
+    # TODO depending on region the syntax of the website variy (dot vs dash before region)
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        region = config.DEFAULT_REGION
+        return f"http://{bucket_name}.s3-website-{region}.amazonaws.com"
+    return _bucket_url_vhost(bucket_name, localstack_host=constants.S3_STATIC_WEBSITE_HOSTNAME)
 
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
