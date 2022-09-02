@@ -1830,6 +1830,46 @@ class TestS3PresignedUrl:
         resp = s3_client.list_objects(Bucket=bucket_name, Marker="")
         snapshot.match("list-objects", resp)
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Prefix", "$..ContentLanguage", "$..VersionId"])
+    def test_s3_put_more_than_1000_items(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = "test" + short_uid()
+        s3_create_bucket(Bucket=bucket_name)
+        for i in range(0, 1010, 1):
+            body = "test-" + str(i)
+            key = "test-key-" + str(i)
+            s3_client.put_object(Bucket=bucket_name, Key=key, Body=body)
+
+        # trying to get the last item of 1010 items added.
+        resp = s3_client.get_object(Bucket=bucket_name, Key="test-key-1009")
+        snapshot.match("get_object-1009", resp)
+
+        # trying to get the first item of 1010 items added.
+        resp = s3_client.get_object(Bucket=bucket_name, Key="test-key-0")
+        snapshot.match("get_object-0", resp)
+
+        # according docs for MaxKeys: the response might contain fewer keys but will never contain more.
+        # AWS returns less during testing
+        resp = s3_client.list_objects(Bucket=bucket_name, MaxKeys=1010)
+        assert 1010 >= len(resp["Contents"])
+
+        resp = s3_client.list_objects(Bucket=bucket_name, Delimiter="/")
+        assert 1000 == len(resp["Contents"])
+        # way too much content, remove it from this match
+        snapshot.add_transformer(
+            snapshot.transform.jsonpath(
+                "$..list-objects.Contents", "<content>", reference_replacement=False
+            )
+        )
+        snapshot.match("list-objects", resp)
+        next_marker = resp["NextMarker"]
+
+        # Second list
+        resp = s3_client.list_objects(Bucket=bucket_name, Marker=next_marker)
+        snapshot.match("list-objects-next_marker", resp)
+        assert 10 == len(resp["Contents"])
+
 
 class TestS3Cors:
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)

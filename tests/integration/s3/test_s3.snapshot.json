@@ -1323,5 +1323,175 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_put_more_than_1000_items": {
+    "recorded-date": "02-09-2022, 14:49:04",
+    "recorded-content": {
+      "get_object-1009": {
+        "AcceptRanges": "bytes",
+        "Body": "test-1009",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"7d2a1f93cc456846faba49b73eefc5b2\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_object-0": {
+        "AcceptRanges": "bytes",
+        "Body": "test-0",
+        "ContentLength": 6,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"86639701cdcc5b39438a5f009bd74cb1\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects": {
+        "Contents": "<content>",
+        "Delimiter": "/",
+        "EncodingType": "url",
+        "IsTruncated": true,
+        "Marker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "NextMarker": "test-key-99",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects-next_marker": {
+        "Contents": [
+          {
+            "ETag": "\"469aa468e8b397232fe0754ba11ba9f3\"",
+            "Key": "test-key-990",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 8,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"aa50de431ca7e15fa7f769df3615bac1\"",
+            "Key": "test-key-991",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 8,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"07844c1200a3eeb13dd3885d336c300e\"",
+            "Key": "test-key-992",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 8,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"43a56bbd65ff5cfa706996026b11f627\"",
+            "Key": "test-key-993",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 8,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"05e2fb7108663f7398dfeb41a048bf32\"",
+            "Key": "test-key-994",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 8,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"ca06c6ef5b6317771502c23ae4e941d7\"",
+            "Key": "test-key-995",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 8,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"bd6e51d9b1c43aa30906314e5ed9d857\"",
+            "Key": "test-key-996",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 8,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"3fda8ced7c145b9820e3d95d6458cbb9\"",
+            "Key": "test-key-997",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 8,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"b3ed4e42f8e008bfeb879a9b0aeeff23\"",
+            "Key": "test-key-998",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 8,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"880a4a8e1643dc0014d8f0fc297327f4\"",
+            "Key": "test-key-999",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 8,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "Marker": "test-key-99",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

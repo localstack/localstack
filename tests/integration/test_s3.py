@@ -366,32 +366,6 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [key1, key2])
 
-    def test_s3_put_more_than_1000_items(self):
-        self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_2)
-        for i in range(0, 1010, 1):
-            body = "test-" + str(i)
-            key = "test-key-" + str(i)
-            self.s3_client.put_object(Bucket=TEST_BUCKET_NAME_2, Key=key, Body=body)
-
-        # trying to get the last item of 1010 items added.
-        resp = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key="test-key-1009")
-        self.assertEqual("test-1009", to_str(resp["Body"].read()))
-
-        # trying to get the first item of 1010 items added.
-        resp = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key="test-key-0")
-        self.assertEqual("test-0", to_str(resp["Body"].read()))
-
-        resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, MaxKeys=1010)
-        self.assertEqual(1010, len(resp["Contents"]))
-
-        resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2)
-        self.assertEqual(1000, len(resp["Contents"]))
-        next_marker = resp["NextMarker"]
-
-        # Second list
-        resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, Marker=next_marker)
-        self.assertEqual(10, len(resp["Contents"]))
-
     # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # may not be suitable for parallel execution
