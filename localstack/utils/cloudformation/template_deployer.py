@@ -1365,7 +1365,7 @@ class TemplateDeployer:
                 resource["PhysicalResourceId"] = physical_id
 
         # set resource status
-        # stack.set_resource_status(resource_id, f"{action}_COMPLETE", physical_res_id=physical_id)
+        stack.set_resource_status(resource_id, f"{action}_COMPLETE", physical_res_id=physical_id)
 
         return physical_id
 
