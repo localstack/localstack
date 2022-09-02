@@ -27,14 +27,7 @@ from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_NODEJS14X
 from localstack.services.s3 import s3_utils
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import (
-    get_service_protocol,
-    new_tmp_dir,
-    run,
-    short_uid,
-    to_bytes,
-    to_str,
-)
+from localstack.utils.common import new_tmp_dir, run, short_uid, to_bytes, to_str
 
 TEST_BUCKET_NAME_WITH_POLICY = "test-bucket-policy-1"
 TEST_BUCKET_WITH_VERSIONING = "test-bucket-versioning-1"
@@ -489,32 +482,7 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
-    def test_s3_batch_delete_objects_using_requests(self):
-        bucket_name = "bucket-%s" % short_uid()
-        object_key_1 = "key-%s" % short_uid()
-        object_key_2 = "key-%s" % short_uid()
-
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key_1, Body="This body document")
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key_2, Body="This body document")
-
-        base_url = (
-            f"{get_service_protocol()}://{config.LOCALSTACK_HOSTNAME}:{config.service_port('s3')}"
-        )
-        url = "{}/{}?delete=".format(base_url, bucket_name)
-        r = requests.post(url=url, data=BATCH_DELETE_BODY % (object_key_1, object_key_2))
-
-        self.assertEqual(200, r.status_code)
-
-        s3_resource = aws_stack.connect_to_resource("s3")
-        bucket = s3_resource.Bucket(bucket_name)
-
-        total_keys = sum(1 for _ in bucket.objects.all())
-        self.assertEqual(0, total_keys)
-
-        # clean up
-        self._delete_bucket(bucket_name, [])
-
+    # TODO
     # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # may not be suitable for parallel execution
     def test_presign_with_query_params(self):

@@ -1,5 +1,7 @@
+import base64
 import datetime
 import gzip
+import hashlib
 import io
 import json
 import logging
@@ -51,6 +53,17 @@ if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
 LOG = logging.getLogger(__name__)
+
+BATCH_DELETE_BODY = """
+<Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Object>
+    <Key>%s</Key>
+  </Object>
+  <Object>
+    <Key>%s</Key>
+  </Object>
+</Delete>
+"""
 
 
 @pytest.fixture(scope="class")
@@ -1709,6 +1722,38 @@ class TestS3PresignedUrl:
 
         request_response = requests.put(url, verify=False)
         assert request_response.status_code == 200
+
+    @pytest.mark.only_localstack  # TODO request works against AWS but some policies are still missing
+    def test_s3_batch_delete_objects_using_requests(self, s3_client, s3_create_bucket):
+        bucket_name = "bucket-%s" % short_uid()
+        object_key_1 = "key-%s" % short_uid()
+        object_key_2 = "key-%s" % short_uid()
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read-write")
+        s3_client.put_object(
+            Bucket=bucket_name, Key=object_key_1, Body="This body document", ACL="public-read-write"
+        )
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key_2,
+            Body="This body document #2",
+            ACL="public-read-write",
+        )
+
+        # TODO delete does currently not work with S3_VIRTUAL_HOSTNAME
+        url = f"{_bucket_url(bucket_name, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
+        data = BATCH_DELETE_BODY % (object_key_1, object_key_2)
+        md = hashlib.md5(data.encode("utf-8")).digest()
+        contents_md5 = base64.b64encode(md).decode("utf-8")
+        header = {"content-md5": contents_md5, "x-amz-request-payer": "requester"}
+        r = requests.post(url=url, data=data, headers=header)
+        # TODO on AWS some configuration is still missing: status code returns 200, but Access Denied for deleting the buckets.
+        assert 200 == r.status_code
+
+        response = s3_client.list_objects(Bucket=bucket_name)
+        # TODO make snapshot once validates against AWS
+        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert "Contents" not in response
 
 
 class TestS3Cors:
