@@ -1,0 +1,6 @@
+{
+  "s3/2006-03-01/service-2": [
+    {"op": "add", "path": "/shapes/NoSuchBucket/members/BucketName", "value": {"shape": "BucketName"}},
+    {"op": "add", "path": "/shapes/NoSuchBucket/error", "value": {"httpStatusCode": 404}}
+  ]
+}

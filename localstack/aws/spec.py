@@ -1,14 +1,48 @@
 import dataclasses
+import json
+import os
 from collections import defaultdict
 from functools import cached_property, lru_cache
 from typing import Dict, Generator, List, Optional, Tuple
 
-from botocore.loaders import create_loader
+import jsonpatch
+from botocore.loaders import Loader, instance_cache
 from botocore.model import OperationModel, ServiceModel
 
-loader = create_loader()
-
 ServiceName = str
+
+spec_patches_json = os.path.join(os.path.dirname(__file__), "spec-patches.json")
+
+
+def load_spec_patches() -> Dict[str, list]:
+    if not os.path.exists(spec_patches_json):
+        return {}
+    with open(spec_patches_json) as fd:
+        return json.load(fd)
+
+
+class PatchingLoader(Loader):
+    """
+    A custom botocore Loader that applies JSON patches from the given json patch file to the specs as they are loaded.
+    """
+
+    patches: Dict[str, list]
+
+    def __init__(self, patches: Dict[str, list], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.patches = patches
+
+    @instance_cache
+    def load_data(self, name: str):
+        result = super(PatchingLoader, self).load_data(name)
+
+        if patches := self.patches.get(name):
+            return jsonpatch.apply_patch(result, patches)
+
+        return result
+
+
+loader = PatchingLoader(load_spec_patches())
 
 
 def list_services(model_type="service-2") -> List[ServiceModel]:
