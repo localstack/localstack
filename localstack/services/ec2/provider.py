@@ -296,7 +296,7 @@ class Ec2Provider(Ec2Api, ABC):
         request: CreateTransitGatewayRequest,
     ) -> CreateTransitGatewayResult:
         result = call_moto(context)
-        backend = ec2_backends[context.region]
+        backend = ec2_backends[context.account_id][context.region]
         transit_gateway_id = result["TransitGateway"]["TransitGatewayId"]
         transit_gateway = backend.transit_gateways.get(transit_gateway_id)
         result.get("TransitGateway").get("Options").update(transit_gateway.options)
@@ -309,7 +309,7 @@ class Ec2Provider(Ec2Api, ABC):
         request: DescribeTransitGatewaysRequest,
     ) -> DescribeTransitGatewaysResult:
         result = call_moto(context)
-        backend = ec2_backends[context.region]
+        backend = ec2_backends[context.account_id][context.region]
         for transit_gateway in result.get("TransitGateways", []):
             transit_gateway_id = transit_gateway["TransitGatewayId"]
             tgw = backend.transit_gateways.get(transit_gateway_id)
