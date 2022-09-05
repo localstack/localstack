@@ -1807,17 +1807,23 @@ class TestS3PresignedUrl:
         request_response = requests.put(url, verify=False)
         assert request_response.status_code == 200
 
-    @pytest.mark.only_localstack  # TODO request works against AWS but some policies are still missing
-    def test_s3_batch_delete_objects_using_requests(self, s3_client, s3_create_bucket):
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(reason="ACL behaviour is not implemented, see comments")
+    def test_s3_batch_delete_objects_using_requests(self, s3_client, s3_create_bucket, snapshot):
+        # If an object is created in a public bucket by the owner, it can't be deleted by anonymous clients
+        # https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#specifying-grantee-predefined-groups
+        # only "public" created objects can be deleted by anonymous clients
+        snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = f"bucket-{short_uid()}"
-        object_key_1 = f"key-{short_uid()}"
-        object_key_2 = f"key-{short_uid()}"
+        object_key_1 = "key-created-by-owner"
+        object_key_2 = "key-created-by-anonymous"
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read-write")
         s3_client.put_object(
             Bucket=bucket_name, Key=object_key_1, Body="This body document", ACL="public-read-write"
         )
-        s3_client.put_object(
+        anon = _anon_client("s3")
+        anon.put_object(
             Bucket=bucket_name,
             Key=object_key_2,
             Body="This body document #2",
@@ -1842,13 +1848,19 @@ class TestS3PresignedUrl:
         contents_md5 = base64.b64encode(md).decode("utf-8")
         header = {"content-md5": contents_md5, "x-amz-request-payer": "requester"}
         r = requests.post(url=url, data=data, headers=header)
-        # TODO on AWS some configuration is still missing: status code returns 200, but Access Denied for deleting the buckets.
+
         assert 200 == r.status_code
+        response = xmltodict.parse(r.content)
+        response["DeleteResult"].pop("@xmlns")
+        assert response["DeleteResult"]["Error"]["Key"] == object_key_1
+        assert response["DeleteResult"]["Error"]["Code"] == "AccessDenied"
+        assert response["DeleteResult"]["Deleted"]["Key"] == object_key_2
+        snapshot.match("multi-delete-with-requests", response)
 
         response = s3_client.list_objects(Bucket=bucket_name)
-        # TODO make snapshot once validates against AWS
         assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-        assert "Contents" not in response
+        assert len(response["Contents"]) == 1
+        snapshot.match("list-remaining-objects", response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
