@@ -12,6 +12,7 @@ from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
     _get_lambda_invocation_events,
+    is_old_provider,
     lambda_role,
     s3_lambda_permission,
 )
@@ -70,6 +71,28 @@ def get_lambda_logs_event(logs_client):
     return _get_lambda_logs_event
 
 
+@pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        "$..TableDescription.BillingModeSummary.LastUpdateToPayPerRequestDateTime",
+        "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
+        "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
+        "$..TableDescription.StreamSpecification",
+        "$..TableDescription.TableStatus",
+        "$..BisectBatchOnFunctionError",
+        "$..DestinationConfig",
+        "$..FunctionResponseTypes",
+        "$..LastProcessingResult",
+        "$..MaximumBatchingWindowInSeconds",
+        "$..MaximumRecordAgeInSeconds",
+        "$..ResponseMetadata.HTTPStatusCode",
+        "$..State",
+        "$..Topics",
+        "$..TumblingWindowInSeconds",
+        "$..Records..dynamodb.SizeBytes",
+        "$..Records..eventVersion",
+    ],
+)
 class TestDynamoDBEventSourceMapping:
     @pytest.mark.aws_validated
     def test_dynamodb_event_source_mapping(
@@ -250,6 +273,20 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("list_event_source_mapping_result", result)
 
     @pytest.mark.aws_validated
+    # FIXME last three skip verification entries are purely due to numbering mismatches
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..Messages..Body.requestContext.approximateInvokeCount",
+            "$..Messages..Body.requestContext.functionArn",
+            "$..Messages..Body.requestContext.requestId",
+            "$..Messages..Body.responseContext.statusCode",
+            "$..Messages..MessageId",
+            "$..TableDescription.TableId",
+            "$..FunctionArn",
+            "$..UUID",
+        ],
+    )
     def test_dynamodb_event_source_mapping_with_on_failure_destination_config(
         self,
         lambda_client,
