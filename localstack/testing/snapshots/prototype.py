@@ -143,7 +143,7 @@ class SnapshotSession:
         self.observed_state[key] = self._order_dict(obj)
         # TODO: track them separately since the transformation is now done *just* before asserting
 
-        if not self.update and (not self.recorded_state or not self.recorded_state.get(key)):
+        if not self.update and (not self.recorded_state or self.recorded_state.get(key) is None):
             raise Exception(
                 f"No state for {self.scope_key} recorded. Please (re-)generate the snapshot for this test."
             )
