@@ -1712,5 +1712,22 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_lambda_integration": {
+    "recorded-date": "05-09-2022, 12:40:12",
+    "recorded-content": {
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 0,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

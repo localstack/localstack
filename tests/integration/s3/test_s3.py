@@ -7,6 +7,8 @@ import json
 import logging
 import os
 import re
+import shutil
+import tempfile
 import time
 from io import BytesIO
 from operator import itemgetter
@@ -30,12 +32,17 @@ from localstack.constants import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
+from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_RUNTIME_NODEJS14X,
+    LAMBDA_RUNTIME_PYTHON39,
+)
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.fixtures import _client
+from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.collections import is_sub_dict
 from localstack.utils.files import load_file
+from localstack.utils.run import run
 from localstack.utils.server import http2_server
 from localstack.utils.strings import (
     checksum_crc32,
@@ -135,6 +142,27 @@ def s3_multipart_upload(s3_client):
         )
 
     return perform_multipart_upload
+
+
+@pytest.fixture
+def create_tmp_folder_lambda():
+    cleanup_folders = []
+
+    def prepare_folder(path_to_lambda, run_command=None):
+        tmp_dir = tempfile.mkdtemp()
+        shutil.copy(path_to_lambda, tmp_dir)
+        if run_command:
+            run(f"cd {tmp_dir}; {run_command}")
+        cleanup_folders.append(tmp_dir)
+        return tmp_dir
+
+    yield prepare_folder
+
+    for folder in cleanup_folders:
+        try:
+            shutil.rmtree(folder)
+        except Exception:
+            LOG.warning(f"could not delete folder {folder}")
 
 
 class TestS3:
@@ -1241,6 +1269,49 @@ class TestS3:
         response = requests.get(download_url)
         assert response.status_code == 200
         assert to_str(response.content) == content
+
+    @pytest.mark.skip_offline
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
+    def test_s3_lambda_integration(
+        self,
+        lambda_client,
+        create_lambda_function,
+        lambda_su_role,
+        s3_client,
+        s3_create_bucket,
+        create_tmp_folder_lambda,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        handler_file = os.path.join(
+            os.path.dirname(__file__), "../awslambda", "functions", "lambda_s3_integration.js"
+        )
+        temp_folder = create_tmp_folder_lambda(
+            handler_file,
+            run_command="npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner",
+        )
+
+        function_name = "func-integration-%s" % short_uid()
+
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(temp_folder, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="lambda_s3_integration.handler",
+            role=lambda_su_role,
+        )
+        s3_create_bucket(Bucket=function_name)
+
+        response = lambda_client.invoke(FunctionName=function_name)
+        presigned_url = response["Payload"].read()
+        presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
+
+        response = requests.put(presigned_url, verify=False)
+        assert 200 == response.status_code
+
+        response = s3_client.head_object(Bucket=function_name, Key="key.png")
+        snapshot.match("head_object", response)
 
 
 class TestS3TerraformRawRequests:

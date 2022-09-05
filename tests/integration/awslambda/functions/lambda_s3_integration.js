@@ -7,24 +7,29 @@ exports.handler = async (event, context, callback) => {
         getSignedUrl
     } = require('@aws-sdk/s3-request-presigner');
 
-    const CREDENTIALS = {
-        secretAccessKey: 'test',
-        accessKeyId: 'test',
-    };
-
-    const ENDPOINT = {
-        path: '',
-        hostname: 's3.localhost.localstack.cloud:4566',
-        protocol: 'http',
-    };
-
     const BUCKET_NAME = process.env.AWS_LAMBDA_FUNCTION_NAME;
+    let s3;
+    if (process.env.LOCALSTACK_HOSTNAME) {
+        const CREDENTIALS = {
+            secretAccessKey: 'test',
+            accessKeyId: 'test',
+        };
 
-    const s3 = new S3Client({
-        endpoint: ENDPOINT,
-        region: 'us-east-1',
-        credentials: CREDENTIALS,
-    });
+        const ENDPOINT = {
+            path: '',
+            hostname: 's3.localhost.localstack.cloud:4566',
+            protocol: 'http',
+        };
+
+
+        s3 = new S3Client({
+            endpoint: ENDPOINT,
+            region: 'us-east-1',
+            credentials: CREDENTIALS,
+        });
+    } else {
+        s3 = new S3Client()
+    }
 
     const url = await getSignedUrl(
         s3,

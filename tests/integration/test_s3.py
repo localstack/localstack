@@ -1,13 +1,8 @@
 # TODO: migrate tests to tests/integration/s3/
 #  DO NOT ADD ADDITIONAL TESTS HERE. USE PYTEST AND RUN TESTS AGAINST AWS!
 import base64
-import gzip
 import hashlib
-import json
-import os
-import shutil
 import unittest
-from io import BytesIO
 from urllib.request import Request
 
 import boto3
@@ -16,41 +11,9 @@ import requests
 from botocore.client import Config
 
 from localstack import config
-from localstack.constants import (
-    AWS_REGION_US_EAST_1,
-    TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_SECRET_ACCESS_KEY,
-)
-from localstack.services.awslambda.lambda_api import use_docker
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_NODEJS14X
-from localstack.utils import testutil
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import new_tmp_dir, run, short_uid, to_bytes, to_str
-
-TEST_BUCKET_NAME_WITH_POLICY = "test-bucket-policy-1"
-TEST_BUCKET_WITH_VERSIONING = "test-bucket-versioning-1"
-
-TEST_BUCKET_NAME_2 = "test-bucket-2"
-TEST_KEY_2 = "test-key-2"
-TEST_GET_OBJECT_RANGE = 17
-
-TEST_REGION_1 = "eu-west-1"
-
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON_DOWNLOAD_FROM_S3 = os.path.join(
-    THIS_FOLDER, "awslambda", "functions", "lambda_triggered_by_sqs_download_s3_file.py"
-)
-
-BATCH_DELETE_BODY = """
-<Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-  <Object>
-    <Key>%s</Key>
-  </Object>
-  <Object>
-    <Key>%s</Key>
-  </Object>
-</Delete>
-"""
+from localstack.utils.common import short_uid
 
 
 class PutRequest(Request):
@@ -128,41 +91,6 @@ class TestS3(unittest.TestCase):
         finally:
             s3_client.meta.events.unregister("before-sign.s3.GetObject", add_query_param)
 
-    # TODO
-    @pytest.mark.skip_offline
-    def test_s3_lambda_integration(self):
-        if not use_docker():
-            return
-        temp_folder = new_tmp_dir()
-        handler_file = os.path.join(
-            THIS_FOLDER, "awslambda", "functions", "lambda_s3_integration.js"
-        )
-        shutil.copy(handler_file, temp_folder)
-        run("cd %s; npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner" % temp_folder)
-
-        function_name = "func-integration-%s" % short_uid()
-        lambda_client = aws_stack.create_external_boto_client("lambda")
-        s3_client = aws_stack.create_external_boto_client("s3")
-
-        testutil.create_lambda_function(
-            func_name=function_name,
-            zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=LAMBDA_RUNTIME_NODEJS14X,
-            handler="lambda_s3_integration.handler",
-        )
-        s3_client.create_bucket(Bucket=function_name)
-
-        response = lambda_client.invoke(FunctionName=function_name)
-        presigned_url = response["Payload"].read()
-        presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
-
-        response = requests.put(presigned_url, verify=False)
-        response = s3_client.head_object(Bucket=function_name, Key="key.png")
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-
-        s3_client.delete_object(Bucket=function_name, Key="key.png")
-        s3_client.delete_bucket(Bucket=function_name)
-
     # TODO -> not sure if this test makes sense in the future..
     def test_presign_port_permutation(self):
         bucket_name = short_uid()
@@ -191,61 +119,6 @@ class TestS3(unittest.TestCase):
 
         response = requests.get(presign_url)
         self.assertEqual(b"test-value", response._content)
-
-    # ---------------
-    # HELPER METHODS
-    # ---------------
-
-    def _delete_bucket(self, bucket_name, keys=None):
-        if keys is None:
-            keys = []
-        keys = keys if isinstance(keys, list) else [keys]
-        objects = [{"Key": k} for k in keys]
-        if objects:
-            self.s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": objects})
-        self.s3_client.delete_bucket(Bucket=bucket_name)
-
-    def _perform_multipart_upload(self, bucket, key, data=None, zip=False, acl=None):
-        kwargs = {"ACL": acl} if acl else {}
-        multipart_upload_dict = self.s3_client.create_multipart_upload(
-            Bucket=bucket, Key=key, **kwargs
-        )
-        upload_id = multipart_upload_dict["UploadId"]
-
-        # Write contents to memory rather than a file.
-        data = data or (5 * short_uid())
-        data = to_bytes(data)
-        upload_file_object = BytesIO(data)
-        if zip:
-            upload_file_object = BytesIO()
-            with gzip.GzipFile(fileobj=upload_file_object, mode="w") as filestream:
-                filestream.write(data)
-
-        response = self.s3_client.upload_part(
-            Bucket=bucket,
-            Key=key,
-            Body=upload_file_object,
-            PartNumber=1,
-            UploadId=upload_id,
-        )
-
-        multipart_upload_parts = [{"ETag": response["ETag"], "PartNumber": 1}]
-
-        return self.s3_client.complete_multipart_upload(
-            Bucket=bucket,
-            Key=key,
-            MultipartUpload={"Parts": multipart_upload_parts},
-            UploadId=upload_id,
-        )
-
-    def _get_test_client(self, region_name="us-east-1"):
-        return boto3.client(
-            "s3",
-            endpoint_url=config.get_edge_url(),
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-            region_name=region_name,
-        )
 
 
 # TODO
