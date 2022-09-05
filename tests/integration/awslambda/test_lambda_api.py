@@ -1,3 +1,9 @@
+"""
+API-focused tests only. Don't add tests for asynchronous, blocking or implicit behavior here.
+
+# TODO: create a re-usable pattern for fairly reproducible scenarios with slower updates/creates to test intermediary states
+
+"""
 import json
 from io import BytesIO
 
@@ -13,13 +19,16 @@ from localstack.testing.aws.lambda_utils import (
 )
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
+from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
+from localstack.utils.testutil import create_lambda_archive
 from tests.integration.awslambda.test_lambda import (
     FUNCTION_MAX_UNZIPPED_SIZE,
     TEST_LAMBDA_INTROSPECT_PYTHON,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_PYTHON_ECHO,
+    TEST_LAMBDA_PYTHON_VERSION,
 )
 
 
@@ -31,10 +40,226 @@ def fixture_snapshot(snapshot):
     )
 
 
-# class TestLambdaFunction: ... # TODO
-# class TestLambdaAlias: ... # TODO
+@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+class TestLambdaFunction:
+
+    # TODO: maybe need to wait for each update to be active?
+    @pytest.mark.aws_validated
+    def test_function_lifecycle(
+        self, lambda_client, snapshot, create_lambda_function, lambda_su_role
+    ):
+        """Tests CRUD for the lifecycle of a Lambda function and its config"""
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+            MemorySize=256,
+            Timeout=5,
+        )
+        snapshot.match("create_response", create_response)
+
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response", get_function_response)
+
+        update_func_conf_response = lambda_client.update_function_configuration(
+            FunctionName=function_name,
+            Runtime=Runtime.python3_8,
+            Description="Changed-Description",
+            MemorySize=512,
+            Timeout=10,
+            Environment={"Variables": {"ENV_A": "a"}},
+        )
+        snapshot.match("update_func_conf_response", update_func_conf_response)
+
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_function_response_postupdate = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response_postupdate", get_function_response_postupdate)
+
+        zip_f = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_VERSION), get_content=True)
+        update_code_response = lambda_client.update_function_code(
+            FunctionName=function_name,
+            ZipFile=zip_f,
+        )
+        snapshot.match("update_code_response", update_code_response)
+
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_function_response_postcodeupdate = lambda_client.get_function(
+            FunctionName=function_name
+        )
+        snapshot.match("get_function_response_postcodeupdate", get_function_response_postcodeupdate)
+
+        delete_response = lambda_client.delete_function(FunctionName=function_name)
+        snapshot.match("delete_response", delete_response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.delete_function(FunctionName=function_name)
+        snapshot.match("delete_postdelete", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_redundant_updates(self, lambda_client, create_lambda_function, snapshot):
+        """validates that redundant updates work (basically testing idempotency)"""
+        function_name = f"fn-{short_uid()}"
+
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            Description="Initial description",
+        )
+        snapshot.match("create_response", create_response)
+
+        first_update_result = lambda_client.update_function_configuration(
+            FunctionName=function_name, Description="1st update description"
+        )
+        snapshot.match("first_update_result", first_update_result)
+
+        lambda_client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        get_fn_config_result = lambda_client.get_function_configuration(FunctionName=function_name)
+        snapshot.match("get_fn_config_result", get_fn_config_result)
+
+        get_fn_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_fn_result", get_fn_result)
+
+        redundant_update_result = lambda_client.update_function_configuration(
+            FunctionName=function_name, Description="1st update description"
+        )
+        snapshot.match("redundant_update_result", redundant_update_result)
+
+    @pytest.mark.parametrize(
+        "clientfn",
+        [
+            "delete_function",
+            "get_function",
+            "get_function_configuration",
+            "get_function_url_config",
+            "get_function_code_signing_config",
+            "get_function_event_invoke_config",
+            "get_function_concurrency",
+        ],
+    )
+    @pytest.mark.aws_validated
+    def test_ops_on_nonexisting_fn(self, lambda_client, snapshot, clientfn):
+        """Test API responses on non-existing function names"""
+        # technically the short_uid isn't really required but better safe than sorry
+        function_name = f"i-dont-exist-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(function_name, "<nonexisting-fn-name>"))
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            method = getattr(lambda_client, clientfn)
+            method(FunctionName=function_name)
+        snapshot.match("not_found_exception", e.value.response)
+
+
 # class TestLambdaVersions: ... # TODO
-# class TestLambdaTag: ... # TODO
+# class TestLambdaAlias: ... # TODO
+
+
+@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+class TestLambdaTag:
+    @pytest.fixture(scope="function")
+    def fn_arn(self, create_lambda_function, lambda_client):
+        """simple reusable setup to test tagging operations against"""
+        function_name = f"fn-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+        )
+
+        yield lambda_client.get_function(FunctionName=function_name)["Configuration"]["FunctionArn"]
+
+    @pytest.mark.aws_validated
+    def test_create_tag_on_fn_create(self, lambda_client, create_lambda_function, snapshot):
+        function_name = f"fn-{short_uid()}"
+        custom_tag = f"tag-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(custom_tag, "<custom-tag>"))
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            Tags={"testtag": custom_tag},
+        )
+        get_function_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_result", get_function_result)
+        fn_arn = get_function_result["Configuration"]["FunctionArn"]
+
+        list_tags_result = lambda_client.list_tags(Resource=fn_arn)
+        snapshot.match("list_tags_result", list_tags_result)
+
+    @pytest.mark.aws_validated
+    def test_tag_lifecycle(self, lambda_client, create_lambda_function, snapshot, fn_arn):
+
+        # 1. add tag
+        tag_single_response = lambda_client.tag_resource(Resource=fn_arn, Tags={"A": "tag-a"})
+        snapshot.match("tag_single_response", tag_single_response)
+        snapshot.match("tag_single_response_listtags", lambda_client.list_tags(Resource=fn_arn))
+
+        # 2. add multiple tags
+        tag_multiple_response = lambda_client.tag_resource(
+            Resource=fn_arn, Tags={"B": "tag-b", "C": "tag-c"}
+        )
+        snapshot.match("tag_multiple_response", tag_multiple_response)
+        snapshot.match("tag_multiple_response_listtags", lambda_client.list_tags(Resource=fn_arn))
+
+        # 3. add overlapping tags
+        tag_overlap_response = lambda_client.tag_resource(
+            Resource=fn_arn, Tags={"C": "tag-c-newsuffix", "D": "tag-d"}
+        )
+        snapshot.match("tag_overlap_response", tag_overlap_response)
+        snapshot.match("tag_overlap_response_listtags", lambda_client.list_tags(Resource=fn_arn))
+
+        # 3. remove tag
+        untag_single_response = lambda_client.untag_resource(Resource=fn_arn, TagKeys=["A"])
+        snapshot.match("untag_single_response", untag_single_response)
+        snapshot.match("untag_single_response_listtags", lambda_client.list_tags(Resource=fn_arn))
+
+        # 4. remove multiple tags
+        untag_multiple_response = lambda_client.untag_resource(Resource=fn_arn, TagKeys=["B", "C"])
+        snapshot.match("untag_multiple_response", untag_multiple_response)
+        snapshot.match("untag_multiple_response_listtags", lambda_client.list_tags(Resource=fn_arn))
+
+        # 5. try to remove only tags that don't exist
+        untag_nonexisting_response = lambda_client.untag_resource(Resource=fn_arn, TagKeys=["F"])
+        snapshot.match("untag_nonexisting_response", untag_nonexisting_response)
+        snapshot.match(
+            "untag_nonexisting_response_listtags", lambda_client.list_tags(Resource=fn_arn)
+        )
+
+        # 6. remove a mix of tags that exist & don't exist
+        untag_existing_and_nonexisting_response = lambda_client.untag_resource(
+            Resource=fn_arn, TagKeys=["D", "F"]
+        )
+        snapshot.match(
+            "untag_existing_and_nonexisting_response", untag_existing_and_nonexisting_response
+        )
+        snapshot.match(
+            "untag_existing_and_nonexisting_response_listtags",
+            lambda_client.list_tags(Resource=fn_arn),
+        )
+
+    @pytest.mark.aws_validated
+    def test_tag_nonexisting_resource(self, lambda_client, snapshot, fn_arn):
+        get_result = lambda_client.get_function(FunctionName=fn_arn)
+        snapshot.match("pre_delete_get_function", get_result)
+        lambda_client.delete_function(FunctionName=fn_arn)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.tag_resource(Resource=fn_arn, Tags={"A": "B"})
+        snapshot.match("not_found_exception_tag", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.untag_resource(Resource=fn_arn, TagKeys=["A"])
+        snapshot.match("not_found_exception_untag", e.value.response)
+
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.list_tags(Resource=fn_arn)
+        snapshot.match("not_found_exception_list", e.value.response)
+
+
 # class TestLambdaSigningConfig: ... # TODO
 
 
