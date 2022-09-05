@@ -293,40 +293,28 @@ class TestS3:
         assert is_sub_dict(sub_dict, response)
 
     @pytest.mark.aws_validated
-    def test_get_object_no_such_bucket(self, s3_client):
+    @pytest.mark.skip_snapshot_verify(path="$..Error.BucketName")
+    def test_get_object_no_such_bucket(self, s3_client, snapshot):
         with pytest.raises(ClientError) as e:
             s3_client.get_object(Bucket=f"does-not-exist-{short_uid()}", Key="foobar")
 
-        # TODO: simplify with snapshot test once activated
-        response = e.value.response
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 404
-        error = response["Error"]
-        assert error["Code"] == "NoSuchBucket"
-        assert error["Message"] == "The specified bucket does not exist"
+        snapshot.match("expected_error", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_delete_bucket_no_such_bucket(self, s3_client):
+    @pytest.mark.skip_snapshot_verify(path="$..RequestID")
+    def test_delete_bucket_no_such_bucket(self, s3_client, snapshot):
         with pytest.raises(ClientError) as e:
             s3_client.delete_bucket(Bucket=f"does-not-exist-{short_uid()}")
 
-        # TODO: simplify with snapshot test once activated
-        response = e.value.response
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 404
-        error = response["Error"]
-        assert error["Code"] == "NoSuchBucket"
-        assert error["Message"] == "The specified bucket does not exist"
+        snapshot.match("expected_error", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_get_bucket_notification_configuration_no_such_bucket(self, s3_client):
+    @pytest.mark.skip_snapshot_verify(path="$..Error.BucketName")
+    def test_get_bucket_notification_configuration_no_such_bucket(self, s3_client, snapshot):
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_notification_configuration(Bucket=f"doesnotexist-{short_uid()}")
 
-        # TODO: simplify with snapshot test once activated
-        response = e.value.response
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 404
-        error = response["Error"]
-        assert error["Code"] == "NoSuchBucket"
-        assert error["Message"] == "The specified bucket does not exist"
+        snapshot.match("expected_error", e.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
@@ -749,26 +737,20 @@ class TestS3:
         snapshot.match("bucket-replication", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_location_path_url(
-        self,
-        s3_client,
-        s3_create_bucket,
-    ):
+    def test_location_path_url(self, s3_client, s3_create_bucket, account_id):
         region = "us-east-2"
         bucket_name = s3_create_bucket(
             CreateBucketConfiguration={"LocationConstraint": region}, ACL="public-read"
         )
         response = s3_client.get_bucket_location(Bucket=bucket_name)
         assert region == response["LocationConstraint"]
-        # TODO should this also work against AWS?
-        # related PR https://github.com/localstack/localstack/pull/5795
-        # originally tested this url:
-        # url = f"{config.get_edge_url(localstack_hostname=S3_VIRTUAL_HOSTNAME)}/{bucket_name}?location="
 
-        # make raw request, assert that newline is contained after XML preamble: <?xml ...>\n
         url = _bucket_url(bucket_name, region)
-        response = requests.get(url)
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLocation.html
+        # make raw request, assert that newline is contained after XML preamble: <?xml ...>\n
+        response = requests.get(f"{url}?location?x-amz-expected-bucket-owner={account_id}")
         assert response.ok
+
         content = to_str(response.content)
         assert re.match(r"^<\?xml [^>]+>\n<.*", content, flags=re.MULTILINE)
 

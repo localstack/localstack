@@ -1729,5 +1729,53 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_get_object_no_such_bucket": {
+    "recorded-date": "05-09-2022, 13:47:29",
+    "recorded-content": {
+      "expected_error": {
+        "Error": {
+          "BucketName": "does-not-exist-75bb3f88",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_delete_bucket_no_such_bucket": {
+    "recorded-date": "05-09-2022, 13:49:41",
+    "recorded-content": {
+      "expected_error": {
+        "Error": {
+          "BucketName": "does-not-exist-1581ad5c",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_get_bucket_notification_configuration_no_such_bucket": {
+    "recorded-date": "05-09-2022, 13:50:50",
+    "recorded-content": {
+      "expected_error": {
+        "Error": {
+          "BucketName": "doesnotexist-81bd54d0",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
