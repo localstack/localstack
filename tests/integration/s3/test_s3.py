@@ -936,7 +936,7 @@ class TestS3:
         snapshot.match("get-object", resp)
 
     @pytest.mark.aws_validated
-    def test_s3_get_range_object_headers(self, s3_client, s3_bucket):
+    def test_get_range_object_headers(self, s3_client, s3_bucket):
         object_key = "sample.bin"
         chunk_size = 1024
 
@@ -962,7 +962,7 @@ class TestS3:
         assert "content-encoding" not in resp_headers
 
     @pytest.mark.only_localstack
-    def test_s3_put_object_chunked_newlines(self, s3_client, s3_bucket):
+    def test_put_object_chunked_newlines(self, s3_client, s3_bucket):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
         # Test for https://github.com/localstack/localstack/issues/1571
@@ -987,6 +987,50 @@ class TestS3:
         download_file_object = to_str(downloaded_object["Body"].read())
         assert len(body) == len(str(download_file_object))
         assert body == str(download_file_object)
+
+    @pytest.mark.only_localstack
+    def test_put_object_with_md5_and_chunk_signature(self, s3_client, s3_bucket):
+        # Boto still does not support chunk encoding, which means we can't test with the client nor
+        # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
+        # Test for https://github.com/localstack/localstack/issues/4987
+        object_key = "test-runtime.properties"
+        object_data = (
+            "#20211122+0100\n"
+            "#Mon Nov 22 20:10:44 CET 2021\n"
+            "last.sync.url.test-space-key=2822a50f-4992-425a-b8fb-923735a9ddff317e3479-5907-46cf-b33a-60da9709274f\n"
+        )
+        object_data_chunked = (
+            "93;chunk-signature=5be6b2d473e96bb9f297444da60bdf0ff8f5d2e211e1d551b3cf3646c0946641\r\n"
+            f"{object_data}"
+            "\r\n0;chunk-signature=bd5c830b94346b57ddc8805ba26c44a122256c207014433bf6579b0985f21df7\r\n\r\n"
+        )
+        content_md5 = base64.b64encode(hashlib.md5(object_data.encode()).digest()).decode()
+        headers = {
+            "Content-Md5": content_md5,
+            "Content-Type": "application/octet-stream",
+            "User-Agent": (
+                "aws-sdk-java/1.11.951 Mac_OS_X/10.15.7 OpenJDK_64-Bit_Server_VM/11.0.11+9-LTS "
+                "java/11.0.11 scala/2.13.6 kotlin/1.5.31 vendor/Amazon.com_Inc."
+            ),
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
+            "X-Amz-Date": "20211122T191045Z",
+            "X-Amz-Decoded-Content-Length": str(len(object_data)),
+            "Content-Length": str(len(object_data_chunked)),
+            "Connection": "Keep-Alive",
+            "Expect": "100-continue",
+        }
+
+        url = s3_client.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": s3_bucket,
+                "Key": object_key,
+                "ContentType": "application/octet-stream",
+                "ContentMD5": content_md5,
+            },
+        )
+        result = requests.put(url, data=object_data_chunked, headers=headers)
+        assert result.status_code == 200, (result, result.content)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..VersionId", "$..ContentLanguage"])
