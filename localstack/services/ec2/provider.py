@@ -5,7 +5,7 @@ from botocore.parsers import ResponseParserError
 from moto.core.utils import camelcase_to_underscores, underscores_to_camelcase
 from moto.ec2 import ec2_backends
 from moto.ec2.exceptions import InvalidVpcEndPointIdError
-from moto.ec2.models import SubnetBackend
+from moto.ec2.models import SubnetBackend, TransitGatewayAttachmentBackend
 from moto.ec2.models.subnets import Subnet
 
 from localstack.aws.api import RequestContext, handler
@@ -14,6 +14,8 @@ from localstack.aws.api.ec2 import (
     Boolean,
     CreateSubnetRequest,
     CreateSubnetResult,
+    CreateTransitGatewayRequest,
+    CreateTransitGatewayResult,
     CurrencyCodeValues,
     DescribeAvailabilityZonesRequest,
     DescribeAvailabilityZonesResult,
@@ -23,6 +25,8 @@ from localstack.aws.api.ec2 import (
     DescribeReservedInstancesResult,
     DescribeSubnetsRequest,
     DescribeSubnetsResult,
+    DescribeTransitGatewaysRequest,
+    DescribeTransitGatewaysResult,
     Ec2Api,
     InstanceType,
     ModifySubnetAttributeRequest,
@@ -285,6 +289,33 @@ class Ec2Provider(Ec2Api, ABC):
                         subnet[attr_name] = getattr(subnet_obj, attr)
         return result
 
+    @handler("CreateTransitGateway", expand=False)
+    def create_transit_gateway(
+        self,
+        context: RequestContext,
+        request: CreateTransitGatewayRequest,
+    ) -> CreateTransitGatewayResult:
+        result = call_moto(context)
+        backend = ec2_backends[context.account_id][context.region]
+        transit_gateway_id = result["TransitGateway"]["TransitGatewayId"]
+        transit_gateway = backend.transit_gateways.get(transit_gateway_id)
+        result.get("TransitGateway").get("Options").update(transit_gateway.options)
+        return result
+
+    @handler("DescribeTransitGateways", expand=False)
+    def describe_transit_gateways(
+        self,
+        context: RequestContext,
+        request: DescribeTransitGatewaysRequest,
+    ) -> DescribeTransitGatewaysResult:
+        result = call_moto(context)
+        backend = ec2_backends[context.account_id][context.region]
+        for transit_gateway in result.get("TransitGateways", []):
+            transit_gateway_id = transit_gateway["TransitGatewayId"]
+            tgw = backend.transit_gateways.get(transit_gateway_id)
+            transit_gateway["Options"].update(tgw.options)
+        return result
+
 
 @patch(SubnetBackend.modify_subnet_attribute)
 def modify_subnet_attribute(fn, self, subnet_id, attr_name, attr_value):
@@ -311,3 +342,10 @@ def get_filter_value(fn, self, filter_name):
     ):
         return self.ipv6_cidr_block_associations
     return fn(self, filter_name)
+
+
+@patch(TransitGatewayAttachmentBackend.delete_transit_gateway_vpc_attachment)
+def delete_transit_gateway_vpc_attachment(fn, self, transit_gateway_attachment_id):
+    transit_gateway_attachment = self.transit_gateway_attachments.get(transit_gateway_attachment_id)
+    transit_gateway_attachment.state = "deleted"
+    return transit_gateway_attachment
