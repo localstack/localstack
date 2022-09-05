@@ -829,7 +829,6 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     request_context["identity"].update(invocation_context.auth_identity or {})
 
     if not is_test_invoke_method(method, path):
-        # TODO here
         request_context["path"] = (f"/{stage}" if stage else "") + relative_path
         request_context["stage"] = stage
     return request_context
