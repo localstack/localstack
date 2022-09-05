@@ -144,7 +144,9 @@ class SnapshotSession:
         # TODO: track them separately since the transformation is now done *just* before asserting
 
         if not self.update and (not self.recorded_state or not self.recorded_state.get(key)):
-            raise Exception("Please run the test first with --snapshot-update")
+            raise Exception(
+                f"No state for {self.scope_key} recorded. Please (re-)generate the snapshot for this test."
+            )
 
         # TODO: we should return something meaningful here
         return True
@@ -176,16 +178,21 @@ class SnapshotSession:
         # TODO: separate these states
         a_all = self.recorded_state
         if not a_all and not self.update:
-            SNAPSHOT_LOGGER.warning(
-                "There is no recorded state yet. Snapshot verification skipped."
+            raise Exception(
+                f"No state for {self.scope_key} recorded. Please (re-)generate the snapshot for this test."
             )
-            return results
 
         self._remove_skip_verification_paths(a_all)
         self.observed_state = b_all = self._transform(self.observed_state)
 
         for key in self.called_keys:
-            a = a_all[key]
+            a = a_all.get(
+                key
+            )  # if this is None, a new key was added since last updating => usage error
+            if a is None:
+                raise Exception(
+                    f"State for {key=} missing in {self.scope_key}. Please (re-)generate the snapshot for this test."
+                )
             b = b_all[key]
             result = SnapshotMatchResult(a, b, key=key)
             results.append(result)
