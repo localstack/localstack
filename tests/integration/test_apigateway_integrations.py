@@ -3,11 +3,8 @@ import json
 import pytest
 import requests
 
-from localstack import config
-from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON39
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -89,14 +86,6 @@ def test_lambda_aws_integration(apigateway_client, create_rest_apigw):
     assert response.json() == {"message": "Hello from Lambda"}
 
 
-def get_apigateway_base_url():
-    return "amazonaws.com" if is_aws_cloud() else f"{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
-
-
-def format_apigateway_url(api_id: str, region: str, stage: str, path: str):
-    return f"https://{api_id}.execute-api.{f'{region}.' if is_aws_cloud() else ''}{get_apigateway_base_url()}/{stage}{path}"
-
-
 @pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(
     paths=[
@@ -174,6 +163,7 @@ def test_lambda_proxy_integration(
     create_policy,
     iam_client,
     snapshot,
+    cleanups,
 ):
     function_name = f"test-function-{short_uid()}"
     role_name = f"test-role-{short_uid()}"
@@ -185,7 +175,7 @@ def test_lambda_proxy_integration(
     create_function_response = create_lambda_function(
         func_name=function_name,
         handler_file=TEST_LAMBDA_AWS_PROXY,
-        handler="lambda_apigateway_proxy.handler",
+        handler="lambda_aws_proxy.handler",
         runtime=LAMBDA_RUNTIME_PYTHON39,
     )
     # create invocation role
@@ -217,70 +207,67 @@ def test_lambda_proxy_integration(
         name=f"test-api-{short_uid()}", description="Integration test API"
     )
     snapshot.match("rest-api-creation", rest_api_creation_response)
+    cleanups.append(lambda: apigateway_client.delete_rest_api(restApiId=rest_api_id))
     rest_api_id = rest_api_creation_response["id"]
-    try:
-        root_resource_id = apigateway_client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
-        resource_id = apigateway_client.create_resource(
-            restApiId=rest_api_id, parentId=root_resource_id, pathPart="test-path"
-        )["id"]
-        apigateway_client.put_method(
-            restApiId=rest_api_id,
-            resourceId=resource_id,
-            httpMethod="ANY",
-            authorizationType="NONE",
-        )
-        apigateway_client.put_integration(
-            restApiId=rest_api_id,
-            resourceId=resource_id,
-            httpMethod="ANY",
-            type="AWS_PROXY",
-            integrationHttpMethod="POST",
-            uri=f"arn:aws:apigateway:{apigateway_client.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
-            credentials=role_arn,
-        )
-        apigateway_client.create_deployment(restApiId=rest_api_id, stageName=stage_name)
+    root_resource_id = apigateway_client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
+    resource_id = apigateway_client.create_resource(
+        restApiId=rest_api_id, parentId=root_resource_id, pathPart="test-path"
+    )["id"]
+    apigateway_client.put_method(
+        restApiId=rest_api_id,
+        resourceId=resource_id,
+        httpMethod="ANY",
+        authorizationType="NONE",
+    )
+    apigateway_client.put_integration(
+        restApiId=rest_api_id,
+        resourceId=resource_id,
+        httpMethod="ANY",
+        type="AWS_PROXY",
+        integrationHttpMethod="POST",
+        uri=f"arn:aws:apigateway:{apigateway_client.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        credentials=role_arn,
+    )
+    apigateway_client.create_deployment(restApiId=rest_api_id, stageName=stage_name)
 
-        # invoke rest api
-        invocation_url = format_apigateway_url(
-            api_id=rest_api_id,
-            region=apigateway_client.meta.region_name,
-            stage=stage_name,
-            path="/test-path",
-        )
+    # invoke rest api
+    invocation_url = api_invoke_url(
+        api_id=rest_api_id,
+        stage=stage_name,
+        path="/test-path",
+    )
 
-        def invoke_api(url):
-            # use test header with different casing to check if it is preserved in the proxy payload
-            response = requests.get(
-                url,
-                headers={"User-Agent": "python-requests/testing", "tEsT-HEADeR": "aValUE"},
-                verify=False,
-            )
-            assert 200 == response.status_code
-            return response
+    def invoke_api(url):
+        # use test header with different casing to check if it is preserved in the proxy payload
+        response = requests.get(
+            url,
+            headers={"User-Agent": "python-requests/testing", "tEsT-HEADeR": "aValUE"},
+            verify=False,
+        )
+        assert 200 == response.status_code
+        return response
 
-        # retry is necessary against AWS, probably IAM permission delay
-        response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
-        snapshot.match("invocation-payload-without-trailing-slash", response.json())
+    # retry is necessary against AWS, probably IAM permission delay
+    response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+    snapshot.match("invocation-payload-without-trailing-slash", response.json())
 
-        # invoke rest api with trailing slash
-        response_trailing_slash = retry(invoke_api, sleep=2, retries=10, url=f"{invocation_url}/")
-        snapshot.match("invocation-payload-with-trailing-slash", response_trailing_slash.json())
-        response_trailing_slash = retry(
-            invoke_api, sleep=2, retries=10, url=f"{invocation_url}?urlparam=test"
-        )
-        snapshot.match(
-            "invocation-payload-without-trailing-slash-and-query-params",
-            response_trailing_slash.json(),
-        )
-        response_trailing_slash = retry(
-            invoke_api, sleep=2, retries=10, url=f"{invocation_url}/?urlparam=test"
-        )
-        snapshot.match(
-            "invocation-payload-with-trailing-slash-and-query-params",
-            response_trailing_slash.json(),
-        )
-    finally:
-        apigateway_client.delete_rest_api(restApiId=rest_api_id)
+    # invoke rest api with trailing slash
+    response_trailing_slash = retry(invoke_api, sleep=2, retries=10, url=f"{invocation_url}/")
+    snapshot.match("invocation-payload-with-trailing-slash", response_trailing_slash.json())
+    response_trailing_slash = retry(
+        invoke_api, sleep=2, retries=10, url=f"{invocation_url}?urlparam=test"
+    )
+    snapshot.match(
+        "invocation-payload-without-trailing-slash-and-query-params",
+        response_trailing_slash.json(),
+    )
+    response_trailing_slash = retry(
+        invoke_api, sleep=2, retries=10, url=f"{invocation_url}/?urlparam=test"
+    )
+    snapshot.match(
+        "invocation-payload-with-trailing-slash-and-query-params",
+        response_trailing_slash.json(),
+    )
 
 
 #
