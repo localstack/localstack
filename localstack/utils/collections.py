@@ -9,6 +9,8 @@ import sys
 from collections.abc import Mapping
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sized, Tuple, Type, TypeVar, Union
 
+import cachetools
+
 if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
@@ -134,6 +136,17 @@ class PaginatedList(List[_ListType]):
             next_token = None
 
         return result_list[start_idx : start_idx + page_size], next_token
+
+
+class CustomExpiryTTLCache(cachetools.TTLCache):
+    """TTLCache that allows to set custom expiry times for individual keys."""
+
+    def set_expiry(self, key: Any, ttl: Union[float, int]) -> float:
+        """Set the expiry of the given key in a TTLCache to (<current_time> + <ttl>)"""
+        with self.timer as time:
+            # note: need to access the internal dunder API here
+            self._TTLCache__getlink(key).expires = expiry = time + ttl
+            return expiry
 
 
 def get_safe(dictionary, path, default_value=None):
