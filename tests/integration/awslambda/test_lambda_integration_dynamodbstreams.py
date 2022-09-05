@@ -38,6 +38,7 @@ def _snapshot_transformers(snapshot):
     )
     snapshot.add_transformer(snapshot.transform.key_value("SequenceNumber"))
     snapshot.add_transformer(snapshot.transform.key_value("eventID"))
+    snapshot.add_transformer(snapshot.transform.key_value("shardId"))
 
 
 @pytest.fixture
@@ -248,6 +249,7 @@ class TestDynamoDBEventSourceMapping:
         result = lambda_client.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", result)
 
+    @pytest.mark.aws_validated
     def test_dynamodb_event_source_mapping_with_on_failure_destination_config(
         self,
         lambda_client,
@@ -396,84 +398,87 @@ class TestDynamoDBEventSourceMapping:
         calls,
         item_to_put1,
         item_to_put2,
+        cleanups,
+        snapshot,
     ):
 
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
-        event_source_uuid = None
         max_retries = 50
 
-        try:
-
-            create_lambda_function(
-                handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                func_name=function_name,
-                runtime=LAMBDA_RUNTIME_PYTHON37,
-                role=lambda_su_role,
-            )
-            dynamodb_create_table(table_name=table_name, partition_key="id")
-            _await_dynamodb_table_active(dynamodb_client, table_name)
-            stream_arn = dynamodb_client.update_table(
-                TableName=table_name,
-                StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
-            )["TableDescription"]["LatestStreamArn"]
-            wait_for_dynamodb_stream_ready(stream_arn)
-            event_source_mapping_kwargs = {
-                "FunctionName": function_name,
-                "BatchSize": 1,
-                "StartingPosition": "TRIM_HORIZON",
-                "EventSourceArn": stream_arn,
-                "MaximumBatchingWindowInSeconds": 1,
-                "MaximumRetryAttempts": 1,
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=lambda_su_role,
+        )
+        table_creation_response = dynamodb_create_table(table_name=table_name, partition_key="id")
+        snapshot.match("table_creation_response", table_creation_response)
+        _await_dynamodb_table_active(dynamodb_client, table_name)
+        stream_arn = dynamodb_client.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+        )["TableDescription"]["LatestStreamArn"]
+        wait_for_dynamodb_stream_ready(stream_arn)
+        event_source_mapping_kwargs = {
+            "FunctionName": function_name,
+            "BatchSize": 1,
+            "StartingPosition": "TRIM_HORIZON",
+            "EventSourceArn": stream_arn,
+            "MaximumBatchingWindowInSeconds": 1,
+            "MaximumRetryAttempts": 1,
+        }
+        event_source_mapping_kwargs.update(
+            FilterCriteria={
+                "Filters": [
+                    {"Pattern": json.dumps(filter)},
+                ]
             }
-            event_source_mapping_kwargs.update(
-                FilterCriteria={
-                    "Filters": [
-                        {"Pattern": json.dumps(filter)},
-                    ]
-                }
-            )
+        )
 
-            event_source_uuid = lambda_client.create_event_source_mapping(
-                **event_source_mapping_kwargs
-            )["UUID"]
+        create_event_source_mapping_response = lambda_client.create_event_source_mapping(
+            **event_source_mapping_kwargs
+        )
+        event_source_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=event_source_uuid))
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
 
-            _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
+        _await_event_source_mapping_enabled(lambda_client, event_source_uuid)
+        dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
+
+        def assert_lambda_called():
+            events = get_lambda_log_events(function_name, logs_client=logs_client)
+            if calls > 0:
+                assert len(events) == 1
+            else:
+                # negative test for 'numeric' filter
+                assert len(events) == 0
+            return events
+
+        events = retry(assert_lambda_called, retries=max_retries)
+        snapshot.match("lambda-log-events", events)
+
+        # Following lines are relevant if variables are set via parametrize
+        if item_to_put2:
+            # putting a new item (item_to_put2) a second time is a 'INSERT' request
+            dynamodb_client.put_item(TableName=table_name, Item=item_to_put2)
+        else:
+            # putting the same item (item_to_put1) a second time is a 'MODIFY' request (at least in Localstack)
             dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
+        # depending on the parametrize values the filter (and the items to put) the lambda might be called multiple times
+        if calls > 1:
 
-            def assert_lambda_called():
+            def assert_events_called_multiple():
                 events = get_lambda_log_events(function_name, logs_client=logs_client)
-                if calls > 0:
-                    assert len(events) == 1
-                else:
-                    # negative test for 'numeric' filter
-                    assert len(events) == 0
+                assert len(events) == calls
+                return events
 
-            retry(assert_lambda_called, retries=max_retries)
-
-            # Following lines are relevant if variables are set via parametrize
-            if item_to_put2:
-                # putting a new item (item_to_put2) a second time is a 'INSERT' request
-                dynamodb_client.put_item(TableName=table_name, Item=item_to_put2)
-            else:
-                # putting the same item (item_to_put1) a second time is a 'MODIFY' request (at least in Localstack)
-                dynamodb_client.put_item(TableName=table_name, Item=item_to_put1)
-            # depending on the parametrize values the filter (and the items to put) the lambda might be called multiple times
-            if calls > 1:
-
-                def assert_events_called_multiple():
-                    events = get_lambda_log_events(function_name, logs_client=logs_client)
-                    assert len(events) == calls
-
-                # lambda was called a second time, so new records should be found
-                retry(assert_events_called_multiple, retries=max_retries)
-            else:
-                # lambda wasn't called a second time, so no new records should be found
-                retry(assert_lambda_called, retries=max_retries)
-
-        finally:
-            if event_source_uuid:
-                lambda_client.delete_event_source_mapping(UUID=event_source_uuid)
+            # lambda was called a second time, so new records should be found
+            events = retry(assert_events_called_multiple, retries=max_retries)
+        else:
+            # lambda wasn't called a second time, so no new records should be found
+            events = retry(assert_lambda_called, retries=max_retries)
+        snapshot.match("lambda-multiple-log-events", events)
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize(
@@ -492,6 +497,7 @@ class TestDynamoDBEventSourceMapping:
         lambda_su_role,
         wait_for_dynamodb_stream_ready,
         filter,
+        snapshot,
     ):
 
         function_name = f"lambda_func-{short_uid()}"
@@ -526,4 +532,5 @@ class TestDynamoDBEventSourceMapping:
 
         with pytest.raises(Exception) as expected:
             lambda_client.create_event_source_mapping(**event_source_mapping_kwargs)
+        snapshot.match("exception_event_source_creation", expected.value.response)
         expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)

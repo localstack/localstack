@@ -270,7 +270,7 @@ format:            		  ## Run black and isort code formatter
 	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
 
 format-modified:   		  ## Run black and isort code formatter on modified files
-	($(VENV_RUN); python -m isort `git diff --name-only HEAD | grep '\.py$$' | xargs`; python -m black `git ls-files -m | grep '\.py$$' | xargs` )
+	($(VENV_RUN); python -m isort `git diff --name-only HEAD | grep '\.py$$' | xargs`; python -m black `git diff --name-only HEAD | grep '\.py$$' | xargs` )
 
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
