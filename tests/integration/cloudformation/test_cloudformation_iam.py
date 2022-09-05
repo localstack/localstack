@@ -107,7 +107,7 @@ def test_policy_attachments(
     role_inline_policies = iam_client.list_role_policies(RoleName=role_name)
     user_inline_policies = iam_client.list_user_policies(UserName=user_name)
     group_inline_policies = iam_client.list_group_policies(GroupName=group_name)
-    assert len(role_inline_policies["PolicyNames"]) == 1
+    assert len(role_inline_policies["PolicyNames"]) == 2
     assert len(user_inline_policies["PolicyNames"]) == 1
     assert len(group_inline_policies["PolicyNames"]) == 1
 

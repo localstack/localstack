@@ -313,6 +313,7 @@ class IAMRole(GenericBaseModel):
 
             # get policy document - make sure we're resolving references in the policy doc
             doc = dict(policy["PolicyDocument"])
+            doc = remove_none_values(doc)
             doc = resolve_refs_recursively(stack, doc)
 
             doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
