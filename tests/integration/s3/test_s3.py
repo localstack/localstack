@@ -13,7 +13,6 @@ import time
 from io import BytesIO
 from operator import itemgetter
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 from urllib.parse import parse_qs, quote, urlparse
 
 import boto3 as boto3
@@ -2252,7 +2251,6 @@ class TestS3PresignedUrl:
 
 
 class TestS3Cors:
-    @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
     @pytest.mark.aws_validated
     # TODO x-amzn-requestid should be 'x-amz-request-id'
     # TODO "Vary" contains more in AWS, other params are added additional in LocalStack
@@ -2268,7 +2266,8 @@ class TestS3Cors:
             "$..Last-Modified",
         ]
     )
-    def test_cors_with_allowed_origins(self, s3_client, s3_create_bucket, snapshot):
+    def test_cors_with_allowed_origins(self, s3_client, s3_create_bucket, snapshot, monkeypatch):
+        monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", False)
         snapshot.add_transformer(self._get_cors_result_header_snapshot_transformer(snapshot))
         bucket_cors_config = {
             "CORSRules": [
@@ -2372,7 +2371,6 @@ class TestS3Cors:
         assert result.status_code == 200
         snapshot.match("raw-response-headers-4", dict(result.headers))
 
-    @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
@@ -2393,7 +2391,8 @@ class TestS3Cors:
             "$..raw-response-headers-2.Access-Control-Allow-Credentials",
         ]
     )
-    def test_cors_configurations(self, s3_client, s3_create_bucket, snapshot):
+    def test_cors_configurations(self, s3_client, s3_create_bucket, monkeypatch, snapshot):
+        monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", False)
         snapshot.add_transformer(self._get_cors_result_header_snapshot_transformer(snapshot))
 
         bucket = f"test-cors-{short_uid()}"
@@ -2457,7 +2456,6 @@ class TestS3Cors:
             snapshot.transform.key_value("Last-Modified", "<date>", reference_replacement=False),
         ]
 
-    @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
     @pytest.mark.parametrize(
         "signature_version, use_virtual_address",
         [
@@ -2469,8 +2467,14 @@ class TestS3Cors:
     )
     @pytest.mark.aws_validated
     def test_presigned_url_signature_authentication_multi_part(
-        self, s3_client, s3_create_bucket, signature_version, use_virtual_address
+        self,
+        s3_client,
+        s3_create_bucket,
+        signature_version,
+        use_virtual_address,
+        monkeypatch,
     ):
+        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         bucket_name = f"presign-{short_uid()}"
 
         s3_endpoint_path_style = _endpoint_url()
@@ -2521,7 +2525,6 @@ class TestS3Cors:
         assert 200 == response.status_code
         assert response.content == data
 
-    @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
     @pytest.mark.parametrize(
         "signature_version, use_virtual_address",
         [
@@ -2533,8 +2536,14 @@ class TestS3Cors:
     )
     @pytest.mark.aws_validated
     def test_presigned_url_signature_authentication_expired(
-        self, s3_client, s3_create_bucket, signature_version, use_virtual_address
+        self,
+        s3_client,
+        s3_create_bucket,
+        signature_version,
+        use_virtual_address,
+        monkeypatch,
     ):
+        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         bucket_name = f"presign-{short_uid()}"
 
         s3_endpoint_path_style = _endpoint_url()
@@ -2554,7 +2563,6 @@ class TestS3Cors:
 
         assert 403 == requests.get(url).status_code
 
-    @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
     @pytest.mark.parametrize(
         "signature_version, use_virtual_address",
         [
@@ -2566,8 +2574,14 @@ class TestS3Cors:
     )
     @pytest.mark.aws_validated
     def test_presigned_url_signature_authentication(
-        self, s3_client, s3_create_bucket, signature_version, use_virtual_address
+        self,
+        s3_client,
+        s3_create_bucket,
+        signature_version,
+        use_virtual_address,
+        monkeypatch,
     ):
+        monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
         bucket_name = f"presign-{short_uid()}"
 
         s3_endpoint_path_style = _endpoint_url()
