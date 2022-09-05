@@ -1,4 +1,5 @@
 from io import BytesIO
+from typing import Optional
 
 import pytest
 from moto.core import DEFAULT_ACCOUNT_ID
@@ -260,6 +261,66 @@ def test_moto_fallback_dispatcher():
     list_queues_response = _dispatch("ListQueues", None)
     assert len(provider.calls) == 1
     assert len([url for url in list_queues_response["QueueUrls"] if qname in url])
+
+
+class FakeS3Provider:
+    class FakeNoSuchBucket(ServiceException):
+        code: str = "NoSuchBucket"
+        sender_fault: bool = False
+        status_code: int = 404
+        BucketName: Optional[str]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls = []
+
+    @handler("GetObject", expand=False)
+    def get_object(self, _, __):
+        # Test fall-through raises exception
+        raise NotImplementedError
+
+    @handler("ListObjects", expand=False)
+    def list_objects(self, _, request):
+        # Test provider implementation raises exception
+        ex = self.FakeNoSuchBucket()
+        ex.BucketName = request["Bucket"]
+        raise ex
+
+    @handler("ListObjectsV2", expand=False)
+    def list_objects_v2(self, context, _):
+        # Test call_moto raises exception
+        return moto.call_moto(context)
+
+
+def test_moto_fallback_dispatcher_error_handling(monkeypatch):
+    """
+    This test checks if the error handling (marshalling / unmarshalling) works correctly on all levels, including
+    additional (even non-officially supported) fields on exception (like NoSuchBucket#BucketName).
+    """
+    monkeypatch.setenv("MOTO_S3_CUSTOM_ENDPOINTS", "s3.localhost.localstack.cloud:4566")
+
+    provider = FakeS3Provider()
+    dispatcher = MotoFallbackDispatcher(provider)
+
+    def _dispatch(action, params):
+        context = moto.create_aws_request_context("s3", action, params)
+        return dispatcher[action](context, params)
+
+    bucket_name = f"bucket-{short_uid()}"
+    # Test fallback implementation raises a service exception which has the additional attribute "BucketName"
+    with pytest.raises(ServiceException) as e:
+        _dispatch("GetObject", {"Bucket": bucket_name, "Key": "key"})
+    assert getattr(e.value, "BucketName") == bucket_name
+
+    # Test provider implementation raises a service exception
+    with pytest.raises(ServiceException) as e:
+        _dispatch("ListObjects", {"Bucket": bucket_name})
+    assert getattr(e.value, "BucketName") == bucket_name
+
+    # Test provider uses call_moto, which raises a service exception
+    with pytest.raises(ServiceException) as e:
+        _dispatch("ListObjectsV2", {"Bucket": bucket_name})
+    assert getattr(e.value, "BucketName") == bucket_name
 
 
 def test_request_with_response_header_location_fields():
