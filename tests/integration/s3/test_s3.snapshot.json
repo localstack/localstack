@@ -1819,5 +1819,34 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3PresignedUrl::test_s3_batch_delete_public_objects_using_requests": {
+    "recorded-date": "05-09-2022, 16:53:55",
+    "recorded-content": {
+      "multi-delete-with-requests": {
+        "DeleteResult": {
+          "Deleted": [
+            {
+              "Key": "key-created-by-anonymous-1"
+            },
+            {
+              "Key": "key-created-by-anonymous-2"
+            }
+          ]
+        }
+      },
+      "list-remaining-objects": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "Marker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
