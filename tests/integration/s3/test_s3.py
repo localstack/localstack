@@ -61,17 +61,6 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
-BATCH_DELETE_BODY = """
-<Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-  <Object>
-    <Key>%s</Key>
-  </Object>
-  <Object>
-    <Key>%s</Key>
-  </Object>
-</Delete>
-"""
-
 
 @pytest.fixture(scope="class")
 def s3_client_for_region():
@@ -89,7 +78,7 @@ def s3_create_bucket_with_client(s3_resource):
 
     def factory(s3_client, **kwargs) -> str:
         if "Bucket" not in kwargs:
-            kwargs["Bucket"] = "test-bucket-%s" % short_uid()
+            kwargs["Bucket"] = f"test-bucket-{short_uid()}"
 
         response = s3_client.create_bucket(**kwargs)
         buckets.append(kwargs["Bucket"])
@@ -105,7 +94,7 @@ def s3_create_bucket_with_client(s3_resource):
             bucket.object_versions.all().delete()
             bucket.delete()
         except Exception as e:
-            LOG.debug("error cleaning up bucket %s: %s", bucket, e)
+            LOG.debug(f"error cleaning up bucket {bucket}: {e}")
 
 
 @pytest.fixture
@@ -405,7 +394,7 @@ class TestS3:
     def test_create_bucket_via_host_name(self, s3_vhost_client):
         # todo check redirection (happens in AWS because of region name), should it happen in LS?
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#VirtualHostingBackwardsCompatibility
-        bucket_name = "test-%s" % short_uid()
+        bucket_name = f"test-{short_uid()}"
         try:
             response = s3_vhost_client.create_bucket(
                 Bucket=bucket_name,
@@ -634,7 +623,7 @@ class TestS3:
                 snapshot.transform.key_value("ID", value_replacement="owner-id"),
             ]
         )
-        bucket_name = "test-bucket-%s" % short_uid()
+        bucket_name = f"test-bucket-{short_uid()}"
         s3_create_bucket(Bucket=bucket_name, ACL="public-read")
         response = s3_client.get_bucket_acl(Bucket=bucket_name)
         snapshot.match("bucket-acl", response)
@@ -840,8 +829,8 @@ class TestS3:
     def test_get_object_with_anon_credentials(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
-        bucket_name = "bucket-%s" % short_uid()
-        object_key = "key-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
+        object_key = f"key-{short_uid()}"
         body = "body data"
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read")
@@ -864,7 +853,7 @@ class TestS3:
     def test_putobject_with_multiple_keys(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
-        bucket = "bucket-%s" % short_uid()
+        bucket = f"bucket-{short_uid()}"
         key_by_path = "aws/key1/key2/key3"
 
         s3_create_bucket(Bucket=bucket)
@@ -940,7 +929,7 @@ class TestS3:
             data.seek(0)
             s3_client.upload_fileobj(data, s3_bucket, object_key)
 
-        range_header = "bytes=0-%s" % (chunk_size - 1)
+        range_header = f"bytes=0-{(chunk_size - 1)}"
         resp = s3_client.get_object(Bucket=s3_bucket, Key=object_key, Range=range_header)
         content = resp["Body"].read()
         assert chunk_size == len(content)
@@ -956,7 +945,7 @@ class TestS3:
             data.seek(0)
             s3_client.upload_fileobj(data, s3_bucket, object_key)
 
-        range_header = "bytes=0-%s" % (chunk_size - 1)
+        range_header = f"bytes=0-{(chunk_size - 1)}"
         resp = s3_client.get_object(Bucket=s3_bucket, Key=object_key, Range=range_header)
         assert resp.get("AcceptRanges") == "bytes"
         resp_headers = resp["ResponseMetadata"]["HTTPHeaders"]
@@ -1091,7 +1080,7 @@ class TestS3:
     )
     def test_s3_uppercase_key_names(self, s3_client, s3_create_bucket, snapshot):
         # bucket name should be case-sensitive
-        bucket_name = "testuppercase-%s" % short_uid()
+        bucket_name = f"testuppercase-{short_uid()}"
         s3_create_bucket(Bucket=bucket_name)
 
         # key name should be case-sensitive
@@ -1114,9 +1103,9 @@ class TestS3:
         logs_client,
     ):
 
-        bucket_name = "bucket-%s" % short_uid()
-        function_name = "func-%s" % short_uid()
-        key = "key-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
+        function_name = f"func-{short_uid()}"
+        key = f"key-{short_uid()}"
 
         s3_create_bucket(Bucket=bucket_name)
         s3_client.put_object(Bucket=bucket_name, Key=key, Body="something..")
@@ -1156,7 +1145,7 @@ class TestS3:
     # TODO LocalStack adds this RequestID to the error response
     @pytest.mark.skip_snapshot_verify(paths=["$..Error.RequestID"])
     def test_precondition_failed_error(self, s3_client, s3_create_bucket, snapshot):
-        bucket = "bucket-%s" % short_uid()
+        bucket = f"bucket-{short_uid()}"
 
         s3_create_bucket(Bucket=bucket)
         s3_client.put_object(Bucket=bucket, Key="foo", Body=b'{"foo": "bar"}')
@@ -1292,8 +1281,7 @@ class TestS3:
             run_command="npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner",
         )
 
-        function_name = "func-integration-%s" % short_uid()
-
+        function_name = f"func-integration-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
@@ -1326,7 +1314,7 @@ class TestS3TerraformRawRequests:
             req, _, headers = header.strip().partition("\n")
             headers = {h.split(":")[0]: h.partition(":")[2].strip() for h in headers.split("\n")}
             method, path, _ = req.split(" ")
-            url = "%s%s" % (config.get_edge_url(), path)
+            url = f"{config.get_edge_url()}{path}"
             result = getattr(requests, method.lower())(url, data=body, headers=headers)
             assert result.status_code < 400
 
@@ -1494,7 +1482,7 @@ class TestS3PresignedUrl:
         s3_client,
         s3_create_bucket,
     ):
-        bucket_name = "bucket-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
         object_key = "test-runtime.properties"
         content_md5 = "pX8KKuGXS1f2VTcuJpqjkw=="
         headers = {
@@ -1708,7 +1696,7 @@ class TestS3PresignedUrl:
 
     @pytest.mark.aws_validated
     def test_presigned_url_with_session_token(self, s3_create_bucket_with_client, sts_client):
-        bucket_name = "bucket-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
         key_name = "key"
         response = sts_client.get_session_token()
 
@@ -1796,9 +1784,9 @@ class TestS3PresignedUrl:
 
     @pytest.mark.only_localstack  # TODO request works against AWS but some policies are still missing
     def test_s3_batch_delete_objects_using_requests(self, s3_client, s3_create_bucket):
-        bucket_name = "bucket-%s" % short_uid()
-        object_key_1 = "key-%s" % short_uid()
-        object_key_2 = "key-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
+        object_key_1 = f"key-{short_uid()}"
+        object_key_2 = f"key-{short_uid()}"
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read-write")
         s3_client.put_object(
@@ -1813,7 +1801,18 @@ class TestS3PresignedUrl:
 
         # TODO delete does currently not work with S3_VIRTUAL_HOSTNAME
         url = f"{_bucket_url(bucket_name, localstack_host=config.LOCALSTACK_HOSTNAME)}?delete"
-        data = BATCH_DELETE_BODY % (object_key_1, object_key_2)
+
+        data = f"""
+        <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+          <Object>
+            <Key>{object_key_1}</Key>
+          </Object>
+          <Object>
+            <Key>{object_key_2}</Key>
+          </Object>
+        </Delete>
+        """
+
         md = hashlib.md5(data.encode("utf-8")).digest()
         contents_md5 = base64.b64encode(md).decode("utf-8")
         header = {"content-md5": contents_md5, "x-amz-request-payer": "requester"}
@@ -1877,7 +1876,7 @@ class TestS3PresignedUrl:
     @pytest.mark.aws_validated
     def test_create_bucket_with_existing_name(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = "bucket-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
         s3_create_bucket(
             Bucket=bucket_name,
             CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
@@ -1945,7 +1944,7 @@ class TestS3PresignedUrl:
     @pytest.mark.skip_snapshot_verify(paths=["$..AcceptRanges"])
     def test_upload_big_file(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = "bucket-big-file-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
         key1 = "test_key1"
         key2 = "test_key1"
 
@@ -1972,7 +1971,7 @@ class TestS3PresignedUrl:
     def test_get_bucket_versioning_order(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
-        bucket_name = "version-order-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
         s3_create_bucket(Bucket=bucket_name)
         rs = s3_client.list_object_versions(Bucket=bucket_name, EncodingType="url")
         snapshot.match("list_object_versions_before", rs)
@@ -2069,7 +2068,7 @@ class TestS3PresignedUrl:
 
     @pytest.mark.aws_validated
     def test_s3_static_website_index(self, s3_client, s3_create_bucket):
-        bucket_name = "test-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read")
         s3_client.put_object(
@@ -2096,7 +2095,7 @@ class TestS3PresignedUrl:
     @pytest.mark.aws_validated
     def test_s3_static_website_hosting(self, s3_client, s3_create_bucket):
 
-        bucket_name = "test-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
 
         s3_create_bucket(Bucket=bucket_name, ACL="public-read")
         index_obj = s3_client.put_object(
@@ -2238,7 +2237,7 @@ class TestS3Cors:
             ]
         }
 
-        bucket_name = "bucket-%s" % short_uid()
+        bucket_name = f"bucket-{short_uid()}"
         object_key = "424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf"
         s3_create_bucket(Bucket=bucket_name)
         s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
@@ -2428,7 +2427,7 @@ class TestS3Cors:
     def test_presigned_url_signature_authentication_multi_part(
         self, s3_client, s3_create_bucket, signature_version, use_virtual_address
     ):
-        bucket_name = "presign-%s" % short_uid()
+        bucket_name = f"presign-{short_uid()}"
 
         s3_endpoint_path_style = _endpoint_url()
 
@@ -2492,7 +2491,7 @@ class TestS3Cors:
     def test_presigned_url_signature_authentication_expired(
         self, s3_client, s3_create_bucket, signature_version, use_virtual_address
     ):
-        bucket_name = "presign-%s" % short_uid()
+        bucket_name = f"presign-{short_uid()}"
 
         s3_endpoint_path_style = _endpoint_url()
 
@@ -2525,7 +2524,7 @@ class TestS3Cors:
     def test_presigned_url_signature_authentication(
         self, s3_client, s3_create_bucket, signature_version, use_virtual_address
     ):
-        bucket_name = "presign-%s" % short_uid()
+        bucket_name = f"presign-{short_uid()}"
 
         s3_endpoint_path_style = _endpoint_url()
         s3_url = _bucket_url_vhost(bucket_name) if use_virtual_address else _bucket_url(bucket_name)
