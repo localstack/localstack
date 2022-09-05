@@ -1,4 +1,5 @@
 import csv
+import json
 import logging
 import sys
 import time
@@ -7,6 +8,7 @@ from pathlib import Path
 from typing import TypedDict
 
 import botocore.config
+import requests
 from botocore.exceptions import (
     ClientError,
     ConnectTimeoutError,
@@ -29,99 +31,11 @@ STATUS_TIMEOUT_ERROR = 901
 STATUS_PARSING_ERROR = 902
 STATUS_CONNECTION_ERROR = 903
 
-# TODO: generate these via a script in PRO
+# TODO: will only include available services
 # generate with e.g. http http://localhost:4566/health | jq ".services | keys[]" | pbcopy
-latest_services_pro = [
-    "acm",
-    "amplify",
-    "apigateway",
-    "apigatewaymanagementapi",
-    "apigatewayv2",
-    "appconfig",
-    "application-autoscaling",
-    "appsync",
-    "athena",
-    "autoscaling",
-    "azure",
-    "backup",
-    "batch",
-    "ce",
-    "cloudformation",
-    "cloudfront",
-    "cloudtrail",
-    "cloudwatch",
-    "codecommit",
-    "cognito-identity",
-    "cognito-idp",
-    "config",
-    "docdb",
-    "dynamodb",
-    "dynamodbstreams",
-    "ec2",
-    "ecr",
-    "ecs",
-    "efs",
-    "eks",
-    "elasticache",
-    "elasticbeanstalk",
-    "elb",
-    "elbv2",
-    "emr",
-    "es",
-    "events",
-    "firehose",
-    "fis",
-    "glacier",
-    "glue",
-    "iam",
-    "iot",
-    "iot-data",
-    "iotanalytics",
-    "iotwireless",
-    "kafka",
-    "kinesis",
-    "kinesisanalytics",
-    "kinesisanalyticsv2",
-    "kms",
-    "lakeformation",
-    "lambda",
-    "logs",
-    "mediastore",
-    "mediastore-data",
-    "mwaa",
-    "neptune",
-    "opensearch",
-    "organizations",
-    "qldb",
-    "qldb-session",
-    "rds",
-    "rds-data",
-    "redshift",
-    "redshift-data",
-    "resource-groups",
-    "resourcegroupstaggingapi",
-    "route53",
-    "route53resolver",
-    "s3",
-    "s3control",
-    "sagemaker",
-    "secretsmanager",
-    "serverlessrepo",
-    "servicediscovery",
-    "ses",
-    "sesv2",
-    "sns",
-    "sqs",
-    "ssm",
-    "stepfunctions",
-    "sts",
-    "support",
-    "swf",
-    "timestream-query",
-    "timestream-write",
-    "transfer",
-    "xray",
-]
+response = requests.get("http://localhost:4566/health").content.decode("utf-8")
+latest_services_pro = [k for k in json.loads(response).get("services").keys()]
+
 exclude_services = {"azure"}
 latest_services_pro = [s for s in latest_services_pro if s not in exclude_services]
 latest_services_pro.sort()
