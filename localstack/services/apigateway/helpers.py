@@ -658,6 +658,7 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
         child_id = create_resource_id()
         rel_path = rel_path or "/"
         resource = Resource(
+            account_id=rest_api.account_id,
             resource_id=child_id,
             region_name=rest_api.region_name,
             api_id=rest_api.id,

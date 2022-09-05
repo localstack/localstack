@@ -10,6 +10,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.services.sqs.provider import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 
@@ -290,6 +291,74 @@ class TestSqsProvider:
         except ClientError as e:
             assert "EmptyBatchRequest" in e.response["Error"]["Code"]
             assert e.response["ResponseMetadata"]["HTTPStatusCode"] in [400, 404]
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_oversized_message(self, sqs_client, sqs_queue, snapshot):
+        with pytest.raises(ClientError) as e:
+            sqs_client.send_message(
+                QueueUrl=sqs_queue, MessageBody="a" * (DEFAULT_MAXIMUM_MESSAGE_SIZE + 1)
+            )
+
+        snapshot.match("send_oversized_message", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_message_with_updated_maximum_message_size(self, sqs_client, sqs_queue, snapshot):
+        new_max_message_size = 1024
+        sqs_client.set_queue_attributes(
+            QueueUrl=sqs_queue,
+            Attributes={"MaximumMessageSize": str(new_max_message_size)},
+        )
+
+        # check base case still works
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="a" * new_max_message_size)
+
+        # check error case
+        with pytest.raises(ClientError) as e:
+            sqs_client.send_message(
+                QueueUrl=sqs_queue, MessageBody="a" * (new_max_message_size + 1)
+            )
+
+        snapshot.match("send_oversized_message", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_message_batch_with_oversized_contents(self, sqs_client, sqs_queue, snapshot):
+        # Send two messages, one of max message size and a second with
+        # message body of size 1
+        with pytest.raises(ClientError) as e:
+            sqs_client.send_message_batch(
+                QueueUrl=sqs_queue,
+                Entries=[
+                    {"Id": "1", "MessageBody": "a" * DEFAULT_MAXIMUM_MESSAGE_SIZE},
+                    {"Id": "2", "MessageBody": "a"},
+                ],
+            )
+
+        snapshot.match("send_oversized_message_batch", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Detail"])
+    def test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size(
+        self, sqs_client, sqs_queue, snapshot
+    ):
+        new_max_message_size = 2048
+        sqs_client.set_queue_attributes(
+            QueueUrl=sqs_queue,
+            Attributes={"MaximumMessageSize": str(new_max_message_size)},
+        )
+
+        # batch send seems to ignore the MaximumMessageSize of the queue
+        response = sqs_client.send_message_batch(
+            QueueUrl=sqs_queue,
+            Entries=[
+                {"Id": "1", "MessageBody": "a" * new_max_message_size},
+                {"Id": "2", "MessageBody": "a"},
+            ],
+        )
+
+        snapshot.match("send_oversized_message_batch", response)
 
     @pytest.mark.aws_validated
     def test_tag_untag_queue(self, sqs_client, sqs_create_queue):

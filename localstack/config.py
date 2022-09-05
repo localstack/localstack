@@ -554,7 +554,7 @@ KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 # Delay between data persistence (in seconds)
 KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", "").strip() or "5s"
 
-# Kinesis provider - either "kinesis-mock" or "kinesalite"
+# Kinesis provider - either "kinesis-mock" or "kinesalite" (deprecated, kinesalite support will be removed)
 KINESIS_PROVIDER = os.environ.get("KINESIS_PROVIDER") or "kinesis-mock"
 
 # Whether or not to handle lambda event sources as synchronous invocations
@@ -693,6 +693,9 @@ if OPENSEARCH_ENDPOINT_STRATEGY == "off":
 OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_env_true(
     "ES_MULTI_CLUSTER"
 )
+
+# TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
+MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from moto.ec2.models import ec2_backends
 from moto.route53resolver.models import Route53ResolverBackend as MotoRoute53ResolverBackend
-from moto.route53resolver.models import route53resolver_backends as moto_route53resolver_backends
+from moto.route53resolver.models import route53resolver_backends
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.route53resolver import (
@@ -114,7 +114,9 @@ class Route53ResolverProvider(Route53ResolverApi):
             ModificationTime=datetime.now(timezone.utc).isoformat(),
         )
         region_details.firewall_rule_groups[id] = firewall_rule_group
-        moto_route53resolver_backends[context.region].tagger.tag_resource(arn, tags or [])
+        route53resolver_backends[context.account_id][context.region].tagger.tag_resource(
+            arn, tags or []
+        )
         return CreateFirewallRuleGroupResponse(FirewallRuleGroup=firewall_rule_group)
 
     def delete_firewall_rule_group(
@@ -173,7 +175,9 @@ class Route53ResolverProvider(Route53ResolverApi):
             ModificationTime=datetime.now(timezone.utc).isoformat(),
         )
         region_details.firewall_domain_lists[id] = firewall_domain_list
-        moto_route53resolver_backends[context.region].tagger.tag_resource(arn, tags or [])
+        route53resolver_backends[context.account_id][context.region].tagger.tag_resource(
+            arn, tags or []
+        )
         return CreateFirewallDomainListResponse(FirewallDomainList=firewall_domain_list)
 
     def delete_firewall_domain_list(
@@ -432,7 +436,9 @@ class Route53ResolverProvider(Route53ResolverApi):
             ModificationTime=datetime.now(timezone.utc).isoformat(),
         )
         region_details.firewall_rule_group_associations[id] = firewall_rule_group_association
-        moto_route53resolver_backends[context.region].tagger.tag_resource(arn, tags or [])
+        route53resolver_backends[context.account_id][context.region].tagger.tag_resource(
+            arn, tags or []
+        )
         return AssociateFirewallRuleGroupResponse(
             FirewallRuleGroupAssociation=firewall_rule_group_association
         )
@@ -516,7 +522,7 @@ class Route53ResolverProvider(Route53ResolverApi):
             CreationTime=datetime.now(timezone.utc).isoformat(),
         )
         region_details.resolver_query_log_configs[id] = resolver_query_log_config
-        moto_route53resolver_backends[context.region].tagger.tag_resource(arn, tags or [])
+        route53resolver_backends[context.region].tagger.tag_resource(arn, tags or [])
         return CreateResolverQueryLogConfigResponse(
             ResolverQueryLogConfig=resolver_query_log_config
         )

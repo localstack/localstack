@@ -16,5 +16,20 @@
         }
       }
     }
+  },
+  "tests/integration/cloudformation/test_cloudformation_iam.py::test_iam_user_access_key": {
+    "recorded-date": "30-08-2022, 13:42:39",
+    "recorded-content": {
+      "key_outputs": {
+        "AccessKeyId": "<key-id:1>",
+        "SecretAccessKey": "<secret-access-key:1>"
+      },
+      "access_key": {
+        "AccessKeyId": "<key-id:1>",
+        "CreateDate": "datetime",
+        "Status": "Active",
+        "UserName": "<user-name:1>"
+      }
+    }
   }
 }

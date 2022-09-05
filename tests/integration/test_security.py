@@ -1,3 +1,4 @@
+import pytest
 import requests
 
 from localstack import config
@@ -28,6 +29,14 @@ class TestCSRF:
     def test_default_cors_headers(self):
         headers = {"Origin": "https://app.localstack.cloud"}
         response = requests.get(f"{config.get_edge_url()}/2015-03-31/functions/", headers=headers)
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == "https://app.localstack.cloud"
+        assert "GET" in response.headers["access-control-allow-methods"].split(",")
+
+    @pytest.mark.parametrize("path", ["/health", "/_localstack/health"])
+    def test_internal_route_cors_headers(self, path):
+        headers = {"Origin": "https://app.localstack.cloud"}
+        response = requests.get(f"{config.get_edge_url()}{path}", headers=headers)
         assert response.status_code == 200
         assert response.headers["access-control-allow-origin"] == "https://app.localstack.cloud"
         assert "GET" in response.headers["access-control-allow-methods"].split(",")

@@ -362,3 +362,30 @@ ec2:
     - TestAccVPCSubnet_mapPublicIPOnLaunch
     - TestAccVPCSubnet_privateDNSNameOptionsOnLaunch
     - TestAccVPCSubnet_tags
+    - TestAccVPCDefaultRouteTable_Disappears_vpc
+    - TestAccVPCDefaultRouteTable_Route_mode
+    - TestAccVPCDefaultRouteTable_basic
+    - TestAccVPCDefaultRouteTable_conditionalCIDRBlock
+    - TestAccVPCDefaultRouteTable_ipv4ToTransitGateway
+    - TestAccVPCDefaultRouteTable_prefixListToInternetGateway
+    - TestAccVPCDefaultRouteTable_tags
+    - TestAccVPCDefaultRouteTable_vpcEndpointAssociation
+    - TestAccVPCRouteTable_Disappears_subnetAssociation
+    - TestAccVPCRouteTable_IPv6ToNetworkInterface_unattached
+    - TestAccVPCRouteTable_Route_mode
+    - TestAccVPCRouteTable_basic
+    - TestAccVPCRouteTable_conditionalCIDRBlock
+    - TestAccVPCRouteTable_disappears
+    - TestAccVPCRouteTable_gatewayVPCEndpoint
+    - TestAccVPCRouteTable_ipv4ToInstance
+    - TestAccVPCRouteTable_ipv4ToInternetGateway
+    - TestAccVPCRouteTable_ipv4ToNatGateway
+    - TestAccVPCRouteTable_ipv4ToTransitGateway
+    - TestAccVPCRouteTable_ipv4ToVPCPeeringConnection
+    - TestAccVPCRouteTable_ipv6ToEgressOnlyInternetGateway
+    - TestAccVPCRouteTable_multipleRoutes
+    - TestAccVPCRouteTable_prefixListToInternetGateway
+    - TestAccVPCRouteTable_requireRouteDestination
+    - TestAccVPCRouteTable_requireRouteTarget
+    - TestAccVPCRouteTable_tags
+    - TestAccVPCRouteTable_vpcMultipleCIDR

@@ -6,6 +6,7 @@ from typing import Any, Callable, Mapping, Optional
 from urllib.parse import urlsplit
 
 from botocore.awsrequest import AWSPreparedRequest
+from botocore.config import Config as BotoConfig
 from werkzeug.datastructures import Headers
 
 from localstack import config
@@ -74,7 +75,12 @@ def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> Service
                 parameters=service_request,
                 region=context.region,
             )
-            local_context.request.headers.update(context.request.headers)
+            # update the newly created context with non-payload specific request headers (the payload can differ from
+            # the original request, f.e. it could be JSON encoded now while the initial request was CBOR encoded)
+            headers = Headers(context.request.headers)
+            headers.pop("Content-Type", None)
+            headers.pop("Content-Length", None)
+            local_context.request.headers.update(headers)
             context = local_context
         return forward_request(context, forward_url_getter)
 
@@ -110,6 +116,10 @@ def dispatch_to_backend(
     return parsed_response
 
 
+# boto config deactivating param validation to forward to backends (backends are responsible for validating params)
+_non_validating_boto_config = BotoConfig(parameter_validation=False)
+
+
 def create_aws_request_context(
     service_name: str,
     action: str,
@@ -140,9 +150,14 @@ def create_aws_request_context(
     service = load_service(service_name)
     operation = service.operation_model(action)
 
-    # we re-use botocore internals here to serialize the HTTP request, but don't send it
+    # we re-use botocore internals here to serialize the HTTP request,
+    # but deactivate validation (validation errors should be handled by the backend)
+    # and don't send it yet
     client = aws_stack.connect_to_service(
-        service_name, endpoint_url=endpoint_url, region_name=region
+        service_name,
+        endpoint_url=endpoint_url,
+        region_name=region,
+        config=_non_validating_boto_config,
     )
     request_context = {
         "client_region": region,

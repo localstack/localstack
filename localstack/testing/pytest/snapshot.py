@@ -99,12 +99,6 @@ def pytest_runtest_call(item: Item) -> None:
         sm._assert_all(verify, paths)
 
 
-@pytest.fixture(name="account_id", scope="session")
-def fixture_account_id():
-    sts_client = _client("sts")  # TODO: extract client factory from fixtures plugin
-    yield sts_client.get_caller_identity()["Account"]
-
-
 @pytest.fixture(name="region", scope="session")
 def fixture_region():
     sts_client = _client("sts")  # TODO: extract client factory from fixtures plugin

@@ -39,12 +39,21 @@ Resources:
       - Key: env
         Value: qa
 
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
   PublicRoute:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      RouteTableId:
-        Ref: RouteTableProduction
+      RouteTableId: !Ref RouteTableProduction
+      GatewayId: !Ref InternetGateway
 
 Outputs:
   PublicRoute:
@@ -52,3 +61,6 @@ Outputs:
       Ref: PublicRoute
     Export:
       Name: 'publicRoute-identify'
+  VPC:
+    Value:
+      Ref: VPC

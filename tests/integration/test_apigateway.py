@@ -18,7 +18,13 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.config import get_edge_url
-from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_REQUEST_URL, LOCALHOST_HOSTNAME
+from localstack.constants import (
+    APPLICATION_JSON,
+    HEADER_LOCALSTACK_REQUEST_URL,
+    LOCALHOST_HOSTNAME,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
@@ -824,14 +830,14 @@ class TestAPIGateway:
         response = requests.get(f"{url}?param1=foobar")
         assert response.status_code < 400
         content = response.json()
-        assert '{"param1": "foobar"}' == content.get("event")
+        assert {"param1": "foobar"} == content.get("event")
 
         # additional checks from https://github.com/localstack/localstack/issues/5041
         # pass Signature param
         response = requests.get(f"{url}?param1=foobar&Signature=1")
         assert response.status_code == 200
         content = response.json()
-        assert '{"param1": "foobar"}' == content.get("event")
+        assert {"param1": "foobar"} == content.get("event")
 
         # delete integration
         rs = apigateway_client.delete_integration(
@@ -856,7 +862,7 @@ class TestAPIGateway:
         domain_name = f"{short_uid()}.example.com"
         apigw_client = aws_stack.create_external_boto_client("apigateway")
         rs = apigw_client.create_domain_name(domainName=domain_name)
-        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
+        assert 201 == rs["ResponseMetadata"]["HTTPStatusCode"]
         rs = apigw_client.get_domain_name(domainName=domain_name)
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
         assert domain_name == rs["domainName"]
@@ -1384,7 +1390,7 @@ class TestAPIGateway:
         sfn_client = aws_stack.create_external_boto_client("stepfunctions")
         lambda_client = aws_stack.create_external_boto_client("lambda")
 
-        state_machine_name = "test"
+        state_machine_name = f"test-{short_uid()}"
         state_machine_def = {
             "Comment": "Hello World example",
             "StartAt": "step1",
@@ -1394,7 +1400,7 @@ class TestAPIGateway:
         }
 
         # create state machine
-        fn_name = "test-stepfunctions-apigw"
+        fn_name = f"sfn-apigw-{short_uid()}"
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=fn_name,
@@ -1976,7 +1982,7 @@ def test_import_swagger_api(apigateway_client):
     api_spec = load_test_resource("openapi.swagger.json")
     api_spec_dict = json.loads(api_spec)
 
-    backend = apigateway_backends["eu-west-1"]
+    backend = apigateway_backends[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME]
     api_model = backend.create_rest_api(name="", description="")
 
     imported_api = import_api_from_openapi_spec(api_model, api_spec_dict, {})

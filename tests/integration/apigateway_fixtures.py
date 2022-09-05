@@ -93,7 +93,7 @@ def create_rest_resource_method(apigateway_client, **kwargs):
 
 def create_rest_authorizer(apigateway_client, **kwargs):
     response = apigateway_client.create_authorizer(**kwargs)
-    assert_response_is_200(response)
+    assert_response_is_201(response)
     return response.get("id"), response.get("type")
 
 
@@ -127,12 +127,12 @@ def create_rest_api_integration_response(apigateway_client, **kwargs):
 
 def create_domain_name(apigateway_client, **kwargs):
     response = apigateway_client.create_domain_name(**kwargs)
-    assert_response_is_200(response)
+    assert_response_is_201(response)
 
 
 def create_base_path_mapping(apigateway_client, **kwargs):
     response = apigateway_client.create_base_path_mapping(**kwargs)
-    assert_response_is_200(response)
+    assert_response_is_201(response)
     return response.get("basePath"), response.get("stage")
 
 
@@ -144,7 +144,7 @@ def create_rest_api_deployment(apigateway_client, **kwargs):
 
 def update_rest_api_deployment(apigateway_client, **kwargs):
     response = apigateway_client.update_deployment(**kwargs)
-    assert_response_is_201(response)
+    assert_response_is_200(response)
     return response
 
 

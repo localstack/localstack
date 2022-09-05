@@ -91,6 +91,10 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
     LOGGER.debug("Email saved at: %s", path)
 
 
+def get_ses_backend(context: RequestContext) -> SESBackend:
+    return ses_backends[context.account_id]["global"]
+
+
 class SesServiceApiResource:
     """Provides a REST API for retrospective access to emails sent via SES.
 
@@ -124,10 +128,6 @@ def register_ses_api_resource():
         _EMAILS_ENDPOINT_REGISTERED = True
 
 
-def ses_global_backend() -> SESBackend:
-    return ses_backends["global"]
-
-
 class SesProvider(SesApi, ServiceLifecycleHook):
 
     #
@@ -158,7 +158,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     def list_templates(
         self, context: RequestContext, next_token: NextToken = None, max_items: MaxItems = None
     ) -> ListTemplatesResponse:
-        for template in ses_global_backend().list_templates():
+        backend = get_ses_backend(context)
+        for template in backend.list_templates():
             if isinstance(template["Timestamp"], (date, datetime)):
                 template["Timestamp"] = timestamp_millis(template["Timestamp"])
         return call_moto(context)
@@ -167,8 +168,9 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     def delete_template(
         self, context: RequestContext, template_name: TemplateName
     ) -> DeleteTemplateResponse:
-        if template_name in ses_global_backend().templates:
-            del ses_global_backend().templates[template_name]
+        backend = get_ses_backend(context)
+        if template_name in backend.templates:
+            del backend.templates[template_name]
         return DeleteTemplateResponse()
 
     @handler("GetIdentityVerificationAttributes")
@@ -277,9 +279,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         if destinations is None:
             destinations = []
 
-        message = ses_global_backend().send_raw_email(
-            source, destinations, raw_data, context.region
-        )
+        backend = get_ses_backend(context)
+        message = backend.send_raw_email(source, destinations, raw_data, context.region)
 
         save_for_retrospection(
             message.id,

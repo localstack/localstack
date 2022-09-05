@@ -1282,6 +1282,29 @@ class TestSNSProvider:
         snapshot.match("messages", {"Messages": messages})
 
     @pytest.mark.aws_validated
+    def test_publish_batch_messages_without_topic(
+        self,
+        sns_client,
+        sns_create_topic,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        fake_topic_arn = topic_arn + "fake-topic"
+
+        with pytest.raises(ClientError) as e:
+            sns_client.publish_batch(
+                TopicArn=fake_topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": "Test Message with two attributes",
+                        "Subject": "Subject",
+                    }
+                ],
+            )
+        snapshot.match("publish-batch-no-topic", e.value.response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
             "$.sub-attrs-raw-true.Attributes.Owner",
@@ -1290,7 +1313,7 @@ class TestSNSProvider:
             "$.topic-attrs.Attributes.EffectiveDeliveryPolicy",
             "$.topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
             "$..Messages..Attributes.SequenceNumber",
-            "$..Successful..SequenceNumber",  # sequence number are not added
+            "$..Successful..SequenceNumber",  # not added, need to be managed by SNS, different from SQS received
         ]
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])

@@ -119,13 +119,13 @@ def handle_request(request: Request, region: str) -> Response:
     try:
         response, operation = try_call_sqs(request, region)
         del response["ResponseMetadata"]
-        return serializer.serialize_to_response(response, operation)
+        return serializer.serialize_to_response(response, operation, request.headers)
     except UnknownOperationException:
         return Response("<UnknownOperationException/>", 404)
     except CommonServiceException as e:
         # use a dummy operation for the serialization to work
         op = service.operation_model(service.operation_names[0])
-        return serializer.serialize_error_to_response(e, op)
+        return serializer.serialize_error_to_response(e, op, request.headers)
     except Exception as e:
         LOG.exception("exception")
         op = service.operation_model(service.operation_names[0])
@@ -134,6 +134,7 @@ def handle_request(request: Request, region: str) -> Response:
                 "InternalError", f"An internal error ocurred: {e}", status_code=500
             ),
             op,
+            request.headers,
         )
 
 

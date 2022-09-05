@@ -37,7 +37,8 @@ class S3BucketPolicy(GenericBaseModel):
             "create": {
                 "function": "put_bucket_policy",
                 "parameters": rename_params(
-                    dump_json_params(None, "PolicyDocument"), {"PolicyDocument": "Policy"}
+                    dump_json_params(None, "PolicyDocument"),
+                    {"PolicyDocument": "Policy", "Bucket": "Bucket"},
                 ),
             },
             "delete": {"function": "delete_bucket_policy", "parameters": {"Bucket": "Bucket"}},

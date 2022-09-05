@@ -259,6 +259,7 @@ def test_integration_response(apigateway_client):
     # this is hard to match against, so remove it
     response["ResponseMetadata"].pop("HTTPHeaders", None)
     response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
     assert response == (
         {
             "statusCode": "200",
@@ -274,6 +275,7 @@ def test_integration_response(apigateway_client):
     # this is hard to match against, so remove it
     response["ResponseMetadata"].pop("HTTPHeaders", None)
     response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
     assert response == (
         {
             "statusCode": "200",
@@ -287,6 +289,7 @@ def test_integration_response(apigateway_client):
     # this is hard to match against, so remove it
     response["ResponseMetadata"].pop("HTTPHeaders", None)
     response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
     assert response["methodIntegration"]["integrationResponses"] == (
         {
             "200": {
@@ -338,6 +341,7 @@ def test_integration_response(apigateway_client):
     # this is hard to match against, so remove it
     response["ResponseMetadata"].pop("HTTPHeaders", None)
     response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
     assert response == (
         {
             "statusCode": "200",
@@ -354,6 +358,7 @@ def test_integration_response(apigateway_client):
     # this is hard to match against, so remove it
     response["ResponseMetadata"].pop("HTTPHeaders", None)
     response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
     assert response == (
         {
             "statusCode": "200",
@@ -402,6 +407,7 @@ def test_put_integration_response_with_response_template(apigateway_client):
     # this is hard to match against, so remove it
     response["ResponseMetadata"].pop("HTTPHeaders", None)
     response["ResponseMetadata"].pop("RetryAttempts", None)
+    response["ResponseMetadata"].pop("RequestId", None)
     assert response == {
         "statusCode": "200",
         "selectionPattern": "foobar",

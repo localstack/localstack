@@ -536,7 +536,7 @@ def install_stepfunctions_local():
     update_jar_manifest(
         "StepFunctionsLocal.jar",
         INSTALL_DIR_STEPFUNCTIONS,
-        re.compile("Main-Class: .+"),
+        re.compile(r"Main-Class: com\.amazonaws.+"),
         "Main-Class: cloud.localstack.StepFunctionsStarter",
     )
 
@@ -586,7 +586,7 @@ def install_dynamodb_local():
       </Loggers>
     </Configuration>"""
     log4j2_file = os.path.join(INSTALL_DIR_DDB, "log4j2.xml")
-    save_file(log4j2_file, log4j2_config)
+    run_safe(lambda: save_file(log4j2_file, log4j2_config))
     run_safe(lambda: run(["zip", "-u", "DynamoDBLocal.jar", "log4j2.xml"], cwd=INSTALL_DIR_DDB))
 
     # download agent JAR
@@ -599,7 +599,7 @@ def install_dynamodb_local():
 
     # ensure that javassist.jar is in the manifest classpath
     update_jar_manifest(
-        "DynamoDBLocal.jar", INSTALL_DIR_DDB, "Class-Path:", "Class-Path: javassist.jar"
+        "DynamoDBLocal.jar", INSTALL_DIR_DDB, "Class-Path: .", "Class-Path: javassist.jar ."
     )
 
 
@@ -607,17 +607,25 @@ def update_jar_manifest(
     jar_file_name: str, parent_dir: str, search: Union[str, re.Pattern], replace: str
 ):
     manifest_file_path = "META-INF/MANIFEST.MF"
-    run(["unzip", "-o", jar_file_name, manifest_file_path], cwd=parent_dir)
+    jar_path = os.path.join(parent_dir, jar_file_name)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_manifest_file = os.path.join(tmp_dir, manifest_file_path)
+        run(["unzip", "-o", jar_path, manifest_file_path], cwd=tmp_dir)
+        manifest = load_file(tmp_manifest_file)
+
+    # return if the search pattern does not match (for idempotence, to avoid file permission issues further below)
+    if isinstance(search, re.Pattern):
+        if not search.search(manifest):
+            return
+        manifest = search.sub(replace, manifest, 1)
+    else:
+        if search not in manifest:
+            return
+        manifest = manifest.replace(search, replace, 1)
+
     manifest_file = os.path.join(parent_dir, manifest_file_path)
-    manifest = load_file(manifest_file)
-    if replace not in manifest:
-        if isinstance(search, re.Pattern):
-            manifest = search.sub(replace, manifest, 1)
-        else:
-            manifest = manifest.replace(search, replace, 1)
-        save_file(manifest_file, manifest)
-        run(["zip", jar_file_name, manifest_file_path], cwd=parent_dir)
-    os.remove(manifest_file)
+    save_file(manifest_file, manifest)
+    run(["zip", jar_file_name, manifest_file_path], cwd=parent_dir)
 
 
 def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):

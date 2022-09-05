@@ -622,6 +622,15 @@ class TestExternalServicePortsManager:
         with pytest.raises(PortNotAvailableException):
             external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
 
+    def test_reserve_custom_expiry(
+        self, external_service_ports_manager: ExternalServicePortsManager
+    ):
+        external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START, duration=1)
+        with pytest.raises(PortNotAvailableException):
+            external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
+        time.sleep(1)
+        external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
+
 
 @pytest.fixture()
 def paginated_list():

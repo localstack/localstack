@@ -869,6 +869,71 @@ class TestDynamoDB:
         delete_table(table_name)
         kinesis.delete_stream(StreamName="kinesis_dest_stream")
 
+    def test_global_tables_version_2019(
+        self, create_boto_client, cleanups, dynamodb_wait_for_table_active
+    ):
+        # following https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/V2globaltables.tutorial.html
+
+        # create clients
+        dynamodb_us_east_1 = create_boto_client("dynamodb", region_name="us-east-1")
+        dynamodb_eu_west_1 = create_boto_client("dynamodb", region_name="eu-west-1")
+        dynamodb_us_east_2 = create_boto_client("dynamodb", region_name="us-east-2")
+
+        # create table on us-east-1
+        table_name = f"table-{short_uid()}"
+        dynamodb_us_east_2.create_table(
+            TableName=table_name,
+            KeySchema=[
+                {"AttributeName": "Artist", "KeyType": "HASH"},
+                {"AttributeName": "SongTitle", "KeyType": "RANGE"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "Artist", "AttributeType": "S"},
+                {"AttributeName": "SongTitle", "AttributeType": "S"},
+            ],
+            BillingMode="PAY_PER_REQUEST",
+        )
+        cleanups.append(lambda: dynamodb_us_east_2.delete_table(TableName=table_name))
+        dynamodb_wait_for_table_active(table_name=table_name, client=dynamodb_us_east_2)
+        # replica table on us-east-1
+        dynamodb_us_east_2.update_table(
+            TableName=table_name, ReplicaUpdates=[{"Create": {"RegionName": "us-east-1"}}]
+        )
+        # replica table on eu-west-1
+        dynamodb_us_east_2.update_table(
+            TableName=table_name, ReplicaUpdates=[{"Create": {"RegionName": "eu-west-1"}}]
+        )
+        response = dynamodb_us_east_2.describe_table(TableName=table_name)
+
+        assert len(response["Table"]["Replicas"]) == 2
+
+        # put item on us-east-2
+        dynamodb_us_east_2.put_item(
+            TableName=table_name,
+            Item={"Artist": {"S": "item_1"}, "SongTitle": {"S": "Song Value 1"}},
+        )
+        # check the item on us-east-1 and eu-west-1
+        item_us_east = dynamodb_us_east_1.get_item(
+            TableName=table_name,
+            Key={"Artist": {"S": "item_1"}, "SongTitle": {"S": "Song Value 1"}},
+        )["Item"]
+        assert item_us_east
+        item_eu_west = dynamodb_eu_west_1.get_item(
+            TableName=table_name,
+            Key={"Artist": {"S": "item_1"}, "SongTitle": {"S": "Song Value 1"}},
+        )["Item"]
+        assert item_eu_west
+        # delete replica on us-west-1
+        dynamodb_us_east_2.update_table(
+            TableName=table_name, ReplicaUpdates=[{"Delete": {"RegionName": "eu-west-1"}}]
+        )
+        with pytest.raises(Exception) as ctx:
+            dynamodb_eu_west_1.get_item(
+                TableName=table_name,
+                Key={"Artist": {"S": "item_1"}, "SongTitle": {"S": "Song Value 1"}},
+            )
+        ctx.match("ResourceNotFoundException")
+
     def test_global_tables(self):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
