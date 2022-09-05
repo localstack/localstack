@@ -71,17 +71,23 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
-def _client(service, region_name=None):
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return boto3.client(service, region_name=region_name)
+def _client(service, region_name=None, *, additional_config=None):
+    config = botocore.config.Config()
+
     # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
-    config = (
-        botocore.config.Config(
-            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+    if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
+        config = config.merge(
+            botocore.config.Config(
+                connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+            )
         )
-        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
-        else None
-    )
+
+    if additional_config:
+        config = config.merge(additional_config)
+
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.client(service, region_name=region_name, config=config)
+
     return aws_stack.create_external_boto_client(service, config=config, region_name=region_name)
 
 
