@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 import json
+import time
 from datetime import datetime
-from time import sleep
 from typing import Dict
 
 import pytest
-from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
@@ -20,8 +19,6 @@ from .test_kinesis import get_shard_iterator
 
 PARTITION_KEY = "id"
 
-TEST_DDB_TABLE_NAME = "test-ddb-table-1"
-TEST_DDB_TABLE_NAME_2 = "test-ddb-table-2"
 TEST_DDB_TABLE_NAME_3 = "test-ddb-table-3"
 
 TEST_DDB_TAGS = [
@@ -42,71 +39,96 @@ def dynamodb(dynamodb_resource):
 
 class TestDynamoDB:
     @pytest.mark.aws_validated
-    def test_non_ascii_chars(self, dynamodb_client, dynamodb_create_table, snapshot):
-        key_schema = [{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}]
-        attr_defs = [{"AttributeName": PARTITION_KEY, "AttributeType": "S"}]
-        stream_spec = {"StreamEnabled": False}
+    def test_delete_table(self, dynamodb_client, dynamodb_create_table, snapshot):
+        # This test has a race condition with global table tests
+        # global tables are not properly deleted, therefore, the first list_tables call
+        # will return existing tables. Temporary fix is to change order.
+        tables_before = dynamodb_client.list_tables()
+        snapshot.match("TablesBefore", tables_before)
 
         table = dynamodb_create_table(
-            KeySchema=key_schema,
-            AttributeDefinitions=attr_defs,
-            StreamSpecification=stream_spec,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
         )
+        table_name = table["TableDescription"]["TableName"]
+
+        table_list = dynamodb_client.list_tables()
+        snapshot.match("ListTables", table_list)
+
+        dynamodb_client.delete_table(TableName=table_name)
+        # wait a bit for deletion
+        time.sleep(2)
+
+        table_list = dynamodb_client.list_tables()
+        snapshot.match("DeletedTable", table_list)
+
+        with pytest.raises(Exception) as ctx:
+            dynamodb_client.delete_table(TableName=table_name)
+        snapshot.match("ErrorFailedDelete", ctx.value)
+
+    @pytest.mark.aws_validated
+    def test_non_ascii_chars(self, dynamodb_client, dynamodb_create_table, snapshot):
+        table = dynamodb_create_table(
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
+        )
+        table_name = table["TableDescription"]["TableName"]
 
         # write some items containing non-ASCII characters
         items = {
-            "id1": {PARTITION_KEY: "id1", "data": "foobar123 ✓"},
-            "id2": {PARTITION_KEY: "id2", "data": "foobar123 £"},
-            "id3": {PARTITION_KEY: "id3", "data": "foobar123 ¢"},
+            "id1": {PARTITION_KEY: {"S": "id1"}, "data": {"S": "foobar123 ✓"}},
+            "id2": {PARTITION_KEY: {"S": "id2"}, "data": {"S": "foobar123 £"}},
+            "id3": {PARTITION_KEY: {"S": "id3"}, "data": {"S": "foobar123 ¢"}},
         }
         for k, item in items.items():
-            dynamodb_client.put_item(TableName=table["TableDescription"]["TableName"], Item=item)
+            dynamodb_client.put_item(TableName=table_name, Item=item)
 
         result = []
         for item_id in items.keys():
-            item = table.get_item(Key={PARTITION_KEY: item_id})["Item"]
+            item = dynamodb_client.get_item(
+                TableName=table_name, Key={PARTITION_KEY: {"S": item_id}}
+            )["Item"]
             result.append(item)
 
-        result.sort(key=lambda k: k.get("id"))
+        result.sort(key=lambda k: k.get("id").get("S"))
         snapshot.match("Items", result)
 
     @pytest.mark.aws_validated
-    def test_large_data_download(self, dynamodb_create_table, snapshot):
-        key_schema = [{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}]
-        attr_defs = [{"AttributeName": PARTITION_KEY, "AttributeType": "S"}]
-        stream_spec = {"StreamEnabled": False}
-
+    def test_large_data_download(self, dynamodb_client, dynamodb_create_table, snapshot):
         table = dynamodb_create_table(
-            KeySchema=key_schema,
-            AttributeDefinitions=attr_defs,
-            StreamSpecification=stream_spec,
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
         )
+        table_name = table["TableDescription"]["TableName"]
 
         # Create a large amount of items
         num_items = 20
         for i in range(0, num_items):
-            item = {PARTITION_KEY: "id%s" % i, "data1": "foobar123 " * 1000}
-            table.put_item(Item=item)
+            item = {PARTITION_KEY: {"S": "id%s" % i}, "data1": {"S": "foobar123 " * 1000}}
+            dynamodb_client.put_item(TableName=table_name, Item=item)
 
         # Retrieve the items. The data will be transmitted to the client with chunked transfer encoding
-        result = table.scan(TableName=table.name)
+        result = dynamodb_client.scan(TableName=table_name)
         sorted_items = result["Items"]
-        sorted_items.sort(key=lambda k: k.get("id"))
+        sorted_items.sort(key=lambda k: k.get("id").get("S"))
         snapshot.match("Items", sorted_items)
 
-    # TODO FIXME
-    def test_time_to_live(self, dynamodb):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
-        table = dynamodb.Table(TEST_DDB_TABLE_NAME_3)
+    @pytest.mark.aws_validated
+    def test_time_to_live(self, dynamodb_client, dynamodb_create_table):
+        table = dynamodb_create_table(
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
+        )
+        table_name = table["TableDescription"]["TableName"]
 
         # Insert some items to the table
         items = {
-            "id1": {PARTITION_KEY: "id1", "data": "IT IS"},
-            "id2": {PARTITION_KEY: "id2", "data": "TIME"},
-            "id3": {PARTITION_KEY: "id3", "data": "TO LIVE!"},
+            "id1": {PARTITION_KEY: {"S": "id1"}, "data": {"S": "IT IS"}},
+            "id2": {PARTITION_KEY: {"S": "id2"}, "data": {"S": "TIME"}},
+            "id3": {PARTITION_KEY: {"S": "id3"}, "data": {"S": "TO LIVE!"}},
         }
         for k, item in items.items():
-            table.put_item(Item=item)
+            dynamodb_client.put_item(TableName=table_name, Item=item)
 
         # Describe TTL when still unset
         response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
@@ -152,38 +174,32 @@ class TestDynamoDB:
         )
 
         # clean up
-        delete_table(TEST_DDB_TABLE_NAME_3)
+        delete_table(table_name)
 
     @pytest.mark.aws_validated
     def test_list_tags_of_resource(self, dynamodb_client, dynamodb_create_table, snapshot):
-        key_schema = [{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}]
-        attr_defs = [{"AttributeName": PARTITION_KEY, "AttributeType": "S"}]
-        stream_spec = {"StreamEnabled": False}
-
         table = dynamodb_create_table(
-            KeySchema=key_schema,
-            AttributeDefinitions=attr_defs,
-            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
-            BillingMode="PROVISIONED",
-            StreamSpecification=stream_spec,
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
             Tags=TEST_DDB_TAGS,
         )
+        table_arn = table["TableDescription"]["TableArn"]
 
-        rs = dynamodb_client.list_tags_of_resource(ResourceArn=table.table_arn)["Tags"]
+        rs = dynamodb_client.list_tags_of_resource(ResourceArn=table_arn)["Tags"]
         rs.sort(key=lambda k: k.get("Key"))
         snapshot.match("ResourceTags", rs)
 
         dynamodb_client.tag_resource(
-            ResourceArn=table.table_arn, Tags=[{"Key": "NewKey", "Value": "TestValue"}]
+            ResourceArn=table_arn, Tags=[{"Key": "NewKey", "Value": "TestValue"}]
         )
 
-        rs = dynamodb_client.list_tags_of_resource(ResourceArn=table.table_arn)["Tags"]
+        rs = dynamodb_client.list_tags_of_resource(ResourceArn=table_arn)["Tags"]
         rs.sort(key=lambda k: k.get("Key"))
         snapshot.match("ResourceTagsOneAdded", rs)
 
-        dynamodb_client.untag_resource(ResourceArn=table.table_arn, TagKeys=["Name", "NewKey"])
+        dynamodb_client.untag_resource(ResourceArn=table_arn, TagKeys=["Name", "NewKey"])
 
-        rs = dynamodb_client.list_tags_of_resource(ResourceArn=table.table_arn)["Tags"]
+        rs = dynamodb_client.list_tags_of_resource(ResourceArn=table_arn)["Tags"]
         rs.sort(key=lambda k: k.get("Key"))
         snapshot.match("UntaggedResource", rs)
 
@@ -212,7 +228,7 @@ class TestDynamoDB:
         )["StreamDescription"]
         snapshot.match("DescribeStream", result)
 
-    # TODO: FIXME
+    @pytest.mark.aws_validated
     def test_multiple_update_expressions(self, dynamodb_client, dynamodb_create_table, snapshot):
         table = dynamodb_create_table(
             KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
@@ -265,12 +281,13 @@ class TestDynamoDB:
             dynamodb_client.query(
                 TableName=table_name,
                 IndexName="id-index",
-                KeyConditionExpression=Key(PARTITION_KEY).eq(item_id),
+                KeyConditionExpression=f"{PARTITION_KEY} = :{PARTITION_KEY}",
+                ExpressionAttributeValues={f":{PARTITION_KEY}": {"S": item_id}},
                 Select="ALL_ATTRIBUTES",
             )
         snapshot.match("ValidationException", ctx.value)
 
-    # TODO fixme
+    @pytest.mark.aws_validated
     def test_query_index(self, dynamodb_client, dynamodb_create_table, snapshot):
         def create_table(projection_type: str = "INCLUDE"):
             # create valid table
@@ -312,9 +329,11 @@ class TestDynamoDB:
         resp = dynamodb_client.query(
             TableName=table_name,
             IndexName="field_b_index",
-            KeyConditionExpression=Key("field_b").eq("xyz"),
+            KeyConditionExpression="field_b = :field_b",
+            ExpressionAttributeValues={":field_b": {"S": "XYZ"}},
             Select="ALL_ATTRIBUTES",
         )
+
         snapshot.match("AllAttributesValid", resp)
 
         # projection type KEYS_ONLY should make the following query invalid
@@ -325,10 +344,11 @@ class TestDynamoDB:
             dynamodb_client.query(
                 TableName=table_name,
                 IndexName="field_a_index",
-                KeyConditionExpression=Key("field_a").eq("xyz"),
+                KeyConditionExpression="field_b = :field_b",
+                ExpressionAttributeValues={":field_b": {"S": "XYZ"}},
                 Select="ALL_ATTRIBUTES",
             )
-        snapshot.match("ProjectionError", ctx.result)
+        snapshot.match("ProjectionError", ctx.value)
 
     @pytest.mark.aws_validated
     def test_valid_local_secondary_index(self, dynamodb_client, dynamodb_create_table, snapshot):
@@ -369,88 +389,74 @@ class TestDynamoDB:
             Select="ALL_ATTRIBUTES",
         )
         snapshot.match("Items", result)
-        # assert result["Items"] == [item]
 
-    @pytest.mark.only_localstack("AWS has a 20 gsi limit")
+    @pytest.mark.only_localstack(reason="AWS has a 20 gsi limit")
     def test_more_than_20_global_secondary_indexes(self, dynamodb_client, dynamodb_create_table):
-        table_name = f"test-table-{short_uid()}"
         num_gsis = 25
         attrs = [{"AttributeName": f"a{i}", "AttributeType": "S"} for i in range(num_gsis)]
-        gsis = [
-            {
-                "IndexName": f"gsi_{i}",
-                "KeySchema": [{"AttributeName": f"a{i}", "KeyType": "HASH"}],
-                "Projection": {"ProjectionType": "ALL"},
-            }
-            for i in range(num_gsis)
-        ]
-        dynamodb_create_table(
-            TableName=table_name,
+        table = dynamodb_create_table(
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}, *attrs],
-            GlobalSecondaryIndexes=gsis,
-            BillingMode="PAY_PER_REQUEST",
+            GlobalSecondaryIndexes=[
+                {
+                    "IndexName": f"gsi_{i}",
+                    "KeySchema": [{"AttributeName": f"a{i}", "KeyType": "HASH"}],
+                    "Projection": {"ProjectionType": "ALL"},
+                    "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+                }
+                for i in range(num_gsis)
+            ],
+            BillingMode="PROVISIONED",
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
+        table_name = table["TableDescription"]["TableName"]
 
         table = dynamodb_client.describe_table(TableName=table_name)
         assert len(table["Table"]["GlobalSecondaryIndexes"]) == num_gsis
 
     @pytest.mark.aws_validated
-    def test_return_values_in_put_item(self, dynamodb, dynamodb_client):
-        aws_stack.create_dynamodb_table(
-            TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY, client=dynamodb_client
+    def test_return_values_in_put_item(self, dynamodb_client, dynamodb_create_table, snapshot):
+        table = dynamodb_create_table(
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
         )
-        table = dynamodb.Table(TEST_DDB_TABLE_NAME)
-
-        def _validate_response(response, expected=None):
-            """
-            Validates the response against the optionally expected one.
-            It checks that the response doesn't contain `Attributes`,
-            `ConsumedCapacity` and `ItemCollectionMetrics` unless they are expected.
-            """
-            if expected is None:
-                expected = {}
-            should_not_contain = {
-                "Attributes",
-                "ConsumedCapacity",
-                "ItemCollectionMetrics",
-            } - expected.keys()
-            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-            assert expected.items() <= response.items()
-            assert response.keys().isdisjoint(should_not_contain)
+        table_name = table["TableDescription"]["TableName"]
 
         # items which are being used to put in the table
-        item1 = {PARTITION_KEY: "id1", "data": "foobar"}
-        item1b = {PARTITION_KEY: "id1", "data": "barfoo"}
-        item2 = {PARTITION_KEY: "id2", "data": "foobar"}
+        item1 = {PARTITION_KEY: {"S": "id1"}, "data": {"S": "foobar"}}
+        item1b = {PARTITION_KEY: {"S": "id1"}, "data": {"S": "barfoo"}}
+        item2 = {PARTITION_KEY: {"S": "id2"}, "data": {"S": "foobar"}}
 
-        response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
         # there is no data present in the table already so even if return values
         # is set to 'ALL_OLD' as there is no data it will not return any data.
-        _validate_response(response)
+        response = dynamodb_client.put_item(
+            TableName=table_name, Item=item1, ReturnValues="ALL_OLD"
+        )
+        snapshot.match("PutItem1", response)
         # now the same data is present so when we pass return values as 'ALL_OLD'
         # it should give us attributes
-        response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
-        _validate_response(response, expected={"Attributes": item1})
+        response = dynamodb_client.put_item(
+            TableName=table_name, Item=item1, ReturnValues="ALL_OLD"
+        )
+        snapshot.match("PutItem1Old", response)
 
         # now a previous version of data is present, so when we pass return
         # values as 'ALL_OLD' it should give us the old attributes
-        response = table.put_item(Item=item1b, ReturnValues="ALL_OLD")
-        _validate_response(response, expected={"Attributes": item1})
+        response = dynamodb_client.put_item(
+            TableName=table_name, Item=item1b, ReturnValues="ALL_OLD"
+        )
+        snapshot.match("PutItem1b", response)
 
-        response = table.put_item(Item=item2)
         # we do not have any same item as item2 already so when we add this by default
         # return values is set to None so no Attribute values should be returned
-        _validate_response(response)
+        response = dynamodb_client.put_item(TableName=table_name, Item=item2)
+        snapshot.match("PutItem2", response)
 
-        response = table.put_item(Item=item2)
         # in this case we already have item2 in the table so on this request
         # it should not return any data as return values is set to None so no
         # Attribute values should be returned
-        _validate_response(response)
-
-        # cleanup
-        table.delete()
+        response = dynamodb_client.put_item(TableName=table_name, Item=item2)
+        snapshot.match("PutItem2ReturnNone", response)
 
     @pytest.mark.aws_validated
     def test_empty_and_binary_values(self, dynamodb_client, dynamodb_create_table, snapshot):
@@ -482,7 +488,6 @@ class TestDynamoDB:
                 {"AttributeName": "PK", "KeyType": "HASH"},
                 {"AttributeName": "SK", "KeyType": "RANGE"},
             ],
-            BillingMode="PAY_PER_REQUEST",
         )
         table_name = table["TableDescription"]["TableName"]
 
@@ -510,17 +515,19 @@ class TestDynamoDB:
         )
         snapshot.match("Response", response)
 
-    @pytest.mark.only_localstack
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=["$..Data"], reason="Encoding error described in issues 6700 & 6786"
+    )
     def test_binary_data_with_stream(
         self,
         wait_for_stream_ready,
         dynamodb_create_table,
         dynamodb_client,
         kinesis_client,
+        snapshot,
     ):
-        table_name = f"table-{short_uid()}"
-        dynamodb_create_table(
-            TableName=table_name,
+        table = dynamodb_create_table(
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
@@ -530,26 +537,24 @@ class TestDynamoDB:
             },
             BillingMode="PROVISIONED",
         )
+        table_name = table["TableDescription"]["TableName"]
         stream_name = get_kinesis_stream_name(table_name)
         wait_for_stream_ready(stream_name)
         response = dynamodb_client.put_item(
             TableName=table_name, Item={"id": {"S": "id1"}, "data": {"B": b"\x90"}}
         )
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("PutItemResponse", response)
 
         iterator = get_shard_iterator(stream_name, kinesis_client)
         response = kinesis_client.get_records(ShardIterator=iterator)
         json_records = response.get("Records")
-        assert 1 == len(json_records)
-        assert "Data" in json_records[0]
+        snapshot.match("KinesisGetRecords", json_records)
 
     @pytest.mark.aws_validated
-    def test_dynamodb_stream_shard_iterator(self, wait_for_stream_ready, dynamodb_create_table):
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
-
-        table_name = f"table_with_stream-{short_uid()}"
+    def test_dynamodb_stream_shard_iterator(
+        self, dynamodbstreams_client, wait_for_stream_ready, dynamodb_create_table, snapshot
+    ):
         table = dynamodb_create_table(
-            TableName=table_name,
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
             StreamSpecification={
@@ -559,20 +564,22 @@ class TestDynamoDB:
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             BillingMode="PROVISIONED",
         )
+        table_name = table["TableDescription"]["TableName"]
         stream_name = get_kinesis_stream_name(table_name)
 
         wait_for_stream_ready(stream_name)
 
         stream_arn = table["TableDescription"]["LatestStreamArn"]
-        result = ddbstreams.describe_stream(StreamArn=stream_arn)
+        result = dynamodbstreams_client.describe_stream(StreamArn=stream_arn)
 
-        response = ddbstreams.get_shard_iterator(
+        response = dynamodbstreams_client.get_shard_iterator(
             StreamArn=stream_arn,
             ShardId=result["StreamDescription"]["Shards"][0]["ShardId"],
             ShardIteratorType="LATEST",
         )
+        snapshot.match("GetShardIteratorLatest", response)
         assert "ShardIterator" in response
-        response = ddbstreams.get_shard_iterator(
+        response = dynamodbstreams_client.get_shard_iterator(
             StreamArn=stream_arn,
             ShardId=result["StreamDescription"]["Shards"][0]["ShardId"],
             ShardIteratorType="AT_SEQUENCE_NUMBER",
@@ -580,30 +587,33 @@ class TestDynamoDB:
             .get("SequenceNumberRange")
             .get("StartingSequenceNumber"),
         )
+        snapshot.match("GetShardIteratorAtSequenceNumber", response)
+
         assert "ShardIterator" in response
 
-    @pytest.mark.only_localstack
-    def test_dynamodb_create_table_with_class(self, dynamodb_client, dynamodb_create_table):
-        table_name = f"table_with_class_{short_uid()}"
-        # create table
-        result = dynamodb_create_table(
-            TableName=table_name,
+    @pytest.mark.aws_validated
+    def test_dynamodb_create_table_with_class(
+        self, dynamodb_client, dynamodb_create_table, snapshot
+    ):
+        table = dynamodb_create_table(
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
             TableClass="STANDARD",
         )
-        assert result["TableDescription"]["TableClassSummary"]["TableClass"] == "STANDARD"
+        table_name = table["TableDescription"]["TableName"]
+
+        snapshot.match("TableDescription", table["TableDescription"])
+
         result = dynamodb_client.describe_table(TableName=table_name)
-        assert result["Table"]["TableClassSummary"]["TableClass"] == "STANDARD"
+        snapshot.match("DynamodbDescribeTable", result)
+
         result = dynamodb_client.update_table(
             TableName=table_name, TableClass="STANDARD_INFREQUENT_ACCESS"
         )
-        assert (
-            result["TableDescription"]["TableClassSummary"]["TableClass"]
-            == "STANDARD_INFREQUENT_ACCESS"
-        )
+        snapshot.match("UpdateTableResult", result)
+
         result = dynamodb_client.describe_table(TableName=table_name)
-        assert result["Table"]["TableClassSummary"]["TableClass"] == "STANDARD_INFREQUENT_ACCESS"
+        snapshot.match("DescribeTableResult", result)
 
     @pytest.mark.aws_validated
     def test_dynamodb_execute_transaction(self, dynamodb_client, dynamodb_create_table, snapshot):
@@ -617,9 +627,7 @@ class TestDynamoDB:
             {"Statement": f"INSERT INTO {table_name} VALUE {{'Username': 'user01'}}"},
             {"Statement": f"INSERT INTO {table_name} VALUE {{'Username': 'user02'}}"},
         ]
-        result = dynamodb_client.execute_transaction(
-            TableName=table_name, TransactStatements=statements
-        )
+        result = dynamodb_client.execute_transaction(TransactStatements=statements)
         snapshot.match("ExecutedTransaction", result)
 
         result = dynamodb_client.scan(TableName=table_name)
@@ -675,6 +683,7 @@ class TestDynamoDB:
         assert len(items) == 0
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(paths=["$..StreamDescription..Shards"])
     def test_dynamodb_stream_stream_view_type(
         self, dynamodb_client, dynamodbstreams_client, dynamodb_create_table, snapshot
     ):
@@ -738,7 +747,15 @@ class TestDynamoDB:
         snapshot.match("StreamRecords", records)
 
     @pytest.mark.aws_validated
-    def test_dynamodb_with_kinesis_stream(self):
+    @pytest.mark.skip_snapshot_verify(paths=["$..Data..dynamodb..ApproximateCreationDateTime"])
+    def test_dynamodb_with_kinesis_stream(
+        self,
+        wait_for_stream_ready,
+        dynamodb_client,
+        kinesis_client,
+        dynamodb_create_table,
+        snapshot,
+    ):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         kinesis = aws_stack.create_external_boto_client("kinesis")
 
@@ -746,17 +763,17 @@ class TestDynamoDB:
         stream_name = "kinesis_dest_stream"
         kinesis.create_stream(StreamName=stream_name, ShardCount=1)
         # wait for the stream to be created
-        sleep(1)
+        wait_for_stream_ready(stream_name)
         # Get stream description
         stream_description = kinesis.describe_stream(StreamName=stream_name)["StreamDescription"]
-        table_name = "table_with_kinesis_stream-%s" % short_uid()
+
         # create table
-        dynamodb.create_table(
-            TableName=table_name,
+        table = dynamodb_create_table(
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
+        table_name = table["TableDescription"]["TableName"]
 
         # Enable kinesis destination for the table
         dynamodb.enable_kinesis_streaming_destination(
@@ -787,28 +804,12 @@ class TestDynamoDB:
 
         # get records from the stream
         records = retry(_fetch_records)
+        snapshot.match("Records", records)
 
-        for record in records:
-            record = json.loads(record["Data"])
-            assert record["tableName"] == table_name
-            # check eventSourceARN not exists in the stream record
-            assert "eventSourceARN" not in record
-            if record["eventName"] == "INSERT":
-                assert "OldImage" not in record["dynamodb"]
-                assert "NewImage" in record["dynamodb"]
-            elif record["eventName"] == "MODIFY":
-                assert "NewImage" in record["dynamodb"]
-                assert "OldImage" in record["dynamodb"]
-            elif record["eventName"] == "REMOVE":
-                assert "NewImage" not in record["dynamodb"]
-                assert "OldImage" in record["dynamodb"]
         # describe kinesis streaming destination of the table
         destinations = dynamodb.describe_kinesis_streaming_destination(TableName=table_name)
         destination = destinations["KinesisDataStreamDestinations"][0]
-
-        # assert kinesis streaming destination status
-        assert stream_description["StreamARN"] == destination["StreamArn"]
-        assert destination["DestinationStatus"] == "ACTIVE"
+        snapshot.match("DescribeKinesisStreamingActive", destination)
 
         # Disable kinesis destination
         dynamodb.disable_kinesis_streaming_destination(
@@ -818,15 +819,13 @@ class TestDynamoDB:
         # describe kinesis streaming destination of the table
         result = dynamodb.describe_kinesis_streaming_destination(TableName=table_name)
         destination = result["KinesisDataStreamDestinations"][0]
-
-        # assert kinesis streaming destination status
-        assert stream_description["StreamARN"] == destination["StreamArn"]
-        assert destination["DestinationStatus"] == "DISABLED"
+        snapshot.match("DescribeKinesisStreamingDisabled", destination)
 
         # clean up
         delete_table(table_name)
         kinesis.delete_stream(StreamName="kinesis_dest_stream")
 
+    @pytest.mark.only_localstack
     def test_global_tables_version_2019(
         self, create_boto_client, cleanups, dynamodb_wait_for_table_active
     ):
@@ -892,9 +891,11 @@ class TestDynamoDB:
             )
         ctx.match("ResourceNotFoundException")
 
-    def test_global_tables(self):
-        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
-        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+    @pytest.mark.aws_validated
+    def test_global_tables(self, dynamodb_client):
+        table_name = f"test_table_{short_uid()}"
+        aws_stack.create_dynamodb_table(table_name, partition_key=PARTITION_KEY)
+        aws_stack.create_external_boto_client("dynamodb")
 
         # create global table
         regions = [
@@ -902,14 +903,14 @@ class TestDynamoDB:
             {"RegionName": "us-west-1"},
             {"RegionName": "eu-central-1"},
         ]
-        response = dynamodb.create_global_table(
-            GlobalTableName=TEST_DDB_TABLE_NAME, ReplicationGroup=regions
+        response = dynamodb_client.create_global_table(
+            GlobalTableName=table_name, ReplicationGroup=regions
         )["GlobalTableDescription"]
         assert "ReplicationGroup" in response
         assert len(response["ReplicationGroup"]) == len(regions)
 
         # describe global table
-        response = dynamodb.describe_global_table(GlobalTableName=TEST_DDB_TABLE_NAME)[
+        response = dynamodb_client.describe_global_table(GlobalTableName=table_name)[
             "GlobalTableDescription"
         ]
         assert "ReplicationGroup" in response
@@ -921,32 +922,30 @@ class TestDynamoDB:
             {"Create": {"RegionName": "us-west-2"}},
             {"Delete": {"RegionName": "us-west-1"}},
         ]
-        response = dynamodb.update_global_table(
-            GlobalTableName=TEST_DDB_TABLE_NAME, ReplicaUpdates=updates
+        response = dynamodb_client.update_global_table(
+            GlobalTableName=table_name, ReplicaUpdates=updates
         )["GlobalTableDescription"]
         assert "ReplicationGroup" in response
         assert len(response["ReplicationGroup"]) == len(regions) + 1
 
         # assert exceptions for invalid requests
         with pytest.raises(Exception) as ctx:
-            dynamodb.create_global_table(
-                GlobalTableName=TEST_DDB_TABLE_NAME, ReplicationGroup=regions
+            dynamodb_client.create_global_table(
+                GlobalTableName=table_name, ReplicationGroup=regions
             )
         assert ctx.match("GlobalTableAlreadyExistsException")
         with pytest.raises(Exception) as ctx:
-            dynamodb.describe_global_table(GlobalTableName="invalid-table-name")
+            dynamodb_client.describe_global_table(GlobalTableName="invalid-table-name")
         assert ctx.match("GlobalTableNotFoundException")
 
     @pytest.mark.aws_validated
     def test_create_duplicate_table(self, dynamodb_create_table, snapshot):
-        table_name = f"duplicateTable-{short_uid()}"
-
-        dynamodb_create_table(
-            TableName=table_name,
+        table = dynamodb_create_table(
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
             Tags=TEST_DDB_TAGS,
         )
+        table_name = table["TableDescription"]["TableName"]
 
         with pytest.raises(Exception) as ctx:
             dynamodb_create_table(
@@ -956,31 +955,6 @@ class TestDynamoDB:
                 Tags=TEST_DDB_TAGS,
             )
         snapshot.match("Error", ctx.value)
-
-    def test_delete_table(self, dynamodb_client, dynamodb_create_table, snapshot):
-        table_name = "test-table"
-        tables_before = dynamodb_client.list_tables()
-        snapshot.match("TablesBefore", tables_before)
-
-        dynamodb_create_table(
-            TableName=table_name,
-            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
-            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
-        )
-
-        table_list = dynamodb_client.list_tables()
-        snapshot.match("ListTables", table_list)
-
-        # TODO: Fix - AWS throws resourcenotfound
-        dynamodb_client.delete_table(TableName=table_name)
-
-        table_list = dynamodb_client.list_tables()
-        snapshot.match("DeletedTable", table_list)
-
-        with pytest.raises(Exception) as ctx:
-            dynamodb_client.delete_table(TableName=table_name)
-        snapshot.match("ErrorFailedDelete", ctx.value)
-        # assert ctx.match("ResourceNotFoundException")
 
     @pytest.mark.aws_validated
     def test_transaction_write_items(self, dynamodb_client, dynamodb_create_table, snapshot):
@@ -1113,15 +1087,14 @@ class TestDynamoDB:
         dynamodb_create_table,
         wait_for_stream_ready,
     ):
-        table_name = f"test-ddb-table-{short_uid()}"
-
-        dynamodb_create_table(
-            table_name=table_name,
-            partition_key=PARTITION_KEY,
-            stream_view_type="NEW_AND_OLD_IMAGES",
+        table = dynamodb_create_table(
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
-        table = dynamodb_resource.Table(table_name)
-        stream_name = get_kinesis_stream_name(table_name)
+        table_name = table["TableDescription"]["TableName"]
+        table_arn = table["TableDescription"]["TableArn"]
+        stream_name = get_kinesis_stream_name(table_arn)
 
         wait_for_stream_ready(stream_name)
 
@@ -1187,54 +1160,61 @@ class TestDynamoDB:
 
         retry(check_expected_records, retries=5, sleep=1, sleep_before=2)
 
-    @pytest.mark.only_localstack
-    def test_query_on_deleted_resource(self, dynamodb_client, dynamodb_create_table):
-        key_schema = [{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}]
-        attr_defs = [{"AttributeName": PARTITION_KEY, "AttributeType": "S"}]
-        stream_spec = {"StreamEnabled": False}
-
-        partition_key = "username"
+    @pytest.mark.aws_validated
+    def test_query_on_deleted_resource(self, dynamodb_client, dynamodb_create_table, snapshot):
 
         table = dynamodb_create_table(
-            KeySchema=key_schema,
-            AttributeDefinitions=attr_defs,
-            StreamSpecification=stream_spec,
+            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
         )
+        table_name = table["TableDescription"]["TableName"]
 
         rs = dynamodb_client.query(
-            TableName=table["TableDescription"]["TableName"],
-            KeyConditionExpression="{} = :username".format(partition_key),
-            ExpressionAttributeValues={":username": {"S": "test"}},
+            TableName=table_name,
+            KeyConditionExpression=f"{PARTITION_KEY} = :{PARTITION_KEY}",
+            ExpressionAttributeValues={f":{PARTITION_KEY}": {"S": "test"}},
+            Select="ALL_ATTRIBUTES",
         )
-        assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("QueryResult", rs)
 
-        dynamodb_client.delete_table(TableName=table.name)
+        dynamodb_client.delete_table(TableName=table_name)
 
         with pytest.raises(Exception) as ctx:
             dynamodb_client.query(
-                TableName=table["TableDescription"]["TableName"],
-                KeyConditionExpression="{} = :username".format(partition_key),
-                ExpressionAttributeValues={":username": {"S": "test"}},
+                TableName=table_name,
+                KeyConditionExpression=f"{PARTITION_KEY} = :{PARTITION_KEY}",
+                ExpressionAttributeValues={f":{PARTITION_KEY}": {"S": "test"}},
             )
-        assert ctx.match("ResourceNotFoundException")
+        snapshot.match("Error", ctx.value)
 
-    @pytest.mark.only_localstack
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Records..dynamodb..ApproximateCreationDateTime",
+            "$..ApproximateCreationDateTime",
+        ]
+    )
     def test_dynamodb_stream_to_lambda(
-        self, lambda_client, dynamodb_resource, dynamodb_create_table, wait_for_stream_ready
+        self,
+        lambda_client,
+        dynamodb_client,
+        dynamodb_resource,
+        dynamodb_create_table,
+        wait_for_stream_ready,
+        snapshot,
     ):
-        table_name = "ddb-table-%s" % short_uid()
         function_name = "func-%s" % short_uid()
         partition_key = "SK"
 
-        dynamodb_create_table(
-            table_name=table_name,
-            partition_key=partition_key,
-            stream_view_type="NEW_AND_OLD_IMAGES",
+        table = dynamodb_create_table(
+            KeySchema=[{"AttributeName": partition_key, "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": partition_key, "AttributeType": "S"}],
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
-        table = dynamodb_resource.Table(table_name)
-        latest_stream_arn = table.latest_stream_arn
-        stream_name = get_kinesis_stream_name(table_name)
+        table_name = table["TableDescription"]["TableName"]
+        latest_stream_arn = table["TableDescription"]["LatestStreamArn"]
 
+        stream_name = get_kinesis_stream_name(table_name)
         wait_for_stream_ready(stream_name)
 
         testutil.create_lambda_function(
@@ -1249,9 +1229,9 @@ class TestDynamoDB:
             StartingPosition="TRIM_HORIZON",
         )["UUID"]
 
-        item = {"SK": short_uid(), "Name": "name-{}".format(short_uid())}
+        item = {"SK": {"S": "test-SK"}, "Name": {"S": "test-name"}}
 
-        table.put_item(Item=item)
+        dynamodb_client.put_item(TableName=table_name, Item=item)
 
         events = retry(
             check_expected_lambda_log_events_length,
@@ -1262,14 +1242,10 @@ class TestDynamoDB:
             regex_filter=r"Records",
         )
 
-        assert len(events) == 1
-        assert len(events[0]["Records"]) == 1
+        snapshot.match("Records", events)
 
         dynamodb_event = events[0]["Records"][0]["dynamodb"]
-        assert dynamodb_event["StreamViewType"] == "NEW_AND_OLD_IMAGES"
-        assert dynamodb_event["Keys"] == {"SK": {"S": item["SK"]}}
-        assert dynamodb_event["NewImage"]["Name"] == {"S": item["Name"]}
-        assert "SequenceNumber" in dynamodb_event
+        snapshot.match("DynamoEvent", dynamodb_event)
 
         lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
 
@@ -1311,7 +1287,6 @@ class TestDynamoDB:
     def test_dynamodb_create_table_with_sse_specification(self, dynamodb_create_table, snapshot):
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
-        kms_master_key_arn = aws_stack.kms_key_arn(kms_master_key_id)
 
         table = dynamodb_create_table(
             KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
@@ -1322,8 +1297,9 @@ class TestDynamoDB:
             Tags=TEST_DDB_TAGS,
         )
 
-        assert table["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
-        snapshot.match("Table", table)
+        snapshot.match(
+            "TableDescription", sorted(table["TableDescription"].keys(), key=lambda x: x.lower())
+        )
 
     @pytest.mark.aws_validated
     def test_dynamodb_create_table_with_partial_sse_specification(
@@ -1347,44 +1323,38 @@ class TestDynamoDB:
 
     @pytest.mark.aws_validated
     def test_dynamodb_get_batch_items(self, dynamodb_client, dynamodb_create_table, snapshot):
-        table_name = "test-table"
-        dynamodb_create_table(
-            TableName=table_name,
+        table = dynamodb_create_table(
             KeySchema=[{"AttributeName": "PK", "KeyType": "HASH"}],
             AttributeDefinitions=[{"AttributeName": "PK", "AttributeType": "S"}],
             ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
             BillingMode="PROVISIONED",
         )
+        table_name = table["TableDescription"]["TableName"]
 
         result = dynamodb_client.batch_get_item(
             RequestItems={table_name: {"Keys": [{"PK": {"S": "test-key"}}]}}
         )
         snapshot.match("Response", result)
 
-    # TODO: create dynamodbstreams fixture
+    @pytest.mark.aws_validated
     def test_dynamodb_streams_describe_with_exclusive_start_shard_id(
-        self, dynamodb_resource, dynamodb_create_table
+        self, dynamodbstreams_client, dynamodb_create_table, snapshot
     ):
-        table_name = f"test-ddb-table-{short_uid()}"
-        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
-
-        dynamodb_create_table(
-            table_name=table_name,
-            partition_key=PARTITION_KEY,
-            stream_view_type="NEW_AND_OLD_IMAGES",
+        table = dynamodb_create_table(
+            KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "Username", "AttributeType": "S"}],
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
         )
-        table = dynamodb_resource.Table(table_name)
+        stream_arn = table["TableDescription"]["LatestStreamArn"]
 
-        response = ddbstreams.describe_stream(StreamArn=table.latest_stream_arn)
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert len(response["StreamDescription"]["Shards"]) == 1
+        response = dynamodbstreams_client.describe_stream(StreamArn=stream_arn)
+        snapshot.match("DescribeStream", response)
+
         shard_id = response["StreamDescription"]["Shards"][0]["ShardId"]
-
-        response = ddbstreams.describe_stream(
-            StreamArn=table.latest_stream_arn, ExclusiveStartShardId=shard_id
+        response = dynamodbstreams_client.describe_stream(
+            StreamArn=stream_arn, ExclusiveStartShardId=shard_id
         )
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert len(response["StreamDescription"]["Shards"]) == 0
+        snapshot.match("DescribeStreamShardStart", response)
 
     @pytest.mark.aws_validated
     def test_dynamodb_idempotent_writing(self, dynamodb_create_table, dynamodb_client, snapshot):
@@ -1426,7 +1396,6 @@ class TestDynamoDB:
     def test_batch_write_not_matching_schema(
         self, dynamodb_client, dynamodb_create_table, snapshot
     ):
-
         table = dynamodb_create_table(
             KeySchema=[
                 {"AttributeName": "id", "KeyType": "HASH"},
@@ -1437,7 +1406,6 @@ class TestDynamoDB:
                 {"AttributeName": "sortKey", "AttributeType": "S"},
             ],
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
-            BillingMode="PROVISIONED",
         )
 
         faulty_item = {"Item": {"nonKey": {"S": "hello"}}}
@@ -1445,8 +1413,7 @@ class TestDynamoDB:
             dynamodb_client.batch_write_item(
                 RequestItems={table.name: [{"PutRequest": faulty_item}]}
             )
-        snapshot.match("ValidationException", ctx.value.response)
-        # assert ctx.match("ValidationException")
+        snapshot.match("ValidationException", ctx.value)
 
 
 def delete_table(name):

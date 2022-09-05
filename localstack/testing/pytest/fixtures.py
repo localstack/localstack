@@ -351,6 +351,8 @@ def dynamodb_create_table(
             kwargs["TableName"] = f"test_table_{short_uid()}"
         if "StreamSpecification" not in kwargs:
             kwargs["StreamSpecification"] = {"StreamEnabled": False}
+        if "ProvisionedThroughput" not in kwargs:
+            kwargs["ProvisionedThroughput"] = {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
 
         tables.append(kwargs["TableName"])
 

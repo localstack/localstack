@@ -226,17 +226,22 @@ class TransformerUtility:
         """
         return [
             RegexTransformer(
-                r"[a-zA-Z0-9-_.]{8}-[a-zA-Z0-9-_.]{4}-[a-zA-Z0-9-_.]{4}-[a-zA-Z0-9-_.]{8}",
-                replacement="<arn-uuid>",
-            ),
-            RegexTransformer(
                 r"\d{4}-\d?\d-\d?\dT(?:2[0-3]|[01]?[0-9]):[0-5]?[0-9]:[0-5]?[0-9].\d{3}",
                 replacement="datetime",
+            ),
+            RegexTransformer(
+                r"shardId-\d{20}-[0-9]{12}",
+                replacement="shard_id",
+            ),
+            RegexTransformer(
+                r"test_table_([a-zA-Z0-9-_.]*)?",
+                replacement="<table_name>",
             ),
             TransformerUtility.key_value("TableName", "table_name"),
             TransformerUtility.key_value("SequenceNumber", "sequence_number"),
             TransformerUtility.key_value("StartingSequenceNumber", "sequence_number"),
             TransformerUtility.key_value("eventID", "event_id"),
+            TransformerUtility.key_value("ShardIterator", "shard_iterator"),
         ]
 
     @staticmethod
