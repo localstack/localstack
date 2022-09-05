@@ -9,7 +9,17 @@ from localstack.aws.scaffold import generate
 @pytest.mark.skip_offline
 @pytest.mark.parametrize(
     "service",
-    ["apigateway", "autoscaling", "cloudformation", "dynamodb", "glue", "kafka", "kinesis", "sqs"],
+    [
+        "apigateway",
+        "autoscaling",
+        "cloudformation",
+        "dynamodb",
+        "glue",
+        "kafka",
+        "kinesis",
+        "sqs",
+        "s3",
+    ],
 )
 def test_generated_code_compiles(service, caplog):
     # Deactivate logging on CLI (https://github.com/pallets/click/issues/824#issuecomment-562581313)
