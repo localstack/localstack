@@ -1,7 +1,7 @@
 import logging
 import re
 from datetime import datetime
-from typing import Dict, Optional, Pattern, Set
+from typing import Optional, Pattern
 
 from localstack.aws.api.secretsmanager import CreateSecretResponse
 from localstack.testing.snapshots.transformer import (
@@ -269,31 +269,13 @@ class TransformerUtility:
 
     @staticmethod
     def secretsmanager_api():
-        class DropUnsupportedEntries(Transformer):
-            # TODO: resolve all unsupported entries.
-            _DROP_KEYS: Set[str] = {"KmsKeyId", "KmsKeyIds"}
-
-            def _drop(self, input_data):
-                if isinstance(input_data, dict):
-                    res = dict()
-                    for k, v in input_data.items():
-                        if k not in self._DROP_KEYS:
-                            res[k] = self._drop(v)
-                        else:
-                            LOG.warning(
-                                f"Snapshot test for secretsmanager will ignore key entry {k} as it is unsupported."
-                            )
-                    return res
-                elif isinstance(input_data, list):
-                    return list(map(self._drop, input_data))
-                else:
-                    return input_data
-
-            def transform(self, input_data: Dict, *, ctx: TransformContext) -> Dict:
-                return self._drop(input_data)
-
         class NormaliseVersionStages(Transformer):
-            def _normalise(self, input_data):
+            """
+            Normalises Version Stages list in responses so that these are sorted. This is to enable a set comparison of
+            the Version Stages in all responses, as AWS's ordering behaviour is unknown.
+            """
+
+            def _normalise(self, input_data: dict | list) -> dict | list:
                 if isinstance(input_data, dict):
                     res = dict()
                     for k, v in input_data.items():
@@ -308,12 +290,24 @@ class TransformerUtility:
                 else:
                     return input_data
 
-            def transform(self, input_data: Dict, *, ctx: TransformContext) -> Dict:
+            def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
                 return self._normalise(input_data)
 
+        class NormaliseSecretVersions(Transformer):
+            """
+            Normalises ListSecretVersionIdsResponse responses so that Secret Versions are sorted by date. This is to
+            enable a set comparison of the Secret Versions in the response, as AWS's ordering behaviour is unknown.
+            """
+
+            def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+                for k, v in input_data.items():
+                    if k == "Versions" and isinstance(v, list):
+                        input_data[k] = sorted(v, key=lambda e: e.get("CreatedDate"), reverse=True)
+                    elif isinstance(v, dict):
+                        input_data[k] = self.transform(v, ctx=ctx)
+                return input_data
+
         return [
-            DropUnsupportedEntries(),
-            NormaliseVersionStages(),
             KeyValueBasedTransformer(
                 lambda k, v: (
                     k
@@ -335,6 +329,8 @@ class TransformerUtility:
                 ),
                 "version_uuid",
             ),
+            NormaliseVersionStages(),
+            NormaliseSecretVersions(),
         ]
 
     @staticmethod

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import copy
 import json
 import logging
 import re
 import time
-from typing import Dict, Final, List, Optional, Union
+from typing import Final, Optional, Union
 
 from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
@@ -90,8 +89,13 @@ class ValidationException(CommonServiceException):
 
 
 class SecretNotFoundException(CommonServiceException):
-    def __init__(self, message: str):
-        super().__init__("SecretNotFoundException", message, 404, True)
+    def __init__(self):
+        super().__init__(
+            "ResourceNotFoundException",
+            "Secrets Manager can't find the specified secret.",
+            404,
+            True,
+        )
 
 
 class SecretsmanagerProvider(SecretsmanagerApi):
@@ -137,7 +141,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
 
     @staticmethod
     def _call_moto_with_request_secret_id(
-        context: RequestContext, request: Dict
+        context: RequestContext, request: dict
     ) -> ServiceResponse:
         t_secret_id = SecretsmanagerProvider._transform_context_secret_id(
             request.get("SecretId", None)
@@ -322,7 +326,7 @@ class FakeSecretVersionStore(dict):
     def __setitem__(self, key, value):
         self.put_version(key, value, time.time())
 
-    def put_version(self, version_id: str, version: Dict, create_date: Optional[float] = None):
+    def put_version(self, version_id: str, version: dict, create_date: Optional[float] = None):
         if create_date and "createdate" in version:
             version["createdate"] = create_date
         super().__setitem__(version_id, version)
@@ -378,7 +382,7 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
     secret = self.secrets[secret_id]
 
     # Patch: output format, report exact createdate instead of current time.
-    versions: List[SecretVersionsListEntry] = list()
+    versions: list[SecretVersionsListEntry] = list()
     for version_id, version in secret.versions.items():
         version_stages = version["version_stages"]
         entry = SecretVersionsListEntry(
@@ -400,22 +404,6 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
     response = ListSecretVersionIdsResponse(ARN=secret.arn, Name=secret.name, Versions=versions)
 
     return json.dumps(response)
-
-
-@patch(SecretsManagerBackend.put_secret_value)
-def moto_smb_put_secret_value(
-    fn, self, secret_id, secret_string, secret_binary, client_request_token, version_stages
-):
-    # Patch: VersionStages are sequentially appended but AWS* ones which are appended after custom stages.
-    # TODO: more investigations are required, AWS behaviour seems sporadic.
-    aws_version_stages: List[str] = [
-        vs for vs in version_stages or [] if (vs or "").startswith("AWS")
-    ]
-    if aws_version_stages:
-        for aws_vs in aws_version_stages:
-            version_stages.remove(aws_vs)
-            version_stages.append(aws_vs)
-    return fn(self, secret_id, secret_string, secret_binary, client_request_token, version_stages)
 
 
 @patch(FakeSecret.to_dict)
@@ -470,7 +458,7 @@ def backend_update_secret(
     resp: UpdateSecretResponse = UpdateSecretResponse()
     resp["ARN"] = secret.arn
     resp["Name"] = secret.name
-    #
+
     if version_id_t0 != version_id_t1:
         resp["VersionId"] = version_id_t1
 
@@ -499,14 +487,6 @@ def response_update_secret(_, self):
 def backend_update_secret_version_stage(
     fn, self, secret_id, version_stage, remove_from_version_id, move_to_version_id
 ):
-    # Cache the version stages in the source version, to allow for the detection of added stages.
-    prev_rm_from_version_stages = None
-    secret = self.secrets.get(secret_id)
-    if secret:
-        src_version = secret.versions.get(remove_from_version_id)
-        if src_version:
-            prev_rm_from_version_stages = copy.deepcopy(src_version["version_stages"])
-
     fn(self, secret_id, version_stage, remove_from_version_id, move_to_version_id)
 
     secret = self.secrets[secret_id]
@@ -529,30 +509,6 @@ def backend_update_secret_version_stage(
     # Patch: remove secret versions with no version stages.
     for version_no_stages in versions_no_stages:
         del secret.versions[version_no_stages]
-
-    # Patch: versions stages are added in front not appended, AWSCURRENT is always in front of all other AWS stages.
-    dst_version = secret.versions.get(move_to_version_id)
-    if dst_version:
-        version_stages = dst_version["version_stages"]
-        if version_stage in version_stages:
-            version_stages.remove(version_stage)
-            insert_index: int = 0
-            if version_stage == AWSCURRENT:
-                # Find were to place AWSCURRENT.
-                for i, vs in enumerate(version_stages):
-                    if vs.startswith("AWS"):
-                        insert_index = i
-                        break
-            version_stages.insert(insert_index, version_stage)
-
-    # Patch: ensure the version stages added to the source version are injected in the correct order.
-    src_version = secret.versions.get(remove_from_version_id)
-    if prev_rm_from_version_stages and src_version:
-        version_stages = src_version["version_stages"]
-        added_stages = list(set(version_stages) - set(prev_rm_from_version_stages))
-        for added_stage in added_stages:
-            version_stages.remove(added_stage)
-            version_stages.insert(0, added_stage)
 
     res = UpdateSecretVersionStageResponse(ARN=secret.arn, Name=secret.name)
     return json.dumps(res)

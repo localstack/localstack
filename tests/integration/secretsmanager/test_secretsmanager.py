@@ -3,11 +3,10 @@ import logging
 import os
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional, Set
+from typing import Optional
 
 import pytest
 import requests
-from py._code.code import ExceptionInfo
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.secretsmanager import (
@@ -15,14 +14,7 @@ from localstack.aws.api.secretsmanager import (
     CreateSecretResponse,
     DeleteSecretRequest,
     DeleteSecretResponse,
-    DescribeSecretResponse,
-    GetSecretValueResponse,
     ListSecretsResponse,
-    ListSecretVersionIdsResponse,
-    PutSecretValueResponse,
-    SecretVersionsListEntry,
-    UpdateSecretResponse,
-    UpdateSecretVersionStageResponse,
 )
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
@@ -58,26 +50,28 @@ class TestSecretsManager:
     def sm_client(self, secretsmanager_client):
         return secretsmanager_client
 
-    @pytest.fixture()
+    @pytest.fixture
+    def secret_name(self, sm_client, cleanups) -> str:
+        """
+        Returns a new unique SecretId, and schedules its deletion though the cleanups mechanism.
+        :return: a new and automatically deleted unique SecretId.
+        """
+        secret_name = f"s-{short_uid()}"
+        cleanups.append(
+            lambda: sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        )
+        return secret_name
+
+    @pytest.fixture
     def sm_snapshot(self, snapshot):
         snapshot.add_transformers_list(snapshot.transform.secretsmanager_api())
         return snapshot
 
     @staticmethod
-    def _snapshot_obj_of_exception(ex: ExceptionInfo) -> Dict:
-        return {"typename": ex.typename, "message": str(ex.value)}
-
-    @staticmethod
-    def _typed_response_of(typ: type, response: Dict) -> Dict:
-        return select_from_typed_dict(typ, response)
-
-    @staticmethod
     def _wait_created_is_listed(client, secret_id: str):
         def _is_secret_in_list():
-            lst: ListSecretsResponse = TestSecretsManager._typed_response_of(
-                typ=ListSecretsResponse, response=client.list_secrets()
-            )
-            secret_ids: Set[str] = {secret["Name"] for secret in lst.get("SecretList", [])}
+            lst: ListSecretsResponse = client.list_secrets()
+            secret_ids: set[str] = {secret["Name"] for secret in lst.get("SecretList", [])}
             return secret_id in secret_ids
 
         success = poll_condition(condition=_is_secret_in_list, timeout=20, interval=2)
@@ -103,11 +97,6 @@ class TestSecretsManager:
                 f"Timed out whilst awaiting for force deletion of secret '{secret_id}' to complete."
             )
 
-    @staticmethod
-    def _normalise_list_secret_version_ids_response(response: ListSecretVersionIdsResponse) -> None:
-        versions: List[SecretVersionsListEntry] = response["Versions"]
-        versions.sort(key=lambda e: e["CreatedDate"], reverse=True)
-
     @pytest.mark.parametrize(
         "secret_name, is_valid_partial_arn",
         [
@@ -119,16 +108,16 @@ class TestSecretsManager:
         ],
     )
     def test_create_and_update_secret(
-        self, sm_client, secret_name: str, is_valid_partial_arn: bool, sm_snapshot
+        self, sm_client, secret_name: str, is_valid_partial_arn: bool, sm_snapshot, cleanups
     ):
+        cleanups.append(
+            lambda: sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        )
         description = "Testing secret creation."
-        create_secret_rs_1: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(
-                Name=secret_name,
-                SecretString="my_secret",
-                Description=description,
-            ),
+        create_secret_rs_1 = sm_client.create_secret(
+            Name=secret_name,
+            SecretString="my_secret",
+            Description=description,
         )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_1, 0)
@@ -138,87 +127,75 @@ class TestSecretsManager:
         secret_arn = create_secret_rs_1["ARN"]
         assert len(secret_arn.rpartition("-")[-1]) == 6
 
-        get_secret_value_rs_1: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_rs_1 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_rs_1", get_secret_value_rs_1)
 
-        describe_secret_rs_1: DescribeSecretResponse = self._typed_response_of(
-            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
-        )
+        describe_secret_rs_1 = sm_client.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_rs_1", describe_secret_rs_1)
 
-        get_secret_value_rs_2: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_arn)
-        )
+        get_secret_value_rs_2 = sm_client.get_secret_value(SecretId=secret_arn)
         sm_snapshot.match("get_secret_value_rs_2", get_secret_value_rs_2)
 
         if is_valid_partial_arn:
-            get_secret_value_rs_3: GetSecretValueResponse = self._typed_response_of(
-                typ=GetSecretValueResponse,
-                response=sm_client.get_secret_value(SecretId=secret_arn[:-7]),
-            )
+            get_secret_value_rs_3 = sm_client.get_secret_value(SecretId=secret_arn[:-7])
             sm_snapshot.match("get_secret_value_rs_3", get_secret_value_rs_3)
         else:
             with pytest.raises(Exception) as resource_not_found:
                 sm_client.get_secret_value(SecretId=secret_arn[:-7])
-            resource_not_found_dict_1 = self._snapshot_obj_of_exception(resource_not_found)
-            sm_snapshot.match("resource_not_found_dict_1", resource_not_found_dict_1)
+            sm_snapshot.match("resource_not_found_dict_1", resource_not_found.value)
 
-        put_secret_value_rs_1: GetSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(SecretId=secret_name, SecretString="new_secret"),
+        put_secret_value_rs_1 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="new_secret"
         )
         sm_snapshot.match("put_secret_value_rs_1", put_secret_value_rs_1)
 
-        get_secret_value_rs_4: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_rs_4 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_rs_4", get_secret_value_rs_4)
 
         # update secret by ARN
-        update_secret_res_1: UpdateSecretResponse = self._typed_response_of(
-            typ=UpdateSecretResponse,
-            response=sm_client.update_secret(
-                SecretId=secret_arn, SecretString="test123", Description="d1"
-            ),
+        update_secret_res_1 = sm_client.update_secret(
+            SecretId=secret_arn, SecretString="test123", Description="d1"
         )
         sm_snapshot.match("update_secret_res_1", update_secret_res_1)
 
         # clean up
-        delete_secret_res_1: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_1 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
-    def test_call_lists_secrets_multiple_times(self, sm_client):
-        secret_name = f"s-{short_uid()}"
+    def test_secret_not_found(self, sm_client, sm_snapshot):
+        with pytest.raises(Exception) as not_found:
+            sm_client.get_secret_value(SecretId=f"s-{short_uid()}")
+        sm_snapshot.match("get_secret_value_not_found_ex", not_found.value)
+
+        with pytest.raises(Exception) as not_found:
+            sm_client.list_secret_version_ids(SecretId=f"s-{short_uid()}")
+        sm_snapshot.match("list_secret_version_ids_not_found_ex", not_found.value)
+
+    def test_call_lists_secrets_multiple_times(self, sm_client, secret_name):
         sm_client.create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing creation of secrets",
         )
+        self._wait_created_is_listed(sm_client, secret_id=secret_name)
 
         # call list_secrets multiple times
         for i in range(3):
             rs = sm_client.list_secrets()
             secrets = [secret for secret in rs["SecretList"] if secret["Name"] == secret_name]
-            assert 1 == len(secrets)
+            assert len(secrets) == 1
 
         # clean up
         sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
     @pytest.mark.skip("In CI transformers are not applied for this test.")
-    def test_call_lists_secrets_multiple_times_snapshots(self, sm_client, sm_snapshot):
-        secret_name = f"s-{short_uid()}"
-        create_secret_rs_1: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(
-                Name=secret_name,
-                SecretString="my_secret",
-                Description="testing creation of secrets",
-            ),
+    def test_call_lists_secrets_multiple_times_snapshots(self, sm_client, sm_snapshot, secret_name):
+        create_secret_rs_1 = sm_client.create_secret(
+            Name=secret_name,
+            SecretString="my_secret",
+            Description="testing creation of secrets",
         )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_1, 0)
@@ -229,28 +206,31 @@ class TestSecretsManager:
 
         # call list_secrets multiple times
         for i in range(3):
-            list_secrets_res = self._typed_response_of(
-                typ=ListSecretsResponse, response=sm_client.list_secrets()
-            )
+            list_secrets_res = sm_client.list_secrets()
             sm_snapshot.match(f"list_secrets_res_{i}", list_secrets_res)
 
         # clean up
-        delete_secret_res_1: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_1 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
-    def test_create_multi_secrets(self, sm_client):
+    def test_create_multi_secrets(self, sm_client, cleanups):
         secret_names = [short_uid(), short_uid(), short_uid()]
         arns = []
         for secret_name in secret_names:
+            cleanups.append(
+                lambda: sm_client.delete_secret(
+                    SecretId=secret_name, ForceDeleteWithoutRecovery=True
+                )
+            )
             rs = sm_client.create_secret(
                 Name=secret_name,
                 SecretString="my_secret_{}".format(secret_name),
                 Description="testing creation of secrets",
             )
             arns.append(rs["ARN"])
+            self._wait_created_is_listed(sm_client, secret_id=secret_name)
 
         rs = sm_client.list_secrets()
         secrets = {
@@ -268,16 +248,18 @@ class TestSecretsManager:
             sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
     @pytest.mark.skip("In CI transformers are not applied for this test.")
-    def test_create_multi_secrets_snapshot(self, sm_client, sm_snapshot):
+    def test_create_multi_secrets_snapshot(self, sm_client, sm_snapshot, cleanups):
         secret_names = [short_uid() for _ in range(3)]
         for i, secret_name in enumerate(secret_names):
-            create_secret_rs_1: CreateSecretResponse = self._typed_response_of(
-                typ=CreateSecretResponse,
-                response=sm_client.create_secret(
-                    Name=secret_name,
-                    SecretString=f"my_secret_{secret_name}",
-                    Description="Testing secrets creation.",
-                ),
+            cleanups.append(
+                lambda: sm_client.delete_secret(
+                    SecretId=secret_name, ForceDeleteWithoutRecovery=True
+                )
+            )
+            create_secret_rs_1 = sm_client.create_secret(
+                Name=secret_name,
+                SecretString=f"my_secret_{secret_name}",
+                Description="Testing secrets creation.",
             )
             sm_snapshot.add_transformers_list(
                 sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_1, i)
@@ -285,18 +267,13 @@ class TestSecretsManager:
 
             self._wait_created_is_listed(sm_client, secret_name)
 
-        list_secrets_res = self._typed_response_of(
-            typ=ListSecretsResponse, response=sm_client.list_secrets()
-        )
+        list_secrets_res = sm_client.list_secrets()
         sm_snapshot.match("list_secrets_res", list_secrets_res)
 
         # clean up
         for i, secret_name in enumerate(secret_names):
-            delete_secret_res: DeleteSecretResponse = self._typed_response_of(
-                typ=DeleteSecretResponse,
-                response=sm_client.delete_secret(
-                    SecretId=secret_name, ForceDeleteWithoutRecovery=True
-                ),
+            delete_secret_res = sm_client.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
             )
             sm_snapshot.match(f"delete_secret_res{i}", delete_secret_res)
 
@@ -308,9 +285,7 @@ class TestSecretsManager:
         assert len(random_password["RandomPassword"]) == 120
         assert all(c not in "xyzDje@?!." for c in random_password["RandomPassword"])
 
-    def test_resource_policy(self, sm_client):
-        secret_name = f"s-{short_uid()}"
-
+    def test_resource_policy(self, sm_client, secret_name):
         sm_client.create_secret(
             Name=secret_name,
             SecretString="my_secret",
@@ -334,9 +309,7 @@ class TestSecretsManager:
         # clean up
         sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
-    def test_rotate_secret_with_lambda_1(self, sm_client):
-        secret_name = f"s-{short_uid()}"
-
+    def test_rotate_secret_with_lambda_1(self, sm_client, secret_name):
         sm_client.create_secret(
             Name=secret_name,
             SecretString="my_secret",
@@ -365,9 +338,7 @@ class TestSecretsManager:
         sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
         testutil.delete_lambda_function(function_name)
 
-    def test_rotate_secret_with_lambda_2(self, sm_client):
-        secret_name = f"s-{short_uid()}"
-
+    def test_rotate_secret_with_lambda_2(self, sm_client, secret_name):
         cre_res = sm_client.create_secret(
             Name=secret_name,
             SecretString="init",
@@ -453,8 +424,7 @@ class TestSecretsManager:
         sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
         testutil.delete_lambda_function(function_name)
 
-    def test_rotate_secret_invalid_lambda_arn(self, sm_client):
-        secret_name = f"s-{short_uid()}"
+    def test_rotate_secret_invalid_lambda_arn(self, sm_client, secret_name):
         sm_client.create_secret(Name=secret_name, SecretString="init")
         invalid_arn = (
             "arn:aws:lambda:sa-east-1:000000000000:function:rotate_secret_invalid_lambda_arn"
@@ -478,103 +448,78 @@ class TestSecretsManager:
         assert "RotationRules" not in des
         assert "RotationLambdaARN" not in des
 
-    def test_put_secret_value_with_version_stages(self, sm_client, sm_snapshot):
-        secret_name = f"s-{short_uid()}"
+    def test_put_secret_value_with_version_stages(self, sm_client, sm_snapshot, secret_name):
         secret_string_v0: str = "secret_string_v0"
 
-        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(Name=secret_name, SecretString=secret_string_v0),
+        create_secret_rs_0 = sm_client.create_secret(
+            Name=secret_name, SecretString=secret_string_v0
         )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        get_secret_value_res_0: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_0 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_0", get_secret_value_res_0)
 
         secret_string_v1: str = "secret_string_v1"
-        version_stages_v1: List[str] = ["SAMPLESTAGE1", "SAMPLESTAGE0"]
+        version_stages_v1: list[str] = ["SAMPLESTAGE1", "SAMPLESTAGE0"]
         pv_v1_vid: str = str(uuid.uuid4())
         #
-        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name,
-                SecretString=secret_string_v1,
-                VersionStages=version_stages_v1,
-                ClientRequestToken=pv_v1_vid,
-            ),
+        put_secret_value_res_1 = sm_client.put_secret_value(
+            SecretId=secret_name,
+            SecretString=secret_string_v1,
+            VersionStages=version_stages_v1,
+            ClientRequestToken=pv_v1_vid,
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
-        get_secret_value_res_1: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_1 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_1", get_secret_value_res_1)
 
         secret_string_v2: str = "secret_string_v2"
-        version_stages_v2: ["str"] = version_stages_v1
+        version_stages_v2: list[str] = version_stages_v1
         pv_v2_vid: str = str(uuid.uuid4())
         #
-        put_secret_value_res_2: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name,
-                SecretString=secret_string_v2,
-                VersionStages=version_stages_v2,
-                ClientRequestToken=pv_v2_vid,
-            ),
+        put_secret_value_res_2 = sm_client.put_secret_value(
+            SecretId=secret_name,
+            SecretString=secret_string_v2,
+            VersionStages=version_stages_v2,
+            ClientRequestToken=pv_v2_vid,
         )
         sm_snapshot.match("put_secret_value_res_2", put_secret_value_res_2)
 
-        get_secret_value_res_2: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_2 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
 
         secret_string_v3: str = "secret_string_v3"
         version_stages_v3: ["str"] = ["AWSPENDING"]
         pv_v3_vid: str = str(uuid.uuid4())
         #
-        put_secret_value_res_3: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name,
-                SecretString=secret_string_v3,
-                VersionStages=version_stages_v3,
-                ClientRequestToken=pv_v3_vid,
-            ),
+        put_secret_value_res_3 = sm_client.put_secret_value(
+            SecretId=secret_name,
+            SecretString=secret_string_v3,
+            VersionStages=version_stages_v3,
+            ClientRequestToken=pv_v3_vid,
         )
         sm_snapshot.match("put_secret_value_res_3", put_secret_value_res_3)
 
-        get_secret_value_res_3: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_3 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_3", get_secret_value_res_3)
 
         secret_string_v4: str = "secret_string_v4"
         pv_v4_vid: str = str(uuid.uuid4())
         #
-        put_secret_value_res_4: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString=secret_string_v4, ClientRequestToken=pv_v4_vid
-            ),
+        put_secret_value_res_4 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString=secret_string_v4, ClientRequestToken=pv_v4_vid
         )
         sm_snapshot.match("put_secret_value_res_4", put_secret_value_res_4)
 
-        get_secret_value_res_4: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_4 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_4", get_secret_value_res_4)
 
-        delete_secret_res_1: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_1 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
@@ -582,66 +527,64 @@ class TestSecretsManager:
         "secret_name", ["Inv Name", " Inv Name", " Inv*Name? ", " Inv *?!]Name\\-"]
     )
     @pytest.mark.aws_validated
-    def test_invalid_secret_name(self, sm_client, secret_name: str, sm_snapshot):
+    def test_invalid_secret_name(self, sm_client, sm_snapshot, cleanups, secret_name: str):
+        cleanups.append(
+            lambda: sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+        )
         # The secret name can contain ASCII letters, numbers, and the following characters: /_+=.@-
         with pytest.raises(Exception) as validation_exception:
             sm_client.create_secret(Name=secret_name, SecretString="MySecretString")
-        ex_log_1: Dict = self._snapshot_obj_of_exception(validation_exception)
-        sm_snapshot.match("ex_log_1", ex_log_1)
+        sm_snapshot.match("ex_log_1", validation_exception.value)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
-        ex_log_2: Dict = self._snapshot_obj_of_exception(validation_exception)
-        sm_snapshot.match("ex_log_2", ex_log_2)
+        sm_snapshot.match("ex_log_2", validation_exception.value)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.describe_secret(SecretId=secret_name)
-        ex_log_3: Dict = self._snapshot_obj_of_exception(validation_exception)
-        sm_snapshot.match("ex_log_3", ex_log_3)
+        sm_snapshot.match("ex_log_3", validation_exception.value)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.get_secret_value(SecretId=secret_name)
-        ex_log_4: Dict = self._snapshot_obj_of_exception(validation_exception)
-        sm_snapshot.match("ex_log_4", ex_log_4)
+        sm_snapshot.match("ex_log_4", validation_exception.value)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.list_secret_version_ids(SecretId=secret_name, IncludeDeprecated=True)
-        ex_log_5: Dict = self._snapshot_obj_of_exception(validation_exception)
-        sm_snapshot.match("ex_log_5", ex_log_5)
+        sm_snapshot.match("ex_log_5", validation_exception.value)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.put_secret_value(SecretId=secret_name, SecretString="MySecretString")
-        ex_log_6: Dict = self._snapshot_obj_of_exception(validation_exception)
-        sm_snapshot.match("ex_log_6", ex_log_6)
+        sm_snapshot.match("ex_log_6", validation_exception.value)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.tag_resource(
                 SecretId=secret_name, Tags=[{"Key": "FirstTag", "Value": "SomeValue"}]
             )
-        ex_log_7: Dict = self._snapshot_obj_of_exception(validation_exception)
-        sm_snapshot.match("ex_log_7", ex_log_7)
+        sm_snapshot.match("ex_log_7", validation_exception.value)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.untag_resource(SecretId=secret_name, TagKeys=["FirstTag"])
-        ex_log_8: Dict = self._snapshot_obj_of_exception(validation_exception)
-        sm_snapshot.match("ex_log_8", ex_log_8)
+        sm_snapshot.match("ex_log_8", validation_exception.value)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.update_secret(SecretId=secret_name, Description="MyNewDescription")
-        ex_log_9: Dict = self._snapshot_obj_of_exception(validation_exception)
-        sm_snapshot.match("ex_log_9", ex_log_9)
+        sm_snapshot.match("ex_log_9", validation_exception.value)
 
         with pytest.raises(Exception) as validation_exception:
             sm_client.validate_resource_policy(
                 SecretId=secret_name,
                 ResourcePolicy='{\n"Version":"2012-10-17",\n"Statement":[{\n"Effect":"Allow",\n"Principal":{\n"AWS":"arn:aws:iam::123456789012:root"\n},\n"Action":"secretsmanager:GetSecretValue",\n"Resource":"*"\n}]\n}',
             )
-        ex_log_10: Dict = self._snapshot_obj_of_exception(validation_exception)
-        sm_snapshot.match("ex_log_10", ex_log_10)
+        sm_snapshot.match("ex_log_10", validation_exception.value)
 
-    def test_last_accessed_date(self, sm_client):
+    def test_last_accessed_date(self, sm_client, cleanups):
         def last_accessed_scenario_1(fail_if_days_overlap: bool) -> bool:
             secret_name = f"s-{short_uid()}"
+            cleanups.append(
+                lambda: sm_client.delete_secret(
+                    SecretId=secret_name, ForceDeleteWithoutRecovery=True
+                )
+            )
 
             sm_client.create_secret(Name=secret_name, SecretString="MySecretValue")
 
@@ -675,8 +618,7 @@ class TestSecretsManager:
                 True
             )  # Replay today or allow failure (this should never take longer than a day).
 
-    def test_last_updated_date(self, sm_client):
-        secret_name = f"s-{short_uid()}"
+    def test_last_updated_date(self, sm_client, secret_name):
         sm_client.create_secret(Name=secret_name, SecretString="MySecretValue")
 
         res = sm_client.describe_secret(SecretId=secret_name)
@@ -710,90 +652,61 @@ class TestSecretsManager:
         assert "LastChangedDate" in res
         assert create_date < res["LastChangedDate"]
 
-    def test_update_secret_description(self, sm_client, sm_snapshot):
-        secret_name = f"s-{short_uid()}"
+    def test_update_secret_description(self, sm_client, sm_snapshot, secret_name):
         secret_string_v0 = "MySecretString"
-        #
-        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(Name=secret_name, SecretString=secret_string_v0),
+        create_secret_rs_0 = sm_client.create_secret(
+            Name=secret_name, SecretString=secret_string_v0
         )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        describe_secret_res_0: DescribeSecretResponse = self._typed_response_of(
-            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
-        )
+        describe_secret_res_0 = sm_client.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_res_0", describe_secret_res_0)
 
         description_v1 = "MyDescription"
         #
-        update_secret_res_0: UpdateSecretResponse = self._typed_response_of(
-            typ=UpdateSecretResponse,
-            response=sm_client.update_secret(SecretId=secret_name, Description=description_v1),
+        update_secret_res_0 = sm_client.update_secret(
+            SecretId=secret_name, Description=description_v1
         )
         sm_snapshot.match("update_secret_res_0", update_secret_res_0)
 
-        describe_secret_res_1: DescribeSecretResponse = self._typed_response_of(
-            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
-        )
+        describe_secret_res_1 = sm_client.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_res_1", describe_secret_res_1)
 
         description_v2 = "MyNewDescription"
         secret_string_v1 = "MyNewSecretString"
         #
-        update_secret_res_1: UpdateSecretResponse = self._typed_response_of(
-            typ=UpdateSecretResponse,
-            response=sm_client.update_secret(
-                SecretId=secret_name, SecretString=secret_string_v1, Description=description_v2
-            ),
+        update_secret_res_1 = sm_client.update_secret(
+            SecretId=secret_name, SecretString=secret_string_v1, Description=description_v2
         )
         sm_snapshot.match("update_secret_res_1", update_secret_res_1)
 
-        describe_secret_res_2: DescribeSecretResponse = self._typed_response_of(
-            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
-        )
+        describe_secret_res_2 = sm_client.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_res_2", describe_secret_res_2)
 
-        update_secret_res_2: UpdateSecretResponse = self._typed_response_of(
-            typ=UpdateSecretResponse,
-            response=sm_client.update_secret(
-                SecretId=secret_name, SecretString=secret_string_v1 * 2
-            ),
+        update_secret_res_2 = sm_client.update_secret(
+            SecretId=secret_name, SecretString=secret_string_v1 * 2
         )
         sm_snapshot.match("update_secret_res_2", update_secret_res_2)
 
-        describe_secret_res_3: DescribeSecretResponse = self._typed_response_of(
-            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
-        )
+        describe_secret_res_3 = sm_client.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_res_3", describe_secret_res_3)
 
-        update_secret_res_3: UpdateSecretResponse = self._typed_response_of(
-            typ=UpdateSecretResponse,
-            response=sm_client.update_secret(SecretId=secret_name),
-        )
+        update_secret_res_3 = sm_client.update_secret(SecretId=secret_name)
         sm_snapshot.match("update_secret_res_3", update_secret_res_3)
 
-        describe_secret_res_4: DescribeSecretResponse = self._typed_response_of(
-            typ=DescribeSecretResponse, response=sm_client.describe_secret(SecretId=secret_name)
-        )
+        describe_secret_res_4 = sm_client.describe_secret(SecretId=secret_name)
         sm_snapshot.match("describe_secret_res_4", describe_secret_res_4)
 
-        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_0 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    def test_update_secret_version_stages_return_type(self, sm_client, sm_snapshot):
-        secret_name = f"s-{short_uid()}"
-        #
-        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(Name=secret_name, SecretString="Something1"),
-        )
+    def test_update_secret_version_stages_return_type(self, sm_client, sm_snapshot, secret_name):
+        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="Something1")
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
@@ -801,43 +714,34 @@ class TestSecretsManager:
 
         version_id_v0: str = create_secret_rs_0["VersionId"]
 
-        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
-            ),
+        put_secret_value_res_0 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
 
         version_id_v1 = put_secret_value_res_0["VersionId"]
         assert version_id_v1 != version_id_v0
 
-        update_secret_version_stage_res_0: UpdateSecretVersionStageResponse = (
-            self._typed_response_of(
-                typ=UpdateSecretVersionStageResponse,
-                response=sm_client.update_secret_version_stage(
-                    SecretId=secret_name,
-                    RemoveFromVersionId=version_id_v0,
-                    MoveToVersionId=version_id_v1,
-                    VersionStage="AWSCURRENT",
-                ),
-            )
+        update_secret_version_stage_res_0 = sm_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=version_id_v0,
+            MoveToVersionId=version_id_v1,
+            VersionStage="AWSCURRENT",
         )
         sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
 
-        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_0 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    def test_update_secret_version_stages_current_previous(self, sm_client, sm_snapshot):
-        secret_name = f"s-{short_uid()}"
+    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    def test_update_secret_version_stages_current_previous(
+        self, sm_client, sm_snapshot, secret_name
+    ):
         secret_string_v0 = "secret_string_v0"
-        #
-        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(Name=secret_name, SecretString=secret_string_v0),
+        create_secret_rs_0 = sm_client.create_secret(
+            Name=secret_name, SecretString=secret_string_v0
         )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
@@ -846,41 +750,29 @@ class TestSecretsManager:
 
         self._wait_created_is_listed(sm_client, secret_name)
 
-        list_secret_version_ids_res_0: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
+        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
         secret_string_v1 = "secret_string_v1"
         #
-        update_secret_res_0: UpdateSecretResponse = self._typed_response_of(
-            typ=UpdateSecretResponse,
-            response=sm_client.update_secret(SecretId=secret_name, SecretString=secret_string_v1),
+        update_secret_res_0 = sm_client.update_secret(
+            SecretId=secret_name, SecretString=secret_string_v1
         )
         sm_snapshot.match("update_secret_res_0", update_secret_res_0)
 
-        list_secret_version_ids_res_1: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
+        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_0 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    def test_update_secret_version_stages_current_pending(self, sm_client, sm_snapshot):
-        secret_name = f"s-{short_uid()}"
-        #
-        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(Name=secret_name, SecretString="Something1"),
-        )
+    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    def test_update_secret_version_stages_current_pending(
+        self, sm_client, sm_snapshot, secret_name
+    ):
+        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="Something1")
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
@@ -888,69 +780,45 @@ class TestSecretsManager:
 
         version_id_v0 = create_secret_rs_0["VersionId"]
 
-        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
-            ),
+        put_secret_value_res_0 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="Something2", VersionStages=["AWSPENDING"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
 
         version_id_v1 = put_secret_value_res_0["VersionId"]
 
-        list_secret_version_ids_res_0: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
+        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        update_secret_version_stage_res_0: UpdateSecretVersionStageResponse = (
-            self._typed_response_of(
-                typ=UpdateSecretVersionStageResponse,
-                response=sm_client.update_secret_version_stage(
-                    SecretId=secret_name,
-                    RemoveFromVersionId=version_id_v0,
-                    MoveToVersionId=version_id_v1,
-                    VersionStage="AWSCURRENT",
-                ),
-            )
+        update_secret_version_stage_res_0 = sm_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=version_id_v0,
+            MoveToVersionId=version_id_v1,
+            VersionStage="AWSCURRENT",
         )
         sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
 
-        list_secret_version_ids_res_1: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
+        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(SecretId=secret_name, SecretString="SS3"),
+        put_secret_value_res_1 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="SS3"
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
-        list_secret_version_ids_res_2: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_2)
+        list_secret_version_ids_res_2 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_2", list_secret_version_ids_res_2)
 
-        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_0 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    def test_update_secret_version_stages_current_pending_cycle(self, sm_client, sm_snapshot):
-        secret_name = f"s-{short_uid()}"
-        #
-        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(Name=secret_name, SecretString="S1"),
-        )
+    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    def test_update_secret_version_stages_current_pending_cycle(
+        self, sm_client, sm_snapshot, secret_name
+    ):
+        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="S1")
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
@@ -958,457 +826,285 @@ class TestSecretsManager:
 
         vid_0 = create_secret_rs_0["VersionId"]
 
-        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="S2", VersionStages=["AWSPENDING"]
-            ),
+        put_secret_value_res_0 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="S2", VersionStages=["AWSPENDING"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
 
         vid_1 = put_secret_value_res_0["VersionId"]
 
-        list_secret_version_ids_res_0: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
+        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        get_secret_value_res_0: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_0 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_0", get_secret_value_res_0)
 
-        update_secret_version_stage_res_0: UpdateSecretVersionStageResponse = (
-            self._typed_response_of(
-                typ=UpdateSecretVersionStageResponse,
-                response=sm_client.update_secret_version_stage(
-                    SecretId=secret_name,
-                    RemoveFromVersionId=vid_0,
-                    MoveToVersionId=vid_1,
-                    VersionStage="AWSCURRENT",
-                ),
-            )
+        update_secret_version_stage_res_0 = sm_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=vid_0,
+            MoveToVersionId=vid_1,
+            VersionStage="AWSCURRENT",
         )
         sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
 
-        list_secret_version_ids_res_1: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
+        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        get_secret_value_res_1: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_1 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_1", get_secret_value_res_1)
 
-        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING"]
-            ),
+        put_secret_value_res_1 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING"]
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
         vid_2 = put_secret_value_res_1["VersionId"]
 
-        list_secret_version_ids_res_2: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_2)
+        list_secret_version_ids_res_2 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_2", list_secret_version_ids_res_2)
 
-        get_secret_value_res_2: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_2 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
 
-        put_secret_value_res_2: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.update_secret_version_stage(
-                SecretId=secret_name,
-                RemoveFromVersionId=vid_1,
-                MoveToVersionId=vid_2,
-                VersionStage="AWSCURRENT",
-            ),
+        put_secret_value_res_2 = sm_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=vid_1,
+            MoveToVersionId=vid_2,
+            VersionStage="AWSCURRENT",
         )
         sm_snapshot.match("put_secret_value_res_2", put_secret_value_res_2)
 
-        list_secret_version_ids_res_3: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_3)
+        list_secret_version_ids_res_3 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_3", list_secret_version_ids_res_3)
 
-        get_secret_value_res_3: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_3 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_3", get_secret_value_res_3)
 
-        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_0 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
+    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_pending_cycle_custom_stages_1(
-        self, sm_client, sm_snapshot
+        self, sm_client, sm_snapshot, secret_name
     ):
-        secret_name = f"s-{short_uid()}"
-        #
-        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(Name=secret_name, SecretString="S1"),
-        )
+        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="S1")
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
         vid_0 = create_secret_rs_0["VersionId"]
 
-        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name,
-                SecretString="S2",
-                VersionStages=["AWSSOMETHING", "AWSPENDING", "PUT1"],
-            ),
+        put_secret_value_res_0 = sm_client.put_secret_value(
+            SecretId=secret_name,
+            SecretString="S2",
+            VersionStages=["AWSSOMETHING", "AWSPENDING", "PUT1"],
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
         vid_1 = put_secret_value_res_0["VersionId"]
 
-        list_secret_version_ids_res_0: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
+        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        get_secret_value_res_0: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_0 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_0", get_secret_value_res_0)
 
-        update_secret_version_stage_res_0: UpdateSecretVersionStageResponse = (
-            self._typed_response_of(
-                typ=UpdateSecretVersionStageResponse,
-                response=sm_client.update_secret_version_stage(
-                    SecretId=secret_name,
-                    RemoveFromVersionId=vid_0,
-                    MoveToVersionId=vid_1,
-                    VersionStage="AWSCURRENT",
-                ),
-            )
+        update_secret_version_stage_res_0 = sm_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=vid_0,
+            MoveToVersionId=vid_1,
+            VersionStage="AWSCURRENT",
         )
         sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
 
-        list_secret_version_ids_res_1: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
+        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        get_secret_value_res_1: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_1 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_1", get_secret_value_res_1)
 
-        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING", "PUT2"]
-            ),
+        put_secret_value_res_1 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING", "PUT2"]
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
         vid_2 = put_secret_value_res_1["VersionId"]
 
-        list_secret_version_ids_res_2: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_2)
+        list_secret_version_ids_res_2 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_2", list_secret_version_ids_res_2)
 
-        get_secret_value_res_2: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_2 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
 
-        update_secret_version_stage_res_1: UpdateSecretVersionStageResponse = (
-            self._typed_response_of(
-                typ=UpdateSecretVersionStageResponse,
-                response=sm_client.update_secret_version_stage(
-                    SecretId=secret_name,
-                    RemoveFromVersionId=vid_1,
-                    MoveToVersionId=vid_2,
-                    VersionStage="AWSCURRENT",
-                ),
-            )
+        update_secret_version_stage_res_1 = sm_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=vid_1,
+            MoveToVersionId=vid_2,
+            VersionStage="AWSCURRENT",
         )
         sm_snapshot.match("update_secret_version_stage_res_1", update_secret_version_stage_res_1)
 
-        list_secret_version_ids_res_3: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_3)
+        list_secret_version_ids_res_3 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_3", list_secret_version_ids_res_3)
 
-        get_secret_value_res_3: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_3 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_3", get_secret_value_res_3)
 
-        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_0 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
+    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     def test_update_secret_version_stages_current_pending_cycle_custom_stages_2(
-        self, sm_client, sm_snapshot
+        self, sm_client, sm_snapshot, secret_name
     ):
-        secret_name = f"s-{short_uid()}"
-        #
-        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(Name=secret_name, SecretString="SS"),
-        )
+        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="SS")
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="S1", VersionStages=["AWSCURRENT", "PUT0"]
-            ),
+        put_secret_value_res_0 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="S1", VersionStages=["AWSCURRENT", "PUT0"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
         #
         vid_0 = put_secret_value_res_0["VersionId"]
 
-        list_secret_version_ids_res_0: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
+        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="S2", VersionStages=["AWSPENDING", "PUT1"]
-            ),
+        put_secret_value_res_1 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="S2", VersionStages=["AWSPENDING", "PUT1"]
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
         #
         vid_1 = put_secret_value_res_1["VersionId"]
 
-        list_secret_version_ids_res_1: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
+        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        get_secret_value_res_0: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_0 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_0", get_secret_value_res_0)
 
-        update_secret_version_stage_res_0: UpdateSecretVersionStageResponse = (
-            self._typed_response_of(
-                typ=UpdateSecretVersionStageResponse,
-                response=sm_client.update_secret_version_stage(
-                    SecretId=secret_name,
-                    RemoveFromVersionId=vid_0,
-                    MoveToVersionId=vid_1,
-                    VersionStage="AWSCURRENT",
-                ),
-            )
+        update_secret_version_stage_res_0 = sm_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=vid_0,
+            MoveToVersionId=vid_1,
+            VersionStage="AWSCURRENT",
         )
         sm_snapshot.match("update_secret_version_stage_res_0", update_secret_version_stage_res_0)
 
-        list_secret_version_ids_res_2: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_2)
+        list_secret_version_ids_res_2 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_2", list_secret_version_ids_res_2)
 
-        get_secret_value_res_1: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_1 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_1", get_secret_value_res_1)
 
-        put_secret_value_res_2: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING", "PUT2"]
-            ),
+        put_secret_value_res_2 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="S3", VersionStages=["AWSPENDING", "PUT2"]
         )
         sm_snapshot.match("put_secret_value_res_2", put_secret_value_res_2)
         #
         vid_2 = put_secret_value_res_2["VersionId"]
 
-        list_secret_version_ids_res_3: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_3)
+        list_secret_version_ids_res_3 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_3", list_secret_version_ids_res_3)
 
-        get_secret_value_res_2: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_2 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
 
-        update_secret_version_stage_res_1: UpdateSecretVersionStageResponse = (
-            self._typed_response_of(
-                typ=UpdateSecretVersionStageResponse,
-                response=sm_client.update_secret_version_stage(
-                    SecretId=secret_name,
-                    RemoveFromVersionId=vid_1,
-                    MoveToVersionId=vid_2,
-                    VersionStage="AWSCURRENT",
-                ),
-            )
+        update_secret_version_stage_res_1 = sm_client.update_secret_version_stage(
+            SecretId=secret_name,
+            RemoveFromVersionId=vid_1,
+            MoveToVersionId=vid_2,
+            VersionStage="AWSCURRENT",
         )
         sm_snapshot.match("update_secret_version_stage_res_1", update_secret_version_stage_res_1)
 
-        list_secret_version_ids_res_4: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_4)
+        list_secret_version_ids_res_4 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_4", list_secret_version_ids_res_4)
 
-        get_secret_value_res_3: GetSecretValueResponse = self._typed_response_of(
-            typ=GetSecretValueResponse, response=sm_client.get_secret_value(SecretId=secret_name)
-        )
+        get_secret_value_res_3 = sm_client.get_secret_value(SecretId=secret_name)
         sm_snapshot.match("get_secret_value_res_3", get_secret_value_res_3)
 
-        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_0 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    def test_non_versioning_version_stages_replacement(self, sm_client, sm_snapshot):
-        secret_name = f"s-{short_uid()}"
-        #
-        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(Name=secret_name, SecretString="S0"),
-        )
+    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    def test_non_versioning_version_stages_replacement(self, sm_client, sm_snapshot, secret_name):
+        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="S0")
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="S1", VersionStages=["one", "two", "three"]
-            ),
+        put_secret_value_res_0 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="S1", VersionStages=["one", "two", "three"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
 
-        list_secret_version_ids_res_0: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
+        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name,
-                SecretString="S2",
-                VersionStages=["one", "two", "three", "four"],
-            ),
+        put_secret_value_res_1 = sm_client.put_secret_value(
+            SecretId=secret_name,
+            SecretString="S2",
+            VersionStages=["one", "two", "three", "four"],
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
-        list_secret_version_ids_res_1: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
+        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_0 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
-    def test_non_versioning_version_stages_no_replacement(self, sm_client, sm_snapshot):
-        secret_name = f"s-{short_uid()}"
-        #
-        create_secret_rs_0: CreateSecretResponse = self._typed_response_of(
-            typ=CreateSecretResponse,
-            response=sm_client.create_secret(Name=secret_name, SecretString="S0"),
-        )
+    @pytest.mark.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
+    def test_non_versioning_version_stages_no_replacement(
+        self, sm_client, sm_snapshot, secret_name
+    ):
+        create_secret_rs_0 = sm_client.create_secret(Name=secret_name, SecretString="S0")
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs_0, 0)
         )
         sm_snapshot.match("create_secret_rs_0", create_secret_rs_0)
 
-        put_secret_value_res_0: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="S1", VersionStages=["one", "two", "three"]
-            ),
+        put_secret_value_res_0 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="S1", VersionStages=["one", "two", "three"]
         )
         sm_snapshot.match("put_secret_value_res_0", put_secret_value_res_0)
 
-        list_secret_version_ids_res_0: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_0)
+        list_secret_version_ids_res_0 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_0", list_secret_version_ids_res_0)
 
-        put_secret_value_res_1: PutSecretValueResponse = self._typed_response_of(
-            typ=PutSecretValueResponse,
-            response=sm_client.put_secret_value(
-                SecretId=secret_name, SecretString="S2", VersionStages=["one", "two", "four"]
-            ),
+        put_secret_value_res_1 = sm_client.put_secret_value(
+            SecretId=secret_name, SecretString="S2", VersionStages=["one", "two", "four"]
         )
         sm_snapshot.match("put_secret_value_res_1", put_secret_value_res_1)
 
-        list_secret_version_ids_res_1: ListSecretVersionIdsResponse = self._typed_response_of(
-            typ=ListSecretVersionIdsResponse,
-            response=sm_client.list_secret_version_ids(SecretId=secret_name),
-        )
-        self._normalise_list_secret_version_ids_response(list_secret_version_ids_res_1)
+        list_secret_version_ids_res_1 = sm_client.list_secret_version_ids(SecretId=secret_name)
         sm_snapshot.match("list_secret_version_ids_res_1", list_secret_version_ids_res_1)
 
-        delete_secret_res_0: DeleteSecretResponse = self._typed_response_of(
-            typ=DeleteSecretResponse,
-            response=sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True),
+        delete_secret_res_0 = sm_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
 
     @staticmethod
-    def secretsmanager_http_json_headers(amz_target: str) -> Dict:
+    def secretsmanager_http_json_headers(amz_target: str) -> dict:
         headers = aws_stack.mock_aws_request_headers("secretsmanager")
         headers["X-Amz-Target"] = amz_target
         return headers
 
     def secretsmanager_http_json_post(self, amz_target: str, http_body: json) -> requests.Response:
         ep_url: str = aws_stack.get_local_service_url("secretsmanager")
-        http_headers: Dict = self.secretsmanager_http_json_headers(amz_target)
+        http_headers: dict = self.secretsmanager_http_json_headers(amz_target)
         return requests.post(ep_url, headers=http_headers, data=json.dumps(http_body))
 
     def secretsmanager_http_create_secret_string(
@@ -1574,7 +1270,7 @@ class TestSecretsManager:
         secret_id: str,
         secret_string: str,
         client_request_token: Optional[str],
-        version_stages: List[str],
+        version_stages: list[str],
     ) -> requests.Response:
         http_body: json = {
             "SecretId": secret_id,
@@ -1589,7 +1285,7 @@ class TestSecretsManager:
         res: requests.Response,
         secret_name: str,
         client_request_token: Optional[str],
-        version_stages: List[str],
+        version_stages: list[str],
     ) -> json:
         req_version_id: str
         if client_request_token is None:
@@ -1603,9 +1299,7 @@ class TestSecretsManager:
         assert res_json["VersionStages"] == version_stages
         return res_json
 
-    def test_http_update_secret_with_missing_client_request_token(self):
-        secret_name = f"s-{short_uid()}"
-
+    def test_http_update_secret_with_missing_client_request_token(self, secret_name):
         # Create v0.
         secret_string_v0: str = "secret_string_v0"
         cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
@@ -1650,9 +1344,7 @@ class TestSecretsManager:
             version_id_v2,
         )
 
-    def test_http_put_secret_value_with_new_custom_client_request_token(self):
-        secret_name = f"s-{short_uid()}"
-
+    def test_http_put_secret_value_with_new_custom_client_request_token(self, secret_name):
         # Create v0.
         secret_string_v0: str = "MySecretString"
         cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
@@ -1703,9 +1395,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_http_put_secret_value_with_duplicate_client_request_token(self):
-        secret_name = f"s-{short_uid()}"
-
+    def test_http_put_secret_value_with_duplicate_client_request_token(self, secret_name):
         # Create v0.
         secret_string_v0: str = "MySecretString"
         cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
@@ -1751,9 +1441,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_http_put_secret_value_with_null_client_request_token(self):
-        secret_name = f"s-{short_uid()}"
-
+    def test_http_put_secret_value_with_null_client_request_token(self, secret_name):
         # Create v0.
         secret_string_v0: str = "MySecretString"
         cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
@@ -1800,9 +1488,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_http_put_secret_value_with_undefined_client_request_token(self):
-        secret_name = f"s-{short_uid()}"
-
+    def test_http_put_secret_value_with_undefined_client_request_token(self, secret_name):
         # Create v0.
         secret_string_v0: str = "MySecretString"
         cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
@@ -1848,9 +1534,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_http_put_secret_value_duplicate_req(self):
-        secret_name = f"s-{short_uid()}"
-
+    def test_http_put_secret_value_duplicate_req(self, secret_name):
         # Create v0.
         secret_string_v0: str = "MySecretString"
         cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
@@ -1896,9 +1580,7 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_http_put_secret_value_null_client_request_token_new_version_stages(self):
-        secret_name = f"s-{short_uid()}"
-
+    def test_http_put_secret_value_null_client_request_token_new_version_stages(self, secret_name):
         # Create v0.
         secret_string_v0: str = "MySecretString"
         cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
@@ -1916,7 +1598,7 @@ class TestSecretsManager:
 
         # Update v0 with null ClientRequestToken.
         secret_string_v1: str = "MyNewSecretString"
-        version_stages_v1: List[str] = ["AWSPENDING"]
+        version_stages_v1: list[str] = ["AWSPENDING"]
         #
         pv_v1_res_json = self.secretsmanager_http_put_secret_value_with_version_val_res(
             self.secretsmanager_http_put_secret_value_with_version(
@@ -1961,9 +1643,9 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_http_put_secret_value_custom_client_request_token_new_version_stages(self):
-        secret_name = f"s-{short_uid()}"
-
+    def test_http_put_secret_value_custom_client_request_token_new_version_stages(
+        self, secret_name
+    ):
         # Create v0.
         secret_string_v0: str = "MySecretString"
         cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
@@ -1981,7 +1663,7 @@ class TestSecretsManager:
 
         # Update v0 with null ClientRequestToken.
         secret_string_v1: str = "MyNewSecretString"
-        version_stages_v1: List[str] = ["AWSPENDING"]
+        version_stages_v1: list[str] = ["AWSPENDING"]
         crt_v1: str = str(uuid.uuid4())
         while crt_v1 == cr_v0_res_json["VersionId"]:
             crt_v1 = str(uuid.uuid4())
@@ -2027,19 +1709,19 @@ class TestSecretsManager:
             self.secretsmanager_http_delete_secret(secret_name), secret_name
         )
 
-    def test_delete_non_existent_secret_returns_as_if_secret_exists(self, sm_client):
+    def test_delete_non_existent_secret_returns_as_if_secret_exists(self, sm_client, secret_name):
         """When ForceDeleteWithoutRecovery=True, AWS responds as if the non-existent secret was successfully deleted."""
-        secret_id = "non-existent-secret"
+        response = sm_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
-        response = sm_client.delete_secret(SecretId=secret_id, ForceDeleteWithoutRecovery=True)
-
-        assert response["Name"] == secret_id
+        assert response["Name"] == secret_name
         assert response["ARN"] is not None
         assert response["DeletionDate"] is not None
 
-    def test_exp_raised_on_creation_of_secret_scheduled_for_deletion(self, sm_client, sm_snapshot):
+    def test_exp_raised_on_creation_of_secret_scheduled_for_deletion(
+        self, sm_client, sm_snapshot, secret_name
+    ):
         create_secret_req: CreateSecretRequest = CreateSecretRequest(
-            Name=f"secret-{short_uid()}", SecretString=f"secretstr-{short_uid()}"
+            Name=secret_name, SecretString=f"secretstr-{short_uid()}"
         )
         stage_deletion_req: DeleteSecretRequest = DeleteSecretRequest(
             SecretId=create_secret_req["Name"], RecoveryWindowInDays=7
@@ -2057,16 +1739,14 @@ class TestSecretsManager:
 
         with pytest.raises(Exception) as invalid_req_ex:
             sm_client.create_secret(**create_secret_req)
+        sm_snapshot.match("invalid_req_ex", invalid_req_ex.value)
 
-        ex_log: Dict = self._snapshot_obj_of_exception(invalid_req_ex)
-        sm_snapshot.match("invalid_req_ex", ex_log)
-
-    def test_can_recreate_delete_secret(self, sm_client, sm_snapshot):
+    def test_can_recreate_delete_secret(self, sm_client, sm_snapshot, secret_name):
         # NOTE: AWS will behave as staged deletion for a small number of seconds (<10).
         # We assume forced deletion is instantaneous, until the precise behaviour is understood.
 
         create_secret_req: CreateSecretRequest = CreateSecretRequest(
-            Name=f"secret-{short_uid()}", SecretString=f"secretstr-{short_uid()}"
+            Name=secret_name, SecretString=f"secretstr-{short_uid()}"
         )
         stage_deletion_req: DeleteSecretRequest = DeleteSecretRequest(
             SecretId=create_secret_req["Name"], ForceDeleteWithoutRecovery=True
