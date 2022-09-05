@@ -2,12 +2,16 @@
 API-focused tests only. Don't add tests for asynchronous, blocking or implicit behavior here.
 
 # TODO: create a re-usable pattern for fairly reproducible scenarios with slower updates/creates to test intermediary states
+# TODO: code signing https://docs.aws.amazon.com/lambda/latest/dg/configuration-codesigning.html
+# TODO: file systems https://docs.aws.amazon.com/lambda/latest/dg/configuration-filesystem.html
+# TODO: VPC config https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html
 
 """
 import json
 from io import BytesIO
 
 import pytest
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
@@ -17,6 +21,7 @@ from localstack.testing.aws.lambda_utils import (
     is_old_provider,
     update_done,
 )
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
@@ -154,8 +159,350 @@ class TestLambdaFunction:
         snapshot.match("not_found_exception", e.value.response)
 
 
-# class TestLambdaVersions: ... # TODO
-# class TestLambdaAlias: ... # TODO
+@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+class TestLambdaVersions:
+    @pytest.mark.aws_validated
+    def test_publish_version_on_create(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+    ):
+        function_name = f"fn-{short_uid()}"
+
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Publish=True,
+        )
+        snapshot.match("create_response", create_response)
+
+        get_function_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_result", get_function_result)
+
+        list_versions_result = lambda_client.list_versions_by_function(FunctionName=function_name)
+        snapshot.match("list_versions_result", list_versions_result)
+
+    @pytest.mark.aws_validated
+    def test_version_lifecycle(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+    ):
+        """
+        Test the function version "lifecycle" (there are no deletes)
+        """
+        waiter = lambda_client.get_waiter("function_updated_v2")
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Description="No version :(",
+        )
+        snapshot.match("create_response", create_response)
+
+        get_function_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_function_result", get_function_result)
+
+        list_versions_result = lambda_client.list_versions_by_function(FunctionName=function_name)
+        snapshot.match("list_versions_result", list_versions_result)
+
+        first_update_response = lambda_client.update_function_configuration(
+            FunctionName=function_name, Description="First version :)"
+        )
+        snapshot.match("first_update_response", first_update_response)
+        waiter.wait(FunctionName=function_name)
+
+        first_publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="First version description :)"
+        )
+        snapshot.match("first_publish_response", first_publish_response)
+
+        second_update_response = lambda_client.update_function_configuration(
+            FunctionName=function_name, Description="Second version :))"
+        )
+        snapshot.match("second_update_response", second_update_response)
+        waiter.wait(FunctionName=function_name)
+
+        # Same state published as two different versions.
+        # The publish_version api is idempotent, so the second publish_version will *NOT* create a new version because $LATEST hasn't been updated!
+        second_publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="Second version description :))"
+        )
+        snapshot.match("second_publish_response", second_publish_response)
+        third_publish_response = lambda_client.publish_version(
+            FunctionName=function_name, Description="Third version description :)))"
+        )
+        snapshot.match("third_publish_response", third_publish_response)
+
+        list_versions_result_end = lambda_client.list_versions_by_function(
+            FunctionName=function_name
+        )
+        snapshot.match("list_versions_result_end", list_versions_result_end)
+
+    @pytest.mark.aws_validated
+    def test_publish_with_wrong_revisionid(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+    ):
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+        )
+        snapshot.match("create_response", create_response)
+
+        get_fn_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get_fn_response", get_fn_response)
+
+        # state change causes rev id change!
+        assert create_response["RevisionId"] != get_fn_response["Configuration"]["RevisionId"]
+
+        # publish_versions fails for the wrong revision id
+        with pytest.raises(lambda_client.exceptions.PreconditionFailedException) as e:
+            lambda_client.publish_version(FunctionName=function_name, RevisionId="doesntexist")
+        snapshot.match("publish_wrong_revisionid_exc", e.value.response)
+
+        # but with the proper rev id, it should work
+        publish_result = lambda_client.publish_version(
+            FunctionName=function_name, RevisionId=get_fn_response["Configuration"]["RevisionId"]
+        )
+        snapshot.match("publish_result", publish_result)
+
+
+@pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+class TestLambdaAlias:
+    @pytest.mark.aws_validated
+    def test_alias_lifecycle(
+        self, lambda_client, create_lambda_function_aws, lambda_su_role, snapshot
+    ):
+        """
+        The function has 2 (excl. $LATEST) versions:
+        Version 1: env with testenv==staging
+        Version 2: env with testenv==prod
+
+        Alias A (Version == 1) has a routing config targeting both versions
+        Alias B (Version == 1) has no routing config and simply is an alias for Version 1
+        Alias C (Version == 2) has no routing config
+
+        """
+        function_name = f"alias-fn-{short_uid()}"
+        snapshot.add_transformer(SortingTransformer("Aliases", lambda x: x["Name"]))
+
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Publish=True,
+            Environment={"Variables": {"testenv": "staging"}},
+        )
+        snapshot.match("create_response", create_response)
+
+        publish_v1 = lambda_client.publish_version(FunctionName=function_name)
+        snapshot.match("publish_v1", publish_v1)
+
+        lambda_client.update_function_configuration(
+            FunctionName=function_name, Environment={"Variables": {"testenv": "prod"}}
+        )
+        waiter = lambda_client.get_waiter("function_updated_v2")
+        waiter.wait(FunctionName=function_name)
+
+        publish_v2 = lambda_client.publish_version(FunctionName=function_name)
+        snapshot.match("publish_v2", publish_v2)
+
+        create_alias_1_1 = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name="blub1_1",
+            FunctionVersion="1",
+            Description="custom-alias",
+            RoutingConfig={"AdditionalVersionWeights": {"2": 0.2}},
+        )
+        snapshot.match("create_alias_1_1", create_alias_1_1)
+        get_alias_1_1 = lambda_client.get_alias(FunctionName=function_name, Name="blub1_1")
+        snapshot.match("get_alias_1_1", get_alias_1_1)
+
+        create_alias_1_2 = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name="blub1_2",
+            FunctionVersion="1",
+            Description="custom-alias",
+        )
+        snapshot.match("create_alias_1_2", create_alias_1_2)
+        get_alias_1_2 = lambda_client.get_alias(FunctionName=function_name, Name="blub1_2")
+        snapshot.match("get_alias_1_2", get_alias_1_2)
+
+        create_alias_2 = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name="blub2",
+            FunctionVersion="2",
+            Description="custom-alias",
+        )
+        snapshot.match("create_alias_2", create_alias_2)
+        get_alias_2 = lambda_client.get_alias(FunctionName=function_name, Name="blub2")
+        snapshot.match("get_alias_2", get_alias_2)
+
+        # list_aliases can be optionally called with a FunctionVersion to filter only aliases for this version
+        list_aliases_for_fnname = lambda_client.list_aliases(
+            FunctionName=function_name
+        )  # 3 aliases
+        snapshot.match("list_aliases_for_fnname", list_aliases_for_fnname)
+        assert len(list_aliases_for_fnname["Aliases"]) == 3
+
+        list_aliases_for_version = lambda_client.list_aliases(
+            FunctionName=function_name, FunctionVersion="1"
+        )  # 2 aliases
+        snapshot.match("list_aliases_for_version", list_aliases_for_version)
+        assert len(list_aliases_for_version["Aliases"]) == 2
+
+        delete_alias_response = lambda_client.delete_alias(
+            FunctionName=function_name, Name="blub1_1"
+        )
+        snapshot.match("delete_alias_response", delete_alias_response)
+
+        list_aliases_for_fnname_afterdelete = lambda_client.list_aliases(
+            FunctionName=function_name
+        )  # 2 aliases
+        snapshot.match("list_aliases_for_fnname_afterdelete", list_aliases_for_fnname_afterdelete)
+
+    def test_notfound_and_invalid_routingconfigs(
+        self, create_boto_client, create_lambda_function_aws, snapshot, lambda_su_role
+    ):
+        lambda_client = create_boto_client(
+            "lambda", additional_config=Config(parameter_validation=False)
+        )
+        function_name = f"alias-fn-{short_uid()}"
+
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Publish=True,
+            Environment={"Variables": {"testenv": "staging"}},
+        )
+        snapshot.match("create_response", create_response)
+
+        # create 2 versions
+        publish_v1 = lambda_client.publish_version(FunctionName=function_name)
+        snapshot.match("publish_v1", publish_v1)
+
+        lambda_client.update_function_configuration(
+            FunctionName=function_name, Environment={"Variables": {"testenv": "prod"}}
+        )
+        waiter = lambda_client.get_waiter("function_updated_v2")
+        waiter.wait(FunctionName=function_name)
+
+        publish_v2 = lambda_client.publish_version(FunctionName=function_name)
+        snapshot.match("publish_v2", publish_v2)
+
+        # routing config with more than one entry (which isn't supported atm by AWS)
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.create_alias(
+                FunctionName=function_name,
+                Name="custom",
+                FunctionVersion="1",
+                RoutingConfig={"AdditionalVersionWeights": {"1": 0.8, "2": 0.2}},
+            )
+        snapshot.match("routing_config_exc_toomany", e.value.response)
+
+        # value > 1
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_alias(
+                FunctionName=function_name,
+                Name="custom",
+                FunctionVersion="1",
+                RoutingConfig={"AdditionalVersionWeights": {"2": 2}},
+            )
+        snapshot.match("routing_config_exc_toohigh", e.value.response)
+
+        # value < 0
+        with pytest.raises(ClientError) as e:
+            lambda_client.create_alias(
+                FunctionName=function_name,
+                Name="custom",
+                FunctionVersion="1",
+                RoutingConfig={"AdditionalVersionWeights": {"2": -1}},
+            )
+        snapshot.match("routing_config_exc_subzero", e.value.response)
+
+        # same version as alias pointer
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            lambda_client.create_alias(
+                FunctionName=function_name,
+                Name="custom",
+                FunctionVersion="1",
+                RoutingConfig={"AdditionalVersionWeights": {"1": 0.5}},
+            )
+        snapshot.match("routing_config_exc_sameversion", e.value.response)
+
+        # function version 10 doesn't exist
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.create_alias(
+                FunctionName=function_name,
+                Name="custom",
+                FunctionVersion="10",
+                RoutingConfig={"AdditionalVersionWeights": {"2": 0.5}},
+            )
+        snapshot.match("routing_config_exc_version_doesnotexist", e.value.response)
+
+        # function doesn't exist
+        with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
+            lambda_client.create_alias(
+                FunctionName=f"{function_name}-unknown",
+                Name="custom",
+                FunctionVersion="1",
+                RoutingConfig={"AdditionalVersionWeights": {"2": 0.5}},
+            )
+        snapshot.match("routing_config_exc_fn_doesnotexist", e.value.response)
+
+        # empty routing config works fine
+        create_alias_empty_routingconfig = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name="custom-empty-routingconfig",
+            FunctionVersion="1",
+            RoutingConfig={"AdditionalVersionWeights": {}},
+        )
+        snapshot.match("create_alias_empty_routingconfig", create_alias_empty_routingconfig)
+
+        # "normal scenario" works:
+        create_alias_response = lambda_client.create_alias(
+            FunctionName=function_name,
+            Name="custom",
+            FunctionVersion="1",
+            RoutingConfig={"AdditionalVersionWeights": {"2": 0.5}},
+        )
+        snapshot.match("create_alias_response", create_alias_response)
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
@@ -258,9 +605,6 @@ class TestLambdaTag:
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.list_tags(Resource=fn_arn)
         snapshot.match("not_found_exception_list", e.value.response)
-
-
-# class TestLambdaSigningConfig: ... # TODO
 
 
 # some more common ones that usually don't work in the old provider
