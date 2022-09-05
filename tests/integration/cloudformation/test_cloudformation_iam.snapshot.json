@@ -1,5 +1,5 @@
 {
-   "tests/integration/cloudformation/test_cloudformation_iam.py::test_iam_username_defaultname": {
+  "tests/integration/cloudformation/test_cloudformation_iam.py::test_iam_username_defaultname": {
     "recorded-date": "31-05-2022, 11:29:45",
     "recorded-content": {
       "get_iam_user": {
@@ -18,7 +18,7 @@
     }
   },
   "tests/integration/cloudformation/test_cloudformation_iam.py::test_managed_policy_with_empty_resource": {
-    "recorded-date": "31-08-2022, 09:42:47",
+    "recorded-date": "05-09-2022, 10:01:53",
     "recorded-content": {
       "outputs": {
         "PolicyArn": "arn:aws:iam::111111111111:policy/<resource:1>",
@@ -61,9 +61,5 @@
         "UserName": "<user-name:1>"
       }
     }
-  },
-  "tests/integration/cloudformation/test_cloudformation_iam.py::test_managed_policy_with_empty_resource": {
-    "recorded-date": "26-08-2022, 11:02:39",
-    "recorded-content": {}
   }
 }
