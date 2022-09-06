@@ -5,6 +5,7 @@ from requests.models import Response as RequestsResponse
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
 
+from localstack.aws.handlers.cors import cors_aware
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
@@ -127,7 +128,8 @@ class ApigatewayRouter:
             endpoint=self.invoke_rest_api,
         )
 
-    def invoke_rest_api(self, request: Request, **url_params: Dict[str, Any]) -> Response:
+    @cors_aware()
+    def invoke_rest_api(request: Request, **url_params: Dict[str, Any]) -> Response:
         if not get_api_region(url_params["api_id"]):
             return Response(status=404)
         invocation_context = to_invocation_context(request, url_params)

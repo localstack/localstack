@@ -167,10 +167,6 @@ def legacy_rules(request: Request) -> Optional[str]:
     if ".lambda-url." in host:
         return "lambda"
 
-    # DynamoDB shell URLs
-    if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
-        return "dynamodb"
-
     # TODO Remove once fallback to S3 is disabled (after S3 ASF and Cors rework)
     # necessary for correct handling of cors for internal endpoints
     if path == "/health" or path.startswith("/_localstack"):

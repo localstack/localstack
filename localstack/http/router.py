@@ -16,6 +16,7 @@ from typing import (
     TypeVar,
 )
 
+from werkzeug.exceptions import HTTPException
 from werkzeug.routing import BaseConverter, Map, Rule, RuleFactory
 
 from localstack.utils.common import to_str
@@ -232,6 +233,23 @@ class Router(Generic[E]):
         )
         args.pop("__host__", None)
         return self.dispatcher(request, handler, args)
+
+    def match(self, request: Request) -> Optional[E]:
+        """
+        Only performs the matching and returns the endpoint of the matching rule or None if no rule matches.
+
+        :param request: the HTTP request
+        :return: the endpoint of a matching rule or None if no rule matches
+        """
+        matcher = self.url_map.bind(server_name=request.host)
+        try:
+            handler, _ = matcher.match(
+                request.path, method=request.method, query_args=to_str(request.query_string)
+            )
+            return handler
+        except HTTPException:
+            # HTTP exceptions indicate that no direct match was found (f.e. werkzeug's NotFound)
+            pass
 
     def route(
         self,

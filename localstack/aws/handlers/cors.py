@@ -23,6 +23,8 @@ from localstack.config import (
 )
 from localstack.http import Response
 
+from ...services.edge import ROUTER
+from ...services.plugins import SERVICE_PLUGINS
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
 
@@ -89,7 +91,23 @@ if EXTRA_CORS_ALLOWED_ORIGINS:
 ACL_REQUEST_PRIVATE_NETWORK = "Access-Control-Request-Private-Network"
 ACL_ALLOW_PRIVATE_NETWORK = "Access-Control-Allow-Private-Network"
 
+_CORS_AWARE_ROUTE_ENDPOINT_MARKER = "cors_aware"
+
 LOG = logging.getLogger(__name__)
+
+
+def cors_aware():
+    """
+    Decorator used on Router endpoints to indicate that the endpoint handles CORS itself, and should not be handled
+    by any generic CORS handlers.
+    """
+
+    def wrapper(fn):
+        # Set the marker on the function object indicating that the function handles CORS itself
+        setattr(fn, _CORS_AWARE_ROUTE_ENDPOINT_MARKER, True)
+        return fn
+
+    return wrapper
 
 
 def should_enforce_self_managed_service(context: RequestContext) -> bool:
@@ -100,15 +118,32 @@ def should_enforce_self_managed_service(context: RequestContext) -> bool:
                     the targeting service
     :return: True if the CORS rules should be enforced in here.
     """
+    # TODO remove the S3 and API GW specific sections here as soon as the legacy providers are removed
     if config.DISABLE_CUSTOM_CORS_S3 and config.DISABLE_CUSTOM_CORS_APIGATEWAY:
         return True
     # allow only certain api calls without checking origin
     if context.service:
         service_name = context.service.service_name
-        if not config.DISABLE_CUSTOM_CORS_S3 and service_name == "s3":
+        if (
+            not config.DISABLE_CUSTOM_CORS_S3
+            and service_name == "s3"
+            and SERVICE_PLUGINS.get("s3").name().startswith("s3:legacy")
+        ):
             return False
-        if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and service_name == "apigateway":
+        if (
+            not config.DISABLE_CUSTOM_CORS_APIGATEWAY
+            and service_name == "apigateway"
+            and SERVICE_PLUGINS.get("apigateway").name().startswith("apigateway:legacy")
+        ):
             return False
+
+    # TODO the matching is now executed twice in here (once for the CorsEnforcer, once for the CorsResponseEnricher).
+    #      maybe we could - similar to the service_name - also store the matched route on the context?
+    # Check if an edge route matches and if it is marked as "cors aware" (i.e. the endpoint handles CORS itself)
+    endpoint = ROUTER.match(context.request)
+    if endpoint and hasattr(endpoint, _CORS_AWARE_ROUTE_ENDPOINT_MARKER) and endpoint.cors_aware:
+        return False
+
     return True
 
 
