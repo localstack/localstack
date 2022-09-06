@@ -26,6 +26,7 @@ from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_exec
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse, requests_response
+from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.collections import remove_attributes
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.http import canonicalize_headers, parse_request_data
@@ -99,7 +100,9 @@ class SnsIntegration(BackendIntegration):
 
 
 def call_lambda(function_arn: str, event: bytes, asynchronous: bool) -> str:
-    lambda_client = aws_stack.connect_to_service("lambda")
+    lambda_client = aws_stack.connect_to_service(
+        "lambda", region_name=extract_region_from_arn(function_arn)
+    )
     inv_result = lambda_client.invoke(
         FunctionName=function_arn,
         Payload=event,

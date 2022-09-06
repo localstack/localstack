@@ -80,6 +80,7 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (
     connect_to_resource,
+    extract_region_from_arn,
     firehose_stream_arn,
     get_search_db_connection,
     s3_bucket_name,
@@ -599,7 +600,6 @@ class FirehoseProvider(FirehoseApi):
         if proc_type == "Lambda":
             lambda_arn = parameters.get("LambdaArn")
             # TODO: add support for other parameters, e.g., NumberOfRetries, BufferSizeInMBs, BufferIntervalInSeconds, ...
-            client = aws_stack.connect_to_service("lambda")
             records = keys_to_lower(records)
             # Convert the record data to string (for json serialization)
             for record in records:
@@ -609,6 +609,9 @@ class FirehoseProvider(FirehoseApi):
                     record["Data"] = to_str(record["Data"])
             event = {"records": records}
             event = to_bytes(json.dumps(event))
+            client = aws_stack.connect_to_service(
+                "lambda", region_name=extract_region_from_arn(lambda_arn)
+            )
             response = client.invoke(FunctionName=lambda_arn, Payload=event)
             result = response.get("Payload").read()
             result = json.loads(to_str(result))
