@@ -258,12 +258,25 @@ def route53resolver():
     )
 
 
-@aws_provider()
+@aws_provider(api="s3", name="default")
 def s3():
     from localstack.services.s3 import s3_listener, s3_starter
 
     return Service(
         "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
+    )
+
+
+@aws_provider(api="s3", name="asf")
+def s3_asf():
+    from localstack.services.s3.provider import S3Provider
+
+    provider = S3Provider()
+
+    return Service(
+        "s3",
+        listener=AwsApiListener("s3", MotoFallbackDispatcher(provider)),
+        lifecycle_hook=provider,
     )
 
 
