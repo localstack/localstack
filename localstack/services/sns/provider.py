@@ -528,7 +528,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sns_backend = SNSBackend.get()
         sub_arn = None
         for k, v in sns_backend.subscription_status.items():
-            if v["Token"] == token and v["TopicArn"] == topic_arn:
+            if v.get("Token") == token and v["TopicArn"] == topic_arn:
                 v["Status"] = "Subscribed"
                 sub_arn = k
         for k, v in sns_backend.sns_subscriptions.items():
