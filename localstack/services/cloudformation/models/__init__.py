@@ -25,4 +25,5 @@ __all__ = [
     "sqs",
     "ssm",
     "stepfunctions",
+    "stores",
 ]
