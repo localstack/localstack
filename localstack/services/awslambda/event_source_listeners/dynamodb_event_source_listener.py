@@ -5,6 +5,7 @@ from localstack.services.awslambda.event_source_listeners.stream_event_source_li
     StreamEventSourceListener,
 )
 from localstack.services.awslambda.lambda_api import get_event_sources
+from localstack.services.awslambda.lambda_utils import filter_stream_records
 from localstack.utils.aws import aws_stack
 from localstack.utils.threads import FuncThread
 
@@ -36,6 +37,14 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
         return stream_client.get_shard_iterator(
             StreamArn=stream_arn, ShardId=shard_id, ShardIteratorType=iterator_type
         )["ShardIterator"]
+
+    def _filter_records(
+        self, records: List[Dict], event_filter_criterias: List[Dict]
+    ) -> List[Dict]:
+        if len(event_filter_criterias) == 0:
+            return records
+
+        return filter_stream_records(records, event_filter_criterias)
 
     def _create_lambda_event_payload(self, stream_arn, records, shard_id=None):
         record_payloads = []

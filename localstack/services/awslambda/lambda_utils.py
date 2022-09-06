@@ -440,3 +440,12 @@ def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Di
 def function_name_from_arn(arn: str):
     """Extract a function name from a arn/function name"""
     return FUNCTION_NAME_REGEX.match(arn).group("name")
+
+
+def has_data_filter_criteria(filters: List[FilterCriteria]) -> bool:
+    for filter in filters:
+        for rule in filter["Filters"]:
+            parsed_pattern = json.loads(rule["Pattern"])
+            if "data" in parsed_pattern:
+                return True
+    return False

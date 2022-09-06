@@ -11,10 +11,7 @@ from localstack.services.awslambda.event_source_listeners.event_source_listener 
 )
 from localstack.services.awslambda.lambda_api import run_lambda
 from localstack.services.awslambda.lambda_executors import InvocationResult
-from localstack.services.awslambda.lambda_utils import (
-    filter_stream_records,
-    get_lambda_event_filters_for_arn,
-)
+from localstack.services.awslambda.lambda_utils import get_lambda_event_filters_for_arn
 from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import long_uid, timestamp_millis
@@ -110,6 +107,15 @@ class StreamEventSourceListener(EventSourceListener):
         """
         raise NotImplementedError
 
+    def _filter_records(
+        self, records: List[Dict], event_filter_criterias: List[Dict]
+    ) -> List[Dict]:
+        """
+        to be implemented by subclasses
+        :returns: records after being filtered by event fitlter criterias
+        """
+        raise NotImplementedError
+
     def start(self):
         """
         Spawn coordinator thread for listening to relevant new/removed event source mappings
@@ -187,10 +193,9 @@ class StreamEventSourceListener(EventSourceListener):
             records_response = stream_client.get_records(
                 ShardIterator=shard_iterator, Limit=batch_size
             )
-            records = records_response.get("Records")
+            records = records_response.get("Records", [])
             event_filter_criterias = get_lambda_event_filters_for_arn(function_arn, stream_arn)
-            if len(event_filter_criterias) > 0:
-                records = filter_stream_records(records, event_filter_criterias)
+            records = self._filter_records(records, event_filter_criterias)
 
             should_get_next_batch = True
             if records:
