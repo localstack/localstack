@@ -1,12 +1,12 @@
 from typing import Dict
 
 from localstack.aws.api.route53 import DelegationSet
-from localstack.services.generic_proxy import RegionBackend
+from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 
 
-class Route53Backend(RegionBackend):
+class Route53Store(BaseStore):
     # maps delegation set ID to reusable delegation set details
-    reusable_delegation_sets: Dict[str, DelegationSet]
+    reusable_delegation_sets: Dict[str, DelegationSet] = LocalAttribute(default=dict)
 
-    def __init__(self):
-        self.reusable_delegation_sets = {}
+
+route53_stores = AccountRegionBundle("route53", Route53Store)
