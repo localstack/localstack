@@ -1,7 +1,7 @@
 import pytest
 
 from localstack.testing.snapshots import SnapshotSession
-from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
+from localstack.testing.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 from localstack.testing.snapshots.transformer_utility import _resource_name_transformer
 
 
@@ -119,3 +119,34 @@ class TestSnapshotManager:
 
         skip_path_escaped = ["$..aab", "$..b.'a.aa'"]
         sm._assert_all(skip_verification_paths=skip_path_escaped)
+
+
+def test_sorting_transformer():
+    original_dict = {
+        "a": {
+            "b": [
+                {"name": "c-123"},
+                {"name": "a-123"},
+                {"name": "b-123"},
+            ]
+        },
+        "a2": {
+            "b": [
+                {"name": "b-123"},
+                {"name": "a-123"},
+                {"name": "c-123"},
+            ]
+        },
+    }
+
+    sorted_items = [
+        {"name": "a-123"},
+        {"name": "b-123"},
+        {"name": "c-123"},
+    ]
+
+    transformer = SortingTransformer("b", lambda x: x["name"])
+    transformed_dict = transformer.transform(original_dict)
+
+    assert transformed_dict["a"]["b"] == sorted_items
+    assert transformed_dict["a2"]["b"] == sorted_items
