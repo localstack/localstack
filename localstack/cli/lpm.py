@@ -6,7 +6,7 @@ from click import ClickException
 from rich.console import Console
 
 from localstack import config
-from localstack.services.install import InstallerManager
+from localstack.services.install import InstallerManager, InstallTarget
 from localstack.utils.bootstrap import setup_logging
 
 console = Console()
@@ -88,11 +88,14 @@ def install(package, parallel, version, target):
     # collect installers and install in parallel:
     try:
         if version or target:
+            if target:
+                target = InstallTarget[str.upper(target)]
             # TODO: this is just to test installing 1 package with the new installer hierarchy
             for pkg in package:
                 _do_install(pkg, version, target)
-        with Pool(processes=parallel) as pool:
-            pool.map(_do_install, package)
+        else:
+            with Pool(processes=parallel) as pool:
+                pool.map(_do_install, package)
     except Exception as e:
         # raise ClickException("one or more package installations failed.")
         raise e

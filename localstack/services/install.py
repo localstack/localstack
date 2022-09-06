@@ -25,13 +25,11 @@ from localstack import config
 from localstack.config import dirs
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
-    DYNAMODB_JAR_URL,
     ELASTICMQ_JAR_URL,
     ELASTICSEARCH_DEFAULT_VERSION,
     ELASTICSEARCH_DELETE_MODULES,
     ELASTICSEARCH_PLUGIN_LIST,
     KMS_URL_PATTERN,
-    LIBSQLITE_AARCH64_URL,
     LOCALSTACK_MAVEN_VERSION,
     MAVEN_REPO_URL,
     OPENSEARCH_DEFAULT_VERSION,
@@ -115,14 +113,6 @@ SFN_AWS_SDK_URL_PREFIX = (
 )
 SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
 
-# patches for DynamoDB Local
-DDB_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/388cd73f45bfd3bcf7ad40aa35499093061c7962/dynamodb-local-patch"
-)
-DDB_AGENT_JAR_URL = f"{DDB_PATCH_URL_PREFIX}/target/ddb-local-loader-0.1.jar"
-DDB_AGENT_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "ddb-local-loader-0.1.jar")
-JAVASSIST_JAR_URL = f"{MAVEN_REPO_URL}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
-JAVASSIST_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "javassist.jar")
 
 # additional JAR libs required for multi-region and persistence (PRO only) support
 URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
@@ -267,79 +257,6 @@ def install_elasticsearch(version=None):
         )
         if jvm_options != jvm_options_replaced:
             save_file(jvm_options_file, jvm_options_replaced)
-
-    # def get_opensearch_install_version(version: str) -> str:
-    #     from localstack.services.opensearch import versions
-    #
-    #     if config.SKIP_INFRA_DOWNLOADS:
-    #         version = OPENSEARCH_DEFAULT_VERSION
-    #
-    #     return versions.get_install_version(version)
-    #
-    #
-    # def get_opensearch_install_dir(version: str) -> str:
-    #     return os.path.join(config.dirs.var_libs, "opensearch", version)
-
-    #
-    # def install_opensearch(version=None):
-    #     # locally import to avoid having a dependency on ASF when starting the CLI
-    #     from localstack.aws.api.opensearch import EngineType
-    #     from localstack.services.opensearch import versions
-    #
-    #     if not version:
-    #         version = OPENSEARCH_DEFAULT_VERSION
-    #
-    #     version = get_opensearch_install_version(version)
-    #     install_dir = get_opensearch_install_dir(version)
-    #     installed_executable = os.path.join(install_dir, "bin", "opensearch")
-    #     if not os.path.exists(installed_executable):
-    #         with OS_INSTALL_LOCKS.setdefault(version, threading.Lock()):
-    #             if not os.path.exists(installed_executable):
-    #                 log_install_msg(f"OpenSearch ({version})")
-    #                 opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
-    #                 install_dir_parent = os.path.dirname(install_dir)
-    #                 mkdir(install_dir_parent)
-    #                 # download and extract archive
-    #                 tmp_archive = os.path.join(
-    #                     config.dirs.cache, f"localstack.{os.path.basename(opensearch_url)}"
-    #                 )
-    #                 download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
-    #                 opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
-    #                 if not opensearch_dir:
-    #                     raise Exception(f"Unable to find OpenSearch folder in {install_dir_parent}")
-    #                 shutil.move(opensearch_dir[0], install_dir)
-    #
-    #                 for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
-    #                     dir_path = os.path.join(install_dir, dir_name)
-    #                     mkdir(dir_path)
-    #                     chmod_r(dir_path, 0o777)
-    #
-    #                 # install default plugins for opensearch 1.1+
-    #                 # https://forum.opensearch.org/t/ingest-attachment-cannot-be-installed/6494/12
-    #                 parsed_version = semver.VersionInfo.parse(version)
-    #                 if parsed_version >= "1.1.0":
-    #                     for plugin in OPENSEARCH_PLUGIN_LIST:
-    #                         plugin_binary = os.path.join(install_dir, "bin", "opensearch-plugin")
-    #                         plugin_dir = os.path.join(install_dir, "plugins", plugin)
-    #                         if not os.path.exists(plugin_dir):
-    #                             LOG.info("Installing OpenSearch plugin %s", plugin)
-    #
-    #                             def try_install():
-    #                                 output = run([plugin_binary, "install", "-b", plugin])
-    #                                 LOG.debug("Plugin installation output: %s", output)
-    #
-    #                             # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
-    #                             download_attempts = 3
-    #                             try:
-    #                                 retry(try_install, retries=download_attempts - 1, sleep=2)
-    #                             except Exception:
-    #                                 LOG.warning(
-    #                                     "Unable to download OpenSearch plugin '%s' after %s attempts",
-    #                                     plugin,
-    #                                     download_attempts,
-    #                                 )
-    #                                 if not os.environ.get("IGNORE_OS_DOWNLOAD_ERRORS"):
-    #                                     raise
 
     # patch JVM options file - replace hardcoded heap size settings
     jvm_options_file = os.path.join(install_dir, "config", "jvm.options")
@@ -559,49 +476,6 @@ def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):
         run(["zip", target_jar, class_file], cwd=base_dir)
 
 
-def install_dynamodb_local():
-    if not os.path.exists(INSTALL_PATH_DDB_JAR):
-        log_install_msg("DynamoDB")
-        # download and extract archive
-        tmp_archive = os.path.join(tempfile.gettempdir(), "localstack.ddb.zip")
-        download_and_extract_with_retry(DYNAMODB_JAR_URL, tmp_archive, INSTALL_DIR_DDB)
-
-    # download additional libs for Mac M1 (for local dev mode)
-    ddb_local_lib_dir = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal_lib")
-    if is_mac_os() and get_arch() == "arm64":
-        target_path = os.path.join(ddb_local_lib_dir, "libsqlite4java-osx-aarch64.dylib")
-        if not file_exists_not_empty(target_path):
-            download(LIBSQLITE_AARCH64_URL, target_path)
-
-    # fix logging configuration for DynamoDBLocal
-    log4j2_config = """<Configuration status="WARN">
-      <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-          <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-        </Console>
-      </Appenders>
-      <Loggers>
-        <Root level="WARN"><AppenderRef ref="Console"/></Root>
-      </Loggers>
-    </Configuration>"""
-    log4j2_file = os.path.join(INSTALL_DIR_DDB, "log4j2.xml")
-    run_safe(lambda: save_file(log4j2_file, log4j2_config))
-    run_safe(lambda: run(["zip", "-u", "DynamoDBLocal.jar", "log4j2.xml"], cwd=INSTALL_DIR_DDB))
-
-    # download agent JAR
-    if not os.path.exists(DDB_AGENT_JAR_PATH):
-        download(DDB_AGENT_JAR_URL, DDB_AGENT_JAR_PATH)
-    if not os.path.exists(JAVASSIST_JAR_PATH):
-        download(JAVASSIST_JAR_URL, JAVASSIST_JAR_PATH)
-
-    upgrade_jar_file(ddb_local_lib_dir, "slf4j-ext-*.jar", "org/slf4j/slf4j-ext:1.8.0-beta4")
-
-    # ensure that javassist.jar is in the manifest classpath
-    update_jar_manifest(
-        "DynamoDBLocal.jar", INSTALL_DIR_DDB, "Class-Path: .", "Class-Path: javassist.jar ."
-    )
-
-
 def update_jar_manifest(
     jar_file_name: str, parent_dir: str, search: Union[str, re.Pattern], replace: str
 ):
@@ -818,7 +692,8 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
 # kept here for backwards compatibility (installed on "make init" - TODO should be removed)
 installers = {
     "cloudformation": install_cloudformation_libs,
-    "dynamodb": install_dynamodb_local,
+    # WIP, this function was removed due to the installer refactoring
+    # "dynamodb": install_dynamodb_local,
     "kinesis": install_kinesis,
     "kms": install_local_kms,
     "lambda": install_lambda_runtime,
@@ -844,7 +719,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("awslamba-go-runtime", install_go_lambda_runtime),
             ("awslambda-runtime", install_lambda_runtime),
             ("cloudformation-libs", install_cloudformation_libs),
-            ("dynamodb-local", install_dynamodb_local),
+            ("dynamodb-local", DynamoDBLocalPackage()),
             ("elasticmq", install_elasticmq),
             ("elasticsearch", install_elasticsearch),
             ("opensearch", OpensearchPackage()),
@@ -946,9 +821,14 @@ class Package(ABC):
         return self.get_installer(version).get_installed_dir()
 
     def get_installer(self, version: str | None = None) -> PackageInstaller:
-        raise NotImplementedError()
+        if not version:
+            version = self.default_version
+        return self._get_installer(version)
 
     def get_versions(self) -> List[str]:
+        raise NotImplementedError()
+
+    def _get_installer(self, version):
         raise NotImplementedError()
 
 
@@ -956,9 +836,7 @@ class OpensearchPackage(Package):
     def __init__(self, default_version: str = OPENSEARCH_DEFAULT_VERSION):
         super().__init__(default_version)
 
-    def get_installer(self, version: str | None = None) -> PackageInstaller:
-        if not version:
-            version = self.default_version
+    def _get_installer(self, version: str | None = None) -> PackageInstaller:
         # TODO check if the version is allowed, otherwise raise Exception
         return OpensearchPackageInstaller(version)
 
@@ -1042,6 +920,83 @@ class OpensearchPackageInstaller(PackageInstaller):
             self.version = OPENSEARCH_DEFAULT_VERSION
 
         return versions.get_install_version(self.version)
+
+
+class DynamoDBLocalPackage(Package):
+    def __init__(self, default_version: str = "latest"):
+        super().__init__(default_version)
+
+    def _get_installer(self, version: str | None = None) -> PackageInstaller:
+        return DynamoDBLocalPackageInstaller(version)
+
+    def get_versions(self) -> List[str]:
+        return [self.default_version]
+
+
+class DynamoDBLocalPackageInstaller(PackageInstaller):
+    # patches for DynamoDB Local
+    DDB_PATCH_URL_PREFIX = (
+        f"{ARTIFACTS_REPO}/raw/388cd73f45bfd3bcf7ad40aa35499093061c7962/dynamodb-local-patch"
+    )
+    DDB_AGENT_JAR_URL = f"{DDB_PATCH_URL_PREFIX}/target/ddb-local-loader-0.1.jar"
+
+    LIBSQLITE_AARCH64_URL = f"{MAVEN_REPO_URL}/io/github/ganadist/sqlite4java/libsqlite4java-osx-aarch64/1.0.392/libsqlite4java-osx-aarch64-1.0.392.dylib"
+    DYNAMODB_JAR_URL = "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip"
+    JAVASSIST_JAR_URL = (
+        f"{MAVEN_REPO_URL}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
+    )
+
+    def __init__(self, version: str):
+        self.version = version
+
+    def _get_install_dir(self, target: InstallTarget):
+        return os.path.join(target.value, "dynamodb", self.version)
+
+    def _build_executables_path(self, install_dir: str):
+        return os.path.join(install_dir, "DynamoDBLocal.jar")
+
+    def _install(self, target: InstallTarget):
+        # download and extract archive
+        tmp_archive = os.path.join(tempfile.gettempdir(), "localstack.ddb.zip")
+        install_dir = self._get_install_dir(target)
+        download_and_extract_with_retry(self.DYNAMODB_JAR_URL, tmp_archive, install_dir)
+
+        # download additional libs for Mac M1 (for local dev mode)
+        ddb_local_lib_dir = os.path.join(install_dir, "DynamoDBLocal_lib")
+        if is_mac_os() and get_arch() == "arm64":
+            target_path = os.path.join(ddb_local_lib_dir, "libsqlite4java-osx-aarch64.dylib")
+            if not file_exists_not_empty(target_path):
+                download(self.LIBSQLITE_AARCH64_URL, target_path)
+
+        # fix logging configuration for DynamoDBLocal
+        log4j2_config = """<Configuration status="WARN">
+          <Appenders>
+            <Console name="Console" target="SYSTEM_OUT">
+              <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            </Console>
+          </Appenders>
+          <Loggers>
+            <Root level="WARN"><AppenderRef ref="Console"/></Root>
+          </Loggers>
+        </Configuration>"""
+        log4j2_file = os.path.join(install_dir, "log4j2.xml")
+        run_safe(lambda: save_file(log4j2_file, log4j2_config))
+        run_safe(lambda: run(["zip", "-u", "DynamoDBLocal.jar", "log4j2.xml"], cwd=install_dir))
+
+        ddb_agent_jar_path = os.path.join(install_dir, "ddb-local-loader-0.1.jar")
+        javassit_jar_path = os.path.join(install_dir, "javassist.jar")
+        # download agent JAR
+        if not os.path.exists(ddb_agent_jar_path):
+            download(self.DDB_AGENT_JAR_URL, ddb_agent_jar_path)
+        if not os.path.exists(javassit_jar_path):
+            download(self.JAVASSIST_JAR_URL, javassit_jar_path)
+
+        upgrade_jar_file(ddb_local_lib_dir, "slf4j-ext-*.jar", "org/slf4j/slf4j-ext:1.8.0-beta4")
+
+        # ensure that javassist.jar is in the manifest classpath
+        update_jar_manifest(
+            "DynamoDBLocal.jar", install_dir, "Class-Path: .", "Class-Path: javassist.jar ."
+        )
 
 
 def main():
