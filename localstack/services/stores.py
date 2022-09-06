@@ -26,7 +26,7 @@ Access patterns are as follows
 import re
 from collections.abc import Callable
 from threading import RLock
-from typing import Any, Type, TypeVar, Union
+from typing import Any, Generic, Type, TypeVar, Union
 
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 
@@ -136,7 +136,7 @@ class BaseStore:
 #
 
 
-class RegionBundle(dict):
+class RegionBundle(dict, Generic[BaseStoreType]):
     """
     Encapsulation for stores across all regions for a specific AWS account ID.
     """
@@ -200,7 +200,7 @@ class RegionBundle(dict):
             self.clear()
 
 
-class AccountRegionBundle(dict):
+class AccountRegionBundle(dict, Generic[BaseStoreType]):
     """
     Encapsulation for all stores for all AWS account IDs.
     """
