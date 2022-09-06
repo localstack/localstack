@@ -4,8 +4,9 @@ import threading
 import time
 from typing import Dict
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
-from localstack.services.generic_proxy import RegionBackend
+from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc
 from localstack.utils.json import BytesEncoder
@@ -18,12 +19,10 @@ _SEQUENCE_MTX = threading.RLock()
 _SEQUENCE_NUMBER_COUNTER = 1
 
 
-class DynamoDBStreamsBackend(RegionBackend):
-    # maps table names to DynamoDB stream descriptions
-    ddb_streams: Dict[str, dict]
-
-    def __init__(self):
-        self.ddb_streams = {}
+def get_dynamodbstreams_store(account_id: str = None, region: str = None) -> DynamoDbStreamsStore:
+    return dynamodbstreams_stores[account_id or get_aws_account_id()][
+        region or aws_stack.get_region()
+    ]
 
 
 def get_and_increment_sequence_number_counter() -> int:
@@ -38,7 +37,7 @@ def add_dynamodb_stream(
     table_name, latest_stream_label=None, view_type=StreamViewType.NEW_AND_OLD_IMAGES, enabled=True
 ):
     if enabled:
-        region = DynamoDBStreamsBackend.get()
+        store = get_dynamodbstreams_store()
         # create kinesis stream as a backend
         stream_name = get_kinesis_stream_name(table_name)
         aws_stack.create_kinesis_stream(stream_name)
@@ -55,13 +54,13 @@ def add_dynamodb_stream(
             "StreamViewType": view_type,
             "shards_id_map": {},
         }
-        region.ddb_streams[table_name] = stream
+        store.ddb_streams[table_name] = stream
 
 
 def get_stream_for_table(table_arn: str) -> dict:
-    region = DynamoDBStreamsBackend.get()
+    store = get_dynamodbstreams_store()
     table_name = table_name_from_stream_arn(table_arn)
-    return region.ddb_streams.get(table_name)
+    return store.ddb_streams.get(table_name)
 
 
 def forward_events(records: Dict) -> None:
@@ -80,9 +79,9 @@ def forward_events(records: Dict) -> None:
 
 
 def delete_streams(table_arn: str) -> None:
-    region = DynamoDBStreamsBackend.get()
+    store = get_dynamodbstreams_store()
     table_name = table_name_from_table_arn(table_arn)
-    stream = region.ddb_streams.pop(table_name, None)
+    stream = store.ddb_streams.pop(table_name, None)
     if stream:
         stream_name = get_kinesis_stream_name(table_name)
         try:
