@@ -557,6 +557,11 @@ KINESIS_MOCK_PERSIST_INTERVAL = os.environ.get("KINESIS_MOCK_PERSIST_INTERVAL", 
 # Kinesis provider - either "kinesis-mock" or "kinesalite" (deprecated, kinesalite support will be removed)
 KINESIS_PROVIDER = os.environ.get("KINESIS_PROVIDER") or "kinesis-mock"
 
+# Forces to use S3 ASF provider, while not loading -ext (does not have asf provider)
+# TODO: will need to discuss the best way to do this with -ext, this is temporary for testing
+if not os.environ.get("PROVIDER_OVERRIDE_S3"):
+    os.environ["PROVIDER_OVERRIDE_S3"] = "asf"
+
 # Whether or not to handle lambda event sources as synchronous invocations
 SYNCHRONOUS_SNS_EVENTS = is_env_true("SYNCHRONOUS_SNS_EVENTS")
 SYNCHRONOUS_SQS_EVENTS = is_env_true("SYNCHRONOUS_SQS_EVENTS")
