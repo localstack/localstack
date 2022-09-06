@@ -11,7 +11,6 @@ def handler(event, context):
         protocol = "https" if os.environ.get("USE_SSL") else "http"
         endpoint_url = "{}://{}:{}".format(protocol, os.environ["LOCALSTACK_HOSTNAME"], EDGE_PORT)
     s3 = boto3.client("s3", endpoint_url=endpoint_url, verify=False)
-    # print(f"{os.environ['BUCKET_NAME']}")
     s3.download_file(
         os.environ["BUCKET_NAME"],
         os.environ["OBJECT_NAME"],

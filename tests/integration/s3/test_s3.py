@@ -318,21 +318,9 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(
-        reason="currently not implemented in moto, see https://github.com/localstack/localstack/issues/6422"
-    )
-    def test_get_object_attributes_object_size(self, s3_client, s3_bucket):
-        s3_client.put_object(Bucket=s3_bucket, Key="data.txt", Body=b"69\n420\n")
-        response = s3_client.get_object_attributes(
-            Bucket=s3_bucket, Key="data.txt", ObjectAttributes=["ObjectSize"]
-        )
-        assert response["ObjectSize"] == 7
-
-    @pytest.mark.aws_validated
-    @pytest.mark.xfail(
         reason="currently not implemented in moto, see https://github.com/localstack/localstack/issues/6217"
     )
-    # see also https://github.com/localstack/localstack/issues/6422
-    # todo: see XML issue?
+    # TODO: see also XML issue in https://github.com/localstack/localstack/issues/6422
     def test_get_object_attributes(self, s3_client, s3_bucket, snapshot):
         s3_client.put_object(Bucket=s3_bucket, Key="data.txt", Body=b"69\n420\n")
         response = s3_client.get_object_attributes(
@@ -379,7 +367,7 @@ class TestS3:
 
     @pytest.mark.aws_validated
     def test_create_bucket_via_host_name(self, s3_vhost_client):
-        # todo check redirection (happens in AWS because of region name), should it happen in LS?
+        # TODO check redirection (happens in AWS because of region name), should it happen in LS?
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#VirtualHostingBackwardsCompatibility
         bucket_name = f"test-{short_uid()}"
         try:
@@ -666,7 +654,7 @@ class TestS3:
         # https://stackoverflow.com/questions/38851456/aws-s3-object-expiration-less-than-24-hours
         # handle s3 object expiry
         # https://github.com/localstack/localstack/issues/1685
-        # todo: should we have a config var to not deleted immediately in the new provider? and schedule it?
+        # TODO: should we have a config var to not deleted immediately in the new provider? and schedule it?
         snapshot.add_transformer(snapshot.transform.s3_api())
         # put object
         short_expire = datetime.datetime.now(timezone("GMT")) + datetime.timedelta(seconds=1)
@@ -679,6 +667,7 @@ class TestS3:
             Body="foo",
             Expires=short_expire,
         )
+        # sleep so it expires
         time.sleep(3)
         # head_object does not raise an error for now in LS
         response = s3_client.head_object(Bucket=s3_bucket, Key=object_key_expired)
@@ -896,7 +885,7 @@ class TestS3:
         paths=[
             "$..ContentLanguage",
             "$..VersionId",
-            "$..ETag",  # todo ETag should be the same?
+            "$..ETag",  # TODO ETag should be the same?
         ]
     )
     def test_range_header_body_length(self, s3_client, s3_bucket, snapshot):
@@ -1213,7 +1202,7 @@ class TestS3:
             Body=upload_file_object.getvalue(),
         )
         snapshot.match("put-object", response)
-        # todo: check why ETag is different
+        # TODO: check why ETag is different
 
         # Download gzip
         downloaded_object = s3_client.get_object(Bucket=s3_bucket, Key="test.gz")
@@ -1267,7 +1256,7 @@ class TestS3:
         response = s3_multipart_upload(bucket=s3_bucket, key=key, data=content, acl=acl)
         snapshot.match("multipart-upload", response)
 
-        if is_aws_cloud():  # todo: default addressing is vhost for AWS
+        if is_aws_cloud():  # TODO: default addressing is vhost for AWS
             expected_url = f"{_bucket_url_vhost(bucket_name=s3_bucket)}/{key}"
         else:  # LS default is path addressing
             expected_url = f"{_bucket_url(bucket_name=s3_bucket, localstack_host=config.HOSTNAME_EXTERNAL)}/{key}"
@@ -1648,7 +1637,7 @@ class TestS3PresignedUrl:
         # see localstack.services.s3.s3_listener.ProxyListenerS3.get_201_response
         if is_aws_cloud():
             location = f"{_bucket_url_vhost(s3_bucket, aws_stack.get_region())}/key-my-file"
-            etag = '"43281e21fce675ac3bcb3524b38ca4ed"'  # todo check quoting of etag
+            etag = '"43281e21fce675ac3bcb3524b38ca4ed"'  # TODO check quoting of etag
         else:
             location = "http://localhost/key-my-file"
             etag = "d41d8cd98f00b204e9800998ecf8427f"
@@ -1915,15 +1904,11 @@ class TestS3PresignedUrl:
         assert 200 == r.status_code
         response = xmltodict.parse(r.content)
         response["DeleteResult"].pop("@xmlns")
-        # assert response["DeleteResult"]["Error"]["Key"] == object_key_1
-        # assert response["DeleteResult"]["Error"]["Code"] == "AccessDenied"
-        # assert response["DeleteResult"]["Deleted"]["Key"] == object_key_2
+
         snapshot.match("multi-delete-with-requests", response)
 
         response = s3_client.list_objects(Bucket=bucket_name)
         snapshot.match("list-remaining-objects", response)
-        # assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-        # assert len(response["Contents"]) == 1
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -2479,9 +2464,7 @@ class TestS3Cors:
             url, headers={"Origin": config.get_edge_url(), "Content-Type": "text/html"}
         )
         assert 200 == response.status_code
-        # TODO this is not contained in AWS but was asserted for LocalStack
-        #  assert "Access-Control-Allow-Headers" in response.headers
-        #  assert "x-amz-tagging" == response.headers["Access-Control-Allow-Headers"]
+
         snapshot.match("raw-response-headers", dict(response.headers))
 
         BUCKET_CORS_CONFIG = {
@@ -2729,16 +2712,6 @@ class TestS3Cors:
         response = requests.delete(presigned_delete_url)
         assert 204 == response.status_code
 
-        # TODO this does not work on AWS (not even if the first delete was not executed)
-        # presigned_delete_url_2 = _generate_presigned_url(
-        #     client,
-        #     {"Bucket": bucket_name, "Key": object_key, "VersionId": "1"},
-        #     expires,
-        #     client_method="delete_object",
-        # )
-        # response = requests.delete(presigned_delete_url_2)
-        # assert 204 == response.status_code
-
 
 class TestS3DeepArchive:
     """
@@ -2835,7 +2808,7 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
             return f"https://{bucket_name}.s3.{region}.amazonaws.com"
     host = localstack_host or S3_VIRTUAL_HOSTNAME
     s3_edge_url = config.get_edge_url(localstack_hostname=host)
-    # todo might add the region here
+    # TODO might add the region here
     return s3_edge_url.replace(f"://{host}", f"://{bucket_name}.{host}")
 
 
