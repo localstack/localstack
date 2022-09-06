@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.services.sqs.provider import DEFAULT_MAXIMUM_MESSAGE_SIZE
+from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 

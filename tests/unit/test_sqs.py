@@ -2,6 +2,7 @@ import pytest
 
 from localstack.aws.api.sqs import Message
 from localstack.services.sqs import provider
+from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.utils import get_message_attributes_md5
 from localstack.utils.common import convert_to_printable_chars
 
@@ -51,11 +52,11 @@ def test_handle_string_max_receive_count_in_dead_letter_check():
 
 
 def test_except_check_message_size():
-    message_body = "".join(("a" for _ in range(provider.DEFAULT_MAXIMUM_MESSAGE_SIZE + 1)))
+    message_body = "".join(("a" for _ in range(DEFAULT_MAXIMUM_MESSAGE_SIZE + 1)))
     with pytest.raises(provider.InvalidParameterValue):
-        provider.check_message_size(message_body, provider.DEFAULT_MAXIMUM_MESSAGE_SIZE)
+        provider.check_message_size(message_body, DEFAULT_MAXIMUM_MESSAGE_SIZE)
 
 
 def test_check_message_size():
     message_body = "a"
-    provider.check_message_size(message_body, provider.DEFAULT_MAXIMUM_MESSAGE_SIZE)
+    provider.check_message_size(message_body, DEFAULT_MAXIMUM_MESSAGE_SIZE)

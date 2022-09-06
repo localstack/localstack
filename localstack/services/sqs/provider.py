@@ -16,6 +16,7 @@ from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
 
 from localstack import config, constants
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sqs import (
     ActionNameList,
@@ -66,8 +67,19 @@ from localstack.aws.api.sqs import (
 )
 from localstack.aws.spec import load_service
 from localstack.config import external_service_url
-from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.services.sqs.constants import (
+    ATTR_NAME_CHAR_REGEX,
+    ATTR_NAME_PREFIX_SUFFIX_REGEX,
+    ATTR_TYPE_REGEX,
+    DEDUPLICATION_INTERVAL_IN_SEC,
+    DEFAULT_MAXIMUM_MESSAGE_SIZE,
+    FIFO_MSG_REGEX,
+    MSG_CONTENT_REGEX,
+    RECENTLY_DELETED_TIMEOUT,
+)
+from localstack.services.sqs.models import SqsStore, sqs_stores
+from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.objects import singleton_factory
 from localstack.utils.run import FuncThread
@@ -77,26 +89,6 @@ from localstack.utils.threads import start_thread
 from localstack.utils.time import now
 
 LOG = logging.getLogger(__name__)
-
-# Valid unicode values: #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
-# https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
-MSG_CONTENT_REGEX = "^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$"
-
-# https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-message-metadata.html
-# While not documented, umlauts seem to be allowed
-ATTR_NAME_CHAR_REGEX = "^[\u00C0-\u017Fa-zA-Z0-9_.-]*$"
-ATTR_NAME_PREFIX_SUFFIX_REGEX = r"^(?!(aws\.|amazon\.|\.)).*(?<!\.)$"
-ATTR_TYPE_REGEX = "^(String|Number|Binary).*$"
-FIFO_MSG_REGEX = "^[0-9a-zA-z!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-]*$"
-
-DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
-
-# When you delete a queue, you must wait at least 60 seconds before creating a queue with the same name.
-# see https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_DeleteQueue.html
-RECENTLY_DELETED_TIMEOUT = 60
-
-# the default maximum message size in SQS
-DEFAULT_MAXIMUM_MESSAGE_SIZE = 262144
 
 INTERNAL_QUEUE_ATTRIBUTES = [
     # these attributes cannot be changed by set_queue_attributes and should
@@ -796,18 +788,18 @@ class QueueUpdateWorker:
         self.mutex = threading.RLock()
 
     def do_update_all_queues(self):
-        for region in SqsBackend.regions().keys():
-            backend = SqsBackend.get(region)
-            for queue in backend.queues.values():
-                try:
-                    queue.requeue_inflight_messages()
-                except Exception:
-                    LOG.exception("error re-queueing inflight messages")
+        for account_id, region_bundle in sqs_stores:
+            for region, store in region_bundle.items():
+                for queue in store.queues.values():
+                    try:
+                        queue.requeue_inflight_messages()
+                    except Exception:
+                        LOG.exception("error re-queueing inflight messages")
 
-                try:
-                    queue.enqueue_delayed_messages()
-                except Exception:
-                    LOG.exception("error enqueueing delayed messages")
+                    try:
+                        queue.enqueue_delayed_messages()
+                    except Exception:
+                        LOG.exception("error enqueueing delayed messages")
 
     def start(self):
         with self.mutex:
@@ -896,20 +888,6 @@ def check_fifo_id(fifo_id):
         )
 
 
-class SqsBackend(RegionBackend):
-    queues: Dict[str, SqsQueue]
-    deleted: Dict[str, float]
-
-    def __init__(self):
-        self.queues = {}
-        self.deleted = {}
-
-    def expire_deleted(self):
-        for k in list(self.deleted.keys()):
-            if self.deleted[k] <= (time.time() - RECENTLY_DELETED_TIMEOUT):
-                del self.deleted[k]
-
-
 class SqsProvider(SqsApi, ServiceLifecycleHook):
     """
     LocalStack SQS Provider.
@@ -927,6 +905,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._mutex = threading.RLock()
         self._queue_update_worker = QueueUpdateWorker()
 
+    @staticmethod
+    def get_store() -> SqsStore:
+        return sqs_stores[get_aws_account_id()][aws_stack.get_region()]
+
     def on_before_start(self):
         self._queue_update_worker.start()
 
@@ -942,13 +924,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
-        backend = SqsBackend.get(context.region)
-
+        store = self.get_store()
         with self._mutex:
-            if name not in backend.queues.keys():
+            if name not in store.queues.keys():
                 raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
-            return backend.queues[name]
+            return store.queues[name]
 
     def _require_queue_by_arn(self, context: RequestContext, queue_arn: str) -> SqsQueue:
         arn = parse_arn(queue_arn)
@@ -988,11 +969,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if attributes and attributes.get(QueueAttributeName.Policy) == "":
             del attributes[QueueAttributeName.Policy]
 
-        backend = SqsBackend.get(context.region)
+        store = self.get_store()
 
         with self._mutex:
-            if queue_name in backend.queues:
-                queue = backend.queues[queue_name]
+            if queue_name in store.queues:
+                queue = store.queues[queue_name]
 
                 if attributes:
                     # if attributes are set, then we check whether the existing attributes match the passed ones
@@ -1013,13 +994,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 return CreateQueueResult(QueueUrl=queue.url(context))
 
             if config.SQS_DELAY_RECENTLY_DELETED:
-                deleted = backend.deleted.get(queue_name)
+                deleted = store.deleted.get(queue_name)
                 if deleted and deleted > (time.time() - RECENTLY_DELETED_TIMEOUT):
                     raise QueueDeletedRecently(
                         "You must wait 60 seconds after deleting a queue before you can create "
                         "another with the same name."
                     )
-            backend.expire_deleted()
+            store.expire_deleted()
 
             # create the appropriate queue
             if fifo:
@@ -1031,18 +1012,18 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
             LOG.debug("creating queue key=%s attributes=%s tags=%s", queue_name, attributes, tags)
 
-            backend.queues[queue_name] = queue
+            store.queues[queue_name] = queue
 
         return CreateQueueResult(QueueUrl=queue.url(context))
 
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
     ) -> GetQueueUrlResult:
-        backend = SqsBackend.get(context.region)
-        if queue_name not in backend.queues.keys():
+        store = self.get_store()
+        if queue_name not in store.queues.keys():
             raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
-        queue = backend.queues[queue_name]
+        queue = store.queues[queue_name]
 
         return GetQueueUrlResult(QueueUrl=queue.url(context))
 
@@ -1053,16 +1034,16 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         next_token: Token = None,
         max_results: BoxedInteger = None,
     ) -> ListQueuesResult:
-        backend = SqsBackend.get(context.region)
+        store = self.get_store()
 
         if queue_name_prefix:
             urls = [
                 queue.url(context)
-                for queue in backend.queues.values()
+                for queue in store.queues.values()
                 if queue.name.startswith(queue_name_prefix)
             ]
         else:
-            urls = [queue.url(context) for queue in backend.queues.values()]
+            urls = [queue.url(context) for queue in store.queues.values()]
 
         if max_results:
             # FIXME: also need to solve pagination with stateful iterators: If the total number of items available is
@@ -1119,12 +1100,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         )
 
     def delete_queue(self, context: RequestContext, queue_url: String) -> None:
-        backend = SqsBackend.get(context.region)
+        store = self.get_store()
 
         with self._mutex:
             queue = self._resolve_queue(context, queue_url=queue_url)
-            del backend.queues[queue.name]
-            backend.deleted[queue.name] = time.time()
+            del store.queues[queue.name]
+            store.deleted[queue.name] = time.time()
 
     def get_queue_attributes(
         self, context: RequestContext, queue_url: String, attribute_names: AttributeNameList = None
@@ -1375,9 +1356,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         max_results: BoxedInteger = None,
     ) -> ListDeadLetterSourceQueuesResult:
         urls = []
-        backend = SqsBackend.get(context.region)
+        store = self.get_store()
         dead_letter_queue = self._resolve_queue(context, queue_url=queue_url)
-        for queue in backend.queues.values():
+        for queue in store.queues.values():
             policy = queue.attributes.get(QueueAttributeName.RedrivePolicy)
             if policy:
                 policy = json.loads(policy)
