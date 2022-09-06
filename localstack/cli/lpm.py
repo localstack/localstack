@@ -44,7 +44,7 @@ def _do_install(pkg, version=None, target=None):
             package_installer()
         else:
             # new way
-            package_installer.get_installer(version=version, target=target).install()
+            package_installer.get_installer(version=version).install(target=target)
         console.print(f"[green]installed[/green] [bold]{pkg}[/bold]")
     except Exception as e:
         console.print(f"[red]error[/red] installing {pkg}: {e}")

@@ -13,6 +13,7 @@ import tempfile
 import threading
 import time
 from abc import ABC
+from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple, Union
 
@@ -884,149 +885,103 @@ class NoSuchInstallTargetException(Exception):
     pass
 
 
-class InstallTarget:
-    VAR_LIBS = "var"
-    STATIC_LIBS = "static"
+class NoSuchVersionException(Exception):
+    pass
 
-    _targets = {VAR_LIBS: config.dirs.var_libs, STATIC_LIBS: config.dirs.static_libs}
 
-    @staticmethod
-    def get_install_targets() -> [str]:
-        # return [InstallTarget.VAR_LIBS, InstallTarget.STATIC_LIBS]
-        return InstallTarget._targets.values()
-
-    @staticmethod
-    def get_install_target(target_string) -> str:
-        target_string = InstallTarget._targets.get(target_string)
-        if not target_string:
-            raise NoSuchInstallTargetException()
-        return target_string
+class InstallTarget(Enum):
+    # TODO explicitly state that the order is important here! It defines the lookup priority
+    VAR_LIBS = config.dirs.var_libs
+    STATIC_LIBS = config.dirs.static_libs
 
 
 class PackageInstaller(ABC):
-    def __init__(self):
-        self.default_target = InstallTarget.get_install_target(InstallTarget.VAR_LIBS)
+    def install(self, target: InstallTarget):
+        """
+        The method that is called to execute all steps necessary to install the specified version of a package
+        into the specified target
+        """
+        if not target:
+            target = InstallTarget.VAR_LIBS
+        if not self.is_installed():
+            self._install(target)
 
-    """
-    The method that is called to execute all steps necessary to install the specified version of a package
-    into the specified target
-    """
+    def is_installed(self) -> bool:
+        return self.get_installed_dir() is not None
 
-    def install(self):
+    def get_installed_dir(self) -> str:
+        for target in InstallTarget:
+            directory = self._get_install_dir(target)
+            if directory and os.path.exists(directory):
+                return directory
+
+    def get_executables_path(self) -> str | None:
+        """
+        The method that returns a path under which the necessary executables have been installed. It must consider all
+        locations specified in InstallTarget. It will return the first path that matches the lookup.
+        If no path is returned, no installation was found.
+        """
+        directory = self.get_installed_dir()
+        if directory:
+            return self._build_executables_path(directory)
+
+    def _get_install_dir(self, target: InstallTarget):
         raise NotImplementedError()
 
-    """
-    The method that returns the path of the directory where the necessary files should be written to.
-    """
-    # TODO: The typical pattern will be <target>/<name>/<version>. Should  we enforce this already on this level?
-    #   e.g. return path.join(self.target, self.name, self.version), while declaring these variables in the constructor
-    #   with None values?
-    def get_install_dir(self) -> str:
+    def _build_executables_path(self, install_dir: str):
         raise NotImplementedError()
 
-    """
-    The method that returns a path under which the necessary executables have been installed. It must consider all
-    locations specified in InstallTarget. It will return the first path that matches the lookup.
-    If no path is returned, no installation was found.
-    """
-    # TODO: this is more or less supposed to be a "is_installed()" method that returns the path in the process.
-    #   Is there a cleaner way to achieve that?
-    def get_installed_executables_path(self) -> str | None:
+    def _install(self, target: InstallTarget):
         raise NotImplementedError()
 
 
 class Package(ABC):
-    def __init__(self, default_version=None):
+    def __init__(self, default_version: str):
         self.default_version = default_version
-        self.installers = dict[str, PackageInstaller]()
 
-    def _do_get_installer(self, version, target) -> PackageInstaller:
+    def get_executables_path(self, version: str | None = None) -> str | None:
+        return self.get_installer(version).get_executables_path()
+
+    def get_installed_dir(self, version: str) -> str | None:
+        return self.get_installer(version).get_installed_dir()
+
+    def get_installer(self, version: str | None = None) -> PackageInstaller:
         raise NotImplementedError()
 
-    def get_installer(self, version=None, target=None):
-        if not version:
-            version = self.default_version
-        if target:
-            # TODO: should this translation be moved to Installer, so it has the sole responsibility over targets?
-            target = InstallTarget.get_install_target(target)
-        # Save different installers under <version_name>_<target>
-        # If no target is passed, the installer uses the default target, and only the version is used
-        # TODO: Side effect: the package might fetch the installer for the default version twice if it is fetched
-        #   implicitly (without target -> key="<version>") and explicitly (target=<default_target> ->
-        #   key="<version>_<default_target>"). To avoid this, always set the target explicitly.
-        #   This means the Package gets awareness of the default target.
-        # TODO: Is this even necessary? 90% of the time we will have 1 Installer per Package, simply creating the
-        #   wanted objects might be simpler with the same efficiency.
-        installer_name = str.join("_", [s for s in [version, target] if s])
-        installer = installers.get(installer_name)
-        if not installer:
-            self.installers[installer_name] = installer = self._do_get_installer(
-                version=version, target=target
-            )
-        return installer
+    def get_versions(self) -> List[str]:
+        raise NotImplementedError()
 
 
 class OpensearchPackage(Package):
-    def __init__(self, default_version=None):
+    def __init__(self, default_version: str = OPENSEARCH_DEFAULT_VERSION):
         super().__init__(default_version)
-        if default_version is None:
-            self.default_version = OPENSEARCH_DEFAULT_VERSION
 
-    def _do_get_installer(self, version, target):
+    def get_installer(self, version: str | None = None) -> PackageInstaller:
+        if not version:
+            version = self.default_version
+        # TODO check if the version is allowed, otherwise raise Exception
+        return OpensearchPackageInstaller(version)
 
-        print(f"DEBUG: OpensearchPackageInstaller init with version {version}; target {target} ")
-        return OpensearchPackageInstaller(version, target)
+    def get_versions(self) -> List[str]:
+        # TODO implement
+        raise NotImplementedError()
 
 
 class OpensearchPackageInstaller(PackageInstaller):
-    def __init__(self, version, target=None):
-        super().__init__()
-
+    def __init__(self, version: str):
         self.version = version
-        if not target:
-            target = self.default_target
-        self.target = target
 
-    def install(self):
-        self._install_opensearch()
-
-    def get_install_dir(self, target=None) -> str:
-        if not target:
-            target = self.target
-        return os.path.join(target, "opensearch", self.version)
-
-    def get_installed_executables_path(self) -> str | None:
-
-        targets = InstallTarget.get_install_targets()
-        # TODO: necessary? Start with the set one
-        targets = [self.target] + [t for t in targets if t != self.target]
-        for t in targets:
-            installed_executable = self._get_opensearch_installed_executables_path(t)
-            if os.path.exists(installed_executable):
-                return installed_executable
-
-    def _get_opensearch_install_version(self) -> str:
-        from localstack.services.opensearch import versions
-
-        if config.SKIP_INFRA_DOWNLOADS:
-            self.version = OPENSEARCH_DEFAULT_VERSION
-
-        return versions.get_install_version(self.version)
-
-    def _get_opensearch_installed_executables_path(self, target):
-        return os.path.join(self.get_install_dir(target), "bin", "opensearch")
-
-    def _install_opensearch(self):
+    def _install(self, target: InstallTarget):
+        # TODO fix install directory (should be /var/lib/localstack/opensearch/1.1/...)
         # locally import to avoid having a dependency on ASF when starting the CLI
         from localstack.aws.api.opensearch import EngineType
         from localstack.services.opensearch import versions
 
         version = self._get_opensearch_install_version()
-        install_dir = self.get_install_dir()
-        installed_executable = self._get_opensearch_installed_executables_path(self.target)
-        if not os.path.exists(installed_executable):
+        install_dir = self._get_install_dir(target)
+        if not os.path.exists(install_dir):
             with OS_INSTALL_LOCKS.setdefault(version, threading.Lock()):
-                if not os.path.exists(installed_executable):
+                if not os.path.exists(install_dir):
                     log_install_msg(f"OpenSearch ({version})")
                     opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
                     install_dir_parent = os.path.dirname(install_dir)
@@ -1073,6 +1028,20 @@ class OpensearchPackageInstaller(PackageInstaller):
                                     )
                                     if not os.environ.get("IGNORE_OS_DOWNLOAD_ERRORS"):
                                         raise
+
+    def _get_install_dir(self, target: InstallTarget) -> str:
+        return os.path.join(target.value, "opensearch", self.version)
+
+    def _build_executables_path(self, install_dir: str) -> str | None:
+        return os.path.join(install_dir, "bin", "opensearch")
+
+    def _get_opensearch_install_version(self) -> str:
+        from localstack.services.opensearch import versions
+
+        if config.SKIP_INFRA_DOWNLOADS:
+            self.version = OPENSEARCH_DEFAULT_VERSION
+
+        return versions.get_install_version(self.version)
 
 
 def main():
