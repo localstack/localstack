@@ -8,7 +8,6 @@ from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.sqs import ReceiptHandleIsInvalid
-from localstack.services.sqs.models import SqsMessage
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.common import clone
 from localstack.utils.objects import singleton_factory
@@ -122,7 +121,7 @@ def decode_receipt_handle(receipt_handle: str) -> str:
         )
 
 
-def encode_receipt_handle(queue_arn, message: "SqsMessage") -> str:
+def encode_receipt_handle(queue_arn, message) -> str:
     # http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/ImportantIdentifiers.html#ImportantIdentifiers-receipt-handles
     # encode the queue arn in the receipt handle, so we can later check if it belongs to the queue
     # but also add some randomness s.t. the generated receipt handles look like the ones from AWS

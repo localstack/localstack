@@ -41,7 +41,7 @@ class ApiGatewayStore(BaseStore):
     def __init__(self):
         super().__init__()
 
-        self.account.extend(
+        self.account.update(
             {
                 "cloudwatchRoleArn": aws_stack.role_arn("api-gw-cw-role"),
                 "throttleSettings": {"burstLimit": 1000, "rateLimit": 500},
