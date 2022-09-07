@@ -16,9 +16,10 @@ from werkzeug import Response
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.install import SQS_BACKEND_IMPL
-from localstack.services.sns.provider import SNSBackend
+from localstack.services.sns.models import sns_stores
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
+from localstack.utils.aws import aws_stack
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
@@ -467,7 +468,7 @@ class TestSNSProvider:
         self, sns_client, sqs_create_queue, sns_create_topic, sns_subscription
     ):
 
-        sns_backend = SNSBackend.get()
+        sns_backend = sns_stores[get_aws_account_id()][aws_stack.get_region]
         topic_arn = sns_create_topic()["TopicArn"]
 
         app_arn = sns_client.create_platform_application(Name="app1", Platform="p1", Attributes={})[
@@ -580,7 +581,7 @@ class TestSNSProvider:
             Protocol="email",
             Endpoint="localstack@yopmail.com",
         )
-        sns_backend = SNSBackend.get()
+        sns_backend = sns_stores[get_aws_account_id()][aws_stack.get_region]
 
         def check_subscription():
             subscription_arn = subscription["SubscriptionArn"]
@@ -1099,7 +1100,7 @@ class TestSNSProvider:
 
         sns_client.publish(Message=message, TopicArn=topic_arn)
 
-        sns_backend = SNSBackend.get()
+        sns_backend = sns_stores[get_aws_account_id()][aws_stack.get_region]
 
         def check_messages():
             sms_messages = sns_backend.sms_messages
