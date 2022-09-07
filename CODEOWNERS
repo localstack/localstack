@@ -40,6 +40,11 @@
 # Analytics client
 /localstack/utils/analytics/ @thrau
 
+# Snapshot testing
+/localstack/testing/snapshots/ @dominikschubert @steffyP
+/localstack/testing/pytest/ @dominikschubert
+/localstack/testing/pytest/snapshot.py @dominikschubert @steffyP
+
 ######################
 ### SERVICE OWNERS ###
 ######################

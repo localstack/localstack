@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from re import Pattern
-from typing import Callable, Optional, Protocol
+from typing import Any, Callable, Optional, Protocol
 
 from jsonpath_ng.ext import parse
 
@@ -203,8 +203,29 @@ class KeyValueBasedTransformer:
 
 
 class GenericTransformer:
-    def __init__(self, fn: Callable[[dict], dict]):
+    def __init__(self, fn: Callable[[dict, TransformContext], dict]):
         self.fn = fn
 
-    def transform(self, input_data: dict) -> dict:
-        return self.fn(input_data)
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        return self.fn(input_data, ctx)
+
+
+class SortingTransformer:
+    key: str
+    sorting_fn: Callable[[...], Any]
+
+    # TODO: add support for jsonpath
+    def __init__(self, key: str, sorting_fn: Callable[[...], Any]):
+        """Sorts a list at `key` with the given `sorting_fn` (argument for `sorted(list, key=sorting_fn)`)"""
+        self.key = key
+        self.sorting_fn = sorting_fn
+
+    def transform(self, input_data: dict, *, ctx: TransformContext = None) -> dict:
+        for k, v in input_data.items():
+            if k == self.key:
+                if not isinstance(v, list):
+                    raise ValueError("SortingTransformer should only be applied to lists.")
+                input_data[k] = sorted(v, key=self.sorting_fn)
+            elif isinstance(v, dict):
+                input_data[k] = self.transform(v, ctx=ctx)
+        return input_data

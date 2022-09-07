@@ -9,6 +9,8 @@ class CloudWatchAlarm(GenericBaseModel):
         return "AWS::CloudWatch::Alarm"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute == "Arn":
+            return self.props.get("AlarmArn")
         return self.props.get("AlarmName")
 
     def _response_name(self):
