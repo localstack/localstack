@@ -151,6 +151,11 @@ def custom_path_addressing_rules(path: str) -> Optional[str]:
         return "lambda"
 
 
+def is_internal_endpoint(path: str) -> bool:
+    # necessary for correct handling of cors for internal endpoints
+    return path == "/health" or path.startswith("/_localstack")
+
+
 def legacy_rules(request: Request) -> Optional[str]:
     """
     *Legacy* rules which migrate routing logic which will become obsolete with the ASF Gateway.
@@ -176,11 +181,6 @@ def legacy_rules(request: Request) -> Optional[str]:
     # DynamoDB shell URLs
     if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
         return "dynamodb"
-
-    # TODO Remove once fallback to S3 is disabled (after S3 ASF and Cors rework)
-    # necessary for correct handling of cors for internal endpoints
-    if path == "/health" or path.startswith("/_localstack"):
-        return None
 
     # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
     #      Some are similar to other rules and not that greedy, others are nearly general fallbacks.
@@ -385,11 +385,15 @@ def determine_aws_service_name(
         return resolved_conflict
 
     # 7. check the legacy rules in the end
-    legacy_match = legacy_rules(request)
-    if legacy_match:
+    if legacy_match := legacy_rules(request):
         return legacy_match
 
-    # 8. S3 operates on root path routes (no prefix), check for route matches directly
+    # 8. check for internal endpoint, to skip matching with s3
+    # this will always match with s3 in path addressing style
+    if is_internal_endpoint(path):
+        return None
+
+    # 9. S3 operates on root path routes (no prefix), check for route matches directly
     try:
         s3_service = load_service("s3")
         RestServiceOperationRouter(s3_service).match(request)
