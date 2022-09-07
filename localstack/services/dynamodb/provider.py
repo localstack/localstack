@@ -272,6 +272,9 @@ def get_store(context: RequestContext | None = None) -> DynamoDBStore:
     # todo: create an explicit protocol for to retrieve stores for each provider
     _account_id: str = context.account_id if context else get_aws_account_id()
     _region: str = context.region if context else aws_stack.get_region()
+    # special case: AWS NoSQL Workbench sends "localhost" as region - replace with proper region here
+    if _region == "localhost":
+        _region = aws_stack.get_local_region()
     return dynamodb_stores[_account_id][_region]
 
 
