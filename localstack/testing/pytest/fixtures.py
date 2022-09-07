@@ -20,6 +20,7 @@ from pytest_httpserver import HTTPServer
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
@@ -202,6 +203,41 @@ def iam_client() -> "IAMClient":
 @pytest.fixture(scope="class")
 def s3_client() -> "S3Client":
     return _client("s3")
+
+
+@pytest.fixture(scope="class")
+def s3_vhost_client() -> "S3Client":
+    boto_config = botocore.config.Config(s3={"addressing_style": "virtual"})
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.client("s3", config=boto_config)
+    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
+    if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
+        external_boto_config = botocore.config.Config(
+            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+        )
+        boto_config = boto_config.merge(external_boto_config)
+
+    return aws_stack.create_external_boto_client("s3", config=boto_config)
+
+
+@pytest.fixture(scope="class")
+def s3_presigned_client() -> "S3Client":
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return _client("s3")
+    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
+    boto_config = (
+        botocore.config.Config(
+            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+        )
+        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
+        else None
+    )
+    return aws_stack.connect_to_service(
+        "s3",
+        config=boto_config,
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+    )
 
 
 @pytest.fixture(scope="class")
