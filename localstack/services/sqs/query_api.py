@@ -18,7 +18,7 @@ from localstack.aws.protocol.validate import MissingRequiredField, validate_requ
 from localstack.aws.spec import load_service
 from localstack.http import Request, Response, Router, route
 from localstack.http.dispatcher import Handler
-from localstack.services.sqs.provider import MissingParameter
+from localstack.services.sqs.exceptions import MissingParameter
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import extract_region_from_headers
 

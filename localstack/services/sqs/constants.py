@@ -1,5 +1,7 @@
 # Valid unicode values: #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
+from localstack.aws.api.sqs import QueueAttributeName
+
 MSG_CONTENT_REGEX = "^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$"
 
 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-message-metadata.html
@@ -17,3 +19,15 @@ RECENTLY_DELETED_TIMEOUT = 60
 
 # the default maximum message size in SQS
 DEFAULT_MAXIMUM_MESSAGE_SIZE = 262144
+INTERNAL_QUEUE_ATTRIBUTES = [
+    # these attributes cannot be changed by set_queue_attributes and should
+    # therefore be ignored when comparing queue attributes for create_queue
+    # 'FifoQueue' is handled on a per_queue basis
+    QueueAttributeName.ApproximateNumberOfMessages,
+    QueueAttributeName.ApproximateNumberOfMessagesDelayed,
+    QueueAttributeName.ApproximateNumberOfMessagesNotVisible,
+    QueueAttributeName.ContentBasedDeduplication,
+    QueueAttributeName.CreatedTimestamp,
+    QueueAttributeName.LastModifiedTimestamp,
+    QueueAttributeName.QueueArn,
+]
