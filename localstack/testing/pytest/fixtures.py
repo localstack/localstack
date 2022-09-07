@@ -1155,14 +1155,16 @@ def is_change_set_finished(cfn_client):
 
 @pytest.fixture
 def wait_until_lambda_ready(lambda_client):
-    def _wait_until_ready(function_name: str, qualifier: str = None):
+    def _wait_until_ready(function_name: str, qualifier: str = None, client=None):
+        client = client or lambda_client
+
         def _is_not_pending():
             kwargs = {}
             if qualifier:
                 kwargs["Qualifier"] = qualifier
             try:
                 result = (
-                    lambda_client.get_function(FunctionName=function_name)["Configuration"]["State"]
+                    client.get_function(FunctionName=function_name)["Configuration"]["State"]
                     != "Pending"
                 )
                 LOG.debug(f"lambda state result: {result=}")
@@ -1213,12 +1215,13 @@ role_policy = """
 
 @pytest.fixture
 def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_lambda_ready):
-    lambda_arns = []
+    lambda_arns_and_clients = []
     role_names_policy_arns = []
     log_groups = []
 
     def _create_lambda_function(*args, **kwargs):
-        kwargs["client"] = lambda_client
+        client = kwargs.get("client") or lambda_client
+        kwargs["client"] = client
         func_name = kwargs.get("func_name")
         assert func_name
         del kwargs["func_name"]
@@ -1238,8 +1241,8 @@ def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_la
 
         def _create_function():
             resp = testutil.create_lambda_function(func_name, **kwargs)
-            lambda_arns.append(resp["CreateFunctionResponse"]["FunctionArn"])
-            wait_until_lambda_ready(function_name=func_name)
+            lambda_arns_and_clients.append((resp["CreateFunctionResponse"]["FunctionArn"], client))
+            wait_until_lambda_ready(function_name=func_name, client=client)
             log_group_name = f"/aws/lambda/{func_name}"
             log_groups.append(log_group_name)
             return resp
@@ -1250,9 +1253,9 @@ def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_la
 
     yield _create_lambda_function
 
-    for arn in lambda_arns:
+    for arn, client in lambda_arns_and_clients:
         try:
-            lambda_client.delete_function(FunctionName=arn)
+            client.delete_function(FunctionName=arn)
         except Exception:
             LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
