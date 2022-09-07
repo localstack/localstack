@@ -3,17 +3,23 @@ import os
 from typing import NamedTuple, Optional, Set
 
 import botocore
+from werkzeug.exceptions import NotFound
 from werkzeug.http import parse_dict_header
 
 import localstack
 from localstack import config
-from localstack.aws.spec import ServiceCatalog, build_service_index_cache, load_service_index_cache
+from localstack.aws.protocol.op_router import RestServiceOperationRouter
+from localstack.aws.spec import (
+    ServiceCatalog,
+    build_service_index_cache,
+    load_service,
+    load_service_index_cache,
+)
 from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
 from localstack.http import Request
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.objects import singleton_factory
-from localstack.utils.strings import to_bytes
 from localstack.utils.urls import hostname_from_url
 
 LOG = logging.getLogger(__name__)
@@ -153,6 +159,13 @@ def custom_path_addressing_rules(path: str) -> Optional[str]:
         return "lambda"
 
 
+def is_internal_endpoint(path: str) -> bool:
+    # necessary for correct handling of cors for internal endpoints
+    # maybe create a list of all internal endpoints somewhat, to be sure to have them handled
+    internal_endpoints = ("/_localstack", "/_aws")
+    return path == "/health" or any(path.startswith(endpoint) for endpoint in internal_endpoints)
+
+
 def legacy_rules(request: Request) -> Optional[str]:
     """
     *Legacy* rules which migrate routing logic which will become obsolete with the ASF Gateway.
@@ -162,7 +175,6 @@ def legacy_rules(request: Request) -> Optional[str]:
     """
 
     path = request.path
-    method = request.method
     host = hostname_from_url(request.host)
 
     # API Gateway invocation URLs
@@ -172,80 +184,20 @@ def legacy_rules(request: Request) -> Optional[str]:
     ):
         return "apigateway"
 
-    if ".lambda-url." in host:
-        return "lambda"
-
     # DynamoDB shell URLs
     if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
         return "dynamodb"
 
-    # TODO Remove once fallback to S3 is disabled (after S3 ASF and Cors rework)
-    # necessary for correct handling of cors for internal endpoints
-    if path == "/health" or path.startswith("/_localstack"):
-        return None
-
-    # TODO The remaining rules here are special S3 rules - needs to be discussed how these should be handled.
-    #      Some are similar to other rules and not that greedy, others are nearly general fallbacks.
-    stripped = path.strip("/")
-    if method in ["GET", "HEAD"] and stripped:
-        # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
-        return "s3"
-
-    # detect S3 URLs
-    if stripped and "/" not in stripped:
-        if method == "PUT":
-            # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
-            return "s3"
-        if method == "POST" and "key" in request.values:
-            # assume that this is an S3 POST request with form parameters or multipart form in the body
-            return "s3"
-
-    # detect S3 requests sent from aws-cli using --no-sign-request option
-    if "aws-cli/" in str(request.user_agent):
-        return "s3"
-
-    # detect S3 pre-signed URLs (v2 and v4)
-    values = request.values
-    if any(
-        value in values
-        for value in [
-            "AWSAccessKeyId",
-            "Signature",
-            "X-Amz-Algorithm",
-            "X-Amz-Credential",
-            "X-Amz-Date",
-            "X-Amz-Expires",
-            "X-Amz-SignedHeaders",
-            "X-Amz-Signature",
-        ]
-    ):
-        return "s3"
-
-    # S3 delete object requests
-    if method == "POST" and "delete" in values:
-        data_bytes = to_bytes(request.data)
-        if b"<Delete" in data_bytes and b"<Key>" in data_bytes:
-            return "s3"
-
-    # Put Object API can have multiple keys
-    if stripped.count("/") >= 1 and method == "PUT":
-        # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
-        # or `/<bucket>/object/object1/+`
-        return "s3"
-
-    # detect S3 requests with "AWS id:key" Auth headers
-    auth_header = request.headers.get("Authorization") or ""
-    if auth_header.startswith("AWS "):
-        return "s3"
-
-    if uses_host_addressing(request.headers):
+    # Checks whether this is a virtual host addressing S3 bucket URL
+    # the first part is a small optimization to not launch the full regex matching
+    if ".s3" in host and uses_host_addressing(request.headers):
         # Note: This needs to be the last rule (and therefore is not in the host rules), since it is incredibly greedy
         return "s3"
 
 
 @singleton_factory
 def get_service_catalog() -> ServiceCatalog:
-    """Loads the ServiceCatalog (which contains all the service specs), and potentially re-uses a cached index."""
+    """Loads the ServiceCatalog (which contains all the service specs), and p@otentially re-uses a cached index."""
     if not os.path.isdir(config.dirs.cache):
         return ServiceCatalog()
 
@@ -385,9 +337,21 @@ def determine_aws_service_name(
         return resolved_conflict
 
     # 7. check the legacy rules in the end
-    legacy_match = legacy_rules(request)
-    if legacy_match:
+    if legacy_match := legacy_rules(request):
         return legacy_match
+
+    # 8. check for internal endpoint, to skip matching with s3
+    # otherwise this will always match with s3 in path addressing style
+    if is_internal_endpoint(path):
+        return None
+
+    # 9. S3 operates on root path routes (no prefix), check for route matches directly
+    try:
+        s3_service = load_service("s3")
+        RestServiceOperationRouter(s3_service).match(request)
+        return "s3"
+    except NotFound:
+        pass
 
     if signing_name:
         return signing_name
