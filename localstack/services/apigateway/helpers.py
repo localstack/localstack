@@ -180,7 +180,7 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
     if not context.stage:
         return {}
 
-    region_name = get_api_region(context.api_id)
+    _, region_name = get_api_account_id_and_region(context.api_id)
     api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
@@ -854,7 +854,7 @@ def set_api_id_stage_invocation_path(
         # set current region in request thread local, to ensure aws_stack.get_region() works properly
         # TODO: replace with RequestContextManager
         if getattr(THREAD_LOCAL, "request_context", None) is not None:
-            api_region = get_api_region(api_id)
+            _, api_region = get_api_account_id_and_region(api_id)
             THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = api_region
 
     # set details in invocation context
@@ -864,12 +864,14 @@ def set_api_id_stage_invocation_path(
     return invocation_context
 
 
-def get_api_region(api_id: str) -> Optional[str]:
+def get_api_account_id_and_region(api_id: str) -> Tuple[Optional[str], Optional[str]]:
     """Return the region name for the given REST API ID"""
     for account_id, account in apigateway_backends.items():
         for region_name, region in account.items():
             if api_id in region.apis:
-                return region_name
+                return (account_id, region_name)
+
+    return (None, None)
 
 
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
