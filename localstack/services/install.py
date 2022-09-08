@@ -8,6 +8,7 @@ import platform
 import re
 import shutil
 import stat
+import subprocess
 import sys
 import tempfile
 import threading
@@ -727,6 +728,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("kinesis-mock", install_kinesis_mock),
             ("lambda-java-libs", install_lambda_java_libs),
             ("local-kms", install_local_kms),
+            ("postgresql", PostgrePackage()),
             ("stepfunctions-local", install_stepfunctions_local),
             ("terraform", install_terraform),
         ]
@@ -761,6 +763,10 @@ class NoSuchInstallTargetException(Exception):
 
 
 class NoSuchVersionException(Exception):
+    pass
+
+
+class UnsupportedOperatingSystemException(Exception):
     pass
 
 
@@ -997,6 +1003,110 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
         update_jar_manifest(
             "DynamoDBLocal.jar", install_dir, "Class-Path: .", "Class-Path: javassist.jar ."
         )
+
+
+class PostgrePackageInstaller(PackageInstaller):
+    def __init__(self, version: str):
+        self.version = version
+
+    def _get_install_dir(self, target: InstallTarget) -> str:
+        # TODO: needs talk!
+        try:
+            return subprocess.check_output(["which", "psql"]).decode("utf-8")
+        except subprocess.CalledProcessError:
+            return ""
+
+    def _build_executables_path(self, install_dir: str) -> str:
+        # TODO: needs talk!
+        install_dir = self._get_install_dir(None)
+        path = ""
+        if install_dir:
+            path = subprocess.check_output(["readlink", "-f", install_dir]).decode("utf-8")
+        return path
+
+    def _install(self, target: InstallTarget):
+        package_command = PostgrePackageInstaller._probe_for_os_manager()
+        if package_command == "apt":
+            self._apt_install()
+
+    def _apt_install(self):
+        os.system("apt-get update")
+        # TODO: replace with python packages/calls?
+        subprocess.check_output(["apt-get", "install", "lsb-release", "gnupg", "wget", "-y"])
+
+        # Add postgre repo
+        # https://www.postgresql.org/download/linux/debian/
+        subprocess.check_output(
+            [
+                "sh",
+                "-c",
+                "echo",
+                "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main",
+                ">",
+                "/etc/apt/sources.list.d/pgdg.list",
+            ]
+        )
+        os.system(
+            "wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -"
+        )
+        os.system("apt-get update")
+
+        # use check_output for an exception on error, TODO: not really meaningful right now
+        # TODO: debian frontend necessary?
+        os.environ["DEBIAN_FRONTEND"] = "noninteractive"
+        subprocess.check_output(
+            [
+                "apt-get",
+                "install",
+                "-y",
+                "--no-install-recommends",
+                f"postgresql-{self.version}",
+                f"postgresql-client-{self.version}",
+                f"postgresql-plpython3-{self.version}",
+            ]
+        )
+
+        # ## sudo section - testing only
+        # os.system("sudo apt-get update")
+        # subprocess.check_output(["sudo", "apt-get", "install", "lsb-release", "gnupg", "wget", "-y"])
+        #
+        # # Add postgre repo
+        # # https://www.postgresql.org/download/linux/debian/
+        # subprocess.check_output(
+        #     ['sudo', 'sh', '-c', 'echo', "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main", ">",
+        #      "/etc/apt/sources.list.d/pgdg.list"])
+        # os.system('wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -')
+        # os.system('sudo apt-get update')
+        #
+        # # use check_output for an exception on error
+        # os.environ["DEBIAN_FRONTEND"] = "noninteractive"
+        # subprocess.check_output(
+        #     ["sudo", "apt-get", "install", "-y", "--no-install-recommends",
+        #      f"postgresql-{self.version}", f"postgresql-client-{self.version}", f"postgresql-plpython3-{self.version}"])
+
+    @staticmethod
+    def _probe_for_os_manager() -> str:
+        # TODO: which os is supported?
+        # os_package_managers = ["apt", "apk", "yum", "pacman"]
+        os_package_managers = ["apt", "apk"]
+        for m in os_package_managers:
+            status_code = os.system(f"which {m}")
+            if status_code == 0:
+                return m
+        raise UnsupportedOperatingSystemException()
+
+
+class PostgrePackage(Package):
+    # TODO: talk: this type of constructor is always necessary, but easily forgotten and not enforced
+    def __init__(self, default_version: str = "12"):
+        super().__init__(default_version)
+
+    # TODO: different OS might have different available versions
+    def get_versions(self) -> List[str]:
+        pass
+
+    def _get_installer(self, version):
+        return PostgrePackageInstaller(version)
 
 
 def main():
