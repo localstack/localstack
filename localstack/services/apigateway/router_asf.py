@@ -5,7 +5,6 @@ from requests.models import Response as RequestsResponse
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import NotFound
 
-from localstack.aws.handlers.cors import cors_aware
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
@@ -103,33 +102,37 @@ class ApigatewayRouter:
             "/",
             host="<api_id>.execute-api.<regex('.*'):server>",
             endpoint=self.invoke_rest_api,
+            cors_aware=True,
             defaults={"path": "", "stage": None},
         )
         self.router.add(
             "/<stage>/",
             host="<api_id>.execute-api.<regex('.*'):server>",
             endpoint=self.invoke_rest_api,
+            cors_aware=True,
             defaults={"path": ""},
         )
         self.router.add(
             "/<stage>/<path:path>",
             host="<api_id>.execute-api.<regex('.*'):server>",
             endpoint=self.invoke_rest_api,
+            cors_aware=True,
         )
 
         # add the localstack-specific _user_request_ routes
         self.router.add(
             "/restapis/<api_id>/<stage>/_user_request_",
             endpoint=self.invoke_rest_api,
+            cors_aware=True,
             defaults={"path": ""},
         )
         self.router.add(
             "/restapis/<api_id>/<stage>/_user_request_/<path:path>",
             endpoint=self.invoke_rest_api,
+            cors_aware=True,
         )
 
-    @cors_aware()
-    def invoke_rest_api(request: Request, **url_params: Dict[str, Any]) -> Response:
+    def invoke_rest_api(self, request: Request, **url_params: Dict[str, Any]) -> Response:
         if not get_api_region(url_params["api_id"]):
             return Response(status=404)
         invocation_context = to_invocation_context(request, url_params)

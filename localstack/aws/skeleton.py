@@ -15,6 +15,7 @@ from localstack.aws.api.core import ServiceRequest, ServiceRequestHandler, Servi
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.aws.spec import load_service
+from localstack.http.cors import enforce_cors_on_request, enrich_cors_response_headers
 from localstack.utils import analytics
 
 LOG = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class HandlerAttributes(NamedTuple):
     operation: str
     pass_context: bool
     expand_parameters: bool
+    cors_aware: bool
 
 
 def create_dispatch_table(delegate: object) -> DispatchTable:
@@ -58,7 +60,7 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
             try:
                 # attributes come from operation_marker in @handler wrapper
                 handlers[fn.operation] = HandlerAttributes(
-                    fn.__name__, fn.operation, fn.pass_context, fn.expand_parameters
+                    fn.__name__, fn.operation, fn.pass_context, fn.expand_parameters, fn.cors_aware
                 )
             except AttributeError:
                 pass
@@ -74,6 +76,7 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
             operation=handler.operation,
             pass_context=handler.pass_context,
             expand_parameters=handler.expand_parameters,
+            cors_aware=handler.cors_aware,
         )
 
     return dispatch_table
@@ -84,6 +87,7 @@ class ServiceRequestDispatcher:
     operation: str
     expand_parameters: bool = True
     pass_context: bool = True
+    cors_aware: bool = False
 
     def __init__(
         self,
@@ -91,11 +95,13 @@ class ServiceRequestDispatcher:
         operation: str,
         pass_context: bool = True,
         expand_parameters: bool = True,
+        cors_aware: bool = False,
     ):
         self.fn = fn
         self.operation = operation
         self.pass_context = pass_context
         self.expand_parameters = expand_parameters
+        self.cors_aware = cors_aware
 
     def __call__(
         self, context: RequestContext, request: ServiceRequest
@@ -160,6 +166,11 @@ class Skeleton:
         operation = context.operation
 
         handler = self.dispatch_table[operation.name]
+        cors_aware = hasattr(handler, "cors_aware") and handler.cors_aware
+        if not cors_aware:
+            response = enforce_cors_on_request(context.request)
+            if response:
+                return response
 
         # Call the appropriate handler
         result = handler(context, instance) or {}
@@ -171,7 +182,11 @@ class Skeleton:
         context.service_response = result
 
         # Serialize result dict to an HTTPResponse and return it
-        return self.serializer.serialize_to_response(result, operation, context.request.headers)
+        response = self.serializer.serialize_to_response(result, operation, context.request.headers)
+        if not cors_aware:
+            enrich_cors_response_headers(context.request, response)
+
+        return response
 
     def on_service_exception(
         self, context: RequestContext, exception: ServiceException

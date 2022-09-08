@@ -24,18 +24,21 @@ class LocalstackAwsGateway(Gateway):
             [
                 handlers.push_request_context,
                 metric_collector.create_metric_handler_item,
-                handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
-                handlers.enforce_cors,
                 handlers.content_decoder,
+                # Router - this serves the internal resources (_localstack)
                 handlers.serve_localstack_resources,  # try to serve internal resources in /_localstack first
+                # generic_proxy - this handles some legacy Proxy Listeners (which still uses the CORS implementation in generic_proxy)
                 handlers.serve_default_listeners,  # legacy proxy default listeners
+                # Router - handles the ASF edge routes (API GW user routes,...)
                 handlers.serve_edge_router_rules,
                 # start aws handler chain
+                handlers.parse_service_name,
                 handlers.inject_auth_header_if_missing,
                 handlers.add_region_from_header,
                 handlers.add_account_id,
                 handlers.parse_service_request,
                 metric_collector.record_parsed_request,
+                # TODO this can be anything! How to enforce CORS here if not handled?
                 handlers.serve_custom_service_request_handlers,
                 load_service,  # once we have the service request we can make sure we load the service
                 self.service_request_router,  # once we know the service is loaded we can route the request
@@ -56,11 +59,11 @@ class LocalstackAwsGateway(Gateway):
         # response post-processing
         self.response_handlers.extend(
             [
+                handlers.cors_cleanup,
                 handlers.modify_service_response,
                 handlers.parse_service_response,
                 handlers.set_close_connection_header,
                 handlers.run_custom_response_handlers,
-                handlers.add_cors_response_headers,
                 handlers.log_response,
                 handlers.count_service_request,
                 handlers.pop_request_context,

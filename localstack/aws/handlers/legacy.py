@@ -13,6 +13,7 @@ from localstack.services.generic_proxy import ProxyListener, modify_and_forward
 
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
+from .codec import GZIP_CONTENT_ENCODING_ATTR, GZIP_STREAM_ATTR
 from .routes import RouterHandler
 
 LOG = logging.getLogger(__name__)
@@ -71,6 +72,16 @@ class GenericProxyHandler(Handler):
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         request = context.request
+
+        # Restore the GZIP content for S3 here before our request object is not used anymore
+        if (
+            context.service
+            and context.service.service_name == "s3"
+            and hasattr(request, GZIP_STREAM_ATTR)
+        ):
+            # TODO this doesn't work if any component accessed the stream before
+            request.stream = getattr(request, GZIP_STREAM_ATTR)
+            request.headers["Content-Encoding"] = getattr(request, GZIP_CONTENT_ENCODING_ATTR)
 
         # a werkzeug Request consumes form/multipart data from the socket stream, so we need to restore the payload here
         data = restore_payload(request)

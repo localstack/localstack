@@ -5,6 +5,7 @@ import pytest
 import requests
 import werkzeug
 from werkzeug.exceptions import NotFound
+from werkzeug.routing import Rule
 
 from localstack.http import Request, Response, Router
 from localstack.http.router import E, RegexConverter, RequestArguments, route
@@ -19,14 +20,16 @@ def noop(*args, **kwargs):
 class RequestCollector:
     """Test dispatcher that collects requests into a list"""
 
-    requests: List[Tuple[Request, E, RequestArguments]]
+    requests: List[Tuple[Rule, Request, E, RequestArguments]]
 
     def __init__(self) -> None:
         super().__init__()
         self.requests = []
 
-    def __call__(self, request: Request, endpoint: E, args: RequestArguments) -> Response:
-        self.requests.append((request, endpoint, args))
+    def __call__(
+        self, rule: Rule, request: Request, endpoint: E, args: RequestArguments
+    ) -> Response:
+        self.requests.append((rule, request, endpoint, args))
         return Response()
 
 
@@ -102,11 +105,11 @@ class TestRouter:
         router.dispatch(Request("GET", "/"))
         router.dispatch(Request("GET", "/users/12"))
 
-        _, endpoint, args = collector.requests[0]
+        _, _, endpoint, args = collector.requests[0]
         assert endpoint == "index"
         assert args == {}
 
-        _, endpoint, args = collector.requests[1]
+        _, _, endpoint, args = collector.requests[1]
         assert endpoint == "users"
         assert args == {"id": 12}
 

@@ -14,6 +14,7 @@ class TestCSRF:
         assert response.status_code == 403
 
         # Test if config endpoint is reachable
+        # TODO this reaches a 404 (since the config endpoint is not loaded by default)
         config_body = {"variable": "harmful", "value": "config"}
 
         response = requests.post(

@@ -3,8 +3,7 @@
 from .. import chain
 from . import analytics, auth, codec, cors, fallback, internal, legacy, logging, region, service
 
-enforce_cors = cors.CorsEnforcer()
-add_cors_response_headers = cors.CorsResponseEnricher()
+cors_cleanup = cors.CorsResponseCleanup()
 content_decoder = codec.ContentDecoder()
 parse_service_name = service.ServiceNameParser()
 parse_service_request = service.ServiceRequestParser()

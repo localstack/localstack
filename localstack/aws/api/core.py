@@ -104,7 +104,9 @@ class ServiceRequestHandler(Protocol):
         raise NotImplementedError
 
 
-def handler(operation: str = None, context: bool = True, expand: bool = True):
+def handler(
+    operation: str = None, context: bool = True, expand: bool = True, cors_aware: bool = False
+):
     """
     Decorator that indicates that the given function is a handler
     """
@@ -117,6 +119,7 @@ def handler(operation: str = None, context: bool = True, expand: bool = True):
         operation_marker.operation = operation
         operation_marker.expand_parameters = expand
         operation_marker.pass_context = context
+        operation_marker.cors_aware = cors_aware
 
         return operation_marker
 

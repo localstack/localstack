@@ -16,16 +16,17 @@ from typing import (
     TypeVar,
 )
 
-from werkzeug.exceptions import HTTPException
 from werkzeug.routing import BaseConverter, Map, Rule, RuleFactory
 
 from localstack.utils.common import to_str
 
+from .cors import enforce_cors_on_request, enrich_cors_response_headers
 from .request import Request
 from .response import Response
 
 E = TypeVar("E")
 RequestArguments = Mapping[str, Any]
+_CORS_AWARE_RULE_MARKER = "_cors_aware_rule_marker"
 
 
 class Dispatcher(Protocol[E]):
@@ -34,10 +35,13 @@ class Dispatcher(Protocol[E]):
     creating a Response from the incoming Request and the matching endpoint.
     """
 
-    def __call__(self, request: Request, endpoint: E, args: RequestArguments) -> Response:
+    def __call__(
+        self, rule: Rule, request: Request, endpoint: E, args: RequestArguments
+    ) -> Response:
         """
         Dispatch the HTTP Request.
 
+        :param rule: the matched rule
         :param request: the incoming HTTP request
         :param endpoint: the endpoint that matched the URL rule
         :param args: the request arguments extracted from the URL rule
@@ -46,10 +50,35 @@ class Dispatcher(Protocol[E]):
         pass
 
 
+def cors_dispatch_wrapper(fn: Dispatcher[E]) -> Dispatcher[E]:
+    @functools.wraps(fn)
+    def cors_dispatcher_wrapper(rule: Rule, request: Request, endpoint: E, args: RequestArguments):
+        # Check if the rule has the marker which indicates that the endpoint handles CORS on its own
+        is_cors_aware = hasattr(rule, _CORS_AWARE_RULE_MARKER) and getattr(
+            rule, _CORS_AWARE_RULE_MARKER
+        )
+        if not is_cors_aware:
+            # If the endpoint does not handle CORS on its own, perform the CORS enforcement
+            cors_response = enforce_cors_on_request(request)
+            if cors_response:
+                return cors_response
+
+        # Invoke the actual dispatcher
+        response = fn(rule, request, endpoint, args)
+
+        if not is_cors_aware:
+            # If the endpoint does not handle CORS on its own, add the CORS response headers
+            enrich_cors_response_headers(request, response)
+        return response
+
+    return cors_dispatcher_wrapper
+
+
 class _RuleAttributes(NamedTuple):
     path: str
     host: Optional[str] = (None,)
     methods: Optional[Iterable[str]] = None
+    cors_aware: bool = False
     kwargs: Optional[Dict[str, Any]] = {}
 
 
@@ -65,7 +94,11 @@ class _RouteEndpoint(Protocol):
 
 
 def route(
-    path: str, host: Optional[str] = None, methods: Optional[Iterable[str]] = None, **kwargs
+    path: str,
+    host: Optional[str] = None,
+    methods: Optional[Iterable[str]] = None,
+    cors_aware: bool = False,
+    **kwargs,
 ) -> Callable[[E], _RouteEndpoint]:
     """
     Decorator that indicates that the given function is a Router Rule.
@@ -73,6 +106,8 @@ def route(
     :param path: the path pattern to match
     :param host: an optional host matching pattern. if not pattern is given, the rule matches any host
     :param methods: the allowed HTTP verbs for this rule
+    :param cors_aware: True if the endpoint handles CORS requests on its own (and the default CORS handling should
+                        be deactivated). Defaults to False (default CORS handling is activated).
     :param kwargs: any other argument that can be passed to ``werkzeug.routing.Rule``
     :return: the function endpoint wrapped as a ``_RouteEndpoint``
     """
@@ -82,7 +117,7 @@ def route(
         def route_marker(*args, **kwargs):
             return fn(*args, **kwargs)
 
-        route_marker.rule_attributes = _RuleAttributes(path, host, methods, kwargs)
+        route_marker.rule_attributes = _RuleAttributes(path, host, methods, cors_aware, kwargs)
 
         return route_marker
 
@@ -90,6 +125,7 @@ def route(
 
 
 def call_endpoint(
+    rule: Rule,
     request: Request,
     endpoint: Callable[[Request, RequestArguments], Response],
     args: RequestArguments,
@@ -130,7 +166,7 @@ class Router(Generic[E]):
         self.url_map = Map(
             host_matching=True, strict_slashes=False, converters=converters, redirect_defaults=False
         )
-        self.dispatcher = dispatcher or call_endpoint
+        self.dispatcher = cors_dispatch_wrapper(dispatcher or call_endpoint)
         self._mutex = threading.RLock()
 
     def add(
@@ -139,6 +175,7 @@ class Router(Generic[E]):
         endpoint: E,
         host: Optional[str] = None,
         methods: Optional[Iterable[str]] = None,
+        cors_aware: bool = False,
         **kwargs,
     ) -> Rule:
         """
@@ -148,8 +185,10 @@ class Router(Generic[E]):
         :param endpoint: the endpoint to invoke
         :param host: an optional host matching pattern. if not pattern is given, the rule matches any host
         :param methods: the allowed HTTP verbs for this rule
+        :param cors_aware: True if the endpoint handles CORS requests on its own (and the default CORS handling should
+                            be deactivated). Defaults to False (default CORS handling is activated).
         :param kwargs: any other argument that can be passed to ``werkzeug.routing.Rule``
-        :return:
+        :return: created Rule object which has been added to the router
         """
         if host is None and self.url_map.host_matching:
             # this creates a "match any" rule, and will put the value of the host
@@ -159,7 +198,7 @@ class Router(Generic[E]):
         # the typing for endpoint is a str, but the doc states it can be any value,
         # however then the redirection URL building will not work
         rule = Rule(path, endpoint=endpoint, methods=methods, host=host, **kwargs)
-        self.add_rule(rule)
+        self.add_rule(rule, cors_aware)
         return rule
 
     def add_route_endpoint(self, fn: _RouteEndpoint) -> Rule:
@@ -170,7 +209,9 @@ class Router(Generic[E]):
         """
         attr: _RuleAttributes = fn.rule_attributes
 
-        return self.add(path=attr.path, endpoint=fn, host=attr.host, **attr.kwargs)
+        return self.add(
+            path=attr.path, endpoint=fn, host=attr.host, cors_aware=attr.cors_aware, **attr.kwargs
+        )
 
     def add_route_endpoints(self, obj: object) -> List[Rule]:
         """
@@ -187,8 +228,9 @@ class Router(Generic[E]):
 
         return rules
 
-    def add_rule(self, rule: RuleFactory):
+    def add_rule(self, rule: RuleFactory, cors_aware: bool = False):
         with self._mutex:
+            setattr(rule, _CORS_AWARE_RULE_MARKER, cors_aware)
             self.url_map.add(rule)
 
     def remove_rule(self, rule: Rule):
@@ -228,34 +270,27 @@ class Router(Generic[E]):
         :return: the HTTP response
         """
         matcher = self.url_map.bind(server_name=request.host)
-        handler, args = matcher.match(
-            request.path, method=request.method, query_args=to_str(request.query_string)
+        rule, args = matcher.match(
+            request.path,
+            method=request.method,
+            query_args=to_str(request.query_string),
+            return_rule=True,
         )
+        handler = rule.endpoint
         args.pop("__host__", None)
-        return self.dispatcher(request, handler, args)
-
-    def match(self, request: Request) -> Optional[E]:
-        """
-        Only performs the matching and returns the endpoint of the matching rule or None if no rule matches.
-
-        :param request: the HTTP request
-        :return: the endpoint of a matching rule or None if no rule matches
-        """
-        matcher = self.url_map.bind(server_name=request.host)
-        try:
-            handler, _ = matcher.match(
-                request.path, method=request.method, query_args=to_str(request.query_string)
-            )
-            return handler
-        except HTTPException:
-            # HTTP exceptions indicate that no direct match was found (f.e. werkzeug's NotFound)
-            pass
+        return self.dispatcher(
+            rule,
+            request,
+            handler,
+            args,
+        )
 
     def route(
         self,
         path: str,
         host: Optional[str] = None,
         methods: Optional[Iterable[str]] = None,
+        cors_aware: bool = False,
         **kwargs,
     ) -> Callable[[E], _RouteEndpoint]:
         """
@@ -265,12 +300,14 @@ class Router(Generic[E]):
         :param path: the path pattern to match
         :param host: an optional host matching pattern. if not pattern is given, the rule matches any host
         :param methods: the allowed HTTP verbs for this rule
+        :param cors_aware: True if the endpoint handles CORS requests on its own (and the default CORS handling should
+                            be deactivated). Defaults to False (default CORS handling is activated).
         :param kwargs: any other argument that can be passed to ``werkzeug.routing.Rule``
         :return: the function endpoint wrapped as a ``_RouteEndpoint``
         """
 
         def wrapper(fn):
-            r = route(path, host, methods, **kwargs)
+            r = route(path, host, methods, cors_aware, **kwargs)
             fn = r(fn)
             self.add_route_endpoint(fn)
             return fn

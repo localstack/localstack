@@ -46,6 +46,8 @@ class WsgiGateway:
 
         # prepare response
         response = Response()
+        # set the status code to 0 to indicate that it has not been set yet (for allow identifying unchanged responses)
+        response.status_code = 0
 
         self.gateway.process(request, response)
 

@@ -3,6 +3,7 @@ from typing import Any, Dict, Protocol, Union
 
 from werkzeug import Response as WerkzeugResponse
 from werkzeug.exceptions import MethodNotAllowed
+from werkzeug.routing import Rule
 
 from localstack.utils.json import CustomEncoder
 
@@ -61,7 +62,7 @@ def resource_dispatcher(pass_response: bool = False) -> Dispatcher:
     :returns: a new Dispatcher
     """
 
-    def _dispatch(request: Request, endpoint: object, args: RequestArguments) -> Response:
+    def _dispatch(_: Rule, request: Request, endpoint: object, args: RequestArguments) -> Response:
         fn_name = f"on_{request.method.lower()}"
 
         fn = getattr(endpoint, fn_name, None)
@@ -96,7 +97,7 @@ def handler_dispatcher() -> Dispatcher[Handler]:
     :return: a new dispatcher
     """
 
-    def _dispatch(request: Request, endpoint: Handler, args: RequestArguments) -> Response:
+    def _dispatch(_: Rule, request: Request, endpoint: Handler, args: RequestArguments) -> Response:
         result = endpoint(request, **args)
         if isinstance(result, WerkzeugResponse):
             return result
