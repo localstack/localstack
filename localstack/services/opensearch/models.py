@@ -7,6 +7,7 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
+from localstack.utils.tagging import TaggingService
 
 
 class OpenSearchStore(BaseStore):
@@ -14,7 +15,7 @@ class OpenSearchStore(BaseStore):
     opensearch_domains: Dict[str, DomainStatus] = LocalAttribute(default=dict)
 
     # static tagging service instance
-    TAGS = CrossRegionAttribute(default=dict)
+    TAGS = CrossRegionAttribute(default=TaggingService)
 
 
 opensearch_stores = AccountRegionBundle("opensearch", OpenSearchStore)
