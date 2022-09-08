@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
+from localstack.services.sqs.models import sqs_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 
@@ -150,10 +151,10 @@ class TestSqsProvider:
     @pytest.mark.only_localstack
     def test_create_queue_recently_deleted_cache(self, sqs_client, sqs_create_queue, monkeypatch):
         # this is a white-box test for the QueueDeletedRecently timeout behavior
-        from localstack.services.sqs import provider
+        from localstack.services.sqs import constants
 
         monkeypatch.setattr(config, "SQS_DELAY_RECENTLY_DELETED", True)
-        monkeypatch.setattr(provider, "RECENTLY_DELETED_TIMEOUT", 1)
+        monkeypatch.setattr(constants, "RECENTLY_DELETED_TIMEOUT", 1)
 
         name = f"test-queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=name)
@@ -168,9 +169,10 @@ class TestSqsProvider:
         )
 
         time.sleep(1.5)
-        assert name in provider.SqsBackend.get().deleted
+        store = sqs_stores[get_aws_account_id()][aws_stack.get_region()]
+        assert name in store.deleted
         assert queue_url == sqs_create_queue(QueueName=name)
-        assert name not in provider.SqsBackend.get().deleted
+        assert name not in store.deleted
 
     @pytest.mark.only_localstack
     def test_create_queue_recently_deleted_can_be_disabled(

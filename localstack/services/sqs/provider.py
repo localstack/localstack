@@ -62,16 +62,7 @@ from localstack.aws.api.sqs import (
 )
 from localstack.aws.spec import load_service
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.sqs.constants import (
-    ATTR_NAME_CHAR_REGEX,
-    ATTR_NAME_PREFIX_SUFFIX_REGEX,
-    ATTR_TYPE_REGEX,
-    DEFAULT_MAXIMUM_MESSAGE_SIZE,
-    FIFO_MSG_REGEX,
-    INTERNAL_QUEUE_ATTRIBUTES,
-    MSG_CONTENT_REGEX,
-    RECENTLY_DELETED_TIMEOUT,
-)
+from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import InvalidParameterValue
 from localstack.services.sqs.models import (
     FifoQueue,
@@ -124,7 +115,7 @@ def check_message_size(message_body: str, max_message_size: int):
 def check_message_content(message_body: str):
     error = "Invalid characters found. Valid unicode characters are #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF"
 
-    if not re.match(MSG_CONTENT_REGEX, message_body):
+    if not re.match(sqs_constants.MSG_CONTENT_REGEX, message_body):
         raise InvalidMessageContents(error)
 
 
@@ -141,7 +132,7 @@ class QueueUpdateWorker:
         self.mutex = threading.RLock()
 
     def do_update_all_queues(self):
-        for account_id, region_bundle in sqs_stores:
+        for account_id, region_bundle in sqs_stores.items():
             for region, store in region_bundle.items():
                 for queue in store.queues.values():
                     try:
@@ -187,12 +178,12 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
             raise InvalidParameterValue(
                 "Message (user) attribute names must be shorter than 256 Bytes"
             )
-        if not re.match(ATTR_NAME_CHAR_REGEX, attribute_name.lower()):
+        if not re.match(sqs_constants.ATTR_NAME_CHAR_REGEX, attribute_name.lower()):
             raise InvalidParameterValue(
                 "Message (user) attributes name can only contain upper and lower score characters, digits, periods, "
                 "hyphens and underscores. "
             )
-        if not re.match(ATTR_NAME_PREFIX_SUFFIX_REGEX, attribute_name.lower()):
+        if not re.match(sqs_constants.ATTR_NAME_PREFIX_SUFFIX_REGEX, attribute_name.lower()):
             raise InvalidParameterValue(
                 "You can't use message attribute names beginning with 'AWS.' or 'Amazon.'. "
                 "These strings are reserved for internal use. Additionally, they cannot start or end with '.'."
@@ -202,7 +193,7 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
         attribute_type = attribute.get("DataType")
         if not attribute_type:
             raise InvalidParameterValue("Missing required parameter DataType")
-        if not re.match(ATTR_TYPE_REGEX, attribute_type):
+        if not re.match(sqs_constants.ATTR_TYPE_REGEX, attribute_type):
             raise InvalidParameterValue(
                 f"Type for parameter MessageAttributes.Attribute_name.DataType must be prefixed"
                 f'with "String", "Binary", or "Number", but was: {attribute_type}'
@@ -234,7 +225,7 @@ def check_fifo_id(fifo_id):
         raise InvalidParameterValue(
             "Message deduplication ID and group ID must be shorter than 128 bytes"
         )
-    if not re.match(FIFO_MSG_REGEX, fifo_id):
+    if not re.match(sqs_constants.FIFO_MSG_REGEX, fifo_id):
         raise InvalidParameterValue(
             "Invalid characters found. Deduplication ID and group ID can only contain"
             "alphanumeric characters as well as TODO"
@@ -259,8 +250,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._queue_update_worker = QueueUpdateWorker()
 
     @staticmethod
-    def get_store() -> SqsStore:
-        return sqs_stores[get_aws_account_id()][aws_stack.get_region()]
+    def get_store(account_id: str = None, region: str = None) -> SqsStore:
+        return sqs_stores[account_id or get_aws_account_id()][region or aws_stack.get_region()]
 
     def on_before_start(self):
         self._queue_update_worker.start()
@@ -277,7 +268,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         :returns: the queue
         :raises QueueDoesNotExist: if the queue does not exist
         """
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         with self._mutex:
             if name not in store.queues.keys():
                 raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
@@ -322,7 +313,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if attributes and attributes.get(QueueAttributeName.Policy) == "":
             del attributes[QueueAttributeName.Policy]
 
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
 
         with self._mutex:
             if queue_name in store.queues:
@@ -348,7 +339,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
             if config.SQS_DELAY_RECENTLY_DELETED:
                 deleted = store.deleted.get(queue_name)
-                if deleted and deleted > (time.time() - RECENTLY_DELETED_TIMEOUT):
+                if deleted and deleted > (time.time() - sqs_constants.RECENTLY_DELETED_TIMEOUT):
                     raise QueueDeletedRecently(
                         "You must wait 60 seconds after deleting a queue before you can create "
                         "another with the same name."
@@ -372,7 +363,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
     ) -> GetQueueUrlResult:
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         if queue_name not in store.queues.keys():
             raise QueueDoesNotExist("The specified queue does not exist for this wsdl version.")
 
@@ -387,7 +378,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         next_token: Token = None,
         max_results: BoxedInteger = None,
     ) -> ListQueuesResult:
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
 
         if queue_name_prefix:
             urls = [
@@ -453,7 +444,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         )
 
     def delete_queue(self, context: RequestContext, queue_url: String) -> None:
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
 
         with self._mutex:
             queue = self._resolve_queue(context, queue_url=queue_url)
@@ -533,7 +524,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         # check the total batch size first and raise BatchRequestTooLong id > DEFAULT_MAXIMUM_MESSAGE_SIZE.
         # This is checked before any messages in the batch are sent.  Raising the exception here should
         # cause error response, rather than batching error results and returning
-        self._assert_valid_batch_size(entries, DEFAULT_MAXIMUM_MESSAGE_SIZE)
+        self._assert_valid_batch_size(entries, sqs_constants.DEFAULT_MAXIMUM_MESSAGE_SIZE)
 
         successful = []
         failed = []
@@ -709,7 +700,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         max_results: BoxedInteger = None,
     ) -> ListDeadLetterSourceQueuesResult:
         urls = []
-        store = self.get_store()
+        store = self.get_store(context.account_id, context.region)
         dead_letter_queue = self._resolve_queue(context, queue_url=queue_url)
         for queue in store.queues.values():
             policy = queue.attributes.get(QueueAttributeName.RedrivePolicy)
@@ -781,7 +772,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue.validate_queue_attributes(attributes)
 
         for k, v in attributes.items():
-            if k in INTERNAL_QUEUE_ATTRIBUTES:
+            if k in sqs_constants.INTERNAL_QUEUE_ATTRIBUTES:
                 raise InvalidAttributeName(f"Unknown Attribute {k}.")
             queue.attributes[k] = v
 

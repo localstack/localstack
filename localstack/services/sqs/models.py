@@ -22,12 +22,7 @@ from localstack.aws.api.sqs import (
     TagMap,
 )
 from localstack.config import external_service_url
-from localstack.services.sqs.constants import (
-    DEDUPLICATION_INTERVAL_IN_SEC,
-    DEFAULT_MAXIMUM_MESSAGE_SIZE,
-    INTERNAL_QUEUE_ATTRIBUTES,
-    RECENTLY_DELETED_TIMEOUT,
-)
+from localstack.services.sqs import constants as sqs_constants
 from localstack.services.sqs.exceptions import (
     InvalidAttributeValue,
     InvalidParameterValue,
@@ -214,7 +209,7 @@ class SqsQueue:
             QueueAttributeName.CreatedTimestamp: str(now()),
             QueueAttributeName.DelaySeconds: "0",
             QueueAttributeName.LastModifiedTimestamp: str(now()),
-            QueueAttributeName.MaximumMessageSize: str(DEFAULT_MAXIMUM_MESSAGE_SIZE),
+            QueueAttributeName.MaximumMessageSize: str(sqs_constants.DEFAULT_MAXIMUM_MESSAGE_SIZE),
             QueueAttributeName.MessageRetentionPeriod: "345600",
             QueueAttributeName.QueueArn: self.arn,
             QueueAttributeName.ReceiveMessageWaitTimeSeconds: "0",
@@ -462,7 +457,7 @@ class SqsQueue:
         valid = [
             k[1]
             for k in inspect.getmembers(QueueAttributeName)
-            if k not in INTERNAL_QUEUE_ATTRIBUTES
+            if k not in sqs_constants.INTERNAL_QUEUE_ATTRIBUTES
         ]
         del valid[valid.index(QueueAttributeName.FifoQueue)]
 
@@ -588,7 +583,8 @@ class FifoQueue(SqsQueue):
         if (
             original_message
             and not original_message.deleted
-            and original_message.priority + DEDUPLICATION_INTERVAL_IN_SEC > fifo_message.priority
+            and original_message.priority + sqs_constants.DEDUPLICATION_INTERVAL_IN_SEC
+            > fifo_message.priority
         ):
             message["MessageId"] = original_message.message["MessageId"]
         else:
@@ -617,7 +613,7 @@ class FifoQueue(SqsQueue):
         valid = [
             k[1]
             for k in inspect.getmembers(QueueAttributeName)
-            if k not in INTERNAL_QUEUE_ATTRIBUTES
+            if k not in sqs_constants.INTERNAL_QUEUE_ATTRIBUTES
         ]
         for k in attributes.keys():
             if k not in valid:
@@ -640,7 +636,7 @@ class SqsStore(BaseStore):
 
     def expire_deleted(self):
         for k in list(self.deleted.keys()):
-            if self.deleted[k] <= (time.time() - RECENTLY_DELETED_TIMEOUT):
+            if self.deleted[k] <= (time.time() - sqs_constants.RECENTLY_DELETED_TIMEOUT):
                 del self.deleted[k]
 
 
