@@ -70,6 +70,7 @@ from .awslambda.test_lambda import (
     TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NODEJS,
+    TEST_LAMBDA_NODEJS_APIGW_502,
     TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
@@ -857,6 +858,34 @@ class TestAPIGateway:
         # clean up
         lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=lambda_name)
+
+    def test_malformed_response_apigw_invocation(self, create_lambda_function, lambda_client):
+        lambda_name = f"test_lambda_{short_uid()}"
+        lambda_resource = "/api/v1/{proxy+}"
+        lambda_path = "/api/v1/hello/world"
+
+        create_lambda_function(
+            func_name=lambda_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS_APIGW_502, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="apigw_502.handler",
+        )
+
+        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+        target_uri = f"arn:aws:apigateway:{aws_stack.get_region()}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
+        result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
+            "test_gateway",
+            target_uri,
+            path=lambda_resource,
+            stage_name="testing",
+        )
+        api_id = result["id"]
+        url = path_based_url(api_id=api_id, stage_name="testing", path=lambda_path)
+        result = requests.get(url)
+
+        assert result.status_code == 502
+        assert result.headers.get("Content-Type") == "application/json"
+        assert json.loads(result.content)["message"] == "Internal server error"
 
     def test_api_gateway_handle_domain_name(self):
         domain_name = f"{short_uid()}.example.com"

@@ -21,10 +21,11 @@ from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns.provider import SNSBackend
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils import testutil
+from localstack.utils.functions import run_safe
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
-from localstack.utils.testutil import check_expected_lambda_log_events_length
+from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 
 from .awslambda.functions import lambda_integration
 from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
@@ -100,6 +101,109 @@ class TestSNSSubscription:
         )
         notification = events[0]["Records"][0]["Sns"]
         snapshot.match("notification", notification)
+
+    @pytest.mark.skip_snapshot_verify
+    # TODO maybe snapshot payload as well
+    def test_java_lambda_subscribe_sns_topic(
+        self,
+        lambda_client,
+        s3_client,
+        sns_client,
+        sns_subscription,
+        simple_java_lambda,
+        s3_bucket,
+        sns_create_topic,
+        logs_client,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Sid"))
+
+        topic_name = f"topic-{short_uid()}"
+        key = f"key-{short_uid()}"
+        function_name = simple_java_lambda
+        function_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function", function_result)
+        function_arn = function_result["Configuration"]["FunctionArn"]
+        permission_id = f"test-statement-{short_uid()}"
+
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+
+        s3_sns_policy = f"""{{
+            "Version": "2012-10-17",
+            "Id": "example-ID",
+            "Statement": [
+                {{
+                    "Sid": "Example SNS topic policy",
+                    "Effect": "Allow",
+                    "Principal": {{
+                        "Service": "s3.amazonaws.com"
+                    }},
+                    "Action": [
+                        "SNS:Publish"
+                    ],
+                    "Resource": "{topic_arn}",
+                    "Condition": {{
+                        "ArnLike": {{
+                            "aws:SourceArn": "arn:aws:s3:*:*:{s3_bucket}"
+                        }}
+                    }}
+                }}
+            ]
+        }}
+        """
+        sns_client.set_topic_attributes(
+            TopicArn=topic_arn, AttributeName="Policy", AttributeValue=s3_sns_policy
+        )
+
+        s3_client.put_bucket_notification_configuration(
+            Bucket=s3_bucket,
+            NotificationConfiguration={
+                "TopicConfigurations": [{"TopicArn": topic_arn, "Events": ["s3:ObjectCreated:*"]}]
+            },
+        )
+
+        add_permission_response = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId=permission_id,
+            Action="lambda:InvokeFunction",
+            Principal="sns.amazonaws.com",
+            SourceArn=topic_arn,
+        )
+
+        snapshot.match("add-permission", add_permission_response)
+
+        sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="lambda",
+            Endpoint=function_arn,
+        )
+
+        events_before = (
+            run_safe(
+                get_lambda_log_events,
+                function_name,
+                regex_filter="Records",
+                logs_client=logs_client,
+            )
+            or []
+        )
+
+        s3_client.put_object(Bucket=s3_bucket, Key=key, Body="something")
+
+        # We got an event that confirm lambda invoked
+        retry(
+            function=check_expected_lambda_log_events_length,
+            retries=30,
+            sleep=1,
+            expected_length=len(events_before) + 1,
+            function_name=function_name,
+            regex_filter="Records",
+            logs_client=logs_client,
+        )
+
+        # clean up
+        s3_client.delete_objects(Bucket=s3_bucket, Delete={"Objects": [{"Key": key}]})
 
 
 class TestSNSProvider:
