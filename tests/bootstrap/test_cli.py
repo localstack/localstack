@@ -38,10 +38,6 @@ def container_client():
         client.stop_container(config.MAIN_CONTAINER_NAME, timeout=5)
     except Exception:
         pass
-    try:
-        client.remove_container(config.MAIN_CONTAINER_NAME, force=True)
-    except Exception:
-        pass
 
     # wait until container has been removed
     assert poll_condition(

@@ -272,6 +272,7 @@ class PortMappings:
         return f"<PortMappings: {self.to_dict()}>"
 
 
+"""Type alias for a simple version of VolumeBind"""
 SimpleVolumeBind = Tuple[str, str]
 
 
