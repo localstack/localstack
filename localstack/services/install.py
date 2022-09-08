@@ -722,7 +722,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("dynamodb-local", DynamoDBLocalPackage()),
             ("elasticmq", install_elasticmq),
             ("elasticsearch", install_elasticsearch),
-            ("opensearch", OpensearchPackage()),
+            ("opensearch", OpenSearchPackage()),
             ("kinesalite", install_kinesalite),
             ("kinesis-mock", install_kinesis_mock),
             ("lambda-java-libs", install_lambda_java_libs),
@@ -832,20 +832,20 @@ class Package(ABC):
         raise NotImplementedError()
 
 
-class OpensearchPackage(Package):
+class OpenSearchPackage(Package):
     def __init__(self, default_version: str = OPENSEARCH_DEFAULT_VERSION):
         super().__init__(default_version)
 
     def _get_installer(self, version: str | None = None) -> PackageInstaller:
         # TODO check if the version is allowed, otherwise raise Exception
-        return OpensearchPackageInstaller(version)
+        return OpenSearchPackageInstaller(version)
 
     def get_versions(self) -> List[str]:
         # TODO implement
         raise NotImplementedError()
 
 
-class OpensearchPackageInstaller(PackageInstaller):
+class OpenSearchPackageInstaller(PackageInstaller):
     def __init__(self, version: str):
         self.version = version
 
