@@ -23,7 +23,6 @@ from localstack.utils.container_utils.container_client import (
     VolumeMappings,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
-from localstack.utils.container_utils.docker_sdk_client import SdkDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, chmod_r, mkdir
 from localstack.utils.functions import call_safe
@@ -745,4 +744,7 @@ def get_docker_client() -> ContainerClient:
     """Get a Docker client - either using the `docker` binary (if available), or using the Python SDK"""
     if is_command_available(config.DOCKER_CMD):
         return CmdDockerClient()
+
+    from localstack.utils.container_utils.docker_sdk_client import SdkDockerClient
+
     return SdkDockerClient()
