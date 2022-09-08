@@ -468,7 +468,7 @@ class TestSNSProvider:
         self, sns_client, sqs_create_queue, sns_create_topic, sns_subscription
     ):
 
-        sns_backend = sns_stores[get_aws_account_id()][aws_stack.get_region]
+        sns_backend = sns_stores[get_aws_account_id()][aws_stack.get_region()]
         topic_arn = sns_create_topic()["TopicArn"]
 
         app_arn = sns_client.create_platform_application(Name="app1", Platform="p1", Attributes={})[
@@ -581,7 +581,7 @@ class TestSNSProvider:
             Protocol="email",
             Endpoint="localstack@yopmail.com",
         )
-        sns_backend = sns_stores[get_aws_account_id()][aws_stack.get_region]
+        sns_backend = sns_stores[get_aws_account_id()][aws_stack.get_region()]
 
         def check_subscription():
             subscription_arn = subscription["SubscriptionArn"]
@@ -1100,7 +1100,7 @@ class TestSNSProvider:
 
         sns_client.publish(Message=message, TopicArn=topic_arn)
 
-        sns_backend = sns_stores[get_aws_account_id()][aws_stack.get_region]
+        sns_backend = sns_stores[get_aws_account_id()][aws_stack.get_region()]
 
         def check_messages():
             sms_messages = sns_backend.sms_messages
