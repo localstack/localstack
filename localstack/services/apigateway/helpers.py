@@ -401,8 +401,7 @@ def extract_query_string_params(path: str) -> Tuple[str, Dict[str, str]]:
         else:
             query_string_params[query_param_name] = query_param_values
 
-    # strip trailing slashes from path to fix downstream lookups
-    path = path.rstrip("/") or "/"
+    path = path or "/"
     return path, query_string_params
 
 
@@ -763,7 +762,7 @@ def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tup
     path_map = get_rest_api_paths(
         rest_api_id=invocation_context.api_id, region_name=invocation_context.region_name
     )
-    relative_path = invocation_context.invocation_path
+    relative_path = invocation_context.invocation_path.rstrip("/") or "/"
     try:
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
         invocation_context.resource = resource
