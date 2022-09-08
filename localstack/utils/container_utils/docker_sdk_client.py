@@ -505,6 +505,7 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        privileged: Optional[bool] = None,
     ) -> str:
         LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
@@ -526,6 +527,8 @@ class SdkDockerClient(ContainerClient):
                 kwargs["ports"] = ports.to_dict()
             if workdir:
                 kwargs["working_dir"] = workdir
+            if privileged:
+                kwargs["privileged"] = True
             mounts = None
             if mount_volumes:
                 mounts = Util.convert_mount_list_to_dict(mount_volumes)
@@ -582,6 +585,7 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        privileged: Optional[bool] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
@@ -606,6 +610,7 @@ class SdkDockerClient(ContainerClient):
                 dns=dns,
                 additional_flags=additional_flags,
                 workdir=workdir,
+                privileged=privileged,
             )
             result = self.start_container(
                 container_name_or_id=container,

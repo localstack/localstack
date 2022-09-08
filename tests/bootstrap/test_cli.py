@@ -38,6 +38,10 @@ def container_client():
         client.stop_container(config.MAIN_CONTAINER_NAME, timeout=5)
     except Exception:
         pass
+    try:
+        client.remove_container(config.MAIN_CONTAINER_NAME, force=True)
+    except Exception:
+        pass
 
     # wait until container has been removed
     assert poll_condition(
@@ -178,3 +182,22 @@ class TestCliContainerLifecycle:
 
         output = container_client.exec_in_container(config.MAIN_CONTAINER_NAME, ["ps", "-u", user])
         assert "supervisord" in to_str(output[0])
+
+    # TODO: remove marker
+    @pytest.mark.xfail(reason="tests should run after a full rebuild of the Docker image")
+    def test_start_cli_within_container(self, runner, container_client):
+
+        output = container_client.run_container(
+            "localstack/localstack",
+            remove=True,
+            entrypoint="",
+            command=["bin/localstack", "start", "-d"],
+            mount_volumes=[("/var/run/docker.sock", "/var/run/docker.sock")],
+            env_vars={"LOCALSTACK_VOLUME_DIR": "/tmp/ls-volume"},
+        )
+        stdout = to_str(output[0])
+        assert "starting LocalStack" in stdout
+        assert "detaching" in stdout
+
+        # assert that container is running
+        runner.invoke(cli, ["wait", "-t", "60"])

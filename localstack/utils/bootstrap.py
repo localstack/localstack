@@ -15,6 +15,7 @@ from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
+    ContainerClient,
     ContainerException,
     PortMappings,
     SimpleVolumeBind,
@@ -22,10 +23,11 @@ from localstack.utils.container_utils.container_client import (
     VolumeMappings,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
+from localstack.utils.container_utils.docker_sdk_client import SdkDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, chmod_r, mkdir
 from localstack.utils.functions import call_safe
-from localstack.utils.run import run, to_str
+from localstack.utils.run import is_command_available, run, to_str
 from localstack.utils.serving import Server
 from localstack.utils.sync import poll_condition
 from localstack.utils.tail import FileListener
@@ -426,7 +428,7 @@ class LocalstackContainer:
         return mount_volumes
 
     def run(self):
-        client = CmdDockerClient()
+        client = get_docker_client()
         client.default_run_outfile = self.logfile
 
         try:
@@ -449,6 +451,7 @@ class LocalstackContainer:
                 dns=self.dns,
                 additional_flags=" ".join(self.additional_flags),
                 workdir=self.workdir,
+                privileged=self.privileged,
             )
         except ContainerException as e:
             if LOG.isEnabledFor(logging.DEBUG):
@@ -578,7 +581,7 @@ def configure_container(container: LocalstackContainer):
     # mount docker socket
     container.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
-    container.additional_flags.append("--privileged")
+    container.privileged = True
 
 
 def configure_volume_mounts(container: LocalstackContainer):
@@ -736,3 +739,10 @@ def in_ci():
         if os.environ.get(key, "") not in [False, "", "0", "false"]:
             return True
     return False
+
+
+def get_docker_client() -> ContainerClient:
+    """Get a Docker client - either using the `docker` binary (if available), or using the Python SDK"""
+    if is_command_available(config.DOCKER_CMD):
+        return CmdDockerClient()
+    return SdkDockerClient()
