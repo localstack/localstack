@@ -389,9 +389,10 @@ class TestAPIGateway:
         url = api_invoke_url(api_id=api_id, stage="local", path="/test")
         response = requests.get(url)
         body = response.json()
-
+        assert response.status_code == 200
         # authorizer contains an object that does not contain the authorizer type ('lambda', 'sns')
-        assert body.get("requestContext").get("authorizer") == {"context": {}, "identity": {}}
+        # TODO this should not only be empty, but the key should not exist (like in aws)
+        assert not body.get("requestContext").get("authorizer")
 
     @pytest.mark.aws_validated
     def test_api_gateway_lambda_integration_aws_type(
