@@ -31,6 +31,7 @@ jobs:
       DNS_ADDRESS: 0
       AWS_DEFAULT_REGION: us-east-2
       AWS_ALTERNATE_REGION: eu-west-1
+      PROVIDER_OVERRIDE_S3: asf
 
     steps:
     - uses: actions/setup-go@v3
