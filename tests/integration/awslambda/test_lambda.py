@@ -180,7 +180,12 @@ class TestLambdaBaseFeatures:
 
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
-        paths=["$..Tags", "$..Configuration.RevisionId", "$..Code.RepositoryType"],
+        paths=[
+            "$..Tags",
+            "$..Configuration.RevisionId",
+            "$..Code.RepositoryType",
+            "$..CodeSize",  # CI reports different code size here
+        ],
     )
     @pytest.mark.aws_validated
     def test_function_state(
@@ -240,7 +245,7 @@ class TestLambdaBehavior:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..FunctionError", "$..LogResult", "$..Payload"]
     )
-    @pytest.mark.skipif(is_old_provider())
+    @pytest.mark.skipif(is_old_provider(), reason="old provider")
     @pytest.mark.aws_validated
     def test_lambda_invoke_with_timeout(
         self,
@@ -503,7 +508,7 @@ class TestLambdaFeatures:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload.context.memory_limit_in_mb", "$..logs.logs"]
     )
-    # TODO run in python and nodejs / 1 version each suffices
+    @pytest.mark.aws_validated
     def test_invocation_with_logs(self, lambda_client, snapshot, invocation_echo_lambda):
         """Test invocation of a lambda with no invocation type set, but LogType="Tail""" ""
         snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<request-id>"))
@@ -514,13 +519,7 @@ class TestLambdaFeatures:
         result = lambda_client.invoke(
             FunctionName=invocation_echo_lambda, Payload=b"{}", LogType="Tail"
         )
-        result = read_streams(result)
         snapshot.match("invoke", result)
-        result_data = json.loads(result["Payload"])
-
-        # assert response details
-        assert 200 == result["StatusCode"]
-        assert {} == result_data
 
         # assert that logs are contained in response
         logs = result.get("LogResult", "")
@@ -542,28 +541,22 @@ class TestLambdaFeatures:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
     )
-    # TODO run in python and nodejs / 1 version each suffices
+    @pytest.mark.aws_validated
     def test_invocation_type_request_response(
         self, lambda_client, snapshot, invocation_echo_lambda
     ):
-        """Test invocation with InvocationType RequestResponse explicitely set"""
+        """Test invocation with InvocationType RequestResponse explicitly set"""
         result = lambda_client.invoke(
             FunctionName=invocation_echo_lambda,
             Payload=b"{}",
             InvocationType="RequestResponse",
         )
-        result = read_streams(result)
         snapshot.match("invoke-result", result)
-        result_data = result["Payload"]
-        result_data = json.loads(result_data)
-        assert "application/json" == result["ResponseMetadata"]["HTTPHeaders"]["content-type"]
-        assert 200 == result["StatusCode"]
-        assert isinstance(result_data, dict)
 
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
     )
-    # TODO run in python and nodejs / 1 version each suffices
+    @pytest.mark.aws_validated
     def test_invocation_type_event(self, lambda_client, snapshot, invocation_echo_lambda):
         """Check invocation response for type event"""
         result = lambda_client.invoke(
@@ -577,7 +570,7 @@ class TestLambdaFeatures:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
     )
-    # TODO run in python and nodejs / 1 version each suffices
+    @pytest.mark.aws_validated
     def test_invocation_type_dry_run(self, lambda_client, snapshot, invocation_echo_lambda):
         """Check invocation response for type dryrun"""
         result = lambda_client.invoke(
@@ -589,6 +582,7 @@ class TestLambdaFeatures:
         assert 204 == result["StatusCode"]
 
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
+    @pytest.mark.aws_validated
     # TODO create new one and run it for everything with new lambda, delete this then
     def test_lambda_environment(self, lambda_client, create_lambda_function, snapshot):
         """Tests invoking a lambda function with environment variables set on creation"""
@@ -617,7 +611,7 @@ class TestLambdaFeatures:
         assert result["Environment"] == {"Variables": env_vars}
 
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
-    # TODO run in python and nodejs / 1 version each suffices
+    @pytest.mark.aws_validated
     def test_invocation_with_qualifier(
         self,
         lambda_client,
@@ -630,6 +624,7 @@ class TestLambdaFeatures:
         snapshot,
     ):
         """Tests invocation of python lambda with a given qualifier"""
+        snapshot.add_transformer(snapshot.transform.key_value("LogResult"))
 
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
@@ -654,42 +649,26 @@ class TestLambdaFeatures:
             Timeout=10,
         )
         snapshot.match("creation-response", response)
-
-        assert "Version" in response
         qualifier = response["Version"]
 
-        wait_until_lambda_ready(function_name=function_name, qualifier=qualifier)
-
         # invoke lambda function
-        data_before = b'{"foo": "bar with \'quotes\\""}'
-        result = lambda_client.invoke(
-            FunctionName=function_name, Payload=data_before, Qualifier=qualifier
+        invoke_result = lambda_client.invoke(
+            FunctionName=function_name,
+            Payload=b'{"foo": "bar with \'quotes\\""}',
+            Qualifier=qualifier,
+            LogType="Tail",
         )
-        result = read_streams(result)
-        snapshot.match("invocation-response", result)
-        data_after = json.loads(result["Payload"])
-        assert json.loads(to_str(data_before)) == data_after["event"]
-
-        context = data_after["context"]
-        snapshot.match("context", context)
-        assert response["Version"] == context["function_version"]
-        assert context.get("aws_request_id")
-        assert function_name == context["function_name"]
-        assert f"/aws/lambda/{function_name}" == context["log_group_name"]
-        assert context.get("log_stream_name")
-        assert context.get("memory_limit_in_mb")
-
-        # assert that logs are present
-        expected = [".*Lambda log message - print function.*"]
-        expected.append(".*Lambda log message - logging module.*")
-
-        def check_logs():
-            check_lambda_logs(function_name, expected_lines=expected)
-
-        retry(check_logs, retries=10)
+        log_result = invoke_result["LogResult"]
+        raw_logs = to_str(base64.b64decode(to_str(log_result)))
+        log_lines = raw_logs.splitlines()
+        snapshot.match(
+            "log_result",
+            {"log_result": [line for line in log_lines if not line.startswith("REPORT")]},
+        )
+        snapshot.match("invocation-response", invoke_result)
 
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
-    # TODO run in python and nodejs / 1 version each suffices
+    @pytest.mark.aws_validated
     def test_upload_lambda_from_s3(
         self,
         lambda_client,
@@ -698,6 +677,7 @@ class TestLambdaFeatures:
         lambda_su_role,
         wait_until_lambda_ready,
         snapshot,
+        create_lambda_function_aws,
     ):
         """Test invocation of a python lambda with its deployment package uploaded to s3"""
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -715,7 +695,7 @@ class TestLambdaFeatures:
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
-        create_response = lambda_client.create_function(
+        create_response = create_lambda_function_aws(
             FunctionName=function_name,
             Runtime=Runtime.python3_9,
             Handler="handler.handler",
@@ -725,29 +705,18 @@ class TestLambdaFeatures:
         )
         snapshot.match("creation-response", create_response)
 
-        wait_until_lambda_ready(function_name=function_name)
-
         # invoke lambda function
-        data_before = b'{"foo": "bar with \'quotes\\""}'
-        result = lambda_client.invoke(FunctionName=function_name, Payload=data_before)
-        result = read_streams(result)
+        result = lambda_client.invoke(
+            FunctionName=function_name, Payload=b'{"foo": "bar with \'quotes\\""}'
+        )
         snapshot.match("invocation-response", result)
-        data_after = json.loads(result["Payload"])
-        assert json.loads(to_str(data_before)) == data_after["event"]
 
-        context = data_after["context"]
-        assert "$LATEST" == context["function_version"]
-        assert function_name == context["function_name"]
-
-        # clean up
-        lambda_client.delete_function(FunctionName=function_name)
-
-    # TODO run in python and nodejs / 1 version each suffices
     @pytest.mark.skipif(
         is_old_provider() and not use_docker(),
         reason="Test for docker nodejs runtimes not applicable if run locally",
     )
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
+    @pytest.mark.aws_validated
     def test_lambda_with_context(
         self, lambda_client, create_lambda_function, check_lambda_logs, snapshot
     ):
