@@ -728,7 +728,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("kinesis-mock", install_kinesis_mock),
             ("lambda-java-libs", install_lambda_java_libs),
             ("local-kms", install_local_kms),
-            ("postgresql", PostgrePackage()),
+            ("postgresql", PostgresqlPackage()),
             ("stepfunctions-local", install_stepfunctions_local),
             ("terraform", install_terraform),
         ]
@@ -758,6 +758,9 @@ class InstallerManager:
         return installer(*args, **kwargs)
 
 
+INSTALL_LOCK = threading.RLock()
+
+
 class NoSuchInstallTargetException(Exception):
     pass
 
@@ -767,6 +770,18 @@ class NoSuchVersionException(Exception):
 
 
 class UnsupportedOperatingSystemException(Exception):
+    pass
+
+
+class PackageInstallationException(Exception):
+    """Exception which indicates that the installation of a package failed."""
+
+    pass
+
+
+class SystemNotSupportedException(PackageInstallationException):
+    """Indicates that the installation of a package is not supported for the current operating system."""
+
     pass
 
 
@@ -814,6 +829,64 @@ class PackageInstaller(ABC):
 
     def _install(self, target: InstallTarget):
         raise NotImplementedError()
+
+
+class OSPackageInstaller(PackageInstaller, ABC):
+    """
+    Installer superclass for installing an OS-dependent package.
+    Supported operating systems are Debian and RedHat.
+    Inheriting classes only need to overwrite the package names that need to be installed
+    """
+
+    def __init__(self):
+        # packages might have different names or dependencies in different package managers
+        self.debian_packages = []
+        self.redhat_packages = []
+
+    def _install(self, target: InstallTarget):
+
+        # TODO: copied from old ext installer, do we want to keep this behaviour?
+        if not in_docker():
+            raise SystemNotSupportedException(
+                "OS level packages are only installed within docker containers."
+            )
+        if is_debian():
+            self._debian_install(target)
+        elif is_redhat():
+            self._redhat_install()
+        else:
+            raise SystemNotSupportedException(
+                "The current operating system is currently not supported."
+            )
+
+    def _debian_install(self, target: InstallTarget):
+        with INSTALL_LOCK:
+            download_path = self._debian_download_os_packages(target)
+            cmd = self.cmd_prefix(download_path) + ["install"] + self.debian_packages
+            run(cmd)
+
+    # TODO: respect target for Redhat
+    def _redhat_install(self):
+        with INSTALL_LOCK:
+            run(["dnf", "install", "-y"] + self.redhat_packages)
+
+    def _debian_download_os_packages(self, target: InstallTarget):
+        with INSTALL_LOCK:
+            download_path = self._get_install_dir(target)
+            mkdir(download_path)
+            run(["apt-get", "update"])
+            LOG.debug("Downloading packages %s to folder: %s", self.debian_packages, download_path)
+            try:
+                cmd = self.cmd_prefix(download_path) + ["-d", "install"] + self.debian_packages
+                run(cmd)
+            except Exception as e:
+                LOG.info("Unable to download packages %s: %s", self.debian_packages, e)
+                rm_rf(download_path)
+            return download_path
+
+    def cmd_prefix(self, cache_dir: str) -> List[str]:
+        """Return the apt command prefix, configuring the local package cache folders"""
+        return ["apt", f"-o=dir::cache={cache_dir}", f"-o=dir::cache::archives={cache_dir}", "-y"]
 
 
 class Package(ABC):
@@ -1005,16 +1078,30 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
         )
 
 
-class PostgrePackageInstaller(PackageInstaller):
+class PostgresqlPackageInstaller(OSPackageInstaller):
     def __init__(self, version: str):
+        super().__init__()
         self.version = version
+        self.debian_packages = self.redhat_packages = [
+            f"postgresql-{self.version}",
+            f"postgresql-client-{self.version}",
+            f"postgresql-plpython3-{self.version}",
+        ]
 
     def _get_install_dir(self, target: InstallTarget) -> str:
         # TODO: needs talk!
-        try:
-            return subprocess.check_output(["which", "psql"]).decode("utf-8")
-        except subprocess.CalledProcessError:
-            return ""
+        #   This is currently a "snap-like" approach: every dependency has their own folder, which means no reuse.
+        #   We do the same for binary packages, however the probability of reusing a package
+        #   is much higher here. However the overhead is probably negligible, and it keeps the code simpler.
+        #   Also: doesn't it always need to be like the redhat version? Downloaded lib-files will not make
+        #   the necessary command available.
+        if is_debian():
+            return os.path.join(target.value, "apt-libs", "postgres", self.version)
+        elif is_redhat():
+            # installing for redhat is just <dnf install> at the moment
+            return subprocess.check_output(["which", "psql"])
+        else:
+            raise SystemNotSupportedException()
 
     def _build_executables_path(self, install_dir: str) -> str:
         # TODO: needs talk!
@@ -1024,81 +1111,10 @@ class PostgrePackageInstaller(PackageInstaller):
             path = subprocess.check_output(["readlink", "-f", install_dir]).decode("utf-8")
         return path
 
-    def _install(self, target: InstallTarget):
-        package_command = PostgrePackageInstaller._probe_for_os_manager()
-        if package_command == "apt":
-            self._apt_install()
 
-    def _apt_install(self):
-        os.system("apt-get update")
-        # TODO: replace with python packages/calls?
-        subprocess.check_output(["apt-get", "install", "lsb-release", "gnupg", "wget", "-y"])
-
-        # Add postgre repo
-        # https://www.postgresql.org/download/linux/debian/
-        subprocess.check_output(
-            [
-                "sh",
-                "-c",
-                "echo",
-                "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main",
-                ">",
-                "/etc/apt/sources.list.d/pgdg.list",
-            ]
-        )
-        os.system(
-            "wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -"
-        )
-        os.system("apt-get update")
-
-        # use check_output for an exception on error, TODO: not really meaningful right now
-        # TODO: debian frontend necessary?
-        os.environ["DEBIAN_FRONTEND"] = "noninteractive"
-        subprocess.check_output(
-            [
-                "apt-get",
-                "install",
-                "-y",
-                "--no-install-recommends",
-                f"postgresql-{self.version}",
-                f"postgresql-client-{self.version}",
-                f"postgresql-plpython3-{self.version}",
-            ]
-        )
-
-        # ## sudo section - testing only
-        # os.system("sudo apt-get update")
-        # subprocess.check_output(["sudo", "apt-get", "install", "lsb-release", "gnupg", "wget", "-y"])
-        #
-        # # Add postgre repo
-        # # https://www.postgresql.org/download/linux/debian/
-        # subprocess.check_output(
-        #     ['sudo', 'sh', '-c', 'echo', "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main", ">",
-        #      "/etc/apt/sources.list.d/pgdg.list"])
-        # os.system('wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -')
-        # os.system('sudo apt-get update')
-        #
-        # # use check_output for an exception on error
-        # os.environ["DEBIAN_FRONTEND"] = "noninteractive"
-        # subprocess.check_output(
-        #     ["sudo", "apt-get", "install", "-y", "--no-install-recommends",
-        #      f"postgresql-{self.version}", f"postgresql-client-{self.version}", f"postgresql-plpython3-{self.version}"])
-
-    @staticmethod
-    def _probe_for_os_manager() -> str:
-        # TODO: which os is supported?
-        # os_package_managers = ["apt", "apk", "yum", "pacman"]
-        os_package_managers = ["apt", "apk"]
-        for m in os_package_managers:
-            status_code = os.system(f"which {m}")
-            if status_code == 0:
-                return m
-        raise UnsupportedOperatingSystemException()
-
-
-class PostgrePackage(Package):
-    # TODO: talk: this type of constructor is always necessary, but easily forgotten and not enforced
-    def __init__(self, default_version: str = "12"):
+class PostgresqlPackage(Package):
+    # TODO: talk: this type of constructor is always necessary for packages, but easily forgotten and not enforced
+    def __init__(self, default_version: str = "11"):
         super().__init__(default_version)
 
     # TODO: different OS might have different available versions
@@ -1106,7 +1122,7 @@ class PostgrePackage(Package):
         pass
 
     def _get_installer(self, version):
-        return PostgrePackageInstaller(version)
+        return PostgresqlPackageInstaller(version)
 
 
 def main():
