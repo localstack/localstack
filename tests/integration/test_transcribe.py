@@ -45,7 +45,7 @@ class TestTranscribe:
         # <5sec for a vosk transcription
         # ~100sec for an AWS transcription -> adjust timeout accordingly
         assert poll_condition(
-            is_transcription_done, timeout=10
+            is_transcription_done, timeout=100
         ), f"could not finish transcription job: {job_name} in time"
 
         job = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
