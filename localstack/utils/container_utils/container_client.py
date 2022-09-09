@@ -676,6 +676,7 @@ class ContainerClient(metaclass=ABCMeta):
             dns=container_config.dns,
             additional_flags=container_config.additional_flags,
             workdir=container_config.workdir,
+            privileged=container_config.privileged
         )
 
     @abstractmethod

@@ -21,7 +21,6 @@ from localstack.utils.container_utils.container_client import (
     VolumeBind,
     VolumeMappings,
     get_docker_client,
-    pull_image_if_not_available,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, chmod_r, mkdir
@@ -431,9 +430,6 @@ class LocalstackContainer:
         client.default_run_outfile = self.logfile
 
         try:
-            # pull image if not available
-            pull_image_if_not_available(self.image_name, client=client)
-            # run main container
             return client.run_container(
                 image_name=self.image_name,
                 stdin=self.stdin,
