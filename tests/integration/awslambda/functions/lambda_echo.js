@@ -1,8 +1,4 @@
-exports.handler = function(event, context, callback) {
+exports.handler = async function(event, context) {
 	console.log(event);
-	if (callback) {
-		callback(null, event);
-	} else {
-		context.succeed(event);
-	}
+	return event;
 };
