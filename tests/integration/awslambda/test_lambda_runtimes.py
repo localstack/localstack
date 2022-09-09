@@ -103,19 +103,6 @@ class TestJavaRuntimes:
         save_file(zip_jar_path, test_java_jar)
         return testutil.create_zip_file(tmpdir, get_content=True)
 
-    @pytest.fixture(
-        params=JAVA_TEST_RUNTIMES,
-    )
-    def simple_java_lambda(self, create_lambda_function, test_java_zip, request):
-        function_name = f"java-test-function-{short_uid()}"
-        create_lambda_function(
-            func_name=function_name,
-            zip_file=test_java_zip,
-            runtime=request.param,
-            handler="cloud.localstack.sample.LambdaHandler",
-        )
-        return function_name
-
     @pytest.mark.skip_snapshot_verify
     def test_java_runtime_with_lib(self, lambda_client, create_lambda_function, snapshot):
         """Test lambda creation/invocation with different deployment package types (jar, zip, zip-with-gradle)"""

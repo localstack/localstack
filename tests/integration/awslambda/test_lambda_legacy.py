@@ -1,11 +1,6 @@
 import json
 
 import pytest
-from integration.awslambda.test_lambda import (
-    TEST_GOLANG_LAMBDA_URL_TEMPLATE,
-    TEST_LAMBDA_RUBY,
-    read_streams,
-)
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api.lambda_ import Runtime
@@ -24,7 +19,12 @@ from localstack.utils.files import load_file
 from localstack.utils.platform import get_arch, get_os
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.testutil import create_lambda_archive
-from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+from tests.integration.awslambda.test_lambda import (
+    TEST_GOLANG_LAMBDA_URL_TEMPLATE,
+    TEST_LAMBDA_PYTHON_ECHO,
+    TEST_LAMBDA_RUBY,
+    read_streams,
+)
 
 
 @pytest.mark.skipif(not is_old_provider(), reason="test does not make valid assertions against AWS")
