@@ -177,6 +177,12 @@ class SnapshotSession:
 
         # TODO: separate these states
         a_all = self.recorded_state
+        if not self.observed_state:
+            # match was never called, so we must assume this isn't a "real" snapshot test
+            # e.g. test_sqs uses the snapshot fixture to configure it via another fixture on module scope
+            #   but might not use them in some individual tests
+            return []
+
         if not a_all and not self.update:
             raise Exception(
                 f"No state for {self.scope_key} recorded. Please (re-)generate the snapshot for this test."
