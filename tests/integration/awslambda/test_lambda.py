@@ -590,7 +590,7 @@ class TestLambdaFeatures:
 
     @pytest.mark.skip_snapshot_verify
     # TODO create new one and run it for everything with new lambda, delete this then
-    def test_lambda_environment(self, lambda_client, create_lambda_function, runtime, snapshot):
+    def test_lambda_environment(self, lambda_client, create_lambda_function, snapshot):
         """Tests invoking a lambda function with environment variables set on creation"""
         function_name = f"env-test-function-{short_uid()}"
         env_vars = {"Hello": "World"}
@@ -599,7 +599,7 @@ class TestLambdaFeatures:
             libs=TEST_LAMBDA_LIBS,
             func_name=function_name,
             envvars=env_vars,
-            runtime=runtime,
+            runtime=Runtime.python3_9,
         )
         snapshot.match("creation-result", creation_result)
 
@@ -618,13 +618,11 @@ class TestLambdaFeatures:
 
     @pytest.mark.skip_snapshot_verify
     # TODO run in python and nodejs / 1 version each suffices
-    # feature test
     def test_invocation_with_qualifier(
         self,
         lambda_client,
         s3_client,
         s3_bucket,
-        runtime,
         check_lambda_logs,
         lambda_su_role,
         wait_until_lambda_ready,
@@ -637,14 +635,17 @@ class TestLambdaFeatures:
 
         # upload zip file to S3
         zip_file = create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS, runtime=runtime
+            load_file(TEST_LAMBDA_PYTHON),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=Runtime.python3_9,
         )
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
         response = lambda_client.create_function(
             FunctionName=function_name,
-            Runtime=runtime,
+            Runtime=Runtime.python3_9,
             Role=lambda_su_role,
             Publish=True,
             Handler="handler.handler",
@@ -691,13 +692,11 @@ class TestLambdaFeatures:
 
     @pytest.mark.skip_snapshot_verify
     # TODO run in python and nodejs / 1 version each suffices
-    # feature test
     def test_upload_lambda_from_s3(
         self,
         lambda_client,
         s3_client,
         s3_bucket,
-        runtime,
         lambda_su_role,
         wait_until_lambda_ready,
         snapshot,
@@ -710,14 +709,17 @@ class TestLambdaFeatures:
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS, runtime=runtime
+            load_file(TEST_LAMBDA_PYTHON),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=Runtime.python3_9,
         )
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
         create_response = lambda_client.create_function(
             FunctionName=function_name,
-            Runtime=runtime,
+            Runtime=Runtime.python3_9,
             Handler="handler.handler",
             Role=lambda_su_role,
             Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
@@ -748,9 +750,8 @@ class TestLambdaFeatures:
         reason="Test for docker nodejs runtimes not applicable if run locally",
     )
     @pytest.mark.skip_snapshot_verify
-    # move to Features test
     def test_nodejs_lambda_with_context(
-        self, lambda_client, create_lambda_function, runtime, check_lambda_logs, snapshot
+        self, lambda_client, create_lambda_function, check_lambda_logs, snapshot
     ):
         """Test context of nodejs lambda invocation"""
         function_name = f"test-function-{short_uid()}"
@@ -758,7 +759,7 @@ class TestLambdaFeatures:
             func_name=function_name,
             handler_file=TEST_LAMBDA_INTEGRATION_NODEJS,
             handler="lambda_integration.handler",
-            runtime=runtime,
+            runtime=Runtime.nodejs16_x,
         )
         snapshot.match("creation", creation_response)
         ctx = {
