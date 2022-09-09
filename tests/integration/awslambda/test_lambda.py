@@ -242,20 +242,11 @@ class TestLambdaBehavior:
         condition=is_old_provider, paths=["$..FunctionError", "$..LogResult", "$..Payload"]
     )
     @pytest.mark.skipif(is_old_provider())
-    @pytest.mark.parametrize(
-        ["lambda_fn", "lambda_runtime"],
-        [
-            (TEST_LAMBDA_TIMEOUT_PYTHON, Runtime.python3_8),
-        ],
-        ids=["python"],
-    )
     @pytest.mark.aws_validated
     def test_lambda_invoke_with_timeout(
         self,
         lambda_client,
         create_lambda_function,
-        lambda_fn,
-        lambda_runtime,
         logs_client,
         snapshot,
     ):
@@ -271,8 +262,8 @@ class TestLambdaBehavior:
         func_name = f"test_lambda_{short_uid()}"
         create_result = create_lambda_function(
             func_name=func_name,
-            handler_file=lambda_fn,
-            runtime=lambda_runtime,
+            handler_file=TEST_LAMBDA_TIMEOUT_PYTHON,
+            runtime=Runtime.python3_8,
             client=lambda_client,
             timeout=1,
         )
@@ -299,29 +290,19 @@ class TestLambdaBehavior:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload", "$..LogResult"]
     )
-    @pytest.mark.parametrize(
-        ["lambda_fn", "lambda_runtime"],
-        [
-            (TEST_LAMBDA_TIMEOUT_PYTHON, Runtime.python3_8),
-        ],
-        ids=["python"],
-    )
     @pytest.mark.aws_validated
     def test_lambda_invoke_no_timeout(
         self,
         lambda_client,
         create_lambda_function,
-        lambda_fn,
-        lambda_runtime,
         logs_client,
         snapshot,
     ):
-
         func_name = f"test_lambda_{short_uid()}"
         create_result = create_lambda_function(
             func_name=func_name,
-            handler_file=lambda_fn,
-            runtime=lambda_runtime,
+            handler_file=TEST_LAMBDA_TIMEOUT_PYTHON,
+            runtime=Runtime.python3_8,
             client=lambda_client,
             timeout=2,
         )
