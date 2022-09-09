@@ -1,9 +1,8 @@
 exports.handler = function(event, context, callback) {
-	console.log('Node.js Lambda handler executing.');
-	var result = {context};
+	console.log(event);
 	if (callback) {
-		callback(null, result);
+		callback(null, event);
 	} else {
-		context.succeed(result);
+		context.succeed(event);
 	}
 };

@@ -15,6 +15,7 @@ from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from localstack.utils.testutil import get_lambda_log_events
 from tests.integration.awslambda.test_lambda import (
+    FUNCTIONS_FOLDER,
     JAVA_TEST_RUNTIMES,
     NODE_TEST_RUNTIMES,
     PYTHON_TEST_RUNTIMES,
@@ -25,7 +26,6 @@ from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
     TEST_LAMBDA_PYTHON_VERSION,
-    THIS_FOLDER,
     read_streams,
 )
 
@@ -63,7 +63,8 @@ pytestmark = pytest.mark.skip_snapshot_verify(
 class TestNodeJSRuntimes:
     @pytest.mark.parametrize("runtime", (Runtime.nodejs14_x, Runtime.nodejs16_x))
     @pytest.mark.skipif(
-        not use_docker(), reason="ES6 support is only guaranteed when using the docker executor"
+        is_old_provider() and not use_docker(),
+        reason="ES6 support is only guaranteed when using the docker executor",
     )
     @pytest.mark.aws_validated
     def test_invoke_nodejs_es6_lambda(
@@ -145,8 +146,8 @@ class TestJavaRuntimes:
 
         java_zip_with_lib_gradle = load_file(
             os.path.join(
-                THIS_FOLDER,
-                "functions/java/lambda_echo/build/distributions/lambda-function-built-by-gradle.zip",
+                FUNCTIONS_FOLDER,
+                "java/lambda_echo/build/distributions/lambda-function-built-by-gradle.zip",
             ),
             mode="rb",
         )

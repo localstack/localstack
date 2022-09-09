@@ -13,6 +13,7 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.services.awslambda.lambda_api import use_docker
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
+from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import testutil
 from localstack.utils.common import load_file, retry, safe_requests, short_uid, to_bytes, to_str
 from localstack.utils.generic.wait_utils import wait_until
@@ -23,48 +24,46 @@ FUNCTION_MAX_UNZIPPED_SIZE = 262144000
 
 
 # TODO: find a better way to manage these handler files
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
-TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_python_version.py")
-TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
-    THIS_FOLDER, "functions/lambda_unhandled_error.py"
-)
-TEST_LAMBDA_AWS_PROXY = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy.py")
-TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
-TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
-TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
-TEST_LAMBDA_HELLO_WORLD = os.path.join(THIS_FOLDER, "functions/lambda_hello_world.py")
-TEST_LAMBDA_NODEJS_APIGW_INTEGRATION = os.path.join(THIS_FOLDER, "functions/apigw_integration.js")
-TEST_LAMBDA_NODEJS_APIGW_502 = os.path.join(THIS_FOLDER, "functions/apigw_502.js")
-TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions/golang/handler.zip")
-TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions/lambda_integration.rb")
-TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "functions/dotnetcore31/dotnetcore31.zip")
-TEST_LAMBDA_DOTNET6 = os.path.join(THIS_FOLDER, "functions/dotnet6/dotnet6.zip")
-TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "functions/custom-runtime")
-TEST_LAMBDA_HTTP_RUST = os.path.join(THIS_FOLDER, "functions/rust-lambda/function.zip")
+FUNCTIONS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "functions")
+TEST_LAMBDA_PYTHON = os.path.join(FUNCTIONS_FOLDER, "lambda_integration.py")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(FUNCTIONS_FOLDER, "lambda_echo.py")
+TEST_LAMBDA_PYTHON_VERSION = os.path.join(FUNCTIONS_FOLDER, "lambda_python_version.py")
+TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(FUNCTIONS_FOLDER, "lambda_unhandled_error.py")
+TEST_LAMBDA_AWS_PROXY = os.path.join(FUNCTIONS_FOLDER, "lambda_aws_proxy.py")
+TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(FUNCTIONS_FOLDER, "lambda_integration.js")
+TEST_LAMBDA_NODEJS = os.path.join(FUNCTIONS_FOLDER, "lambda_handler.js")
+TEST_LAMBDA_NODEJS_ES6 = os.path.join(FUNCTIONS_FOLDER, "lambda_handler_es6.mjs")
+TEST_LAMBDA_NODEJS_ECHO = os.path.join(FUNCTIONS_FOLDER, "lambda_echo.js")
+TEST_LAMBDA_HELLO_WORLD = os.path.join(FUNCTIONS_FOLDER, "lambda_hello_world.py")
+TEST_LAMBDA_NODEJS_APIGW_INTEGRATION = os.path.join(FUNCTIONS_FOLDER, "apigw_integration.js")
+TEST_LAMBDA_NODEJS_APIGW_502 = os.path.join(FUNCTIONS_FOLDER, "apigw_502.js")
+TEST_LAMBDA_GOLANG_ZIP = os.path.join(FUNCTIONS_FOLDER, "golang/handler.zip")
+TEST_LAMBDA_RUBY = os.path.join(FUNCTIONS_FOLDER, "lambda_integration.rb")
+TEST_LAMBDA_DOTNETCORE31 = os.path.join(FUNCTIONS_FOLDER, "dotnetcore31/dotnetcore31.zip")
+TEST_LAMBDA_DOTNET6 = os.path.join(FUNCTIONS_FOLDER, "dotnet6/dotnet6.zip")
+TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(FUNCTIONS_FOLDER, "custom-runtime")
+TEST_LAMBDA_HTTP_RUST = os.path.join(FUNCTIONS_FOLDER, "rust-lambda/function.zip")
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
-    THIS_FOLDER, "functions/java/lambda_echo/lambda-function-with-lib-0.0.1.jar"
+    FUNCTIONS_FOLDER, "java/lambda_echo/lambda-function-with-lib-0.0.1.jar"
 )
 TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
-    THIS_FOLDER,
-    "functions",
+    FUNCTIONS_FOLDER,
     "java",
     "lambda_multiple_handlers",
     "build",
     "distributions",
     "lambda-function-with-multiple-handlers.zip",
 )
-TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "functions/lambda_environment.py")
+TEST_LAMBDA_ENV = os.path.join(FUNCTIONS_FOLDER, "lambda_environment.py")
 
-TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions/lambda_send_message.py")
-TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions/lambda_put_item.py")
-TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, "functions/lambda_start_execution.py")
-TEST_LAMBDA_URL = os.path.join(THIS_FOLDER, "functions/lambda_url.js")
-TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_cache.js")
-TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_cache.py")
-TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout.py")
-TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_introspect.py")
+TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(FUNCTIONS_FOLDER, "lambda_send_message.py")
+TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(FUNCTIONS_FOLDER, "lambda_put_item.py")
+TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(FUNCTIONS_FOLDER, "lambda_start_execution.py")
+TEST_LAMBDA_URL = os.path.join(FUNCTIONS_FOLDER, "lambda_url.js")
+TEST_LAMBDA_CACHE_NODEJS = os.path.join(FUNCTIONS_FOLDER, "lambda_cache.js")
+TEST_LAMBDA_CACHE_PYTHON = os.path.join(FUNCTIONS_FOLDER, "lambda_cache.py")
+TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(FUNCTIONS_FOLDER, "lambda_timeout.py")
+TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(FUNCTIONS_FOLDER, "lambda_introspect.py")
 
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
 
@@ -445,6 +444,20 @@ class TestLambdaURL:
 
 
 class TestLambdaFeatures:
+    @pytest.fixture(
+        params=[("python3.9", TEST_LAMBDA_PYTHON_ECHO), ("nodejs16.x", TEST_LAMBDA_NODEJS_ECHO)],
+        ids=["python3.9", "nodejs16.x"],
+    )
+    def invocation_echo_lambda(self, create_lambda_function, request):
+        function_name = f"echo-func-{short_uid()}"
+        runtime, handler = request.param
+        creation_result = create_lambda_function(
+            handler_file=handler,
+            func_name=function_name,
+            runtime=runtime,
+        )
+        return creation_result["CreateFunctionResponse"]["FunctionArn"]
+
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
         paths=["$..Tags", "$..LogResult", "$..RevisionId", "$..RepositoryType"],
@@ -488,24 +501,26 @@ class TestLambdaFeatures:
         snapshot.match("lambda_invoke_result", invoke_result)
 
     @pytest.mark.skip_snapshot_verify(
-        paths=["$..Payload.context.memory_limit_in_mb", "$..logs.logs"]
+        condition=is_old_provider, paths=["$..Payload.context.memory_limit_in_mb", "$..logs.logs"]
     )
     # TODO run in python and nodejs / 1 version each suffices
-    def test_invocation_type_not_set(self, lambda_client, snapshot):
+    def test_invocation_with_logs(self, lambda_client, snapshot, invocation_echo_lambda):
         """Test invocation of a lambda with no invocation type set, but LogType="Tail""" ""
-        function_name = f"fn-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<request-id>"))
         snapshot.add_transformer(
             snapshot.transform.key_value("LogResult", reference_replacement=False)
         )
 
-        result = lambda_client.invoke(FunctionName=function_name, Payload=b"{}", LogType="Tail")
+        result = lambda_client.invoke(
+            FunctionName=invocation_echo_lambda, Payload=b"{}", LogType="Tail"
+        )
         result = read_streams(result)
         snapshot.match("invoke", result)
         result_data = json.loads(result["Payload"])
 
         # assert response details
         assert 200 == result["StatusCode"]
-        assert {} == result_data["event"]
+        assert {} == result_data
 
         # assert that logs are contained in response
         logs = result.get("LogResult", "")
@@ -520,19 +535,20 @@ class TestLambdaFeatures:
         )
         snapshot.match("logs", {"logs": logs})
         assert "START" in logs
-        assert "Lambda log message" in logs
+        assert "{}" in logs
         assert "END" in logs
         assert "REPORT" in logs
 
     @pytest.mark.skip_snapshot_verify(
-        paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
+        condition=is_old_provider, paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
     )
     # TODO run in python and nodejs / 1 version each suffices
-    def test_invocation_type_request_response(self, lambda_client, snapshot):
+    def test_invocation_type_request_response(
+        self, lambda_client, snapshot, invocation_echo_lambda
+    ):
         """Test invocation with InvocationType RequestResponse explicitely set"""
-        function_name = f"fn-{short_uid()}"
         result = lambda_client.invoke(
-            FunctionName=function_name,
+            FunctionName=invocation_echo_lambda,
             Payload=b"{}",
             InvocationType="RequestResponse",
         )
@@ -544,33 +560,35 @@ class TestLambdaFeatures:
         assert 200 == result["StatusCode"]
         assert isinstance(result_data, dict)
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..LogResult", "$..ExecutedVersion"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
+    )
     # TODO run in python and nodejs / 1 version each suffices
-    def test_invocation_type_event(self, lambda_client, snapshot):
+    def test_invocation_type_event(self, lambda_client, snapshot, invocation_echo_lambda):
         """Check invocation response for type event"""
-        function_name = f"fn-{short_uid()}"
         result = lambda_client.invoke(
-            FunctionName=function_name, Payload=b"{}", InvocationType="Event"
+            FunctionName=invocation_echo_lambda, Payload=b"{}", InvocationType="Event"
         )
         result = read_streams(result)
         snapshot.match("invoke-result", result)
 
         assert 202 == result["StatusCode"]
 
-    @pytest.mark.skip_snapshot_verify(paths=["$..LogResult", "$..ExecutedVersion"])
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..LogResult", "$..ExecutedVersion"]
+    )
     # TODO run in python and nodejs / 1 version each suffices
-    def test_invocation_type_dry_run(self, lambda_client, snapshot):
+    def test_invocation_type_dry_run(self, lambda_client, snapshot, invocation_echo_lambda):
         """Check invocation response for type dryrun"""
-        function_name = f"fn-{short_uid()}"
         result = lambda_client.invoke(
-            FunctionName=function_name, Payload=b"{}", InvocationType="DryRun"
+            FunctionName=invocation_echo_lambda, Payload=b"{}", InvocationType="DryRun"
         )
         result = read_streams(result)
         snapshot.match("invoke-result", result)
 
         assert 204 == result["StatusCode"]
 
-    @pytest.mark.skip_snapshot_verify
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     # TODO create new one and run it for everything with new lambda, delete this then
     def test_lambda_environment(self, lambda_client, create_lambda_function, snapshot):
         """Tests invoking a lambda function with environment variables set on creation"""
@@ -598,7 +616,7 @@ class TestLambdaFeatures:
         snapshot.match("get-configuration-result", result)
         assert result["Environment"] == {"Variables": env_vars}
 
-    @pytest.mark.skip_snapshot_verify
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     # TODO run in python and nodejs / 1 version each suffices
     def test_invocation_with_qualifier(
         self,
@@ -608,6 +626,7 @@ class TestLambdaFeatures:
         check_lambda_logs,
         lambda_su_role,
         wait_until_lambda_ready,
+        create_lambda_function_aws,
         snapshot,
     ):
         """Tests invocation of python lambda with a given qualifier"""
@@ -625,7 +644,7 @@ class TestLambdaFeatures:
         s3_client.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
-        response = lambda_client.create_function(
+        response = create_lambda_function_aws(
             FunctionName=function_name,
             Runtime=Runtime.python3_9,
             Role=lambda_su_role,
@@ -652,6 +671,7 @@ class TestLambdaFeatures:
         assert json.loads(to_str(data_before)) == data_after["event"]
 
         context = data_after["context"]
+        snapshot.match("context", context)
         assert response["Version"] == context["function_version"]
         assert context.get("aws_request_id")
         assert function_name == context["function_name"]
@@ -661,18 +681,14 @@ class TestLambdaFeatures:
 
         # assert that logs are present
         expected = [".*Lambda log message - print function.*"]
-        if use_docker():
-            # Note that during regular test execution, nosetests captures the output from
-            # the logging module - hence we can only expect this when running in Docker
-            expected.append(".*Lambda log message - logging module.*")
+        expected.append(".*Lambda log message - logging module.*")
 
         def check_logs():
             check_lambda_logs(function_name, expected_lines=expected)
 
         retry(check_logs, retries=10)
-        lambda_client.delete_function(FunctionName=function_name)
 
-    @pytest.mark.skip_snapshot_verify
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     # TODO run in python and nodejs / 1 version each suffices
     def test_upload_lambda_from_s3(
         self,
@@ -731,8 +747,8 @@ class TestLambdaFeatures:
         is_old_provider() and not use_docker(),
         reason="Test for docker nodejs runtimes not applicable if run locally",
     )
-    @pytest.mark.skip_snapshot_verify
-    def test_nodejs_lambda_with_context(
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
+    def test_lambda_with_context(
         self, lambda_client, create_lambda_function, check_lambda_logs, snapshot
     ):
         """Test context of nodejs lambda invocation"""
