@@ -65,6 +65,7 @@ class TestNodeJSRuntimes:
     @pytest.mark.skipif(
         not use_docker(), reason="ES6 support is only guaranteed when using the docker executor"
     )
+    @pytest.mark.aws_validated
     def test_invoke_nodejs_es6_lambda(
         self, lambda_client, create_lambda_function, logs_client, snapshot, runtime
     ):
@@ -126,6 +127,7 @@ class TestJavaRuntimes:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload"]
     )  # newline at end
+    @pytest.mark.aws_validated
     def test_java_runtime_with_lib(self, lambda_client, create_lambda_function, snapshot):
         """Test lambda creation/invocation with different deployment package types (jar, zip, zip-with-gradle)"""
 
@@ -172,6 +174,7 @@ class TestJavaRuntimes:
             assert "echo" in to_str(result_data)
 
     @parametrize_java_runtimes
+    @pytest.mark.aws_validated
     def test_stream_handler(
         self, lambda_client, create_lambda_function, test_java_jar, runtime, snapshot
     ):
@@ -189,6 +192,7 @@ class TestJavaRuntimes:
         snapshot.match("invoke_result", result)
 
     @parametrize_java_runtimes
+    @pytest.mark.aws_validated
     def test_serializable_input_object(
         self, lambda_client, create_lambda_function, test_java_zip, runtime, snapshot
     ):
@@ -233,6 +237,7 @@ class TestJavaRuntimes:
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..Payload"]
     )  # newline at end
+    @pytest.mark.aws_validated
     # this test is only compiled against java 11
     def test_java_custom_handler_method_specification(
         self,
@@ -271,6 +276,7 @@ class TestJavaRuntimes:
 
 class TestPythonRuntimes:
     @parametrize_python_runtimes
+    @pytest.mark.aws_validated
     def test_handler_in_submodule(self, lambda_client, create_lambda_function, runtime):
         """Test invocation of a lambda handler which resides in a submodule (= not root module)"""
         function_name = f"test-function-{short_uid()}"
@@ -298,6 +304,7 @@ class TestPythonRuntimes:
         not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
     )
     @parametrize_python_runtimes
+    @pytest.mark.aws_validated
     def test_python_runtime_correct_versions(self, lambda_client, create_lambda_function, runtime):
         """Test different versions of python runtimes to report back the correct python version"""
         function_name = f"test_python_executor_{short_uid()}"
@@ -319,6 +326,7 @@ class TestPythonRuntimes:
     )
     @parametrize_python_runtimes
     @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Payload.requestId"])
+    @pytest.mark.aws_validated
     def test_python_runtime_unhandled_errors(
         self, lambda_client, create_lambda_function, runtime, snapshot
     ):
