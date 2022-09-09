@@ -63,7 +63,6 @@ from tests.integration.apigateway_fixtures import (
     delete_rest_api,
     get_rest_api,
     get_rest_api_resources,
-    import_rest_api,
     put_rest_api,
     update_rest_api_deployment,
 )
@@ -2051,9 +2050,11 @@ class TestAPIGateway:
         return api_id
 
     @pytest.mark.parametrize("base_path_type", ["ignore", "prepend", "split"])
-    def test_import_rest_apis(self, base_path_type, apigateway_client):
+    def test_import_rest_apis(
+        self, base_path_type, apigateway_client, create_rest_apigw, import_apigw
+    ):
         rest_api_name = f"restapi-{short_uid()}"
-        rest_api_id, _, _ = create_rest_api(apigateway_client, name=rest_api_name)
+        rest_api_id, _, _ = create_rest_apigw(name=rest_api_name)
 
         spec_file = load_file(TEST_SWAGGER_FILE_JSON)
         api_params = {"basepath": base_path_type}
@@ -2096,19 +2097,13 @@ class TestAPIGateway:
         response = requests.get(url)
         assert 200 == response.status_code
 
-        # clean up
-        delete_rest_api(apigateway_client, restApiId=rest_api_id)
-
         spec_file = load_file(TEST_IMPORT_REST_API_FILE)
-        rest_api_id, _ = import_rest_api(apigateway_client, body=spec_file, parameters=api_params)
+        rest_api_id, _, _ = import_apigw(body=spec_file, parameters=api_params)
         resources = get_rest_api_resources(apigateway_client, restApiId=rest_api_id)
         paths = [res["path"] for res in resources]
         assert "/" in paths
         assert "/pets" in paths
         assert "/pets/{petId}" in paths
-
-        # clean up
-        delete_rest_api(apigateway_client, restApiId=rest_api_id)
 
 
 def test_import_swagger_api(apigateway_client):
