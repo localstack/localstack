@@ -179,10 +179,9 @@ class TestCliContainerLifecycle:
         output = container_client.exec_in_container(config.MAIN_CONTAINER_NAME, ["ps", "-u", user])
         assert "supervisord" in to_str(output[0])
 
-    # TODO: remove marker
-    @pytest.mark.xfail(reason="tests should run after a full rebuild of the Docker image")
+    # TODO: enable test in next iteration, after a full rebuild of the Docker image
+    @pytest.mark.skip
     def test_start_cli_within_container(self, runner, container_client):
-
         output = container_client.run_container(
             "localstack/localstack",
             remove=True,

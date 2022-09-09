@@ -274,8 +274,8 @@ class PortMappings:
         return f"<PortMappings: {self.to_dict()}>"
 
 
-"""Type alias for a simple version of VolumeBind"""
 SimpleVolumeBind = Tuple[str, str]
+"""Type alias for a simple version of VolumeBind"""
 
 
 @dataclasses.dataclass
@@ -676,7 +676,7 @@ class ContainerClient(metaclass=ABCMeta):
             dns=container_config.dns,
             additional_flags=container_config.additional_flags,
             workdir=container_config.workdir,
-            privileged=container_config.privileged
+            privileged=container_config.privileged,
         )
 
     @abstractmethod
@@ -982,28 +982,12 @@ class Util:
         return dockerfile_path
 
 
-def pull_image_if_not_available(image_name: str, client: ContainerClient = None):
-    """Pull the given Docker image if it is not yet available locally"""
-    client = client or get_docker_client()
-    if not image_exists_locally(image_name, client=client):
-        client.pull_image(image_name)
-
-
-def image_exists_locally(image_name: str, client: ContainerClient = None) -> bool:
-    """Return whether the given Docker image exists locally"""
-    try:
-        client = client or get_docker_client()
-        details = client.inspect_image(image_name)
-        return True if details else False
-    except NoSuchImage:
-        return False
-
-
 def get_docker_client() -> ContainerClient:
     """Get a Docker client - either using the `docker` binary (if available), or using the Python SDK"""
-    from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 
     if is_command_available(config.DOCKER_CMD):
+        from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
+
         return CmdDockerClient()
 
     from localstack.utils.container_utils.docker_sdk_client import SdkDockerClient
