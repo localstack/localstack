@@ -773,6 +773,7 @@ class UnsupportedOperatingSystemException(Exception):
     pass
 
 
+# TODO keep this, discard the duplicate with different name
 class PackageInstallationException(Exception):
     """Exception which indicates that the installation of a package failed."""
 
@@ -862,6 +863,7 @@ class OSPackageInstaller(PackageInstaller, ABC):
     def _debian_install(self, target: InstallTarget):
         with INSTALL_LOCK:
             download_path = self._debian_download_os_packages(target)
+            # TODO: change to cache dir
             cmd = self.cmd_prefix(download_path) + ["install"] + self.debian_packages
             run(cmd)
 
@@ -1104,7 +1106,8 @@ class PostgresqlPackageInstaller(OSPackageInstaller):
             raise SystemNotSupportedException()
 
     def _build_executables_path(self, install_dir: str) -> str:
-        # TODO: needs talk!
+        # TODO: needs talk! Maybe this is the actual _get_install_dir()?
+        #   Should this return the path directly to the binary?
         install_dir = self._get_install_dir(None)
         path = ""
         if install_dir:
