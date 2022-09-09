@@ -11,9 +11,10 @@ from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.utils import testutil
 from localstack.utils.archives import unzip
 from localstack.utils.files import cp_r, load_file, mkdir, new_tmp_dir, save_file
+from localstack.utils.functions import run_safe
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
-from localstack.utils.testutil import get_lambda_log_events
+from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 from tests.integration.awslambda.test_lambda import (
     FUNCTIONS_FOLDER,
     JAVA_TEST_RUNTIMES,
@@ -273,6 +274,117 @@ class TestJavaRuntimes:
             check_lambda_logs(function_name, expected_lines=expected)
 
         retry(check_logs, retries=20)
+
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Code.RepositoryType", "$..Tags"]
+    )
+    # TODO maybe snapshot payload as well
+    def test_java_lambda_subscribe_sns_topic(
+        self,
+        lambda_client,
+        s3_client,
+        sns_client,
+        sns_subscription,
+        s3_bucket,
+        sns_create_topic,
+        logs_client,
+        snapshot,
+        create_lambda_function,
+        test_java_zip,
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Sid"))
+        function_name = f"java-test-function-{short_uid()}"
+        topic_name = f"topic-{short_uid()}"
+        key = f"key-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=test_java_zip,
+            runtime=Runtime.java11,
+            handler="cloud.localstack.sample.LambdaHandler",
+        )
+        function_result = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function", function_result)
+        function_arn = function_result["Configuration"]["FunctionArn"]
+        permission_id = f"test-statement-{short_uid()}"
+
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+
+        s3_sns_policy = f"""{{
+            "Version": "2012-10-17",
+            "Id": "example-ID",
+            "Statement": [
+                {{
+                    "Sid": "Example SNS topic policy",
+                    "Effect": "Allow",
+                    "Principal": {{
+                        "Service": "s3.amazonaws.com"
+                    }},
+                    "Action": [
+                        "SNS:Publish"
+                    ],
+                    "Resource": "{topic_arn}",
+                    "Condition": {{
+                        "ArnLike": {{
+                            "aws:SourceArn": "arn:aws:s3:*:*:{s3_bucket}"
+                        }}
+                    }}
+                }}
+            ]
+        }}
+        """
+        sns_client.set_topic_attributes(
+            TopicArn=topic_arn, AttributeName="Policy", AttributeValue=s3_sns_policy
+        )
+
+        s3_client.put_bucket_notification_configuration(
+            Bucket=s3_bucket,
+            NotificationConfiguration={
+                "TopicConfigurations": [{"TopicArn": topic_arn, "Events": ["s3:ObjectCreated:*"]}]
+            },
+        )
+
+        add_permission_response = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId=permission_id,
+            Action="lambda:InvokeFunction",
+            Principal="sns.amazonaws.com",
+            SourceArn=topic_arn,
+        )
+
+        snapshot.match("add-permission", add_permission_response)
+
+        sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="lambda",
+            Endpoint=function_arn,
+        )
+
+        events_before = (
+            run_safe(
+                get_lambda_log_events,
+                function_name,
+                regex_filter="Records",
+                logs_client=logs_client,
+            )
+            or []
+        )
+
+        s3_client.put_object(Bucket=s3_bucket, Key=key, Body="something")
+
+        # We got an event that confirm lambda invoked
+        retry(
+            function=check_expected_lambda_log_events_length,
+            retries=30,
+            sleep=1,
+            expected_length=len(events_before) + 1,
+            function_name=function_name,
+            regex_filter="Records",
+            logs_client=logs_client,
+        )
+
+        # clean up
+        s3_client.delete_objects(Bucket=s3_bucket, Delete={"Objects": [{"Key": key}]})
 
 
 class TestPythonRuntimes:
