@@ -14,6 +14,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON38,
     LAMBDA_RUNTIME_PYTHON39,
 )
+from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled, is_old_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -26,13 +27,6 @@ LAMBDA_SQS_INTEGRATION_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_sqs
 LAMBDA_SQS_BATCH_ITEM_FAILURE_FILE = os.path.join(
     THIS_FOLDER, "functions", "lambda_sqs_batch_item_failure.py"
 )
-
-
-def _await_event_source_mapping_enabled(lambda_client, uuid, retries=30):
-    def assert_mapping_enabled():
-        assert lambda_client.get_event_source_mapping(UUID=uuid)["State"] == "Enabled"
-
-    retry(assert_mapping_enabled, sleep_before=2, retries=retries)
 
 
 def _await_queue_size(sqs_client, queue_url: str, qsize: int, retries=10, sleep=1):
@@ -782,10 +776,31 @@ def test_report_batch_item_failures_empty_json_batch_succeeds(
     assert "Messages" not in dlq_response
 
 
+@pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        # create event source mapping attributes
+        "$..FunctionResponseTypes",
+        "$..LastProcessingResult",
+        "$..MaximumBatchingWindowInSeconds",
+        "$..MaximumRetryAttempts",
+        "$..ParallelizationFactor",
+        "$..ResponseMetadata.HTTPStatusCode",
+        "$..StartingPosition",
+        "$..State",
+        "$..StateTransitionReason",
+        "$..Topics",
+        # events attribute
+        "$..Records..md5OfMessageAttributes",
+    ],
+)
 class TestSQSEventSourceMapping:
     # FIXME refactor and move to test_lambda_sqs_integration
 
-    @pytest.mark.skip_snapshot_verify
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Error.Message", "$..message"]
+    )
     def test_event_source_mapping_default_batch_size(
         self,
         create_lambda_function,
@@ -854,43 +869,45 @@ class TestSQSEventSourceMapping:
         sqs_queue_arn,
         logs_client,
         lambda_su_role,
+        snapshot,
+        cleanups,
     ):
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         mapping_uuid = None
 
-        try:
-            create_lambda_function(
-                func_name=function_name,
-                handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                runtime=LAMBDA_RUNTIME_PYTHON37,
-                role=lambda_su_role,
-            )
-            queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
-            queue_arn_1 = sqs_queue_arn(queue_url_1)
-            mapping_uuid = lambda_client.create_event_source_mapping(
-                EventSourceArn=queue_arn_1,
-                FunctionName=function_name,
-                MaximumBatchingWindowInSeconds=1,
-            )["UUID"]
-            _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=lambda_su_role,
+        )
+        queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
+        queue_arn_1 = sqs_queue_arn(queue_url_1)
+        create_event_source_mapping_response = lambda_client.create_event_source_mapping(
+            EventSourceArn=queue_arn_1,
+            FunctionName=function_name,
+            MaximumBatchingWindowInSeconds=1,
+        )
+        mapping_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=mapping_uuid))
+        snapshot.match("create-event-source-mapping-response", create_event_source_mapping_response)
+        _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
 
-            sqs_client.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps({"foo": "bar"}))
+        sqs_client.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps({"foo": "bar"}))
 
-            retry(
-                check_expected_lambda_log_events_length,
-                retries=10,
-                sleep=1,
-                function_name=function_name,
-                expected_length=1,
-                logs_client=logs_client,
-            )
+        events = retry(
+            check_expected_lambda_log_events_length,
+            retries=10,
+            sleep=1,
+            function_name=function_name,
+            expected_length=1,
+            logs_client=logs_client,
+        )
+        snapshot.match("events", events)
 
-            rs = sqs_client.receive_message(QueueUrl=queue_url_1)
-            assert rs.get("Messages") is None
-        finally:
-            if mapping_uuid:
-                lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
+        rs = sqs_client.receive_message(QueueUrl=queue_url_1)
+        assert rs.get("Messages") is None
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize(
@@ -958,69 +975,71 @@ class TestSQSEventSourceMapping:
         filter,
         item_matching,
         item_not_matching,
+        snapshot,
+        cleanups,
     ):
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         mapping_uuid = None
 
-        try:
-            create_lambda_function(
-                func_name=function_name,
-                handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                runtime=LAMBDA_RUNTIME_PYTHON37,
-                role=lambda_su_role,
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=LAMBDA_RUNTIME_PYTHON37,
+            role=lambda_su_role,
+        )
+        queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
+        queue_arn_1 = sqs_queue_arn(queue_url_1)
+
+        sqs_client.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps(item_matching))
+        sqs_client.send_message(
+            QueueUrl=queue_url_1,
+            MessageBody=json.dumps(item_not_matching)
+            if not isinstance(item_not_matching, str)
+            else item_not_matching,
+        )
+
+        def _assert_qsize():
+            response = sqs_client.get_queue_attributes(
+                QueueUrl=queue_url_1, AttributeNames=["ApproximateNumberOfMessages"]
             )
-            queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
-            queue_arn_1 = sqs_queue_arn(queue_url_1)
+            assert int(response["Attributes"]["ApproximateNumberOfMessages"]) == 2
 
-            sqs_client.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps(item_matching))
-            sqs_client.send_message(
-                QueueUrl=queue_url_1,
-                MessageBody=json.dumps(item_not_matching)
-                if not isinstance(item_not_matching, str)
-                else item_not_matching,
-            )
+        retry(_assert_qsize, retries=10)
 
-            def _assert_qsize():
-                response = sqs_client.get_queue_attributes(
-                    QueueUrl=queue_url_1, AttributeNames=["ApproximateNumberOfMessages"]
-                )
-                assert int(response["Attributes"]["ApproximateNumberOfMessages"]) == 2
+        create_event_source_mapping_response = lambda_client.create_event_source_mapping(
+            EventSourceArn=queue_arn_1,
+            FunctionName=function_name,
+            MaximumBatchingWindowInSeconds=1,
+            FilterCriteria={
+                "Filters": [
+                    {"Pattern": json.dumps(filter)},
+                ]
+            },
+        )
+        mapping_uuid = create_event_source_mapping_response["UUID"]
+        cleanups.append(lambda: lambda_client.delete_event_source_mapping(UUID=mapping_uuid))
+        snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
+        _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
 
-            retry(_assert_qsize, retries=10)
+        def _check_lambda_logs():
+            events = get_lambda_log_events(function_name, logs_client=logs_client)
+            # once invoked
+            assert len(events) == 1
+            records = events[0]["Records"]
+            # one record processed
+            assert len(records) == 1
+            # check for correct record presence
+            if "body" in json.dumps(filter):
+                item_matching_str = json.dumps(item_matching)
+                assert records[0]["body"] == item_matching_str
+            return events
 
-            mapping_uuid = lambda_client.create_event_source_mapping(
-                EventSourceArn=queue_arn_1,
-                FunctionName=function_name,
-                MaximumBatchingWindowInSeconds=1,
-                FilterCriteria={
-                    "Filters": [
-                        {"Pattern": json.dumps(filter)},
-                    ]
-                },
-            )["UUID"]
-            _await_event_source_mapping_enabled(lambda_client, mapping_uuid)
+        invocation_events = retry(_check_lambda_logs, retries=10)
+        snapshot.match("invocation_events", invocation_events)
 
-            def _check_lambda_logs():
-                events = get_lambda_log_events(function_name, logs_client=logs_client)
-                # once invoked
-                assert len(events) == 1
-                records = events[0]["Records"]
-                # one record processed
-                assert len(records) == 1
-                # check for correct record presence
-                if "body" in json.dumps(filter):
-                    item_matching_str = json.dumps(item_matching)
-                    assert records[0]["body"] == item_matching_str
-
-            retry(_check_lambda_logs, retries=10)
-
-            rs = sqs_client.receive_message(QueueUrl=queue_url_1)
-            assert rs.get("Messages") is None
-
-        finally:
-            if mapping_uuid:
-                lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
+        rs = sqs_client.receive_message(QueueUrl=queue_url_1)
+        assert rs.get("Messages") is None
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize(
@@ -1034,6 +1053,7 @@ class TestSQSEventSourceMapping:
         lambda_su_role,
         lambda_client,
         invalid_filter,
+        snapshot,
     ):
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}"
@@ -1047,7 +1067,7 @@ class TestSQSEventSourceMapping:
         queue_url_1 = sqs_create_queue(QueueName=queue_name_1)
         queue_arn_1 = sqs_queue_arn(queue_url_1)
 
-        with pytest.raises(Exception) as expected:
+        with pytest.raises(ClientError) as expected:
             lambda_client.create_event_source_mapping(
                 EventSourceArn=queue_arn_1,
                 FunctionName=function_name,
@@ -1062,4 +1082,5 @@ class TestSQSEventSourceMapping:
                     ]
                 },
             )
+        snapshot.match("create_event_source_mapping_exception", expected.value.response)
         expected.match(INVALID_PARAMETER_VALUE_EXCEPTION)

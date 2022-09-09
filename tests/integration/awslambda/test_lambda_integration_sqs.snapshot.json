@@ -710,5 +710,653 @@
         }
       }
     }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_event_source_mapping_default_batch_size": {
+    "recorded-date": "09-09-2022, 12:05:11",
+    "recorded-content": {
+      "create-event-source-mapping": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 0,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invalid-update-event-source-mapping": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10"
+        },
+        "Type": "User",
+        "message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-create-event-source-mapping": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10"
+        },
+        "Type": "User",
+        "message": "Maximum batch window in seconds must be greater than 0 if maximum batch size is greater than 10",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_source_mapping": {
+    "recorded-date": "09-09-2022, 12:15:13",
+    "recorded-content": {
+      "create-event-source-mapping-response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "foo": "bar"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "timestamp"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter0-item_matching0-item_not_matching0]": {
+    "recorded-date": "09-09-2022, 12:22:38",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "testItem": [
+                    "test24"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "testItem": "test24"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "timestamp"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter1-item_matching1-item_not_matching1]": {
+    "recorded-date": "09-09-2022, 12:23:24",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "testItem": [
+                    "test24",
+                    "test45"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "testItem": "test45"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "timestamp"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter2-item_matching2-item_not_matching2]": {
+    "recorded-date": "09-09-2022, 12:24:09",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "testItem": [
+                    "test24",
+                    "test45"
+                  ],
+                  "test2": [
+                    "go"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "testItem": "test45",
+                "test2": "go"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "timestamp"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter3-item_matching3-item_not_matching3]": {
+    "recorded-date": "09-09-2022, 12:24:53",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "test2": [
+                    {
+                      "exists": true
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "test2": "7411"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "timestamp"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter4-item_matching4-this is a test string]": {
+    "recorded-date": "09-09-2022, 12:25:39",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "test2": [
+                    {
+                      "numeric": [
+                        ">",
+                        100
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "test2": 105
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "timestamp"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter5-item_matching5-item_not_matching5]": {
+    "recorded-date": "09-09-2022, 12:26:24",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "test2": [
+                    {
+                      "numeric": [
+                        "<",
+                        100
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "test2": 93
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "timestamp"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter6-item_matching6-item_not_matching6]": {
+    "recorded-date": "09-09-2022, 12:27:09",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "test2": [
+                    {
+                      "numeric": [
+                        ">=",
+                        100,
+                        "<",
+                        200
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "test2": 105
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "timestamp"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_event_filter[filter7-item_matching7-item_not_matching7]": {
+    "recorded-date": "09-09-2022, 12:27:53",
+    "recorded-content": {
+      "create_event_source_mapping_response": {
+        "BatchSize": 10,
+        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "body": {
+                  "test2": [
+                    {
+                      "prefix": "us-1"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "MaximumBatchingWindowInSeconds": 1,
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED",
+        "UUID": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "invocation_events": [
+        {
+          "Records": [
+            {
+              "messageId": "<uuid:2>",
+              "receiptHandle": "<receipt-handle:1>",
+              "body": {
+                "test2": "us-1-48454"
+              },
+              "attributes": {
+                "ApproximateReceiveCount": "1",
+                "SentTimestamp": "timestamp",
+                "SenderId": "sender-id",
+                "ApproximateFirstReceiveTimestamp": "timestamp"
+              },
+              "messageAttributes": {},
+              "md5OfMessageAttributes": null,
+              "md5OfBody": "<md5-of-body:1>",
+              "eventSource": "aws:sqs",
+              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "awsRegion": "<region>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_invalid_event_filter[None]": {
+    "recorded-date": "09-09-2022, 12:29:55",
+    "recorded-content": {
+      "create_event_source_mapping_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Invalid filter pattern definition."
+        },
+        "Type": "User",
+        "message": "Invalid filter pattern definition.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_invalid_event_filter[simple string]": {
+    "recorded-date": "09-09-2022, 12:29:57",
+    "recorded-content": {
+      "create_event_source_mapping_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Invalid filter pattern definition."
+        },
+        "Type": "User",
+        "message": "Invalid filter pattern definition.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_invalid_event_filter[invalid_filter2]": {
+    "recorded-date": "09-09-2022, 12:29:59",
+    "recorded-content": {
+      "create_event_source_mapping_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Invalid filter pattern definition."
+        },
+        "Type": "User",
+        "message": "Invalid filter pattern definition.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_integration_sqs.py::TestSQSEventSourceMapping::test_sqs_invalid_event_filter[invalid_filter3]": {
+    "recorded-date": "09-09-2022, 12:30:01",
+    "recorded-content": {
+      "create_event_source_mapping_exception": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Invalid filter pattern definition."
+        },
+        "Type": "User",
+        "message": "Invalid filter pattern definition.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
