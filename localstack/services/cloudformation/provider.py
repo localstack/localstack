@@ -64,10 +64,7 @@ from localstack.aws.api.cloudformation import (
     ValidateTemplateInput,
     ValidateTemplateOutput,
 )
-from localstack.services.cloudformation.models.stores import (
-    CloudFormationStore,
-    cloudformation_stores,
-)
+from localstack.services.cloudformation.stores import CloudFormationStore, cloudformation_stores
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_deployer, template_preparer
 from localstack.utils.cloudformation.template_deployer import NoStackUpdates
