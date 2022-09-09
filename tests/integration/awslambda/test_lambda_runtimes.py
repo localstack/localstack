@@ -37,11 +37,31 @@ parametrize_java_runtimes = pytest.mark.parametrize("runtime", JAVA_TEST_RUNTIME
 @pytest.fixture(autouse=True)
 def add_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.lambda_api())
+    snapshot.add_transformer(snapshot.transform.key_value("CodeSha256", "<code-sha-256>"))
+
+
+# some more common ones that usually don't work in the old provider
+pytestmark = pytest.mark.skip_snapshot_verify(
+    condition=is_old_provider,
+    paths=[
+        # "$..Architectures",
+        "$..EphemeralStorage",
+        "$..LastUpdateStatus",
+        "$..MemorySize",
+        "$..State",
+        "$..StateReason",
+        "$..StateReasonCode",
+        "$..VpcConfig",
+        "$..LogResult",
+        # "$..CodeSigningConfig",
+        "$..Environment",  # missing
+        "$..HTTPStatusCode",  # 201 vs 200
+    ],
+)
 
 
 class TestNodeJSRuntimes:
     @pytest.mark.parametrize("runtime", (Runtime.nodejs14_x, Runtime.nodejs16_x))
-    @pytest.mark.skip_snapshot_verify
     @pytest.mark.skipif(
         not use_docker(), reason="ES6 support is only guaranteed when using the docker executor"
     )
@@ -103,7 +123,9 @@ class TestJavaRuntimes:
         save_file(zip_jar_path, test_java_jar)
         return testutil.create_zip_file(tmpdir, get_content=True)
 
-    @pytest.mark.skip_snapshot_verify
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Payload"]
+    )  # newline at end
     def test_java_runtime_with_lib(self, lambda_client, create_lambda_function, snapshot):
         """Test lambda creation/invocation with different deployment package types (jar, zip, zip-with-gradle)"""
 
@@ -150,7 +172,9 @@ class TestJavaRuntimes:
             assert "echo" in to_str(result_data)
 
     @parametrize_java_runtimes
-    def test_stream_handler(self, lambda_client, create_lambda_function, test_java_jar, runtime):
+    def test_stream_handler(
+        self, lambda_client, create_lambda_function, test_java_jar, runtime, snapshot
+    ):
         function_name = f"test-lambda-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
@@ -162,17 +186,12 @@ class TestJavaRuntimes:
             FunctionName=function_name,
             Payload=b'{"echo":"echo"}',
         )
-        result_data = result["Payload"].read()
-
-        assert 200 == result["StatusCode"]
-        assert "{}" == to_str(result_data).strip()
+        snapshot.match("invoke_result", result)
 
     @parametrize_java_runtimes
-    @pytest.mark.skip_snapshot_verify
     def test_serializable_input_object(
         self, lambda_client, create_lambda_function, test_java_zip, runtime, snapshot
     ):
-
         # deploy lambda - Java with serializable input object
         function_name = f"test-lambda-{short_uid()}"
         create_result = create_lambda_function(
@@ -211,8 +230,10 @@ class TestJavaRuntimes:
             ),
         ],
     )
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Payload"]
+    )  # newline at end
     # this test is only compiled against java 11
-    @pytest.mark.skip_snapshot_verify
     def test_java_custom_handler_method_specification(
         self,
         lambda_client,
@@ -222,7 +243,6 @@ class TestJavaRuntimes:
         check_lambda_logs,
         snapshot,
     ):
-
         java_handler_multiple_handlers = load_file(TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, mode="rb")
         expected = ['.*"echo": "echo".*']
 
@@ -298,7 +318,7 @@ class TestPythonRuntimes:
         not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
     )
     @parametrize_python_runtimes
-    @pytest.mark.skip_snapshot_verify
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Payload.requestId"])
     def test_python_runtime_unhandled_errors(
         self, lambda_client, create_lambda_function, runtime, snapshot
     ):
