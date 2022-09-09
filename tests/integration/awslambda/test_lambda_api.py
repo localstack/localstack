@@ -622,6 +622,7 @@ pytestmark = pytest.mark.skip_snapshot_verify(
         "$..CodeSigningConfig",
         "$..Environment",  # missing
         "$..HTTPStatusCode",  # 201 vs 200
+        "$..Layers",
     ],
 )
 
@@ -887,12 +888,7 @@ class TestLambdaProvisionedConcurrency:
 # API only functions (no lambda execution itself, i.e. no invoke)
 @pytest.mark.skip_snapshot_verify(
     condition=is_old_provider,
-    paths=[
-        "$..RevisionId",
-        "$..Policy.Statement",
-        "$..PolicyName",
-        "$..PolicyArn",
-    ],
+    paths=["$..RevisionId", "$..Policy.Statement", "$..PolicyName", "$..PolicyArn", "$..Layers"],
 )
 class TestLambdaPermissions:
     @pytest.mark.aws_validated

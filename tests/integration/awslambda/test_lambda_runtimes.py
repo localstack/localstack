@@ -57,6 +57,7 @@ pytestmark = pytest.mark.skip_snapshot_verify(
         # "$..CodeSigningConfig",
         "$..Environment",  # missing
         "$..HTTPStatusCode",  # 201 vs 200
+        "$..Layers",
     ],
 )
 

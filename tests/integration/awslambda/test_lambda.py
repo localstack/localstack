@@ -152,6 +152,7 @@ pytestmark = pytest.mark.skip_snapshot_verify(
         "$..CodeSigningConfig",
         "$..Environment",  # missing
         "$..HTTPStatusCode",  # 201 vs 200
+        "$..Layers",
     ],
 )
 
@@ -184,7 +185,8 @@ class TestLambdaBaseFeatures:
             "$..Tags",
             "$..Configuration.RevisionId",
             "$..Code.RepositoryType",
-            "$..CodeSize",  # CI reports different code size here
+            "$..CodeSize",  # CI reports different code size here,
+            "$..Layers",  # PRO
         ],
     )
     @pytest.mark.aws_validated
@@ -243,7 +245,8 @@ class TestLambdaBehavior:
         snapshot.match("second_invoke_result", second_invoke_result)
 
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..FunctionError", "$..LogResult", "$..Payload"]
+        condition=is_old_provider,
+        paths=["$..FunctionError", "$..LogResult", "$..Payload", "$..Layers"],
     )
     @pytest.mark.skipif(is_old_provider(), reason="old provider")
     @pytest.mark.aws_validated
@@ -292,7 +295,7 @@ class TestLambdaBehavior:
         retry(assert_events, retries=15)
 
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Payload", "$..LogResult"]
+        condition=is_old_provider, paths=["$..Payload", "$..LogResult", "$..Layers"]
     )
     @pytest.mark.aws_validated
     def test_lambda_invoke_no_timeout(
@@ -465,7 +468,7 @@ class TestLambdaFeatures:
 
     @pytest.mark.skip_snapshot_verify(
         condition=is_old_provider,
-        paths=["$..Tags", "$..LogResult", "$..RevisionId", "$..RepositoryType"],
+        paths=["$..Tags", "$..LogResult", "$..RevisionId", "$..RepositoryType", "$..Layers"],
     )
     @pytest.mark.aws_validated
     def test_basic_invoke(
