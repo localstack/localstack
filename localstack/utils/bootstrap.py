@@ -15,18 +15,18 @@ from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
-    ContainerClient,
     ContainerException,
     PortMappings,
     SimpleVolumeBind,
     VolumeBind,
     VolumeMappings,
+    get_docker_client,
+    pull_image_if_not_available,
 )
-from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, chmod_r, mkdir
 from localstack.utils.functions import call_safe
-from localstack.utils.run import is_command_available, run, to_str
+from localstack.utils.run import run, to_str
 from localstack.utils.serving import Server
 from localstack.utils.sync import poll_condition
 from localstack.utils.tail import FileListener
@@ -431,6 +431,9 @@ class LocalstackContainer:
         client.default_run_outfile = self.logfile
 
         try:
+            # pull image if not available
+            pull_image_if_not_available(self.image_name, client=client)
+            # run main container
             return client.run_container(
                 image_name=self.image_name,
                 stdin=self.stdin,
@@ -503,7 +506,7 @@ class LocalstackContainerServer(Server):
 
     def do_shutdown(self):
         try:
-            CmdDockerClient().stop_container(
+            get_docker_client().stop_container(
                 self.container.name, timeout=10
             )  # giving the container some time to stop
         except Exception as e:
@@ -677,6 +680,7 @@ def start_infra_in_docker_detached(console):
     console.log("configuring container")
     container = LocalstackContainer()
     configure_container(container)
+    container.detach = True
     container.truncate_log()
 
     # start the Localstack container as a Server
@@ -738,13 +742,3 @@ def in_ci():
         if os.environ.get(key, "") not in [False, "", "0", "false"]:
             return True
     return False
-
-
-def get_docker_client() -> ContainerClient:
-    """Get a Docker client - either using the `docker` binary (if available), or using the Python SDK"""
-    if is_command_available(config.DOCKER_CMD):
-        return CmdDockerClient()
-
-    from localstack.utils.container_utils.docker_sdk_client import SdkDockerClient
-
-    return SdkDockerClient()
