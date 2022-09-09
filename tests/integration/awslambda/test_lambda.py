@@ -510,15 +510,14 @@ class TestLambdaFeatures:
         paths=["$..Payload.context.memory_limit_in_mb", "$..logs.logs"]
     )
     # TODO run in python and nodejs / 1 version each suffices
-    def test_invocation_type_not_set(self, lambda_client, python_function_name, snapshot):
+    def test_invocation_type_not_set(self, lambda_client, snapshot):
         """Test invocation of a lambda with no invocation type set, but LogType="Tail""" ""
+        function_name = f"fn-{short_uid()}"
         snapshot.add_transformer(
             snapshot.transform.key_value("LogResult", reference_replacement=False)
         )
 
-        result = lambda_client.invoke(
-            FunctionName=python_function_name, Payload=b"{}", LogType="Tail"
-        )
+        result = lambda_client.invoke(FunctionName=function_name, Payload=b"{}", LogType="Tail")
         result = read_streams(result)
         snapshot.match("invoke", result)
         result_data = json.loads(result["Payload"])
@@ -548,11 +547,11 @@ class TestLambdaFeatures:
         paths=["$..LogResult", "$..Payload.context.memory_limit_in_mb"]
     )
     # TODO run in python and nodejs / 1 version each suffices
-    def test_invocation_type_request_response(self, lambda_client, python_function_name, snapshot):
+    def test_invocation_type_request_response(self, lambda_client, snapshot):
         """Test invocation with InvocationType RequestResponse explicitely set"""
-
+        function_name = f"fn-{short_uid()}"
         result = lambda_client.invoke(
-            FunctionName=python_function_name,
+            FunctionName=function_name,
             Payload=b"{}",
             InvocationType="RequestResponse",
         )
@@ -566,10 +565,11 @@ class TestLambdaFeatures:
 
     @pytest.mark.skip_snapshot_verify(paths=["$..LogResult", "$..ExecutedVersion"])
     # TODO run in python and nodejs / 1 version each suffices
-    def test_invocation_type_event(self, lambda_client, python_function_name, snapshot):
+    def test_invocation_type_event(self, lambda_client, snapshot):
         """Check invocation response for type event"""
+        function_name = f"fn-{short_uid()}"
         result = lambda_client.invoke(
-            FunctionName=python_function_name, Payload=b"{}", InvocationType="Event"
+            FunctionName=function_name, Payload=b"{}", InvocationType="Event"
         )
         result = read_streams(result)
         snapshot.match("invoke-result", result)
@@ -578,10 +578,11 @@ class TestLambdaFeatures:
 
     @pytest.mark.skip_snapshot_verify(paths=["$..LogResult", "$..ExecutedVersion"])
     # TODO run in python and nodejs / 1 version each suffices
-    def test_invocation_type_dry_run(self, lambda_client, python_function_name, snapshot):
+    def test_invocation_type_dry_run(self, lambda_client, snapshot):
         """Check invocation response for type dryrun"""
+        function_name = f"fn-{short_uid()}"
         result = lambda_client.invoke(
-            FunctionName=python_function_name, Payload=b"{}", InvocationType="DryRun"
+            FunctionName=function_name, Payload=b"{}", InvocationType="DryRun"
         )
         result = read_streams(result)
         snapshot.match("invoke-result", result)
