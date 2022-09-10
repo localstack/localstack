@@ -159,6 +159,25 @@ pytestmark = pytest.mark.skip_snapshot_verify(
     ],
 )
 
+    @pytest.mark.xfail
+    def test_large_environment_variables(self, lambda_client, create_lambda_function):
+        """Lambda functions with environment variables larger than 4 KiB should fail to create."""
+        large_envar = os.urandom(5 * 1024)
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as e:
+            create_lambda_function(
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                func_name="my-function",
+                runtime=LAMBDA_RUNTIME_PYTHON39,
+                envvars={
+                    "FOO": large_envar.hex(),
+                },
+            )
+
+        assert (
+            "An error occurred (InvalidParameterValueException) when calling the CreateFunction operation: Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit"
+            in str(e.value)
+        )
+
 
 class TestLambdaBaseFeatures:
     @pytest.mark.skip_snapshot_verify(paths=["$..LogResult"])
