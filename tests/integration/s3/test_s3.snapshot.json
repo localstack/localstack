@@ -2074,5 +2074,35 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_put_and_get_bucket_policy": {
+    "recorded-date": "09-09-2022, 22:39:34",
+    "recorded-content": {
+      "put-bucket-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get-bucket-policy": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "*"
+              },
+              "Action": "s3:GetObject",
+              "Resource": "<resource:1>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
