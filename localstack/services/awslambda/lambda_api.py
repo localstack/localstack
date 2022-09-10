@@ -1202,7 +1202,7 @@ def create_function():
                 409,
                 error_type="ResourceConflictException",
             )
-        region.lambdas[arn] = lambda_function = LambdaFunction(arn)
+        lambda_function = LambdaFunction(arn)
         lambda_function.versions = {VERSION_LATEST: {"RevisionId": str(uuid.uuid4())}}
         lambda_function.vpc_config = data.get("VpcConfig", {})
         lambda_function.last_modified = datetime.utcnow()
@@ -1227,6 +1227,7 @@ def create_function():
         lambda_function.tracing_config = data.get("TracingConfig", {})
         lambda_function.set_dead_letter_config(data)
         lambda_function.state = "Pending"
+        region.lambdas[arn] = lambda_function
         result = set_function_code(lambda_function)
         if isinstance(result, Response):
             del region.lambdas[arn]
