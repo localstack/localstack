@@ -32,11 +32,14 @@ from localstack.aws.api.s3 import (  # CreateBucketConfiguration,; Delimiter,; E
     ListObjectsV2Request,
     NoSuchBucket,
     NoSuchLifecycleConfiguration,
+    PutObjectOutput,
+    PutObjectRequest,
     S3Api,
 )
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.models import S3Store, s3_stores
+from localstack.services.s3.utils import verify_checksum
 from localstack.utils.aws import aws_stack
 from localstack.utils.objects import singleton_factory
 from localstack.utils.patch import patch
@@ -106,6 +109,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         response = call_moto_with_exception_patching(context, bucket_name)
 
         return HeadObjectOutput(**response, AcceptRanges="bytes")
+
+    @handler("PutObject", expand=False)
+    def put_object(
+        self,
+        context: RequestContext,
+        request: PutObjectRequest,
+    ) -> PutObjectOutput:
+        verify_checksum(context.request.data, request)
+        bucket_name = request.get("Bucket", "")
+        response = call_moto_with_exception_patching(context, bucket_name)
+
+        return PutObjectOutput(**response)
 
     @handler("ListObjects", expand=False)
     def list_objects(

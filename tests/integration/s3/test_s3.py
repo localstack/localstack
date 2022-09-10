@@ -386,7 +386,11 @@ class TestS3:
             s3_vhost_client.delete_bucket(Bucket=bucket_name)
 
     @pytest.mark.aws_validated
-    def test_put_and_get_bucket_policy(self, s3_client, s3_bucket):
+    def test_put_and_get_bucket_policy(self, s3_client, s3_bucket, snapshot):
+        # just for the joke: Response syntax HTTP/1.1 200
+        # sample response: HTTP/1.1 204 No Content
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketPolicy.html
+        snapshot.add_transformer(snapshot.transform.key_value("Resource"))
         # put bucket policy
         policy = {
             "Version": "2012-10-17",
@@ -400,11 +404,13 @@ class TestS3:
             ],
         }
         response = s3_client.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+        # assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+        snapshot.match("put-bucket-policy", response)
 
         # retrieve and check policy config
-        saved_policy = s3_client.get_bucket_policy(Bucket=s3_bucket)["Policy"]
-        assert policy == json.loads(saved_policy)
+        response = s3_client.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-policy", response)
+        assert policy == json.loads(response["Policy"])
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5769")

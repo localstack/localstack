@@ -105,6 +105,11 @@
         "location": "header",
         "locationName": "x-amz-bucket-region"
       }
+    },
+    {
+      "op": "add",
+      "path": "/operations/PutBucketPolicy/http/responseCode",
+      "value": 204
     }
   ]
 }
