@@ -159,7 +159,6 @@ pytestmark = pytest.mark.skip_snapshot_verify(
     ],
 )
 
-    @pytest.mark.xfail
     def test_large_environment_variables(self, lambda_client, create_lambda_function):
         """Lambda functions with environment variables larger than 4 KiB should fail to create."""
         large_envar = os.urandom(5 * 1024)

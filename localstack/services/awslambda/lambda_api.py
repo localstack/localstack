@@ -97,6 +97,7 @@ INVALID_PARAMETER_VALUE_EXCEPTION = "InvalidParameterValueException"
 VERSION_LATEST = LambdaFunction.QUALIFIER_LATEST
 FUNCTION_MAX_SIZE = 69905067
 FUNCTION_MAX_UNZIPPED_SIZE = 262144000
+MAX_FUNCTION_ENVAR_SIZE_BYTES = 4 * 1024
 
 BATCH_SIZE_RANGES = {
     "kafka": (100, 10000),
@@ -1214,6 +1215,14 @@ def create_function():
         lambda_function.timeout = data.get("Timeout", LAMBDA_DEFAULT_TIMEOUT)
         lambda_function.role = data["Role"]
         lambda_function.kms_key_arn = data.get("KMSKeyArn")
+        # Validate that lambda environment variables are less than 4 KiB
+        for value in lambda_function.envvars.values():
+            if len(value) > MAX_FUNCTION_ENVAR_SIZE_BYTES:
+                return error_response(
+                    "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit",
+                    400,
+                    error_type=INVALID_PARAMETER_VALUE_EXCEPTION,
+                )
         # Oddity in Lambda API (discovered when testing against Terraform test suite)
         # See https://github.com/hashicorp/terraform-provider-aws/issues/6366
         if not lambda_function.envvars:
