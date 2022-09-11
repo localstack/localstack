@@ -2,14 +2,13 @@ import logging
 import os
 from urllib.parse import quote
 
-# from moto.s3.models import FakeKey, S3Backend
 import moto.s3.models as moto_s3_models
 import moto.s3.responses as moto_s3_responses
 from moto.s3 import s3_backends as moto_s3_backends
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceResponse, handler
-from localstack.aws.api.s3 import (  # CreateBucketConfiguration,; Delimiter,; EncodingType,; Marker,; MaxKeys,; ObjectKey,; Prefix,; RequestPayer,
+from localstack.aws.api.s3 import (
     AccountId,
     BucketName,
     ChecksumAlgorithm,
@@ -20,8 +19,6 @@ from localstack.aws.api.s3 import (  # CreateBucketConfiguration,; Delimiter,; E
     GetBucketLifecycleOutput,
     GetObjectOutput,
     GetObjectRequest,
-    HeadBucketOutput,
-    HeadBucketRequest,
     HeadObjectOutput,
     HeadObjectRequest,
     InvalidBucketName,
@@ -65,13 +62,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_after_init(self):
         apply_moto_patches()
 
-    @handler("GetObject", expand=False)
-    def get_object(self, context: RequestContext, request: GetObjectRequest) -> GetObjectOutput:
-        # TODO: how to manage LastModified on object (store state?)
-        response = call_moto_with_exception_patching(context, bucket=request.get("Bucket", ""))
-
-        return GetObjectOutput(**response, AcceptRanges="bytes")
-
     @handler("CreateBucket", expand=False)
     def create_bucket(
         self,
@@ -83,44 +73,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         response = call_moto_with_exception_patching(context, bucket_name)
         return CreateBucketOutput(**response)
-
-    @handler("HeadBucket", expand=False)
-    def head_bucket(
-        self,
-        context: RequestContext,
-        request: HeadBucketRequest,
-    ) -> HeadBucketOutput:
-        bucket_name = request.get("Bucket", "")
-        response = call_moto_with_exception_patching(context, bucket_name)
-        if "BucketRegion" not in response:
-            moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
-            response["BucketRegion"] = bucket.region_name
-
-        return HeadBucketOutput(**response)
-
-    @handler("HeadObject", expand=False)
-    def head_object(
-        self,
-        context: RequestContext,
-        request: HeadObjectRequest,
-    ) -> HeadObjectOutput:
-        bucket_name = request.get("Bucket", "")
-        response = call_moto_with_exception_patching(context, bucket_name)
-
-        return HeadObjectOutput(**response, AcceptRanges="bytes")
-
-    @handler("PutObject", expand=False)
-    def put_object(
-        self,
-        context: RequestContext,
-        request: PutObjectRequest,
-    ) -> PutObjectOutput:
-        verify_checksum(context.request.data, request)
-        bucket_name = request.get("Bucket", "")
-        response = call_moto_with_exception_patching(context, bucket_name)
-
-        return PutObjectOutput(**response)
 
     @handler("ListObjects", expand=False)
     def list_objects(
@@ -159,16 +111,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> ListObjectsV2Output:
         bucket_name = request.get("Bucket", "")
         response = call_moto_with_exception_patching(context, bucket_name)
-        # TODO: check those
-        # encoding_type = request.get("EncodingType")
-        # if "EncodingType" not in response and encoding_type:
-        #     response["EncodingType"] = encoding_type
-        #
-        # # fix URL-encoding of Delimiter
-        # if delimiter := response.get("Delimiter"):
-        #     delimiter = delimiter.strip()
-        #     if delimiter != "/":
-        #         response["Delimiter"] = quote(delimiter)
+
+        encoding_type = request.get("EncodingType")
+        if "EncodingType" not in response and encoding_type:
+            response["EncodingType"] = encoding_type
+
+        # fix URL-encoding of Delimiter
+        if delimiter := response.get("Delimiter"):
+            delimiter = delimiter.strip()
+            if delimiter != "/":
+                response["Delimiter"] = quote(delimiter)
 
         if "BucketRegion" not in response:
             moto_backend = get_moto_s3_backend(context)
@@ -177,12 +129,40 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         return ListObjectsV2Output(**response)
 
+    @handler("HeadObject", expand=False)
+    def head_object(
+        self,
+        context: RequestContext,
+        request: HeadObjectRequest,
+    ) -> HeadObjectOutput:
+        bucket_name = request.get("Bucket", "")
+        response = call_moto_with_exception_patching(context, bucket_name)
+
+        return HeadObjectOutput(**response, AcceptRanges="bytes")
+
+    @handler("GetObject", expand=False)
+    def get_object(self, context: RequestContext, request: GetObjectRequest) -> GetObjectOutput:
+        response = call_moto_with_exception_patching(context, bucket=request.get("Bucket", ""))
+        return GetObjectOutput(**response, AcceptRanges="bytes")
+
+    @handler("PutObject", expand=False)
+    def put_object(
+        self,
+        context: RequestContext,
+        request: PutObjectRequest,
+    ) -> PutObjectOutput:
+        if checksum_algorithm := request.get("ChecksumAlgorithm"):
+            verify_checksum(checksum_algorithm, context.request.data, request)
+        bucket_name = request.get("Bucket", "")
+        response = call_moto_with_exception_patching(context, bucket_name)
+
+        return PutObjectOutput(**response)
+
     def get_bucket_lifecycle(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> GetBucketLifecycleOutput:
-        # TODO: see both methods have the same URI, what it returns depends on what was put (filter or not)
+        # TODO: deprecated - both methods have the same URI, what it returns depends on what was put (filter or not)
         # https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycle.html
-        # which is called from ASF?
         response = call_moto_with_exception_patching(context, bucket)
         return GetBucketLifecycleOutput(**response)
 
@@ -191,7 +171,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> GetBucketLifecycleConfigurationOutput:
         # TODO: see both methods have the same URI, what it returns depends on what was put (filter or not)
         # https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycle.html
-        # which is called from ASF?
         response = call_moto_with_exception_patching(context, bucket)
         return GetBucketLifecycleConfigurationOutput(**response)
 
@@ -204,14 +183,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         lifecycle_configuration: LifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
     ) -> None:
-        response = call_moto_with_exception_patching(context, bucket)
-        return response
+        call_moto_with_exception_patching(context, bucket)
 
     def delete_bucket_lifecycle(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
     ) -> None:
-        response = call_moto_with_exception_patching(context, bucket=bucket)
-        return response
+        call_moto_with_exception_patching(context, bucket=bucket)
 
 
 def call_moto_with_exception_patching(
@@ -235,27 +212,11 @@ def _patch_moto_exceptions(e: CommonServiceException, bucket_name: BucketName):
 
 
 def validate_bucket_name(bucket: BucketName):
+    # TODO: add rules to validate bucket name
     if not bucket.islower():
         ex = InvalidBucketName("The specified bucket is not valid.")
         ex.BucketName = bucket
         raise ex
-
-    # match e.code:
-    #     case NoSuchBucket.code:
-    #         ex = NoSuchBucket(e.message)
-    #         ex.BucketName = bucket_name
-    #         raise ex
-    #     case NoSuchLifecycleConfiguration.code:
-    #         ex = NoSuchLifecycleConfiguration(e.message)
-    #         ex.BucketName = bucket_name
-    #         raise ex
-    #
-    #     case _:
-    #         raise e
-
-
-# def get_key_from_moto(moto_backend: S3Backend, bucket: BucketName, key: ObjectKey) -> moto_s3_models.FakeKey:
-#     return
 
 
 def get_bucket_from_moto(
@@ -278,6 +239,13 @@ def apply_moto_patches():
 
     patch(moto_s3_responses.S3Response._key_response_get)(_fix_key_response)
     patch(moto_s3_responses.S3Response._key_response_head)(_fix_key_response)
+
+    @patch(moto_s3_responses.S3Response._bucket_response_head)
+    def _bucket_response_head(fn, self, bucket_name, *args, **kwargs):
+        code, headers, body = fn(self, bucket_name, *args, **kwargs)
+        bucket = self.backend.get_bucket(bucket_name)
+        headers["x-amz-bucket-region"] = bucket.region_name
+        return code, headers, body
 
 
 def _capitalize_header_name_from_snake_case(header_name: str) -> str:

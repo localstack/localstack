@@ -467,34 +467,6 @@ class TestS3:
 
         snapshot.match("get-object-after-delete", e.value.response)
 
-    # @pytest.mark.aws_validated
-    # def test_put_object_unsupported_checksum(self, s3_client, s3_create_bucket, snapshot):
-    #     bucket = s3_create_bucket()
-    #     key = f"file-{short_uid()}"
-    #     data = b"test data.."
-    #     upload_file_object = BytesIO(data)
-    #
-    #     params = {
-    #         "Bucket": bucket,
-    #         "Key": key,
-    #         "Body": data,
-    #         "ChecksumAlgorithm": "random",
-    #         f"ChecksumSHA1": short_uid(),
-    #     }
-    #
-    #     signed_url = _generate_presigned_url(
-    #         client=s3_client,
-    #         params=params,
-    #         expires=10,
-    #         client_method="put_object",
-    #     )
-    #
-    #     response = requests.put(signed_url, data=upload_file_object)
-    #     print(response.status_code)
-    #     print(response.content)
-
-    # snapshot.match("put-unsupported-checksum", e.value)
-
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])
     def test_put_object_checksum(self, s3_client, s3_create_bucket, algorithm, snapshot):
