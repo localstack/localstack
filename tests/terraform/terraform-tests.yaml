@@ -380,3 +380,12 @@ ec2:
     - TestAccVPCRouteTable_requireRouteTarget
     - TestAccVPCRouteTable_tags
     - TestAccVPCRouteTable_vpcMultipleCIDR
+kms:
+    - TestAccKMSAlias
+    - TestAccKMSCiphertext
+    - TestAccKMSExternalKey
+    - TestAccKMSGrant
+    - TestAccKMSKey
+    - TestAccKMSPublicKey
+    - TestAccKMSReplica
+    - TestAccKMSSecrets
