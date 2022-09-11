@@ -6,6 +6,16 @@ from datetime import datetime
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
+MAX_FUNCTION_ENVAR_SIZE_BYTES = 4 * 1024
+
+
+class InvalidEnvvar(ValueError):
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+
+    def __str__(self) -> str:
+        return json.dumps({self.key: self.value}, separators=(",", ":"))
 
 
 class Component:
@@ -181,7 +191,7 @@ class LambdaFunction(Component):
         self.targets = []
         self.versions = {}
         self.aliases = {}
-        self.envvars = {}
+        self._envvars = {}
         self.tags = {}
         self.concurrency = None
         self.runtime = None
@@ -329,6 +339,18 @@ class LambdaFunction(Component):
 
     def qualifier_exists(self, qualifier):
         return qualifier in self.aliases or qualifier in self.versions
+
+    @property
+    def envvars(self):
+        return self._envvars
+
+    @envvars.setter
+    def envvars(self, new_envvars):
+        for key, value in new_envvars.items():
+            if len(value) > MAX_FUNCTION_ENVAR_SIZE_BYTES:
+                raise InvalidEnvvar(key, value)
+
+        self._envvars = new_envvars
 
     def __str__(self):
         return "<%s:%s>" % (self.__class__.__name__, self.name())
