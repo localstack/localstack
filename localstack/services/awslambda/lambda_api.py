@@ -1216,10 +1216,12 @@ def create_function():
         lambda_function.role = data["Role"]
         lambda_function.kms_key_arn = data.get("KMSKeyArn")
         # Validate that lambda environment variables are less than 4 KiB
-        for value in lambda_function.envvars.values():
+        for key, value in lambda_function.envvars.items():
             if len(value) > MAX_FUNCTION_ENVAR_SIZE_BYTES:
+                var_string = json.dumps({key: value}, separators=(",", ":"))
                 return error_response(
-                    "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit",
+                    "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. "
+                    f"String measured: {var_string}",
                     400,
                     error_type=INVALID_PARAMETER_VALUE_EXCEPTION,
                 )
