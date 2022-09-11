@@ -555,6 +555,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 "LocalStack is unable to deserialize the ciphertext blob. Perhaps the "
                 "blob didn't come from LocalStack"
             )
+        key_id = key_id or ciphertext.key_id
         key = self._get_store(context).get_key(key_id)
         key_id = key.metadata["KeyId"]
         if key_id != ciphertext.key_id:

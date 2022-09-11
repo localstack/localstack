@@ -96,6 +96,4 @@ jobs:
       env:
         CI: true
       run: |
-        export AWS_DEFAULT_REGION=us-east-1
-        export AWS_ALTERNATE_REGION=eu-central-1
         bash tests/terraform/run.sh ${{ matrix.service }} ${{ steps.get-list.outputs.testlist }}
