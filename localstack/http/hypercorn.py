@@ -4,7 +4,7 @@ from asyncio import AbstractEventLoop
 
 from hypercorn import Config
 from hypercorn.asyncio import serve
-from hypercorn.typing import ASGI3Framework
+from hypercorn.typing import ASGIFramework
 
 from localstack.utils.serving import Server
 
@@ -14,7 +14,7 @@ class HypercornServer(Server):
     A sync wrapper around Hypercorn that implements the ``Server`` interface.
     """
 
-    def __init__(self, app: ASGI3Framework, config: Config, loop: AbstractEventLoop = None):
+    def __init__(self, app: ASGIFramework, config: Config, loop: AbstractEventLoop = None):
         """
         Create a new Hypercorn server instance. Note that, if you pass an event loop to the constructor,
         you are yielding control of that event loop to the server, as it will invoke `run_until_complete` and
