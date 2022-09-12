@@ -403,6 +403,9 @@ workflows:
       - itest-lambda-docker:
           requires:
             - preflight
+      - itest-lambda-provider:
+          requires:
+            - preflight
       - unit-tests:
           requires:
             - preflight
@@ -448,6 +451,7 @@ workflows:
       - report:
           requires:
             - itest-lambda-docker
+            - itest-lambda-provider
             - docker-test-amd64
             - docker-test-arm64
             - collect-not-implemented-community
@@ -459,6 +463,7 @@ workflows:
               only: master
           requires:
             - itest-lambda-docker
+            - itest-lambda-provider
             - docker-test-amd64
             - docker-test-arm64
             - unit-tests
