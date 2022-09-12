@@ -24,46 +24,49 @@ FUNCTION_MAX_UNZIPPED_SIZE = 262144000
 
 
 # TODO: find a better way to manage these handler files
-FUNCTIONS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "functions")
-TEST_LAMBDA_PYTHON = os.path.join(FUNCTIONS_FOLDER, "lambda_integration.py")
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(FUNCTIONS_FOLDER, "lambda_echo.py")
-TEST_LAMBDA_PYTHON_VERSION = os.path.join(FUNCTIONS_FOLDER, "lambda_python_version.py")
-TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(FUNCTIONS_FOLDER, "lambda_unhandled_error.py")
-TEST_LAMBDA_AWS_PROXY = os.path.join(FUNCTIONS_FOLDER, "lambda_aws_proxy.py")
-TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(FUNCTIONS_FOLDER, "lambda_integration.js")
-TEST_LAMBDA_NODEJS = os.path.join(FUNCTIONS_FOLDER, "lambda_handler.js")
-TEST_LAMBDA_NODEJS_ES6 = os.path.join(FUNCTIONS_FOLDER, "lambda_handler_es6.mjs")
-TEST_LAMBDA_NODEJS_ECHO = os.path.join(FUNCTIONS_FOLDER, "lambda_echo.js")
-TEST_LAMBDA_HELLO_WORLD = os.path.join(FUNCTIONS_FOLDER, "lambda_hello_world.py")
-TEST_LAMBDA_NODEJS_APIGW_INTEGRATION = os.path.join(FUNCTIONS_FOLDER, "apigw_integration.js")
-TEST_LAMBDA_NODEJS_APIGW_502 = os.path.join(FUNCTIONS_FOLDER, "apigw_502.js")
-TEST_LAMBDA_GOLANG_ZIP = os.path.join(FUNCTIONS_FOLDER, "golang/handler.zip")
-TEST_LAMBDA_RUBY = os.path.join(FUNCTIONS_FOLDER, "lambda_integration.rb")
-TEST_LAMBDA_DOTNETCORE31 = os.path.join(FUNCTIONS_FOLDER, "dotnetcore31/dotnetcore31.zip")
-TEST_LAMBDA_DOTNET6 = os.path.join(FUNCTIONS_FOLDER, "dotnet6/dotnet6.zip")
-TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(FUNCTIONS_FOLDER, "custom-runtime")
-TEST_LAMBDA_HTTP_RUST = os.path.join(FUNCTIONS_FOLDER, "rust-lambda/function.zip")
+THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_python_version.py")
+TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
+    THIS_FOLDER, "functions/lambda_unhandled_error.py"
+)
+TEST_LAMBDA_AWS_PROXY = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy.py")
+TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
+TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
+TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
+TEST_LAMBDA_NODEJS_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.js")
+TEST_LAMBDA_HELLO_WORLD = os.path.join(THIS_FOLDER, "functions/lambda_hello_world.py")
+TEST_LAMBDA_NODEJS_APIGW_INTEGRATION = os.path.join(THIS_FOLDER, "functions/apigw_integration.js")
+TEST_LAMBDA_NODEJS_APIGW_502 = os.path.join(THIS_FOLDER, "functions/apigw_502.js")
+TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions/golang/handler.zip")
+TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions/lambda_integration.rb")
+TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "functions/dotnetcore31/dotnetcore31.zip")
+TEST_LAMBDA_DOTNET6 = os.path.join(THIS_FOLDER, "functions/dotnet6/dotnet6.zip")
+TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "functions/custom-runtime")
+TEST_LAMBDA_HTTP_RUST = os.path.join(THIS_FOLDER, "functions/rust-lambda/function.zip")
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
-    FUNCTIONS_FOLDER, "java/lambda_echo/lambda-function-with-lib-0.0.1.jar"
+    THIS_FOLDER, "functions/java/lambda_echo/lambda-function-with-lib-0.0.1.jar"
 )
 TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
-    FUNCTIONS_FOLDER,
+    THIS_FOLDER,
+    "functions",
     "java",
     "lambda_multiple_handlers",
     "build",
     "distributions",
     "lambda-function-with-multiple-handlers.zip",
 )
-TEST_LAMBDA_ENV = os.path.join(FUNCTIONS_FOLDER, "lambda_environment.py")
+TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "functions/lambda_environment.py")
 
-TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(FUNCTIONS_FOLDER, "lambda_send_message.py")
-TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(FUNCTIONS_FOLDER, "lambda_put_item.py")
-TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(FUNCTIONS_FOLDER, "lambda_start_execution.py")
-TEST_LAMBDA_URL = os.path.join(FUNCTIONS_FOLDER, "lambda_url.js")
-TEST_LAMBDA_CACHE_NODEJS = os.path.join(FUNCTIONS_FOLDER, "lambda_cache.js")
-TEST_LAMBDA_CACHE_PYTHON = os.path.join(FUNCTIONS_FOLDER, "lambda_cache.py")
-TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(FUNCTIONS_FOLDER, "lambda_timeout.py")
-TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(FUNCTIONS_FOLDER, "lambda_introspect.py")
+TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions/lambda_send_message.py")
+TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions/lambda_put_item.py")
+TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, "functions/lambda_start_execution.py")
+TEST_LAMBDA_URL = os.path.join(THIS_FOLDER, "functions/lambda_url.js")
+TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_cache.js")
+TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_cache.py")
+TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout.py")
+TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_introspect.py")
 
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
 

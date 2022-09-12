@@ -16,7 +16,6 @@ from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 from tests.integration.awslambda.test_lambda import (
-    FUNCTIONS_FOLDER,
     JAVA_TEST_RUNTIMES,
     NODE_TEST_RUNTIMES,
     PYTHON_TEST_RUNTIMES,
@@ -27,6 +26,7 @@ from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
     TEST_LAMBDA_PYTHON_VERSION,
+    THIS_FOLDER,
     read_streams,
 )
 
@@ -148,8 +148,8 @@ class TestJavaRuntimes:
 
         java_zip_with_lib_gradle = load_file(
             os.path.join(
-                FUNCTIONS_FOLDER,
-                "java/lambda_echo/build/distributions/lambda-function-built-by-gradle.zip",
+                THIS_FOLDER,
+                "functions/java/lambda_echo/build/distributions/lambda-function-built-by-gradle.zip",
             ),
             mode="rb",
         )
