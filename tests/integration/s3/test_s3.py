@@ -164,7 +164,6 @@ def create_tmp_folder_lambda():
 
 class TestS3:
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..EncodingType"])
     def test_region_header_exists(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_create_bucket(
@@ -179,9 +178,7 @@ class TestS3:
 
     @pytest.mark.aws_validated
     # TODO list-buckets contains other buckets when running in CI
-    @pytest.mark.skip_snapshot_verify(
-        paths=["$..Marker", "$..Prefix", "$..EncodingType", "$..list-buckets.Buckets"]
-    )
+    @pytest.mark.skip_snapshot_verify(paths=["$..Prefix", "$..list-buckets.Buckets"])
     def test_delete_bucket_with_content(self, s3_client, s3_resource, s3_bucket, snapshot):
 
         snapshot.add_transformer(snapshot.transform.s3_api())
