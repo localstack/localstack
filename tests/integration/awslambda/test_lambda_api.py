@@ -337,33 +337,33 @@ class TestLambdaAlias:
 
         create_alias_1_1 = lambda_client.create_alias(
             FunctionName=function_name,
-            Name="blub1_1",
+            Name="aliasname1_1",
             FunctionVersion="1",
             Description="custom-alias",
             RoutingConfig={"AdditionalVersionWeights": {"2": 0.2}},
         )
         snapshot.match("create_alias_1_1", create_alias_1_1)
-        get_alias_1_1 = lambda_client.get_alias(FunctionName=function_name, Name="blub1_1")
+        get_alias_1_1 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname1_1")
         snapshot.match("get_alias_1_1", get_alias_1_1)
 
         create_alias_1_2 = lambda_client.create_alias(
             FunctionName=function_name,
-            Name="blub1_2",
+            Name="aliasname1_2",
             FunctionVersion="1",
             Description="custom-alias",
         )
         snapshot.match("create_alias_1_2", create_alias_1_2)
-        get_alias_1_2 = lambda_client.get_alias(FunctionName=function_name, Name="blub1_2")
+        get_alias_1_2 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname1_2")
         snapshot.match("get_alias_1_2", get_alias_1_2)
 
         create_alias_2 = lambda_client.create_alias(
             FunctionName=function_name,
-            Name="blub2",
+            Name="aliasname2",
             FunctionVersion="2",
             Description="custom-alias",
         )
         snapshot.match("create_alias_2", create_alias_2)
-        get_alias_2 = lambda_client.get_alias(FunctionName=function_name, Name="blub2")
+        get_alias_2 = lambda_client.get_alias(FunctionName=function_name, Name="aliasname2")
         snapshot.match("get_alias_2", get_alias_2)
 
         # list_aliases can be optionally called with a FunctionVersion to filter only aliases for this version
@@ -380,7 +380,7 @@ class TestLambdaAlias:
         assert len(list_aliases_for_version["Aliases"]) == 2
 
         delete_alias_response = lambda_client.delete_alias(
-            FunctionName=function_name, Name="blub1_1"
+            FunctionName=function_name, Name="aliasname1_1"
         )
         snapshot.match("delete_alias_response", delete_alias_response)
 

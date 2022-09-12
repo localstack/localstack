@@ -2313,10 +2313,10 @@
         "Version": "2"
       },
       "create_alias_1_1": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub1_1",
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_1",
         "Description": "custom-alias",
         "FunctionVersion": "1",
-        "Name": "blub1_1",
+        "Name": "aliasname1_1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -2329,10 +2329,10 @@
         }
       },
       "get_alias_1_1": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub1_1",
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_1",
         "Description": "custom-alias",
         "FunctionVersion": "1",
-        "Name": "blub1_1",
+        "Name": "aliasname1_1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2345,10 +2345,10 @@
         }
       },
       "create_alias_1_2": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub1_2",
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_2",
         "Description": "custom-alias",
         "FunctionVersion": "1",
-        "Name": "blub1_2",
+        "Name": "aliasname1_2",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -2356,10 +2356,10 @@
         "RevisionId": "<uuid:5>"
       },
       "get_alias_1_2": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub1_2",
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_2",
         "Description": "custom-alias",
         "FunctionVersion": "1",
-        "Name": "blub1_2",
+        "Name": "aliasname1_2",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2367,10 +2367,10 @@
         "RevisionId": "<uuid:5>"
       },
       "create_alias_2": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub2",
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname2",
         "Description": "custom-alias",
         "FunctionVersion": "2",
-        "Name": "blub2",
+        "Name": "aliasname2",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -2378,10 +2378,10 @@
         "RevisionId": "<uuid:6>"
       },
       "get_alias_2": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub2",
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname2",
         "Description": "custom-alias",
         "FunctionVersion": "2",
-        "Name": "blub2",
+        "Name": "aliasname2",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2391,10 +2391,10 @@
       "list_aliases_for_fnname": {
         "Aliases": [
           {
-            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub1_1",
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_1",
             "Description": "custom-alias",
             "FunctionVersion": "1",
-            "Name": "blub1_1",
+            "Name": "aliasname1_1",
             "RevisionId": "<uuid:4>",
             "RoutingConfig": {
               "AdditionalVersionWeights": {
@@ -2403,17 +2403,17 @@
             }
           },
           {
-            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub1_2",
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_2",
             "Description": "custom-alias",
             "FunctionVersion": "1",
-            "Name": "blub1_2",
+            "Name": "aliasname1_2",
             "RevisionId": "<uuid:5>"
           },
           {
-            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub2",
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname2",
             "Description": "custom-alias",
             "FunctionVersion": "2",
-            "Name": "blub2",
+            "Name": "aliasname2",
             "RevisionId": "<uuid:6>"
           }
         ],
@@ -2425,10 +2425,10 @@
       "list_aliases_for_version": {
         "Aliases": [
           {
-            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub1_1",
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_1",
             "Description": "custom-alias",
             "FunctionVersion": "1",
-            "Name": "blub1_1",
+            "Name": "aliasname1_1",
             "RevisionId": "<uuid:4>",
             "RoutingConfig": {
               "AdditionalVersionWeights": {
@@ -2437,10 +2437,10 @@
             }
           },
           {
-            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub1_2",
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_2",
             "Description": "custom-alias",
             "FunctionVersion": "1",
-            "Name": "blub1_2",
+            "Name": "aliasname1_2",
             "RevisionId": "<uuid:5>"
           }
         ],
@@ -2458,17 +2458,17 @@
       "list_aliases_for_fnname_afterdelete": {
         "Aliases": [
           {
-            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub1_2",
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname1_2",
             "Description": "custom-alias",
             "FunctionVersion": "1",
-            "Name": "blub1_2",
+            "Name": "aliasname1_2",
             "RevisionId": "<uuid:5>"
           },
           {
-            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:blub2",
+            "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:aliasname2",
             "Description": "custom-alias",
             "FunctionVersion": "2",
-            "Name": "blub2",
+            "Name": "aliasname2",
             "RevisionId": "<uuid:6>"
           }
         ],
