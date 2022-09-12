@@ -28,7 +28,6 @@ from localstack.aws.api.s3 import (
     ListObjectsV2Request,
     NoSuchBucket,
     NoSuchLifecycleConfiguration,
-    ObjectKey,
     PutBucketRequestPaymentRequest,
     PutObjectOutput,
     PutObjectRequest,
@@ -195,12 +194,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 def call_moto_with_exception_patching(
     context: RequestContext,
     bucket: BucketName,
-    key: ObjectKey = None,
 ) -> ServiceResponse:
     try:
         response = call_moto(context)
     except CommonServiceException as e:
-        ex = _patch_moto_exceptions(e, bucket_name=bucket, key_name=key)
+        ex = _patch_moto_exceptions(e, bucket_name=bucket)
         raise ex
     return response
 
