@@ -125,6 +125,37 @@
         "shape": "GetObjectResponseStatusCode",
         "location": "statusCode"
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchKey/members/Key",
+      "value": {
+        "shape": "ObjectKey"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/PreconditionFailed",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Condition": {
+            "shape": "IfCondition"
+          }
+        },
+        "error": {
+          "httpStatusCode": 412
+        },
+        "documentation": "<p>At least one of the pre-conditions you specified did not hold</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/IfCondition",
+      "value": {
+        "type": "string"
+      }
     }
   ]
 }

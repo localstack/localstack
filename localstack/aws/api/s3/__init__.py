@@ -164,6 +164,7 @@ WebsiteRedirectLocation = str
 Years = int
 BucketRegion = str
 BucketContentType = str
+IfCondition = str
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -580,6 +581,7 @@ class NoSuchKey(ServiceException):
     code: str = "NoSuchKey"
     sender_fault: bool = False
     status_code: int = 400
+    Key: Optional[ObjectKey]
 
 
 class NoSuchUpload(ServiceException):
@@ -612,6 +614,13 @@ class InvalidBucketName(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     BucketName: Optional[BucketName]
+
+
+class PreconditionFailed(ServiceException):
+    code: str = "PreconditionFailed"
+    sender_fault: bool = False
+    status_code: int = 412
+    Condition: Optional[IfCondition]
 
 
 AbortDate = datetime

@@ -28,6 +28,7 @@ from localstack.aws.api.s3 import (
     ListObjectsV2Request,
     NoSuchBucket,
     NoSuchLifecycleConfiguration,
+    ObjectKey,
     PutBucketRequestPaymentRequest,
     PutObjectOutput,
     PutObjectRequest,
@@ -192,12 +193,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
 
 def call_moto_with_exception_patching(
-    context: RequestContext, bucket: BucketName
+    context: RequestContext,
+    bucket: BucketName,
+    key: ObjectKey = None,
 ) -> ServiceResponse:
     try:
         response = call_moto(context)
     except CommonServiceException as e:
-        ex = _patch_moto_exceptions(e, bucket_name=bucket)
+        ex = _patch_moto_exceptions(e, bucket_name=bucket, key_name=key)
         raise ex
     return response
 
@@ -228,7 +231,13 @@ def apply_moto_patches():
     def _fix_key_response(fn, self, *args, **kwargs):
         """Change casing of Last-Modified headers to be picked by the parser"""
         status_code, resp_headers, key_value = fn(self, *args, **kwargs)
-        for low_case_header in ["last-modified", "content-type", "content-length", "content-range"]:
+        for low_case_header in [
+            "last-modified",
+            "content-type",
+            "content-length",
+            "content-range",
+            "content-encoding",
+        ]:
             if header_value := resp_headers.pop(low_case_header, None):
                 header_name = _capitalize_header_name_from_snake_case(low_case_header)
                 resp_headers[header_name] = header_value
@@ -245,3 +254,6 @@ def apply_moto_patches():
 
 def _capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
+
+
+# TODO: check if filter works with current provider
