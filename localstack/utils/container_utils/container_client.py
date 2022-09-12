@@ -13,8 +13,6 @@ from enum import Enum, unique
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
-from localstack.utils.run import is_command_available
-
 if sys.version_info >= (3, 8):
     from typing import Literal, Protocol, get_args
 else:
@@ -980,16 +978,3 @@ class Util:
         if os.path.isdir(dockerfile_path) and os.path.exists(rel_path):
             return rel_path
         return dockerfile_path
-
-
-def get_docker_client() -> ContainerClient:
-    """Get a Docker client - either using the `docker` binary (if available), or using the Python SDK"""
-
-    if is_command_available(config.DOCKER_CMD):
-        from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
-
-        return CmdDockerClient()
-
-    from localstack.utils.container_utils.docker_sdk_client import SdkDockerClient
-
-    return SdkDockerClient()

@@ -20,8 +20,8 @@ from localstack.utils.container_utils.container_client import (
     SimpleVolumeBind,
     VolumeBind,
     VolumeMappings,
-    get_docker_client,
 )
+from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, chmod_r, mkdir
 from localstack.utils.functions import call_safe
@@ -426,11 +426,11 @@ class LocalstackContainer:
         return mount_volumes
 
     def run(self):
-        client = get_docker_client()
-        client.default_run_outfile = self.logfile
+        if isinstance(DOCKER_CLIENT, CmdDockerClient):
+            DOCKER_CLIENT.default_run_outfile = self.logfile
 
         try:
-            return client.run_container(
+            return DOCKER_CLIENT.run_container(
                 image_name=self.image_name,
                 stdin=self.stdin,
                 name=self.name,
@@ -502,7 +502,7 @@ class LocalstackContainerServer(Server):
 
     def do_shutdown(self):
         try:
-            get_docker_client().stop_container(
+            DOCKER_CLIENT.stop_container(
                 self.container.name, timeout=10
             )  # giving the container some time to stop
         except Exception as e:
