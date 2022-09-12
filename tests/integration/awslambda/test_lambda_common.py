@@ -3,6 +3,8 @@ import os
 import subprocess
 import zipfile
 
+import pytest
+
 from localstack.aws.api.lambda_ import Runtime
 
 LOG = logging.getLogger(__name__)
@@ -47,7 +49,6 @@ def package_for_lang(scenario: str, runtime: str) -> str:
 
     # check something is in target now
     target_empty = len(os.listdir(lang_dir)) <= 0
-
     if target_empty:
         raise Exception("Failed")
 
@@ -82,3 +83,38 @@ class TestLambdaRuntimesCommon:
 
     def test_something_random(self, lambda_client):
         package_for_lang("echo", "python")
+
+
+    # mixed
+    @pytest.mark.multiruntime(scenario="echo", runtimes=["python", "ruby", "nodejs12.x"])
+    def test_echo(self, lambda_client, multiruntime_lambda):
+        multiruntime_lambda.create_function()
+
+
+    # mixed
+    @pytest.mark.multiruntime(
+        scenario="echo",
+        runtimes=["python", "ruby", "nodejs12.x"]
+    )
+    def test_echo(self, lambda_client, multiruntime_lambda): ...
+        multiruntime_lambda.create_function(
+            Environment={
+                ""
+            }
+        )
+
+
+    # e.g. for normal API level stuff
+    @pytest.mark.multiruntime("python", "nodejs")
+    def test_echo(self, lambda_client): ...
+
+
+    # all runtimes
+    @pytest.mark.multiruntime
+    def test_echo(self, lambda_client): ...
+
+
+
+    @pytest.mark.multiruntime("python3.9")
+    def test_echo(self, lambda_client): ...
+
