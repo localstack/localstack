@@ -162,6 +162,8 @@ VersionCount = int
 VersionIdMarker = str
 WebsiteRedirectLocation = str
 Years = int
+BucketRegion = str
+BucketContentType = str
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -595,6 +597,20 @@ class ObjectNotInActiveTierError(ServiceException):
     code: str = "ObjectNotInActiveTierError"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class NoSuchLifecycleConfiguration(ServiceException):
+    code: str = "NoSuchLifecycleConfiguration"
+    sender_fault: bool = False
+    status_code: int = 404
+    BucketName: Optional[BucketName]
+
+
+class InvalidBucketName(ServiceException):
+    code: str = "InvalidBucketName"
+    sender_fault: bool = False
+    status_code: int = 400
+    BucketName: Optional[BucketName]
 
 
 AbortDate = datetime
@@ -2215,6 +2231,7 @@ class ListObjectsOutput(TypedDict, total=False):
     MaxKeys: Optional[MaxKeys]
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
+    BucketRegion: Optional[BucketRegion]
 
 
 class ListObjectsRequest(ServiceRequest):
@@ -2241,6 +2258,7 @@ class ListObjectsV2Output(TypedDict, total=False):
     ContinuationToken: Optional[Token]
     NextContinuationToken: Optional[NextToken]
     StartAfter: Optional[StartAfter]
+    BucketRegion: Optional[BucketRegion]
 
 
 class ListObjectsV2Request(ServiceRequest):
@@ -2907,6 +2925,11 @@ class WriteGetObjectResponseRequest(ServiceRequest):
     BucketKeyEnabled: Optional[BucketKeyEnabled]
 
 
+class HeadBucketOutput(TypedDict, total=False):
+    BucketRegion: Optional[BucketRegion]
+    BucketContentType: Optional[BucketContentType]
+
+
 class S3Api:
 
     service = "s3"
@@ -3445,7 +3468,7 @@ class S3Api:
     @handler("HeadBucket")
     def head_bucket(
         self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
-    ) -> None:
+    ) -> HeadBucketOutput:
         raise NotImplementedError
 
     @handler("HeadObject")
