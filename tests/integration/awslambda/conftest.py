@@ -45,11 +45,11 @@ RUNTIMES_AGGREGATED = {
 
 HANDLERS = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "handler.handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "handler.handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "handler.handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "cloud.localstack.test_lambda.LambdaHandler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "index.handler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "echo.Handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "function.handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("go"), "handler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("go"), "main"),
     "dotnetcore31": "dotnetcore31::dotnetcore31.Function::FunctionHandler",  # TODO lets see if we can accumulate those
     "dotnet6": "dotnet6::dotnet6.Function::FunctionHandler",
 }
@@ -199,10 +199,16 @@ class ParametrizedLambda:
     def create_function(self, **kwargs):
         kwargs.setdefault("FunctionName", f"{self.scenario}-{short_uid()}")
         kwargs.setdefault("Runtime", self.runtime)
+        kwargs.setdefault("Handler", self.handler)
         kwargs.setdefault("Role", self.role)
         kwargs.setdefault("Code", {"ZipFile": load_file(self.zip_file_path, mode="rb")})
+
         result = self.lambda_client.create_function(**kwargs)
-        self.function_names.append(result["FunctionName"])
+        self.function_names.append(result["FunctionArn"])
+        self.lambda_client.get_waiter("function_active_v2").wait(
+            FunctionName=kwargs.get("FunctionName")
+        )
+
         return result
 
     def destroy(self):

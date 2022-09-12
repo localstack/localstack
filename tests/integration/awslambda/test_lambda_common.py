@@ -1,3 +1,4 @@
+import json
 import logging
 
 import pytest
@@ -17,16 +18,14 @@ class TestLambdaRuntimesCommon:
 
     """
 
-    def test_something_random(self, lambda_client):
-        ...
+    @pytest.mark.multiruntime(
+        scenario="echo", runtimes=["python", "nodejs", "ruby", "java", "go", "dotnet6"]
+    )
+    def test_echo_invoke(self, lambda_client, multiruntime_lambda):
+        create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
+        invoke_result = lambda_client.invoke(
+            FunctionName=create_function_result["FunctionName"], Payload=b'{"hello":"world"}'
+        )
 
-    # mixed
-    @pytest.mark.multiruntime(scenario="echo", runtimes=["python", "ruby", "nodejs12.x"])
-    def test_echo_some(self, lambda_client, multiruntime_lambda):
-        multiruntime_lambda.create_function()
-
-    # mixed
-    @pytest.mark.multiruntime(scenario="echo", runtimes=["python"])
-    def test_echo_invoke(self, lambda_client, multiruntime_lambda, snapshot):
-        create_function_result = multiruntime_lambda.create_function()
-        lambda_client.invoke(FunctionName=create_function_result["FunctionName"], Payload=b"{}")
+        assert invoke_result["StatusCode"] == 200
+        assert json.loads(invoke_result["Payload"].read()) == {"hello": "world"}
