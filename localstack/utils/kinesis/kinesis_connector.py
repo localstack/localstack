@@ -307,7 +307,7 @@ def get_stream_info(
 
 
 def start_kcl_client_process(
-    stream_name,
+    stream_name: str,
     listener_script,
     log_file=None,
     env=None,
@@ -328,26 +328,8 @@ def start_kcl_client_process(
     env = aws_stack.get_environment(env)
     # make sure to convert stream ARN to stream name
     stream_name = aws_stack.kinesis_stream_name(stream_name)
-    # decide which credentials provider to use
-    credentialsProvider = None
-    if ("AWS_ASSUME_ROLE_ARN" in os.environ or "AWS_ASSUME_ROLE_ARN" in env_vars) and (
-        "AWS_ASSUME_ROLE_SESSION_NAME" in os.environ or "AWS_ASSUME_ROLE_SESSION_NAME" in env_vars
-    ):
-        # use special credentials provider that can assume IAM roles and handle temporary STS auth tokens
-        credentialsProvider = "cloud.localstack.DefaultSTSAssumeRoleSessionCredentialsProvider"
-        # pass through env variables to child process
-        for var_name in [
-            "AWS_ASSUME_ROLE_ARN",
-            "AWS_ASSUME_ROLE_SESSION_NAME",
-            "AWS_ACCESS_KEY_ID",
-            "AWS_SECRET_ACCESS_KEY",
-            "AWS_SESSION_TOKEN",
-        ]:
-            if var_name in os.environ and var_name not in env_vars:
-                env_vars[var_name] = os.environ[var_name]
     if aws_stack.is_local_env(env):
-        # need to disable CBOR protocol, enforce use of plain JSON,
-        # see https://github.com/mhart/kinesalite/issues/31
+        # disable CBOR protocol, enforce use of plain JSON
         env_vars["AWS_CBOR_DISABLE"] = "true"
     if kcl_log_level or (len(log_subscribers) > 0):
         if not log_file:
@@ -390,7 +372,6 @@ def start_kcl_client_process(
         executableName=listener_script,
         streamName=stream_name,
         applicationName=stream_info["app_name"],
-        credentialsProvider=credentialsProvider,
         region_name=region_name,
         **kwargs,
     )
