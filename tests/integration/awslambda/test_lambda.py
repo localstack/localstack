@@ -244,10 +244,6 @@ class TestLambdaBehavior:
         second_invoke_result = lambda_client.invoke(FunctionName=func_name)
         snapshot.match("second_invoke_result", second_invoke_result)
 
-    @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider,
-        paths=["$..FunctionError", "$..LogResult", "$..Payload", "$..Layers"],
-    )
     @pytest.mark.skipif(is_old_provider(), reason="old provider")
     @pytest.mark.aws_validated
     def test_lambda_invoke_with_timeout(
