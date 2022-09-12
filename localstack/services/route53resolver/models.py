@@ -151,10 +151,10 @@ class Route53ResolverBackend(RegionBackend):
             association_id = association.get("Id")
         return self.resolver_query_log_config_associations.pop(association_id)
 
-    def get_or_create_firewall_config(self, resource_id, region, owner_id):
+    def get_or_create_firewall_config(self, resource_id: str, region: str, account_id: str):
         """returns the firewall config with the given id if it exists or creates a new one"""
 
-        validate_vpc(resource_id, region)
+        validate_vpc(resource_id, region, account_id)
         firewall_config: FirewallConfig
         if self.firewall_configs.get(resource_id):
             firewall_config = self.firewall_configs[resource_id]
@@ -163,7 +163,7 @@ class Route53ResolverBackend(RegionBackend):
             firewall_config = FirewallConfig(
                 Id=id,
                 ResourceId=resource_id,
-                OwnerId=owner_id,
+                OwnerId=account_id,
                 FirewallFailOpen="DISABLED",
             )
             self.firewall_configs[resource_id] = firewall_config

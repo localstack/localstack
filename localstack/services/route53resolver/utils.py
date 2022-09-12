@@ -56,8 +56,8 @@ def validate_destination_arn(destination_arn):
         )
 
 
-def validate_vpc(vpc_id, region):
-    backend = ec2_backends[region]
+def validate_vpc(vpc_id: str, region: str, account_id: str):
+    backend = ec2_backends[account_id][region]
 
     if vpc_id not in backend.vpcs:
         raise ValidationException(
