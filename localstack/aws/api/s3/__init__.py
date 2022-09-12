@@ -1862,6 +1862,7 @@ class GetObjectOutput(TypedDict, total=False):
     ObjectLockMode: Optional[ObjectLockMode]
     ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
+    StatusCode: Optional[GetObjectResponseStatusCode]
 
 
 ResponseExpires = datetime

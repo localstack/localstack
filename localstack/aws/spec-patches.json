@@ -117,6 +117,14 @@
       "value": {
         "shape": "BucketName"
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/GetObjectOutput/members/StatusCode",
+      "value": {
+        "shape": "GetObjectResponseStatusCode",
+        "location": "statusCode"
+      }
     }
   ]
 }

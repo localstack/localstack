@@ -1005,7 +1005,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_s3_request_payer": {
-    "recorded-date": "26-08-2022, 15:48:13",
+    "recorded-date": "12-09-2022, 18:39:25",
     "recorded-content": {
       "put-bucket-request-payment": {
         "ResponseMetadata": {
@@ -2128,6 +2128,31 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_request_payer_exceptions": {
+    "recorded-date": "12-09-2022, 18:59:18",
+    "recorded-content": {
+      "wrong-payer-type": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "wrong-bucket-name": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
         }
       }
     }

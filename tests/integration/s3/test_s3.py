@@ -1089,6 +1089,21 @@ class TestS3:
         assert "Requester" == response["Payer"]
 
     @pytest.mark.aws_validated
+    def test_s3_request_payer_exceptions(self, s3_client, s3_bucket, snapshot):
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_request_payment(
+                Bucket=s3_bucket, RequestPaymentConfiguration={"Payer": "Random"}
+            )
+        snapshot.match("wrong-payer-type", e.value.response)
+
+        # TODO: check if no luck or AccessDenied is normal?
+        # with pytest.raises(ClientError) as e:
+        #     s3_client.put_bucket_request_payment(
+        #         Bucket="fake_bucket", RequestPaymentConfiguration={"Payer": "Requester"}
+        #     )
+        # snapshot.match("wrong-bucket-name", e.value.response)
+
+    @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=["$..Error.RequestID", "$..Grants..Grantee.DisplayName"]
     )
