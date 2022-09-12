@@ -1,16 +1,32 @@
 {
   "tests/integration/cloudformation/test_cloudformation_kinesis.py::test_stream_creation": {
-    "recorded-date": "29-08-2022, 14:11:32",
+    "recorded-date": "12-09-2022, 14:11:29",
     "recorded-content": {
       "stack_output": {
         "StreamArnFromAtt": "arn:aws:kinesis:<region>:111111111111:stream/<resource:1>",
         "StreamNameFromRef": "<resource:1>"
       },
-      "stream_description": {
+      "resource_description": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "TestStream",
+            "PhysicalResourceId": "<resource:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Kinesis::Stream",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
-        },
+        }
+      },
+      "stream_description": {
         "StreamDescription": {
           "EncryptionType": "NONE",
           "EnhancedMonitoring": [
@@ -39,6 +55,10 @@
           },
           "StreamName": "<resource:1>",
           "StreamStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
