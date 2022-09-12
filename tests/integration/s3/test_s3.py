@@ -633,30 +633,6 @@ class TestS3:
         s3_multipart_upload(bucket=bucket_name, key="acl-key2", acl="public-read-write")
         check_permissions("acl-key2")
 
-    @pytest.mark.only_localstack
-    @pytest.mark.parametrize("case_sensitive_headers", [True, False])
-    def test_s3_get_response_case_sensitive_headers(
-        self, s3_client, s3_bucket, case_sensitive_headers
-    ):
-        # Test that RETURN_CASE_SENSITIVE_HEADERS is respected
-        object_key = "key-by-hostname"
-        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
-
-        # get object and assert headers
-        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
-        try:
-            url = s3_client.generate_presigned_url(
-                "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
-            )
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
-            response = requests.get(url, verify=False)
-            # expect that Etag is contained
-            header_names = list(response.headers.keys())
-            expected_etag = "ETag" if case_sensitive_headers else "etag"
-            assert expected_etag in header_names
-        finally:
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
-
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
@@ -2356,6 +2332,30 @@ class TestS3PresignedUrl:
         response = requests.get(url, verify=False)
         assert 200 == response.status_code
         assert actual_key_obj["ETag"] == response.headers["etag"]
+
+    @pytest.mark.only_localstack
+    @pytest.mark.parametrize("case_sensitive_headers", [True, False])
+    def test_s3_get_response_case_sensitive_headers(
+        self, s3_client, s3_bucket, case_sensitive_headers
+    ):
+        # Test that RETURN_CASE_SENSITIVE_HEADERS is respected
+        object_key = "key-by-hostname"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
+
+        # get object and assert headers
+        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
+        try:
+            url = s3_client.generate_presigned_url(
+                "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+            )
+            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
+            response = requests.get(url, verify=False)
+            # expect that Etag is contained
+            header_names = list(response.headers.keys())
+            expected_etag = "ETag" if case_sensitive_headers else "etag"
+            assert expected_etag in header_names
+        finally:
+            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
 
 
 class TestS3Cors:

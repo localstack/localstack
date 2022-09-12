@@ -1350,6 +1350,8 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
     serialization.
     """
 
+    SUPPORTED_MIME_TYPES = [TEXT_XML, APPLICATION_XML]
+
     def _serialize_error(
         self,
         error: ServiceException,
