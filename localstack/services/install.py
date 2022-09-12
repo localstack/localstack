@@ -32,10 +32,8 @@ from localstack.constants import (
     LIBSQLITE_AARCH64_URL,
     LOCALSTACK_MAVEN_VERSION,
     MAVEN_REPO_URL,
-    MODULE_MAIN_PATH,
     OPENSEARCH_DEFAULT_VERSION,
     OPENSEARCH_PLUGIN_LIST,
-    STS_JAR_URL,
 )
 from localstack.runtime import hooks
 from localstack.utils.archives import untar, unzip
@@ -51,7 +49,7 @@ from localstack.utils.files import (
 )
 from localstack.utils.functions import run_safe
 from localstack.utils.http import download
-from localstack.utils.platform import get_arch, is_mac_os, is_windows
+from localstack.utils.platform import get_arch, is_mac_os
 from localstack.utils.run import run
 from localstack.utils.sync import retry
 from localstack.utils.threads import parallelize
@@ -653,30 +651,6 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
     download(maven_asset_url, target_file)
 
 
-def install_amazon_kinesis_client_libs():
-    # install KCL/STS JAR files
-    if not os.path.exists(INSTALL_PATH_KCL_JAR):
-        mkdir(INSTALL_DIR_KCL)
-        tmp_archive = os.path.join(tempfile.gettempdir(), "aws-java-sdk-sts.jar")
-        if not os.path.exists(tmp_archive):
-            download(STS_JAR_URL, tmp_archive)
-        shutil.copy(tmp_archive, INSTALL_DIR_KCL)
-
-    # Compile Java files
-    from localstack.utils.kinesis import kclipy_helper
-
-    classpath = kclipy_helper.get_kcl_classpath()
-
-    if is_windows():
-        classpath = re.sub(r":([^\\])", r";\1", classpath)
-    java_files = f"{MODULE_MAIN_PATH}/utils/kinesis/java/cloud/localstack/*.java"
-    class_files = f"{MODULE_MAIN_PATH}/utils/kinesis/java/cloud/localstack/*.class"
-    if not glob.glob(class_files):
-        run(
-            f'javac -source {JAVAC_TARGET_VERSION} -target {JAVAC_TARGET_VERSION} -cp "{classpath}" {java_files}'
-        )
-
-
 def install_lambda_java_libs():
     # install LocalStack "fat" JAR file (contains all dependencies)
     if not os.path.exists(INSTALL_PATH_LOCALSTACK_FAT_JAR):
@@ -874,7 +848,6 @@ class CommunityInstallerRepository(InstallerRepository):
             ("elasticsearch", install_elasticsearch),
             ("opensearch", install_opensearch),
             ("kinesalite", install_kinesalite),
-            ("kinesis-client-libs", install_amazon_kinesis_client_libs),
             ("kinesis-mock", install_kinesis_mock),
             ("lambda-java-libs", install_lambda_java_libs),
             ("local-kms", install_local_kms),
@@ -920,7 +893,6 @@ def main():
             install_all_components()
         if sys.argv[1] in ("libs", "testlibs"):
             # Install additional libraries for testing
-            install_amazon_kinesis_client_libs()
             install_lambda_java_testlibs()
         print("Done.")
 
