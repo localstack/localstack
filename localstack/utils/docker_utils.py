@@ -8,8 +8,6 @@ from localstack import config
 from localstack.constants import DEFAULT_VOLUME_DIR
 from localstack.utils.container_utils.container_client import ContainerClient, VolumeInfo
 
-"""Type alias for a simple version of VolumeBind"""
-
 LOG = logging.getLogger(__name__)
 
 

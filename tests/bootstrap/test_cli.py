@@ -9,6 +9,7 @@ import localstack.utils.container_utils.docker_cmd_client
 from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
 from localstack.config import DOCKER_SOCK, get_edge_url, in_docker
+from localstack.constants import MODULE_MAIN_PATH
 from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import poll_condition
 from localstack.utils.files import mkdir
@@ -178,3 +179,22 @@ class TestCliContainerLifecycle:
 
         output = container_client.exec_in_container(config.MAIN_CONTAINER_NAME, ["ps", "-u", user])
         assert "supervisord" in to_str(output[0])
+
+    def test_start_cli_within_container(self, runner, container_client):
+        output = container_client.run_container(
+            "localstack/localstack",
+            remove=True,
+            entrypoint="",
+            command=["bin/localstack", "start", "-d"],
+            mount_volumes=[
+                ("/var/run/docker.sock", "/var/run/docker.sock"),
+                (MODULE_MAIN_PATH, "/opt/code/localstack/localstack"),
+            ],
+            env_vars={"LOCALSTACK_VOLUME_DIR": "/tmp/ls-volume"},
+        )
+        stdout = to_str(output[0])
+        assert "starting LocalStack" in stdout
+        assert "detaching" in stdout
+
+        # assert that container is running
+        runner.invoke(cli, ["wait", "-t", "60"])

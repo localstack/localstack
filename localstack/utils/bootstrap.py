@@ -426,11 +426,11 @@ class LocalstackContainer:
         return mount_volumes
 
     def run(self):
-        client = CmdDockerClient()
-        client.default_run_outfile = self.logfile
+        if isinstance(DOCKER_CLIENT, CmdDockerClient):
+            DOCKER_CLIENT.default_run_outfile = self.logfile
 
         try:
-            return client.run_container(
+            return DOCKER_CLIENT.run_container(
                 image_name=self.image_name,
                 stdin=self.stdin,
                 name=self.name,
@@ -449,6 +449,7 @@ class LocalstackContainer:
                 dns=self.dns,
                 additional_flags=" ".join(self.additional_flags),
                 workdir=self.workdir,
+                privileged=self.privileged,
             )
         except ContainerException as e:
             if LOG.isEnabledFor(logging.DEBUG):
@@ -501,7 +502,7 @@ class LocalstackContainerServer(Server):
 
     def do_shutdown(self):
         try:
-            CmdDockerClient().stop_container(
+            DOCKER_CLIENT.stop_container(
                 self.container.name, timeout=10
             )  # giving the container some time to stop
         except Exception as e:
@@ -578,7 +579,7 @@ def configure_container(container: LocalstackContainer):
     # mount docker socket
     container.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
-    container.additional_flags.append("--privileged")
+    container.privileged = True
 
 
 def configure_volume_mounts(container: LocalstackContainer):
@@ -675,6 +676,7 @@ def start_infra_in_docker_detached(console):
     console.log("configuring container")
     container = LocalstackContainer()
     configure_container(container)
+    container.detach = True
     container.truncate_log()
 
     # start the Localstack container as a Server
