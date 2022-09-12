@@ -110,6 +110,13 @@
       "op": "add",
       "path": "/operations/PutBucketPolicy/http/responseCode",
       "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/shapes/BucketAlreadyOwnedByYou/members/BucketName",
+      "value": {
+        "shape": "BucketName"
+      }
     }
   ]
 }

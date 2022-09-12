@@ -558,6 +558,7 @@ class BucketAlreadyOwnedByYou(ServiceException):
     code: str = "BucketAlreadyOwnedByYou"
     sender_fault: bool = False
     status_code: int = 400
+    BucketName: Optional[BucketName]
 
 
 class InvalidObjectState(ServiceException):
