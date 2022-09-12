@@ -111,7 +111,12 @@ def render_report(result: SnapshotMatchResult):
             LOG.warning(
                 f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support. {expected=} | {actual=}"
             )
-        return []
+            return [
+                (
+                    change_path,
+                    f"[unknown]?[/unknown] {change_path} Unsupported diff mismatch for {expected!r} vs {actual!r}",
+                )
+            ]
 
     lines = []
     json_paths = []
@@ -130,6 +135,7 @@ def render_report(result: SnapshotMatchResult):
         "remove": [_esctable["red"]],
         "add": [_esctable["green"]],
         "replace": [_esctable["yellow"]],
+        "unknown": [_esctable["cyan"]],
         "s": [_esctable["strikethrough"]],
     }
 
