@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import os
+import subprocess
 import threading
 import wave
 from pathlib import Path
@@ -207,6 +208,19 @@ class TranscribeProvider(TranscribeApi):
             s3_path = job["Media"]["MediaFileUri"]
             bucket, _, key = s3_path.removeprefix("s3://").partition("/")
             s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
+
+            # Check audio file type and convert to wav
+            support_audio_list = ["amr", "flac", "mp3", "mp4", "ogg", "webm"]
+            file_path_without_suffix, file_type = str(file_path).split('.')
+            if file_type != "wav" and file_type in support_audio_list:
+                    LOG.debug("Starting to convert audio to wav type: %s", job_name)
+                    
+                    wav_file_path = file_path_without_suffix + ".wav"
+                    cmd = 'ffmpeg -nostdin -loglevel quiet -y -i {} converted.wav {}'\
+                        .format(str(file_path), wav_file_path)
+                    subprocess.run(cmd.split(' '), stdout=subprocess.PIPE)
+                    file_path = wav_file_path
+                    LOG.debug("Finishing conversion: %s", job_name)
 
             # Check if file is valid wav
             audio = wave.open(file_path, "rb")
