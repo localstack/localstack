@@ -74,7 +74,6 @@ route53resolver:
     - TestAccRoute53ResolverFirewallConfig_disappears
     - TestAccRoute53ResolverFirewallDomainList_basic
     - TestAccRoute53ResolverFirewallDomainList_disappears
-    - TestAccRoute53ResolverFirewallDomainList_domains
     - TestAccRoute53ResolverFirewallDomainList_tags
     - TestAccRoute53ResolverFirewallRuleGroupAssociation_basic
     - TestAccRoute53ResolverFirewallRuleGroupAssociation_disappears
