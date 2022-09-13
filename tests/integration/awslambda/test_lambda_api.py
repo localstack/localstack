@@ -69,10 +69,12 @@ class TestLambdaFunction:
         large_envvar_bytes = target_size - key_bytes
         large_envvar = "x" * large_envvar_bytes
 
+        function_name = "large-envar-lambda"
+
         with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as ex:
             create_lambda_function(
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                func_name="my-function",
+                func_name=function_name,
                 runtime=Runtime.python3_9,
                 envvars={
                     "LARGE_VAR": large_envvar,
@@ -80,6 +82,11 @@ class TestLambdaFunction:
             )
 
         snapshot.match("create_fn_result", ex.value.response)
+        with pytest.raises(ClientError) as ex:
+            lambda_client.get_function(FunctionName=function_name)
+
+        assert ex.match("ResourceNotFoundException")
+
 
     # TODO: maybe need to wait for each update to be active?
     @pytest.mark.aws_validated
