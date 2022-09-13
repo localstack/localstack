@@ -13,8 +13,7 @@ REDHAT_PLPYTHON_VERSION_MAPPING = {"11": "11.17", "12": "12.12", "13": "13.8"}
 
 class PostgresqlPackageInstaller(OSPackageInstaller):
     def __init__(self, version: str):
-        super().__init__("postgresql")
-        self.version = version
+        super().__init__("postgresql", version)
 
         # Debian
         self._debian_install_dir = os.path.join("/usr/lib/postgresql", self.version)

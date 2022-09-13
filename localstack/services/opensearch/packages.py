@@ -46,8 +46,7 @@ class OpensearchPackage(Package):
 
 class OpensearchPackageInstaller(PackageInstaller):
     def __init__(self, version: str):
-        super().__init__("opensearch")
-        self.version = version
+        super().__init__("opensearch", version)
 
     def _install(self, target: InstallTarget):
         # TODO fix install directory (should be /var/lib/localstack/opensearch/1.1/...)
@@ -121,8 +120,7 @@ class OpensearchPackageInstaller(PackageInstaller):
 
 class ElasticsearchPackageInstaller(PackageInstaller):
     def __init__(self, version: str):
-        super().__init__("elasticsearch")
-        self.version = version
+        super().__init__("elasticsearch", version)
 
     def _install(self, target: InstallTarget):
         # locally import to avoid having a dependency on ASF when starting the CLI

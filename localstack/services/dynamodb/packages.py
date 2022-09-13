@@ -40,10 +40,7 @@ class DynamoDBLocalPackage(Package):
 
 class DynamoDBLocalPackageInstaller(PackageInstaller):
     def __init__(self):
-        super().__init__("dynamodb-local")
-
-    def _get_install_dir(self, target: InstallTarget):
-        return os.path.join(target.value, "dynamodb", "latest")
+        super().__init__("dynamodb-local", "latest")
 
     def _build_executables_path(self, install_dir: str):
         return os.path.join(install_dir, "DynamoDBLocal.jar")
