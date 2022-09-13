@@ -82,6 +82,13 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         response: CreateBucketOutput = call_moto(context)
         return response
 
+    def delete_bucket(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        call_moto(context)
+        store = self.get_store()
+        store.bucket_lifecycle_configuration.pop(bucket, None)
+
     @handler("ListObjects", expand=False)
     def list_objects(
         self,

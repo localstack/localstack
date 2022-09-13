@@ -707,7 +707,9 @@ class TestS3:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(condition=is_asf_provider, paths=["$..Error.BucketName"])
     def test_bucket_availability(self, s3_client, snapshot):
-        bucket_name = "test-bucket-lifecycle"
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        # make sure to have a non created bucket, got some AccessDenied against AWS
+        bucket_name = f"test-bucket-lifecycle-{short_uid()}-{short_uid()}"
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_lifecycle(Bucket=bucket_name)
         snapshot.match("bucket-lifecycle", e.value.response)

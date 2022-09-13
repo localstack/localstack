@@ -902,26 +902,28 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_bucket_availability": {
-    "recorded-date": "13-09-2022, 19:10:56",
+    "recorded-date": "13-09-2022, 19:33:43",
     "recorded-content": {
       "bucket-lifecycle": {
         "Error": {
-          "Code": "AccessDenied",
-          "Message": "Access Denied"
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 403
+          "HTTPStatusCode": 404
         }
       },
       "bucket-replication": {
         "Error": {
-          "Code": "AccessDenied",
-          "Message": "Access Denied"
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 403
+          "HTTPStatusCode": 404
         }
       }
     }
