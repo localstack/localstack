@@ -160,6 +160,49 @@ pytestmark = pytest.mark.skip_snapshot_verify(
 )
 
 
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..CodeSha256",
+            "$..EphemeralStorage",
+            "$..LastUpdateStatus",
+            "$..MemorySize",
+            "$..ResponseMetadata",
+            "$..State",
+            "$..StateReason",
+            "$..StateReasonCode",
+            "$..VpcConfig",
+        ]
+    )
+    def test_lambda_envvars_near_limit_succeeds(
+        self, lambda_client, create_lambda_function, snapshot
+    ):
+        """Lambda functions with environment variables larger than 4 KiB should fail to create."""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
+        # set up environment mapping with a total size of 4 KB
+        strlen = lambda s: len(s.encode("utf8"))
+        key = "LARGE_VAR"
+        key_bytes = strlen(key)
+        # the environment variable size is exactly 4KB, so should succeed
+        target_size = 4 * KB - 7
+        large_envvar_bytes = target_size - key_bytes
+        large_envvar = "x" * large_envvar_bytes
+
+        function_name = "large-envvar-lambda"
+        res = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON39,
+            envvars={
+                "LARGE_VAR": large_envvar,
+            },
+        )
+
+        snapshot.match("successful_create_fn_result", res)
+        lambda_client.get_function(FunctionName=function_name)
+
+
 class TestLambdaBaseFeatures:
     @pytest.mark.skip_snapshot_verify(paths=["$..LogResult"])
     @pytest.mark.aws_validated

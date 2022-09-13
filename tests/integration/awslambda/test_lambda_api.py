@@ -53,6 +53,7 @@ def string_length_bytes(s: str) -> int:
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 class TestLambdaFunction:
+    @pytest.mark.aws_validated
     def test_large_environment_variables_fails(
         self, lambda_client, create_lambda_function, snapshot
     ):
