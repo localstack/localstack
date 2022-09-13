@@ -6,7 +6,7 @@ from datetime import datetime
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
-MAX_FUNCTION_ENVAR_SIZE_BYTES = 4 * 1024
+MAX_FUNCTION_ENVVAR_SIZE_BYTES = 4 * 1024
 
 
 class InvalidEnvvar(ValueError):
@@ -354,7 +354,7 @@ class LambdaFunction(Component):
     @envvars.setter
     def envvars(self, new_envvars):
         for key, value in new_envvars.items():
-            if len(value) > MAX_FUNCTION_ENVAR_SIZE_BYTES:
+            if len(value) > MAX_FUNCTION_ENVVAR_SIZE_BYTES:
                 raise InvalidEnvvar(key, value)
 
         self._envvars = new_envvars
