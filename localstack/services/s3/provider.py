@@ -225,7 +225,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store = self.get_store()
         bucket_lifecycle = store.bucket_lifecycle_configuration.get(bucket)
         if not bucket_lifecycle:
-            raise NoSuchLifecycleConfiguration("The lifecycle configuration does not exist")
+            ex = NoSuchLifecycleConfiguration("The lifecycle configuration does not exist")
+            ex.BucketName = bucket
+            raise ex
 
         return GetBucketLifecycleConfigurationOutput(Rules=bucket_lifecycle["Rules"])
 
@@ -266,9 +268,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         get_bucket_from_moto(moto_backend, bucket=bucket)
 
         store = self.get_store()
-        bucket_lifecycle = store.bucket_lifecycle_configuration.pop(bucket, None)
-        if not bucket_lifecycle:
-            raise NoSuchLifecycleConfiguration("The lifecycle configuration does not exist")
+        store.bucket_lifecycle_configuration.pop(bucket, None)
 
 
 def validate_bucket_name(bucket: BucketName):

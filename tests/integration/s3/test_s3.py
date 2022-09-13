@@ -828,6 +828,10 @@ class TestS3:
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
         snapshot.match("get-bucket-lifecycle-exc-1", e.value.response)
+
+        resp = s3_client.delete_bucket_lifecycle(Bucket=s3_bucket)
+        snapshot.match("delete-bucket-lifecycle-no-bucket", resp)
+
         lfc = {
             "Rules": [
                 {

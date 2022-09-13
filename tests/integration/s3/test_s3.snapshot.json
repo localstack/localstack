@@ -756,7 +756,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_delete_bucket_lifecycle_configuration": {
-    "recorded-date": "08-09-2022, 20:59:00",
+    "recorded-date": "13-09-2022, 18:36:20",
     "recorded-content": {
       "get-bucket-lifecycle-exc-1": {
         "Error": {
@@ -767,6 +767,12 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      },
+      "delete-bucket-lifecycle-no-bucket": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
         }
       },
       "get-bucket-lifecycle-conf": {
