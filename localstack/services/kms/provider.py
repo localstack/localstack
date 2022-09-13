@@ -74,6 +74,7 @@ from localstack.aws.api.kms import (
     TagResourceRequest,
     UnsupportedOperationException,
     UntagResourceRequest,
+    UpdateAliasRequest,
     UpdateKeyDescriptionRequest,
     VerifyRequest,
     VerifyResponse,
@@ -90,6 +91,7 @@ from localstack.services.kms.models import (
     ValidationException,
     deserialize_ciphertext_blob,
     kms_stores,
+    validate_alias_name,
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.aws_stack import kms_alias_arn
@@ -669,6 +671,19 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             # AWS itself uses AliasArn instead of AliasName in this exception.
             raise NotFoundException(f"Alias {alias_arn} is not found")
         store.aliases.pop(alias_name, None)
+
+    @handler("UpdateAlias", expand=False)
+    def update_alias(self, context: RequestContext, request: UpdateAliasRequest) -> None:
+        alias_name = request["AliasName"]
+        # This API, per AWS docs, accepts only names, not ARNs.
+        validate_alias_name(alias_name)
+        store = self._get_store(context)
+        alias = store.get_alias(alias_name, context.account_id, context.region)
+        key_id = request["TargetKeyId"]
+        # Don't care about the key, just want to validate it is there.
+        store.get_key(key_id)
+        alias.metadata["TargetKeyId"] = key_id
+        alias.update_date_of_last_update()
 
     @handler("ListAliases")
     def list_aliases(

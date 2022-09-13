@@ -467,9 +467,12 @@ class KmsAlias:
         self.metadata = {}
         self.metadata["AliasName"] = create_alias_request.get("AliasName")
         self.metadata["TargetKeyId"] = create_alias_request.get("TargetKeyId")
-        self.metadata["CreationDate"] = time.time()
-        self.metadata["LastUpdateDate"] = self.metadata["CreationDate"]
+        self.update_date_of_last_update()
+        self.metadata["CreationDate"] = self.metadata["LastUpdateDate"]
         self.metadata["AliasArn"] = kms_alias_arn(self.metadata["AliasName"], account_id, region)
+
+    def update_date_of_last_update(self):
+        self.metadata["LastUpdateDate"] = time.time()
 
 
 @dataclass
@@ -478,6 +481,14 @@ class KeyImportState:
     import_token: str
     wrapping_algo: str
     key: KmsKey
+
+
+def validate_alias_name(alias_name: str) -> None:
+    if not alias_name.startswith("alias/"):
+        raise ValidationException(
+            'Alias must start with the prefix "alias/". Please see '
+            "https://docs.aws.amazon.com/kms/latest/developerguide/kms-alias.html"
+        )
 
 
 class KmsStore(BaseStore):
@@ -506,6 +517,25 @@ class KmsStore(BaseStore):
         if key_id not in self.keys:
             raise NotFoundException(f"Invalid keyID '{key_id}'")
         return self.keys[key_id]
+
+    # TODO account_id and region params here are somewhat redundant, the store is supposed to know them. But at the
+    #  moment there is no way to get them from the store itself. Should get rid of these params later.
+    def get_alias(self, alias_name_or_arn: str, account_id: str, region: str) -> KmsAlias:
+        if not alias_name_or_arn.startswith("arn:"):
+            alias_name = alias_name_or_arn
+        else:
+            if ":alias/" not in alias_name_or_arn:
+                raise ValidationException(f"{alias_name_or_arn} is not a valid alias ARN")
+            alias_name = "alias/" + alias_name_or_arn.split(":alias/")[1]
+
+        validate_alias_name(alias_name)
+
+        if alias_name not in self.aliases:
+            alias_arn = kms_alias_arn(alias_name, account_id, region)
+            # AWS itself uses AliasArn instead of AliasName in this exception.
+            raise NotFoundException(f"Alias {alias_arn} is not found.")
+
+        return self.aliases.get(alias_name)
 
     # In KMS, keys can be identified by
     # - key ID

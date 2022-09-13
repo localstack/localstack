@@ -26,7 +26,7 @@ def _get_all_key_ids(kms_client):
     return ids
 
 
-def _is_alias_there(kms_client, alias_name, key_id=None):
+def _get_alias(kms_client, alias_name, key_id=None):
     next_token = None
     while True:
         kwargs = {"nextToken": next_token} if next_token else {}
@@ -35,11 +35,11 @@ def _is_alias_there(kms_client, alias_name, key_id=None):
         response = kms_client.list_aliases(**kwargs)
         for alias in response["Aliases"]:
             if alias["AliasName"] == alias_name:
-                return True
+                return alias
         if "nextToken" not in response:
             break
         next_token = response["nextToken"]
-    return False
+    return None
 
 
 class TestKMS:
@@ -297,8 +297,8 @@ class TestKMS:
         alias_name = f"alias/{short_uid()}"
         kms_create_alias(AliasName=alias_name, TargetKeyId=aliased_key_id)
 
-        assert _is_alias_there(kms_client, alias_name, aliased_key_id) is True
-        assert _is_alias_there(kms_client, alias_name, comparison_key_id) is False
+        assert _get_alias(kms_client, alias_name, aliased_key_id) is not None
+        assert _get_alias(kms_client, alias_name, comparison_key_id) is None
 
     @pytest.mark.aws_validated
     def test_all_types_of_key_id_can_be_used_for_encryption(
@@ -379,11 +379,26 @@ class TestKMS:
     @pytest.mark.aws_validated
     def test_create_list_delete_alias(self, kms_client, kms_create_alias):
         alias_name = f"alias/{short_uid()}"
-        assert _is_alias_there(kms_client, alias_name) is False
+        assert _get_alias(kms_client, alias_name) is None
         kms_create_alias(AliasName=alias_name)
-        assert _is_alias_there(kms_client, alias_name) is True
+        assert _get_alias(kms_client, alias_name) is not None
         kms_client.delete_alias(AliasName=alias_name)
-        assert _is_alias_there(kms_client, alias_name) is False
+        assert _get_alias(kms_client, alias_name) is None
+
+    @pytest.mark.aws_validated
+    def test_update_alias(self, kms_client, kms_create_key, kms_create_alias):
+        alias_name = f"alias/{short_uid()}"
+        old_key_id = kms_create_key()["KeyId"]
+        kms_create_alias(AliasName=alias_name, TargetKeyId=old_key_id)
+        alias = _get_alias(kms_client, alias_name, old_key_id)
+        assert alias is not None
+        assert alias["TargetKeyId"] == old_key_id
+
+        new_key_id = kms_create_key()["KeyId"]
+        kms_client.update_alias(AliasName=alias_name, TargetKeyId=new_key_id)
+        alias = _get_alias(kms_client, alias_name, new_key_id)
+        assert alias is not None
+        assert alias["TargetKeyId"] == new_key_id
 
     # Fails in AWS, as the principal is invalid there.
     # Maybe would work if get_aws_account_id() starts returning an actual AWS account ID.
