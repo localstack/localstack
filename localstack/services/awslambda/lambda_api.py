@@ -54,7 +54,7 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
 from localstack.utils.archives import unzip
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_models import CodeSigningConfig, InvalidEnvvar, LambdaFunction
+from localstack.utils.aws.aws_models import CodeSigningConfig, InvalidEnvVars, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
 from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.common import get_unzipped_size, is_zip_file
@@ -1211,7 +1211,7 @@ def create_function():
         lambda_function.runtime = data.get("Runtime")
         try:
             lambda_function.envvars = data.get("Environment", {}).get("Variables", {})
-        except InvalidEnvvar as e:
+        except InvalidEnvVars as e:
             return error_response(
                 "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. "
                 f"String measured: {e}",

@@ -159,22 +159,6 @@ pytestmark = pytest.mark.skip_snapshot_verify(
     ],
 )
 
-    def test_large_environment_variables(self, lambda_client, create_lambda_function, snapshot):
-        """Lambda functions with environment variables larger than 4 KiB should fail to create."""
-        snapshot.add_transformer(snapshot.transform.lambda_api())
-        large_envvar = "x" * 5 * 1024
-        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as ex:
-            create_lambda_function(
-                handler_file=TEST_LAMBDA_PYTHON_ECHO,
-                func_name="my-function",
-                runtime=LAMBDA_RUNTIME_PYTHON39,
-                envvars={
-                    "LARGE_VAR": large_envvar,
-                },
-            )
-
-        snapshot.match("create_fn_result", ex.value.response)
-
 
 class TestLambdaBaseFeatures:
     @pytest.mark.skip_snapshot_verify(paths=["$..LogResult"])

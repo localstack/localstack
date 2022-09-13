@@ -9,13 +9,12 @@ LOG = logging.getLogger(__name__)
 MAX_FUNCTION_ENVVAR_SIZE_BYTES = 4 * 1024
 
 
-class InvalidEnvvar(ValueError):
-    def __init__(self, key, value):
-        self.key = key
-        self.value = value
+class InvalidEnvVars(ValueError):
+    def __init__(self, envvars_string):
+        self.envvars_string = envvars_string
 
     def __str__(self) -> str:
-        return json.dumps({self.key: self.value}, separators=(",", ":"))
+        return self.envvars_string
 
 
 class Component:
@@ -353,9 +352,9 @@ class LambdaFunction(Component):
 
     @envvars.setter
     def envvars(self, new_envvars):
-        for key, value in new_envvars.items():
-            if len(value) > MAX_FUNCTION_ENVVAR_SIZE_BYTES:
-                raise InvalidEnvvar(key, value)
+        encoded_envvars = json.dumps(new_envvars, separators=(",", ":"))
+        if len(encoded_envvars.encode("utf-8")) > MAX_FUNCTION_ENVVAR_SIZE_BYTES:
+            raise InvalidEnvVars(encoded_envvars)
 
         self._envvars = new_envvars
 

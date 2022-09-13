@@ -36,6 +36,8 @@ from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_PYTHON_VERSION,
 )
 
+KB = 1024
+
 
 @pytest.fixture(autouse=True)
 def fixture_snapshot(snapshot):
@@ -45,8 +47,39 @@ def fixture_snapshot(snapshot):
     )
 
 
+def string_length_bytes(s: str) -> int:
+    return len(s.encode("utf-8"))
+
+
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 class TestLambdaFunction:
+    def test_large_environment_variables_fails(
+        self, lambda_client, create_lambda_function, snapshot
+    ):
+        """Lambda functions with environment variables larger than 4 KiB should fail to create."""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
+        # set up environment mapping with a total size of 4 KB
+        key = "LARGE_VAR"
+        key_bytes = string_length_bytes(key)
+        #  need to reserve bytes for json encoding ({, }, 2x" and :). This is 7
+        #  bytes, so reserving 6 makes the environment variables one byte to
+        #  big.
+        target_size = 4 * KB - 6
+        large_envvar_bytes = target_size - key_bytes
+        large_envvar = "x" * large_envvar_bytes
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as ex:
+            create_lambda_function(
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                func_name="my-function",
+                runtime=Runtime.python3_9,
+                envvars={
+                    "LARGE_VAR": large_envvar,
+                },
+            )
+
+        snapshot.match("create_fn_result", ex.value.response)
 
     # TODO: maybe need to wait for each update to be active?
     @pytest.mark.aws_validated
