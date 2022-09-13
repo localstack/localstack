@@ -33,8 +33,6 @@ route53:
     - TestAccRoute53Record_longTXTrecord
     - TestAccRoute53Record_Allow_doNotOverwrite
     - TestAccRoute53Record_Allow_overwrite
-    - TestAccRoute53VPCAssociationAuthorization_basic
-    - TestAccRoute53VPCAssociationAuthorization_disappears
     - TestAccRoute53Zone_basic
     - TestAccRoute53Zone_disappears
     - TestAccRoute53Zone_multiple
@@ -53,7 +51,6 @@ route53:
     - TestAccRoute53ZoneAssociation_disappears
     - TestAccRoute53ZoneAssociation_Disappears_vpc
     - TestAccRoute53ZoneAssociation_Disappears_zone
-    - TestAccRoute53ZoneAssociation_crossAccount
     - TestAccRoute53ZoneAssociation_crossRegion
     - TestAccRoute53QueryLog_basic
     - TestAccRoute53QueryLog_disappears
@@ -73,11 +70,9 @@ route53resolver:
     - TestAccRoute53ResolverEndpointDataSource_filter
     - TestAccRoute53ResolverEndpoint_basicInbound
     - TestAccRoute53ResolverEndpoint_updateOutbound
-    - TestAccRoute53ResolverFirewallConfig_basic
     - TestAccRoute53ResolverFirewallConfig_disappears
     - TestAccRoute53ResolverFirewallDomainList_basic
     - TestAccRoute53ResolverFirewallDomainList_disappears
-    - TestAccRoute53ResolverFirewallDomainList_domains
     - TestAccRoute53ResolverFirewallDomainList_tags
     - TestAccRoute53ResolverFirewallRuleGroupAssociation_basic
     - TestAccRoute53ResolverFirewallRuleGroupAssociation_disappears
@@ -242,7 +237,6 @@ s3:
     - TestAccS3Bucket_disappears
     - TestAccS3Bucket_Duplicate_basic
     - TestAccS3Bucket_Duplicate_UsEast1
-    - TestAccS3Bucket_Duplicate_UsEast1AltAccount
     - TestAccS3Bucket_Tags_basic
     - TestAccS3Bucket_Tags_withNoSystemTags
     - TestAccS3Bucket_Tags_ignoreTags

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 export TF_ACC=1
 export AWS_ALTERNATE_ACCESS_KEY_ID=test
