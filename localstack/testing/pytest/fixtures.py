@@ -1214,6 +1214,46 @@ role_policy = """
 
 
 @pytest.fixture
+def create_lambda_function_aws(
+    lambda_client,
+):
+    lambda_arns = []
+
+    def _create_lambda_function(**kwargs):
+        def _create_function():
+            resp = lambda_client.create_function(**kwargs)
+            lambda_arns.append(resp["FunctionArn"])
+
+            def _is_not_pending():
+                try:
+                    result = (
+                        lambda_client.get_function(FunctionName=resp["FunctionName"])[
+                            "Configuration"
+                        ]["State"]
+                        != "Pending"
+                    )
+                    return result
+                except Exception as e:
+                    LOG.error(e)
+                    raise
+
+            wait_until(_is_not_pending)
+            return resp
+
+        # @AWS, takes about 10s until the role/policy is "active", until then it will fail
+        # localstack should normally not require the retries and will just continue here
+        return retry(_create_function, retries=3, sleep=4)
+
+    yield _create_lambda_function
+
+    for arn in lambda_arns:
+        try:
+            lambda_client.delete_function(FunctionName=arn)
+        except Exception:
+            LOG.debug(f"Unable to delete function {arn=} in cleanup")
+
+
+@pytest.fixture
 def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_lambda_ready):
     lambda_arns_and_clients = []
     role_names_policy_arns = []
@@ -1279,7 +1319,7 @@ def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_la
 
 @pytest.fixture
 def check_lambda_logs(logs_client):
-    def _check_logs(func_name: str, expected_lines: List[str] = None):
+    def _check_logs(func_name: str, expected_lines: List[str] = None) -> List[str]:
         if not expected_lines:
             expected_lines = []
         log_events = get_lambda_logs(func_name, logs_client=logs_client)
@@ -1290,6 +1330,7 @@ def check_lambda_logs(logs_client):
                 if any(found):
                     continue
             assert line in log_messages
+        return log_messages
 
     return _check_logs
 

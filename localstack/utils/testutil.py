@@ -171,8 +171,8 @@ def create_zip_file(
         save_file(full_zip_file, content)
         return full_zip_file
 
-    # create zip file
-    if is_debian():
+    # TODO: using a different packaging method here also produces wildly different .zip package sizes
+    if is_debian() and "PYTEST_CURRENT_TEST" not in os.environ:
         # todo: extend CLI with the new parameters
         create_zip_file_cli(source_path=file_path, base_dir=base_dir, zip_file=full_zip_file)
     else:

@@ -143,8 +143,10 @@ class SnapshotSession:
         self.observed_state[key] = self._order_dict(obj)
         # TODO: track them separately since the transformation is now done *just* before asserting
 
-        if not self.update and (not self.recorded_state or not self.recorded_state.get(key)):
-            raise Exception("Please run the test first with --snapshot-update")
+        if not self.update and (not self.recorded_state or self.recorded_state.get(key) is None):
+            raise Exception(
+                f"No state for {self.scope_key} recorded. Please (re-)generate the snapshot for this test."
+            )
 
         # TODO: we should return something meaningful here
         return True
@@ -175,17 +177,28 @@ class SnapshotSession:
 
         # TODO: separate these states
         a_all = self.recorded_state
+        if not self.observed_state:
+            # match was never called, so we must assume this isn't a "real" snapshot test
+            # e.g. test_sqs uses the snapshot fixture to configure it via another fixture on module scope
+            #   but might not use them in some individual tests
+            return []
+
         if not a_all and not self.update:
-            SNAPSHOT_LOGGER.warning(
-                "There is no recorded state yet. Snapshot verification skipped."
+            raise Exception(
+                f"No state for {self.scope_key} recorded. Please (re-)generate the snapshot for this test."
             )
-            return results
 
         self._remove_skip_verification_paths(a_all)
         self.observed_state = b_all = self._transform(self.observed_state)
 
         for key in self.called_keys:
-            a = a_all[key]
+            a = a_all.get(
+                key
+            )  # if this is None, a new key was added since last updating => usage error
+            if a is None:
+                raise Exception(
+                    f"State for {key=} missing in {self.scope_key}. Please (re-)generate the snapshot for this test."
+                )
             b = b_all[key]
             result = SnapshotMatchResult(a, b, key=key)
             results.append(result)
