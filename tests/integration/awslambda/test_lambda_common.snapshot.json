@@ -1,0 +1,1282 @@
+{
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs12.x]": {
+    "recorded-date": "13-09-2022, 20:27:30",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "A+DVT1F+/QSicHvPDODGKaXur9fOvq1i/UCBupJSSGs=",
+        "CodeSize": 924,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "nodejs12.x",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "remaining_time_in_millis": 2999
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRPBFTMKEK",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_nodejs12.x",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "qGkzfmggCt9IRXT6WqhBHmd+BVIH4Awmf+EaXRE8",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJHMEUCIH8nGN9+6JVSMJFqrOYEJxB5rlRn5gr8Zc7UcELS49cYAiEAlFIR0kP2QMHuS68OLtMqzyvbVspFgd9qFYGdfhk583sqjAMIrP//////////ARAAGgw4Njk2MzYzMzA5MTQiDAth44bxMSrMCQn4DirgAo7Qvjo9DdPqq0svLBC/Wx3FAgaM/u1TzHzesJGtkw+s1ADzELSPGBOr3oG9yUS8Ndlkb0iVL8ZKMlRwvE0Zm/q+umgA4iHp1IG5v8yRAqcm1IkODpN3nLsNWCEdTUTWkMlIpkGGxo23hNN8k+nzKsECeq+LLUbjheN3kVHMzyLio/H3DjvRSBFxQi2inVfOQGrAtcAkKhiTtYbD0HJtIcYSYRGfCgrKMwl9NTafc1aJEzE35B+DFEXEAXxPnBYYlSBOc7tTHruH9YcnjHsGBXlXhb9smMjmOckrLE7UmfSbp9mXDbkJ48gfOF5WleJ0SBO96gVIvujGqb3D8Jg9Rhm7nfx0om6C4S2I+ey8k5WqNcY7Lqwz2HXEymOH9XUsc28B5JtlcL59h8+uryZ+8Hvi7UVwO8jECrN3gunbt7hj+jvVx3C/phL8+/xdvbJLGpyt0ZT4qpGRA8BHXfhNoicwkZeDmQY6ngHTXJCS1tNfYSeQX021yntQGBKqYmJ6PdHWoFoxfrT5UKkBkeoQWMGOfpaHh8h8PLGXQy5C+10c787PI7opZjijJJ4fNLjwM87EknwH1bMCgf8fLfd+pwLDpHXouYBnfGOqcxPa4s+XADZsFRlvsONhCm29d/IeCyHqPJKQ4e2Z5DaGYWnnQtv2Xg9Mx0vptgba8hvCwYmC8zz2DMXksQ==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "NODE_EXTRA_CA_CERTS": "/etc/pki/tls/certs/ca-bundle.crt",
+          "NODE_PATH": "/opt/nodejs/node12/node_modules:/opt/nodejs/node_modules:/var/runtime/node_modules:/var/runtime:/var/task",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "PWD": "/var/task",
+          "SHLVL": "0",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "index.handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cb91-6080c1cf039b30e2093aa945;Parent=66e592a97681f4ee;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs14.x]": {
+    "recorded-date": "13-09-2022, 20:27:32",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "A+DVT1F+/QSicHvPDODGKaXur9fOvq1i/UCBupJSSGs=",
+        "CodeSize": 924,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "nodejs14.x",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "remaining_time_in_millis": 2999
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRIU3CFAF4",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_nodejs14.x",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "LpGZweUQSde4f6dBZXwdMjRSRA6zqkRZFySZ4BwW",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJIMEYCIQDGPdtsJsc23qPkcu2Hr5aB47Vyj5/8B4OAz0kB/vlFPgIhAI6swDAZ130PXN+5/QImbQCu2SaJQCT58k4HLZYWqWT4KowDCKz//////////wEQABoMODY5NjM2MzMwOTE0IgyzNdN5hVPMnjFYP3kq4AL3dYlfS3erP6T78YZytH7FUa8COcwsxaObXJSZLu9uZzalDoluH2d08fiTi1qQF4kr5QdVeEgPher4RyrdyhWIbidiilZEe6QumOfn7OADjYWu+d22fjgg9zfvOgPgFVrtdhGAHICwGEIuF4yD8/ZwN3N5DRu9lydoCZLmajAobkDrx5ZQOCDt+0Se0u1be+io3eGS4v0xeMlMpssotjq7vp0U/b2mTL5AD1J4u3AzmbVo5gSRWihQ1DBKh+P8dzdfw3m+SBksIwN69ddQMQBlYGoKjNamHNqfxQY08W2Hd/FDorp3sLKa3o/dTq6bW9OK846qxoSKIbjfTcdxroHAghTsyMT7y2130Yv2zMAH7YaPRFRsuJJVIc8IV5kYNw4OW3b/9axYYFa0TN1e/RWVF7gWFWu4qXlQcY47ZAOYDBgmc7GDZlC1KX3Q9RcMmWVNPFXYQsjuKQQlIRc4kuZXMJOXg5kGOp0Bih5MpsAxCW4YNvfYVR8JZolrFto7L53wdliAoAXWGDiXA4aJlQgVnnAQweDZWM5rcpxVMJxz5oP5P4veHfnymsc85KmdK+Gf2WMuh86y+DqXchFbu8v+VJg85+7GjtEfjdcH+14Z5BRr3377oBepBMQdDOoNiTnI6+DTW5wh63EINnqAUtUU3OwqLlbkYgu4jwLCTAHzNl7R1lCCWg==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "NODE_EXTRA_CA_CERTS": "/etc/pki/tls/certs/ca-bundle.crt",
+          "NODE_PATH": "/opt/nodejs/node14/node_modules:/opt/nodejs/node_modules:/var/runtime/node_modules:/var/runtime:/var/task",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "PWD": "/var/task",
+          "SHLVL": "0",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "index.handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cb93-0bff4e460392e6190bc141fc;Parent=5b41575f79c03937;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs16.x]": {
+    "recorded-date": "13-09-2022, 20:27:34",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "A+DVT1F+/QSicHvPDODGKaXur9fOvq1i/UCBupJSSGs=",
+        "CodeSize": 924,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "nodejs16.x",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "remaining_time_in_millis": 2999
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRCHEETE5V",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_nodejs16.x",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "csfOiSbnjjer2dVMHShBTmvpm6YBeWW81WDA6FCv",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJIMEYCIQCcZkvlK7c276V7VxlHDDvUuigHWU5WoLims5pYuw9t5AIhAPo8yZNjAwb/ByXhq+R1HMgeMO/l8XtaJSAOwzK1uESRKowDCKz//////////wEQABoMODY5NjM2MzMwOTE0IgyVrgARz8pmxDL9znAq4ALXj2F9qwEJmGCuG5QUELmMRWBvFIpw6YnZRwFQ8AOorSa7JicHCxCXwQWjEiTXLf1pzVySPsu7n1ZfzElJplURG1otudNg416LN6cgNG93n0aqcKkndnwF+IWH4U2y+OF/RGMUXWG4EprKSUxFr+iwRZpladOcBI3pBG2yiZjsMIAuDk7w+GTIN4CYGYBONvw1WGB0OB3yY2z3+zy0ZjNklfAsf0sFGurE+IFZNN/CXlhkKtZDX5wYruJaBihI2ijYTKt4It8KGSi1N5CmWImGQlYQPeLxqgP4WAMCuqBX3fcfic8A+aJ4zWNsy7SAgPvFWuTe+LKmGZAuLsmdRmuC1bQLwY3zTavMCV9SXaGc80260iIlBy4o6IBkfF2oEso1wbGEUIgz6i08xpfxs2fMu+eqf+Jz5AzQ7rxpREizE0+aNz6nSexZQTwqH/lgsRZSao5ofcSLUKhGJpZHsZcIMJWXg5kGOp0BaNAFgAOdf8OVQ4+Xvu94KD0RJ8hxJOFG5N2x68aAmvP9qoBYEXTdiq/z7ipj+3A5iIbRMlHC+/2SpnShxHfBow2W4xYQCm4oI+nlEgau1kdUZwRWK4iTwzC5vbJNQfNRxYB1yatUromTXmYKKF/m4UPi7bZqqQp20vm45ftIVCEZucboi50I27vZZPw9GofqQo6UtWWhj8yeCUvIww==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "NODE_EXTRA_CA_CERTS": "/etc/pki/tls/certs/ca-bundle.crt",
+          "NODE_PATH": "/opt/nodejs/node16/node_modules:/opt/nodejs/node_modules:/var/runtime/node_modules:/var/runtime:/var/task",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "PWD": "/var/task",
+          "SHLVL": "0",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "index.handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cb95-16c2334242edd43b584a0495;Parent=7f64bf1c727c05ae;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.7]": {
+    "recorded-date": "13-09-2022, 20:27:24",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "n8qj8JkbQ4/9XnBW5YnpYCwFBwCtyz+lb8YSRh3UmUE=",
+        "CodeSize": 793,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.7",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": 2999
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRH5KEUCX3",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_python3.7",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "rR+EyZtG+fBpJcuROGxbZHNOu5ItpKqvGfMdR2qm",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJHMEUCIQD8lNiem2RZeey/NygXI1WLmuVpLWHE6iglG+I/rW+jwAIgauQQpstrtlZwXZPzDXMUmfeDWdXZ/i0g1CB46TbsnyMqjAMIrP//////////ARAAGgw4Njk2MzYzMzA5MTQiDO/tWWT3ESQFbnsz+yrgAiD7Bi6fIbJfn6UJvdX4/oCP7MnVx283lFbUl8B7pgFwbE/eHtgMaXbE425AJVE1i8FunzO/buYDjUkh/BPDuCj7U+vAcfr7lq5KdWYeKi6tedVxQDc1pPWoPyaXBlz3BfIijXSi+axsytYAkgoC7CskF8jxxlFI539urRev3JoIHiLROwFMnDwHsKpuxoPd9v+9AeQd9J/+g5AMUZ7KfWj05ehwAnonO8kDwnyw0Zi2dTvnHZ9nBkN1qKNv6oWI62Ywe5Y4V5aUAgnJtxCswYMzJCzvujskfGj/VEDfcISnnEbpYZxs0+SW5Oek0bfD8FvLGC5aGk+YW+Vw/gLMlLxbVQWVF2y+cUzi6ZZdrytKDgMRnXmWTvq1FOYuv5qq44AMLj455OrPwwF4VWBBVQ/uW2rvxh4Q+a8vfQ7FyXUbTst1TwRqABxb8nZiFxjFEaqqiC2fIu+2YDxDNWqvo9owjJeDmQY6ngFbYkGW4c5QSmNscfJfLGelvJI7xrSDbmEDGETT70h6n8DCSvwRxD/1Ur8eq3xyZ6HFptenPS1Wg+JpvGqYVffW37t4xyqA8GJUlZi5fVjbwWs6LVQY1EOjcemiMnN/JJmBvqpov9KEx9YIA3+0RkADhqxOWmfSRqycYTyWGR4eSo49sAhqyf4jNAsToXbL7mHSouOC32poilgdBzc4HA==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "handler.handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cb8c-1f0c861a29ef4b6117e5ed0e;Parent=5a30b4986d7fb025;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.8]": {
+    "recorded-date": "13-09-2022, 20:27:26",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "n8qj8JkbQ4/9XnBW5YnpYCwFBwCtyz+lb8YSRh3UmUE=",
+        "CodeSize": 793,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.8",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": 3000
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRPAMBBR7E",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_python3.8",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "/d4CWzN95AxjeXBd+oTebvTwsGUUbUFYXTb8UmCg",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJGMEQCIDJb1e1Al0M1aV6i1bal5twnUWZSiapOaQtwQL3uMyS+AiA8N2/JH7iqLM7EI9xxHo8zd3w2pFILA/5R8Qsx5bHzPyqMAwis//////////8BEAAaDDg2OTYzNjMzMDkxNCIMcPlzZpuMEDy3eYWBKuAC/bFd85E42lS8YtA0DbS9190L+NTy6S0ToJr17FOpdOf3XRG5BZlGYRJFtqiYh8Fwx/L29C60Td7Y42Y8SoxTN1jc8rllJzk1IlLxBuOlxRKUVKEByBkzIFnuT6iDdITeHxHJAhegmft6nP2UMLmw3nbQTnuECNVbSqB9SPAr2qEhDgwHHlGnrlgpSIt0D9qSp9+2KNmOLW9B8kFloxSvK/noAktXjqF12Vt61Mg6ILIeHuRIJNKqIjpfQ1k/nilpeUhi+sbTFcDllEk5s3akIanweiBjLphFXHkfriFZgbS9P9NNi1FftyT9zNFU1t9I67ZCY4CMfdA6N6vNYMXDoh5D8Hd/gg18DKHREaOUBBHCGT9allNPSbu60YLrJw7TtZuS9wJnh4EbhkLOqbjXtbCcgdnuuvX5+0C9r78/pnxsbG13agycMHHw3m9OHKhG8J3rsu9zb4SfnjV9QfmYJjCOl4OZBjqfAWyLmnUgb1k+IgUO8l3VgRZztoTdy3AGy/nP8kM8qrfTgYDHkJVxhgyAbc7/15qEIHg6Z5AArK5l54OEyokaQctv2Ca+qpPMkMvYdbtzEmmCeKfPZAA4Ev6CkFf2a5PxN7u8WKmiJ6/QfgyGFbc7nOfQgoVg5ZhPW33cF1bssMEQ98xH9d2W9bLUHXI2bwsZt+0uX071kSYcTER+UNO9Yg==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "PWD": "/var/task",
+          "PYTHONPATH": "/var/runtime",
+          "SHLVL": "0",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "handler.handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cb8e-70ac5ec70aed0f551cedfaf3;Parent=427805044468baa9;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.9]": {
+    "recorded-date": "13-09-2022, 20:27:28",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "n8qj8JkbQ4/9XnBW5YnpYCwFBwCtyz+lb8YSRh3UmUE=",
+        "CodeSize": 793,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": 3000
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRGJ3E5T7T",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_python3.9",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "2FYGuPGTj/IQ08iGqYRompvI+2rAyDcyhTOoAFsv",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJGMEQCICR70Zj7H97xgG+WftyUIpUYtXxN7wkHATs9GAAIlVNGAiB1gJwKOh/sZKJqEFoYjAkNNCKuivw/J2kOhmL4RD3WKSqMAwis//////////8BEAAaDDg2OTYzNjMzMDkxNCIMhG1XT/QCCoU+OhaEKuAC9piC4v0dYqLIBcn6b4E+e8j2cnCPhqqQUXQpYdz0z94KRELACZqkps7SYCdlvZ6DKetyPZc7+aySk0aWtHcCD0gumwN2Ax2cEzwPznws7q7FxvjgPvcAqthptJbKSm0u6rjEzWwWBmT3zz6+A6k/H+dsc3BLTb8dlJZyxJrld9MeuqdCu+sefs85J6gD7LFfZZEd8bIbj13eas7xGaYKIvONMMCPj3Y7wI4adcEtkF/wCD0RapVYkUhIMa6gZJkj80rxti/j958zZxSPOhZTM8qIxr6wSchIY2aV60H/Be8IFeGYhHRwmIRDaRbvAVdzPByE0LHv+Vy8L90whJGnHhDSdOMsz0M3GIwxWS+jE78bjSH8IGjbLA68FqbvD5xOyb518d++34FHVcjtn3G4GIdJkocrzHhCK5YkTqvnstmzNQhssUgnNQR77qnFUdg/bP54W9o8mY3uck5BJDG3yzCQl4OZBjqfAWabCWJVqGnr4q90siOz8L21MKflcNR7nIfmxb1hAu7u6bJIq95KF89HOTNOnUsDue1V2aC75UR3Ute4s3D11IOoYczJrF/N7mHq/WTg+m1NBpY9QzWRKjwEH7mTNcByJiOMCPL9vR5a4mrPvKBTCQHv1fICk91TgtZO6q/Qeapn27fwilMFlX3BgmPp2g/ronLx1P5KplLwloZuTbYdzg==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "PWD": "/var/task",
+          "PYTHONPATH": "/var/runtime",
+          "SHLVL": "0",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "handler.handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cb8f-108fe4d7130b74350841967b;Parent=203146ed71d13a91;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[ruby2.7]": {
+    "recorded-date": "13-09-2022, 20:27:36",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "fC4JbicwFCbijwcqpkqgN1R4flCtaBYhuKqGbaFAnV0=",
+        "CodeSize": 719,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "function.handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "ruby2.7",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": 3000
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRDHKX5IJZ",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_ruby2.7",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "2PwtIR8FN8f6LXRyoNzBweBliVoYFfk3SF9wXj1G",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJGMEQCICmIUIfvCiJP1ctw28SsWtI9YAEbGEstO9M9SDuDUc0LAiAcxcsGwsFEcmm7ZbD9gFFXqrgXHle8GGa+dS99RZGNPSqMAwis//////////8BEAAaDDg2OTYzNjMzMDkxNCIMMoU+H6/tG0vRe7zWKuACneLCqldgclZIf28Hd3Jmuv1nt09odLvMrG1KNteuew11uYo1AGUWn+SC467B4lqOueMtz3ADlG5jKMaa2nJ2lP1sA5PMpEfJjkFnRAlrKPegY5Z8nhR1zk9vJfWzbEfwS0aQ+zyZS3sJHAPNU3wfyCpD6Kf3GgDnSTiqdtn2acFkbDDw3d+7pJc7mwMeeP4En0NG3xEQz6Nz1GozPAdYPYb1cbkF2DUyP39PjvGMVgBhYj4oIMyrAwVcDK+2/bA3M+ke20n7Zib0FzCI1HgY5C3oFISkDOqKytnMoLtrOsdtiFdArm8pxxQYqt/6+F1TkcG0fVbKLoQOsbJXtgO+K6DwBRPD4a1zH2HNKSnBpZChZoDm7lXk9GslCwjdc9svbZEGlWExBRs27bnWB0oM+TPnGFKs7IYD9dy87+V7vrQqwKJ6spUlvxvngS+LkAKAYPMgE5GQQMCScMUEyYUGnDCXl4OZBjqfAVhqp0g6TiEXSEToE5PQQdTPPECgiQHelZjg/zvpJyeE1UFS5WPrPeasiE0+DnUuoBopjKAQG9jBoZHsCB4RIdQ2xYdMYsi9FD4nHMagtHe8dSAuHA/T+6L5AwpiIqdmWgf4O4V7wqYPqkhav1rCmcO8Ozn4l9bLQlD8jYFYqrGNlJVUo96qzH78Vt8Mrz8a26Gkix67gdtVmTovUWdxUw==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "GEM_HOME": "/var/runtime",
+          "GEM_PATH": "/var/task/vendor/bundle/ruby/2.7.0:/opt/ruby/gems/2.7.0",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "PWD": "/var/task",
+          "RUBYLIB": "/var/task:/var/runtime/lib:/opt/ruby/lib",
+          "SHLVL": "0",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "function.handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cb97-29facdcd5fab89551867fe70;Parent=033d31df36f1e7ca;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java8]": {
+    "recorded-date": "13-09-2022, 20:27:43",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "E16ptXFvlElQTc6Svls+L0srsAer1yyqVAlM1m/LudM=",
+        "CodeSize": 13436678,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "echo.Handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "java8",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": "2941"
+        },
+        "environment": {
+          "AWS_ACCESS_KEY": "ASIA4U6S5KWREYOURDBP",
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWREYOURDBP",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_java8",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "465HcuwJ7dEFjvBm8mrCY1IUVrGwD9dS9Ju8JZWM",
+          "AWS_SECRET_KEY": "465HcuwJ7dEFjvBm8mrCY1IUVrGwD9dS9Ju8JZWM",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJGMEQCIAckijxvMKLX+WGuXCt4K41zEw9S3lPFAT/rIjznqZKWAiBIfonzyDfB1IW1tjhQFAjKMWXiUg2VMmktdJCPcyw/DCqMAwis//////////8BEAAaDDg2OTYzNjMzMDkxNCIM4iJrOH+gLSJkrX4iKuAC9KiEwdTQsjVKOJwlrvhUY5fjMBLFsluzgnGTgCISyYQGE9qnATjZty5EtRsa0Y5YBVaZN0RsG+IJ7m4pdAXmv0gn2J5bP/eRbdDLaNLa7eno0tbYJO9f0q+r5AOND8fO++qCArD+cUgQ+uFs7KUV70NubvFt8k4oGwiz2OTEdieqfju4KpFbSyJQda51WwkiG3peMjsW29nwmSY9YLQfz30QPEhRyiGKN0wyDj0DSTVU3YUyCue71nZYm/SrwiHwbvFI0HurM+/5nXVubs2RhR5joyO64nbg3HfyMt9Zyo0o7Vs/p37MDoEeTbK2XQjcs6XK2RTUAbEPiQLQ4QkuaVezoxmveg/Ep64wWxBfJinGGpqAmtli1WuvVAtiIFbbiq3jncbqB+UQ/wkiWk7AYnIPfqw5YCAWUerlwnc/D6K+Yl2isMe2tE5WkS73R16g66T8dxHZRsaDM2P6qqAmDjCdl4OZBjqfAekvDdmC1A1d8j0GjjQ1NK3G47iq1Jz8nFOk9rdV+Mee7VMIIkd9p9o8b8dXa/5aXxJ6NbS2BC9w2bGGNC8QhK2vq3HVYCsvxEhaUeqtV+YG0W4CFMsLUXXc6PwpQ4sMN3OcrffCdoySxROadnf6h/Ct4BhG5jw7sbzhqsgeb9w4adRSbMacVhy2qVDnEhg4gDpihQFle7KWbpMqTAaU/A==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "echo.Handler",
+          "_LAMBDA_TELEMETRY_LOG_FD": "3",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cb9d-62d25174127e1d5828a3ae88;Parent=6758e30f7fd0da0a;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java8.al2]": {
+    "recorded-date": "13-09-2022, 20:27:49",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "E16ptXFvlElQTc6Svls+L0srsAer1yyqVAlM1m/LudM=",
+        "CodeSize": 13436678,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "echo.Handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "java8.al2",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": "2984"
+        },
+        "environment": {
+          "AWS_ACCESS_KEY": "ASIA4U6S5KWRNNZ2E4GS",
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRNNZ2E4GS",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_java8.al2",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "Q4QYwsI6js3MxADKlRVVUtJ/ohoV1U1BmvZc7AA1",
+          "AWS_SECRET_KEY": "Q4QYwsI6js3MxADKlRVVUtJ/ohoV1U1BmvZc7AA1",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJIMEYCIQCDvoHx8HZTxwiY2eKauzm3ChRHH9zksIEMvve0SN2mdQIhAKyx/x6RLeNJ+7IkjZRs9asOuqD92hTvo4dUnoaQeLkDKowDCKz//////////wEQABoMODY5NjM2MzMwOTE0IgyFH4DvfpQdMq8j5Vkq4AJ+sPv5TX1L7n13KFI8jsw3WcSNpqES/XUz0OSxq6RotV8VgNeD2y9E0DzX4sglGa610PYpa35qVA8qUUZ5lTJ6GSOP4T3eFOfxKCqe2SP8gm6yOK6L7LukoGZVb3DMmyWIURzTV/yz45wih7IUEEwaLEjoy+lOz8FJXhk8eHFrP1vQy3A6t9oHqX7hnbqFJ4kq/Bq7Us6YZLkCuNLe6a4izxdGMAOfrRcQHDmiQPJTnESoF/3Ph5MwuprhyluHKYCTRhM9+sIWJVGGYujXz61YwJ2Jcd236t+ApbJmADItO9YO4Fz0xfI4fluBHLg76YJR1gp9+lL+gTohguJt0KrDI+0A4nwA6acXXRc/9ZsHXmRNZQ4W4yjAZm10L9I1yOaqv+ks96GSTTxGaBrmljO9EKzklIqGJ1p6OK2Kw7B6psGea/1bEU+uNKPqLVq7FstQlAdk9pOCjL7SBgo9UwyBMKSXg5kGOp0BIclMfAhQxNUDdJt3h247XwioS8r/i4t0BtlTlfKBN9r5yXYtjU2FHCHqBGGn9KQtiYoAcJuyY1UEHjHTimlhCbRBVt0NmthP/VVsZVlBwlaKgfRKJrdeWxFKziPQ+O7OozZ6ttGLTedEcNTvGCq4PfzjMOffAnGB558AwS3ro1taFWe1mvzMxEqlYcsWF/yrex5m6uy2VT2P8x3p3w==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "echo.Handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cba4-5444698f42ea34a15117a192;Parent=133c03966a114e64;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java11]": {
+    "recorded-date": "13-09-2022, 20:27:55",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "E16ptXFvlElQTc6Svls+L0srsAer1yyqVAlM1m/LudM=",
+        "CodeSize": 13436678,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "echo.Handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "java11",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": "2994"
+        },
+        "environment": {
+          "AWS_ACCESS_KEY": "ASIA4U6S5KWREHWCQS4Y",
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWREHWCQS4Y",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_java11",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "joPmqRd9MdHFu2lI4WInLFDENaAiezZVXsPC0e02",
+          "AWS_SECRET_KEY": "joPmqRd9MdHFu2lI4WInLFDENaAiezZVXsPC0e02",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJHMEUCIQD0vAhxDEiyTCHjcf1XAUcBKukGHGF6PJEekQV8flkFvQIgUaLRVGeVvUQh7O75+EgRS+o/5aBV6Ohf3ZmJfWr2lQ4qjAMIrP//////////ARAAGgw4Njk2MzYzMzA5MTQiDMwtuE9PIyxh0rjNHCrgAsSg8hL9XNmR8QvhCEmB1fUYkKeAct3b0Mu7yej1grFPYpWpjOoqNjhJkoE9ZyKt3Tu6zXnmSPascRlImBLvge04N6kFUWjZKNydoJgmAIb9huNb4zac7ZHH6T1RU27WAwtBehTR6Kp6RQMYJO4MRjB5C/+12/QA3dRT1ma9qtiXNZWuZAJWIQfaae50S/YU8fUahZMpSH52Sm8/L/me6x/q+dwAJs2n3U/G5JvDrlBqLVXvHijGezWjsFSpqfwKGQv/gplDhPLNejZnfi9x57crekKBiw5ErURvxwkhmvF/nc6dXIZsJLy0ZXpofKUIBq5VsCG3CuJ99WV31lztCU0GezLeOxYzQfVEmU3FYcRcKc1BurkVX2pj9dlv/rsFxk08vVHBgoYRrtexAbJZY3S5RjUpiyivPYX44aikO5hlziqoICivckGaNuAK5XAsc3DB3B4a++R3oPsrXqoWWfkwqpeDmQY6ngEuqtC8uTSP5giZnTi+0yP2d+Oyr2iNBbb+ikaRIL659biOSO1V5iAOWXtRQ6aspCBveCCSLRT3af5DnOOFaEcYyNmI6JWhgv8Ea0GO6yq4mx+FjOlDMHbzCM24JY+wSM/hAQCXyZAPyxVOCNRYSAHmvS4d0cwuziiMWfwCTQAUXy5Yl9mafGQzFRnC185xe2Opf2aUBU1V+ZX7/fUpvg==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "echo.Handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cbaa-1b859aee5f4f6be04df17f95;Parent=75dc089e31b54159;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[go1.x]": {
+    "recorded-date": "13-09-2022, 20:28:00",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "31lYyZOCTzLHDSVD65ft7JQMP6rD3VsRQPFG3sOlQRc=",
+        "CodeSize": 9004315,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "main",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "go1.x",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024"
+        },
+        "environment": {
+          "AWS_ACCESS_KEY": "ASIA4U6S5KWRFULLER54",
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRFULLER54",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_go1.x",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "pcNXEetRT3HZUYqB1VRPYhC66BO/ZFr3qLRiWveP",
+          "AWS_SECRET_KEY": "pcNXEetRT3HZUYqB1VRPYhC66BO/ZFr3qLRiWveP",
+          "AWS_SECURITY_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJGMEQCIA5id51Qi5m6bZNuIpev925fCnjOQDJtQ26jSVQqYHJiAiArFkvRt9VUGw9yDOwoU6UIR5WJ9Isq2TMXj/nniEA2byqMAwis//////////8BEAAaDDg2OTYzNjMzMDkxNCIM/gP0mo6jXv4b1Vp/KuACzzeu5J9YXnxqSxCuq2aR5AjhZXENHU1MlSceaHScmgBIqavN8qyW+mhRna4wLeSetmrbiHFEc1B24/N1nER0egFDQLQB3OazQ33yC1M0SbnwxMPbiMhDgtkdKU21U95cspgdPGMdkyh9yH5NBsx12VHWkEnP/MYC4kuPSbZL0fgUpcOP4HxXw9KfzZ0dU0G8uYZAJ7Cb+d93BzhdmVrVSsG19cUm7ewCqK2k0ta0vTg5HtGI7L7JLeszGINAxH3/cFMcG1ZRd3+4mOKj/mHi89RsdhkRKm+xmgtjefTBR0vtEZNF720EqycAzuK35KKNAQF7rHUhY4tz5LTlVtK1mqE+CQRTaqWl+uspXB9eapLm3OqvnxEPfDzcHXUy1Gn3sR/KF6osGqNo0Ba/En557G8CQKyJT6HrveZ3v76sYUtdsFom0p5a/XKuQTo+YsyU99MNZXPDns67ZR+d7afN8jCvl4OZBjqfAUc12cGjLenuF98jN4cPvVwB/MoVrDY4CsksWKMMpJOor2PcadU/bq8+POlaJbhGurMr1iMFK2uiyEJl5YWeon4XOXyYhEO6kb8h2/bfbywcunbNTbOGRXfWYF/uWyb1Uprdg7xsT3sYlgfRggs9/Ro+t8O9yZRoZTNSwoY5cyJTyt+azOwGB2I7zce83zuNwZ+cla0GH366z8qAUQ8GNg==",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJGMEQCIA5id51Qi5m6bZNuIpev925fCnjOQDJtQ26jSVQqYHJiAiArFkvRt9VUGw9yDOwoU6UIR5WJ9Isq2TMXj/nniEA2byqMAwis//////////8BEAAaDDg2OTYzNjMzMDkxNCIM/gP0mo6jXv4b1Vp/KuACzzeu5J9YXnxqSxCuq2aR5AjhZXENHU1MlSceaHScmgBIqavN8qyW+mhRna4wLeSetmrbiHFEc1B24/N1nER0egFDQLQB3OazQ33yC1M0SbnwxMPbiMhDgtkdKU21U95cspgdPGMdkyh9yH5NBsx12VHWkEnP/MYC4kuPSbZL0fgUpcOP4HxXw9KfzZ0dU0G8uYZAJ7Cb+d93BzhdmVrVSsG19cUm7ewCqK2k0ta0vTg5HtGI7L7JLeszGINAxH3/cFMcG1ZRd3+4mOKj/mHi89RsdhkRKm+xmgtjefTBR0vtEZNF720EqycAzuK35KKNAQF7rHUhY4tz5LTlVtK1mqE+CQRTaqWl+uspXB9eapLm3OqvnxEPfDzcHXUy1Gn3sR/KF6osGqNo0Ba/En557G8CQKyJT6HrveZ3v76sYUtdsFom0p5a/XKuQTo+YsyU99MNZXPDns67ZR+d7afN8jCvl4OZBjqfAUc12cGjLenuF98jN4cPvVwB/MoVrDY4CsksWKMMpJOor2PcadU/bq8+POlaJbhGurMr1iMFK2uiyEJl5YWeon4XOXyYhEO6kb8h2/bfbywcunbNTbOGRXfWYF/uWyb1Uprdg7xsT3sYlgfRggs9/Ro+t8O9yZRoZTNSwoY5cyJTyt+azOwGB2I7zce83zuNwZ+cla0GH366z8qAUQ8GNg==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "main",
+          "_LAMBDA_SERVER_PORT": "39875",
+          "_LAMBDA_TELEMETRY_LOG_FD": "3",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cbaf-0c0920067c25af3626f4d256;Parent=3637a3390da243c9;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnet6]": {
+    "recorded-date": "13-09-2022, 20:28:04",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "LywF/yhd2C+Sqq/OOFrmyS+J2Z01/+NVSYOtuAXpY5k=",
+        "CodeSize": 31720,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "dotnet6::dotnet6.Function::FunctionHandler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "dotnet6",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": "956"
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRGKSXSQPJ",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_dotnet6",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "E1SoVdy1Ka4b/lA+dJgeUDxPcUMQ958hgDqDIKnX",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJGMEQCIHozCSQPS+xnj6N/JsZEiFOCfzmWqir8vHGc2Z4riWtpAiBAO18kUgKGwSP0gT2D6q66jNwsLES568pUHgttFcx5PiqMAwis//////////8BEAAaDDg2OTYzNjMzMDkxNCIMNBcK9BIfAwDPnDtsKuAC3XlS6Wd23aAePoNHvwc2Zf4EY7vFsEL/LeA0nro0ZKzGSj6Eg56o/40Non/t1T0NIN8NRmFLpKxzYY7wLTqO4f2DTGlsB616fVWSqfmKxADvBVKVn2nk6/bWuw0cqvE9nUIcU62+FCpPW2yoZ9x/zR7HCVyPCN1OBlJmyb7O9swH+cwEPN+7H4ldnyrGojj3WSdMjc1pPuQ5w28rbAuyw71SdIdpfmHGwBQVRuM2J0ffoZ8FsTLgt7YEDsUeOeYqS7MRXbE7LXIHnc7a397kIyiK0ZiDANDr8U6UFydBtBn++xrLxOEUnNIiluBY3sZJ41uX7k9lRuyzQ0egU0uHCd6ipTi87vcdwnK5ojA9n8qZ+Thc+UHlZ6el0867bLD+PwoQToxcfcuANTOnRk6RFMDhyr3DBKpfCIZELGZ9AB7Wq5pa4xJFYN0k2fR57UlJ2k6ir6JJSKXKvPvzANfjSjCzl4OZBjqfAQBRBzzz7yhxV9sG0sdWfOBdC9yT7g4y53ly5JzcFQw/Y46JQ6UJnKsCoXuyPJZNfXfmxTKOxgJJ4tl0OveUlZe0EQUHo/2xCDFvO5CgJwep/6OzU1eEPiQ/B8kyQ7CDPPDXDo5asNbWUamj6gTsdlOw/YHN4gGM4NDAu+jivjIok1J64byusI4+Prg+KF2gSyD+TubyOz8zc8V+iK3hiA==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "DOTNET_ROOT": "/var/lang/bin",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_RUNTIME_NAME": "dotnet6",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "PWD": "/var/task",
+          "SHLVL": "0",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "dotnet6::dotnet6.Function::FunctionHandler",
+          "_LAMBDA_TELEMETRY_LOG_FD": "3",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cbb3-7883b9405b85330069487212;Parent=18be0ba355a5c5d9;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnetcore3.1]": {
+    "recorded-date": "13-09-2022, 20:28:02",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "qnxGzh3nGNL5cxNAkc/tD+IE7qHhTDHeu/E6L4ebe84=",
+        "CodeSize": 30459,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "dotnetcore31::dotnetcore31.Function::FunctionHandler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "dotnetcore3.1",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": "970"
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRMBV6FJUD",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_dotnetcore3.1",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "0+W5vZfAvLZtSzRC3H/7zfyf59hxk2KAT6HRQhPr",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJHMEUCIQDDJ0V/+IAKcvq8nxE2wq9DU3qmqmlvWHwX96QL6D/b3gIgUkrhk57iQ9avgTK4MJ+h87a09CFjfd7zT749u9ajdZoqjAMIrP//////////ARAAGgw4Njk2MzYzMzA5MTQiDCx8kO8Q1/yi/zM+SirgAgJxr7of8XFmr/tHEhGRn2E1cXTVg08/rJ6E7Wn6c++zSnAZeBkPnvIKgYJ5fSeaBo4xlFB21zQw24l5zBFB2PWNmQ+dcAqRczElOPS4cYMkBI06cPWUIQ2x0fFWt69nK029I6hKjh/69moWvFYQPk2bnUm/AYqqamj5tSOPEgWdOzl6BLzaCwnLuJQJN6waNcsnOG49l/SeAsnZW++dgn65mVqqCxpDU0fw/bhvHOzn/Bgj4N7C1M78kbm2JUQvzUWva4GI2EDn9q/jlnAocPfXT/VDPzouhle/UWKWyHDwxjogAwByhlwtmM/bQXGpvAhXgfcFyjONe0uiXOs7dh15raxgLzLdiGNk4smJ2O49xyzsCveKDYbDQBEel7Jvmb7RsUsejnNqTDvZM14o2FQkhAoJQJ6I7x2lkCbBW0D1R4WNYhrOFBxIjmcr8TWXvPdt1g823RtO50x/qWJoR3IwsZeDmQY6ngFPZ/FiTl8smkZND2z3Vv9LgSllw3AmlPhFomydo96dxbj2zTHVGQZ0tUFKKVRMnPZpgWtaUNyO5EU/wkE8dJxZ/y+Fpc8XIRKpZ3+lEzZYlDwfTfTqXzxxpIAjXbA6y5rEMFPASTryyzTsNH6jI6Y8lhazlFYWle2bzAhmSt6opCmpZjRZh6lH2nTgCotcpdXoDrAQxzBDb75+11NGuA==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "dotnetcore31::dotnetcore31.Function::FunctionHandler",
+          "_LAMBDA_TELEMETRY_LOG_FD": "3",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cbb1-60bddce05acee3671683f66a;Parent=314a35705f9089d3;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided]": {
+    "recorded-date": "13-09-2022, 20:28:08",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "CyFLyh/dq3PlP8kcII1gwEulzTuQdfTbBixi9Y0BoaM=",
+        "CodeSize": 6438108,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "function.handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "provided",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "deadline": "1663093691079",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": 1024
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRDCDOGWJI",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "nD8yQ1sueLGQ/1Tof4MSejba199W8FymxNTpi/hu",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJIMEYCIQCYquvkP31J+rr6JuTkCiazzcRtxmXahSNNWZJNC67iMQIhANm/dLLfO4lQGBdnDkElub1RC5u+1amrSCxbTGxhRMdnKowDCKz//////////wEQABoMODY5NjM2MzMwOTE0IgwmMpo1ohJ33qA+2MYq4AIddavSbQGMn2QyWZXqn1hVVGpuKN2xSD8k0Pf1GaK6bvSgGQ0zQZ7Z2ITcP6/DTtvrDHbK7pxZ2BZedkNkw6G2cBXka+i1yX/kI13s53e2K7SuSLDzv8gA/aHVoerqUTiD/o0x+X/c0BzaKx39hIS/0R9qyGOr8YwCTaYa+/Wcj9rVlSnrJwyV+D94tvnnkGsc4Z7v46nElZft/owQD71Rv/zn/OVLvTuyq3nHg5AndQGSAIBwVNqOVVAUkc7MiW6MqnP782SeabpdJIVZUx9yqkqtiruagmNg01qmjLDUKkTwDH6IWVTx+ipa05nK+QVSYgBQAXW8R9wpwzLCjIlnNS/BC7fTZBfmbxdlhaMhc86IKZF39s5jCxopN7703PpPmN9AH5OhDaaHyntJp076zcSVlgdwX8BY1kH91McixH58gGuGi49Puc4yPEUXV14eBgk8qs5enZTuAgf9KnhPMLeXg5kGOp0BpCYe4ZwcUIsC4tkYqly+VqK/jDma/AAYLp1AdiPTKqItwVtPuFsHb6t7bvv5fHKyTLdi8+Y7lPVWeejViOMiz1h+XLk0bRiEf+3YBP/LVOjlg35VQrCr3+Z2zEm+pek/Y0aK+baGbGqpAzd+qCsOAWsHFpt7z4M4jWFJs3IlSfOoEPmp73mPJCXlREDAV4uHcVqcCKECumuFQAW2gA==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "function.handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cbb7-3725d22d4347524f2a606725;Parent=5e1386e012004845;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided.al2]": {
+    "recorded-date": "13-09-2022, 20:28:11",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "CyFLyh/dq3PlP8kcII1gwEulzTuQdfTbBixi9Y0BoaM=",
+        "CodeSize": 6438108,
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "function.handler",
+        "LastModified": "date",
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "provided.al2",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "deadline": "1663093694793",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": 1024
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "ASIA4U6S5KWRI6LTJNW6",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "uERzm8l1k55Hti0eyUMmdipIqBi9Ba4q7SqE/JZ5",
+          "AWS_SESSION_TOKEN": "IQoJb3JpZ2luX2VjEBMaDGV1LWNlbnRyYWwtMSJGMEQCIE83WsJfXsYUwIFsK8drtHmWCV1Aq0Hddr+O2J2yy0X7AiBqQ/D9HkTd67pQyQG0kW/cwBEYL7IFQOco4oy//xSa1SqMAwis//////////8BEAAaDDg2OTYzNjMzMDkxNCIMALzAVHt7XN3QlfvLKuACt1jNWxQoOzo7WxFj1k8jw8v2qvyXsveVcEVROyKH/BfMoWiYi82yI5gR+GAmgcz6k/+w7QIWP2AmrBygh/LkaJ7b9EURH017XwCbiPBGxnt+J4ZTXq2Lo0TkD5Ln20IBYLHrJL2XkRHIhy7X+OOIk8pfli8KkkbA9YMr5YTD+olJta5txXeH/aHFc4Ars8Vu8x/6w4k6ogQ1wKHQpuPgV7XdSp4MDDZvVYasckaXgDf1DYbyomQjoXj7MuDkfGs3kVXyvk4sNSOrLS+CWoHUBMu9s2tUtndbTRzlr8UbLXaXAWmYEhgdmBrAu0Lax6Zn+hMzDxSYVAQNntWpnipbqtGU9WJkYhD2KgDCAWL/RQ65GdDBJfyHnRfooLQiwhVbk12hqA8MduWYQUIb2pptrnM5+0yX4XWb21T3YsO+b162oHC3eEBUnaBipwwLFL0zY2xhzvzh0Cz2bJJBIpYAajC7l4OZBjqfAedtYss9CmzIAr+ztSoGZXc9jQk3SYaSWURSPeHGtWO1Y274/NemwLBxRi7WdKOfjZwnHaOGKNRZYf+iNkLcYNtP64VXxisIyWqp3EVRxyx0SHvPkzHCIkRIZx/REq+QOkuejpswgIMEwmk6JdRw14qBsm7/UNWuoTq8zeuygJ9fNMaUmIQJ1FTPWAjdgOaf7PpPtuSgei91cgY+5x1P9A==",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "function.handler",
+          "_X_AMZN_TRACE_ID": "Root=1-6320cbbb-25d8ea4a343c3b832eddf0de;Parent=13c216cb5f21c91b;Sampled=0"
+        },
+        "packages": []
+      }
+    }
+  }
+}
