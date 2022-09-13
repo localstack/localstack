@@ -75,7 +75,7 @@ class TestLambdaFunction:
         large_envvar_bytes = target_size - key_bytes
         large_envvar = "x" * large_envvar_bytes
 
-        function_name = "large-envar-lambda"
+        function_name = f"large-envvar-lambda-{short_uid()}"
 
         with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as ex:
             create_lambda_function(
@@ -110,7 +110,7 @@ class TestLambdaFunction:
         env[key] = large_envvar
         assert environment_length_bytes(env) == 4097
 
-        function_name = "large-envvar-lambda"
+        function_name = f"large-envvar-lambda-{short_uid()}"
 
         with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as ex:
             create_lambda_function(
@@ -156,7 +156,7 @@ class TestLambdaFunction:
         large_envvar_bytes = target_size - key_bytes
         large_envvar = "x" * large_envvar_bytes
 
-        function_name = "large-envvar-lambda"
+        function_name = f"large-envvar-lambda-{short_uid()}"
         res = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
