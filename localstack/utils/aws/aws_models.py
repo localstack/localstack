@@ -342,6 +342,13 @@ class LambdaFunction(Component):
 
     @property
     def envvars(self):
+        """Get the environment variables for the function.
+
+        When setting the environment variables, perform the following
+        validations:
+
+        - environment variables must be less than 4KiB in size
+        """
         return self._envvars
 
     @envvars.setter
