@@ -11,6 +11,7 @@ from localstack.services import install
 from localstack.services.generic_proxy import EndpointProxy
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
+from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
 from localstack.utils.common import (
     ShellCommandThread,
     chmod_r,
@@ -185,7 +186,7 @@ class OpensearchCluster(Server):
         return resolve_directories(version=self.version, cluster_path=self.version)
 
     def _ensure_installed(self):
-        install.install_opensearch(self.version)
+        opensearch_package.install(self.version)
 
     def _init_directories(self):
         init_directories(self.directories)
@@ -347,7 +348,7 @@ class ElasticsearchCluster(OpensearchCluster):
         return constants.OS_USER_OPENSEARCH
 
     def _ensure_installed(self):
-        install.install_elasticsearch(self.version)
+        elasticsearch_package.install(self.version)
 
     def _base_settings(self, dirs) -> CommandSettings:
         settings = {

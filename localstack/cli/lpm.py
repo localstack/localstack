@@ -1,12 +1,14 @@
+import itertools
 from multiprocessing.pool import Pool
-from typing import Callable, Dict
+from typing import Callable, Dict, List
 
 import click
 from click import ClickException
 from rich.console import Console
 
 from localstack import config
-from localstack.services.install import InstallerManager, InstallTarget
+from localstack.packages import InstallTarget, Package, PackageRepository
+from localstack.services.install import InstallerManager
 from localstack.utils.bootstrap import setup_logging
 
 console = Console()
@@ -39,15 +41,24 @@ def _do_install(pkg, version=None, target=None):
     console.print(f"installing... [bold]{pkg}[/bold]")
     try:
         package_installer = InstallerManager().get_installers()[pkg]
-        if callable(package_installer):
-            # old way
-            package_installer()
+        if isinstance(package_installer, Package):
+            package_installer.install(version=version, target=target)
         else:
-            # new way
-            package_installer.get_installer(version=version).install(target=target)
+            # Old installers are just callables
+            package_installer()
         console.print(f"[green]installed[/green] [bold]{pkg}[/bold]")
     except Exception as e:
         console.print(f"[red]error[/red] installing {pkg}: {e}")
+        raise e
+
+
+def _do_install_package(package: Package, version=None, target=None):
+    console.print(f"installing... [bold]{package}[/bold]")
+    try:
+        package.install(version=version, target=target)
+        console.print(f"[green]installed[/green] [bold]{package}[/bold]")
+    except Exception as e:
+        console.print(f"[red]error[/red] installing {package}: {e}")
         raise e
 
 
@@ -65,10 +76,14 @@ def _do_install(pkg, version=None, target=None):
     type=str,
     default=None,
     required=False,
-    help="WIP!! which version you want to install, just for testing!",
+    help="[Experimental] Defines the version to install of a package. Not supported for all packages yet.",
 )
 @click.option(
-    "--target", type=str, default=None, required=False, help="WIP, where to install the package"
+    "--target",
+    type=click.Choice([target.name.lower() for target in InstallTarget]),
+    default=None,
+    required=False,
+    help="[Experimental] Defines the installation target package. Not supported for all packages yet.",
 )
 def install(package, parallel, version, target):
     """
@@ -90,7 +105,6 @@ def install(package, parallel, version, target):
         if version or target:
             if target:
                 target = InstallTarget[str.upper(target)]
-            # TODO: this is just to test installing 1 package with the new installer hierarchy
             for pkg in package:
                 _do_install(pkg, version, target)
         else:
@@ -99,6 +113,70 @@ def install(package, parallel, version, target):
     except Exception as e:
         # raise ClickException("one or more package installations failed.")
         raise e
+
+
+@cli.command(name="list-service-packages")
+def list_service_packages():
+    for service, packages in _get_service_packages().items():
+        console.print(f"[green]{service}[/green]:")
+        for package in packages:
+            console.print(f"  - {package.name}", highlight=False)
+            for version in package.get_versions():
+                if version == package.default_version:
+                    console.print(f"    -  [bold]{version} (default)[/bold]", highlight=False)
+                else:
+                    console.print(f"    -  {version}", highlight=False)
+
+
+@cli.command(name="install-service-packages")
+@click.argument("services", nargs=-1, required=True)
+@click.option(
+    "--parallel",
+    type=int,
+    default=1,
+    required=False,
+    help="how many installers to run in parallel processes",
+)
+@click.option(
+    "--target",
+    type=click.Choice([target.name.lower() for target in InstallTarget]),
+    default=None,
+    required=False,
+    help="[Experimental] Defines the installation target package. Not supported for all packages yet.",
+)
+def install_service_packages(services: List[str], parallel: int, target: str):
+    packages = []
+    service_packages = _get_service_packages()
+    for service in services:
+        packages += service_packages.get(service, [])
+
+    if not packages:
+        console.print(f"[red]error[/red] installing packages for {services}: No packages found.")
+        return
+
+    if target:
+        target = InstallTarget[str.upper(target)]
+
+    if parallel > 1:
+        console.print(f"install {parallel} packages in parallel:")
+
+    with Pool(processes=parallel) as pool:
+        pool.starmap(
+            _do_install_package, zip(packages, itertools.repeat(None), itertools.repeat(target))
+        )
+
+
+def _get_service_packages() -> Dict[str, List[Package]]:
+    result = {}
+    package_repo = PackageRepository()
+    package_repo.load_all()
+    container_names = package_repo.list_names()
+    for container_name in container_names:
+        container = package_repo.get_container(container_name)
+        service = container.plugin.service
+        packages: List[Package] = container.plugin.get_packages()
+        result[service] = packages
+    return result
 
 
 @cli.command(name="list")
