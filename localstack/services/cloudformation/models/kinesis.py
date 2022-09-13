@@ -32,8 +32,8 @@ class KinesisStream(GenericBaseModel):
         return "AWS::Kinesis::Stream"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute == "Ref":
-            return self.props.get("Name")
+        if attribute == "Arn":
+            return self.props.get("Arn")
         return self.physical_resource_id
 
     def fetch_state(self, stack_name, resources):
@@ -62,7 +62,8 @@ class KinesisStream(GenericBaseModel):
             while description["StreamDescription"]["StreamStatus"] != "ACTIVE":
                 description = client.describe_stream(StreamName=stream_name)
 
-            resources[resource_id]["PhysicalResourceId"] = description["StreamDescription"][
+            resources[resource_id]["PhysicalResourceId"] = stream_name
+            resources[resource_id]["Properties"]["Arn"] = description["StreamDescription"][
                 "StreamARN"
             ]
 

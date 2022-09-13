@@ -5,7 +5,7 @@ import pytest
 
 @pytest.mark.aws_validated
 @pytest.mark.skip_snapshot_verify(paths=["$..StreamDescription.StreamModeDetails"])
-def test_stream_creation(kinesis_client, deploy_cfn_template, snapshot):
+def test_stream_creation(kinesis_client, cfn_client, deploy_cfn_template, snapshot):
     snapshot.add_transformer(snapshot.transform.resource_name())
     snapshot.add_transformers_list(
         [
@@ -15,6 +15,7 @@ def test_stream_creation(kinesis_client, deploy_cfn_template, snapshot):
             snapshot.transform.key_value("StartingSequenceNumber", "sequence-number"),
         ]
     )
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
     template = json.dumps(
         {
@@ -31,9 +32,12 @@ def test_stream_creation(kinesis_client, deploy_cfn_template, snapshot):
         }
     )
 
-    outputs = deploy_cfn_template(template=template).outputs
-    snapshot.match("stack_output", outputs)
+    stack = deploy_cfn_template(template=template)
+    snapshot.match("stack_output", stack.outputs)
 
-    stream_name = outputs.get("StreamNameFromRef")
+    description = cfn_client.describe_stack_resources(StackName=stack.stack_name)
+    snapshot.match("resource_description", description)
+
+    stream_name = stack.outputs.get("StreamNameFromRef")
     description = kinesis_client.describe_stream(StreamName=stream_name)
     snapshot.match("stream_description", description)
