@@ -2212,5 +2212,45 @@
         }
       }
     }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_batch_delete_objects": {
+    "recorded-date": "14-09-2022, 00:03:37",
+    "recorded-content": {
+      "batch-delete": {
+        "Deleted": [
+          {
+            "Key": "<key:1>"
+          },
+          {
+            "Key": "<key:2>"
+          },
+          {
+            "Key": "<key:3>"
+          },
+          {
+            "Key": "<key:4>"
+          },
+          {
+            "Key": "<key:5>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-remaining-objects": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "Marker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

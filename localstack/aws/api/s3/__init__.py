@@ -1244,32 +1244,6 @@ class DeleteObjectTaggingRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
-class Error(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    VersionId: Optional[ObjectVersionId]
-    Code: Optional[Code]
-    Message: Optional[Message]
-
-
-Errors = List[Error]
-
-
-class DeletedObject(TypedDict, total=False):
-    Key: Optional[ObjectKey]
-    VersionId: Optional[ObjectVersionId]
-    DeleteMarker: Optional[DeleteMarker]
-    DeleteMarkerVersionId: Optional[DeleteMarkerVersionId]
-
-
-DeletedObjects = List[DeletedObject]
-
-
-class DeleteObjectsOutput(TypedDict, total=False):
-    Deleted: Optional[DeletedObjects]
-    RequestCharged: Optional[RequestCharged]
-    Errors: Optional[Errors]
-
-
 class DeleteObjectsRequest(ServiceRequest):
     Bucket: BucketName
     Delete: Delete
@@ -1283,6 +1257,16 @@ class DeleteObjectsRequest(ServiceRequest):
 class DeletePublicAccessBlockRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
+
+
+class DeletedObject(TypedDict, total=False):
+    Key: Optional[ObjectKey]
+    VersionId: Optional[ObjectVersionId]
+    DeleteMarker: Optional[DeleteMarker]
+    DeleteMarkerVersionId: Optional[DeleteMarkerVersionId]
+
+
+DeletedObjects = List[DeletedObject]
 
 
 class ReplicationTimeValue(TypedDict, total=False):
@@ -1326,8 +1310,18 @@ class EndEvent(TypedDict, total=False):
     pass
 
 
+class Error(TypedDict, total=False):
+    Key: Optional[ObjectKey]
+    VersionId: Optional[ObjectVersionId]
+    Code: Optional[Code]
+    Message: Optional[Message]
+
+
 class ErrorDocument(TypedDict, total=False):
     Key: ObjectKey
+
+
+Errors = List[Error]
 
 
 class EventBridgeConfiguration(TypedDict, total=False):
@@ -2949,6 +2943,12 @@ class HeadBucketOutput(TypedDict, total=False):
     BucketContentType: Optional[BucketContentType]
 
 
+class DeleteResult(TypedDict, total=False):
+    Deleted: Optional[DeletedObjects]
+    RequestCharged: Optional[RequestCharged]
+    Errors: Optional[Errors]
+
+
 class S3Api:
 
     service = "s3"
@@ -3214,7 +3214,7 @@ class S3Api:
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
-    ) -> DeleteObjectsOutput:
+    ) -> DeleteResult:
         raise NotImplementedError
 
     @handler("DeletePublicAccessBlock")

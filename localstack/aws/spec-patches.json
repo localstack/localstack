@@ -196,6 +196,38 @@
         "location": "header",
         "locationName": "expires"
       }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/DeleteObjectsOutput"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/DeleteResult",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Deleted": {
+            "shape": "DeletedObjects",
+            "documentation": "<p>Container element for a successful delete. It identifies the object that was successfully deleted.</p>"
+          },
+          "RequestCharged": {
+            "shape": "RequestCharged",
+            "location": "header",
+            "locationName": "x-amz-request-charged"
+          },
+          "Errors": {
+            "shape": "Errors",
+            "documentation": "<p>Container for a failed delete action that describes the object that Amazon S3 attempted to delete and the error it encountered.</p>",
+            "locationName": "Error"
+          }
+        }
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/operations/DeleteObjects/output/shape",
+      "value": "DeleteResult"
     }
   ]
 }

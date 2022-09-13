@@ -1677,11 +1677,34 @@ class TestS3:
 
         assert 200 == r.status_code
         response = xmltodict.parse(r.content)
-        response["DeleteResult"].pop("@xmlns")
+        # TODO: why is that under??
+        if LEGACY_S3_PROVIDER:
+            response["DeleteResult"].pop("@xmlns")
 
         snapshot.match("multi-delete-with-requests", response)
 
         response = s3_client.list_objects(Bucket=bucket_name)
+        snapshot.match("list-remaining-objects", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..Prefix",
+        ]
+    )
+    def test_s3_batch_delete_objects(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Key"))
+        delete_object = []
+        for _ in range(5):
+            key_name = f"key-batch-delete-{short_uid()}"
+            s3_client.put_object(Bucket=s3_bucket, Key=key_name, Body="This body document")
+            delete_object.append({"Key": key_name})
+
+        response = s3_client.delete_objects(Bucket=s3_bucket, Delete={"Objects": delete_object})
+        snapshot.match("batch-delete", response)
+
+        response = s3_client.list_objects(Bucket=s3_bucket)
         snapshot.match("list-remaining-objects", response)
 
 
