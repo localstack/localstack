@@ -70,7 +70,6 @@ route53resolver:
     - TestAccRoute53ResolverEndpointDataSource_filter
     - TestAccRoute53ResolverEndpoint_basicInbound
     - TestAccRoute53ResolverEndpoint_updateOutbound
-    - TestAccRoute53ResolverFirewallConfig_basic
     - TestAccRoute53ResolverFirewallConfig_disappears
     - TestAccRoute53ResolverFirewallDomainList_basic
     - TestAccRoute53ResolverFirewallDomainList_disappears
