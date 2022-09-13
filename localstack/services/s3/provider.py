@@ -8,13 +8,11 @@ from moto.s3 import s3_backends as moto_s3_backends
 from moto.s3.exceptions import MissingBucket
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import RequestContext, handler
+from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.s3 import (
     BucketName,
     CreateBucketOutput,
     CreateBucketRequest,
-    GetBucketLifecycleConfigurationOutput,
-    GetBucketLifecycleOutput,
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
     GetObjectOutput,
@@ -27,7 +25,6 @@ from localstack.aws.api.s3 import (
     ListObjectsV2Output,
     ListObjectsV2Request,
     NoSuchBucket,
-    NoSuchLifecycleConfiguration,
     PutBucketRequestPaymentRequest,
     PutObjectOutput,
     PutObjectRequest,
@@ -157,11 +154,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         response: PutObjectOutput = call_moto(context)
         return response
 
-    def delete_bucket_lifecycle(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
-    ) -> None:
-        call_moto_with_exception_patching(context, bucket=bucket)
-
     @handler("PutBucketRequestPayment", expand=False)
     def put_bucket_request_payment(
         self,
@@ -189,18 +181,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_backend = get_moto_s3_backend(context)
         bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
         return GetBucketRequestPaymentOutput(Payer=bucket.payer)
-
-
-def call_moto_with_exception_patching(
-    context: RequestContext,
-    bucket: BucketName,
-) -> ServiceResponse:
-    try:
-        response = call_moto(context)
-    except CommonServiceException as e:
-        ex = _patch_moto_exceptions(e, bucket_name=bucket)
-        raise ex
-    return response
 
 
 def validate_bucket_name(bucket: BucketName):
