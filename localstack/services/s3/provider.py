@@ -10,9 +10,12 @@ from moto.s3.exceptions import MissingBucket
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.s3 import (
+    AccountId,
     BucketName,
     CreateBucketOutput,
     CreateBucketRequest,
+    GetBucketLifecycleConfigurationOutput,
+    GetBucketLifecycleOutput,
     GetBucketRequestPaymentOutput,
     GetBucketRequestPaymentRequest,
     GetObjectOutput,
@@ -26,7 +29,10 @@ from localstack.aws.api.s3 import (
     ListObjectsV2Request,
     NoSuchBucket,
     NoSuchKey,
+    NoSuchLifecycleConfiguration,
     ObjectKey,
+    PutBucketLifecycleConfigurationRequest,
+    PutBucketLifecycleRequest,
     PutBucketRequestPaymentRequest,
     PutObjectOutput,
     PutObjectRequest,
@@ -202,6 +208,68 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
         return GetBucketRequestPaymentOutput(Payer=bucket.payer)
 
+    def get_bucket_lifecycle(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketLifecycleOutput:
+        # deprecated for older rules created. Not sure what to do with this?
+        response = self.get_bucket_lifecycle_configuration(context, bucket, expected_bucket_owner)
+        return GetBucketLifecycleOutput(**response)
+
+    def get_bucket_lifecycle_configuration(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketLifecycleConfigurationOutput:
+        # test if bucket exists in moto
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket=bucket)
+
+        store = self.get_store()
+        bucket_lifecycle = store.bucket_lifecycle_configuration.get(bucket)
+        if not bucket_lifecycle:
+            raise NoSuchLifecycleConfiguration("The lifecycle configuration does not exist")
+
+        return GetBucketLifecycleConfigurationOutput(Rules=bucket_lifecycle["Rules"])
+
+    @handler("PutBucketLifecycle", expand=False)
+    def put_bucket_lifecycle(
+        self,
+        context: RequestContext,
+        request: PutBucketLifecycleRequest,
+    ) -> None:
+        # deprecated for older rules created. Not sure what to do with this?
+        # same URI as PutBucketLifecycleConfiguration
+        self.put_bucket_lifecycle_configuration(context, request)
+
+    @handler("PutBucketLifecycleConfiguration", expand=False)
+    def put_bucket_lifecycle_configuration(
+        self,
+        context: RequestContext,
+        request: PutBucketLifecycleConfigurationRequest,
+    ) -> None:
+        """This is technically supported in moto, however moto does not support multiple transitions action
+        It will raise an TypeError trying to get dict attributes on a list. It would need a bigger rework on moto's side
+        Moto has quite a good validation for the other Lifecycle fields, so it would be nice to be able to use it
+        somehow. For now the behaviour is the same as before, aka no validation
+        """
+        # test if bucket exists in moto
+        bucket = request.get("Bucket", "")
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket=bucket)
+        store = self.get_store()
+        # TODO: add validation on the BucketLifecycleConfiguration
+        store.bucket_lifecycle_configuration[bucket] = request.get("LifecycleConfiguration")
+
+    def delete_bucket_lifecycle(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> None:
+        # test if bucket exists in moto
+        moto_backend = get_moto_s3_backend(context)
+        get_bucket_from_moto(moto_backend, bucket=bucket)
+
+        store = self.get_store()
+        bucket_lifecycle = store.bucket_lifecycle_configuration.pop(bucket, None)
+        if not bucket_lifecycle:
+            raise NoSuchLifecycleConfiguration("The lifecycle configuration does not exist")
+
 
 def validate_bucket_name(bucket: BucketName):
     """
@@ -262,7 +330,6 @@ def apply_moto_patches():
                 header_name = _capitalize_header_name_from_snake_case(low_case_header)
                 resp_headers[header_name] = header_value
 
-        print(resp_headers)
         return status_code, resp_headers, key_value
 
     @patch(moto_s3_responses.S3Response._bucket_response_head)

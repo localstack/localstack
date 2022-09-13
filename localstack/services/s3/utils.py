@@ -2,7 +2,6 @@ import datetime
 import re
 
 from moto.s3.models import FakeKey
-from pytz import timezone
 
 from localstack.aws.api import ServiceException
 from localstack.aws.api.s3 import ChecksumAlgorithm, PutObjectRequest
@@ -54,11 +53,7 @@ def verify_checksum(checksum_algorithm: str, data: bytes, request: PutObjectRequ
 def is_key_expired(key_object: FakeKey) -> bool:
     if not key_object or not key_object._expiry:
         return False
-    tzname = key_object._expiry.tzname()
-    if not tzname:
-        return False
-    t_zone = timezone(tzname)
-    return key_object._expiry <= datetime.datetime.now(t_zone)
+    return key_object._expiry <= datetime.datetime.now(key_object._expiry.tzinfo)
 
 
 def is_bucket_name_valid(bucket_name: str) -> bool:

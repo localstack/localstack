@@ -1401,7 +1401,7 @@ class TestS3TerraformRawRequests:
             headers = {h.split(":")[0]: h.partition(":")[2].strip() for h in headers.split("\n")}
             method, path, _ = req.split(" ")
             url = f"{config.get_edge_url()}{path}"
-            result = getattr(requests, method.lower())(url, data=body, headers=headers)
+            result = requests.request(method=method, url=url, data=body, headers=headers)
             assert result.status_code < 400
 
 
