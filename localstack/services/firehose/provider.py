@@ -644,7 +644,7 @@ class FirehoseProvider(FirehoseApi):
         return records
 
     def _replace_prefix_dynamic_partitions(self, metadata, groups):
-        return metadata[''.join(list(groups.group(1)))]
+        return f'{metadata[''.join(list(groups.group(1)))]}'
 
     def _put_records_to_s3_bucket(
         self,
