@@ -18,9 +18,7 @@ class TestLambdaRuntimesCommon:
 
     """
 
-    @pytest.mark.multiruntime(
-        scenario="echo", runtimes=["python", "nodejs", "ruby", "java", "go", "dotnet6", "provided"]
-    )
+    @pytest.mark.multiruntime(scenario="echo")
     def test_echo_invoke(self, lambda_client, multiruntime_lambda):
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
         invoke_result = lambda_client.invoke(

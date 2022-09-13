@@ -50,7 +50,7 @@ HANDLERS = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "echo.Handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "function.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("go"), "main"),
-    "dotnetcore31": "dotnetcore31::dotnetcore31.Function::FunctionHandler",  # TODO lets see if we can accumulate those
+    "dotnetcore3.1": "dotnetcore31::dotnetcore31.Function::FunctionHandler",  # TODO lets see if we can accumulate those
     "dotnet6": "dotnet6::dotnet6.Function::FunctionHandler",
 }
 
@@ -61,7 +61,8 @@ PACKAGE_FOR_RUNTIME = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "java"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "provided"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("go"), "go"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("dotnet"), "dotnet"),  # TODO lets see if this works
+    "dotnet6": "dotnet6",
+    "dotnetcore3.1": "dotnetcore3.1",
 }
 
 
