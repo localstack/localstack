@@ -7,28 +7,20 @@ import moto.s3.responses as moto_s3_responses
 from moto.s3 import s3_backends as moto_s3_backends
 
 from localstack.aws.accounts import get_aws_account_id
-from localstack.aws.api import CommonServiceException, RequestContext, ServiceResponse, handler
+from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.s3 import (
-    AccountId,
     BucketName,
-    ChecksumAlgorithm,
-    ContentMD5,
     CreateBucketOutput,
     CreateBucketRequest,
-    GetBucketLifecycleConfigurationOutput,
-    GetBucketLifecycleOutput,
     GetObjectOutput,
     GetObjectRequest,
     HeadObjectOutput,
     HeadObjectRequest,
     InvalidBucketName,
-    LifecycleConfiguration,
     ListObjectsOutput,
     ListObjectsRequest,
     ListObjectsV2Output,
     ListObjectsV2Request,
-    NoSuchBucket,
-    NoSuchLifecycleConfiguration,
     PutObjectOutput,
     PutObjectRequest,
     S3Api,
@@ -47,7 +39,8 @@ os.environ[
     "MOTO_S3_CUSTOM_ENDPOINTS"
 ] = "s3.localhost.localstack.cloud:4566,s3.localhost.localstack.cloud"
 
-PATCHED_EXCEPTIONS = [NoSuchBucket, NoSuchLifecycleConfiguration]
+# PATCHED_EXCEPTIONS = [NoSuchBucket, NoSuchLifecycleConfiguration]
+PATCHED_EXCEPTIONS = []
 
 
 def get_moto_s3_backend(context: RequestContext) -> moto_s3_models.S3Backend:
@@ -71,8 +64,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket_name = request.get("Bucket", "")
         validate_bucket_name(bucket=bucket_name)
 
-        response = call_moto_with_exception_patching(context, bucket_name)
-        return CreateBucketOutput(**response)
+        response: CreateBucketOutput = call_moto(context)
+        return response
 
     @handler("ListObjects", expand=False)
     def list_objects(
@@ -80,8 +73,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: ListObjectsRequest,
     ) -> ListObjectsOutput:
-        bucket_name = request.get("Bucket", "")
-        response = call_moto_with_exception_patching(context, bucket_name)
+        response: ListObjectsOutput = call_moto(context)
 
         if "Marker" not in response:
             response["Marker"] = request.get("Marker") or ""
@@ -98,7 +90,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if "BucketRegion" not in response:
             moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
+            bucket = get_bucket_from_moto(moto_backend, bucket=request.get("Bucket", ""))
             response["BucketRegion"] = bucket.region_name
 
         return ListObjectsOutput(**response)
@@ -109,8 +101,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: ListObjectsV2Request,
     ) -> ListObjectsV2Output:
-        bucket_name = request.get("Bucket", "")
-        response = call_moto_with_exception_patching(context, bucket_name)
+        response: ListObjectsV2Output = call_moto(context)
 
         encoding_type = request.get("EncodingType")
         if "EncodingType" not in response and encoding_type:
@@ -124,10 +115,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if "BucketRegion" not in response:
             moto_backend = get_moto_s3_backend(context)
-            bucket = get_bucket_from_moto(moto_backend, bucket=bucket_name)
+            bucket = get_bucket_from_moto(moto_backend, bucket=request.get("Bucket", ""))
             response["BucketRegion"] = bucket.region_name
 
-        return ListObjectsV2Output(**response)
+        return response
 
     @handler("HeadObject", expand=False)
     def head_object(
@@ -135,15 +126,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: HeadObjectRequest,
     ) -> HeadObjectOutput:
-        bucket_name = request.get("Bucket", "")
-        response = call_moto_with_exception_patching(context, bucket_name)
-
-        return HeadObjectOutput(**response, AcceptRanges="bytes")
+        response: HeadObjectOutput = call_moto(context)
+        response["AcceptRanges"] = "bytes"
+        return response
 
     @handler("GetObject", expand=False)
     def get_object(self, context: RequestContext, request: GetObjectRequest) -> GetObjectOutput:
-        response = call_moto_with_exception_patching(context, bucket=request.get("Bucket", ""))
-        return GetObjectOutput(**response, AcceptRanges="bytes")
+        response: GetObjectOutput = call_moto(context)
+        response["AcceptRanges"] = "bytes"
+        return response
 
     @handler("PutObject", expand=False)
     def put_object(
@@ -153,62 +144,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> PutObjectOutput:
         if checksum_algorithm := request.get("ChecksumAlgorithm"):
             verify_checksum(checksum_algorithm, context.request.data, request)
-        bucket_name = request.get("Bucket", "")
-        response = call_moto_with_exception_patching(context, bucket_name)
 
-        return PutObjectOutput(**response)
-
-    def get_bucket_lifecycle(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
-    ) -> GetBucketLifecycleOutput:
-        # TODO: deprecated - both methods have the same URI, what it returns depends on what was put (filter or not)
-        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycle.html
-        response = call_moto_with_exception_patching(context, bucket)
-        return GetBucketLifecycleOutput(**response)
-
-    def get_bucket_lifecycle_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
-    ) -> GetBucketLifecycleConfigurationOutput:
-        # TODO: see both methods have the same URI, what it returns depends on what was put (filter or not)
-        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycle.html
-        response = call_moto_with_exception_patching(context, bucket)
-        return GetBucketLifecycleConfigurationOutput(**response)
-
-    def put_bucket_lifecycle(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        content_md5: ContentMD5 = None,
-        checksum_algorithm: ChecksumAlgorithm = None,
-        lifecycle_configuration: LifecycleConfiguration = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        call_moto_with_exception_patching(context, bucket)
-
-    def delete_bucket_lifecycle(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
-    ) -> None:
-        call_moto_with_exception_patching(context, bucket=bucket)
-
-
-def call_moto_with_exception_patching(
-    context: RequestContext, bucket: BucketName
-) -> ServiceResponse:
-    try:
-        response = call_moto(context)
-    except CommonServiceException as e:
-        ex = _patch_moto_exceptions(e, bucket_name=bucket)
-        raise ex
-    return response
-
-
-def _patch_moto_exceptions(e: CommonServiceException, bucket_name: BucketName):
-    for exception_class in PATCHED_EXCEPTIONS:
-        if exception_class.code == e.code:
-            ex = exception_class(e.message)
-            ex.BucketName = bucket_name
-            return ex
-    return e
+        response: PutObjectOutput = call_moto(context)
+        return response
 
 
 def validate_bucket_name(bucket: BucketName):
@@ -227,6 +165,7 @@ def get_bucket_from_moto(
 
 @singleton_factory
 def apply_moto_patches():
+    @patch(moto_s3_responses.S3Response.key_response)
     def _fix_key_response(fn, self, *args, **kwargs):
         """Change casing of Last-Modified headers to be picked by the parser"""
         status_code, resp_headers, key_value = fn(self, *args, **kwargs)
@@ -236,9 +175,6 @@ def apply_moto_patches():
                 resp_headers[header_name] = header_value
 
         return status_code, resp_headers, key_value
-
-    patch(moto_s3_responses.S3Response._key_response_get)(_fix_key_response)
-    patch(moto_s3_responses.S3Response._key_response_head)(_fix_key_response)
 
     @patch(moto_s3_responses.S3Response._bucket_response_head)
     def _bucket_response_head(fn, self, bucket_name, *args, **kwargs):

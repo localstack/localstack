@@ -1715,11 +1715,11 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_get_object_no_such_bucket": {
-    "recorded-date": "05-09-2022, 13:47:29",
+    "recorded-date": "13-09-2022, 15:36:32",
     "recorded-content": {
       "expected_error": {
         "Error": {
-          "BucketName": "does-not-exist-75bb3f88",
+          "BucketName": "<bucket-name:1>",
           "Code": "NoSuchBucket",
           "Message": "The specified bucket does not exist"
         },
@@ -1747,11 +1747,11 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_get_bucket_notification_configuration_no_such_bucket": {
-    "recorded-date": "05-09-2022, 13:50:50",
+    "recorded-date": "13-09-2022, 15:34:44",
     "recorded-content": {
       "expected_error": {
         "Error": {
-          "BucketName": "doesnotexist-81bd54d0",
+          "BucketName": "<bucket-name:1>",
           "Code": "NoSuchBucket",
           "Message": "The specified bucket does not exist"
         },
@@ -2128,6 +2128,39 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_invalid_range_error": {
+    "recorded-date": "13-09-2022, 16:01:02",
+    "recorded-content": {
+      "exc": {
+        "Error": {
+          "ActualObjectSize": "8",
+          "Code": "InvalidRange",
+          "Message": "The requested range is not satisfiable",
+          "RangeRequested": "bytes=1024-4096"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 416
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_range_key_not_exists": {
+    "recorded-date": "13-09-2022, 16:05:49",
+    "recorded-content": {
+      "exc": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "my-key",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
     }
