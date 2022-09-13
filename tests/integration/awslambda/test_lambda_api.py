@@ -62,7 +62,7 @@ class TestLambdaFunction:
     def test_large_environment_variables_fails(
         self, lambda_client, create_lambda_function, snapshot
     ):
-        """Lambda functions with environment variables larger than 4 KiB should fail to create."""
+        """Lambda functions with environment variables larger than 4 KB should fail to create."""
         snapshot.add_transformer(snapshot.transform.lambda_api())
 
         # set up environment mapping with a total size of 4 KB
@@ -97,7 +97,7 @@ class TestLambdaFunction:
     def test_large_environment_fails_multiple_keys(
         self, lambda_client, create_lambda_function, snapshot
     ):
-        """Lambda functions with environment variables larger than 4 KiB should fail to create."""
+        """Lambda functions with environment mappings larger than 4 KB should fail to create"""
         snapshot.add_transformer(snapshot.transform.lambda_api())
 
         # set up environment mapping with a total size of 4 KB
@@ -145,7 +145,7 @@ class TestLambdaFunction:
     def test_lambda_envvars_near_limit_succeeds(
         self, lambda_client, create_lambda_function, snapshot
     ):
-        """Lambda functions with environment variables larger than 4 KiB should fail to create."""
+        """Lambda functions with environments less than or equal to 4 KB can be created."""
         snapshot.add_transformer(snapshot.transform.lambda_api())
 
         # set up environment mapping with a total size of 4 KB
