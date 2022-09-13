@@ -2679,8 +2679,8 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_large_environment_variables_fails": {
-    "recorded-date": "13-09-2022, 16:01:17",
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_variables_fails": {
+    "recorded-date": "13-09-2022, 17:26:31",
     "recorded-content": {
       "failed_create_fn_result": {
         "Error": {
@@ -2696,8 +2696,8 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_large_environment_fails_multiple_keys": {
-    "recorded-date": "13-09-2022, 16:00:22",
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_fails_multiple_keys": {
+    "recorded-date": "13-09-2022, 17:26:48",
     "recorded-content": {
       "failured_create_fn_result_multi_key": {
         "Error": {
@@ -2713,8 +2713,8 @@
       }
     }
   },
-  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_envvars_near_limit_succeeds": {
-    "recorded-date": "13-09-2022, 16:00:54",
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_lambda_envvars_near_limit_succeeds": {
+    "recorded-date": "13-09-2022, 17:27:03",
     "recorded-content": {
       "successful_create_fn_result": {
         "CreateEventSourceMappingResponse": null,
