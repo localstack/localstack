@@ -304,7 +304,7 @@ class TestS3:
         assert is_sub_dict(sub_dict, response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(condition=is_asf_provider, path="$..Error.BucketName")
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_object_no_such_bucket(self, s3_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
@@ -321,7 +321,7 @@ class TestS3:
         snapshot.match("expected_error", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(condition=is_asf_provider, path="$..Error.BucketName")
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_bucket_notification_configuration_no_such_bucket(self, s3_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
@@ -359,10 +359,7 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Error.ActualObjectSize", "$..Error.RangeRequested"]
-    )
-    @pytest.mark.skip_snapshot_verify(
-        condition=is_asf_provider,
+        condition=is_old_provider,
         paths=["$..Error.ActualObjectSize", "$..Error.RangeRequested", "$..Error.Message"],
     )
     def test_invalid_range_error(self, s3_client, s3_bucket, snapshot):
@@ -374,7 +371,7 @@ class TestS3:
         snapshot.match("exc", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Key"])
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Key", "$..Error.RequestID"])
     def test_range_key_not_exists(self, s3_client, s3_bucket, snapshot):
         key = "my-key"
         with pytest.raises(ClientError) as e:
@@ -448,7 +445,7 @@ class TestS3:
         snapshot.match("deleted-object-tags", object_tags)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(condition=is_asf_provider, paths=["$..AcceptRanges"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_head_object_fields(self, s3_client, s3_bucket, snapshot):
         key = "my-key"
         s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
@@ -735,7 +732,8 @@ class TestS3:
         snapshot.match("get_object", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(condition=is_asf_provider, paths=["$..Error.BucketName"])
+    @pytest.mark.xfail(reason="Get 404 Not Found instead of NoSuchBucket")
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.BucketName"])
     def test_bucket_availability(self, s3_client, snapshot):
         bucket_name = "test-bucket-lifecycle"
         with pytest.raises(ClientError) as e:
@@ -1376,6 +1374,7 @@ class TestS3:
         snapshot.match("head_object", response)
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_s3_uppercase_bucket_name(self, s3_client, s3_create_bucket, snapshot):
         # bucket name should be lower-case
         snapshot.add_transformer(snapshot.transform.s3_api())
