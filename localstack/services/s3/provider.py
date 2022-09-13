@@ -25,6 +25,8 @@ from localstack.aws.api.s3 import (
     ListObjectsV2Output,
     ListObjectsV2Request,
     NoSuchBucket,
+    NoSuchKey,
+    ObjectKey,
     PutBucketRequestPaymentRequest,
     PutObjectOutput,
     PutObjectRequest,
@@ -33,7 +35,7 @@ from localstack.aws.api.s3 import (
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.models import S3Store, s3_stores
-from localstack.services.s3.utils import verify_checksum
+from localstack.services.s3.utils import is_bucket_name_valid, is_key_expired, verify_checksum
 from localstack.utils.aws import aws_stack
 from localstack.utils.objects import singleton_factory
 from localstack.utils.patch import patch
@@ -140,6 +142,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     @handler("GetObject", expand=False)
     def get_object(self, context: RequestContext, request: GetObjectRequest) -> GetObjectOutput:
         response: GetObjectOutput = call_moto(context)
+        key = request.get("Key", "")
+        if is_object_expired(context, bucket=request.get("Bucket", ""), key=key):
+            # TODO: old behaviour was deleting key instantly if expired. AWS cleans up only once a day generally
+            # see if we need to implement a feature flag
+            # but you can still HeadObject on it and you get the expiry time
+            ex = NoSuchKey("The specified key does not exist.")
+            ex.Key = key
+            raise ex
+
         response["AcceptRanges"] = "bytes"
         return response
 
@@ -151,7 +162,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> PutObjectOutput:
         if checksum_algorithm := request.get("ChecksumAlgorithm"):
             verify_checksum(checksum_algorithm, context.request.data, request)
+
         response: PutObjectOutput = call_moto(context)
+
+        if expires := request.get("Expires"):
+            moto_backend = get_moto_s3_backend(context)
+            bucket = get_bucket_from_moto(moto_backend, bucket=request.get("Bucket", ""))
+            key = request.get("Key", "")
+            key_object = get_key_from_moto_bucket(bucket, key=key)
+            key_object.set_expiry(expires)
+
         return response
 
     @handler("PutBucketRequestPayment", expand=False)
@@ -184,8 +204,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
 
 def validate_bucket_name(bucket: BucketName):
-    # TODO: add rules to validate bucket name
-    if not bucket.islower():
+    """
+    Validate s3 bucket name based on the documentation
+    ref. https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
+    """
+    if not is_bucket_name_valid(bucket_name=bucket):
         ex = InvalidBucketName("The specified bucket is not valid.")
         ex.BucketName = bucket
         raise ex
@@ -201,6 +224,25 @@ def get_bucket_from_moto(
         ex = NoSuchBucket("The specified bucket does not exist")
         ex.BucketName = bucket
         raise ex
+
+
+def get_key_from_moto_bucket(
+    moto_bucket: moto_s3_models.FakeBucket, key: ObjectKey
+) -> moto_s3_models.FakeKey:
+    fake_key = moto_bucket.keys.get(key)
+    if not fake_key:
+        ex = NoSuchKey("The specified key does not exist.")
+        ex.Key = key
+        raise ex
+
+    return fake_key
+
+
+def is_object_expired(context: RequestContext, bucket: BucketName, key: ObjectKey) -> bool:
+    moto_backend = get_moto_s3_backend(context)
+    moto_bucket = get_bucket_from_moto(moto_backend, bucket)
+    key_object = get_key_from_moto_bucket(moto_bucket, key)
+    return is_key_expired(key_object=key_object)
 
 
 @singleton_factory
@@ -220,6 +262,7 @@ def apply_moto_patches():
                 header_name = _capitalize_header_name_from_snake_case(low_case_header)
                 resp_headers[header_name] = header_value
 
+        print(resp_headers)
         return status_code, resp_headers, key_value
 
     @patch(moto_s3_responses.S3Response._bucket_response_head)
