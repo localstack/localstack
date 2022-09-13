@@ -23,9 +23,6 @@ from localstack.config import dirs
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     ELASTICMQ_JAR_URL,
-    ELASTICSEARCH_DEFAULT_VERSION,
-    ELASTICSEARCH_DELETE_MODULES,
-    ELASTICSEARCH_PLUGIN_LIST,
     KMS_URL_PATTERN,
     LOCALSTACK_MAVEN_VERSION,
     MAVEN_REPO_URL,
@@ -45,7 +42,6 @@ from localstack.utils.files import (
 from localstack.utils.http import download
 from localstack.utils.platform import get_arch
 from localstack.utils.run import run
-from localstack.utils.sync import retry
 from localstack.utils.threads import parallelize
 
 LOG = logging.getLogger(__name__)
@@ -156,111 +152,6 @@ LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/rel
 LAMBDA_RUNTIME_INIT_PATH = os.path.join(config.dirs.static_libs, "aws-lambda-rie")
 
 OS_INSTALL_LOCKS = {}
-
-
-def get_elasticsearch_install_version(version: str) -> str:
-    from localstack.services.opensearch import versions
-
-    if config.SKIP_INFRA_DOWNLOADS:
-        return ELASTICSEARCH_DEFAULT_VERSION
-
-    return versions.get_install_version(version)
-
-
-def get_elasticsearch_install_dir(version: str) -> str:
-    if version == get_elasticsearch_install_version(
-        ELASTICSEARCH_DEFAULT_VERSION
-    ) and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
-        # install the default version into a subfolder of the code base
-        install_dir = os.path.join(dirs.static_libs, "elasticsearch")
-    else:
-        # put all other versions into the TMP_FOLDER
-        install_dir = os.path.join(config.dirs.var_libs, "elasticsearch", version)
-
-    return install_dir
-
-
-def install_elasticsearch(version=None):
-    # locally import to avoid having a dependency on ASF when starting the CLI
-    from localstack.aws.api.opensearch import EngineType
-    from localstack.services.opensearch import versions
-
-    if not version:
-        version = ELASTICSEARCH_DEFAULT_VERSION
-
-    version = get_elasticsearch_install_version(version)
-    install_dir = get_elasticsearch_install_dir(version)
-    installed_executable = os.path.join(install_dir, "bin", "elasticsearch")
-    if not os.path.exists(installed_executable):
-        log_install_msg(f"Elasticsearch ({version})")
-        es_url = versions.get_download_url(version, EngineType.Elasticsearch)
-        install_dir_parent = os.path.dirname(install_dir)
-        mkdir(install_dir_parent)
-        # download and extract archive
-        tmp_archive = os.path.join(config.dirs.cache, f"localstack.{os.path.basename(es_url)}")
-        download_and_extract_with_retry(es_url, tmp_archive, install_dir_parent)
-        elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, "elasticsearch*"))
-        if not elasticsearch_dir:
-            raise Exception(f"Unable to find Elasticsearch folder in {install_dir_parent}")
-        shutil.move(elasticsearch_dir[0], install_dir)
-
-        for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
-            dir_path = os.path.join(install_dir, dir_name)
-            mkdir(dir_path)
-            chmod_r(dir_path, 0o777)
-
-        # install default plugins
-        for plugin in ELASTICSEARCH_PLUGIN_LIST:
-            plugin_binary = os.path.join(install_dir, "bin", "elasticsearch-plugin")
-            plugin_dir = os.path.join(install_dir, "plugins", plugin)
-            if not os.path.exists(plugin_dir):
-                LOG.info("Installing Elasticsearch plugin %s", plugin)
-
-                def try_install():
-                    output = run([plugin_binary, "install", "-b", plugin])
-                    LOG.debug("Plugin installation output: %s", output)
-
-                # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
-                download_attempts = 3
-                try:
-                    retry(try_install, retries=download_attempts - 1, sleep=2)
-                except Exception:
-                    LOG.warning(
-                        "Unable to download Elasticsearch plugin '%s' after %s attempts",
-                        plugin,
-                        download_attempts,
-                    )
-                    if not os.environ.get("IGNORE_ES_DOWNLOAD_ERRORS"):
-                        raise
-
-    # delete some plugins to free up space
-    for plugin in ELASTICSEARCH_DELETE_MODULES:
-        module_dir = os.path.join(install_dir, "modules", plugin)
-        rm_rf(module_dir)
-
-    # disable x-pack-ml plugin (not working on Alpine)
-    xpack_dir = os.path.join(install_dir, "modules", "x-pack-ml", "platform")
-    rm_rf(xpack_dir)
-
-    # patch JVM options file - replace hardcoded heap size settings
-    jvm_options_file = os.path.join(install_dir, "config", "jvm.options")
-    if os.path.exists(jvm_options_file):
-        jvm_options = load_file(jvm_options_file)
-        jvm_options_replaced = re.sub(
-            r"(^-Xm[sx][a-zA-Z0-9.]+$)", r"# \1", jvm_options, flags=re.MULTILINE
-        )
-        if jvm_options != jvm_options_replaced:
-            save_file(jvm_options_file, jvm_options_replaced)
-
-    # patch JVM options file - replace hardcoded heap size settings
-    jvm_options_file = os.path.join(install_dir, "config", "jvm.options")
-    if os.path.exists(jvm_options_file):
-        jvm_options = load_file(jvm_options_file)
-        jvm_options_replaced = re.sub(
-            r"(^-Xm[sx][a-zA-Z0-9.]+$)", r"# \1", jvm_options, flags=re.MULTILINE
-        )
-        if jvm_options != jvm_options_replaced:
-            save_file(jvm_options_file, jvm_options_replaced)
 
 
 def install_sqs_provider():

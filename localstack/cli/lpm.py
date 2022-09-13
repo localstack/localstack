@@ -110,9 +110,8 @@ def install(package, parallel, version, target):
         else:
             with Pool(processes=parallel) as pool:
                 pool.map(_do_install, package)
-    except Exception as e:
-        # raise ClickException("one or more package installations failed.")
-        raise e
+    except Exception:
+        raise ClickException("one or more package installations failed.")
 
 
 @cli.command(name="list-service-packages")
