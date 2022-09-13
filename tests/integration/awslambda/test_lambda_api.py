@@ -81,7 +81,7 @@ class TestLambdaFunction:
                 },
             )
 
-        snapshot.match("create_fn_result", ex.value.response)
+        snapshot.match("failed_create_fn_result", ex.value.response)
         with pytest.raises(ClientError) as ex:
             lambda_client.get_function(FunctionName=function_name)
 
