@@ -395,10 +395,6 @@ USE_SSL = is_env_true("USE_SSL")
 # whether to use the legacy edge proxy or the newer Gateway/HandlerChain framework
 LEGACY_EDGE_PROXY = is_env_true("LEGACY_EDGE_PROXY")
 
-# whether legacy s3 is enabled
-# TODO change when asf becomes default: os.environ.get("PROVIDER_OVERRIDE_S3", "") == 'legacy'
-LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") != "asf"
-
 # Whether to report internal failures as 500 or 501 errors.
 FAIL_FAST = is_env_true("FAIL_FAST")
 
@@ -565,6 +561,10 @@ KINESIS_PROVIDER = os.environ.get("KINESIS_PROVIDER") or "kinesis-mock"
 # TODO: will need to discuss the best way to do this with -ext, this is temporary for testing
 if not os.environ.get("PROVIDER_OVERRIDE_S3"):
     os.environ["PROVIDER_OVERRIDE_S3"] = "asf"
+
+# whether legacy s3 is enabled
+# TODO change when asf becomes default: os.environ.get("PROVIDER_OVERRIDE_S3", "") == 'legacy'
+LEGACY_S3_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_S3", "") != "asf"
 
 # Whether or not to handle lambda event sources as synchronous invocations
 SYNCHRONOUS_SNS_EVENTS = is_env_true("SYNCHRONOUS_SNS_EVENTS")

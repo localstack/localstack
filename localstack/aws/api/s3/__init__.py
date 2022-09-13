@@ -165,6 +165,7 @@ Years = int
 BucketRegion = str
 BucketContentType = str
 IfCondition = str
+RestoreObjectOutputStatusCode = int
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -2754,6 +2755,7 @@ class RequestProgress(TypedDict, total=False):
 class RestoreObjectOutput(TypedDict, total=False):
     RequestCharged: Optional[RequestCharged]
     RestoreOutputPath: Optional[RestoreOutputPath]
+    StatusCode: Optional[RestoreObjectOutputStatusCode]
 
 
 class SelectParameters(TypedDict, total=False):

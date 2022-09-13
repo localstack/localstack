@@ -228,6 +228,21 @@
       "op": "replace",
       "path": "/operations/DeleteObjects/output/shape",
       "value": "DeleteResult"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/RestoreObjectOutputStatusCode",
+      "value": {
+        "type": "integer"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/RestoreObjectOutput/members/StatusCode",
+      "value": {
+        "shape": "RestoreObjectOutputStatusCode",
+        "location": "statusCode"
+      }
     }
   ]
 }

@@ -322,6 +322,9 @@ def is_object_expired(context: RequestContext, bucket: BucketName, key: ObjectKe
 
 @singleton_factory
 def apply_moto_patches():
+    # importing here in case we need InvalidObjectState from `localstack.aws.api.s3`
+    from moto.s3.exceptions import InvalidObjectState
+
     @patch(moto_s3_responses.S3Response.key_response)
     def _fix_key_response(fn, self, *args, **kwargs):
         """Change casing of Last-Modified headers to be picked by the parser"""
@@ -340,10 +343,20 @@ def apply_moto_patches():
         return status_code, resp_headers, key_value
 
     @patch(moto_s3_responses.S3Response._bucket_response_head)
-    def _bucket_response_head(fn, self, bucket_name, *args, **kwargs):
+    def _fix_bucket_response_head(fn, self, bucket_name, *args, **kwargs):
         code, headers, body = fn(self, bucket_name, *args, **kwargs)
         bucket = self.backend.get_bucket(bucket_name)
         headers["x-amz-bucket-region"] = bucket.region_name
+        return code, headers, body
+
+    @patch(moto_s3_responses.S3Response._key_response_get)
+    def _fix_key_response_get(fn, *args, **kwargs):
+        code, headers, body = fn(*args, **kwargs)
+        storage_class = headers.get("x-amz-storage-class")
+
+        if storage_class == "DEEP_ARCHIVE" and not headers.get("x-amz-restore"):
+            raise InvalidObjectState(storage_class=storage_class)
+
         return code, headers, body
 
 

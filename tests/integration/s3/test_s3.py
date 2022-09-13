@@ -2674,12 +2674,13 @@ class TestS3DeepArchive:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
         paths=[
             "$..Error.Message",  # TODO AWS does not include dot at the end
             "$..Error.RequestID",  # AWS has no RequestID here
             "$..Error.StorageClass",  # Missing in Localstack
             "$..StorageClass",  # Missing in Localstack
-        ]
+        ],
     )
     def test_s3_get_deep_archive_object_restore(self, s3_client, s3_create_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.s3_api())
