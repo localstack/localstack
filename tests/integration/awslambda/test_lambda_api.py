@@ -129,6 +129,7 @@ class TestLambdaFunction:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
         paths=[
             "$..CodeSha256",
             "$..EphemeralStorage",
@@ -139,7 +140,7 @@ class TestLambdaFunction:
             "$..StateReason",
             "$..StateReasonCode",
             "$..VpcConfig",
-        ]
+        ],
     )
     def test_lambda_envvars_near_limit_succeeds(
         self, lambda_client, create_lambda_function, snapshot
