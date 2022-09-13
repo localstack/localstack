@@ -356,9 +356,6 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
-        condition=is_old_provider, paths=["$..Error.ActualObjectSize", "$..Error.RangeRequested"]
-    )
-    @pytest.mark.skip_snapshot_verify(
         condition=is_asf_provider,
         paths=["$..Error.ActualObjectSize", "$..Error.RangeRequested", "$..Error.Message"],
     )
@@ -371,7 +368,7 @@ class TestS3:
         snapshot.match("exc", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Key"])
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.Key"])
     def test_range_key_not_exists(self, s3_client, s3_bucket, snapshot):
         key = "my-key"
         with pytest.raises(ClientError) as e:

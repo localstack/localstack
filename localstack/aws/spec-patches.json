@@ -156,6 +156,26 @@
       "value": {
         "type": "string"
       }
+    },
+        {
+      "op": "add",
+      "path": "/shapes/InvalidRange",
+      "value": {
+        "type": "structure",
+        "members": {
+          "ActualObjectSize": {
+            "shape": "ObjectSize"
+          },
+          "RangeRequested": {
+            "shape": "ContentRange"
+          }
+        },
+        "error": {
+          "httpStatusCode": 416
+        },
+        "documentation": "<p>The requested range is not satisfiable</p>",
+        "exception": true
+      }
     }
   ]
 }

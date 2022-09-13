@@ -623,6 +623,17 @@ class PreconditionFailed(ServiceException):
     Condition: Optional[IfCondition]
 
 
+ObjectSize = int
+
+
+class InvalidRange(ServiceException):
+    code: str = "InvalidRange"
+    sender_fault: bool = False
+    status_code: int = 416
+    ActualObjectSize: Optional[ObjectSize]
+    RangeRequested: Optional[ContentRange]
+
+
 AbortDate = datetime
 
 
@@ -1745,9 +1756,6 @@ class GetObjectAclRequest(ServiceRequest):
     VersionId: Optional[ObjectVersionId]
     RequestPayer: Optional[RequestPayer]
     ExpectedBucketOwner: Optional[AccountId]
-
-
-ObjectSize = int
 
 
 class ObjectPart(TypedDict, total=False):
