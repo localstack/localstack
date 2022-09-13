@@ -39,9 +39,6 @@ os.environ[
     "MOTO_S3_CUSTOM_ENDPOINTS"
 ] = "s3.localhost.localstack.cloud:4566,s3.localhost.localstack.cloud"
 
-# PATCHED_EXCEPTIONS = [NoSuchBucket, NoSuchLifecycleConfiguration]
-PATCHED_EXCEPTIONS = []
-
 
 def get_moto_s3_backend(context: RequestContext) -> moto_s3_models.S3Backend:
     return moto_s3_backends[context.account_id]["global"]
