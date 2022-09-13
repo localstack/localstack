@@ -11,6 +11,7 @@ from _pytest.python import Metafunc
 from localstack.aws.api.lambda_ import Runtime
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 
 if TYPE_CHECKING:
     from mypy_boto3_lambda import LambdaClient
@@ -40,7 +41,7 @@ RUNTIMES_AGGREGATED = {
         Runtime.dotnet6,
     ],
     "go": [Runtime.go1_x],
-    "provided": [Runtime.provided, Runtime.provided_al2],
+    "custom": [Runtime.provided, Runtime.provided_al2],
 }
 
 HANDLERS = {
@@ -48,7 +49,7 @@ HANDLERS = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "index.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "echo.Handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "function.handler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("custom"), "function.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("go"), "main"),
     "dotnetcore3.1": "dotnetcore31::dotnetcore31.Function::FunctionHandler",  # TODO lets see if we can accumulate those
     "dotnet6": "dotnet6::dotnet6.Function::FunctionHandler",
@@ -59,7 +60,7 @@ PACKAGE_FOR_RUNTIME = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "nodejs"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "ruby"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "java"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "provided"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("custom"), "provided"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("go"), "go"),
     "dotnet6": "dotnet6",
     "dotnetcore3.1": "dotnetcore3.1",
@@ -204,7 +205,12 @@ class ParametrizedLambda:
         kwargs.setdefault("Role", self.role)
         kwargs.setdefault("Code", {"ZipFile": load_file(self.zip_file_path, mode="rb")})
 
-        result = self.lambda_client.create_function(**kwargs)
+        def _create_function():
+            return self.lambda_client.create_function(**kwargs)
+
+        # @AWS, takes about 10s until the role/policy is "active", until then it will fail
+        # localstack should normally not require the retries and will just continue here
+        result = retry(_create_function, retries=3, sleep=4)
         self.function_names.append(result["FunctionArn"])
         self.lambda_client.get_waiter("function_active_v2").wait(
             FunctionName=kwargs.get("FunctionName")
