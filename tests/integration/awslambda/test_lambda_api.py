@@ -51,6 +51,11 @@ def string_length_bytes(s: str) -> int:
     return len(s.encode("utf-8"))
 
 
+def environment_length_bytes(e: dict) -> int:
+    serialized_environment = json.dumps(e, separators=(":", ","))
+    return string_length_bytes(serialized_environment)
+
+
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
 class TestLambdaFunction:
     @pytest.mark.aws_validated
@@ -88,6 +93,80 @@ class TestLambdaFunction:
 
         assert ex.match("ResourceNotFoundException")
 
+    @pytest.mark.aws_validated
+    def test_large_environment_fails_multiple_keys(
+        self, lambda_client, create_lambda_function, snapshot
+    ):
+        """Lambda functions with environment variables larger than 4 KiB should fail to create."""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
+        # set up environment mapping with a total size of 4 KB
+        env = {"SMALL_VAR": "ok"}
+
+        key = "LARGE_VAR"
+        # this size makes the environment > 4K
+        target_size = 4064
+        large_envvar = "x" * target_size
+        env[key] = large_envvar
+        assert environment_length_bytes(env) == 4097
+
+        function_name = "large-envvar-lambda"
+
+        with pytest.raises(lambda_client.exceptions.InvalidParameterValueException) as ex:
+            create_lambda_function(
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                func_name=function_name,
+                runtime=Runtime.python3_9,
+                envvars=env,
+            )
+
+        snapshot.match("failured_create_fn_result_multi_key", ex.value.response)
+
+        with pytest.raises(ClientError) as exc:
+            lambda_client.get_function(FunctionName=function_name)
+
+        assert exc.match("ResourceNotFoundException")
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..CodeSha256",
+            "$..EphemeralStorage",
+            "$..LastUpdateStatus",
+            "$..MemorySize",
+            "$..ResponseMetadata",
+            "$..State",
+            "$..StateReason",
+            "$..StateReasonCode",
+            "$..VpcConfig",
+        ]
+    )
+    def test_lambda_envvars_near_limit_succeeds(
+        self, lambda_client, create_lambda_function, snapshot
+    ):
+        """Lambda functions with environment variables larger than 4 KiB should fail to create."""
+        snapshot.add_transformer(snapshot.transform.lambda_api())
+
+        # set up environment mapping with a total size of 4 KB
+        key = "LARGE_VAR"
+        key_bytes = string_length_bytes(key)
+        # the environment variable size is exactly 4KB, so should succeed
+        target_size = 4 * KB - 7
+        large_envvar_bytes = target_size - key_bytes
+        large_envvar = "x" * large_envvar_bytes
+
+        function_name = "large-envvar-lambda"
+        res = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_9,
+            envvars={
+                "LARGE_VAR": large_envvar,
+            },
+        )
+
+        snapshot.match("successful_create_fn_result", res)
+        lambda_client.get_function(FunctionName=function_name)
 
     # TODO: maybe need to wait for each update to be active?
     @pytest.mark.aws_validated
