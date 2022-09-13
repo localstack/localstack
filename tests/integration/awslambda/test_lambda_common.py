@@ -3,6 +3,7 @@ import logging
 
 import pytest
 
+from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -11,6 +12,25 @@ LOG = logging.getLogger(__name__)
 @pytest.fixture(autouse=True)
 def snapshot_transformers(snapshot):
     snapshot.add_transformer(snapshot.transform.lambda_api())
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("AWS_ACCESS_KEY_ID", "aws-access-key-id"),
+            snapshot.transform.key_value("AWS_SECRET_ACCESS_KEY", "aws-secret-access-key"),
+            snapshot.transform.key_value("AWS_SESSION_TOKEN", "aws-session-token"),
+            snapshot.transform.key_value("_X_AMZN_TRACE_ID", "x-amzn-trace-id"),
+            # go lambdas only
+            snapshot.transform.key_value(
+                "_LAMBDA_SERVER_PORT", "<lambda-server-port>", reference_replacement=False
+            ),
+            # workaround for integer values
+            KeyValueBasedTransformer(
+                lambda k, v: str(v) if k == "remaining_time_in_millis" else None,
+                "<remaining-time-in-millis>",
+                replace_reference=False,
+            ),
+            snapshot.transform.key_value("deadline", "deadline"),
+        ]
+    )
 
 
 class TestLambdaRuntimesCommon:
