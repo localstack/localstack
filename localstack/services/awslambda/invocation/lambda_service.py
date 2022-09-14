@@ -1,6 +1,4 @@
-import base64
 import concurrent.futures
-import hashlib
 import logging
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from threading import RLock
@@ -91,10 +89,13 @@ class LambdaService:
 
         with self.create_fn_lock:
             arn = VersionIdentifier(function_name, "$LATEST", region_name, account_id)
-            zip_file_content = code.zip_file
-            code_sha_256 = base64.standard_b64encode(
-                hashlib.sha256(zip_file_content).digest()
-            ).decode("utf-8")
+
+            # zip_file_content = code.zip_file
+            # code_sha_256 = base64.standard_b64encode(
+            #     hashlib.sha256(zip_file_content).digest()
+            # ).decode("utf-8")
+            # TODO: calculate this from the actual code we retrieve here (e.g. downloaded from S3)
+            code_sha_256 = "codesha"
             version = FunctionVersion(
                 id=arn,
                 qualifier="$LATEST",
@@ -102,7 +103,8 @@ class LambdaService:
                 config_meta=FunctionConfigurationMeta(
                     function_arn=arn.qualified_arn(),
                     revision_id="?",
-                    code_size=len(code.zip_file),
+                    code_size=512,
+                    # code_size=len(code.zip_file),
                     coda_sha256=code_sha_256,
                     last_modified="asdf",
                     last_update=UpdateStatus(status="Successful"),

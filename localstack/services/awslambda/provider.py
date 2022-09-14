@@ -111,6 +111,18 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if architectures and Architecture.arm64 in architectures:
             raise ServiceException("ARM64 is currently not supported by this provider")
 
+        code = Code()
+        if request["PackageType"] == PackageType.Zip:
+            request_code = request["Code"]
+            if request_code.get("ZipFile"):
+                code.zip_file = request_code["ZipFile"]
+            elif request_code["S3Bucket"]:
+                # validate all are here
+                # TODO: test exception
+                code.s3_bucket = request_code["S3Bucket"]
+                code.s3_bucket = request_code["S3Key"]
+                # code.s3_bucket = request_code['S3ObjectVersion']  # optional
+
         version = self.lambda_service.create_function(
             context.account_id,
             context.region,
@@ -118,19 +130,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             function_config=VersionFunctionConfiguration(
                 description=request.get("Description", ""),
                 role=request["Role"],
-                timeout=request["Timeout"] or LAMBDA_DEFAULT_TIMEOUT,
+                timeout=request.get("Timeout", LAMBDA_DEFAULT_TIMEOUT),
                 runtime=request["Runtime"],
-                memory_size=request["MemorySize"] or LAMBDA_DEFAULT_MEMORY_SIZE,
+                memory_size=request.get("MemorySize", LAMBDA_DEFAULT_MEMORY_SIZE),
                 handler=request["Handler"],
                 package_type=PackageType.Zip,  # TODO
                 reserved_concurrent_executions=0,
-                environment={k: v for k, v in request["Environment"]["Variables"].items()},
+                environment={
+                    k: v for k, v in request.get("Environment", {}).get("Variables", {}).items()
+                },
                 architectures=[Architecture.x86_64],  # TODO
                 tracing_config_mode=TracingMode.PassThrough,  # TODO
                 image_config=None,  # TODO
                 layers=[],  # TODO
             ),
-            code=Code(zip_file=request["Code"]["ZipFile"]),  # TODO: s3?
+            code=code,
         )
         return self._map_config_out(version)
 
@@ -144,6 +158,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def update_function_code(
         self, context: RequestContext, request: UpdateFunctionCodeRequest
     ) -> FunctionConfiguration:
+        # only supports normal zip packaging atm
+        # if request.get("Publish"):
+        #     self.lambda_service.create_function_version()
+        # self.lambda_service.update
         return FunctionConfiguration()
 
     # TODO: does deleting the latest published version affect the next versions number?
@@ -183,7 +201,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,  # TODO
         max_items: MaxListItems = None,  # TODO
     ) -> ListFunctionsResponse:
-        versions = self.lambda_service.list_function_versions(context.region)
+        versions = self.lambda_service.list_function_versions(context.account_id, context.region)
         return ListFunctionsResponse(
             Functions=[self._map_to_list_response(self._map_config_out(fc)) for fc in versions]
         )
@@ -197,13 +215,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         version = self.lambda_service.get_function_version(
             context.account_id, context.region, function_name, qualifier or "$LATEST"
         )
-
         return GetFunctionResponse(
             Configuration=self._map_config_out(version),
-            Code=FunctionCodeLocation(Location=""),  # TODO
+            Code=FunctionCodeLocation(Location="http://httpbin.org/get"),  # TODO
             # Tags={},  # TODO
             # Concurrency={},  # TODO
         )
+
+    def get_function_configuration(
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        qualifier: Qualifier = None,
+    ) -> FunctionConfiguration:  # CAVE: THIS RETURN VALUE IS *NOT* THE SAME AS IN get_function (!)
+        return FunctionConfiguration()
 
     def invoke(
         self,
