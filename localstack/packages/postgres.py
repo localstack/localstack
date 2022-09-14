@@ -33,6 +33,9 @@ class PostgresqlPackageInstaller(OSPackageInstaller):
     def _debian_get_install_dir(self, target: InstallTarget):
         return self._debian_install_dir
 
+    def _debian_get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, "bin", "psql")
+
     def _debian_packages(self) -> List[str]:
         return self._debian_package_list
 
@@ -52,6 +55,9 @@ class PostgresqlPackageInstaller(OSPackageInstaller):
     def _redhat_get_install_dir(self, target: InstallTarget):
         return self._redhat_install_dir
 
+    def _redhat_get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, "bin", "psql")
+
     def _redhat_packages(self) -> List[str]:
         return self._redhat_package_list
 
@@ -59,9 +65,6 @@ class PostgresqlPackageInstaller(OSPackageInstaller):
         # Install the redhat repo
         run(["dnf", "install", "-y", POSTGRES_RPM_REPOSITORY])
         super()._redhat_prepare_install(target)
-
-    def _build_executables_path(self, install_dir: str):
-        return os.path.join(install_dir, "bin", "psql")
 
 
 class PostgresqlPackage(Package):

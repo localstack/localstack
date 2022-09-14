@@ -116,7 +116,9 @@ def install(package, parallel, version, target):
 
 @cli.command(name="list-service-packages")
 def list_service_packages():
-    for service, packages in _get_service_packages().items():
+    package_repo = PackageRepository()
+    service_packages = package_repo.get_service_packages()
+    for service, packages in service_packages.items():
         console.print(f"[green]{service}[/green]:")
         for package in packages:
             console.print(f"  - {package.name}", highlight=False)
@@ -145,7 +147,8 @@ def list_service_packages():
 )
 def install_service_packages(services: List[str], parallel: int, target: str):
     packages = []
-    service_packages = _get_service_packages()
+    package_repo = PackageRepository()
+    service_packages = package_repo.get_service_packages()
     for service in services:
         packages += service_packages.get(service, [])
 
@@ -163,19 +166,6 @@ def install_service_packages(services: List[str], parallel: int, target: str):
         pool.starmap(
             _do_install_package, zip(packages, itertools.repeat(None), itertools.repeat(target))
         )
-
-
-def _get_service_packages() -> Dict[str, List[Package]]:
-    result = {}
-    package_repo = PackageRepository()
-    package_repo.load_all()
-    container_names = package_repo.list_names()
-    for container_name in container_names:
-        container = package_repo.get_container(container_name)
-        service = container.plugin.service
-        packages: List[Package] = container.plugin.get_packages()
-        result[service] = packages
-    return result
 
 
 @cli.command(name="list")

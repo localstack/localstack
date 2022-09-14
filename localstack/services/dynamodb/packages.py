@@ -42,9 +42,6 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
     def __init__(self):
         super().__init__("dynamodb-local", "latest")
 
-    def _build_executables_path(self, install_dir: str):
-        return os.path.join(install_dir, "DynamoDBLocal.jar")
-
     def _install(self, target: InstallTarget):
         # download and extract archive
         tmp_archive = os.path.join(tempfile.gettempdir(), "localstack.ddb.zip")
@@ -87,6 +84,9 @@ class DynamoDBLocalPackageInstaller(PackageInstaller):
         update_jar_manifest(
             "DynamoDBLocal.jar", install_dir, "Class-Path: .", "Class-Path: javassist.jar ."
         )
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(install_dir, "DynamoDBLocal.jar")
 
     def get_ddb_agent_jar_path(self):
         return os.path.join(self.get_installed_dir(), "ddb-local-loader-0.1.jar")

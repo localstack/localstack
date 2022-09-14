@@ -4,7 +4,7 @@ import threading
 
 from localstack.http import Response
 from localstack.services.plugins import Service, ServiceManager
-from localstack.utils.threads import SynchronizedDefaultDict
+from localstack.utils.sync import SynchronizedDefaultDict
 
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain

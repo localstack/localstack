@@ -1,6 +1,6 @@
 import threading
 
-from localstack.utils.threads import SynchronizedDefaultDict
+from localstack.utils.sync import SynchronizedDefaultDict
 
 
 def test_synchronized_defaultdict():

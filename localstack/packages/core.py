@@ -6,7 +6,7 @@ import threading
 from abc import ABC
 from enum import Enum
 from inspect import getmodule
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from plugin import Plugin, PluginManager, PluginSpec
 
@@ -102,26 +102,16 @@ class PackageInstaller(abc.ABC):
         """
         return self.get_installed_dir() is not None
 
-    def get_installed_dir(self) -> str:
+    def get_installed_dir(self) -> str | None:
         """
-        Returns the installation directory. The directory can differ based on the installation target and version.
+        Returns the directory of an existing installation. The directory can differ based on the installation target
+        and version.
         :return: str representation of the installation directory path or None if the package is not installed anywhere
         """
         for target in InstallTarget:
             directory = self._get_install_dir(target)
-            if directory and os.path.exists(directory):
+            if directory and os.path.exists(self._get_install_marker_path(directory)):
                 return directory
-
-    def get_executables_path(self) -> str | None:
-        """
-        TODO check if this is useful?
-        Returns the path to the executable of the package (i.e. the binary / script / jar / ... which represents the
-        main executable of the specific package installation).
-        :return: str representation of the executable path or None if the package is not installed anywhere
-        """
-        directory = self.get_installed_dir()
-        if directory:
-            return self._build_executables_path(directory)
 
     def _get_install_dir(self, target: InstallTarget) -> str:
         """
@@ -131,11 +121,14 @@ class PackageInstaller(abc.ABC):
         """
         return os.path.join(target.value, self.name, self.version)
 
-    def _build_executables_path(self, install_dir: str) -> str:
+    def _get_install_marker_path(self, install_dir: str) -> str:
         """
-        Internal function to build the executable path for a specific installation directory.
-        Needs to be implemented by subclasses.
-        :return: str representation of the executable path in the given installation directory
+        Builds the path for a specific "marker" whose presence indicates that the package has been installed
+        successfully in the given directory.
+
+        :param install_dir: base path for the check (f.e. /var/lib/localstack/lib/dynamodblocal/latest/)
+        :return: path which should be checked to indicate if the package has been installed successfully
+                 (f.e. /var/lib/localstack/lib/dynamodblocal/latest/DynamoDBLocal.jar)
         """
         raise NotImplementedError()
 
@@ -174,6 +167,7 @@ _DEBIAN_CACHE_DIR = os.path.join(config.dirs.cache, "apt")
 
 class OSPackageInstaller(PackageInstaller, ABC):
     """
+    TODO make sure to log the output of all "run" commands (at least on trace level)
     Package installer abstraction for packages which are installed on operating system level, using the OS package
     manager.
     These packages are exceptional, since they cannot be installed to a specific target.
@@ -230,7 +224,19 @@ class OSPackageInstaller(PackageInstaller, ABC):
                 debian=self._debian_post_process, redhat=self._redhat_post_process, target=target
             )
 
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return self._os_switch(
+            debian=self._debian_get_install_marker_path,
+            redhat=self._redhat_get_install_marker_path,
+            install_dir=install_dir,
+        )
+
     def _debian_get_install_dir(self, target: InstallTarget) -> str:
+        raise SystemNotSupportedException(
+            f"There is no supported installation method for {self.name} on Debian."
+        )
+
+    def _debian_get_install_marker_path(self, install_dir: str) -> str:
         raise SystemNotSupportedException(
             f"There is no supported installation method for {self.name} on Debian."
         )
@@ -253,7 +259,7 @@ class OSPackageInstaller(PackageInstaller, ABC):
 
     def _debian_post_process(self, target: InstallTarget) -> None:
         # TODO maybe remove the debian cache dir here?
-        ...
+        pass
 
     def _debian_cmd_prefix(self) -> List[str]:
         """Return the apt command prefix, configuring the local package cache folders"""
@@ -269,13 +275,18 @@ class OSPackageInstaller(PackageInstaller, ABC):
             f"There is no supported installation method for {self.name} on RedHat."
         )
 
+    def _redhat_get_install_marker_path(self, install_dir: str) -> str:
+        raise SystemNotSupportedException(
+            f"There is no supported installation method for {self.name} on Debian."
+        )
+
     def _redhat_packages(self) -> List[str]:
         raise SystemNotSupportedException(
             f"There is no supported installation method for {self.name} on RedHat."
         )
 
     def _redhat_prepare_install(self, target: InstallTarget) -> None:
-        ...
+        pass
 
     def _redhat_install(self, target: InstallTarget) -> None:
         run(["dnf", "install", "-y"] + self._redhat_packages())
@@ -318,6 +329,17 @@ class Package(abc.ABC):
 class PackageRepository(PluginManager):
     def __init__(self):
         super().__init__(namespace=PLUGIN_NAMESPACE)
+
+    def get_service_packages(self) -> Dict[str, List[Package]]:
+        result = {}
+        self.load_all()
+        container_names = self.list_names()
+        for container_name in container_names:
+            container = self.get_container(container_name)
+            service = container.plugin.service
+            packages: List[Package] = container.plugin.get_packages()
+            result[service] = packages
+        return result
 
 
 class PackagesPlugin(Plugin):

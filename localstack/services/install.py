@@ -10,7 +10,6 @@ import shutil
 import stat
 import sys
 import tempfile
-import threading
 import time
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple, Union
@@ -150,8 +149,6 @@ TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-
 
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/v0.1.1-pre/aws-lambda-rie-{arch}"
 LAMBDA_RUNTIME_INIT_PATH = os.path.join(config.dirs.static_libs, "aws-lambda-rie")
-
-OS_INSTALL_LOCKS = {}
 
 
 def install_sqs_provider():
@@ -498,6 +495,18 @@ def get_terraform_binary() -> str:
 
 
 def install_component(name):
+    from localstack.services.dynamodb.packages import dynamodblocal_package
+
+    installers = {
+        "cloudformation": install_cloudformation_libs,
+        "dynamodb": dynamodblocal_package.install,
+        "kinesis": install_kinesis,
+        "kms": install_local_kms,
+        "lambda": install_lambda_runtime,
+        "sqs": install_sqs_provider,
+        "stepfunctions": install_stepfunctions_local,
+    }
+
     installer = installers.get(name)
     if installer:
         installer()
@@ -574,22 +583,11 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
 
 
-# kept here for backwards compatibility (installed on "make init" - TODO should be removed)
-installers = {
-    "cloudformation": install_cloudformation_libs,
-    # WIP, this function was removed due to the installer refactoring
-    # "dynamodb": install_dynamodb_local,
-    "kinesis": install_kinesis,
-    "kms": install_local_kms,
-    "lambda": install_lambda_runtime,
-    "sqs": install_sqs_provider,
-    "stepfunctions": install_stepfunctions_local,
-}
-
 Installer = Tuple[str, Callable]
 
 
 class InstallerRepository(Plugin):
+    # TODO the installer repositories should be migrated (downwards compatible) to use the packages / package installers
     namespace = "localstack.installer"
 
     def get_installer(self) -> List[Installer]:
@@ -649,10 +647,9 @@ class InstallerManager:
         return installer(*args, **kwargs)
 
 
-INSTALL_LOCK = threading.RLock()
-
-
 def main():
+    # TODO this main should be removed (together with the make init target in the Makefile)
+    #      once the installer refactoring is done
     if len(sys.argv) > 1:
         config.dirs.mkdirs()
 
