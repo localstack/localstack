@@ -296,20 +296,44 @@ class OSPackageInstaller(PackageInstaller, ABC):
 
 
 class Package(abc.ABC):
+    """
+    A Package defines a specific kind of software, mostly used as backends or supporting system for service
+    implementations.
+    """
+
     def __init__(self, name: str, default_version: str):
+        """
+        :param name: Human readable name of the package, f.e. "PostgreSQL"
+        :param default_version: Default version of the package which is used for installations if no version is defined
+        """
         self.name = name
         self.default_version = default_version
 
-    def get_executables_path(self, version: str | None = None) -> str | None:
-        return self.get_installer(version).get_executables_path()
-
     def get_installed_dir(self, version: str | None = None) -> str | None:
+        """
+        Finds a directory where the package (in the specific version) is installed.
+        :param version: of the package to look for. If None, the default version of the package is used.
+        :return: str representation of the path to the existing installation directory or None if the package in this
+                 version is not yet installed.
+        """
         return self.get_installer(version).get_installed_dir()
 
     def install(self, version: str | None = None, target: Optional[InstallTarget] = None) -> None:
+        """
+        Installs the package in the given version in the preferred target location.
+        :param version: version of the package to install. If None, the default version of the package will be used.
+        :param target: preferred installation target. If None, the var_libs directory is used.
+        :raises NoSuchVersionException: If the given version is not supported.
+        """
         self.get_installer(version).install(target)
 
     def get_installer(self, version: str | None = None) -> PackageInstaller:
+        """
+        Returns the installer instance for a specific version of the package.
+        :param version: version of the package to install. If None, the default version of the package will be used.
+        :return: PackageInstaller instance for the given version.
+        :raises NoSuchVersionException: If the given version is not supported.
+        """
         if not version:
             version = self.default_version
         if version not in self.get_versions():
@@ -317,9 +341,19 @@ class Package(abc.ABC):
         return self._get_installer(version)
 
     def get_versions(self) -> List[str]:
+        """
+        :return: List of all versions available for this package.
+        """
         raise NotImplementedError()
 
     def _get_installer(self, version: str) -> PackageInstaller:
+        """
+        Internal lookup function which needs to be implemented by specific packages.
+        It creates PackageInstaller instances for the specific version.
+
+        :param version: to find the installer for
+        :return: PackageInstaller instance responsible for installing the given version of the package.
+        """
         raise NotImplementedError()
 
     def __str__(self):
@@ -327,6 +361,12 @@ class Package(abc.ABC):
 
 
 class PackageRepository(PluginManager):
+    """
+    PackageRepository is a plugin manager for PackagesPlugin instances.
+    It discovers all plugins in the namespace "localstack.packages" and provides convenience functions to
+    list the packages for each service.
+    """
+
     def __init__(self):
         super().__init__(namespace=PLUGIN_NAMESPACE)
 
@@ -337,12 +377,17 @@ class PackageRepository(PluginManager):
         for container_name in container_names:
             container = self.get_container(container_name)
             service = container.plugin.service
-            packages: List[Package] = container.plugin.get_packages()
-            result[service] = packages
+            _packages: List[Package] = container.plugin.get_packages()
+            result[service] = _packages
         return result
 
 
 class PackagesPlugin(Plugin):
+    """
+    Plugin implementation for Package plugins.
+    A package plugin bundles a specific service with a set of packages which are used by the service.
+    """
+
     service: str
 
     def __init__(
@@ -355,11 +400,21 @@ class PackagesPlugin(Plugin):
         self._get_packages = get_packages
 
     def get_packages(self) -> List[Package]:
-        packages = self._get_packages()
-        return packages if isinstance(packages, list) else [packages]
+        """
+        :return: list of package instances which are used by the service this PackagePlugin is associated with.
+        """
+        _packages = self._get_packages()
+        return _packages if isinstance(_packages, list) else [_packages]
 
 
 def packages(service: Optional[str] = None, name: Optional[str] = "default"):
+    """
+    Decorator for marking methods that create Package instances as a PackagePlugin.
+    Methods marked with this decorator are discoverable as a PluginSpec within the namespace "localstack.packages",
+    with the name "<service>:<name>". If service is not explicitly specified, then the module name is used as service
+    name.
+    """
+
     def wrapper(fn):
         @functools.wraps(fn)
         def factory() -> PackagesPlugin:
