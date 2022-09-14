@@ -19,6 +19,7 @@ def _get_all_key_ids(kms_client):
         kwargs = {"nextToken": next_token} if next_token else {}
         response = kms_client.list_keys(**kwargs)
         for key in response["Keys"]:
+            print(key)
             ids.add(key["KeyId"])
         if "nextToken" not in response:
             break
@@ -67,6 +68,22 @@ class TestKMS:
         assert response["KeyId"] == key_id
         assert f":{region}:" in response["Arn"]
         assert f":{account_id}:" in response["Arn"]
+
+    @pytest.mark.aws_validated
+    def test_list_keys(self, kms_client, kms_create_key):
+        created_key = kms_create_key()
+        next_token = None
+        while True:
+            kwargs = {"nextToken": next_token} if next_token else {}
+            response = kms_client.list_keys(**kwargs)
+            for key in response["Keys"]:
+                assert key["KeyId"]
+                assert key["KeyArn"]
+                if key["KeyId"] == created_key["KeyId"]:
+                    assert key["KeyArn"] == created_key["Arn"]
+            if "nextToken" not in response:
+                break
+            next_token = response["nextToken"]
 
     @pytest.mark.aws_validated
     def test_schedule_and_cancel_key_deletion(self, kms_client, kms_create_key):

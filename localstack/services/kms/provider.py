@@ -220,7 +220,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # Out of whole KeyMetadata only two fields are present in the response.
         keys_list = PaginatedList(
             [
-                select_attributes(key.metadata, ("KeyArn", "KeyId"))
+                {"KeyId": key.metadata["KeyId"], "KeyArn": key.metadata["Arn"]}
                 for key in self._get_store(context).keys.values()
             ]
         )
