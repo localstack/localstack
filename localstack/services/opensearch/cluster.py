@@ -7,7 +7,6 @@ import requests
 
 from localstack import config, constants
 from localstack.aws.api.opensearch import EngineType
-from localstack.services import install
 from localstack.services.generic_proxy import EndpointProxy
 from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.services.opensearch import versions
@@ -88,11 +87,7 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
     """
     # where to find cluster binary and the modules
     engine_type, install_version = versions.get_install_type_and_version(version)
-    if engine_type == EngineType.OpenSearch:
-        install_dir = install.get_opensearch_install_dir(install_version)
-    else:
-        # Elasticsearch version
-        install_dir = install.get_elasticsearch_install_dir(install_version)
+    install_dir = opensearch_package.get_installed_dir(version)
 
     modules_dir = os.path.join(install_dir, "modules")
 
@@ -133,7 +128,7 @@ class OpensearchCluster(Server):
         self._version = version or self.default_version
 
         self.command_settings = {}
-        self.directories = directories or self._resolve_directories()
+        self.directories = directories
 
     @property
     def default_version(self) -> str:
@@ -161,6 +156,7 @@ class OpensearchCluster(Server):
 
     def do_start_thread(self) -> FuncThread:
         self._ensure_installed()
+        self.directories = self.directories or self._resolve_directories()
         self._init_directories()
 
         cmd = self._create_run_command(additional_settings=self.command_settings)
@@ -377,8 +373,7 @@ class ElasticsearchCluster(OpensearchCluster):
 class EdgeProxiedElasticsearchCluster(EdgeProxiedOpensearchCluster):
     @property
     def default_version(self):
-        # TODO move to constants
-        return "Elasticsearch_7.10"
+        return constants.ELASTICSEARCH_DEFAULT_VERSION
 
     def _backend_cluster(self) -> OpensearchCluster:
         return ElasticsearchCluster(
