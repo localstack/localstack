@@ -8,8 +8,8 @@ by subclassing BaseStore e.g. `localstack.services.sqs.models.SqsStore`
 Also by convention, cross-region attributes are declared in CAPITAL_CASE
 
     class SqsStore(BaseStore):
-        queues =  LocalAttribute(default=dict)        # type: Dict[str, SqsQueue]
-        DELETED = CrossRegionAttribute(default=dict)  # type: Dict[str, float]
+        queues: dict[str, SqsQueue] =  LocalAttribute(default=dict)
+        DELETED: dict[str, float] = CrossRegionAttribute(default=dict)
 
 Stores are then wrapped in AccountRegionBundle
 
@@ -222,7 +222,7 @@ class AccountRegionBundle(dict, Generic[BaseStoreType]):
         self.validate = validate
         self.lock = RLock()
 
-    def __getitem__(self, account_id: str) -> RegionBundle:
+    def __getitem__(self, account_id: str) -> RegionBundle[BaseStoreType]:
         if self.validate and not re.match(r"\d{12}", account_id):
             raise ValueError(f"'{account_id}' is not a valid AWS account ID")
 
