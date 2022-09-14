@@ -6,6 +6,7 @@ from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from threading import RLock
 from typing import Dict, List, Optional
 
+from localstack.aws.api.lambda_ import ResourceNotFoundException
 from localstack.services.awslambda.invocation.lambda_models import (
     Code,
     Function,
@@ -18,8 +19,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     VersionIdentifier,
 )
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
-from localstack.services.generic_proxy import RegionBackend
-from localstack.utils.tagging import TaggingService
+from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 
 LOG = logging.getLogger(__name__)
 
@@ -27,11 +27,11 @@ LAMBDA_DEFAULT_TIMEOUT_SECONDS = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 
-class LambdaServiceBackend(RegionBackend):
-    # name => Function; Account/region are implicit through the Backend
-    functions: Dict[str, Function] = {}
-    # static tagging service instance
-    TAGS = TaggingService()
+class LambdaStore(BaseStore):
+    functions: dict[str, Function] = LocalAttribute(default=dict)
+
+
+lambda_stores = AccountRegionBundle[LambdaStore]("lambda", LambdaStore)
 
 
 class LambdaService:
@@ -86,7 +86,7 @@ class LambdaService:
         function_config: VersionFunctionConfiguration,
         code: Code,
     ) -> FunctionVersion:
-        state = LambdaServiceBackend.get(region_name)
+        state = lambda_stores[account_id][region_name]
         fn = Function(function_name=function_name)
 
         with self.create_fn_lock:
@@ -116,25 +116,36 @@ class LambdaService:
         return version
 
     # TODO: is this sync?
-    def delete_function(self, region_name: str, function_name: str):
-        state = LambdaServiceBackend.get(region_name)
+    # TODO: what's the point of the qualifier here?
+    def delete_function(
+        self, account_id: str, region_name: str, function_name: str, qualifier: str
+    ):
+        state = lambda_stores[account_id][region_name]
+        if function_name not in state.functions:
+            raise ResourceNotFoundException(f"Function not found: {function_name}")
         function = state.functions.pop(function_name)
         for version in function.versions.values():
             self.stop_version(qualified_arn=version.id.qualified_arn())
 
-    def delete_version(self, region_name: str, function_name: str, version_qualifier: str):
-        state = LambdaServiceBackend.get(region_name)
+    def delete_version(
+        self, account_id: str, region_name: str, function_name: str, version_qualifier: str
+    ):
+        state = lambda_stores[account_id][region_name]
         version = state.functions[function_name].versions[version_qualifier]
         self.stop_version(qualified_arn=version.id.qualified_arn())
 
     def get_function_version(
-        self, region_name: str, function_name: str, qualifier: Optional[str] = "$LATEST"
+        self,
+        account_id: str,
+        region_name: str,
+        function_name: str,
+        qualifier: Optional[str] = "$LATEST",
     ) -> FunctionVersion:
-        state = LambdaServiceBackend.get(region_name)
+        state = lambda_stores[account_id][region_name]
         return state.functions[function_name].versions[qualifier]
 
-    def list_function_versions(self, region_name: str) -> List[FunctionVersion]:
-        state = LambdaServiceBackend.get(region_name)
+    def list_function_versions(self, account_id: str, region_name: str) -> List[FunctionVersion]:
+        state = lambda_stores[account_id][region_name]
         return [f.latest() for f in state.functions.values()]  # TODO: qualifier
 
     def create_function_version(self, function_version: FunctionVersion) -> None:

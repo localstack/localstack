@@ -3,6 +3,13 @@ import dataclasses
 import threading
 from typing import Dict, List, Optional
 
+from localstack.aws.api.lambda_ import (
+    Architecture,
+    InvocationType,
+    LastUpdateStatus,
+    PackageType,
+    Runtime,
+)
 from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
 
 
@@ -10,17 +17,20 @@ from localstack.services.awslambda.invocation.lambda_util import qualified_lambd
 class Invocation:
     payload: bytes
     client_context: Optional[str]
-    invocation_type: str
+    invocation_type: InvocationType
 
 
 @dataclasses.dataclass
 class Code:
+    # Image-based lambda
     image_uri: Optional[str] = None
 
+    # Pointer to code in S3
     s3_bucket: Optional[str] = None
     s3_key: Optional[str] = None
     s3_object_version: Optional[str] = None
 
+    # Code uploaded directly via Zip upload
     zip_file: Optional[str] = None
 
 
@@ -50,7 +60,7 @@ class VpcConfig:
 
 @dataclasses.dataclass(frozen=True)
 class UpdateStatus:
-    status: str
+    status: LastUpdateStatus
     code: Optional[str] = None  # TODO: probably not a string
     reason: Optional[str] = None
 
@@ -72,13 +82,13 @@ class VersionFunctionConfiguration:
     description: str
     role: str
     timeout: int
-    runtime: str
+    runtime: Runtime
     memory_size: int
     handler: str
-    package_type: str  # TODO: enum or literal union
+    package_type: PackageType
     reserved_concurrent_executions: int
     environment: Dict[str, str]
-    architectures: List[str]
+    architectures: List[Architecture]
 
     tracing_config_mode: str
     image_config: Optional[ImageConfig] = None
