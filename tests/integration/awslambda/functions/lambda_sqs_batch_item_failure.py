@@ -71,4 +71,8 @@ def create_external_boto_client(service):
         endpoint_url = (
             f"http://{os.environ['LOCALSTACK_HOSTNAME']}:{os.environ.get('EDGE_PORT', 4566)}"
         )
-    return boto3.client(service, endpoint_url=endpoint_url)
+    # fix for local lambda executor
+    region_name = (
+        os.environ.get("AWS_DEFAULT_REGION") or os.environ.get("AWS_REGION") or "us-east-1"
+    )
+    return boto3.client(service, endpoint_url=endpoint_url, region_name=region_name)
