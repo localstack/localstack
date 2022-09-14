@@ -77,6 +77,7 @@ from localstack.aws.api.opensearch import (
     VPCDerivedInfoStatus,
     VPCOptions,
 )
+from localstack.config import LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.opensearch import versions
@@ -85,7 +86,6 @@ from localstack.services.opensearch.cluster_manager import (
     DomainKey,
     create_cluster_manager,
 )
-from localstack.utils.analytics import event_publisher
 from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
 from localstack.utils.objects import singleton_factory
 from localstack.utils.serving import Server
@@ -147,7 +147,10 @@ def create_cluster(
     # FIXME: in AWS, the Endpoint is set once the cluster is running, not before (like here), but our tests and
     #  in particular cloudformation currently relies on the assumption that it is set when the domain is created.
     status = region.opensearch_domains[domain_key.domain_name]
-    status["Endpoint"] = cluster.url.split("://")[-1]
+    # Replacing only 0.0.0.0 here as usage of this bind address mostly means running in docker which is used locally
+    # If another bind address is used we want to keep it in the endpoint as this is a conscious user decision to
+    # access from another device on the network.
+    status["Endpoint"] = cluster.url.split("://")[-1].replace("0.0.0.0", LOCALSTACK_HOSTNAME)
     status["EngineVersion"] = engine_version
 
     if cluster.is_up():
@@ -437,12 +440,6 @@ class OpensearchProvider(OpensearchApi):
             # get the (updated) status
             status = get_domain_status(domain_key)
 
-        # record event
-        event_publisher.fire_event(
-            event_publisher.EVENT_OPENSEARCH_CREATE_DOMAIN,
-            payload={"n": event_publisher.get_hash(domain_name)},
-        )
-
         return CreateDomainResponse(DomainStatus=status)
 
     def delete_domain(
@@ -460,12 +457,6 @@ class OpensearchProvider(OpensearchApi):
 
             status = get_domain_status(domain_key, deleted=True)
             _remove_cluster(domain_key)
-
-        # record event
-        event_publisher.fire_event(
-            event_publisher.EVENT_OPENSEARCH_DELETE_DOMAIN,
-            payload={"n": event_publisher.get_hash(domain_name)},
-        )
 
         return DeleteDomainResponse(DomainStatus=status)
 

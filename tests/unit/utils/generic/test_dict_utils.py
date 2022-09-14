@@ -1,6 +1,6 @@
 import unittest
 
-from localstack.utils.generic.dict_utils import get_safe, pick_attributes, set_safe_mutable
+from localstack.utils.collections import get_safe, pick_attributes, set_safe_mutable
 
 
 class GenericDictUtilsTest(unittest.TestCase):

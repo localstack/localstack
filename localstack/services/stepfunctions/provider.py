@@ -5,26 +5,17 @@ from localstack.aws.api.stepfunctions import (
     CreateStateMachineOutput,
     DeleteStateMachineInput,
     DeleteStateMachineOutput,
+    LoggingConfiguration,
+    LogLevel,
     StepfunctionsApi,
 )
-from localstack.aws.forwarder import HttpFallbackDispatcher, get_request_forwarder_http
-from localstack.aws.proxy import AwsApiListener
+from localstack.aws.forwarder import get_request_forwarder_http
 from localstack.constants import LOCALHOST
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.stepfunctions.stepfunctions_starter import (
     start_stepfunctions,
     wait_for_stepfunctions,
 )
-from localstack.utils.analytics import event_publisher
-
-
-class StepFunctionsApiListener(AwsApiListener):
-    def __init__(self, provider=None):
-        provider = provider or StepFunctionsProvider()
-        self.provider = provider
-        super().__init__(
-            "stepfunctions", HttpFallbackDispatcher(provider, provider.get_forward_url)
-        )
 
 
 class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
@@ -42,11 +33,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     def create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput
     ) -> CreateStateMachineOutput:
+        # set default logging configuration
+        if not request.get("loggingConfiguration"):
+            request["loggingConfiguration"] = LoggingConfiguration(
+                level=LogLevel.OFF, includeExecutionData=False
+            )
         result = self.forward_request(context, request)
-        event_publisher.fire_event(
-            event_publisher.EVENT_STEPFUNCTIONS_CREATE_SM,
-            payload={"m": event_publisher.get_hash(request["name"])},
-        )
         return result
 
     @handler("DeleteStateMachine", expand=False)
@@ -54,9 +46,4 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         self, context: RequestContext, request: DeleteStateMachineInput
     ) -> DeleteStateMachineOutput:
         result = self.forward_request(context, request)
-        name = request["stateMachineArn"].split(":")[-1]
-        event_publisher.fire_event(
-            event_publisher.EVENT_STEPFUNCTIONS_DELETE_SM,
-            payload={"m": event_publisher.get_hash(name)},
-        )
         return result

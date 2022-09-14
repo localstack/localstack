@@ -12,6 +12,7 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 AccountId = str
 ActionPrefix = str
 ActionsEnabled = bool
+ActionsSuppressedReason = str
 AlarmArn = str
 AlarmDescription = str
 AlarmName = str
@@ -48,6 +49,7 @@ InsightRuleAggregationStatistic = str
 InsightRuleContributorKey = str
 InsightRuleContributorKeyLabel = str
 InsightRuleDefinition = str
+InsightRuleIsManaged = bool
 InsightRuleMaxResults = int
 InsightRuleMetricName = str
 InsightRuleName = str
@@ -82,10 +84,18 @@ Stat = str
 StateReason = str
 StateReasonData = str
 StorageResolution = int
+SuppressorPeriod = int
 TagKey = str
 TagValue = str
+TemplateName = str
 Threshold = float
 TreatMissingData = str
+
+
+class ActionsSuppressedBy(str):
+    WaitPeriod = "WaitPeriod"
+    ExtensionPeriod = "ExtensionPeriod"
+    Alarm = "Alarm"
 
 
 class AlarmType(str):
@@ -202,7 +212,6 @@ class DashboardInvalidInputError(ServiceException):
     code: str = "InvalidParameterInput"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[DashboardErrorMessage]
     dashboardValidationMessages: Optional[DashboardValidationMessages]
 
 
@@ -210,42 +219,36 @@ class DashboardNotFoundError(ServiceException):
     code: str = "ResourceNotFound"
     sender_fault: bool = True
     status_code: int = 404
-    message: Optional[DashboardErrorMessage]
 
 
 class InternalServiceFault(ServiceException):
     code: str = "InternalServiceError"
     sender_fault: bool = False
     status_code: int = 500
-    Message: Optional[FaultDescription]
 
 
 class InvalidFormatFault(ServiceException):
     code: str = "InvalidFormat"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class InvalidNextToken(ServiceException):
     code: str = "InvalidNextToken"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class InvalidParameterCombinationException(ServiceException):
     code: str = "InvalidParameterCombination"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[AwsQueryErrorMessage]
 
 
 class InvalidParameterValueException(ServiceException):
     code: str = "InvalidParameterValue"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[AwsQueryErrorMessage]
 
 
 class LimitExceededException(ServiceException):
@@ -258,21 +261,18 @@ class LimitExceededFault(ServiceException):
     code: str = "LimitExceeded"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class MissingRequiredParameterException(ServiceException):
     code: str = "MissingParameter"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[AwsQueryErrorMessage]
 
 
 class ResourceNotFound(ServiceException):
     code: str = "ResourceNotFound"
     sender_fault: bool = True
     status_code: int = 404
-    message: Optional[ErrorMessage]
 
 
 class ResourceNotFoundException(ServiceException):
@@ -398,6 +398,12 @@ class CompositeAlarm(TypedDict, total=False):
     StateReasonData: Optional[StateReasonData]
     StateUpdatedTimestamp: Optional[Timestamp]
     StateValue: Optional[StateValue]
+    StateTransitionedTimestamp: Optional[Timestamp]
+    ActionsSuppressedBy: Optional[ActionsSuppressedBy]
+    ActionsSuppressedReason: Optional[ActionsSuppressedReason]
+    ActionsSuppressor: Optional[AlarmArn]
+    ActionsSuppressorWaitPeriod: Optional[SuppressorPeriod]
+    ActionsSuppressorExtensionPeriod: Optional[SuppressorPeriod]
 
 
 CompositeAlarms = List[CompositeAlarm]
@@ -582,6 +588,7 @@ class InsightRule(TypedDict, total=False):
     State: InsightRuleState
     Schema: InsightRuleSchema
     Definition: InsightRuleDefinition
+    ManagedRule: Optional[InsightRuleIsManaged]
 
 
 InsightRules = List[InsightRule]
@@ -820,6 +827,31 @@ class ListDashboardsOutput(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class ListManagedInsightRulesInput(ServiceRequest):
+    ResourceARN: AmazonResourceName
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[InsightRuleMaxResults]
+
+
+class ManagedRuleState(TypedDict, total=False):
+    RuleName: InsightRuleName
+    State: InsightRuleState
+
+
+class ManagedRuleDescription(TypedDict, total=False):
+    TemplateName: Optional[TemplateName]
+    ResourceARN: Optional[AmazonResourceName]
+    RuleState: Optional[ManagedRuleState]
+
+
+ManagedRuleDescriptions = List[ManagedRuleDescription]
+
+
+class ListManagedInsightRulesOutput(TypedDict, total=False):
+    ManagedRules: Optional[ManagedRuleDescriptions]
+    NextToken: Optional[NextToken]
+
+
 class ListMetricStreamsInput(ServiceRequest):
     NextToken: Optional[NextToken]
     MaxResults: Optional[ListMetricStreamsMaxResults]
@@ -875,6 +907,13 @@ class ListTagsForResourceOutput(TypedDict, total=False):
     Tags: Optional[TagList]
 
 
+class ManagedRule(TypedDict, total=False):
+    TemplateName: TemplateName
+    ResourceARN: AmazonResourceName
+    Tags: Optional[TagList]
+
+
+ManagedRules = List[ManagedRule]
 Values = List[DatapointValue]
 
 
@@ -924,6 +963,9 @@ class PutCompositeAlarmInput(ServiceRequest):
     InsufficientDataActions: Optional[ResourceList]
     OKActions: Optional[ResourceList]
     Tags: Optional[TagList]
+    ActionsSuppressor: Optional[AlarmArn]
+    ActionsSuppressorWaitPeriod: Optional[SuppressorPeriod]
+    ActionsSuppressorExtensionPeriod: Optional[SuppressorPeriod]
 
 
 class PutDashboardInput(ServiceRequest):
@@ -944,6 +986,14 @@ class PutInsightRuleInput(ServiceRequest):
 
 class PutInsightRuleOutput(TypedDict, total=False):
     pass
+
+
+class PutManagedInsightRulesInput(ServiceRequest):
+    ManagedRules: ManagedRules
+
+
+class PutManagedInsightRulesOutput(TypedDict, total=False):
+    Failures: Optional[BatchFailures]
 
 
 class PutMetricAlarmInput(ServiceRequest):
@@ -1236,6 +1286,16 @@ class CloudwatchApi:
     ) -> ListDashboardsOutput:
         raise NotImplementedError
 
+    @handler("ListManagedInsightRules")
+    def list_managed_insight_rules(
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        next_token: NextToken = None,
+        max_results: InsightRuleMaxResults = None,
+    ) -> ListManagedInsightRulesOutput:
+        raise NotImplementedError
+
     @handler("ListMetricStreams")
     def list_metric_streams(
         self,
@@ -1289,6 +1349,9 @@ class CloudwatchApi:
         insufficient_data_actions: ResourceList = None,
         ok_actions: ResourceList = None,
         tags: TagList = None,
+        actions_suppressor: AlarmArn = None,
+        actions_suppressor_wait_period: SuppressorPeriod = None,
+        actions_suppressor_extension_period: SuppressorPeriod = None,
     ) -> None:
         raise NotImplementedError
 
@@ -1307,6 +1370,12 @@ class CloudwatchApi:
         rule_state: InsightRuleState = None,
         tags: TagList = None,
     ) -> PutInsightRuleOutput:
+        raise NotImplementedError
+
+    @handler("PutManagedInsightRules")
+    def put_managed_insight_rules(
+        self, context: RequestContext, managed_rules: ManagedRules
+    ) -> PutManagedInsightRulesOutput:
         raise NotImplementedError
 
     @handler("PutMetricAlarm")

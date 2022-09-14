@@ -1,8 +1,10 @@
 import io
 import keyword
 import re
+from functools import cached_property
+from multiprocessing import Pool
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 import click
 from botocore import xform_name
@@ -22,7 +24,7 @@ from localstack.aws.spec import load_service
 from localstack.utils.common import camel_to_snake_case, snake_to_camel_case
 
 # Some minification packages might treat "type" as a keyword, some specs define shapes called like the type "Optional"
-KEYWORDS = list(keyword.kwlist) + ["type", "Optional"]
+KEYWORDS = list(keyword.kwlist) + ["type", "Optional", "Union"]
 is_keyword = KEYWORDS.__contains__
 
 
@@ -71,24 +73,47 @@ class ShapeNode:
         self.service = service
         self.shape = shape
 
-    @property
-    def is_request(self):
+    @cached_property
+    def request_operation(self) -> Optional[OperationModel]:
         for operation_name in self.service.operation_names:
             operation = self.service.operation_model(operation_name)
             if operation.input_shape is None:
                 continue
+
             if to_valid_python_name(self.shape.name) == to_valid_python_name(
                 operation.input_shape.name
             ):
-                return True
+                return operation
 
-        return False
+        return None
+
+    @cached_property
+    def response_operation(self) -> Optional[OperationModel]:
+        for operation_name in self.service.operation_names:
+            operation = self.service.operation_model(operation_name)
+            if operation.output_shape is None:
+                continue
+
+            if to_valid_python_name(self.shape.name) == to_valid_python_name(
+                operation.output_shape.name
+            ):
+                return operation
+
+        return None
+
+    @cached_property
+    def is_request(self):
+        return self.request_operation is not None
+
+    @cached_property
+    def is_response(self):
+        return self.response_operation is not None
 
     @property
     def name(self) -> str:
         return to_valid_python_name(self.shape.name)
 
-    @property
+    @cached_property
     def is_exception(self):
         metadata = self.shape.metadata
         return metadata.get("error") or metadata.get("exception")
@@ -146,7 +171,43 @@ class ShapeNode:
         elif not self.shape.members:
             output.write("    pass\n")
 
-        for k, v in self.shape.members.items():
+        # Avoid generating members for the common error members:
+        # - The message will always be the exception message (first argument of the exception class init)
+        # - The code is already set above
+        # - The type is the sender_fault which is already set above
+        remaining_members = {
+            k: v
+            for k, v in self.shape.members.items()
+            if not self.is_exception or k.lower() not in ["message", "code"]
+        }
+
+        # render any streaming payload first
+        if self.is_request and self.request_operation.has_streaming_input:
+            member: str = self.request_operation.input_shape.serialization.get("payload")
+            shape: Shape = self.request_operation.get_streaming_input()
+            if member in self.shape.required_members:
+                output.write(f"    {member}: IO[{q}{to_valid_python_name(shape.name)}{q}]\n")
+            else:
+                output.write(
+                    f"    {member}: Optional[IO[{q}{to_valid_python_name(shape.name)}{q}]]\n"
+                )
+            del remaining_members[member]
+        # render the streaming payload first
+        if self.is_response and self.response_operation.has_streaming_output:
+            member: str = self.response_operation.output_shape.serialization.get("payload")
+            shape: Shape = self.response_operation.get_streaming_output()
+            shape_name = to_valid_python_name(shape.name)
+            if member in self.shape.required_members:
+                output.write(
+                    f"    {member}: Union[{q}{shape_name}{q}, IO[{q}{shape_name}{q}], Iterable[{q}{shape_name}{q}]]\n"
+                )
+            else:
+                output.write(
+                    f"    {member}: Optional[Union[{q}{shape_name}{q}, IO[{q}{shape_name}{q}], Iterable[{q}{shape_name}{q}]]]\n"
+                )
+            del remaining_members[member]
+
+        for k, v in remaining_members.items():
             if k in self.shape.required_members:
                 if v.serialization.get("eventstream"):
                     output.write(f"    {k}: Iterator[{q}{to_valid_python_name(v.name)}{q}]\n")
@@ -219,9 +280,9 @@ class ShapeNode:
         elif shape.type_name == "boolean":
             output.write(f"{to_valid_python_name(shape.name)} = bool")
         elif shape.type_name == "blob":
-            output.write(
-                f"{to_valid_python_name(shape.name)} = bytes"
-            )  # FIXME check what type blob really is
+            # blobs are often associated with streaming payloads, but we handle that on operation level,
+            # not on shape level
+            output.write(f"{to_valid_python_name(shape.name)} = bytes")
         elif shape.type_name == "timestamp":
             output.write(f"{to_valid_python_name(shape.name)} = datetime")
         else:
@@ -251,7 +312,7 @@ class ShapeNode:
 
 def generate_service_types(output, service: ServiceModel, doc=True):
     output.write("import sys\n")
-    output.write("from typing import Dict, List, Optional, Iterator\n")
+    output.write("from typing import Dict, List, Optional, Iterator, Iterable, IO, Union\n")
     output.write("from datetime import datetime\n")
     output.write("if sys.version_info >= (3, 8):\n")
     output.write("    from typing import TypedDict\n")
@@ -326,18 +387,29 @@ def generate_service_api(output, service: ServiceModel, doc=True):
         parameters = OrderedDict()
         param_shapes = OrderedDict()
 
-        input_shape = operation.input_shape
-        if input_shape is not None:
+        if input_shape := operation.input_shape:
             members = list(input_shape.members)
+
+            streaming_payload_member = None
+            if operation.has_streaming_input:
+                streaming_payload_member = operation.input_shape.serialization.get("payload")
+
             for m in input_shape.required_members:
                 members.remove(m)
                 m_shape = input_shape.members[m]
-                parameters[xform_name(m)] = to_valid_python_name(m_shape.name)
+                type_name = to_valid_python_name(m_shape.name)
+                if m == streaming_payload_member:
+                    type_name = f"IO[{type_name}]"
+                parameters[xform_name(m)] = type_name
                 param_shapes[xform_name(m)] = m_shape
+
             for m in members:
                 m_shape = input_shape.members[m]
                 param_shapes[xform_name(m)] = m_shape
-                parameters[xform_name(m)] = f"{to_valid_python_name(m_shape.name)} = None"
+                type_name = to_valid_python_name(m_shape.name)
+                if m == streaming_payload_member:
+                    type_name = f"IO[{type_name}]"
+                parameters[xform_name(m)] = f"{type_name} = None"
 
         if any(map(is_bad_param_name, parameters.keys())):
             # if we cannot render the parameter name, don't expand the parameters in the handler
@@ -477,14 +549,20 @@ def upgrade(path: str, doc: bool = False):
         for d in Path(path).iterdir()
         if d.is_dir() and not d.name.startswith("__")
     ]
-    for service in services:
-        try:
-            code = generate_code(service, doc)
-        except UnknownServiceError:
-            click.echo(f"unknown service {service}! skipping...")
-            continue
-        create_code_directory(service, code, base_path=path)
+
+    with Pool() as pool:
+        pool.starmap(_do_generate_code, [(service, path, doc) for service in services])
+
     click.echo("done!")
+
+
+def _do_generate_code(service: str, path: str, doc: bool):
+    try:
+        code = generate_code(service, doc)
+    except UnknownServiceError:
+        click.echo(f"unknown service {service}! skipping...")
+        return
+    create_code_directory(service, code, base_path=path)
 
 
 if __name__ == "__main__":

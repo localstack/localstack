@@ -1,9 +1,9 @@
 import json
+import logging
 import os
 
 import pytest
 
-from localstack.services.awslambda import lambda_api
 from localstack.services.events.provider import TEST_EVENTS_CACHE
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -17,6 +17,8 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_NAME_1 = "lambda_sfn_1"
 TEST_LAMBDA_NAME_2 = "lambda_sfn_2"
 TEST_RESULT_VALUE = "testresult1"
+TEST_RESULT_VALUE_2 = "testresult2"
+TEST_RESULT_VALUE_4 = "testresult4"
 STATE_MACHINE_BASIC = {
     "Comment": "Hello World example",
     "StartAt": "step1",
@@ -163,6 +165,8 @@ STATE_MACHINE_EVENTS = {
     },
 }
 
+LOG = logging.getLogger(__name__)
+
 
 @pytest.fixture(scope="module")
 def setup_and_tear_down():
@@ -177,7 +181,7 @@ def setup_and_tear_down():
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_2,
         zip_file=zip_file,
-        envvars={"Hello": TEST_RESULT_VALUE},
+        envvars={"Hello": TEST_RESULT_VALUE_2},
     )
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_3,
@@ -187,7 +191,7 @@ def setup_and_tear_down():
     testutil.create_lambda_function(
         func_name=TEST_LAMBDA_NAME_4,
         zip_file=zip_file,
-        envvars={"Hello": TEST_RESULT_VALUE},
+        envvars={"Hello": TEST_RESULT_VALUE_4},
     )
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_5, zip_file=zip_file2)
 
@@ -198,6 +202,24 @@ def setup_and_tear_down():
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_3)
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_4)
     testutil.delete_lambda_function(name=TEST_LAMBDA_NAME_5)
+
+
+@pytest.fixture
+def create_state_machine(stepfunctions_client):
+    machines_arns = []
+
+    def factory(**kwargs):
+        result = stepfunctions_client.create_state_machine(**kwargs)
+        machines_arns.append(result["stateMachineArn"])
+        return result
+
+    yield factory
+
+    for machine in machines_arns:
+        try:
+            stepfunctions_client.delete_state_machine(stateMachineArn=machine)
+        except Exception as e:
+            LOG.debug("Unable to delete SFN state machine: ", e)
 
 
 def _assert_machine_instances(expected_instances, sfn_client):
@@ -264,7 +286,7 @@ class TestStateMachine:
         assert result.get("executionArn")
 
         # define expected output
-        test_output = {**input, "added": {"Hello": TEST_RESULT_VALUE}}
+        test_output = {**input, "added": {"Hello": TEST_RESULT_VALUE_4}}
 
         def check_result():
             result = _get_execution_results(sm_arn, stepfunctions_client)
@@ -299,14 +321,12 @@ class TestStateMachine:
 
         # run state machine
         sm_arn = get_machine_arn(sm_name, stepfunctions_client)
-        lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
         result = stepfunctions_client.start_execution(
             stateMachineArn=sm_arn, input=json.dumps(test_input)
         )
         assert result.get("executionArn")
 
         def check_invocations():
-            assert lambda_arn_3 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
             result = _get_execution_results(sm_arn, stepfunctions_client)
             assert test_output == result
@@ -338,16 +358,13 @@ class TestStateMachine:
 
         # run state machine
         sm_arn = get_machine_arn(sm_name, stepfunctions_client)
-        lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
         result = stepfunctions_client.start_execution(stateMachineArn=sm_arn)
         assert result.get("executionArn")
 
         def check_invocations():
-            assert lambda_arn_1 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
-            assert lambda_arn_2 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
             result = _get_execution_results(sm_arn, stepfunctions_client)
-            assert {"Hello": TEST_RESULT_VALUE} == result["result_value"]
+            assert {"Hello": TEST_RESULT_VALUE_2} == result["result_value"]
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=0.7, retries=25)
@@ -377,16 +394,13 @@ class TestStateMachine:
 
         # run state machine
         sm_arn = get_machine_arn(sm_name, stepfunctions_client)
-        lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
         result = stepfunctions_client.start_execution(stateMachineArn=sm_arn)
         assert result.get("executionArn")
 
         def check_invocations():
-            assert lambda_arn_1 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
-            assert lambda_arn_2 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
             result = _get_execution_results(sm_arn, stepfunctions_client)
-            assert {"Hello": TEST_RESULT_VALUE} == result.get("handled")
+            assert {"Hello": TEST_RESULT_VALUE_2} == result.get("handled")
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
@@ -418,7 +432,6 @@ class TestStateMachine:
 
         # run state machine
         sm_arn = get_machine_arn(sm_name, stepfunctions_client)
-        lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
         input = {}
         result = stepfunctions_client.start_execution(
             stateMachineArn=sm_arn, input=json.dumps(input)
@@ -426,8 +439,6 @@ class TestStateMachine:
         assert result.get("executionArn")
 
         def check_invocations():
-            assert lambda_arn_1 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
-            assert lambda_arn_2 in lambda_api.LAMBDA_EXECUTOR.function_invoke_times
             # assert that the result is correct
             result = _get_execution_results(sm_arn, stepfunctions_client)
             assert {"payload": {"values": [1, "v2"]}} == result.get("result_value")
@@ -516,6 +527,17 @@ TEST_STATE_MACHINE_3 = {
     },
 }
 
+STS_ROLE_POLICY_DOC = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"Service": ["states.amazonaws.com"]},
+            "Action": "sts:AssumeRole",
+        }
+    ],
+}
+
 
 @pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
 @pytest.mark.parametrize("statemachine_definition", (TEST_STATE_MACHINE_3,))  # TODO: add sync2 test
@@ -568,6 +590,31 @@ def test_multiregion_nested(region_name, statemachine_definition):
     finally:
         client1.delete_state_machine(stateMachineArn=machine_arn)
         client1.delete_state_machine(stateMachineArn=child_machine_arn)
+
+
+@pytest.mark.aws_validated
+def test_default_logging_configuration(iam_client, create_state_machine, stepfunctions_client):
+    role_name = f"role_name-{short_uid()}"
+    try:
+        role_arn = iam_client.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(STS_ROLE_POLICY_DOC),
+        )["Role"]["Arn"]
+
+        definition = clone(TEST_STATE_MACHINE)
+        definition = json.dumps(definition)
+
+        sm_name = f"sts-logging-{short_uid()}"
+        result = create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
+
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+        result = stepfunctions_client.describe_state_machine(
+            stateMachineArn=result["stateMachineArn"]
+        )
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert result["loggingConfiguration"] == {"level": "OFF", "includeExecutionData": False}
+    finally:
+        iam_client.delete_role(RoleName=role_name)
 
 
 def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):

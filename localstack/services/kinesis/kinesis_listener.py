@@ -11,7 +11,6 @@ from requests.models import Response
 from localstack import config
 from localstack.constants import APPLICATION_CBOR, APPLICATION_JSON, HEADER_AMZN_ERROR_TYPE
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
 from localstack.utils.common import clone, json_safe, now_utc, to_bytes, to_str
@@ -23,6 +22,7 @@ ACTION_PREFIX = "Kinesis_20131202"
 ACTION_PUT_RECORD = "%s.PutRecord" % ACTION_PREFIX
 ACTION_PUT_RECORDS = "%s.PutRecords" % ACTION_PREFIX
 ACTION_LIST_STREAMS = "%s.ListStreams" % ACTION_PREFIX
+MAX_SUBSCRIPTION_SECONDS = 300
 
 
 class KinesisBackend(RegionBackend):
@@ -151,17 +151,7 @@ class ProxyListenerKinesis(ProxyListener):
         data, encoding_type = self.decode_content(data or "{}", True)
         response._content = self.replace_in_encoded(response.content or "")
 
-        if action in ("CreateStream", "DeleteStream"):
-            event_type = (
-                event_publisher.EVENT_KINESIS_CREATE_STREAM
-                if action == "CreateStream"
-                else event_publisher.EVENT_KINESIS_DELETE_STREAM
-            )
-            payload = {"n": event_publisher.get_hash(data.get("StreamName"))}
-            if action == "CreateStream":
-                payload["s"] = data.get("ShardCount")
-            event_publisher.fire_event(event_type, payload=payload)
-        elif action == "UpdateShardCount" and config.KINESIS_PROVIDER == "kinesalite":
+        if action == "UpdateShardCount" and config.KINESIS_PROVIDER == "kinesalite":
             # Currently kinesalite, which backs the Kinesis implementation for localstack, does
             # not support UpdateShardCount:
             # https://github.com/mhart/kinesalite/issues/61
@@ -184,7 +174,7 @@ class ProxyListenerKinesis(ProxyListener):
             return response
         elif action == "GetRecords":
             sdk_v2 = self.is_sdk_v2_request(headers)
-            results, encoding_type = self.decode_content(response.content, True)
+            results, encoding_type = self.decode_content(response.content or "{}", True)
 
             records = results.get("Records", [])
             if not records:
@@ -225,7 +215,7 @@ class ProxyListenerKinesis(ProxyListener):
             return response
 
         if response.status_code >= 400:
-            response_body = self.decode_content(response.content)
+            response_body = self.decode_content(response.content or "{}")
             if (
                 response_body
                 and response_body.get("__type")
@@ -307,8 +297,9 @@ def subscribe_to_shard(data, headers):
         yield convert_to_binary_event_payload("", event_type="initial-response")
         iter = iterator
         last_sequence_number = starting_sequence_number
-        # TODO: find better way to run loop up to max 5 minutes (until connection terminates)!
-        for i in range(5 * 60):
+        maximum_duration_subscription_timestamp = now_utc() + MAX_SUBSCRIPTION_SECONDS
+
+        while now_utc() < maximum_duration_subscription_timestamp:
             result = None
             try:
                 result = kinesis.get_records(ShardIterator=iter)
@@ -330,8 +321,10 @@ def subscribe_to_shard(data, headers):
                 record["Data"] = to_str(base64.b64encode(record["Data"]))
                 last_sequence_number = record["SequenceNumber"]
             if not records:
-                time.sleep(1)
-                continue
+                # On AWS there is *at least* 1 event every 5 seconds
+                # but this is not possible in this structure.
+                # In order to avoid a 5-second blocking call, we make the compromise of 3 seconds.
+                time.sleep(3)
 
             response = {
                 "ChildShards": [],

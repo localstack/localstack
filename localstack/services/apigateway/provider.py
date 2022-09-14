@@ -2,6 +2,7 @@ import json
 import logging
 import re
 from copy import deepcopy
+from typing import IO
 
 from localstack.aws.api import RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
@@ -44,7 +45,6 @@ from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
-    API_REGIONS,
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_USER_REQUEST,
     APIGatewayRegion,
@@ -56,8 +56,6 @@ from localstack.services.apigateway.invocations import invoke_rest_api_from_requ
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.analytics import event_publisher
-from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.collections import PaginatedList, ensure_list
 from localstack.utils.json import parse_json_or_yaml
@@ -113,14 +111,6 @@ class ApigatewayApiListener(AwsApiListener):
         ):
             return requests_response({"position": "1", "items": []})
 
-        # keep track of API regions for faster lookup later on
-        # TODO - to be removed - see comment for API_REGIONS variable
-        if method == "POST" and path == "/restapis":
-            content = json.loads(to_str(response.content))
-            api_id = content["id"]
-            region = aws_stack.extract_region_from_auth_header(headers)
-            API_REGIONS[api_id] = region
-
 
 class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def on_after_init(self):
@@ -129,10 +119,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     @handler("CreateRestApi", expand=False)
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
         result = call_moto(context)
-        event_publisher.fire_event(
-            event_publisher.EVENT_APIGW_CREATE_API,
-            payload={"a": event_publisher.get_hash(result["id"])},
-        )
+        if not result.get("binaryMediaTypes"):
+            result.pop("binaryMediaTypes")
+        if not result.get("tags"):
+            result.pop("tags")
+        if result.get("version") == "V1":
+            result.pop("version")
         return result
 
     def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
@@ -143,11 +135,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException(
                 f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
             ) from e
-
-        event_publisher.fire_event(
-            event_publisher.EVENT_APIGW_DELETE_API,
-            payload={"a": event_publisher.get_hash(rest_api_id)},
-        )
 
     # authorizers
 
@@ -660,12 +647,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def import_rest_api(
         self,
         context: RequestContext,
-        body: Blob,
+        body: IO[Blob],
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
     ) -> RestApi:
+        body_data = body.read()
 
-        openapi_spec = parse_json_or_yaml(to_str(body))
+        openapi_spec = parse_json_or_yaml(to_str(body_data))
         response = _call_moto(
             context,
             "CreateRestApi",
@@ -679,7 +667,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 restApiId=response.get("id"),
                 failOnWarnings=str_to_bool(fail_on_warnings) or False,
                 parameters=parameters or {},
-                body=body,
+                body=body_data,
             ),
         )
 
@@ -760,7 +748,7 @@ def _call_moto(context: RequestContext, operation_name: str, parameters: Service
         region=context.region,
     )
 
-    local_context.request.headers.extend(context.request.headers)
+    local_context.request.headers.update(context.request.headers)
     return call_moto(local_context)
 
 

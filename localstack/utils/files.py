@@ -39,7 +39,7 @@ def cache_dir() -> Path:
     from localstack.utils.platform import is_linux, is_mac_os, is_windows
 
     if is_windows():
-        return Path("%LOCALAPPDATA%", "cache", "localstack")
+        return Path(os.path.expandvars(r"%LOCALAPPDATA%\cache\localstack"))
     if is_mac_os():
         return Path.home() / "Library" / "Caches" / "localstack"
     if is_linux():

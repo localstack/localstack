@@ -187,6 +187,7 @@ class LambdaFunction(Component):
         self.runtime = None
         self.handler = None
         self.cwd = None
+        self.zip_dir = None
         self.timeout = None
         self.last_modified = None
         self.vpc_config = None
@@ -205,6 +206,8 @@ class LambdaFunction(Component):
         self.architectures = ["x86_64"]
         self.image_config = {}
         self.tracing_config = {}
+        self.state = None
+        self.url_config = None
 
     def set_dead_letter_config(self, data):
         config = data.get("DeadLetterConfig")

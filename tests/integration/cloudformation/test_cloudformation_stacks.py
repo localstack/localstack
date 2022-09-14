@@ -1,3 +1,4 @@
+import json
 import os
 
 import jinja2
@@ -7,6 +8,7 @@ import yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.sync import retry
 
 
 # TODO: refactor file and remove this compatibility fn
@@ -68,7 +70,7 @@ def test_list_stack_resources_for_removed_resource(
     resources_before = len(resources)
     assert resources_before == 3
     statuses = set([res["ResourceStatus"] for res in resources])
-    assert statuses == {"CREATE_COMPLETE", "UPDATE_COMPLETE"}
+    assert statuses == {"CREATE_COMPLETE"}
 
     # remove one resource from the template, then update stack (via change set)
     template_dict = yaml.load(template)
@@ -86,7 +88,7 @@ def test_list_stack_resources_for_removed_resource(
     resources = cfn_client.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
     assert len(resources) == resources_before - 1
     statuses = set([res["ResourceStatus"] for res in resources])
-    assert statuses == {"CREATE_COMPLETE", "UPDATE_COMPLETE"}
+    assert statuses == {"UPDATE_COMPLETE"}
 
 
 @pytest.mark.xfail(reason="outputs don't behave well in combination with conditions")
@@ -174,3 +176,151 @@ def test_stack_time_attributes(cfn_client, deploy_cfn_template):
         StackName=stack_name,
     )
     assert "DeletionTime" in cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]
+
+
+@pytest.mark.aws_validated
+def test_stack_description_special_chars(cfn_client, deploy_cfn_template, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    template = """
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'test <env>.test.net'
+Resources:
+  TestResource:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "100.30.20.0/20"
+    """
+
+    deployed = deploy_cfn_template(template=template)
+    response = cfn_client.describe_stacks(StackName=deployed.stack_id)["Stacks"][0]
+    snapshot.match("describe_stack", response)
+
+
+@pytest.mark.aws_validated
+def test_import_values_across_stacks(deploy_cfn_template, s3_client):
+    export_name = f"b-{short_uid()}"
+
+    # create stack #1
+    template1 = """
+Parameters:
+  BucketExportName:
+    Type: String
+Resources:
+  Bucket1:
+    Type: AWS::S3::Bucket
+    Properties: {}
+Outputs:
+  BucketName1:
+    Value: !Ref Bucket1
+    Export:
+      Name: !Ref BucketExportName
+    """
+    result = deploy_cfn_template(template=template1, parameters={"BucketExportName": export_name})
+    bucket_name1 = result.outputs.get("BucketName1")
+    assert bucket_name1
+
+    # create stack #2
+    template2 = """
+Parameters:
+  BucketExportName:
+    Type: String
+Resources:
+  Bucket2:
+    Type: AWS::S3::Bucket
+    Properties:
+      Tags:
+        - Key: test
+          Value: !ImportValue
+            'Fn::Sub': '${BucketExportName}'
+Outputs:
+  BucketName2:
+    Value: !Ref Bucket2
+    """
+    result = deploy_cfn_template(template=template2, parameters={"BucketExportName": export_name})
+    bucket_name2 = result.outputs.get("BucketName2")
+    assert bucket_name2
+
+    # assert that correct bucket tags have been created
+    tagging = s3_client.get_bucket_tagging(Bucket=bucket_name2)
+    test_tag = [tag for tag in tagging["TagSet"] if tag["Key"] == "test"]
+    assert test_tag
+    assert test_tag[0]["Value"] == bucket_name1
+
+
+@pytest.mark.aws_validated
+@pytest.mark.parametrize("fileformat", ["yaml", "json"])
+def test_get_template(cfn_client, deploy_cfn_template, snapshot, fileformat):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), f"../templates/sns_topic_template.{fileformat}"
+        )
+    )
+    topic_name = stack.outputs["TopicName"]
+    snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic-name>"), priority=-1)
+
+    describe_stacks = cfn_client.describe_stacks(StackName=stack.stack_id)
+    snapshot.match("describe_stacks", describe_stacks)
+
+    template_original = cfn_client.get_template(StackName=stack.stack_id, TemplateStage="Original")
+    snapshot.match("template_original", template_original)
+
+    template_processed = cfn_client.get_template(
+        StackName=stack.stack_id, TemplateStage="Processed"
+    )
+    snapshot.match("template_processed", template_processed)
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(paths=["$..ParameterValue", "$..PhysicalResourceId"])
+def test_stack_update_resources(
+    cfn_client,
+    deploy_cfn_template,
+    is_change_set_finished,
+    is_change_set_created_and_available,
+    snapshot,
+):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
+
+    def _get_stack_details():
+        result = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
+        assert result["StackStatus"] in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
+        return result
+
+    api_name = f"test_{short_uid()}"
+    template_path = os.path.join(os.path.dirname(__file__), "../templates/simple_api.yaml")
+
+    # create stack
+    deployed = deploy_cfn_template(template_path=template_path, parameters={"ApiName": api_name})
+    stack_name = deployed.stack_name
+    stack_id = deployed.stack_id
+
+    # assert snapshot of created stack
+    result = retry(_get_stack_details, sleep=1, retries=10)
+    snapshot.match("stack_created", result)
+
+    # update stack, with one additional resource
+    api_name = f"test_{short_uid()}"
+    template_body = yaml.safe_load(load_template_file(template_path))
+    template_body["Resources"]["Bucket"] = {"Type": "AWS::S3::Bucket"}
+    response = cfn_client.create_change_set(
+        StackName=stack_name,
+        ChangeSetName="cs1",
+        TemplateBody=json.dumps(template_body),
+        Parameters=[{"ParameterKey": "ApiName", "ParameterValue": api_name}],
+    )
+    change_set_id = response["Id"]
+    wait_until(is_change_set_created_and_available(change_set_id))
+    cfn_client.execute_change_set(ChangeSetName=change_set_id)
+    wait_until(is_change_set_finished(change_set_id))
+
+    # assert snapshot of updated stack
+    result = retry(_get_stack_details, sleep=1, retries=10)
+    snapshot.match("stack_updated", result)
+
+    # describe stack resources
+    resources = cfn_client.describe_stack_resources(StackName=stack_name)
+    snapshot.match("stack_resources", resources)

@@ -1,6 +1,6 @@
 import logging
 
-from localstack.aws.accounts import get_account_id_from_access_key_id, set_ctx_aws_access_key_id
+from localstack.aws.accounts import get_account_id_from_access_key_id, set_aws_access_key_id
 from localstack.constants import HEADER_LOCALSTACK_ACCOUNT_ID, TEST_AWS_ACCESS_KEY_ID
 from localstack.http import Response
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
@@ -39,9 +39,12 @@ class AccountIdEnricher(Handler):
             access_key_id = TEST_AWS_ACCESS_KEY_ID
 
         # Save the request access key ID in the current thread local storage
-        set_ctx_aws_access_key_id(access_key_id)
+        set_aws_access_key_id(access_key_id)
 
         if account_id_from_header := context.request.headers.get(HEADER_LOCALSTACK_ACCOUNT_ID):
             context.account_id = account_id_from_header
         else:
             context.account_id = get_account_id_from_access_key_id(access_key_id)
+
+        # Make Moto use the same Account ID as LocalStack
+        context.request.headers.add("x-moto-account-id", context.account_id)

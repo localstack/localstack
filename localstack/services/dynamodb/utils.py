@@ -1,6 +1,5 @@
 import logging
 import re
-from binascii import crc32
 from typing import Dict, List, Optional
 
 from cachetools import TTLCache
@@ -8,7 +7,6 @@ from moto.core.exceptions import JsonRESTError
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.json import canonical_json
-from localstack.utils.strings import to_bytes
 from localstack.utils.testutil import list_all_resources
 
 LOG = logging.getLogger(__name__)
@@ -60,9 +58,9 @@ class SchemaExtractor:
 
     @classmethod
     def get_key_schema(cls, table_name: str) -> Optional[List[Dict]]:
-        from localstack.services.dynamodb.provider import DynamoDBRegion
+        from localstack.services.dynamodb.provider import get_store
 
-        table_definitions = DynamoDBRegion.get().table_definitions
+        table_definitions: Dict = get_store().table_definitions
         table_def = table_definitions.get(table_name)
         if not table_def:
             raise Exception(f"Unknown table: {table_name} not found in {table_definitions.keys()}")
@@ -82,6 +80,8 @@ class SchemaExtractor:
 class ItemFinder:
     @staticmethod
     def find_existing_item(put_item: Dict, table_name=None) -> Optional[Dict]:
+        from localstack.services.dynamodb.provider import ValidationException
+
         table_name = table_name or put_item["TableName"]
         ddb_client = aws_stack.connect_to_service("dynamodb")
 
@@ -98,7 +98,14 @@ class ItemFinder:
             for schema in schemas:
                 for key in schema:
                     key_name = key["AttributeName"]
-                    search_key[key_name] = put_item["Item"][key_name]
+                    key_value = put_item["Item"].get(key_name)
+                    if not key_value:
+                        raise ValidationException(
+                            "An error occurred (ValidationException) when calling the "
+                            "BatchWriteItem operation: The provided key element does not match "
+                            "the schema"
+                        )
+                    search_key[key_name] = key_value
             if not search_key:
                 return
 
@@ -145,7 +152,3 @@ def extract_table_name_from_partiql_update(statement: str) -> Optional[str]:
     regex = r"^\s*(UPDATE|INSERT\s+INTO|DELETE\s+FROM)\s+([^\s]+).*"
     match = re.match(regex, statement, flags=re.IGNORECASE | re.MULTILINE)
     return match and match.group(2)
-
-
-def calculate_crc32(response):
-    return crc32(to_bytes(response.content)) & 0xFFFFFFFF

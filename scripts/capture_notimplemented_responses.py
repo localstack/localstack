@@ -1,9 +1,14 @@
 import csv
+import json
 import logging
+import sys
+import time
+from datetime import timedelta
+from pathlib import Path
 from typing import TypedDict
 
 import botocore.config
-import click
+import requests
 from botocore.exceptions import (
     ClientError,
     ConnectTimeoutError,
@@ -11,6 +16,7 @@ from botocore.exceptions import (
     ReadTimeoutError,
 )
 from botocore.parsers import ResponseParserError
+from rich.console import Console
 
 from localstack.aws.mocking import generate_request
 from localstack.aws.spec import ServiceCatalog
@@ -19,102 +25,17 @@ from localstack.utils.aws import aws_stack
 logging.basicConfig(level=logging.INFO)
 service_models = ServiceCatalog()
 
+c = Console()
+
 STATUS_TIMEOUT_ERROR = 901
 STATUS_PARSING_ERROR = 902
 STATUS_CONNECTION_ERROR = 903
 
-# TODO: generate these via a script in PRO
+# TODO: will only include available services
 # generate with e.g. http http://localhost:4566/health | jq ".services | keys[]" | pbcopy
-latest_services_pro = [
-    "acm",
-    "amplify",
-    "apigateway",
-    "apigatewaymanagementapi",
-    "apigatewayv2",
-    "appconfig",
-    "application-autoscaling",
-    "appsync",
-    "athena",
-    "autoscaling",
-    "azure",
-    "backup",
-    "batch",
-    "ce",
-    "cloudformation",
-    "cloudfront",
-    "cloudtrail",
-    "cloudwatch",
-    "codecommit",
-    "cognito-identity",
-    "cognito-idp",
-    "config",
-    "docdb",
-    "dynamodb",
-    "dynamodbstreams",
-    "ec2",
-    "ecr",
-    "ecs",
-    "efs",
-    "eks",
-    "elasticache",
-    "elasticbeanstalk",
-    "elb",
-    "elbv2",
-    "emr",
-    "es",
-    "events",
-    "firehose",
-    "glacier",
-    "glue",
-    "iam",
-    "iot",
-    "iot-data",
-    "iotanalytics",
-    "iotwireless",
-    "kafka",
-    "kinesis",
-    "kinesisanalytics",
-    "kinesisanalyticsv2",
-    "kms",
-    "lakeformation",
-    "lambda",
-    "logs",
-    "mediastore",
-    "mediastore-data",
-    "mwaa",
-    "neptune",
-    "opensearch",
-    "organizations",
-    "qldb",
-    "qldb-session",
-    "rds",
-    "rds-data",
-    "redshift",
-    "redshift-data",
-    "resource-groups",
-    "resourcegroupstaggingapi",
-    "route53",
-    "route53resolver",
-    "s3",
-    "s3control",
-    "sagemaker",
-    "secretsmanager",
-    "serverlessrepo",
-    "servicediscovery",
-    "ses",
-    "sesv2",
-    "sns",
-    "sqs",
-    "ssm",
-    "stepfunctions",
-    "sts",
-    "support",
-    "swf",
-    "timestream-query",
-    "timestream-write",
-    "transfer",
-    "xray",
-]
+response = requests.get("http://localhost:4566/health").content.decode("utf-8")
+latest_services_pro = [k for k in json.loads(response).get("services").keys()]
+
 exclude_services = {"azure"}
 latest_services_pro = [s for s in latest_services_pro if s not in exclude_services]
 latest_services_pro.sort()
@@ -136,8 +57,9 @@ def simulate_call(service: str, op: str) -> RowEntry:
         config=botocore.config.Config(
             parameter_validation=False,
             retries={"max_attempts": 0, "total_max_attempts": 1},
-            connect_timeout=1,
+            connect_timeout=50,
             read_timeout=1,
+            inject_host_prefix=False,
         ),
     )
 
@@ -146,7 +68,6 @@ def simulate_call(service: str, op: str) -> RowEntry:
     parameters = generate_request(op_model)  # should be generate_parameters I guess
 
     result = RowEntry(service=service, operation=op, status_code=0)
-    logging.debug(parameters)
     try:
         response = client._make_api_call(op, parameters)
         result["status_code"] = response["ResponseMetadata"]["HTTPStatusCode"]
@@ -163,7 +84,7 @@ def simulate_call(service: str, op: str) -> RowEntry:
         result["status_code"] = STATUS_CONNECTION_ERROR
     except ResponseParserError:
         # TODO: this is actually a bit tricky and might have to be handled on a service by service basis again
-        logging.warning("Parsing issue. Assuming it is implemented.")
+        logging.warning("Parsing issue. Assuming it isn't implemented.")
         result["status_code"] = STATUS_PARSING_ERROR
     except Exception as e:
         logging.exception(e)
@@ -180,9 +101,11 @@ def map_to_notimplemented(row: RowEntry) -> bool:
     :param row: the RowEntry
     :return: True if we assume it is not implemented, False otherwise
     """
-
-    if row["status_code"] in [STATUS_TIMEOUT_ERROR, STATUS_PARSING_ERROR]:
-        # parsing or timeout issue, interpreted as implemented until there's a better heuristic
+    if row["status_code"] in [STATUS_PARSING_ERROR]:
+        # parsing issues are nearly always due to something not being implemented or activated
+        return True
+    if row["status_code"] in [STATUS_TIMEOUT_ERROR]:
+        #  timeout issue, interpreted as implemented until there's a better heuristic
         return False
     if row["status_code"] == STATUS_CONNECTION_ERROR:
         # affected services:
@@ -194,21 +117,39 @@ def map_to_notimplemented(row: RowEntry) -> bool:
         # servicediscovery, DiscoverInstances
         # stepfunctions, StartSyncExecution
         return True
+    if (
+        row["service"] == "cloudfront"
+        and row["status_code"] == 500
+        and row.get("error_code") == "500"
+        and row.get("error_message", "").lower() == "internal server error"
+    ):
+        return True
     if row["service"] == "dynamodb" and row.get("error_code") == "UnknownOperationException":
         return True
     if row["service"] == "lambda" and row["status_code"] == 404 and row.get("error_code") == "404":
         return True
     if (
-        row["service"] == "apigateway"
+        row["service"]
+        in [
+            "route53",
+            "s3",
+            "s3control",
+        ]
         and row["status_code"] == 404
         and row.get("error_code") == "404"
         and row.get("error_message") is not None
-        and "The requested URL was not found on the server" in row.get("error_message", "")
+        and "not found" == row.get("error_message", "").lower()
     ):
         return True
     if (
-        row["service"] == "apigatewayv2"
-        and row["status_code"] == 501
+        row["service"] in ["xray", "batch", "glacier", "resource-groups", "apigateway"]
+        and row["status_code"] == 404
+        and row.get("error_message") is not None
+        and "The requested URL was not found on the server" in row.get("error_message")
+    ):
+        return True
+    if (
+        row["status_code"] == 501
         and row.get("error_message") is not None
         and "not yet implemented" in row.get("error_message", "")
     ):
@@ -219,14 +160,23 @@ def map_to_notimplemented(row: RowEntry) -> bool:
         return True
     if row["status_code"] == 501:
         return True
+    if (
+        row["status_code"] == 500
+        and row.get("error_code") == "500"
+        and not row.get("error_message")
+    ):
+        return True
     return False
 
 
-def run_script(services: list[str]):
+def run_script(services: list[str], path: None):
     """send requests against all APIs"""
+    print(
+        f"writing results to '{path}implementation_coverage_full.csv' and '{path}implementation_coverage_aggregated.csv'..."
+    )
     with (
-        open("implementation_coverage_full.csv", "w") as csvfile,
-        open("implementation_coverage_aggregated.csv", "w") as aggregatefile,
+        open(f"{path}implementation_coverage_full.csv", "w") as csvfile,
+        open(f"{path}implementation_coverage_aggregated.csv", "w") as aggregatefile,
     ):
         full_w = csv.DictWriter(
             csvfile,
@@ -247,10 +197,24 @@ def run_script(services: list[str]):
         full_w.writeheader()
         aggregated_w.writeheader()
 
-        responses = {}
+        total_count = 0
         for service_name in services:
             service = service_models.get(service_name)
             for op_name in service.operation_names:
+                total_count += 1
+
+        time_start = time.perf_counter_ns()
+        counter = 0
+        responses = {}
+        for service_name in services:
+            c.print(f"\n=====  {service_name} =====")
+            service = service_models.get(service_name)
+            for op_name in service.operation_names:
+                counter += 1
+                c.print(
+                    f"{100 * counter/total_count:3.1f}% | Calling endpoint {counter:4.0f}/{total_count}: {service_name}.{op_name}"
+                )
+
                 # here's the important part (the actual service call!)
                 response = simulate_call(service_name, op_name)
 
@@ -274,6 +238,9 @@ def run_script(services: list[str]):
                     "percentage": f"{implemented_percentage * 100:.1f}",
                 }
             )
+        time_end = time.perf_counter_ns()
+        delta = timedelta(microseconds=(time_end - time_start) / 1000.0)
+        c.print(f"\n\nDone.\nTotal time to completion: {delta}")
 
 
 def calculate_percentages():
@@ -316,9 +283,14 @@ def calculate_percentages():
             writer.writerow(agg)
 
 
-@click.command()
+# @click.command()
 def main():
-    run_script(latest_services_pro)
+    path = "./"
+    if len(sys.argv) > 1 and Path(sys.argv[1]).is_dir():
+        path = sys.argv[1]
+        if not path.endswith("/"):
+            path += "/"
+    run_script(latest_services_pro, path=path)
 
 
 if __name__ == "__main__":

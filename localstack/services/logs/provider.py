@@ -23,12 +23,10 @@ from localstack.aws.api.logs import (
     PutLogEventsResponse,
     SequenceToken,
 )
-from localstack.aws.proxy import AwsApiListener
-from localstack.constants import APPLICATION_AMZ_JSON_1_1
-from localstack.services.messages import Request, Response
-from localstack.services.moto import MotoFallbackDispatcher, call_moto
+from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch
 
@@ -48,7 +46,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_events: InputLogEvents,
         sequence_token: SequenceToken = None,
     ) -> PutLogEventsResponse:
-        logs_backend = logs_backends[aws_stack.get_region()]
+        logs_backend = logs_backends[context.account_id][aws_stack.get_region()]
         metric_filters = logs_backend.filters.metric_filters
         for metric_filter in metric_filters:
             pattern = metric_filter.get("filterPattern", "")
@@ -75,19 +73,6 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         return call_moto(context)
 
 
-class LogsAwsApiListener(AwsApiListener):
-    def __init__(self):
-        self.provider = LogsProvider()
-        super().__init__("logs", MotoFallbackDispatcher(self.provider))
-
-    def request(self, request: Request) -> Response:
-        response = super().request(request)
-        # Fix Incorrect response content-type header from cloudwatch logs #1343.
-        # True for all logs api responses.
-        response.headers["content-type"] = APPLICATION_AMZ_JSON_1_1
-        return response
-
-
 def get_pattern_matcher(pattern: str) -> Callable[[str, Dict], bool]:
     """Returns a pattern matcher. Can be patched by plugins to return a more sophisticated pattern matcher."""
     return lambda _pattern, _log_event: True
@@ -107,7 +92,9 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
         raise ResourceNotFoundException("The specified log group does not exist.")
 
     if ":lambda:" in destination_arn:
-        client = aws_stack.connect_to_service("lambda")
+        client = aws_stack.connect_to_service(
+            "lambda", region_name=extract_region_from_arn(destination_arn)
+        )
         lambda_name = aws_stack.lambda_function_name(destination_arn)
         try:
             client.get_function(FunctionName=lambda_name)
@@ -196,7 +183,9 @@ def moto_put_log_events(self, log_group_name, log_stream_name, log_events):
         event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
 
         if ":lambda:" in self.destination_arn:
-            client = aws_stack.connect_to_service("lambda")
+            client = aws_stack.connect_to_service(
+                "lambda", region_name=extract_region_from_arn(self.destination_arn)
+            )
             lambda_name = aws_stack.lambda_function_name(self.destination_arn)
             client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
         if ":kinesis:" in self.destination_arn:

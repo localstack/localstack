@@ -1,11 +1,14 @@
 import json
 import logging
+import re
+from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
     CallAs,
     ChangeSetNameOrId,
+    ChangeSetNotFoundException,
     ClientRequestToken,
     CloudformationApi,
     CreateChangeSetInput,
@@ -69,13 +72,20 @@ from localstack.utils.cloudformation.template_preparer import (
     prepare_template_body,
     template_to_json,
 )
-from localstack.utils.collections import select_attributes
+from localstack.utils.collections import remove_attributes, select_attributes
 from localstack.utils.json import clone, clone_safe
 from localstack.utils.objects import recurse_object
 from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
+
+ARN_CHANGESET_REGEX = re.compile(
+    r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:changeSet/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+)
+ARN_STACK_REGEX = re.compile(
+    r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:stack/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+)
 
 
 class StackSet:
@@ -107,11 +117,12 @@ class StackInstance:
 
 
 class Stack:
-    def __init__(self, metadata=None, template=None):
+    def __init__(self, metadata=None, template=None, template_body=None):
         if template is None:
             template = {}
         self.metadata = metadata or {}
         self.template = template or {}
+        self.template_body = template_body
         self._template_raw = clone_safe(self.template)
         self.template_original = clone_safe(self.template)
         # initialize resources
@@ -131,6 +142,11 @@ class Stack:
         self.metadata["Parameters"] = self.metadata.get("Parameters") or []
         self.metadata["StackStatus"] = "CREATE_IN_PROGRESS"
         self.metadata["CreationTime"] = self.metadata.get("CreationTime") or timestamp_millis()
+        self.metadata["LastUpdatedTime"] = self.metadata["CreationTime"]
+        self.metadata.setdefault("Description", self.template.get("Description"))
+        self.metadata.setdefault("RollbackConfiguration", {})
+        self.metadata.setdefault("DisableRollback", False)
+        self.metadata.setdefault("EnableTerminationProtection", False)
         # maps resource id to resource state
         self._resource_states = {}
         # list of stack events
@@ -153,20 +169,29 @@ class Stack:
             "DeletionTime",
             "LastUpdatedTime",
             "ChangeSetId",
+            "RollbackConfiguration",
+            "DisableRollback",
+            "EnableTerminationProtection",
+            "DriftInformation",
         ]
         result = select_attributes(self.metadata, attrs)
         result["Tags"] = self.tags
-        result["Outputs"] = self.outputs_list()
-        result["Parameters"] = self.stack_parameters()
-        for attr in ["Capabilities", "Outputs", "Parameters", "Tags"]:
+        outputs = self.outputs_list()
+        if outputs:
+            result["Outputs"] = outputs
+        params = self.stack_parameters()
+        if params:
+            result["Parameters"] = params
+        if not result.get("DriftInformation"):
+            result["DriftInformation"] = {"StackDriftStatus": "NOT_CHECKED"}
+        for attr in ["Capabilities", "Tags", "NotificationARNs"]:
             result.setdefault(attr, [])
         return result
 
     def set_stack_status(self, status):
         self.metadata["StackStatus"] = status
-        self.metadata["StackStatusReason"] = "Deployment %s" % (
-            "failed" if "FAILED" in status else "succeeded"
-        )
+        if "FAILED" in status:
+            self.metadata["StackStatusReason"] = "Deployment failed"
         self.add_stack_event(self.stack_name, self.stack_id, status)
 
     def set_time_attribute(self, attribute, new_time=None):
@@ -197,7 +222,7 @@ class Stack:
     def _set_resource_status_details(self, resource_id: str, physical_res_id: str = None):
         """Helper function to ensure that the status details for the given resource ID are up-to-date."""
         resource = self.resources.get(resource_id)
-        if resource is None:
+        if resource is None or resource.get("Type") == "Parameter":
             # make sure we delete the states for any non-existing/deleted resources
             self._resource_states.pop(resource_id, None)
             return
@@ -212,6 +237,7 @@ class Stack:
         state["StackName"] = state.get("StackName") or self.stack_name
         state["StackId"] = state.get("StackId") or self.stack_id
         state["ResourceType"] = state.get("ResourceType") or self.resources[resource_id].get("Type")
+        state["Timestamp"] = timestamp_millis()
         return state
 
     def resource_status(self, resource_id: str):
@@ -566,7 +592,7 @@ class CloudformationProvider(CloudformationApi):
         template_deployer.prepare_template_body(request)  # TODO: avoid mutating request directly
         template = template_preparer.parse_template(request["TemplateBody"])
         stack_name = template["StackName"] = request.get("StackName")
-        stack = Stack(request, template)
+        stack = Stack(request, template)  # TODO: proper body handling like in create_change_set
 
         # find existing stack with same name, and remove it if this stack is in DELETED state
         existing = ([s for s in state.stacks.values() if s.stack_name == stack_name] or [None])[0]
@@ -690,12 +716,18 @@ class CloudformationProvider(CloudformationApi):
         template_stage: TemplateStage = None,
     ) -> GetTemplateOutput:
 
-        stack = find_stack(stack_name)
+        stack = None
         if change_set_name:
             stack = find_change_set(stack_name=stack_name, cs_name=change_set_name)
+        else:
+            stack = find_stack(stack_name)
         if not stack:
             return stack_not_found_error(stack_name)
-        return GetTemplateOutput(TemplateBody=json.dumps(stack.latest_template_raw()))
+
+        return GetTemplateOutput(
+            TemplateBody=stack.template_body,
+            StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
+        )
 
     @handler("GetTemplateSummary", expand=False)
     def get_template_summary(
@@ -854,12 +886,15 @@ class CloudformationProvider(CloudformationApi):
             )  # TODO: check proper message
 
         prepare_template_body(req_params)  # TODO: function has too many unclear responsibilities
+        if not template_body:
+            template_body = req_params[
+                "TemplateBody"
+            ]  # should then have been set by prepare_template_body
         template = template_preparer.parse_template(req_params["TemplateBody"])
         del req_params["TemplateBody"]  # TODO: stop mutating req_params
         template["StackName"] = stack_name
-        template[
-            "ChangeSetName"
-        ] = change_set_name  # TODO: validate with AWS what this is actually doing?
+        # TODO: validate with AWS what this is actually doing?
+        template["ChangeSetName"] = change_set_name
 
         if change_set_type == "UPDATE":
             # add changeset to existing stack
@@ -877,7 +912,11 @@ class CloudformationProvider(CloudformationApi):
             empty_stack_template = dict(template)
             empty_stack_template["Resources"] = {}
             req_params_copy = clone_stack_params(req_params)
-            stack = Stack(req_params_copy, empty_stack_template)
+            stack = Stack(
+                req_params_copy,
+                empty_stack_template,
+                template_body=template_body,
+            )
             state.stacks[stack.stack_id] = stack
             stack.set_stack_status("REVIEW_IN_PROGRESS")
         elif change_set_type == "IMPORT":
@@ -927,13 +966,31 @@ class CloudformationProvider(CloudformationApi):
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
     ) -> DescribeChangeSetOutput:
+
+        # only relevant if change_set_name isn't an ARN
+        if not ARN_CHANGESET_REGEX.match(change_set_name):
+            if not stack_name:
+                raise ValidationError(
+                    "StackName must be specified if ChangeSetName is not specified as an ARN."
+                )
+
+            stack = find_stack(stack_name)
+            if not stack:
+                raise ValidationError(f"Stack [{stack_name}] does not exist")
+
         change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:
-            return not_found_error(
-                f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
-            )
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
 
-        return change_set.metadata
+        attrs = [
+            "ChangeSetType",
+            "StackStatus",
+            "LastUpdatedTime",
+            "DisableRollback",
+            "EnableTerminationProtection",
+        ]
+        result = remove_attributes(deepcopy(change_set.metadata), attrs)
+        return result
 
     @handler("DeleteChangeSet")
     def delete_change_set(
@@ -942,13 +999,25 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
     ) -> DeleteChangeSetOutput:
+
+        # only relevant if change_set_name isn't an ARN
+        if not ARN_CHANGESET_REGEX.match(change_set_name):
+            if not stack_name:
+                raise ValidationError(
+                    "StackName must be specified if ChangeSetName is not specified as an ARN."
+                )
+
+            stack = find_stack(stack_name)
+            if not stack:
+                raise ValidationError(f"Stack [{stack_name}] does not exist")
+
         change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:
-            return not_found_error(
-                f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
-            )
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         change_set.stack.change_sets = [
-            cs for cs in change_set.stack.change_sets if cs.change_set_name != change_set_name
+            cs
+            for cs in change_set.stack.change_sets
+            if change_set_name not in (cs.change_set_name, cs.change_set_id)
         ]
         return DeleteChangeSetOutput()
 
@@ -963,9 +1032,7 @@ class CloudformationProvider(CloudformationApi):
     ) -> ExecuteChangeSetOutput:
         change_set = find_change_set(change_set_name, stack_name=stack_name)
         if not change_set:
-            return not_found_error(
-                f'Unable to find change set "{change_set_name}" for stack "{stack_name}"'
-            )
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         if change_set.metadata.get("ExecutionStatus") != ExecutionStatus.AVAILABLE:
             LOG.debug("Change set %s not in execution status 'AVAILABLE'", change_set_name)
             raise InvalidChangeSetStatusException(
@@ -1139,6 +1206,8 @@ class CloudformationProvider(CloudformationApi):
             for res_id, res_status in stack.resource_states.items()
             if logical_resource_id in [res_id, None]
         ]
+        for status in statuses:
+            status.setdefault("DriftInformation", {"StackResourceDriftStatus": "NOT_CHECKED"})
         return DescribeStackResourcesOutput(StackResources=statuses)
 
     @handler("ListStackResources")
@@ -1146,7 +1215,13 @@ class CloudformationProvider(CloudformationApi):
         self, context: RequestContext, stack_name: StackName, next_token: NextToken = None
     ) -> ListStackResourcesOutput:
         result = self.describe_stack_resources(context, stack_name)
-        return ListStackResourcesOutput(StackResourceSummaries=result.pop("StackResources"))
+
+        resources = deepcopy(result.get("StackResources", []))
+        for resource in resources:
+            attrs = ["StackName", "StackId", "Timestamp", "PreviousResourceStatus"]
+            remove_attributes(resource, attrs)
+
+        return ListStackResourcesOutput(StackResourceSummaries=resources)
 
     @handler("DescribeStackSetOperation")
     def describe_stack_set_operation(

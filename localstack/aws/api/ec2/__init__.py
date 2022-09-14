@@ -28,6 +28,7 @@ CarrierGatewayId = str
 CarrierGatewayMaxResults = int
 ClientVpnAssociationId = str
 ClientVpnEndpointId = str
+CloudWatchLogGroupArn = str
 CoipPoolId = str
 CoipPoolMaxResults = int
 ConnectionNotificationId = str
@@ -246,6 +247,8 @@ TransitGatewayConnectPeerId = str
 TransitGatewayId = str
 TransitGatewayMaxResults = int
 TransitGatewayMulticastDomainId = str
+TransitGatewayPolicyTableId = str
+TransitGatewayRouteTableAnnouncementId = str
 TransitGatewayRouteTableId = str
 TrunkInterfaceAssociationId = str
 VCpuCount = int
@@ -697,6 +700,11 @@ class DomainType(str):
     standard = "standard"
 
 
+class DynamicRoutingValue(str):
+    enable = "enable"
+    disable = "disable"
+
+
 class EbsEncryptionSupport(str):
     unsupported = "unsupported"
     supported = "supported"
@@ -860,6 +868,8 @@ class FlowLogsResourceType(str):
     VPC = "VPC"
     Subnet = "Subnet"
     NetworkInterface = "NetworkInterface"
+    TransitGateway = "TransitGateway"
+    TransitGatewayAttachment = "TransitGatewayAttachment"
 
 
 class FpgaImageAttributeName(str):
@@ -1576,6 +1586,49 @@ class InstanceType(str):
     c7g_8xlarge = "c7g.8xlarge"
     c7g_12xlarge = "c7g.12xlarge"
     c7g_16xlarge = "c7g.16xlarge"
+    mac2_metal = "mac2.metal"
+    c6id_large = "c6id.large"
+    c6id_xlarge = "c6id.xlarge"
+    c6id_2xlarge = "c6id.2xlarge"
+    c6id_4xlarge = "c6id.4xlarge"
+    c6id_8xlarge = "c6id.8xlarge"
+    c6id_12xlarge = "c6id.12xlarge"
+    c6id_16xlarge = "c6id.16xlarge"
+    c6id_24xlarge = "c6id.24xlarge"
+    c6id_32xlarge = "c6id.32xlarge"
+    c6id_metal = "c6id.metal"
+    m6id_large = "m6id.large"
+    m6id_xlarge = "m6id.xlarge"
+    m6id_2xlarge = "m6id.2xlarge"
+    m6id_4xlarge = "m6id.4xlarge"
+    m6id_8xlarge = "m6id.8xlarge"
+    m6id_12xlarge = "m6id.12xlarge"
+    m6id_16xlarge = "m6id.16xlarge"
+    m6id_24xlarge = "m6id.24xlarge"
+    m6id_32xlarge = "m6id.32xlarge"
+    m6id_metal = "m6id.metal"
+    r6id_large = "r6id.large"
+    r6id_xlarge = "r6id.xlarge"
+    r6id_2xlarge = "r6id.2xlarge"
+    r6id_4xlarge = "r6id.4xlarge"
+    r6id_8xlarge = "r6id.8xlarge"
+    r6id_12xlarge = "r6id.12xlarge"
+    r6id_16xlarge = "r6id.16xlarge"
+    r6id_24xlarge = "r6id.24xlarge"
+    r6id_32xlarge = "r6id.32xlarge"
+    r6id_metal = "r6id.metal"
+    r6a_large = "r6a.large"
+    r6a_xlarge = "r6a.xlarge"
+    r6a_2xlarge = "r6a.2xlarge"
+    r6a_4xlarge = "r6a.4xlarge"
+    r6a_8xlarge = "r6a.8xlarge"
+    r6a_12xlarge = "r6a.12xlarge"
+    r6a_16xlarge = "r6a.16xlarge"
+    r6a_24xlarge = "r6a.24xlarge"
+    r6a_32xlarge = "r6a.32xlarge"
+    r6a_48xlarge = "r6a.48xlarge"
+    r6a_metal = "r6a.metal"
+    p4de_24xlarge = "p4de.24xlarge"
 
 
 class InstanceTypeHypervisor(str):
@@ -1811,6 +1864,7 @@ class LocationType(str):
 class LogDestinationType(str):
     cloud_watch_logs = "cloud-watch-logs"
     s3 = "s3"
+    kinesis_data_firehose = "kinesis-data-firehose"
 
 
 class MarketType(str):
@@ -2134,7 +2188,9 @@ class ResourceType(str):
     transit_gateway_attachment = "transit-gateway-attachment"
     transit_gateway_connect_peer = "transit-gateway-connect-peer"
     transit_gateway_multicast_domain = "transit-gateway-multicast-domain"
+    transit_gateway_policy_table = "transit-gateway-policy-table"
     transit_gateway_route_table = "transit-gateway-route-table"
+    transit_gateway_route_table_announcement = "transit-gateway-route-table-announcement"
     volume = "volume"
     vpc = "vpc"
     vpc_endpoint = "vpc-endpoint"
@@ -2143,6 +2199,10 @@ class ResourceType(str):
     vpn_connection = "vpn-connection"
     vpn_gateway = "vpn-gateway"
     vpc_flow_log = "vpc-flow-log"
+    capacity_reservation_fleet = "capacity-reservation-fleet"
+    traffic_mirror_filter_rule = "traffic-mirror-filter-rule"
+    vpc_endpoint_connection_device_type = "vpc-endpoint-connection-device-type"
+    vpn_connection_device_type = "vpn-connection-device-type"
 
 
 class RootDeviceType(str):
@@ -2444,6 +2504,13 @@ class TransitGatewayMulticastDomainState(str):
     deleted = "deleted"
 
 
+class TransitGatewayPolicyTableState(str):
+    pending = "pending"
+    available = "available"
+    deleting = "deleting"
+    deleted = "deleted"
+
+
 class TransitGatewayPrefixListReferenceState(str):
     pending = "pending"
     available = "available"
@@ -2462,6 +2529,20 @@ class TransitGatewayRouteState(str):
     pending = "pending"
     active = "active"
     blackhole = "blackhole"
+    deleting = "deleting"
+    deleted = "deleted"
+
+
+class TransitGatewayRouteTableAnnouncementDirection(str):
+    outgoing = "outgoing"
+    incoming = "incoming"
+
+
+class TransitGatewayRouteTableAnnouncementState(str):
+    available = "available"
+    pending = "pending"
+    failing = "failing"
+    failed = "failed"
     deleting = "deleting"
     deleted = "deleted"
 
@@ -2742,16 +2823,23 @@ class PeeringAttachmentStatus(TypedDict, total=False):
     Message: Optional[String]
 
 
+class TransitGatewayPeeringAttachmentOptions(TypedDict, total=False):
+    DynamicRouting: Optional[DynamicRoutingValue]
+
+
 class PeeringTgwInfo(TypedDict, total=False):
     TransitGatewayId: Optional[String]
+    CoreNetworkId: Optional[String]
     OwnerId: Optional[String]
     Region: Optional[String]
 
 
 class TransitGatewayPeeringAttachment(TypedDict, total=False):
     TransitGatewayAttachmentId: Optional[String]
+    AccepterTransitGatewayAttachmentId: Optional[String]
     RequesterTgwInfo: Optional[PeeringTgwInfo]
     AccepterTgwInfo: Optional[PeeringTgwInfo]
+    Options: Optional[TransitGatewayPeeringAttachmentOptions]
     Status: Optional[PeeringAttachmentStatus]
     State: Optional[TransitGatewayAttachmentState]
     CreationTime: Optional[DateTime]
@@ -3483,6 +3571,24 @@ class AssociateTransitGatewayMulticastDomainRequest(ServiceRequest):
 
 class AssociateTransitGatewayMulticastDomainResult(TypedDict, total=False):
     Associations: Optional[TransitGatewayMulticastDomainAssociations]
+
+
+class AssociateTransitGatewayPolicyTableRequest(ServiceRequest):
+    TransitGatewayPolicyTableId: TransitGatewayPolicyTableId
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId
+    DryRun: Optional[Boolean]
+
+
+class TransitGatewayPolicyTableAssociation(TypedDict, total=False):
+    TransitGatewayPolicyTableId: Optional[TransitGatewayPolicyTableId]
+    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
+    ResourceId: Optional[String]
+    ResourceType: Optional[TransitGatewayAttachmentResourceType]
+    State: Optional[TransitGatewayAssociationState]
+
+
+class AssociateTransitGatewayPolicyTableResult(TypedDict, total=False):
+    Association: Optional[TransitGatewayPolicyTableAssociation]
 
 
 class AssociateTransitGatewayRouteTableRequest(ServiceRequest):
@@ -4422,6 +4528,18 @@ class ClientVpnRoute(TypedDict, total=False):
 ClientVpnRouteSet = List[ClientVpnRoute]
 
 
+class CloudWatchLogOptions(TypedDict, total=False):
+    LogEnabled: Optional[Boolean]
+    LogGroupArn: Optional[String]
+    LogOutputFormat: Optional[String]
+
+
+class CloudWatchLogOptionsSpecification(TypedDict, total=False):
+    LogEnabled: Optional[Boolean]
+    LogGroupArn: Optional[CloudWatchLogGroupArn]
+    LogOutputFormat: Optional[String]
+
+
 class CoipAddressUsage(TypedDict, total=False):
     AllocationId: Optional[String]
     AwsAccountId: Optional[String]
@@ -5121,10 +5239,11 @@ class CreateFlowLogsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     ClientToken: Optional[String]
     DeliverLogsPermissionArn: Optional[String]
+    DeliverCrossAccountRole: Optional[String]
     LogGroupName: Optional[String]
     ResourceIds: FlowLogResourceIds
     ResourceType: FlowLogsResourceType
-    TrafficType: TrafficType
+    TrafficType: Optional[TrafficType]
     LogDestinationType: Optional[LogDestinationType]
     LogDestination: Optional[String]
     LogFormat: Optional[String]
@@ -6424,9 +6543,13 @@ class CreateSnapshotRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+VolumeIdStringList = List[VolumeId]
+
+
 class InstanceSpecification(TypedDict, total=False):
     InstanceId: Optional[InstanceId]
     ExcludeBootVolume: Optional[Boolean]
+    ExcludeDataVolumeIds: Optional[VolumeIdStringList]
 
 
 class CreateSnapshotsRequest(ServiceRequest):
@@ -6789,17 +6912,40 @@ class CreateTransitGatewayMulticastDomainResult(TypedDict, total=False):
     TransitGatewayMulticastDomain: Optional[TransitGatewayMulticastDomain]
 
 
+class CreateTransitGatewayPeeringAttachmentRequestOptions(TypedDict, total=False):
+    DynamicRouting: Optional[DynamicRoutingValue]
+
+
 class CreateTransitGatewayPeeringAttachmentRequest(ServiceRequest):
     TransitGatewayId: TransitGatewayId
     PeerTransitGatewayId: TransitAssociationGatewayId
     PeerAccountId: String
     PeerRegion: String
+    Options: Optional[CreateTransitGatewayPeeringAttachmentRequestOptions]
     TagSpecifications: Optional[TagSpecificationList]
     DryRun: Optional[Boolean]
 
 
 class CreateTransitGatewayPeeringAttachmentResult(TypedDict, total=False):
     TransitGatewayPeeringAttachment: Optional[TransitGatewayPeeringAttachment]
+
+
+class CreateTransitGatewayPolicyTableRequest(ServiceRequest):
+    TransitGatewayId: TransitGatewayId
+    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Optional[Boolean]
+
+
+class TransitGatewayPolicyTable(TypedDict, total=False):
+    TransitGatewayPolicyTableId: Optional[TransitGatewayPolicyTableId]
+    TransitGatewayId: Optional[TransitGatewayId]
+    State: Optional[TransitGatewayPolicyTableState]
+    CreationTime: Optional[DateTime]
+    Tags: Optional[TagList]
+
+
+class CreateTransitGatewayPolicyTableResult(TypedDict, total=False):
+    TransitGatewayPolicyTable: Optional[TransitGatewayPolicyTable]
 
 
 class CreateTransitGatewayPrefixListReferenceRequest(ServiceRequest):
@@ -6898,6 +7044,7 @@ TransitGatewayRouteAttachmentList = List[TransitGatewayRouteAttachment]
 class TransitGatewayRoute(TypedDict, total=False):
     DestinationCidrBlock: Optional[String]
     PrefixListId: Optional[PrefixListResourceId]
+    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
     TransitGatewayAttachments: Optional[TransitGatewayRouteAttachmentList]
     Type: Optional[TransitGatewayRouteType]
     State: Optional[TransitGatewayRouteState]
@@ -6905,6 +7052,31 @@ class TransitGatewayRoute(TypedDict, total=False):
 
 class CreateTransitGatewayRouteResult(TypedDict, total=False):
     Route: Optional[TransitGatewayRoute]
+
+
+class CreateTransitGatewayRouteTableAnnouncementRequest(ServiceRequest):
+    TransitGatewayRouteTableId: TransitGatewayRouteTableId
+    PeeringAttachmentId: TransitGatewayAttachmentId
+    TagSpecifications: Optional[TagSpecificationList]
+    DryRun: Optional[Boolean]
+
+
+class TransitGatewayRouteTableAnnouncement(TypedDict, total=False):
+    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
+    TransitGatewayId: Optional[TransitGatewayId]
+    CoreNetworkId: Optional[String]
+    PeerTransitGatewayId: Optional[TransitGatewayId]
+    PeerCoreNetworkId: Optional[String]
+    PeeringAttachmentId: Optional[TransitGatewayAttachmentId]
+    AnnouncementDirection: Optional[TransitGatewayRouteTableAnnouncementDirection]
+    TransitGatewayRouteTableId: Optional[TransitGatewayRouteTableId]
+    State: Optional[TransitGatewayRouteTableAnnouncementState]
+    CreationTime: Optional[DateTime]
+    Tags: Optional[TagList]
+
+
+class CreateTransitGatewayRouteTableAnnouncementResult(TypedDict, total=False):
+    TransitGatewayRouteTableAnnouncement: Optional[TransitGatewayRouteTableAnnouncement]
 
 
 class CreateTransitGatewayRouteTableRequest(ServiceRequest):
@@ -7149,6 +7321,10 @@ class CreateVpcResult(TypedDict, total=False):
     Vpc: Optional[Vpc]
 
 
+class VpnTunnelLogOptionsSpecification(TypedDict, total=False):
+    CloudWatchLogOptions: Optional[CloudWatchLogOptionsSpecification]
+
+
 class IKEVersionsRequestListValue(TypedDict, total=False):
     Value: Optional[String]
 
@@ -7217,6 +7393,7 @@ class VpnTunnelOptionsSpecification(TypedDict, total=False):
     Phase2DHGroupNumbers: Optional[Phase2DHGroupNumbersRequestList]
     IKEVersions: Optional[IKEVersionsRequestList]
     StartupAction: Optional[String]
+    LogOptions: Optional[VpnTunnelLogOptionsSpecification]
 
 
 VpnTunnelOptionsSpecificationsList = List[VpnTunnelOptionsSpecification]
@@ -7264,6 +7441,10 @@ class VpnStaticRoute(TypedDict, total=False):
 
 
 VpnStaticRouteList = List[VpnStaticRoute]
+
+
+class VpnTunnelLogOptions(TypedDict, total=False):
+    CloudWatchLogOptions: Optional[CloudWatchLogOptions]
 
 
 class IKEVersionsListValue(TypedDict, total=False):
@@ -7335,6 +7516,7 @@ class TunnelOption(TypedDict, total=False):
     Phase2DHGroupNumbers: Optional[Phase2DHGroupNumbersList]
     IkeVersions: Optional[IKEVersionsList]
     StartupAction: Optional[String]
+    LogOptions: Optional[VpnTunnelLogOptions]
 
 
 TunnelOptionsList = List[TunnelOption]
@@ -7888,6 +8070,15 @@ class DeleteTransitGatewayPeeringAttachmentResult(TypedDict, total=False):
     TransitGatewayPeeringAttachment: Optional[TransitGatewayPeeringAttachment]
 
 
+class DeleteTransitGatewayPolicyTableRequest(ServiceRequest):
+    TransitGatewayPolicyTableId: TransitGatewayPolicyTableId
+    DryRun: Optional[Boolean]
+
+
+class DeleteTransitGatewayPolicyTableResult(TypedDict, total=False):
+    TransitGatewayPolicyTable: Optional[TransitGatewayPolicyTable]
+
+
 class DeleteTransitGatewayPrefixListReferenceRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     PrefixListId: PrefixListResourceId
@@ -7915,6 +8106,15 @@ class DeleteTransitGatewayRouteRequest(ServiceRequest):
 
 class DeleteTransitGatewayRouteResult(TypedDict, total=False):
     Route: Optional[TransitGatewayRoute]
+
+
+class DeleteTransitGatewayRouteTableAnnouncementRequest(ServiceRequest):
+    TransitGatewayRouteTableAnnouncementId: TransitGatewayRouteTableAnnouncementId
+    DryRun: Optional[Boolean]
+
+
+class DeleteTransitGatewayRouteTableAnnouncementResult(TypedDict, total=False):
+    TransitGatewayRouteTableAnnouncement: Optional[TransitGatewayRouteTableAnnouncement]
 
 
 class DeleteTransitGatewayRouteTableRequest(ServiceRequest):
@@ -8742,6 +8942,7 @@ class FlowLog(TypedDict, total=False):
     CreationTime: Optional[MillisecondDateTime]
     DeliverLogsErrorMessage: Optional[String]
     DeliverLogsPermissionArn: Optional[String]
+    DeliverCrossAccountRole: Optional[String]
     DeliverLogsStatus: Optional[String]
     FlowLogId: Optional[String]
     FlowLogStatus: Optional[String]
@@ -11538,6 +11739,46 @@ class DescribeTransitGatewayPeeringAttachmentsResult(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+TransitGatewayPolicyTableIdStringList = List[TransitGatewayPolicyTableId]
+
+
+class DescribeTransitGatewayPolicyTablesRequest(ServiceRequest):
+    TransitGatewayPolicyTableIds: Optional[TransitGatewayPolicyTableIdStringList]
+    Filters: Optional[FilterList]
+    MaxResults: Optional[TransitGatewayMaxResults]
+    NextToken: Optional[String]
+    DryRun: Optional[Boolean]
+
+
+TransitGatewayPolicyTableList = List[TransitGatewayPolicyTable]
+
+
+class DescribeTransitGatewayPolicyTablesResult(TypedDict, total=False):
+    TransitGatewayPolicyTables: Optional[TransitGatewayPolicyTableList]
+    NextToken: Optional[String]
+
+
+TransitGatewayRouteTableAnnouncementIdStringList = List[TransitGatewayRouteTableAnnouncementId]
+
+
+class DescribeTransitGatewayRouteTableAnnouncementsRequest(ServiceRequest):
+    TransitGatewayRouteTableAnnouncementIds: Optional[
+        TransitGatewayRouteTableAnnouncementIdStringList
+    ]
+    Filters: Optional[FilterList]
+    MaxResults: Optional[TransitGatewayMaxResults]
+    NextToken: Optional[String]
+    DryRun: Optional[Boolean]
+
+
+TransitGatewayRouteTableAnnouncementList = List[TransitGatewayRouteTableAnnouncement]
+
+
+class DescribeTransitGatewayRouteTableAnnouncementsResult(TypedDict, total=False):
+    TransitGatewayRouteTableAnnouncements: Optional[TransitGatewayRouteTableAnnouncementList]
+    NextToken: Optional[String]
+
+
 TransitGatewayRouteTableIdStringList = List[TransitGatewayRouteTableId]
 
 
@@ -11621,9 +11862,6 @@ class DescribeVolumeAttributeResult(TypedDict, total=False):
     AutoEnableIO: Optional[AttributeBooleanValue]
     ProductCodes: Optional[ProductCodeList]
     VolumeId: Optional[String]
-
-
-VolumeIdStringList = List[VolumeId]
 
 
 class DescribeVolumeStatusRequest(ServiceRequest):
@@ -12158,8 +12396,9 @@ class DisableSerialConsoleAccessResult(TypedDict, total=False):
 
 class DisableTransitGatewayRouteTablePropagationRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    TransitGatewayAttachmentId: TransitGatewayAttachmentId
+    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
     DryRun: Optional[Boolean]
+    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
 
 
 class TransitGatewayPropagation(TypedDict, total=False):
@@ -12168,6 +12407,7 @@ class TransitGatewayPropagation(TypedDict, total=False):
     ResourceType: Optional[TransitGatewayAttachmentResourceType]
     TransitGatewayRouteTableId: Optional[String]
     State: Optional[TransitGatewayPropagationState]
+    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
 
 
 class DisableTransitGatewayRouteTablePropagationResult(TypedDict, total=False):
@@ -12271,6 +12511,16 @@ class DisassociateTransitGatewayMulticastDomainRequest(ServiceRequest):
 
 class DisassociateTransitGatewayMulticastDomainResult(TypedDict, total=False):
     Associations: Optional[TransitGatewayMulticastDomainAssociations]
+
+
+class DisassociateTransitGatewayPolicyTableRequest(ServiceRequest):
+    TransitGatewayPolicyTableId: TransitGatewayPolicyTableId
+    TransitGatewayAttachmentId: TransitGatewayAttachmentId
+    DryRun: Optional[Boolean]
+
+
+class DisassociateTransitGatewayPolicyTableResult(TypedDict, total=False):
+    Association: Optional[TransitGatewayPolicyTableAssociation]
 
 
 class DisassociateTransitGatewayRouteTableRequest(ServiceRequest):
@@ -12461,8 +12711,9 @@ class EnableSerialConsoleAccessResult(TypedDict, total=False):
 
 class EnableTransitGatewayRouteTablePropagationRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
-    TransitGatewayAttachmentId: TransitGatewayAttachmentId
+    TransitGatewayAttachmentId: Optional[TransitGatewayAttachmentId]
     DryRun: Optional[Boolean]
+    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
 
 
 class EnableTransitGatewayRouteTablePropagationResult(TypedDict, total=False):
@@ -13111,6 +13362,57 @@ class GetTransitGatewayMulticastDomainAssociationsResult(TypedDict, total=False)
     NextToken: Optional[String]
 
 
+class GetTransitGatewayPolicyTableAssociationsRequest(ServiceRequest):
+    TransitGatewayPolicyTableId: TransitGatewayPolicyTableId
+    Filters: Optional[FilterList]
+    MaxResults: Optional[TransitGatewayMaxResults]
+    NextToken: Optional[String]
+    DryRun: Optional[Boolean]
+
+
+TransitGatewayPolicyTableAssociationList = List[TransitGatewayPolicyTableAssociation]
+
+
+class GetTransitGatewayPolicyTableAssociationsResult(TypedDict, total=False):
+    Associations: Optional[TransitGatewayPolicyTableAssociationList]
+    NextToken: Optional[String]
+
+
+class GetTransitGatewayPolicyTableEntriesRequest(ServiceRequest):
+    TransitGatewayPolicyTableId: TransitGatewayPolicyTableId
+    Filters: Optional[FilterList]
+    MaxResults: Optional[TransitGatewayMaxResults]
+    NextToken: Optional[String]
+    DryRun: Optional[Boolean]
+
+
+class TransitGatewayPolicyRuleMetaData(TypedDict, total=False):
+    MetaDataKey: Optional[String]
+    MetaDataValue: Optional[String]
+
+
+class TransitGatewayPolicyRule(TypedDict, total=False):
+    SourceCidrBlock: Optional[String]
+    SourcePortRange: Optional[String]
+    DestinationCidrBlock: Optional[String]
+    DestinationPortRange: Optional[String]
+    Protocol: Optional[String]
+    MetaData: Optional[TransitGatewayPolicyRuleMetaData]
+
+
+class TransitGatewayPolicyTableEntry(TypedDict, total=False):
+    PolicyRuleNumber: Optional[String]
+    PolicyRule: Optional[TransitGatewayPolicyRule]
+    TargetRouteTableId: Optional[TransitGatewayRouteTableId]
+
+
+TransitGatewayPolicyTableEntryList = List[TransitGatewayPolicyTableEntry]
+
+
+class GetTransitGatewayPolicyTableEntriesResult(TypedDict, total=False):
+    TransitGatewayPolicyTableEntries: Optional[TransitGatewayPolicyTableEntryList]
+
+
 class GetTransitGatewayPrefixListReferencesRequest(ServiceRequest):
     TransitGatewayRouteTableId: TransitGatewayRouteTableId
     Filters: Optional[FilterList]
@@ -13163,6 +13465,7 @@ class TransitGatewayRouteTablePropagation(TypedDict, total=False):
     ResourceId: Optional[String]
     ResourceType: Optional[TransitGatewayAttachmentResourceType]
     State: Optional[TransitGatewayPropagationState]
+    TransitGatewayRouteTableAnnouncementId: Optional[TransitGatewayRouteTableAnnouncementId]
 
 
 TransitGatewayRouteTablePropagationList = List[TransitGatewayRouteTablePropagation]
@@ -14124,6 +14427,7 @@ class ModifyTransitGatewayOptions(TypedDict, total=False):
     AssociationDefaultRouteTableId: Optional[TransitGatewayRouteTableId]
     DefaultRouteTablePropagation: Optional[DefaultRouteTablePropagationValue]
     PropagationDefaultRouteTableId: Optional[TransitGatewayRouteTableId]
+    AmazonSideAsn: Optional[Long]
 
 
 class ModifyTransitGatewayPrefixListReferenceRequest(ServiceRequest):
@@ -14351,6 +14655,7 @@ class ModifyVpnTunnelOptionsSpecification(TypedDict, total=False):
     Phase2DHGroupNumbers: Optional[Phase2DHGroupNumbersRequestList]
     IKEVersions: Optional[IKEVersionsRequestList]
     StartupAction: Optional[String]
+    LogOptions: Optional[VpnTunnelLogOptionsSpecification]
 
 
 class ModifyVpnTunnelOptionsRequest(ServiceRequest):
@@ -15544,6 +15849,16 @@ class Ec2Api:
     ) -> AssociateTransitGatewayMulticastDomainResult:
         raise NotImplementedError
 
+    @handler("AssociateTransitGatewayPolicyTable")
+    def associate_transit_gateway_policy_table(
+        self,
+        context: RequestContext,
+        transit_gateway_policy_table_id: TransitGatewayPolicyTableId,
+        transit_gateway_attachment_id: TransitGatewayAttachmentId,
+        dry_run: Boolean = None,
+    ) -> AssociateTransitGatewayPolicyTableResult:
+        raise NotImplementedError
+
     @handler("AssociateTransitGatewayRouteTable")
     def associate_transit_gateway_route_table(
         self,
@@ -15969,11 +16284,12 @@ class Ec2Api:
         context: RequestContext,
         resource_ids: FlowLogResourceIds,
         resource_type: FlowLogsResourceType,
-        traffic_type: TrafficType,
         dry_run: Boolean = None,
         client_token: String = None,
         deliver_logs_permission_arn: String = None,
+        deliver_cross_account_role: String = None,
         log_group_name: String = None,
+        traffic_type: TrafficType = None,
         log_destination_type: LogDestinationType = None,
         log_destination: String = None,
         log_format: String = None,
@@ -16571,9 +16887,20 @@ class Ec2Api:
         peer_transit_gateway_id: TransitAssociationGatewayId,
         peer_account_id: String,
         peer_region: String,
+        options: CreateTransitGatewayPeeringAttachmentRequestOptions = None,
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayPeeringAttachmentResult:
+        raise NotImplementedError
+
+    @handler("CreateTransitGatewayPolicyTable")
+    def create_transit_gateway_policy_table(
+        self,
+        context: RequestContext,
+        transit_gateway_id: TransitGatewayId,
+        tag_specifications: TagSpecificationList = None,
+        dry_run: Boolean = None,
+    ) -> CreateTransitGatewayPolicyTableResult:
         raise NotImplementedError
 
     @handler("CreateTransitGatewayPrefixListReference")
@@ -16608,6 +16935,17 @@ class Ec2Api:
         tag_specifications: TagSpecificationList = None,
         dry_run: Boolean = None,
     ) -> CreateTransitGatewayRouteTableResult:
+        raise NotImplementedError
+
+    @handler("CreateTransitGatewayRouteTableAnnouncement")
+    def create_transit_gateway_route_table_announcement(
+        self,
+        context: RequestContext,
+        transit_gateway_route_table_id: TransitGatewayRouteTableId,
+        peering_attachment_id: TransitGatewayAttachmentId,
+        tag_specifications: TagSpecificationList = None,
+        dry_run: Boolean = None,
+    ) -> CreateTransitGatewayRouteTableAnnouncementResult:
         raise NotImplementedError
 
     @handler("CreateTransitGatewayVpcAttachment")
@@ -17155,6 +17493,15 @@ class Ec2Api:
     ) -> DeleteTransitGatewayPeeringAttachmentResult:
         raise NotImplementedError
 
+    @handler("DeleteTransitGatewayPolicyTable")
+    def delete_transit_gateway_policy_table(
+        self,
+        context: RequestContext,
+        transit_gateway_policy_table_id: TransitGatewayPolicyTableId,
+        dry_run: Boolean = None,
+    ) -> DeleteTransitGatewayPolicyTableResult:
+        raise NotImplementedError
+
     @handler("DeleteTransitGatewayPrefixListReference")
     def delete_transit_gateway_prefix_list_reference(
         self,
@@ -17182,6 +17529,15 @@ class Ec2Api:
         transit_gateway_route_table_id: TransitGatewayRouteTableId,
         dry_run: Boolean = None,
     ) -> DeleteTransitGatewayRouteTableResult:
+        raise NotImplementedError
+
+    @handler("DeleteTransitGatewayRouteTableAnnouncement")
+    def delete_transit_gateway_route_table_announcement(
+        self,
+        context: RequestContext,
+        transit_gateway_route_table_announcement_id: TransitGatewayRouteTableAnnouncementId,
+        dry_run: Boolean = None,
+    ) -> DeleteTransitGatewayRouteTableAnnouncementResult:
         raise NotImplementedError
 
     @handler("DeleteTransitGatewayVpcAttachment")
@@ -18619,6 +18975,30 @@ class Ec2Api:
     ) -> DescribeTransitGatewayPeeringAttachmentsResult:
         raise NotImplementedError
 
+    @handler("DescribeTransitGatewayPolicyTables")
+    def describe_transit_gateway_policy_tables(
+        self,
+        context: RequestContext,
+        transit_gateway_policy_table_ids: TransitGatewayPolicyTableIdStringList = None,
+        filters: FilterList = None,
+        max_results: TransitGatewayMaxResults = None,
+        next_token: String = None,
+        dry_run: Boolean = None,
+    ) -> DescribeTransitGatewayPolicyTablesResult:
+        raise NotImplementedError
+
+    @handler("DescribeTransitGatewayRouteTableAnnouncements")
+    def describe_transit_gateway_route_table_announcements(
+        self,
+        context: RequestContext,
+        transit_gateway_route_table_announcement_ids: TransitGatewayRouteTableAnnouncementIdStringList = None,
+        filters: FilterList = None,
+        max_results: TransitGatewayMaxResults = None,
+        next_token: String = None,
+        dry_run: Boolean = None,
+    ) -> DescribeTransitGatewayRouteTableAnnouncementsResult:
+        raise NotImplementedError
+
     @handler("DescribeTransitGatewayRouteTables")
     def describe_transit_gateway_route_tables(
         self,
@@ -18959,8 +19339,9 @@ class Ec2Api:
         self,
         context: RequestContext,
         transit_gateway_route_table_id: TransitGatewayRouteTableId,
-        transit_gateway_attachment_id: TransitGatewayAttachmentId,
+        transit_gateway_attachment_id: TransitGatewayAttachmentId = None,
         dry_run: Boolean = None,
+        transit_gateway_route_table_announcement_id: TransitGatewayRouteTableAnnouncementId = None,
     ) -> DisableTransitGatewayRouteTablePropagationResult:
         raise NotImplementedError
 
@@ -19058,6 +19439,16 @@ class Ec2Api:
     ) -> DisassociateTransitGatewayMulticastDomainResult:
         raise NotImplementedError
 
+    @handler("DisassociateTransitGatewayPolicyTable")
+    def disassociate_transit_gateway_policy_table(
+        self,
+        context: RequestContext,
+        transit_gateway_policy_table_id: TransitGatewayPolicyTableId,
+        transit_gateway_attachment_id: TransitGatewayAttachmentId,
+        dry_run: Boolean = None,
+    ) -> DisassociateTransitGatewayPolicyTableResult:
+        raise NotImplementedError
+
     @handler("DisassociateTransitGatewayRouteTable")
     def disassociate_transit_gateway_route_table(
         self,
@@ -19140,8 +19531,9 @@ class Ec2Api:
         self,
         context: RequestContext,
         transit_gateway_route_table_id: TransitGatewayRouteTableId,
-        transit_gateway_attachment_id: TransitGatewayAttachmentId,
+        transit_gateway_attachment_id: TransitGatewayAttachmentId = None,
         dry_run: Boolean = None,
+        transit_gateway_route_table_announcement_id: TransitGatewayRouteTableAnnouncementId = None,
     ) -> EnableTransitGatewayRouteTablePropagationResult:
         raise NotImplementedError
 
@@ -19523,6 +19915,30 @@ class Ec2Api:
         next_token: String = None,
         dry_run: Boolean = None,
     ) -> GetTransitGatewayMulticastDomainAssociationsResult:
+        raise NotImplementedError
+
+    @handler("GetTransitGatewayPolicyTableAssociations")
+    def get_transit_gateway_policy_table_associations(
+        self,
+        context: RequestContext,
+        transit_gateway_policy_table_id: TransitGatewayPolicyTableId,
+        filters: FilterList = None,
+        max_results: TransitGatewayMaxResults = None,
+        next_token: String = None,
+        dry_run: Boolean = None,
+    ) -> GetTransitGatewayPolicyTableAssociationsResult:
+        raise NotImplementedError
+
+    @handler("GetTransitGatewayPolicyTableEntries")
+    def get_transit_gateway_policy_table_entries(
+        self,
+        context: RequestContext,
+        transit_gateway_policy_table_id: TransitGatewayPolicyTableId,
+        filters: FilterList = None,
+        max_results: TransitGatewayMaxResults = None,
+        next_token: String = None,
+        dry_run: Boolean = None,
+    ) -> GetTransitGatewayPolicyTableEntriesResult:
         raise NotImplementedError
 
     @handler("GetTransitGatewayPrefixListReferences")

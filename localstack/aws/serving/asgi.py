@@ -15,7 +15,7 @@ class AsgiGateway:
     gateway: Gateway
 
     def __init__(
-        self, gateway: Gateway, event_loop: Optional[AbstractEventLoop] = None, threads: int = 100
+        self, gateway: Gateway, event_loop: Optional[AbstractEventLoop] = None, threads: int = 1000
     ) -> None:
         self.gateway = gateway
 

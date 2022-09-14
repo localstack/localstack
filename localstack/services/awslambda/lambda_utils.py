@@ -1,54 +1,58 @@
 import base64
+import json
 import logging
 import os
 import re
+import tempfile
 import time
-from collections import defaultdict
 from functools import lru_cache
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from flask import Response
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_responses import flask_error_response_json
-from localstack.utils.common import short_uid, to_str
 from localstack.utils.container_networking import (
     get_endpoint_for_network,
     get_main_container_network,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
 # root path of Lambda API endpoints
 API_PATH_ROOT = "/2015-03-31"
+API_PATH_ROOT_2 = "/2021-10-31"
 
-# Lambda runtime constants
-LAMBDA_RUNTIME_PYTHON36 = "python3.6"
-LAMBDA_RUNTIME_PYTHON37 = "python3.7"
-LAMBDA_RUNTIME_PYTHON38 = "python3.8"
-LAMBDA_RUNTIME_PYTHON39 = "python3.9"
-LAMBDA_RUNTIME_NODEJS = "nodejs"
-LAMBDA_RUNTIME_NODEJS12X = "nodejs12.x"
-LAMBDA_RUNTIME_NODEJS14X = "nodejs14.x"
-LAMBDA_RUNTIME_NODEJS16X = "nodejs16.x"
-LAMBDA_RUNTIME_JAVA8 = "java8"
-LAMBDA_RUNTIME_JAVA8_AL2 = "java8.al2"
-LAMBDA_RUNTIME_JAVA11 = "java11"
-LAMBDA_RUNTIME_DOTNETCORE31 = "dotnetcore3.1"
-LAMBDA_RUNTIME_DOTNET6 = "dotnet6"
-LAMBDA_RUNTIME_GOLANG = "go1.x"
-LAMBDA_RUNTIME_RUBY = "ruby"
-LAMBDA_RUNTIME_RUBY27 = "ruby2.7"
-LAMBDA_RUNTIME_PROVIDED = "provided"
-LAMBDA_RUNTIME_PROVIDED_AL2 = "provided.al2"
+
+# Lambda runtime constants (LEGACY, use values in Runtime class instead)
+LAMBDA_RUNTIME_PYTHON36 = Runtime.python3_6
+LAMBDA_RUNTIME_PYTHON37 = Runtime.python3_7
+LAMBDA_RUNTIME_PYTHON38 = Runtime.python3_8
+LAMBDA_RUNTIME_PYTHON39 = Runtime.python3_9
+LAMBDA_RUNTIME_NODEJS = Runtime.nodejs
+LAMBDA_RUNTIME_NODEJS12X = Runtime.nodejs12_x
+LAMBDA_RUNTIME_NODEJS14X = Runtime.nodejs14_x
+LAMBDA_RUNTIME_NODEJS16X = Runtime.nodejs16_x
+LAMBDA_RUNTIME_JAVA8 = Runtime.java8
+LAMBDA_RUNTIME_JAVA8_AL2 = Runtime.java8_al2
+LAMBDA_RUNTIME_JAVA11 = Runtime.java11
+LAMBDA_RUNTIME_DOTNETCORE31 = Runtime.dotnetcore3_1
+LAMBDA_RUNTIME_DOTNET6 = Runtime.dotnet6
+LAMBDA_RUNTIME_GOLANG = Runtime.go1_x
+LAMBDA_RUNTIME_RUBY27 = Runtime.ruby2_7
+LAMBDA_RUNTIME_PROVIDED = Runtime.provided
+LAMBDA_RUNTIME_PROVIDED_AL2 = Runtime.provided_al2
+
 
 # default handler and runtime
 LAMBDA_DEFAULT_HANDLER = "handler.handler"
-LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON37
+LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON37  # FIXME (?)
 LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 
 # List of Dotnet Lambda runtime names
@@ -98,19 +102,6 @@ def get_executor_mode() -> str:
     return config.LAMBDA_EXECUTOR or get_default_executor_mode()
 
 
-def multi_value_dict_for_list(elements: Union[List, Dict]) -> Dict:
-    temp_mv_dict = defaultdict(list)
-    for key in elements:
-        if isinstance(key, (list, tuple)):
-            key, value = key
-        else:
-            value = elements[key]
-        key = to_str(key)
-        temp_mv_dict[key].append(value)
-
-    return dict((k, tuple(v)) for k, v in temp_mv_dict.items())
-
-
 def get_lambda_runtime(runtime_details: Union[LambdaFunction, str]) -> str:
     """Return the runtime string from the given LambdaFunction (or runtime string)."""
     if isinstance(runtime_details, LambdaFunction):
@@ -145,13 +136,13 @@ def get_handler_file_from_name(handler_name: str, runtime: str = None):
 
     if runtime.startswith(LAMBDA_RUNTIME_PROVIDED):
         return "bootstrap"
-    if runtime.startswith(LAMBDA_RUNTIME_NODEJS):
+    if runtime.startswith("nodejs"):
         return format_name_to_path(handler_name, ".", ".js")
     if runtime.startswith(LAMBDA_RUNTIME_GOLANG):
         return handler_name
     if runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
         return format_name_to_path(handler_name, ":", ".dll")
-    if runtime.startswith(LAMBDA_RUNTIME_RUBY):
+    if runtime.startswith("ruby"):
         return format_name_to_path(handler_name, ".", ".rb")
 
     return format_name_to_path(handler_name, ".", ".py")
@@ -223,6 +214,21 @@ def get_record_from_event(event: Dict, key: str) -> Any:
         return None
 
 
+def get_lambda_extraction_dir() -> str:
+    """
+    Get the directory a lambda is supposed to use as working directory (= the directory to extract the contents to).
+    This method is needed due to performance problems for IO on bind volumes when running inside Docker Desktop, due to
+    the file sharing with the host being slow when using gRPC-FUSE.
+    By extracting to a not-mounted directory, we can improve performance significantly.
+    The lambda zip file itself, however, should still be located on the mount.
+
+    :return: directory path
+    """
+    if config.LAMBDA_REMOTE_DOCKER:
+        return tempfile.gettempdir()
+    return config.dirs.tmp
+
+
 def get_zip_bytes(function_code):
     """Returns the ZIP file contents from a FunctionCode dict.
 
@@ -283,3 +289,145 @@ def generate_lambda_arn(
         return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}:{qualifier}"
     else:
         return f"arn:aws:lambda:{region}:{account_id}:function:{fn_name}"
+
+
+class FilterCriteria(TypedDict):
+    Filters: List[Dict[str, any]]
+
+
+def parse_and_apply_numeric_filter(
+    record_value: Dict, numeric_filter: List[Union[str, int]]
+) -> bool:
+    if len(numeric_filter) % 2 > 0:
+        LOG.warn("Invalid numeric lambda filter given")
+        return True
+
+    if not isinstance(record_value, (int, float)):
+        LOG.warn(f"Record {record_value} seem not to be a valid number")
+        return False
+
+    for idx in range(0, len(numeric_filter), 2):
+
+        try:
+            if numeric_filter[idx] == ">" and not (record_value > float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == ">=" and not (record_value >= float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == "=" and not (record_value == float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == "<" and not (record_value < float(numeric_filter[idx + 1])):
+                return False
+            if numeric_filter[idx] == "<=" and not (record_value <= float(numeric_filter[idx + 1])):
+                return False
+        except ValueError:
+            LOG.warn(
+                f"Could not convert filter value {numeric_filter[idx + 1]} to a valid number value for filtering"
+            )
+    return True
+
+
+def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]) -> bool:
+    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
+    fits_filter = False
+    for key, filter_value in dict_filter.items():
+        if key.lower() == "anything-but":
+            fits_filter = record_value not in filter_value
+        elif key.lower() == "numeric":
+            fits_filter = parse_and_apply_numeric_filter(record_value, filter_value)
+        elif key.lower() == "exists":
+            fits_filter = bool(filter_value)  # exists means that the key exists in the event record
+        elif key.lower() == "prefix":
+            if not isinstance(record_value, str):
+                LOG.warn(f"Record Value {record_value} does not seem to be a valid string.")
+            fits_filter = isinstance(record_value, str) and record_value.startswith(
+                str(filter_value)
+            )
+
+        if fits_filter:
+            return True
+    return fits_filter
+
+
+def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) -> bool:
+    if not filter_rule:
+        return True
+    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
+    filter_results = []
+    for key, value in filter_rule.items():
+        # check if rule exists in event
+        record_value = (
+            record.get(key.lower(), record.get(key)) if isinstance(record, Dict) else None
+        )
+        append_record = False
+        if record_value is not None:
+            # check if filter rule value is a list (leaf of rule tree) or a dict (rescursively call function)
+            if isinstance(value, list):
+                if len(value) > 0:
+                    if isinstance(value[0], (str, int)):
+                        append_record = record_value in value
+                    if isinstance(value[0], dict):
+                        append_record = verify_dict_filter(record_value, value[0])
+                else:
+                    LOG.warn(f"Empty lambda filter: {key}")
+            elif isinstance(value, dict):
+                append_record = filter_stream_record(value, record_value)
+        else:
+            # special case 'exists'
+            if isinstance(value, list) and len(value) > 0:
+                append_record = not value[0].get("exists", True)
+
+        filter_results.append(append_record)
+    return all(filter_results)
+
+
+def filter_stream_records(records, filters: List[FilterCriteria]):
+    filtered_records = []
+    for record in records:
+        for filter in filters:
+            for rule in filter["Filters"]:
+                if filter_stream_record(json.loads(rule["Pattern"]), record):
+                    filtered_records.append(record)
+                    break
+    return filtered_records
+
+
+def contains_list(filter: Dict) -> bool:
+    if isinstance(filter, dict):
+        for key, value in filter.items():
+            if isinstance(value, list) and len(value) > 0:
+                return True
+            return contains_list(value)
+    return False
+
+
+def validate_filters(filter: FilterCriteria) -> bool:
+    # filter needs to be json serializeable
+    for rule in filter["Filters"]:
+        try:
+            if not (filter_pattern := json.loads(rule["Pattern"])):
+                return False
+            return contains_list(filter_pattern)
+        except json.JSONDecodeError:
+            return False
+    # needs to contain on what to filter (some list with citerias)
+    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
+
+    return True
+
+
+def get_lambda_event_filters_for_arn(lambda_arn: str, event_arn: str) -> List[Dict]:
+    # late import to avoid circular import
+    from localstack.services.awslambda.lambda_api import LambdaRegion
+
+    region_name = lambda_arn.split(":")[3]
+    region = LambdaRegion.get(region_name)
+
+    event_filter_criterias = [
+        event_source_mapping.get("FilterCriteria")
+        for event_source_mapping in region.event_source_mappings
+        if event_source_mapping.get("FunctionArn") == lambda_arn
+        and event_source_mapping.get("EventSourceArn") == event_arn
+        and event_source_mapping.get("FilterCriteria") is not None
+    ]
+
+    return event_filter_criterias

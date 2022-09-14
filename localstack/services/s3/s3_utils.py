@@ -10,8 +10,11 @@ from urllib.parse import parse_qs, urlencode
 from botocore.awsrequest import create_request_object
 from botocore.compat import urlsplit
 from botocore.credentials import Credentials
+from moto.s3 import s3_backends
+from moto.s3.models import S3Backend
 
 from localstack import config
+from localstack.aws.accounts import get_aws_account_id
 from localstack.constants import (
     S3_STATIC_WEBSITE_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
@@ -76,6 +79,10 @@ ALLOWED_QUERY_PARAMS = [
     "uploadid",
     "partnumber",
 ]
+
+
+def get_s3_backend() -> S3Backend:
+    return s3_backends[get_aws_account_id()]["global"]
 
 
 def is_static_website(headers):

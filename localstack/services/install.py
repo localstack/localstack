@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import functools
 import glob
+import json
 import logging
 import os
 import platform
@@ -12,7 +13,7 @@ import tempfile
 import threading
 import time
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 
 import requests
 import semver
@@ -30,14 +31,12 @@ from localstack.constants import (
     KMS_URL_PATTERN,
     LIBSQLITE_AARCH64_URL,
     LOCALSTACK_MAVEN_VERSION,
-    MODULE_MAIN_PATH,
+    MAVEN_REPO_URL,
     OPENSEARCH_DEFAULT_VERSION,
     OPENSEARCH_PLUGIN_LIST,
-    STS_JAR_URL,
 )
 from localstack.runtime import hooks
 from localstack.utils.archives import untar, unzip
-from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import (
     chmod_r,
     file_exists_not_empty,
@@ -50,7 +49,7 @@ from localstack.utils.files import (
 )
 from localstack.utils.functions import run_safe
 from localstack.utils.http import download
-from localstack.utils.platform import get_arch, is_mac_os, is_windows
+from localstack.utils.platform import get_arch, is_mac_os
 from localstack.utils.run import run
 from localstack.utils.sync import retry
 from localstack.utils.threads import parallelize
@@ -73,16 +72,15 @@ INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, "kinesalite", "cli.js")
 
-MAVEN_REPO = "https://repo1.maven.org/maven2"
 URL_LOCALSTACK_FAT_JAR = (
-    MAVEN_REPO + "/cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
-).format(v=LOCALSTACK_MAVEN_VERSION)
+    "{mvn_repo}/cloud/localstack/localstack-utils/{ver}/localstack-utils-{ver}-fat.jar"
+).format(ver=LOCALSTACK_MAVEN_VERSION, mvn_repo=MAVEN_REPO_URL)
 
 MARKER_FILE_LIGHT_VERSION = f"{dirs.static_libs}/.light-version"
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SFN_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/d644316ba05675709e20644688ada0413d9e9941/stepfunctions-local-patch"
+    f"{ARTIFACTS_REPO}/raw/ac84739adc87ff4b5553478f6849134bcd259672/stepfunctions-local-patch"
 )
 SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
 SFN_PATCH_CLASS2 = (
@@ -93,6 +91,22 @@ SFN_PATCH_CLASS_REGION = "cloud/localstack/RegionAspect.class"
 SFN_PATCH_CLASS_ASYNC2SERVICEAPI = "cloud/localstack/Async2ServiceApi.class"
 SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED = "cloud/localstack/DescribeExecutionParsed.class"
 SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
+
+SFN_IMAGE = "amazon/aws-stepfunctions-local"
+SFN_IMAGE_LAYER_DIGEST = "sha256:e7b256bdbc9d58c20436970e8a56bd03581b891a784b00fea7385faff897b777"
+"""
+Digest of the Docker layer which adds the StepFunctionsLocal JAR files to the Docker image.
+This digest pin defines the version of StepFunctionsLocal used in LocalStack.
+
+The Docker image layer digest can be determined by:
+- Use regclient: regctl image manifest amazon/aws-stepfunctions-local:1.7.9 --platform local
+- Inspect the manifest in the Docker registry manually:
+  - Get the auth bearer token (see download code).
+  - Download the manifest (/v2/<image/name>/manifests/<tag>) with the bearer token
+  - Follow any platform link
+  - Extract the layer digest
+Since the JAR files are platform-independent, you can use the layer digest of any platform's image.
+"""
 
 SFN_AWS_SDK_URL_PREFIX = (
     f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-internal-awssdk"
@@ -105,16 +119,16 @@ DDB_PATCH_URL_PREFIX = (
 )
 DDB_AGENT_JAR_URL = f"{DDB_PATCH_URL_PREFIX}/target/ddb-local-loader-0.1.jar"
 DDB_AGENT_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "ddb-local-loader-0.1.jar")
-JAVASSIST_JAR_URL = f"{MAVEN_REPO}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
+JAVASSIST_JAR_URL = f"{MAVEN_REPO_URL}/org/javassist/javassist/3.28.0-GA/javassist-3.28.0-GA.jar"
 JAVASSIST_JAR_PATH = os.path.join(INSTALL_DIR_DDB, "javassist.jar")
 
 # additional JAR libs required for multi-region and persistence (PRO only) support
-URL_ASPECTJRT = f"{MAVEN_REPO}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
-URL_ASPECTJWEAVER = f"{MAVEN_REPO}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
+URL_ASPECTJRT = f"{MAVEN_REPO_URL}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
+URL_ASPECTJWEAVER = f"{MAVEN_REPO_URL}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
 JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
 
 # kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.4"
+KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.5"
 KINESIS_MOCK_RELEASE_URL = (
     "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
 )
@@ -148,9 +162,8 @@ TERRAFORM_BIN = os.path.join(dirs.static_libs, f"terraform-{TERRAFORM_VERSION}",
 
 # Java Test Jar Download (used for tests)
 TEST_LAMBDA_JAVA = os.path.join(config.dirs.var_libs, "localstack-utils-tests.jar")
-MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
 TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
-    version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
+    version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_REPO_URL, name="localstack-utils"
 )
 
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/v0.1.1-pre/aws-lambda-rie-{arch}"
@@ -461,33 +474,41 @@ def install_local_kms():
 
 
 def install_stepfunctions_local():
+    """
+    The StepFunctionsLocal JAR files are downloaded using the artifacts in DockerHub (because AWS only provides an
+    HTTP link to the most recent version). Installers are executed when building Docker, this means they _cannot_ use
+    the Docker socket. Therefore, this installer downloads a pinned Docker Layer Digest (i.e. only the data for a single
+    Docker build step which adds the JAR files of the desired version to a Docker image) using plain HTTP requests.
+    """
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
-        # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
-        if not DOCKER_CLIENT.has_docker():
-            # TODO: works only when a docker socket is available -> add a fallback if running without Docker?
-            LOG.warning("Docker not available - skipping installation of StepFunctions dependency")
-            return
-        log_install_msg("Step Functions")
-        mkdir(INSTALL_DIR_STEPFUNCTIONS)
-        DOCKER_CLIENT.pull_image(IMAGE_NAME_SFN_LOCAL)
-        docker_name = "tmp-ls-sfn"
-        DOCKER_CLIENT.run_container(
-            IMAGE_NAME_SFN_LOCAL,
-            remove=True,
-            entrypoint="",
-            name=docker_name,
-            detach=True,
-            command=["sleep", "15"],
-        )
-        time.sleep(5)
-        DOCKER_CLIENT.copy_from_container(
-            docker_name, local_path=dirs.static_libs, container_path="/home/stepfunctionslocal/"
-        )
 
-        path = Path(f"{dirs.static_libs}/stepfunctionslocal/")
+        target_path = dirs.static_libs
+
+        # Download layer that contains the necessary jars
+        def download_stepfunctions_jar(image, image_digest, target_path):
+            registry_base = "https://registry-1.docker.io"
+            auth_base = "https://auth.docker.io"
+            auth_service = "registry.docker.io"
+            token_request = requests.get(
+                f"{auth_base}/token?service={auth_service}&scope=repository:{image}:pull"
+            )
+            token = json.loads(token_request.content.decode("utf-8"))["token"]
+            headers = {"Authorization": f"Bearer {token}"}
+            response = requests.get(
+                headers=headers,
+                url=f"{registry_base}/v2/{image}/blobs/{image_digest}",
+            )
+            temp_path = new_tmp_file()
+            with open(temp_path, "wb") as f:
+                f.write(response.content)
+            untar(temp_path, target_path)
+
+        download_stepfunctions_jar(SFN_IMAGE, SFN_IMAGE_LAYER_DIGEST, target_path)
+        mkdir(INSTALL_DIR_STEPFUNCTIONS)
+        path = Path(f"{target_path}/home/stepfunctionslocal")
         for file in path.glob("*.jar"):
             file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
-        rm_rf(str(path))
+        rm_rf(f"{target_path}/home")
 
     classes = [
         SFN_PATCH_CLASS1,
@@ -502,20 +523,20 @@ def install_stepfunctions_local():
         patch_url = f"{SFN_PATCH_URL_PREFIX}/{patch_class}"
         add_file_to_jar(patch_class, patch_url, target_jar=INSTALL_PATH_STEPFUNCTIONS_JAR)
 
-    # special case for Manifest file - extract first, replace content, then update in JAR file
-    manifest_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "META-INF", "MANIFEST.MF")
-    if not os.path.exists(manifest_file):
-        content = run(["unzip", "-p", INSTALL_PATH_STEPFUNCTIONS_JAR, "META-INF/MANIFEST.MF"])
-        content = re.sub(
-            "Main-Class: .+", "Main-Class: cloud.localstack.StepFunctionsStarter", content
-        )
-        classpath = " ".join([os.path.basename(jar) for jar in JAR_URLS])
-        content = re.sub(r"Class-Path: \. ", f"Class-Path: {classpath} . ", content)
-        save_file(manifest_file, content)
-        run(
-            ["zip", INSTALL_PATH_STEPFUNCTIONS_JAR, "META-INF/MANIFEST.MF"],
-            cwd=INSTALL_DIR_STEPFUNCTIONS,
-        )
+    # add additional classpath entries to JAR manifest file
+    classpath = " ".join([os.path.basename(jar) for jar in JAR_URLS])
+    update_jar_manifest(
+        "StepFunctionsLocal.jar",
+        INSTALL_DIR_STEPFUNCTIONS,
+        "Class-Path: . ",
+        f"Class-Path: {classpath} . ",
+    )
+    update_jar_manifest(
+        "StepFunctionsLocal.jar",
+        INSTALL_DIR_STEPFUNCTIONS,
+        re.compile(r"Main-Class: com\.amazonaws.+"),
+        "Main-Class: cloud.localstack.StepFunctionsStarter",
+    )
 
     # download additional jar libs
     for jar_url in JAR_URLS:
@@ -545,10 +566,9 @@ def install_dynamodb_local():
         download_and_extract_with_retry(DYNAMODB_JAR_URL, tmp_archive, INSTALL_DIR_DDB)
 
     # download additional libs for Mac M1 (for local dev mode)
+    ddb_local_lib_dir = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal_lib")
     if is_mac_os() and get_arch() == "arm64":
-        target_path = os.path.join(
-            INSTALL_DIR_DDB, "DynamoDBLocal_lib", "libsqlite4java-osx-aarch64.dylib"
-        )
+        target_path = os.path.join(ddb_local_lib_dir, "libsqlite4java-osx-aarch64.dylib")
         if not file_exists_not_empty(target_path):
             download(LIBSQLITE_AARCH64_URL, target_path)
 
@@ -564,7 +584,7 @@ def install_dynamodb_local():
       </Loggers>
     </Configuration>"""
     log4j2_file = os.path.join(INSTALL_DIR_DDB, "log4j2.xml")
-    save_file(log4j2_file, log4j2_config)
+    run_safe(lambda: save_file(log4j2_file, log4j2_config))
     run_safe(lambda: run(["zip", "-u", "DynamoDBLocal.jar", "log4j2.xml"], cwd=INSTALL_DIR_DDB))
 
     # download agent JAR
@@ -572,37 +592,63 @@ def install_dynamodb_local():
         download(DDB_AGENT_JAR_URL, DDB_AGENT_JAR_PATH)
     if not os.path.exists(JAVASSIST_JAR_PATH):
         download(JAVASSIST_JAR_URL, JAVASSIST_JAR_PATH)
+
+    upgrade_jar_file(ddb_local_lib_dir, "slf4j-ext-*.jar", "org/slf4j/slf4j-ext:1.8.0-beta4")
+
     # ensure that javassist.jar is in the manifest classpath
-    run(["unzip", "-o", "DynamoDBLocal.jar", "META-INF/MANIFEST.MF"], cwd=INSTALL_DIR_DDB)
-    manifest_file = os.path.join(INSTALL_DIR_DDB, "META-INF", "MANIFEST.MF")
-    manifest = load_file(manifest_file)
-    if "javassist.jar" not in manifest:
-        manifest = manifest.replace("Class-Path:", "Class-Path: javassist.jar", 1)
-        save_file(manifest_file, manifest)
-        run(["zip", "-u", "DynamoDBLocal.jar", "META-INF/MANIFEST.MF"], cwd=INSTALL_DIR_DDB)
+    update_jar_manifest(
+        "DynamoDBLocal.jar", INSTALL_DIR_DDB, "Class-Path: .", "Class-Path: javassist.jar ."
+    )
 
 
-def install_amazon_kinesis_client_libs():
-    # install KCL/STS JAR files
-    if not os.path.exists(INSTALL_PATH_KCL_JAR):
-        mkdir(INSTALL_DIR_KCL)
-        tmp_archive = os.path.join(tempfile.gettempdir(), "aws-java-sdk-sts.jar")
-        if not os.path.exists(tmp_archive):
-            download(STS_JAR_URL, tmp_archive)
-        shutil.copy(tmp_archive, INSTALL_DIR_KCL)
-    # Compile Java files
-    from localstack.utils.kinesis import kclipy_helper
+def update_jar_manifest(
+    jar_file_name: str, parent_dir: str, search: Union[str, re.Pattern], replace: str
+):
+    manifest_file_path = "META-INF/MANIFEST.MF"
+    jar_path = os.path.join(parent_dir, jar_file_name)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_manifest_file = os.path.join(tmp_dir, manifest_file_path)
+        run(["unzip", "-o", jar_path, manifest_file_path], cwd=tmp_dir)
+        manifest = load_file(tmp_manifest_file)
 
-    classpath = kclipy_helper.get_kcl_classpath()
+    # return if the search pattern does not match (for idempotence, to avoid file permission issues further below)
+    if isinstance(search, re.Pattern):
+        if not search.search(manifest):
+            return
+        manifest = search.sub(replace, manifest, 1)
+    else:
+        if search not in manifest:
+            return
+        manifest = manifest.replace(search, replace, 1)
 
-    if is_windows():
-        classpath = re.sub(r":([^\\])", r";\1", classpath)
-    java_files = f"{MODULE_MAIN_PATH}/utils/kinesis/java/cloud/localstack/*.java"
-    class_files = f"{MODULE_MAIN_PATH}/utils/kinesis/java/cloud/localstack/*.class"
-    if not glob.glob(class_files):
-        run(
-            f'javac -source {JAVAC_TARGET_VERSION} -target {JAVAC_TARGET_VERSION} -cp "{classpath}" {java_files}'
-        )
+    manifest_file = os.path.join(parent_dir, manifest_file_path)
+    save_file(manifest_file, manifest)
+    run(["zip", jar_file_name, manifest_file_path], cwd=parent_dir)
+
+
+def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
+    """
+    Upgrade the matching Java JAR file in a local directory with the given Maven asset
+    :param base_dir: base directory to search the JAR file to replace in
+    :param file_glob: glob pattern for the JAR file to replace
+    :param maven_asset: name of Maven asset to download, in the form "<qualified_name>:<version>"
+    """
+
+    local_path = os.path.join(base_dir, file_glob)
+    parent_dir = os.path.dirname(local_path)
+    maven_asset = maven_asset.replace(":", "/")
+    parts = maven_asset.split("/")
+    maven_asset_url = f"{MAVEN_REPO_URL}/{maven_asset}/{parts[-2]}-{parts[-1]}.jar"
+    target_file = os.path.join(parent_dir, os.path.basename(maven_asset_url))
+    if os.path.exists(target_file):
+        # avoid re-downloading the newer JAR version if it already exists locally
+        return
+    matches = glob.glob(local_path)
+    if not matches:
+        return
+    for match in matches:
+        os.remove(match)
+    download(maven_asset_url, target_file)
 
 
 def install_lambda_java_libs():
@@ -802,7 +848,6 @@ class CommunityInstallerRepository(InstallerRepository):
             ("elasticsearch", install_elasticsearch),
             ("opensearch", install_opensearch),
             ("kinesalite", install_kinesalite),
-            ("kinesis-client-libs", install_amazon_kinesis_client_libs),
             ("kinesis-mock", install_kinesis_mock),
             ("lambda-java-libs", install_lambda_java_libs),
             ("local-kms", install_local_kms),
@@ -848,7 +893,6 @@ def main():
             install_all_components()
         if sys.argv[1] in ("libs", "testlibs"):
             # Install additional libraries for testing
-            install_amazon_kinesis_client_libs()
             install_lambda_java_testlibs()
         print("Done.")
 

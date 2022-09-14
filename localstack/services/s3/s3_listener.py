@@ -16,12 +16,13 @@ import dateutil.parser
 import xmltodict
 from botocore.client import ClientError
 from moto.s3.exceptions import InvalidFilterRuleName, MissingBucket
-from moto.s3.models import FakeBucket, s3_backend
+from moto.s3.models import FakeBucket
 from pytz import timezone
 from requests.models import Request, Response
 
 from localstack import config, constants
 from localstack.aws.api import CommonServiceException
+from localstack.config import get_protocol as get_service_protocol
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
@@ -32,6 +33,7 @@ from localstack.services.s3.s3_utils import (
     extract_bucket_name,
     extract_key_name,
     get_forwarded_for_host,
+    get_s3_backend,
     is_expired,
     is_object_download_request,
     is_static_website,
@@ -39,25 +41,27 @@ from localstack.services.s3.s3_utils import (
     uses_host_addressing,
     validate_bucket_name,
 )
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     create_sqs_system_attributes,
     is_invalid_html_response,
     requests_response,
 )
-from localstack.utils.common import (
-    clone,
-    get_service_protocol,
+from localstack.utils.json import clone
+from localstack.utils.objects import not_none_or
+from localstack.utils.strings import (
+    checksum_crc32,
+    checksum_crc32c,
+    hash_sha1,
+    hash_sha256,
     is_base64,
     md5,
-    not_none_or,
     short_uid,
-    strip_xmlns,
-    timestamp_millis,
     to_bytes,
     to_str,
 )
+from localstack.utils.time import timestamp_millis
+from localstack.utils.xml import strip_xmlns
 
 # backend port (configured in s3_starter.py on startup)
 PORT_S3_BACKEND = None
@@ -75,7 +79,13 @@ BUCKET_NAME_REGEX = (
 )
 
 # list of destination types for bucket notifications
-NOTIFICATION_DESTINATION_TYPES = ("Queue", "Topic", "CloudFunction", "LambdaFunction")
+NOTIFICATION_DESTINATION_TYPES = (
+    "Queue",
+    "Topic",
+    "CloudFunction",
+    "LambdaFunction",
+    "EventBridge",
+)
 
 # prefix for object metadata keys in headers and query params
 OBJECT_METADATA_KEY_PREFIX = "x-amz-meta-"
@@ -120,7 +130,6 @@ class NoSuchBucket(CommonServiceException):
             code="NoSuchBucket",
             message="The specified bucket does not exist",
             status_code=404,
-            sender_fault=True,
         )
 
 
@@ -168,7 +177,8 @@ class BackendState:
     @staticmethod
     def get_bucket(bucket_name: str) -> FakeBucket:
         bucket_name = normalize_bucket_name(bucket_name)
-        bucket = s3_backend.buckets.get(bucket_name)
+        backend = get_s3_backend()
+        bucket = backend.buckets.get(bucket_name)
         if not bucket:
             # note: adding a switch here to be able to handle both, moto's MissingBucket with the
             # legacy edge proxy, as well as our custom CommonServiceException with the new Gateway.
@@ -224,6 +234,7 @@ def get_event_message(
     version_id=None,
     file_size=0,
     config_id="testConfigRule",
+    source_ip="127.0.0.1",
 ):
     # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
     bucket_name = normalize_bucket_name(bucket_name)
@@ -236,9 +247,7 @@ def get_event_message(
                 "eventTime": timestamp_millis(),
                 "eventName": event_name,
                 "userIdentity": {"principalId": "AIDAJDPLRKLG7UEXAMPLE"},
-                "requestParameters": {
-                    "sourceIPAddress": "127.0.0.1"
-                },  # TODO determine real source IP
+                "requestParameters": {"sourceIPAddress": source_ip},
                 "responseElements": {
                     "x-amz-request-id": short_uid(),
                     "x-amz-id-2": "eftixk72aD6Ap51TnqcoF8eFidJG9Z/2",  # Amazon S3 host that processed the request
@@ -301,12 +310,19 @@ def send_notifications(method, bucket_name, object_path, version_id, headers, me
 
 
 def send_notification_for_subscriber(
-    notif, bucket_name, object_path, version_id, api_method, action, event_name, headers
+    notification: Dict,
+    bucket_name: str,
+    object_path: str,
+    version_id: str,
+    api_method: str,
+    action: str,
+    event_name: str,
+    headers,
 ):
     bucket_name = normalize_bucket_name(bucket_name)
 
-    if not event_type_matches(notif["Event"], action, api_method) or not filter_rules_match(
-        notif.get("Filter"), object_path
+    if not event_type_matches(notification["Event"], action, api_method) or not filter_rules_match(
+        notification.get("Filter"), object_path
     ):
         return
 
@@ -319,6 +335,8 @@ def send_notification_for_subscriber(
     except botocore.exceptions.ClientError:
         pass
 
+    source_ip = headers.get("X-Forwarded-For", "127.0.0.1").split(",")[0]
+
     # build event message
     message = get_event_message(
         event_name=event_name,
@@ -327,15 +345,16 @@ def send_notification_for_subscriber(
         etag=object_data.get("ETag", ""),
         file_size=object_data.get("ContentLength", 0),
         version_id=version_id,
-        config_id=notif["Id"],
+        config_id=notification["Id"],
+        source_ip=source_ip,
     )
     message = json.dumps(message)
 
-    if notif.get("Queue"):
-        region = aws_stack.extract_region_from_arn(notif["Queue"])
+    if notification.get("Queue"):
+        region = aws_stack.extract_region_from_arn(notification["Queue"])
         sqs_client = aws_stack.connect_to_service("sqs", region_name=region)
         try:
-            queue_url = aws_stack.sqs_queue_url_for_arn(notif["Queue"])
+            queue_url = aws_stack.sqs_queue_url_for_arn(notification["Queue"])
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=message,
@@ -343,29 +362,23 @@ def send_notification_for_subscriber(
             )
         except Exception as e:
             LOGGER.warning(
-                'Unable to send notification for S3 bucket "%s" to SQS queue "%s": %s',
-                bucket_name,
-                notif["Queue"],
-                e,
+                f"Unable to send notification for S3 bucket \"{bucket_name}\" to SQS queue \"{notification['Queue']}\": {e}",
             )
-    if notif.get("Topic"):
-        region = aws_stack.extract_region_from_arn(notif["Topic"])
+    if notification.get("Topic"):
+        region = aws_stack.extract_region_from_arn(notification["Topic"])
         sns_client = aws_stack.connect_to_service("sns", region_name=region)
         try:
             sns_client.publish(
-                TopicArn=notif["Topic"],
+                TopicArn=notification["Topic"],
                 Message=message,
                 Subject="Amazon S3 Notification",
             )
         except Exception as e:
             LOGGER.warning(
-                'Unable to send notification for S3 bucket "%s" to SNS topic "%s": %s',
-                bucket_name,
-                notif["Topic"],
-                e,
+                f"Unable to send notification for S3 bucket \"{bucket_name}\" to SNS topic \"{notification['Topic']}\": {e}"
             )
     # CloudFunction and LambdaFunction are semantically identical
-    lambda_function_config = notif.get("CloudFunction") or notif.get("LambdaFunction")
+    lambda_function_config = notification.get("CloudFunction") or notification.get("LambdaFunction")
     if lambda_function_config:
         # make sure we don't run into a socket timeout
         region = aws_stack.extract_region_from_arn(lambda_function_config)
@@ -381,12 +394,61 @@ def send_notification_for_subscriber(
             )
         except Exception:
             LOGGER.warning(
-                'Unable to send notification for S3 bucket "%s" to Lambda function "%s".',
-                bucket_name,
-                lambda_function_config,
+                f'Unable to send notification for S3 bucket "{bucket_name}" to Lambda function "{lambda_function_config}".'
             )
 
-    if not filter(lambda x: notif.get(x), NOTIFICATION_DESTINATION_TYPES):
+    if "EventBridge" in notification:
+        s3api_client = aws_stack.connect_to_service("s3")
+        region = (
+            s3api_client.get_bucket_location(Bucket=bucket_name)["LocationConstraint"]
+            or config.DEFAULT_REGION
+        )
+        events_client = aws_stack.connect_to_service("events", region_name=region)
+
+        entry = {
+            "Source": "aws.s3",
+            "Resources": [f"arn:aws:s3:::{bucket_name}"],
+            "Detail": {
+                "version": version_id or "0",
+                "bucket": {"name": bucket_name},
+                "object": {
+                    "key": key,
+                    "size": object_data.get("ContentLength"),
+                    "etag": object_data.get("ETag", ""),
+                    "sequencer": "0062E99A88DC407460",
+                },
+                "request-id": "RKREYG1RN2X92YX6",
+                "requester": "074255357339",
+                "source-ip-address": source_ip,
+            },
+        }
+
+        if action == "ObjectCreated":
+            entry["DetailType"] = "Object Created"
+            entry["Detail"]["reason"] = f"{api_method}Object"
+
+        if action == "ObjectRemoved":
+            entry["DetailType"] = "Object Deleted"
+            entry["Detail"]["reason"] = f"{api_method}Object"
+            entry["Detail"]["deletion-type"] = "Permanently Deleted"
+            entry["Detail"]["object"].pop("etag")
+            entry["Detail"]["object"].pop("size")
+
+        if action == "ObjectTagging":
+            entry["DetailType"] = (
+                "Object Tags Added" if api_method == "Put" else "Object Tags Deleted"
+            )
+
+        entry["Detail"] = json.dumps(entry["Detail"])
+
+        try:
+            events_client.put_events(Entries=[entry])
+        except Exception as e:
+            LOGGER.exception(
+                f'Unable to send notification for S3 bucket "{bucket_name}" to EventBridge', e
+            )
+
+    if not filter(lambda x: notification.get(x), NOTIFICATION_DESTINATION_TYPES):
         LOGGER.warning(
             "Neither of %s defined for S3 notification.", "/".join(NOTIFICATION_DESTINATION_TYPES)
         )
@@ -503,7 +565,8 @@ def set_request_payment(bucket_name, payer):
             response._content = body
             return response
 
-    s3_backend.buckets[bucket_name].payer = payer["RequestPaymentConfiguration"]["Payer"]
+    backend = get_s3_backend()
+    backend.buckets[bucket_name].payer = payer["RequestPaymentConfiguration"]["Payer"]
     response.status_code = 200
     return response
 
@@ -1027,6 +1090,43 @@ def check_content_md5(data, headers):
         )
 
 
+def validate_checksum(data, headers):
+    algorithm = headers.get("x-amz-sdk-checksum-algorithm", "")
+    checksum_header = f"x-amz-checksum-{algorithm.lower()}"
+    received_checksum = headers.get(checksum_header)
+
+    calculated_checksum = ""
+    match algorithm:
+        case "CRC32":
+            calculated_checksum = checksum_crc32(data)
+            pass
+
+        case "CRC32C":
+            calculated_checksum = checksum_crc32c(data)
+            pass
+
+        case "SHA1":
+            calculated_checksum = hash_sha1(data)
+            pass
+
+        case "SHA256":
+            calculated_checksum = hash_sha256(data)
+
+        case _:
+            return error_response(
+                "The value specified in the x-amz-trailer header is not supported",
+                "InvalidRequest",
+                status_code=400,
+            )
+
+    if calculated_checksum != received_checksum:
+        return error_response(
+            f"Value for {checksum_header} header is invalid.",
+            "InvalidRequest",
+            status_code=400,
+        )
+
+
 def error_response(message, code, status_code=400):
     result = {"Error": {"Code": code, "Message": message}}
     content = xmltodict.unparse(result)
@@ -1183,11 +1283,16 @@ def handle_put_bucket_notification(bucket, data):
     parsed = strip_xmlns(xmltodict.parse(data))
     notif_config = parsed.get("NotificationConfiguration")
 
+    if "EventBridgeConfiguration" in notif_config:
+        notif_config.update(
+            {"EventBridgeConfiguration": {"Event": "s3:*", "EventBridgeEnabled": True}}
+        )
+
     notifications = BackendState.notification_configs(bucket)
     notifications.clear()
 
     for dest in NOTIFICATION_DESTINATION_TYPES:
-        config = notif_config.get("%sConfiguration" % dest)
+        config = notif_config.get(f"{dest}Configuration")
         configs = config if isinstance(config, list) else [config] if config else []
         for config in configs:
             events = config.get("Event")
@@ -1342,12 +1447,16 @@ class ProxyListenerS3(ProxyListener):
             return serve_static_website(headers=headers, path=path, bucket_name=bucket_name)
 
         # check content md5 hash integrity if not a copy request or multipart initialization
-        if (
-            "Content-MD5" in headers
-            and not self.is_s3_copy_request(headers, path)
-            and not self.is_create_multipart_request(parsed_path.query)
+        if not self.is_s3_copy_request(headers, path) and not self.is_create_multipart_request(
+            parsed_path.query
         ):
-            response = check_content_md5(data, headers)
+            response = None
+            if "Content-MD5" in headers:
+                response = check_content_md5(data, headers)
+
+            if "x-amz-sdk-checksum-algorithm" in headers:
+                response = validate_checksum(data, headers)
+
             if response is not None:
                 return response
 
@@ -1548,19 +1657,6 @@ class ProxyListenerS3(ProxyListener):
                 }
 
             send_notifications(method, bucket_name, object_path, version_id, headers, method_map)
-
-        # publish event for creation/deletion of buckets:
-        if method in ("PUT", "DELETE") and (
-            "/" not in path[1:] or len(path[1:].split("/")[1]) <= 0
-        ):
-            event_type = (
-                event_publisher.EVENT_S3_CREATE_BUCKET
-                if method == "PUT"
-                else event_publisher.EVENT_S3_DELETE_BUCKET
-            )
-            event_publisher.fire_event(
-                event_type, payload={"n": event_publisher.get_hash(bucket_name)}
-            )
 
         # fix an upstream issue in moto S3 (see https://github.com/localstack/localstack/issues/382)
         if method == "PUT":

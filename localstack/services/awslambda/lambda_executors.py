@@ -18,14 +18,13 @@ from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
-from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_VOLUME_DIR
+from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.runtime.hooks import hook_spec
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
-    get_record_from_event,
     is_java_lambda,
     is_nodejs_runtime,
     rm_docker_container,
@@ -34,10 +33,8 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.services.install import GO_LAMBDA_RUNTIME, INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.aws.dead_letter_queue import (
-    lambda_error_to_dead_letter_queue,
-    sqs_error_to_dead_letter_queue,
-)
+from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
+from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import (
@@ -71,8 +68,9 @@ from localstack.utils.container_utils.container_client import (
     DockerContainerStatus,
     PortMappings,
 )
-from localstack.utils.docker_utils import DOCKER_CLIENT, get_default_volume_dir_mount
+from localstack.utils.docker_utils import DOCKER_CLIENT, get_host_path_for_path_in_docker
 from localstack.utils.run import FuncThread
+from localstack.utils.time import timestamp_millis
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
@@ -354,14 +352,7 @@ def handle_error(
     lambda_function: LambdaFunction, event: Dict, error: Exception, asynchronous: bool = False
 ):
     if asynchronous:
-        if get_record_from_event(event, "eventSource") == EVENT_SOURCE_SQS:
-            sqs_queue_arn = get_record_from_event(event, "eventSourceARN")
-            if sqs_queue_arn:
-                # event source is SQS, send event back to dead letter queue
-                return sqs_error_to_dead_letter_queue(sqs_queue_arn, event, error)
-        else:
-            # event source is not SQS, send back to lambda dead letter queue
-            lambda_error_to_dead_letter_queue(lambda_function, event, error)
+        lambda_error_to_dead_letter_queue(lambda_function, event, error)
 
 
 class LambdaAsyncLocks:
@@ -400,6 +391,49 @@ class LambdaExecutor:
 
         return result
 
+    def _lambda_result_to_destination(
+        self,
+        func_details: LambdaFunction,
+        event: Dict,
+        result: InvocationResult,
+        is_async: bool,
+        error: Optional[InvocationException],
+    ):
+        if not func_details.destination_enabled():
+            return
+
+        payload = {
+            "version": "1.0",
+            "timestamp": timestamp_millis(),
+            "requestContext": {
+                "requestId": long_uid(),
+                "functionArn": func_details.arn(),
+                "condition": "RetriesExhausted",
+                "approximateInvokeCount": 1,
+            },
+            "requestPayload": event,
+            "responseContext": {"statusCode": 200, "executedVersion": "$LATEST"},
+            "responsePayload": {},
+        }
+
+        if result and result.result:
+            try:
+                payload["requestContext"]["condition"] = "Success"
+                payload["responsePayload"] = json.loads(result.result)
+            except Exception:
+                payload["responsePayload"] = result.result
+
+        if error:
+            payload["responseContext"]["functionError"] = "Unhandled"
+            # add the result in the response payload
+            if error.result is not None:
+                payload["responsePayload"] = json.loads(error.result)
+            send_event_to_target(func_details.on_failed_invocation, payload)
+            return
+
+        if func_details.on_successful_invocation is not None:
+            send_event_to_target(func_details.on_successful_invocation, payload)
+
     def execute(
         self,
         func_arn: str,  # TODO remove and get from lambda_function
@@ -411,9 +445,6 @@ class LambdaExecutor:
         callback: Callable = None,
         lock_discriminator: str = None,
     ):
-        # note: leave here to avoid circular import issues
-        from localstack.utils.aws.message_forwarding import lambda_result_to_destination
-
         def do_execute(*args):
             @cloudwatched("lambda")
             def _run(func_arn=None):
@@ -425,7 +456,6 @@ class LambdaExecutor:
                     # start the execution
                     raised_error = None
                     result = None
-                    dlq_sent = None
                     invocation_type = "Event" if asynchronous else "RequestResponse"
                     inv_context = InvocationContext(
                         lambda_function,
@@ -438,14 +468,14 @@ class LambdaExecutor:
                         result = self._execute(lambda_function, inv_context)
                     except Exception as e:
                         raised_error = e
-                        dlq_sent = handle_error(lambda_function, event, e, asynchronous)
+                        handle_error(lambda_function, event, e, asynchronous)
                         raise e
                     finally:
                         self.function_invoke_times[func_arn] = invocation_time
-                        callback and callback(
-                            result, func_arn, event, error=raised_error, dlq_sent=dlq_sent
-                        )
-                        lambda_result_to_destination(
+                        if callback:
+                            callback(result, func_arn, event, error=raised_error)
+
+                        self._lambda_result_to_destination(
                             lambda_function, event, result, asynchronous, raised_error
                         )
 
@@ -767,7 +797,7 @@ class LambdaExecutorContainers(LambdaExecutor):
             LOG.info("TODO: copy file into container for LAMBDA_REMOTE_DOCKER=1 - %s", local_file)
             return local_file
 
-        mountable_file = Util.get_host_path_for_path_in_docker(local_file)
+        mountable_file = get_host_path_for_path_in_docker(local_file)
         _, extension = os.path.splitext(local_file)
         target_file_name = f"{md5(local_file)}{extension}"
         target_path = f"/tmp/{target_file_name}"
@@ -1001,7 +1031,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             if config.LAMBDA_REMOTE_DOCKER:
                 container_config.required_files.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
             else:
-                lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
+                lambda_cwd_on_host = get_host_path_for_path_in_docker(lambda_cwd)
                 # TODO not necessary after Windows 10. Should be deprecated and removed in the future
                 if ":" in lambda_cwd and "\\" in lambda_cwd:
                     lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
@@ -1036,7 +1066,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             image_name=container_config.image_name,
             remove=container_config.remove,
             interactive=container_config.interactive,
-            detach=container_config.detach,
             name=container_config.name,
             entrypoint=container_config.entrypoint,
             command=container_config.command,
@@ -1233,7 +1262,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 container_config.required_files.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
             else:
                 container_config.required_files.append(
-                    (Util.get_host_path_for_path_in_docker(lambda_cwd), DOCKER_TASK_FOLDER)
+                    (get_host_path_for_path_in_docker(lambda_cwd), DOCKER_TASK_FOLDER)
                 )
 
         # running hooks to modify execution parameters
@@ -1462,7 +1491,7 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         classpath = "%s:%s:%s" % (
             main_file,
-            Util.get_java_classpath(main_file),
+            Util.get_java_classpath(lambda_function.cwd),
             LAMBDA_EXECUTOR_JAR,
         )
         cmd = "java %s -cp %s %s %s" % (
@@ -1576,44 +1605,6 @@ class Util:
         return opts
 
     @classmethod
-    def get_host_path_for_path_in_docker(cls, path):
-        """
-        Returns the calculated host location for a given subpath of DEFAULT_VOLUME_DIR inside the localstack container.
-        The path **has** to be a subdirectory of DEFAULT_VOLUME_DIR (the dir itself *will not* work).
-
-        :param path: Path to be replaced (subpath of DEFAULT_VOLUME_DIR)
-        :return: Path on the host
-        """
-        if config.LEGACY_DIRECTORIES:
-            return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
-
-        if config.is_in_docker:
-            volume = get_default_volume_dir_mount()
-
-            if volume:
-                if volume.type != "bind":
-                    raise ValueError(
-                        f"Mount to {DEFAULT_VOLUME_DIR} needs to be a bind mount for lambda code mounting to work"
-                    )
-
-                result, subs = re.subn(
-                    r"^%s/(.*)$" % DEFAULT_VOLUME_DIR, r"%s/\1" % volume.source, path
-                )
-                if subs == 0:
-                    # We should be able to replace something here.
-                    # if this warning is printed, the usage of this function is probably wrong.
-                    # Please check for missing slashes after DEFAULT_VOLUME_DIR etc.
-                    LOG.warning(
-                        "Error while performing automatic host path replacement for path %s to source %s"
-                    )
-                else:
-                    return result
-            else:
-                raise ValueError(f"No volume mounted to {DEFAULT_VOLUME_DIR}")
-
-        return path
-
-    @classmethod
     def format_windows_path(cls, path):
         temp = path.replace(":", "").replace("\\", "/")
         if len(temp) >= 1 and temp[:1] != "/":
@@ -1639,27 +1630,25 @@ class Util:
         return "%s:%s" % (docker_image, docker_tag)
 
     @classmethod
-    def get_java_classpath(cls, archive):
+    def get_java_classpath(cls, lambda_cwd):
         """
-        Return the Java classpath, using the parent folder of the
-        given archive as the base folder.
+        Return the Java classpath, using the given working directory as the base folder.
 
-        The result contains any *.jar files in the base folder, as
+        The result contains any *.jar files in the workdir folder, as
         well as any JAR files in the "lib/*" subfolder living
         alongside the supplied java archive (.jar or .zip).
 
-        :param archive: an absolute path to a .jar or .zip Java archive
-        :return: the Java classpath, relative to the base dir of "archive"
+        :param lambda_cwd: an absolute path to a working directory folder of a java lambda
+        :return: the Java classpath, relative to the base dir of the working directory
         """
         entries = ["."]
-        base_dir = os.path.dirname(archive)
         for pattern in ["%s/*.jar", "%s/lib/*.jar", "%s/java/lib/*.jar", "%s/*.zip"]:
-            for entry in glob.glob(pattern % base_dir):
-                if os.path.realpath(archive) != os.path.realpath(entry):
-                    entries.append(os.path.relpath(entry, base_dir))
+            for entry in glob.glob(pattern % lambda_cwd):
+                if os.path.realpath(lambda_cwd) != os.path.realpath(entry):
+                    entries.append(os.path.relpath(entry, lambda_cwd))
         # make sure to append the localstack-utils.jar at the end of the classpath
         # https://github.com/localstack/localstack/issues/1160
-        entries.append(os.path.relpath(archive, base_dir))
+        entries.append(os.path.relpath(lambda_cwd, lambda_cwd))
         entries.append("*.jar")
         entries.append("java/lib/*.jar")
         result = ":".join(entries)

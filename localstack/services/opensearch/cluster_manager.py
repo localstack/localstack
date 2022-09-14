@@ -7,6 +7,7 @@ from botocore.utils import ArnParser
 
 from localstack import config
 from localstack.aws.api.opensearch import DomainEndpointOptions, EngineType
+from localstack.config import EDGE_BIND_HOST
 from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME
 from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
 from localstack.services.opensearch import versions
@@ -255,11 +256,11 @@ class MultiplexingClusterManager(ClusterManager):
                 # startup routine for the singleton cluster instance
                 if engine_type == EngineType.OpenSearch:
                     self.cluster = OpensearchCluster(
-                        port=get_free_tcp_port(), directories=resolve_directories(version, arn)
+                        get_free_tcp_port(), directories=resolve_directories(version, arn)
                     )
                 else:
                     self.cluster = ElasticsearchCluster(
-                        port=get_free_tcp_port(), directories=resolve_directories(version, arn)
+                        get_free_tcp_port(), directories=resolve_directories(version, arn)
                     )
 
                 def _start_async(*_):
@@ -305,14 +306,14 @@ class MultiClusterManager(ClusterManager):
             port = _get_port_from_url(url)
             if engine_type == EngineType.OpenSearch:
                 return OpensearchCluster(
-                    port=port,
-                    host=LOCALHOST,
+                    port,
+                    host=EDGE_BIND_HOST,
                     version=version,
                     directories=resolve_directories(version, arn),
                 )
             else:
                 return ElasticsearchCluster(
-                    port=port,
+                    port,
                     host=LOCALHOST,
                     version=version,
                     directories=resolve_directories(version, arn),
@@ -354,14 +355,14 @@ class SingletonClusterManager(ClusterManager):
             engine_type = versions.get_engine_type(version)
             if engine_type == EngineType.OpenSearch:
                 self.cluster = OpensearchCluster(
-                    port=port,
-                    host=LOCALHOST,
+                    port,
+                    host=EDGE_BIND_HOST,
                     version=version,
                     directories=resolve_directories(version, arn),
                 )
             else:
                 self.cluster = ElasticsearchCluster(
-                    port=port,
+                    port,
                     host=LOCALHOST,
                     version=version,
                     directories=resolve_directories(version, arn),

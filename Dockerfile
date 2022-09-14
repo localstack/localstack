@@ -1,7 +1,7 @@
 ARG IMAGE_TYPE=full
 
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM python:3.10.5-slim-buster@sha256:a2e9d4e5340453ec31ef0a7e5fb928b3f224387c2f75e9834f83187d2395f83c as java-builder
+FROM python:3.10.7-slim-buster@sha256:3e2f59423255b108729d6be55027552093b6edd8fff4e669b837ba3af225b747 as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -34,15 +34,15 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java, maven,...)
-FROM python:3.10.5-slim-buster@sha256:a2e9d4e5340453ec31ef0a7e5fb928b3f224387c2f75e9834f83187d2395f83c as base
+FROM python:3.10.7-slim-buster@sha256:3e2f59423255b108729d6be55027552093b6edd8fff4e669b837ba3af225b747 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
 RUN apt-get update && \
         # Install dependencies to add additional repos
         apt-get install -y --no-install-recommends ca-certificates curl && \
-        # Setup Node 14 Repo
-        curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
+        # Setup Node 18 Repo
+        curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
         # Install Packages
         apt-get update && \
         apt-get install -y --no-install-recommends \
@@ -233,9 +233,6 @@ RUN mkdir -p /.npm && \
 # Install the latest version of awslocal globally
 RUN pip3 install --upgrade awscli awscli-local requests
 
-# Adds the results of `make init` that are explicitly include in .dockerignore to the image.
-# `make init` needs to be executed before building the image, because some package installers need docker themselves.
-ADD .filesystem/usr/lib/localstack /usr/lib/localstack
 # Add the code in the last step
 ADD localstack/ localstack/
 
@@ -259,6 +256,9 @@ ARG LOCALSTACK_BUILD_VERSION
 ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
 ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
+
+# clean up some libs (e.g., Maven should be no longer required after "make init" has completed)
+RUN rm -rf /usr/share/maven
 
 # expose edge service, external service ports, and debugpy
 EXPOSE 4566 4510-4559 5678

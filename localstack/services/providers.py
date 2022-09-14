@@ -1,4 +1,5 @@
 from localstack import config
+from localstack.aws.forwarder import HttpFallbackDispatcher
 from localstack.aws.proxy import AwsApiListener
 from localstack.services.moto import MotoFallbackDispatcher
 from localstack.services.plugins import Service, aws_provider
@@ -69,13 +70,18 @@ def cloudwatch():
 
 @aws_provider()
 def dynamodb():
-    from localstack.services.dynamodb.provider import DynamoDBApiListener
+    from localstack.aws.forwarder import HttpFallbackDispatcher
+    from localstack.services.dynamodb.provider import DynamoDBProvider
 
-    listener = DynamoDBApiListener()
+    provider = DynamoDBProvider()
+    listener = AwsApiListener(
+        "dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url)
+    )
+
     return Service(
         "dynamodb",
         listener=listener,
-        lifecycle_hook=listener.provider,
+        lifecycle_hook=provider,
     )
 
 
@@ -136,14 +142,14 @@ def iam():
 
 @aws_provider()
 def sts():
-    from localstack.services.sts.provider import StsAwsApiListener
+    from localstack.services.sts.provider import StsProvider
 
-    listener = StsAwsApiListener()
-    return Service("sts", listener=listener)
+    provider = StsProvider()
+    return Service("sts", listener=AwsApiListener("sts", MotoFallbackDispatcher(provider)))
 
 
-@aws_provider()
-def kinesis():
+@aws_provider(api="kinesis", name="legacy")
+def kinesis_legacy():
     from localstack.services.kinesis import kinesis_listener, kinesis_starter
 
     return Service(
@@ -151,6 +157,19 @@ def kinesis():
         listener=kinesis_listener.UPDATE_KINESIS,
         start=kinesis_starter.start_kinesis,
         check=kinesis_starter.check_kinesis,
+    )
+
+
+@aws_provider()
+def kinesis():
+    from localstack.services.kinesis.provider import KinesisProvider
+
+    provider = KinesisProvider()
+    listener = AwsApiListener("kinesis", HttpFallbackDispatcher(provider, provider.get_forward_url))
+    return Service(
+        "kinesis",
+        listener=listener,
+        lifecycle_hook=provider,
     )
 
 
@@ -192,9 +211,10 @@ def awslambda_asf():
 
 @aws_provider()
 def logs():
-    from localstack.services.logs.provider import LogsAwsApiListener
+    from localstack.services.logs.provider import LogsProvider
 
-    listener = LogsAwsApiListener()
+    provider = LogsProvider()
+    listener = AwsApiListener("logs", MotoFallbackDispatcher(provider))
     return Service("logs", listener=listener)
 
 
@@ -238,12 +258,25 @@ def route53resolver():
     )
 
 
-@aws_provider()
+@aws_provider(api="s3", name="default")
 def s3():
     from localstack.services.s3 import s3_listener, s3_starter
 
     return Service(
         "s3", listener=s3_listener.UPDATE_S3, start=s3_starter.start_s3, check=s3_starter.check_s3
+    )
+
+
+@aws_provider(api="s3", name="asf")
+def s3_asf():
+    from localstack.services.s3.provider import S3Provider
+
+    provider = S3Provider()
+
+    return Service(
+        "s3",
+        listener=AwsApiListener("s3", MotoFallbackDispatcher(provider)),
+        lifecycle_hook=provider,
     )
 
 
@@ -345,13 +378,16 @@ def events():
 
 @aws_provider()
 def stepfunctions():
-    from localstack.services.stepfunctions.provider import StepFunctionsApiListener
+    from localstack.services.stepfunctions.provider import StepFunctionsProvider
 
-    listener = StepFunctionsApiListener()
+    provider = StepFunctionsProvider()
+    listener = AwsApiListener(
+        "stepfunctions", HttpFallbackDispatcher(provider, provider.get_forward_url)
+    )
     return Service(
         "stepfunctions",
         listener=listener,
-        lifecycle_hook=listener.provider,
+        lifecycle_hook=provider,
     )
 
 
@@ -402,4 +438,16 @@ def support():
     return Service(
         "support",
         listener=AwsApiListener("support", MotoFallbackDispatcher(provider)),
+    )
+
+
+@aws_provider()
+def transcribe():
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.transcribe.provider import TranscribeProvider
+
+    provider = TranscribeProvider()
+    return Service(
+        "transcribe",
+        listener=AwsApiListener("transcribe", MotoFallbackDispatcher(provider)),
     )

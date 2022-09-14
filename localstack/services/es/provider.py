@@ -69,7 +69,6 @@ from localstack.aws.api.opensearch import (
     DomainStatus,
     VersionString,
 )
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 
 
@@ -262,12 +261,6 @@ class EsProvider(EsApi):
         with exception_mapper():
             domain_status = opensearch_client.create_domain(**kwargs)["DomainStatus"]
 
-        # record event
-        event_publisher.fire_event(
-            event_publisher.EVENT_ES_CREATE_DOMAIN,
-            payload={"n": event_publisher.get_hash(domain_name)},
-        )
-
         status = _domainstatus_from_opensearch(domain_status)
         return CreateElasticsearchDomainResponse(DomainStatus=status)
 
@@ -280,12 +273,6 @@ class EsProvider(EsApi):
             domain_status = opensearch_client.delete_domain(
                 DomainName=domain_name,
             )["DomainStatus"]
-
-        # record event
-        event_publisher.fire_event(
-            event_publisher.EVENT_ES_DELETE_DOMAIN,
-            payload={"n": event_publisher.get_hash(domain_name)},
-        )
 
         status = _domainstatus_from_opensearch(domain_status)
         return DeleteElasticsearchDomainResponse(DomainStatus=status)

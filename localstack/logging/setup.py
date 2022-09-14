@@ -18,12 +18,14 @@ default_log_levels = {
     "s3transfer": logging.INFO,
     "urllib3": logging.WARNING,
     "werkzeug": logging.WARNING,
+    "localstack.aws.protocol.serializer": logging.INFO,
     "localstack.aws.serving.wsgi": logging.WARNING,
     "localstack.request": logging.INFO,
     "localstack.request.internal": logging.WARNING,
 }
 
 trace_log_levels = {
+    "localstack.aws.protocol.serializer": logging.DEBUG,
     "localstack.aws.serving.wsgi": logging.DEBUG,
     "localstack.request": logging.DEBUG,
     "localstack.request.internal": logging.INFO,
@@ -86,7 +88,7 @@ def setup_logging(log_level=logging.INFO) -> None:
     log_handler = create_default_handler(log_level)
 
     # replace any existing handlers
-    logging.basicConfig(level=log_level, handlers=[log_handler], force=True)
+    logging.basicConfig(level=log_level, handlers=[log_handler])
 
     # disable some logs and warnings
     warnings.filterwarnings("ignore")

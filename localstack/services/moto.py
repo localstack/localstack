@@ -3,12 +3,13 @@ This module provides tools to call moto using moto and botocore internals withou
 """
 import sys
 from functools import lru_cache
-from typing import Callable
+from typing import Callable, Optional, Union
 
-from moto.backends import get_backend as get_moto_backend
+import moto.backends as moto_backends
 from moto.core.exceptions import RESTError
 from moto.core.utils import BackendDict
 from moto.moto_server.utilities import RegexConverter
+from werkzeug.exceptions import NotFound
 from werkzeug.routing import Map, Rule
 
 from localstack import __version__ as localstack_version
@@ -16,22 +17,20 @@ from localstack import config
 from localstack.aws.api import (
     CommonServiceException,
     HttpRequest,
-    HttpResponse,
     RequestContext,
     ServiceRequest,
     ServiceResponse,
 )
-from localstack.aws.client import parse_response
 from localstack.aws.forwarder import (
     ForwardingFallbackDispatcher,
-    HttpBackendResponse,
     create_aws_request_context,
+    dispatch_to_backend,
 )
 from localstack.aws.skeleton import DispatchTable
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Response
 
-MotoResponse = HttpBackendResponse
-MotoDispatcher = Callable[[HttpRequest, str, dict], MotoResponse]
+MotoDispatcher = Callable[[HttpRequest, str, dict], Response]
 
 user_agent = f"Localstack/{localstack_version} Python/{sys.version.split(' ')[0]}"
 
@@ -44,22 +43,7 @@ def call_moto(context: RequestContext, include_response_metadata=False) -> Servi
     :param include_response_metadata: whether to include botocore's "ResponseMetadata" attribute
     :return: a serialized AWS ServiceResponse (same as boto3 would return)
     """
-    status, headers, content = dispatch_to_moto(context)
-
-    response = parse_response(context.operation, Response(content, status, headers))
-
-    if status >= 301:
-        error = response["Error"]
-        raise CommonServiceException(
-            code=error.get("Code", "UnknownError"),
-            status_code=status,
-            message=error.get("Message", ""),
-        )
-
-    if not include_response_metadata:
-        response.pop("ResponseMetadata", None)
-
-    return response
+    return dispatch_to_backend(context, dispatch_to_moto, include_response_metadata)
 
 
 def call_moto_with_request(
@@ -72,7 +56,7 @@ def call_moto_with_request(
 
     :param context: the original request context
     :param service_request: the dictionary containing the service request parameters
-    :return: a serialized AWS ServiceResponse (same as boto3 would return)
+    :return: an ASF ServiceResponse (same as a service provider would return)
     """
     local_context = create_aws_request_context(
         service_name=context.service.service_name,
@@ -81,23 +65,22 @@ def call_moto_with_request(
         region=context.region,
     )
 
-    local_context.request.headers.extend(context.request.headers)
+    local_context.request.headers.update(context.request.headers)
 
     return call_moto(local_context)
 
 
-def proxy_moto(context: RequestContext, service_request: ServiceRequest = None) -> HttpResponse:
+def _proxy_moto(
+    context: RequestContext, request: ServiceRequest
+) -> Optional[Union[ServiceResponse, Response]]:
     """
-    Similar to ``call``, only that ``proxy`` does not parse the HTTP response into a ServiceResponse, but instead
-    returns directly the HTTP response. This can be useful to pass through moto's response directly to the client.
+    Wraps `call_moto` such that the interface is compliant with a ServiceRequestHandler.
 
     :param context: the request context
     :param service_request: currently not being used, added to satisfy ServiceRequestHandler contract
-    :return: the HttpResponse from moto
+    :return: the Response from moto
     """
-    status, headers, content = dispatch_to_moto(context)
-
-    return HttpResponse(response=content, status=status, headers=headers)
+    return call_moto(context)
 
 
 def MotoFallbackDispatcher(provider: object) -> DispatchTable:
@@ -109,10 +92,10 @@ def MotoFallbackDispatcher(provider: object) -> DispatchTable:
     :param provider: the ASF provider
     :return: a modified DispatchTable
     """
-    return ForwardingFallbackDispatcher(provider, proxy_moto)
+    return ForwardingFallbackDispatcher(provider, _proxy_moto)
 
 
-def dispatch_to_moto(context: RequestContext) -> MotoResponse:
+def dispatch_to_moto(context: RequestContext) -> Response:
     """
     Internal method to dispatch the request to moto without changing moto's dispatcher output.
     :param context: the request context
@@ -125,7 +108,8 @@ def dispatch_to_moto(context: RequestContext) -> MotoResponse:
     dispatch = get_dispatcher(service.service_name, request.path)
 
     try:
-        return dispatch(request, request.url, request.headers)
+        status, headers, content = dispatch(request, request.url, request.headers)
+        return Response(content, status, headers)
     except RESTError as e:
         raise CommonServiceException(e.error_type, e.message, status_code=e.code) from e
 
@@ -139,7 +123,12 @@ def get_dispatcher(service: str, path: str) -> MotoDispatcher:
         return rule.endpoint
 
     matcher = url_map.bind(config.LOCALSTACK_HOSTNAME)
-    endpoint, _ = matcher.match(path_info=path)
+    try:
+        endpoint, _ = matcher.match(path_info=path)
+    except NotFound as e:
+        raise NotImplementedError(
+            f"No moto route for service {service} on path {path} found."
+        ) from e
     return endpoint
 
 
@@ -158,9 +147,14 @@ def load_moto_routing_table(service: str) -> Map:
     :return: a new Map object
     """
     # code from moto.moto_server.werkzeug_app.create_backend_app
-    backend_dict: BackendDict = get_moto_backend(service)
-    if "us-east-1" in backend_dict:
-        backend = backend_dict["us-east-1"]
+    backend_dict = moto_backends.get_backend(service)
+    # Get an instance of this backend.
+    # We'll only use this backend to resolve the URL's, so the exact region/account_id is irrelevant
+    if isinstance(backend_dict, BackendDict):
+        if "us-east-1" in backend_dict[DEFAULT_AWS_ACCOUNT_ID]:
+            backend = backend_dict[DEFAULT_AWS_ACCOUNT_ID]["us-east-1"]
+        else:
+            backend = backend_dict[DEFAULT_AWS_ACCOUNT_ID]["global"]
     else:
         backend = backend_dict["global"]
 

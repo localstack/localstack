@@ -2,30 +2,28 @@
 This module contains utilities to call a backend (e.g., an external service process like
 DynamoDBLocal) from a service provider.
 """
-from typing import Any, Callable, Mapping, Optional, Tuple, Union
+from typing import Any, Callable, Mapping, Optional
 from urllib.parse import urlsplit
 
-import requests
 from botocore.awsrequest import AWSPreparedRequest
+from botocore.config import Config as BotoConfig
 from werkzeug.datastructures import Headers
 
 from localstack import config
 from localstack.aws.api.core import (
-    CommonServiceException,
     Request,
     RequestContext,
     ServiceRequest,
     ServiceRequestHandler,
     ServiceResponse,
 )
-from localstack.aws.client import parse_response
+from localstack.aws.client import parse_response, raise_service_exception
 from localstack.aws.skeleton import DispatchTable, create_dispatch_table
 from localstack.aws.spec import load_service
 from localstack.http import Response
+from localstack.http.proxy import forward
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import to_str
-
-HttpBackendResponse = Tuple[int, dict, Union[str, bytes]]
 
 
 def ForwardingFallbackDispatcher(
@@ -77,7 +75,12 @@ def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> Service
                 parameters=service_request,
                 region=context.region,
             )
-            local_context.request.headers.extend(context.request.headers)
+            # update the newly created context with non-payload specific request headers (the payload can differ from
+            # the original request, f.e. it could be JSON encoded now while the initial request was CBOR encoded)
+            headers = Headers(context.request.headers)
+            headers.pop("Content-Type", None)
+            headers.pop("Content-Length", None)
+            local_context.request.headers.update(headers)
             context = local_context
         return forward_request(context, forward_url_getter)
 
@@ -87,15 +90,15 @@ def get_request_forwarder_http(forward_url_getter: Callable[[], str]) -> Service
 def forward_request(
     context: RequestContext, forward_url_getter: Callable[[], str]
 ) -> ServiceResponse:
-    def _call_http_backend(context: RequestContext) -> HttpBackendResponse:
-        return call_http_backend(context, forward_url=forward_url_getter())
+    def _call_http_backend(context: RequestContext) -> Response:
+        return forward(context.request, forward_url_getter())
 
     return dispatch_to_backend(context, _call_http_backend)
 
 
 def dispatch_to_backend(
     context: RequestContext,
-    http_request_dispatcher: Callable[[RequestContext], HttpBackendResponse],
+    http_request_dispatcher: Callable[[RequestContext], Response],
     include_response_metadata=False,
 ) -> ServiceResponse:
     """
@@ -104,35 +107,17 @@ def dispatch_to_backend(
     :param context: the request context
     :param http_request_dispatcher: dispatcher that performs the request and returns an HTTP response
     :param include_response_metadata: whether to include boto3 response metadata in the response
-    :return:
+    :return: parsed service response
+    :raises ServiceException: if the dispatcher returned an error response
     """
-    status, headers, content = http_request_dispatcher(context)
-
-    response = parse_response(context.operation, Response(content, status, dict(headers)))
-
-    if status >= 301:
-        error = response["Error"]
-        raise CommonServiceException(
-            code=error.get("Code", "UnknownError"),
-            status_code=status,
-            message=error.get("Message", ""),
-            sender_fault=("Type" in error),
-        )
-
-    if not include_response_metadata:
-        response.pop("ResponseMetadata", None)
-
-    return response
+    http_response = http_request_dispatcher(context)
+    parsed_response = parse_response(context.operation, http_response, include_response_metadata)
+    raise_service_exception(http_response, parsed_response)
+    return parsed_response
 
 
-def call_http_backend(context: RequestContext, forward_url: str) -> HttpBackendResponse:
-    response = requests.request(
-        method=context.request.method,
-        url=forward_url,
-        headers=context.request.headers,
-        data=context.request.data,
-    )
-    return response.status_code, response.headers, response.content
+# boto config deactivating param validation to forward to backends (backends are responsible for validating params)
+_non_validating_boto_config = BotoConfig(parameter_validation=False)
 
 
 def create_aws_request_context(
@@ -165,9 +150,14 @@ def create_aws_request_context(
     service = load_service(service_name)
     operation = service.operation_model(action)
 
-    # we re-use botocore internals here to serialize the HTTP request, but don't send it
+    # we re-use botocore internals here to serialize the HTTP request,
+    # but deactivate validation (validation errors should be handled by the backend)
+    # and don't send it yet
     client = aws_stack.connect_to_service(
-        service_name, endpoint_url=endpoint_url, region_name=region
+        service_name,
+        endpoint_url=endpoint_url,
+        region_name=region,
+        config=_non_validating_boto_config,
     )
     request_context = {
         "client_region": region,

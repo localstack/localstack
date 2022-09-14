@@ -21,9 +21,13 @@ from localstack.services import generic_proxy, install, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import analytics, config_listener, files, persistence
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.request_context import patch_moto_request_handling
-from localstack.utils.bootstrap import canonicalize_api_names, in_ci, log_duration, setup_logging
+from localstack.utils.bootstrap import (
+    canonicalize_api_names,
+    is_api_enabled,
+    log_duration,
+    setup_logging,
+)
 from localstack.utils.container_networking import get_main_container_id
 from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import get_free_tcp_port, is_port_open
@@ -276,10 +280,13 @@ def start_local_api(name, port, api, method, asynchronous=False, listener=None):
 def stop_infra():
     if events.infra_stopping.is_set():
         return
+
+    # run plugin hooks for infra shutdown
+    hooks.on_infra_shutdown.run()
+
     # also used to signal shutdown for edge proxy so that any further requests will be rejected
     events.infra_stopping.set()
 
-    event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
     analytics.log.event("infra_stop")
 
     try:
@@ -431,11 +438,6 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
-    event_publisher.fire_event(
-        event_publisher.EVENT_START_INFRA,
-        {"d": is_in_docker and 1 or 0, "c": in_ci() and 1 or 0},
-    )
-
     if config.DEVELOP:
         install.install_debugpy_and_dependencies()
         import debugpy
@@ -481,12 +483,14 @@ def do_start_infra(asynchronous, apis, is_in_docker):
             return
 
         for api in available_services:
-            try:
-                SERVICE_PLUGINS.require(api)
-            except ServiceDisabled as e:
-                LOG.debug("%s", e)
-            except Exception:
-                LOG.exception("could not load service plugin %s", api)
+            # this should be the only call to is_api_enabled left
+            if is_api_enabled(api):
+                try:
+                    SERVICE_PLUGINS.require(api)
+                except ServiceDisabled as e:
+                    LOG.debug("%s", e)
+                except Exception:
+                    LOG.exception("could not load service plugin %s", api)
 
     @log_duration()
     def start_runtime_components():

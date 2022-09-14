@@ -55,6 +55,7 @@ class ConnectionErrorCodeType(str):
     USER_NOT_FOUND = "USER_NOT_FOUND"
     USER_LOGGED_IN = "USER_LOGGED_IN"
     SUBNET_NOT_FOUND = "SUBNET_NOT_FOUND"
+    INSUFFICIENT_FREE_ADDRESSES_IN_SUBNET = "INSUFFICIENT_FREE_ADDRESSES_IN_SUBNET"
 
 
 class ConnectionStateType(str):
@@ -78,6 +79,7 @@ class CustomerMasterKeySpec(str):
     HMAC_256 = "HMAC_256"
     HMAC_384 = "HMAC_384"
     HMAC_512 = "HMAC_512"
+    SM2 = "SM2"
 
 
 class DataKeyPairSpec(str):
@@ -88,6 +90,7 @@ class DataKeyPairSpec(str):
     ECC_NIST_P384 = "ECC_NIST_P384"
     ECC_NIST_P521 = "ECC_NIST_P521"
     ECC_SECG_P256K1 = "ECC_SECG_P256K1"
+    SM2 = "SM2"
 
 
 class DataKeySpec(str):
@@ -99,6 +102,7 @@ class EncryptionAlgorithmSpec(str):
     SYMMETRIC_DEFAULT = "SYMMETRIC_DEFAULT"
     RSAES_OAEP_SHA_1 = "RSAES_OAEP_SHA_1"
     RSAES_OAEP_SHA_256 = "RSAES_OAEP_SHA_256"
+    SM2PKE = "SM2PKE"
 
 
 class ExpirationModelType(str):
@@ -143,6 +147,7 @@ class KeySpec(str):
     HMAC_256 = "HMAC_256"
     HMAC_384 = "HMAC_384"
     HMAC_512 = "HMAC_512"
+    SM2 = "SM2"
 
 
 class KeyState(str):
@@ -195,6 +200,7 @@ class SigningAlgorithmSpec(str):
     ECDSA_SHA_256 = "ECDSA_SHA_256"
     ECDSA_SHA_384 = "ECDSA_SHA_384"
     ECDSA_SHA_512 = "ECDSA_SHA_512"
+    SM2DSA = "SM2DSA"
 
 
 class WrappingKeySpec(str):
@@ -205,238 +211,204 @@ class AlreadyExistsException(ServiceException):
     code: str = "AlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class CloudHsmClusterInUseException(ServiceException):
     code: str = "CloudHsmClusterInUseException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class CloudHsmClusterInvalidConfigurationException(ServiceException):
     code: str = "CloudHsmClusterInvalidConfigurationException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class CloudHsmClusterNotActiveException(ServiceException):
     code: str = "CloudHsmClusterNotActiveException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class CloudHsmClusterNotFoundException(ServiceException):
     code: str = "CloudHsmClusterNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class CloudHsmClusterNotRelatedException(ServiceException):
     code: str = "CloudHsmClusterNotRelatedException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class CustomKeyStoreHasCMKsException(ServiceException):
     code: str = "CustomKeyStoreHasCMKsException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class CustomKeyStoreInvalidStateException(ServiceException):
     code: str = "CustomKeyStoreInvalidStateException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class CustomKeyStoreNameInUseException(ServiceException):
     code: str = "CustomKeyStoreNameInUseException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class CustomKeyStoreNotFoundException(ServiceException):
     code: str = "CustomKeyStoreNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class DependencyTimeoutException(ServiceException):
     code: str = "DependencyTimeoutException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class DisabledException(ServiceException):
     code: str = "DisabledException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class ExpiredImportTokenException(ServiceException):
     code: str = "ExpiredImportTokenException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class IncorrectKeyException(ServiceException):
     code: str = "IncorrectKeyException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class IncorrectKeyMaterialException(ServiceException):
     code: str = "IncorrectKeyMaterialException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class IncorrectTrustAnchorException(ServiceException):
     code: str = "IncorrectTrustAnchorException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class InvalidAliasNameException(ServiceException):
     code: str = "InvalidAliasNameException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class InvalidArnException(ServiceException):
     code: str = "InvalidArnException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class InvalidCiphertextException(ServiceException):
     code: str = "InvalidCiphertextException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class InvalidGrantIdException(ServiceException):
     code: str = "InvalidGrantIdException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class InvalidGrantTokenException(ServiceException):
     code: str = "InvalidGrantTokenException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class InvalidImportTokenException(ServiceException):
     code: str = "InvalidImportTokenException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class InvalidKeyUsageException(ServiceException):
     code: str = "InvalidKeyUsageException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class InvalidMarkerException(ServiceException):
     code: str = "InvalidMarkerException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class KMSInternalException(ServiceException):
     code: str = "KMSInternalException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class KMSInvalidMacException(ServiceException):
     code: str = "KMSInvalidMacException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class KMSInvalidSignatureException(ServiceException):
     code: str = "KMSInvalidSignatureException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class KMSInvalidStateException(ServiceException):
     code: str = "KMSInvalidStateException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class KeyUnavailableException(ServiceException):
     code: str = "KeyUnavailableException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class LimitExceededException(ServiceException):
     code: str = "LimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class MalformedPolicyDocumentException(ServiceException):
     code: str = "MalformedPolicyDocumentException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class NotFoundException(ServiceException):
     code: str = "NotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class TagException(ServiceException):
     code: str = "TagException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 class UnsupportedOperationException(ServiceException):
     code: str = "UnsupportedOperationException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessageType]
 
 
 DateType = datetime
@@ -479,9 +451,9 @@ class CreateAliasRequest(ServiceRequest):
 
 class CreateCustomKeyStoreRequest(ServiceRequest):
     CustomKeyStoreName: CustomKeyStoreNameType
-    CloudHsmClusterId: CloudHsmClusterIdType
-    TrustAnchorCertificate: TrustAnchorCertificateType
-    KeyStorePassword: KeyStorePasswordType
+    CloudHsmClusterId: Optional[CloudHsmClusterIdType]
+    TrustAnchorCertificate: Optional[TrustAnchorCertificateType]
+    KeyStorePassword: Optional[KeyStorePasswordType]
 
 
 class CreateCustomKeyStoreResponse(TypedDict, total=False):
@@ -1098,9 +1070,9 @@ class KmsApi:
         self,
         context: RequestContext,
         custom_key_store_name: CustomKeyStoreNameType,
-        cloud_hsm_cluster_id: CloudHsmClusterIdType,
-        trust_anchor_certificate: TrustAnchorCertificateType,
-        key_store_password: KeyStorePasswordType,
+        cloud_hsm_cluster_id: CloudHsmClusterIdType = None,
+        trust_anchor_certificate: TrustAnchorCertificateType = None,
+        key_store_password: KeyStorePasswordType = None,
     ) -> CreateCustomKeyStoreResponse:
         raise NotImplementedError
 

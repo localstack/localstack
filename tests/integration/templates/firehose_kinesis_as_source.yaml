@@ -1,47 +1,78 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  BucketName:
+    Type: String
+  StreamName:
+    Type: String
+  DeliveryStreamName:
+    Type: String
 Resources:
   bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: {{BucketName}}
+      BucketName: !Ref BucketName
   stream:
     Type: AWS::Kinesis::Stream
     Properties: 
-      Name: {{StreamName}}
-      ShardCount: 2    
+      Name: !Ref StreamName
+      ShardCount: 2
+  role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: 'sts:AssumeRole'
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: kinesis.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "*"
+                Resource: "*"
   deliveryStream:
     DependsOn:
       - bucket
       - stream
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties: 
-      DeliveryStreamName: {{DeliveryStreamName}}
+      DeliveryStreamName: !Ref DeliveryStreamName
       DeliveryStreamType: KinesisStreamAsSource
       KinesisStreamSourceConfiguration:
         KinesisStreamARN: !GetAtt 'stream.Arn'
-        RoleARN: arn:aws:iam::000000000000:role/Firehose-Role
+        RoleARN: !GetAtt 'role.Arn'
       ExtendedS3DestinationConfiguration: 
         BucketARN: !GetAtt 'bucket.Arn'
-        RoleARN: arn:aws:iam::000000000000:role/Firehose-Role
+        RoleARN: !GetAtt 'role.Arn'
         BufferingHints:
           IntervalInSeconds: 60
           SizeInMBs: 64
-        DynamicPartitioningConfiguration: 
-          Enabled: true
-        ProcessingConfiguration: 
+        ProcessingConfiguration:
           Enabled: true
           Processors:
             - Type: MetadataExtraction
               Parameters: 
-                - ParameterName: "MetadatExtractionQuery"
+                - ParameterName: "MetadataExtractionQuery"
                   ParameterValue: "{s3Prefix: .tableName}"
                 - ParameterName: "JsonParsingEngine"
                   ParameterValue: "JQ-1.6"
-        DataFormatConversionConfiguration: 
+        DynamicPartitioningConfiguration:
           Enabled: true
-        CompressionFormat: "GZIP"
-        Prefix: "firehoseTest/!{partitionKeyFromQuery:s3Prefix}/!{partitionKeyFromLambda:companyId}/!{partitionKeyFromLambda:year}/!{partitionKeyFromLambda:month}/"
+        DataFormatConversionConfiguration:
+          Enabled: false
+        Prefix: "firehoseTest/!{partitionKeyFromQuery:s3Prefix}"
         ErrorOutputPrefix: "firehoseTest-errors/!{firehose:error-output-type}/"
-        CloudWatchLoggingOptions:
-          Enabled: true
-          LogGroupName: 'FirehoseStreamLog'
+Outputs:
+  deliveryStreamRef:
+    Value:
+      Ref: deliveryStream

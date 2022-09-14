@@ -47,6 +47,7 @@ def _setup_cli_debug():
 def localstack(debug, profile):
     if profile:
         os.environ["CONFIG_PROFILE"] = profile
+        config.CONFIG_PROFILE = profile
     if debug:
         _setup_cli_debug()
 
@@ -77,7 +78,6 @@ def localstack_status(ctx):
     name="docker", help="Query information about the LocalStack Docker image and runtime"
 )
 @click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
-@publish_invocation
 def cmd_status_docker(format):
     with console.status("Querying Docker status"):
         print_docker_status(format)
@@ -85,7 +85,6 @@ def cmd_status_docker(format):
 
 @localstack_status.command(name="services", help="Query information about running services")
 @click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
-@publish_invocation
 def cmd_status_services(format):
     import requests
 
@@ -180,12 +179,19 @@ def cmd_stop():
 )
 @publish_invocation
 def cmd_logs(follow: bool):
+    from localstack.utils.bootstrap import LocalstackContainer
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     container_name = config.MAIN_CONTAINER_NAME
+    logfile = LocalstackContainer(container_name).logfile
 
     if not DOCKER_CLIENT.is_container_running(container_name):
         console.print("localstack container not running")
+        if os.path.exists(logfile):
+            console.print("printing logs from previous run")
+            with open(logfile) as fd:
+                for line in fd:
+                    click.echo(line, nl=False)
         sys.exit(1)
 
     if follow:

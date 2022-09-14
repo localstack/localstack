@@ -8,8 +8,10 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from moto.core import BaseBackend
 from moto.kms.models import Key, kms_backends
 
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.kms import (
     AlgorithmSpec,
@@ -38,6 +40,7 @@ from localstack.aws.api.kms import (
     InvalidGrantTokenException,
     KeyIdType,
     KmsApi,
+    KMSInvalidStateException,
     LimitType,
     ListAliasesResponse,
     ListGrantsRequest,
@@ -53,7 +56,6 @@ from localstack.aws.api.kms import (
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import kms_alias_arn
 from localstack.utils.collections import PaginatedList, remove_attributes
@@ -132,19 +134,22 @@ class ValidationError(CommonServiceException):
 
 
 class KmsProvider(KmsApi):
+    @staticmethod
+    def get_kms_backend(context: RequestContext) -> BaseBackend:
+        return kms_backends[context.account_id][context.region]
+
     @handler("CreateKey", expand=False)
     def create_key(
         self,
         context: RequestContext,
         create_key_request: CreateKeyRequest = None,
     ) -> CreateKeyResponse:
-        descr = create_key_request.get("Description") or ""
-        event_publisher.fire_event(EVENT_KMS_CREATE_KEY, {"k": event_publisher.get_hash(descr)})
         result = call_moto(context)
 
         # generate keypair for signing, if this is a SIGN_VERIFY key
-        key_usage = create_key_request.get("KeyUsage")
-        if key_usage == "SIGN_VERIFY":
+        key_usage = create_key_request.get("KeyUsage", "ENCRYPT_DECRYPT")
+        key_spec = create_key_request.get("KeySpec", "SYMMETRIC_DEFAULT")
+        if not (key_usage == "ENCRYPT_DECRYPT" and key_spec == "SYMMETRIC_DEFAULT"):
             create_key_request["KeyId"] = result["KeyMetadata"]["KeyId"]
             _generate_data_key_pair(create_key_request, create_cipher=False)
 
@@ -270,6 +275,7 @@ class KmsProvider(KmsApi):
 
         return ListGrantsResponse(Grants=in_limit, Truncated=True, NextMarker=marker_id)
 
+    @handler("GetPublicKey")
     def get_public_key(
         self, context: RequestContext, key_id: KeyIdType, grant_tokens: GrantTokenList = None
     ) -> GetPublicKeyResponse:
@@ -378,7 +384,7 @@ class KmsProvider(KmsApi):
         if not matching:
             return call_moto(context)
 
-        key_obj = kms_backends[context.region].keys.get(key_id)
+        key_obj = self.get_kms_backend(context).keys.get(key_id)
         ciphertext_blob = encrypt(key_obj.key_material, plaintext)
         return EncryptResponse(
             CiphertextBlob=ciphertext_blob, KeyId=key_id, EncryptionAlgorithm=encryption_algorithm
@@ -398,7 +404,7 @@ class KmsProvider(KmsApi):
         if not matching:
             return call_moto(context)
 
-        key_obj = kms_backends[context.region].keys.get(key_id)
+        key_obj = self.get_kms_backend(context).keys.get(key_id)
         plaintext = decrypt(key_obj.key_material, ciphertext_blob)
         return DecryptResponse(
             KeyId=key_id, Plaintext=plaintext, EncryptionAlgorithm=encryption_algorithm
@@ -445,10 +451,22 @@ class KmsProvider(KmsApi):
         import_state = KMSBackend.get().imports.get(import_token)
         if not import_state:
             raise NotFoundException(f"Unable to find key import token '{import_token}'")
-        key_obj = kms_backends[context.region].keys.get(key_id)
+        key_obj = self.get_kms_backend(context).keys.get(key_id)
         if not key_obj:
             raise NotFoundException(f"Unable to find key '{key_id}'")
-        key_material = import_state.key_obj.decrypt(encrypted_key_material, padding.PKCS1v15())
+
+        if import_state.wrapping_algo == AlgorithmSpec.RSAES_PKCS1_V1_5:
+            decrypt_padding = padding.PKCS1v15()
+        elif import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_1:
+            decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA1()), hashes.SHA1(), None)
+        elif import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_256:
+            decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA256()), hashes.SHA256(), None)
+        else:
+            raise KMSInvalidStateException(
+                f"Unsupported padding, requested wrapping algorithm:'{import_state.wrapping_algo}'"
+            )
+
+        key_material = import_state.key_obj.decrypt(encrypted_key_material, decrypt_padding)
         key_obj.key_material = key_material
         return ImportKeyMaterialResponse()
 
@@ -463,11 +481,12 @@ class KmsProvider(KmsApi):
             return call_moto(context)
 
         response_aliases = PaginatedList()
+        backend = self.get_kms_backend(context)
 
-        if kms_backends.get(context.region).keys.get(key_id) is None:
+        if backend.keys.get(key_id) is None:
             raise NotFoundException(f"Unable to find key '{key_id}'")
 
-        aliases_of_key = kms_backends.get(context.region).get_all_aliases().get(key_id) or []
+        aliases_of_key = backend.get_all_aliases().get(key_id) or []
 
         for alias_name in aliases_of_key:
             response_aliases.append(
@@ -486,7 +505,7 @@ class KmsProvider(KmsApi):
 
     def _verify_key_exists(self, key_id):
         try:
-            kms_backends[aws_stack.get_region()].describe_key(key_id)
+            kms_backends[get_aws_account_id()][aws_stack.get_region()].describe_key(key_id)
         except Exception:
             raise ValidationError(f"Invalid key ID '{key_id}'")
 
@@ -549,6 +568,7 @@ def _generate_data_key_pair(data, create_cipher=True, add_to_keys=True):
     if create_cipher:
         cipher_text = kms.encrypt(KeyId=key_id, Plaintext=private_key)["CiphertextBlob"]
 
+    account_id = get_aws_account_id()
     region = region_details.get_current_request_region()
     result = {
         "PrivateKeyCiphertextBlob": cipher_text,
@@ -557,7 +577,7 @@ def _generate_data_key_pair(data, create_cipher=True, add_to_keys=True):
         "KeyId": key_id,
         "KeyPairSpec": key_spec,
         "KeySpec": key_spec,
-        "KeyUsage": "SIGN_VERIFY",
+        "KeyUsage": data.get("KeyUsage", "ENCRYPT_DECRYPT"),
         "Policy": data.get("Policy"),
         "Region": region,
         "Description": data.get("Description"),
@@ -568,7 +588,7 @@ def _generate_data_key_pair(data, create_cipher=True, add_to_keys=True):
     if add_to_keys:
         region_details.key_pairs[key_id] = result
 
-    key = Key("", result["KeyUsage"], key_spec, result["Description"], region)
+    key = Key("", result["KeyUsage"], key_spec, result["Description"], account_id, region)
     key.id = key_id
 
     result = {**key.to_dict()["KeyMetadata"], **result}
@@ -597,7 +617,9 @@ def set_key_managed(key_id: str) -> None:
     :param key_id: ID of the KMS key
     """
     region_name = aws_stack.get_region()
-    backend = kms_backends.get(region_name)
+    account_id = get_aws_account_id()
+
+    backend = kms_backends[account_id][region_name]
     key_data = backend.keys.get(key_id)
     if key_data:
         key_data.key_manager = "AWS"

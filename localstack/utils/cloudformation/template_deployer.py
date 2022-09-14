@@ -1,5 +1,4 @@
 import base64
-import copy
 import json
 import logging
 import re
@@ -15,6 +14,7 @@ from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     PLACEHOLDER_RESOURCE_NAME,
+    fix_boto_parameters_based_on_report,
     is_none_or_empty_value,
     remove_none_values,
 )
@@ -153,7 +153,7 @@ def get_resource_name(resource):
     return name
 
 
-def get_client(resource, func_config):
+def get_client(resource: dict, func_config: dict):
     resource_type = get_resource_type(resource)
     service = get_service_name(resource)
     resource_config = get_deployment_config(resource_type)
@@ -678,6 +678,12 @@ def _resolve_refs_recursively(stack, value):
             value[key] = resolve_refs_recursively(stack, val)
 
     if isinstance(value, list):
+        # in some cases, intrinsic functions are passed in as, e.g., `[['Fn::Sub', '${MyRef}']]`
+        if len(value) == 1 and isinstance(value[0], list) and len(value[0]) == 2:
+            inner_list = value[0]
+            if str(inner_list[0]).lower().startswith("fn::"):
+                return resolve_refs_recursively(stack, {inner_list[0]: inner_list[1]})
+
         for i in range(len(value)):
             value[i] = resolve_refs_recursively(stack, value[i])
 
@@ -879,12 +885,14 @@ def execute_resource_action(resource_id: str, stack, action_name: str):
     func_details = func_details if isinstance(func_details, list) else [func_details]
     results = []
     for func in func_details:
-        if callable(func["function"]):
+        result = None
+        executed = False
+        if callable(func.get("function")):
             result = func["function"](resource_id, resources, resource_type, func, stack_name)
             results.append(result)
-            continue
-        client = get_client(resource, func)
-        if client:
+            executed = True
+
+        if not executed and get_client(resource, func):
             result = configure_resource_via_sdk(
                 stack,
                 resource_id,
@@ -893,6 +901,12 @@ def execute_resource_action(resource_id: str, stack, action_name: str):
                 action_name,
             )
             results.append(result)
+            executed = True
+
+        if "result_handler" in func and executed:
+            LOG.debug(f"Executing callback method for {resource_type}:{resource_id}")
+            func["result_handler"](result, resource_id, resources, resource_type)
+
     return (results or [None])[0]
 
 
@@ -986,17 +1000,10 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
     params = fix_account_id_in_arns(params)
     # convert data types (e.g., boolean strings to bool)
+    # TODO: this might not be needed anymore
     params = convert_data_types(func_details, params)
     # remove None values, as they usually raise boto3 errors
     params = remove_none_values(params)
-
-    # convert boolean strings
-    #  (TODO: we should find a more reliable mechanism than this opportunistic/probabilistic approach!)
-    params_before_conversion = copy.deepcopy(params)
-    for param_key, param_value in dict(params).items():
-        # Convert to boolean (TODO: do this recursively?)
-        if str(param_value).lower() in ["true", "false"]:
-            params[param_key] = str(param_value).lower() == "true"
 
     # invoke function
     try:
@@ -1010,10 +1017,17 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
         try:
             result = function(**params)
         except botocore.exceptions.ParamValidationError as e:
-            LOG.debug(f"Trying original parameters: {params_before_conversion}")
-            if "type: <class 'bool'>" not in str(e):
+            # alternatively we could also use the ParamValidator directly
+            report = e.kwargs.get("report")
+            if not report:
                 raise
-            result = function(**params_before_conversion)
+
+            LOG.debug("Converting parameters to allowed types")
+            converted_params = fix_boto_parameters_based_on_report(params, report)
+            LOG.debug("Original parameters:  %s", params)
+            LOG.debug("Converted parameters: %s", converted_params)
+
+            result = function(**converted_params)
     except Exception as e:
         if action_name == "delete" and check_not_found_exception(e, resource_type, resource):
             return
@@ -1023,7 +1037,7 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
     return result
 
 
-def get_action_name_for_resource_change(res_change):
+def get_action_name_for_resource_change(res_change: str) -> str:
     return {"Add": "CREATE", "Remove": "DELETE", "Modify": "UPDATE"}.get(res_change)
 
 
@@ -1057,8 +1071,6 @@ def determine_resource_physical_id(resource_id, stack=None, attribute=None):
         return resource_props.get("StageName")
     elif resource_type == "AppSync::DataSource":
         return resource_props.get("DataSourceArn")
-    elif resource_type == "KinesisFirehose::DeliveryStream":
-        return aws_stack.firehose_stream_arn(resource_props.get("DeliveryStreamName"))
     elif resource_type == "StepFunctions::StateMachine":
         return aws_stack.state_machine_arn(
             resource_props.get("StateMachineName")
@@ -1119,9 +1131,6 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == "ApiGateway::RestApi":
         resource_props["id"] = details["id"]
-
-    if resource_type == "KMS::Key":
-        resource["PhysicalResourceId"] = details["KeyMetadata"]["KeyId"]
 
     if resource_type == "EC2::Instance":
         if details and isinstance(details, list) and hasattr(details[0], "id"):
@@ -1202,7 +1211,6 @@ class TemplateDeployer:
             self.apply_changes(
                 self.stack,
                 self.stack,
-                stack_name=self.stack.stack_name,
                 initialize=True,
                 action="CREATE",
             )
@@ -1212,13 +1220,16 @@ class TemplateDeployer:
             raise
 
     def apply_change_set(self, change_set):
-        action = "CREATE"
+        action = "UPDATE" if change_set.stack.status == "CREATE_COMPLETE" else "CREATE"
         change_set.stack.set_stack_status(f"{action}_IN_PROGRESS")
+
+        # update attributes that the stack inherits from the changeset
+        change_set.stack.metadata["Capabilities"] = change_set.metadata.get("Capabilities")
+
         try:
             self.apply_changes(
                 change_set.stack,
                 change_set,
-                stack_name=change_set.stack_name,
                 action=action,
             )
         except Exception as e:
@@ -1232,7 +1243,7 @@ class TemplateDeployer:
     def update_stack(self, new_stack):
         self.stack.set_stack_status("UPDATE_IN_PROGRESS")
         # apply changes
-        self.apply_changes(self.stack, new_stack, stack_name=self.stack.stack_name, action="UPDATE")
+        self.apply_changes(self.stack, new_stack, action="UPDATE")
         self.stack.set_time_attribute("LastUpdatedTime")
 
     def delete_stack(self):
@@ -1336,7 +1347,7 @@ class TemplateDeployer:
         resources = resources or self.resources
         stack = stack or self.stack
         for resource_id, resource in resources.items():
-            stack.set_resource_status(resource_id, "%s_IN_PROGRESS" % action)
+            stack.set_resource_status(resource_id, f"{action}_IN_PROGRESS")
 
     def update_resource_details(self, resource_id, result, stack=None, action="CREATE"):
         stack = stack or self.stack
@@ -1353,22 +1364,27 @@ class TemplateDeployer:
                 resource["PhysicalResourceId"] = physical_id
 
         # set resource status
-        stack.set_resource_status(resource_id, "%s_COMPLETE" % action, physical_res_id=physical_id)
+        stack.set_resource_status(resource_id, f"{action}_COMPLETE", physical_res_id=physical_id)
 
         return physical_id
 
     def get_change_config(self, action, resource, change_set_id=None):
-        return {
+        result = {
             "Type": "Resource",
             "ResourceChange": {
                 "Action": action,
                 "LogicalResourceId": resource.get("LogicalResourceId"),
                 "PhysicalResourceId": resource.get("PhysicalResourceId"),
                 "ResourceType": resource.get("Type"),
-                "Replacement": "False",
-                "ChangeSetId": change_set_id,
+                # TODO ChangeSetId is only set for *nested* change sets
+                # "ChangeSetId": change_set_id,
+                "Scope": [],  # TODO
+                "Details": [],  # TODO
             },
         }
+        if action == "Modify":
+            result["ResourceChange"]["Replacement"] = "False"
+        return result
 
     def resource_config_differs(self, resource_new):
         """Return whether the given resource properties differ from the existing config (for stack updates)."""
@@ -1461,11 +1477,12 @@ class TemplateDeployer:
         #   Change Set Executions.
         old_stack.metadata["Parameters"] = [v for v in parameters.values() if v]
 
-    # TODO: fix circular import with cloudformation_api.py when importing Stack here
+    # TODO: fix circular import with provider.py when importing Stack here
     def construct_changes(
         self,
         existing_stack,
         new_stack,
+        # TODO: remove initialize argument from here, and determine action based on resource status
         initialize=False,
         change_set_id=None,
         append_to_changeset=False,
@@ -1477,7 +1494,9 @@ class TemplateDeployer:
         new_resources = new_stack.template["Resources"]
         deletes = [val for key, val in old_resources.items() if key not in new_resources]
         adds = [val for key, val in new_resources.items() if initialize or key not in old_resources]
-        modifies = [val for key, val in new_resources.items() if key in old_resources]
+        modifies = [
+            val for key, val in new_resources.items() if not initialize and key in old_resources
+        ]
 
         changes = []
         for action, items in (("Remove", deletes), ("Add", adds), ("Modify", modifies)):
@@ -1501,7 +1520,6 @@ class TemplateDeployer:
         self,
         existing_stack,
         new_stack,
-        stack_name,
         change_set_id=None,
         initialize=False,
         action=None,
@@ -1540,15 +1558,15 @@ class TemplateDeployer:
 
         # start deployment loop
         return self.apply_changes_in_loop(
-            changes, existing_stack, stack_name, action=action, new_stack=new_stack
+            changes, existing_stack, action=action, new_stack=new_stack
         )
 
-    def apply_changes_in_loop(self, changes, stack, stack_name, action=None, new_stack=None):
+    def apply_changes_in_loop(self, changes, stack, action=None, new_stack=None):
         from localstack.services.cloudformation.provider import StackChangeSet
 
         def _run(*args):
             try:
-                self.do_apply_changes_in_loop(changes, stack, stack_name)
+                self.do_apply_changes_in_loop(changes, stack)
                 status = f"{action}_COMPLETE"
             except Exception as e:
                 LOG.debug(
@@ -1569,7 +1587,7 @@ class TemplateDeployer:
         # run deployment in background loop, to avoid client network timeouts
         return start_worker_thread(_run)
 
-    def do_apply_changes_in_loop(self, changes, stack, stack_name: str):
+    def do_apply_changes_in_loop(self, changes, stack):
         # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
         changes_done = []
         max_iters = 30
@@ -1613,7 +1631,7 @@ class TemplateDeployer:
                         if not should_deploy:
                             del changes[j]
                             stack_action = get_action_name_for_resource_change(action)
-                            stack.set_resource_status(resource_id, "%s_COMPLETE" % stack_action)
+                            stack.set_resource_status(resource_id, f"{stack_action}_COMPLETE")
                             continue
                         if not self.all_resource_dependencies_satisfied(resource):
                             j += 1
@@ -1666,12 +1684,15 @@ class TemplateDeployer:
         resolve_refs_recursively(stack, resource)
 
         if action in ["Add", "Modify"]:
+            if action == "Add" and not self.is_deployable_resource(resource):
+                return False
             is_deployed = self.is_deployed(resource)
-            if action == "Modify" and not is_deployed:
-                action = res_change["Action"] = "Add"
-            if action == "Add":
-                if not self.is_deployable_resource(resource) or is_deployed:
-                    return False
+            # TODO: Attaching the cached _deployed info here, as we should not change the "Add"/"Modify" attribute
+            #  here, which is used further down the line to determine the resource action CREATE/UPDATE. This is a
+            #  temporary workaround for now - to be refactored once we introduce proper stack resource state models.
+            res_change["_deployed"] = is_deployed
+            if not is_deployed:
+                return True
             if action == "Modify" and not self.is_updateable(resource):
                 LOG.debug(
                     'Action "update" not yet implemented for CF resource type %s',
@@ -1692,12 +1713,13 @@ class TemplateDeployer:
         action = change_details["Action"]
         resource_id = change_details["LogicalResourceId"]
         resource = stack.resources[resource_id]
+        is_deployed = change_details.pop("_deployed", None)
         if not evaluate_resource_condition(stack, resource):
             return
 
         # execute resource action
         result = None
-        if action == "Add":
+        if action == "Add" or is_deployed is False:
             result = deploy_resource(self, resource_id)
         elif action == "Remove":
             result = delete_resource(self, resource_id)

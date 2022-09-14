@@ -9,7 +9,7 @@ from functools import lru_cache
 from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
-from localstack.aws.accounts import get_aws_account_id, get_ctx_aws_access_key_id
+from localstack.aws.accounts import get_aws_access_key_id, get_aws_account_id
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -212,39 +212,19 @@ def get_partition(region_name: str = None):
 def get_local_region():
     global LOCAL_REGION
     if LOCAL_REGION is None:
-        session = boto3.session.Session()
-        LOCAL_REGION = session.region_name or ""
+        LOCAL_REGION = get_boto3_region() or ""
     return config.DEFAULT_REGION or LOCAL_REGION
+
+
+def get_boto3_region() -> str:
+    """Return the region name, as determined from the environment when creating a new boto3 session"""
+    return boto3.session.Session().region_name
 
 
 def is_internal_call_context(headers):
     """Return whether we are executing in the context of an internal API call, i.e.,
     the case where one API uses a boto3 client to call another API internally."""
     return HEADER_LOCALSTACK_ACCOUNT_ID in headers.keys()
-
-
-def get_internal_credential():
-    return "Credential=%s/" % get_aws_account_id()
-
-
-def set_internal_auth(headers):
-    authorization = headers.get("Authorization") or ""
-    if authorization.startswith("AWS "):
-        # Cover Non HMAC Authentication
-        authorization = re.sub(
-            r"AWS [^/]+",
-            "AWS %s" % get_internal_credential(),
-            authorization,
-        )
-    else:
-        authorization = re.sub(
-            r"Credential=[^/]+/",
-            get_internal_credential(),
-            authorization,
-        )
-    headers["Authorization"] = authorization
-    headers[HEADER_LOCALSTACK_ACCOUNT_ID] = get_aws_account_id()
-    return headers
 
 
 def get_local_service_url(service_name_or_port: Union[str, int]) -> str:
@@ -439,22 +419,6 @@ def generate_presigned_url(*args, **kwargs):
     return s3_client.generate_presigned_url(*args, **kwargs)
 
 
-def check_valid_region(headers):
-    """Check whether a valid region is provided, and if not then raise an Exception."""
-    auth_header = headers.get("Authorization")
-    if not auth_header:
-        raise Exception('Unable to find "Authorization" header in request')
-    replaced = re.sub(r".*Credential=([^,]+),.*", r"\1", auth_header)
-    if auth_header == replaced:
-        raise Exception('Unable to find "Credential" section in "Authorization" header')
-    # Format is: <your-access-key-id>/<date>/<aws-region>/<aws-service>/aws4_request
-    # See https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html
-    parts = replaced.split("/")
-    region = parts[2]
-    if region not in get_valid_regions():
-        raise Exception(f'Invalid region specified in "Authorization" header: "{region}"')
-
-
 def set_default_region_in_headers(headers, service=None, region=None):
     # this should now be a no-op, as we support arbitrary regions and don't use a "default" region
     # TODO: remove this function once the legacy USE_SINGLE_REGION config is removed
@@ -589,6 +553,13 @@ def parse_arn(arn: str) -> ArnData:
     :raises InvalidArnException: if the arn is invalid
     """
     return _arn_parser.parse_arn(arn)
+
+
+def extract_account_id_from_arn(arn: str) -> Optional[str]:
+    try:
+        return parse_arn(arn).get("account")
+    except InvalidArnException:
+        return None
 
 
 def extract_region_from_arn(arn: str) -> Optional[str]:
@@ -901,7 +872,7 @@ def kinesis_stream_name(kinesis_arn):
 
 def mock_aws_request_headers(
     service="dynamodb", region_name=None, access_key=None, internal=False
-) -> dict[str, str]:
+) -> Dict[str, str]:
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
         ctype = APPLICATION_AMZ_JSON_1_1
@@ -911,7 +882,7 @@ def mock_aws_request_headers(
     # For S3 presigned URLs, we require that the client and server use the same
     # access key ID to sign requests. So try to use the access key ID for the
     # current request if available
-    access_key = access_key or get_ctx_aws_access_key_id() or TEST_AWS_ACCESS_KEY_ID
+    access_key = access_key or get_aws_access_key_id() or TEST_AWS_ACCESS_KEY_ID
     region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,
@@ -1313,5 +1284,17 @@ def get_route53_resolver_firewall_domain_list_arn(
     return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
 
 
+def get_route53_resolver_firewall_rule_group_associations_arn(
+    id: str, account_id: str = None, region_name: str = None
+):
+    pattern = "arn:aws:route53resolver:%s:%s:firewall-rule-group-association/%s"
+    return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)
+
+
 def get_trace_id():
     return f"1-{get_random_hex(8)}-{get_random_hex(24)}"
+
+
+def get_resolver_query_log_config_arn(id: str, account_id: str = None, region_name: str = None):
+    pattern = "arn:aws:route53resolver:%s:%s:resolver-query-log-config/%s"
+    return _resource_arn(id, pattern, account_id=account_id, region_name=region_name)

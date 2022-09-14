@@ -8,11 +8,10 @@ from typing import Dict, Final, Optional, Union
 
 from moto.awslambda.models import LambdaFunction
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
-from moto.secretsmanager import models as secretsmanager_models
-from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend, secretsmanager_backends
+from moto.secretsmanager import utils as secretsmanager_utils
+from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
 from moto.secretsmanager.responses import SecretsManagerResponse
 
-from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceResponse, handler
 from localstack.aws.api.secretsmanager import (
     CancelRotateSecretRequest,
@@ -70,6 +69,11 @@ from localstack.utils.time import today_no_time
 AWSPREVIOUS: Final[str] = "AWSPREVIOUS"
 AWSPENDING: Final[str] = "AWSPENDING"
 AWSCURRENT: Final[str] = "AWSCURRENT"
+#
+# Error Messages.
+AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[
+    str
+] = "You can't create this secret because a secret with this name is already scheduled for deletion."
 
 LOG = logging.getLogger(__name__)
 
@@ -163,8 +167,11 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def delete_secret(
         self, context: RequestContext, request: DeleteSecretRequest
     ) -> DeleteSecretResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return self._call_moto_with_request_secret_id(context, request)
+        secret_id: str = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        res = self._call_moto_with_request_secret_id(context, request)
+        delete_arn_binding_for(context.region, secret_id)
+        return res
 
     @handler("DescribeSecret", expand=False)
     def describe_secret(
@@ -338,6 +345,18 @@ def moto_smb_get_secret_value(fn, self, secret_id, version_id, version_stage):
     return res
 
 
+@patch(SecretsManagerBackend.create_secret)
+def moto_smb_create_secret(fn, self, name, *args, **kwargs):
+
+    # Creating a secret with a SecretId equal to one that is scheduled for
+    # deletion should raise an 'InvalidRequestException'.
+    secret: Optional[FakeSecret] = self.secrets.get(name, None)
+    if secret is not None and secret.deleted_date is not None:
+        raise InvalidRequestException(AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION)
+
+    return fn(self, name, *args, **kwargs)
+
+
 @patch(FakeSecret.to_dict)
 def fake_secret_to_dict(fn, self):
     res_dict = fn(self)
@@ -381,7 +400,7 @@ def response_update_secret(_, self):
     secret_binary = self._get_param("SecretBinary")
     client_request_token = self._get_param("ClientRequestToken")
     kms_key_id = self._get_param("KmsKeyId")
-    return secretsmanager_backends[self.region].update_secret(
+    return self.backend.update_secret(
         secret_id=secret_id,
         description=description,
         secret_string=secret_string,
@@ -452,7 +471,7 @@ def backend_rotate_secret(
     rotation_days = "AutomaticallyAfterDays"
 
     if not self._is_valid_identifier(secret_id):
-        raise SecretNotFoundException()
+        raise SecretNotFoundException(f"Unable to find secret '{secret_id}'")
 
     if self.secrets[secret_id].is_deleted():
         raise InvalidRequestException(
@@ -474,11 +493,11 @@ def backend_rotate_secret(
 
     rotation_func = None
     try:
-        lm_client = aws_stack.connect_to_service("lambda", region_name=self.region)
+        lm_client = aws_stack.connect_to_service("lambda", region_name=self.region_name)
         get_func_res = lm_client.get_function(FunctionName=rotation_lambda_arn)
         lm_spec = get_func_res["Configuration"]
         lm_spec["Code"] = {"ZipFile": str(short_uid())}
-        rotation_func = LambdaFunction(lm_spec, self.region)
+        rotation_func = LambdaFunction(self.account_id, lm_spec, self.region_name)
     except Exception:
         # Fall through to ResourceNotFoundException.
         pass
@@ -556,15 +575,25 @@ def backend_rotate_secret(
     return secret.to_short_dict()
 
 
-def secretsmanager_models_secret_arn(region, secret_id):
-    k = f"{region}_{secret_id}"
+def get_arn_binding_key_for(region: str, secret_id: str) -> str:
+    return f"{region}_{secret_id}"
+
+
+def get_arn_binding_for(account_id, region, secret_id):
+    k = get_arn_binding_key_for(region, secret_id)
     if k not in SECRET_ARN_STORAGE:
         id_string = short_uid()[:6]
         arn = aws_stack.secretsmanager_secret_arn(
-            secret_id, account_id=get_aws_account_id(), region_name=region, random_suffix=id_string
+            secret_id, account_id=account_id, region_name=region, random_suffix=id_string
         )
         SECRET_ARN_STORAGE[k] = arn
     return SECRET_ARN_STORAGE[k]
+
+
+def delete_arn_binding_for(region: str, secret_id: str) -> None:
+    k = get_arn_binding_key_for(region, secret_id)
+    if k in SECRET_ARN_STORAGE:
+        del SECRET_ARN_STORAGE[k]
 
 
 # patching resource policy in moto
@@ -584,7 +613,7 @@ def get_resource_policy_model(self, secret_id):
 
 def get_resource_policy_response(self):
     secret_id = self._get_param("SecretId")
-    return secretsmanager_backends[self.region].get_resource_policy(secret_id=secret_id)
+    return self.backend.get_resource_policy(secret_id=secret_id)
 
 
 def delete_resource_policy_model(self, secret_id):
@@ -602,7 +631,7 @@ def delete_resource_policy_model(self, secret_id):
 
 def delete_resource_policy_response(self):
     secret_id = self._get_param("SecretId")
-    return secretsmanager_backends[self.region].delete_resource_policy(secret_id=secret_id)
+    return self.backend.delete_resource_policy(secret_id=secret_id)
 
 
 def put_resource_policy_model(self, secret_id, resource_policy):
@@ -624,13 +653,13 @@ def put_resource_policy_model(self, secret_id, resource_policy):
 def put_resource_policy_response(self):
     secret_id = self._get_param("SecretId")
     resource_policy = self._get_param("ResourcePolicy")
-    return secretsmanager_backends[self.region].put_resource_policy(
+    return self.backend.put_resource_policy(
         secret_id=secret_id, resource_policy=json.loads(resource_policy)
     )
 
 
 def apply_patches():
-    secretsmanager_models.secret_arn = secretsmanager_models_secret_arn
+    secretsmanager_utils.secret_arn = get_arn_binding_for
     setattr(SecretsManagerBackend, "get_resource_policy", get_resource_policy_model)
     setattr(SecretsManagerResponse, "get_resource_policy", get_resource_policy_response)
 

@@ -78,224 +78,192 @@ class AuthorizationErrorException(ServiceException):
     code: str = "AuthorizationError"
     sender_fault: bool = True
     status_code: int = 403
-    message: Optional[string]
 
 
 class BatchEntryIdsNotDistinctException(ServiceException):
     code: str = "BatchEntryIdsNotDistinct"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class BatchRequestTooLongException(ServiceException):
     code: str = "BatchRequestTooLong"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class ConcurrentAccessException(ServiceException):
     code: str = "ConcurrentAccess"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class EmptyBatchRequestException(ServiceException):
     code: str = "EmptyBatchRequest"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class EndpointDisabledException(ServiceException):
     code: str = "EndpointDisabled"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class FilterPolicyLimitExceededException(ServiceException):
     code: str = "FilterPolicyLimitExceeded"
     sender_fault: bool = True
     status_code: int = 403
-    message: Optional[string]
 
 
 class InternalErrorException(ServiceException):
     code: str = "InternalError"
     sender_fault: bool = False
     status_code: int = 500
-    message: Optional[string]
 
 
 class InvalidBatchEntryIdException(ServiceException):
     code: str = "InvalidBatchEntryId"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class InvalidParameterException(ServiceException):
     code: str = "InvalidParameter"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class InvalidParameterValueException(ServiceException):
     code: str = "ParameterValueInvalid"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class InvalidSecurityException(ServiceException):
     code: str = "InvalidSecurity"
     sender_fault: bool = True
     status_code: int = 403
-    message: Optional[string]
 
 
 class KMSAccessDeniedException(ServiceException):
     code: str = "KMSAccessDenied"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class KMSDisabledException(ServiceException):
     code: str = "KMSDisabled"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class KMSInvalidStateException(ServiceException):
     code: str = "KMSInvalidState"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class KMSNotFoundException(ServiceException):
     code: str = "KMSNotFound"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class KMSOptInRequired(ServiceException):
     code: str = "KMSOptInRequired"
     sender_fault: bool = True
     status_code: int = 403
-    message: Optional[string]
 
 
 class KMSThrottlingException(ServiceException):
     code: str = "KMSThrottling"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class NotFoundException(ServiceException):
     code: str = "NotFound"
     sender_fault: bool = True
     status_code: int = 404
-    message: Optional[string]
 
 
 class OptedOutException(ServiceException):
     code: str = "OptedOut"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class PlatformApplicationDisabledException(ServiceException):
     code: str = "PlatformApplicationDisabled"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFound"
     sender_fault: bool = True
     status_code: int = 404
-    message: Optional[string]
 
 
 class StaleTagException(ServiceException):
     code: str = "StaleTag"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class SubscriptionLimitExceededException(ServiceException):
     code: str = "SubscriptionLimitExceeded"
     sender_fault: bool = True
     status_code: int = 403
-    message: Optional[string]
 
 
 class TagLimitExceededException(ServiceException):
     code: str = "TagLimitExceeded"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class TagPolicyException(ServiceException):
     code: str = "TagPolicy"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class ThrottledException(ServiceException):
     code: str = "Throttled"
     sender_fault: bool = True
     status_code: int = 429
-    message: Optional[string]
 
 
 class TooManyEntriesInBatchRequestException(ServiceException):
     code: str = "TooManyEntriesInBatchRequest"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class TopicLimitExceededException(ServiceException):
     code: str = "TopicLimitExceeded"
     sender_fault: bool = True
     status_code: int = 403
-    message: Optional[string]
 
 
 class UserErrorException(ServiceException):
     code: str = "UserError"
     sender_fault: bool = True
     status_code: int = 400
-    message: Optional[string]
 
 
 class ValidationException(ServiceException):
     code: str = "ValidationException"
     sender_fault: bool = True
     status_code: int = 400
-    Message: string
 
 
 class VerificationException(ServiceException):
     code: str = "VerificationException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: string
     Status: string
 
 
@@ -385,6 +353,7 @@ class CreateTopicInput(ServiceRequest):
     Name: topicName
     Attributes: Optional[TopicAttributesMap]
     Tags: Optional[TagList]
+    DataProtectionPolicy: Optional[attributeValue]
 
 
 class CreateTopicResponse(TypedDict, total=False):
@@ -414,6 +383,14 @@ class DeleteTopicInput(ServiceRequest):
 class Endpoint(TypedDict, total=False):
     EndpointArn: Optional[String]
     Attributes: Optional[MapStringToString]
+
+
+class GetDataProtectionPolicyInput(ServiceRequest):
+    ResourceArn: topicARN
+
+
+class GetDataProtectionPolicyResponse(TypedDict, total=False):
+    DataProtectionPolicy: Optional[attributeValue]
 
 
 class GetEndpointAttributesInput(ServiceRequest):
@@ -676,6 +653,11 @@ class PublishResponse(TypedDict, total=False):
     SequenceNumber: Optional[String]
 
 
+class PutDataProtectionPolicyInput(ServiceRequest):
+    ResourceArn: topicARN
+    DataProtectionPolicy: attributeValue
+
+
 class RemovePermissionInput(ServiceRequest):
     TopicArn: topicARN
     Label: label
@@ -822,6 +804,7 @@ class SnsApi:
         name: topicName,
         attributes: TopicAttributesMap = None,
         tags: TagList = None,
+        data_protection_policy: attributeValue = None,
     ) -> CreateTopicResponse:
         raise NotImplementedError
 
@@ -843,6 +826,12 @@ class SnsApi:
 
     @handler("DeleteTopic")
     def delete_topic(self, context: RequestContext, topic_arn: topicARN) -> None:
+        raise NotImplementedError
+
+    @handler("GetDataProtectionPolicy")
+    def get_data_protection_policy(
+        self, context: RequestContext, resource_arn: topicARN
+    ) -> GetDataProtectionPolicyResponse:
         raise NotImplementedError
 
     @handler("GetEndpointAttributes")
@@ -968,6 +957,15 @@ class SnsApi:
         topic_arn: topicARN,
         publish_batch_request_entries: PublishBatchRequestEntryList,
     ) -> PublishBatchResponse:
+        raise NotImplementedError
+
+    @handler("PutDataProtectionPolicy")
+    def put_data_protection_policy(
+        self,
+        context: RequestContext,
+        resource_arn: topicARN,
+        data_protection_policy: attributeValue,
+    ) -> None:
         raise NotImplementedError
 
     @handler("RemovePermission")

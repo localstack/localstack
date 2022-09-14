@@ -26,7 +26,7 @@ def test_lifecycle_public_access_block():
         AccountId=get_aws_account_id(), PublicAccessBlockConfiguration=access_block_config
     )
 
-    assert put_response["ResponseMetadata"]["HTTPStatusCode"] == 201
+    assert put_response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     get_response = s3control_client.get_public_access_block(AccountId=get_aws_account_id())
     assert access_block_config == get_response["PublicAccessBlockConfiguration"]

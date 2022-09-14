@@ -73,7 +73,7 @@ resources:
       Type: AWS::Kinesis::StreamConsumer
       Properties:
         ConsumerName: stream-consumer1
-        StreamARN: !Ref KinesisStream
+        StreamARN: !GetAtt 'KinesisStream.Arn'
 
     # DynamoDB configuration
     loginsTable:
@@ -139,8 +139,10 @@ functions:
       - cloudwatchEvent:
           name: sls-test-cf-event
           event:
-            source: aws.cloudformation
-            detail-type: AWS API Call from CloudFormation
+            source:
+              - aws.cloudformation
+            detail-type:
+              - "AWS API Call from CloudFormation"
             detail:
               eventName:
                 - CreateStack
@@ -220,4 +222,5 @@ plugins:
 
 custom:
   localstack:
+    host: http://localhost.localstack.cloud
     stages: local

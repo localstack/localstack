@@ -4,12 +4,12 @@ import os
 import re
 import time
 import unittest
-
-import mock
+from unittest import mock
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
+from localstack.services.awslambda.lambda_api import get_lambda_policy_name
 from localstack.services.awslambda.lambda_executors import OutputLog
 from localstack.services.awslambda.lambda_utils import API_PATH_ROOT
 from localstack.utils.aws import aws_stack
@@ -342,7 +342,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_create_disabled_event_source_mapping(self):
         createResponse = self.client.post(
-            "{0}/event-source-mappings/".format(API_PATH_ROOT),
+            f"{API_PATH_ROOT}/event-source-mappings/",
             data=json.dumps(
                 {
                     "FunctionName": "test-lambda-function",
@@ -970,7 +970,7 @@ class TestLambdaAPI(unittest.TestCase):
     def test_get_java_lib_folder_classpath(self):
         jar_file = os.path.join(new_tmp_dir(), "foo.jar")
         save_file(jar_file, "")
-        classpath = lambda_executors.Util.get_java_classpath(jar_file)
+        classpath = lambda_executors.Util.get_java_classpath(os.path.dirname(jar_file))
         self.assertIn(".:foo.jar", classpath)
         self.assertIn("*.jar", classpath)
 
@@ -981,13 +981,13 @@ class TestLambdaAPI(unittest.TestCase):
         lib_file = os.path.join(base_dir, "lib", "lib.jar")
         mkdir(os.path.dirname(lib_file))
         save_file(lib_file, "")
-        classpath = lambda_executors.Util.get_java_classpath(jar_file)
+        classpath = lambda_executors.Util.get_java_classpath(os.path.dirname(jar_file))
         self.assertIn(":foo.jar", classpath)
         self.assertIn("lib/lib.jar:", classpath)
         self.assertIn(":*.jar", classpath)
 
     def test_get_java_lib_folder_classpath_archive_is_None(self):
-        self.assertRaises(TypeError, lambda_executors.Util.get_java_classpath, None)
+        self.assertRaises(ValueError, lambda_executors.Util.get_java_classpath, None)
 
     @mock.patch("localstack.utils.cloudwatch.cloudwatch_util.store_cloudwatch_logs")
     def test_executor_store_logs_can_handle_milliseconds(self, mock_store_cloudwatch_logs):
@@ -1026,6 +1026,7 @@ class TestLambdaAPI(unittest.TestCase):
         region.lambdas[arn].last_modified = self.LAST_MODIFIED
         region.lambdas[arn].role = self.ROLE
         region.lambdas[arn].memory_size = self.MEMORY_SIZE
+        region.lambdas[arn].state = "Active"
 
     def _update_function_code(self, function_name, tags=None):
         if tags is None:
@@ -1130,3 +1131,12 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
         self.assertEqual(self.RETRY_ATTEMPTS, response["MaximumRetryAttempts"])
         self.assertEqual(self.EVENT_AGE, response["MaximumEventAgeInSeconds"])
         self.assertEqual(self.DL_QUEUE, response["DestinationConfig"]["OnFailure"]["Destination"])
+
+
+class TestLambdaUtils:
+    def test_lambda_policy_name(self):
+        func_name = "lambda1"
+        policy_name1 = get_lambda_policy_name(func_name)
+        policy_name2 = get_lambda_policy_name(lambda_api.func_arn(func_name))
+        assert func_name in policy_name1
+        assert policy_name1 == policy_name2

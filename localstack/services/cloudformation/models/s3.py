@@ -37,7 +37,8 @@ class S3BucketPolicy(GenericBaseModel):
             "create": {
                 "function": "put_bucket_policy",
                 "parameters": rename_params(
-                    dump_json_params(None, "PolicyDocument"), {"PolicyDocument": "Policy"}
+                    dump_json_params(None, "PolicyDocument"),
+                    {"PolicyDocument": "Policy", "Bucket": "Bucket"},
                 ),
             },
             "delete": {"function": "delete_bucket_policy", "parameters": {"Bucket": "Bucket"}},
@@ -163,11 +164,15 @@ class S3Bucket(GenericBaseModel):
             except ClientError as e:
                 if e.response["Error"]["Message"] == "Not Found":
                     bucket_name = props.get("BucketName")
-                    s3_client.create_bucket(
-                        Bucket=bucket_name,
-                        ACL=convert_acl_cf_to_s3(props.get("AccessControl", "PublicRead")),
-                        CreateBucketConfiguration={"LocationConstraint": aws_stack.get_region()},
-                    )
+                    params = {
+                        "Bucket": bucket_name,
+                        "ACL": convert_acl_cf_to_s3(props.get("AccessControl", "PublicRead")),
+                    }
+                    if aws_stack.get_region() != "us-east-1":
+                        params["CreateBucketConfiguration"] = {
+                            "LocationConstraint": aws_stack.get_region()
+                        }
+                    s3_client.create_bucket(**params)
 
         result = {
             "create": [

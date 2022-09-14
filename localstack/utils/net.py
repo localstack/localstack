@@ -6,9 +6,9 @@ from contextlib import closing
 from typing import List, Optional, Union
 from urllib.parse import urlparse
 
-import cachetools
 import dns.resolver
 
+from .collections import CustomExpiryTTLCache
 from .numbers import is_number
 from .sync import retry
 
@@ -193,12 +193,12 @@ class PortRange:
 
     def __init__(self, start: int, end: int):
         # cache for locally available ports (ports are reserved for a short period of a few seconds)
-        self._PORTS_CACHE = cachetools.TTLCache(maxsize=100, ttl=6)
-        self._PORTS_LOCK = threading.RLock()
+        self._ports_cache = CustomExpiryTTLCache(maxsize=100, ttl=6)
+        self._ports_lock = threading.RLock()
         self.start = start
         self.end = end
 
-    def reserve_port(self, port: int = None) -> int:
+    def reserve_port(self, port: int = None, duration: int = None) -> int:
         """
         Reserves the given port (if it is still free). If the given port is None, it reserves a free port from the
         configured port range for external services. If a port is given, it has to be within the configured
@@ -213,26 +213,28 @@ class PortRange:
             raise PortNotAvailableException(
                 f"The requested port ({port}) is not in the port range ({ports_range})."
             )
-        with self._PORTS_LOCK:
+        with self._ports_lock:
             if port is not None:
-                return self._check_port(port)
+                return self._try_reserve_port(port, duration=duration)
             else:
                 for port_in_range in ports_range:
                     try:
-                        return self._check_port(port_in_range)
+                        return self._try_reserve_port(port_in_range, duration=duration)
                     except PortNotAvailableException:
                         # We ignore the fact that this single port is reserved, we just check the next one
                         pass
         raise PortNotAvailableException(
             "No free network ports available in the port range (currently reserved: %s)",
-            list(self._PORTS_CACHE.keys()),
+            list(self._ports_cache.keys()),
         )
 
-    def _check_port(self, port: int) -> int:
+    def _try_reserve_port(self, port: int, duration: int) -> int:
         """Checks if the given port is currently not reserved and can be bound."""
-        if not self._PORTS_CACHE.get(port) and port_can_be_bound(port):
+        if not self._ports_cache.get(port) and port_can_be_bound(port):
             # reserve the port for a short period of time
-            self._PORTS_CACHE[port] = "__reserved__"
+            self._ports_cache[port] = "__reserved__"
+            if duration:
+                self._ports_cache.set_expiry(port, duration)
             return port
         else:
             raise PortNotAvailableException(f"The given port ({port}) is already reserved.")

@@ -29,7 +29,7 @@ LOCALHOST_IP = "127.0.0.1"
 LOCALHOST_HOSTNAME = "localhost.localstack.cloud"
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = "0.2.19"
+LOCALSTACK_MAVEN_VERSION = "0.2.21"
 MAVEN_REPO_URL = "https://repo1.maven.org/maven2"
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
@@ -38,14 +38,16 @@ DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
 
+# Fallback Account ID if not available in the client request
+DEFAULT_AWS_ACCOUNT_ID = "000000000000"
+
 # AWS user account ID used for tests - TODO move to config.py
 if "TEST_AWS_ACCOUNT_ID" not in os.environ:
-    os.environ["TEST_AWS_ACCOUNT_ID"] = "000000000000"
+    os.environ["TEST_AWS_ACCOUNT_ID"] = DEFAULT_AWS_ACCOUNT_ID
 
-# WARNING:
-# Do not use this constant to access the Account ID.
-# Use `localstack.aws.accounts.get_aws_account_id()` instead.
-_TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
+# Values used by tests
+TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
+TEST_AWS_REGION_NAME = "us-west-2"
 
 # root code folder
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -90,6 +92,7 @@ ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
 
 # content types / encodings
 HEADER_CONTENT_TYPE = "Content-Type"
+TEXT_XML = "text/xml"
 APPLICATION_AMZ_JSON_1_0 = "application/x-amz-json-1.0"
 APPLICATION_AMZ_JSON_1_1 = "application/x-amz-json-1.1"
 APPLICATION_AMZ_CBOR_1_1 = "application/x-amz-cbor-1.1"
@@ -133,9 +136,6 @@ OPENSEARCH_PLUGIN_LIST = [
 
 ELASTICMQ_JAR_URL = (
     "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar"
-)
-STS_JAR_URL = (
-    f"{MAVEN_REPO_URL}/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar"
 )
 STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip"
 KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"

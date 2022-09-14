@@ -173,9 +173,8 @@ class TestFirehoseIntegration:
 
             # create kinesis stream
             kinesis_create_stream(StreamName=stream_name, ShardCount=2)
-            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)[
-                "StreamDescription"
-            ]["StreamARN"]
+            stream_info = kinesis_client.describe_stream(StreamName=stream_name)
+            stream_arn = stream_info["StreamDescription"]["StreamARN"]
 
             kinesis_stream_source_def = {
                 "KinesisStreamARN": stream_arn,
@@ -199,12 +198,19 @@ class TestFirehoseIntegration:
                 ElasticsearchDestinationConfiguration=elasticsearch_destination_configuration,
             )
 
+            # wait for delivery stream to be ready
+            def check_stream_state():
+                stream = firehose_client.describe_delivery_stream(
+                    DeliveryStreamName=delivery_stream_name
+                )
+                return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
+
+            assert poll_condition(check_stream_state, 45, 1)
+
             # wait for ES cluster to be ready
             def check_domain_state():
-                result = es_client.describe_elasticsearch_domain(DomainName=domain_name)[
-                    "DomainStatus"
-                ]["Processing"]
-                return not result
+                result = es_client.describe_elasticsearch_domain(DomainName=domain_name)
+                return not result["DomainStatus"]["Processing"]
 
             assert poll_condition(check_domain_state, 30, 1)
 
@@ -305,6 +311,15 @@ class TestFirehoseIntegration:
                 AmazonopensearchserviceDestinationConfiguration=opensearch_destination_configuration,
             )
 
+            # wait for delivery stream to be ready
+            def check_stream_state():
+                stream = firehose_client.describe_delivery_stream(
+                    DeliveryStreamName=delivery_stream_name
+                )
+                return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
+
+            assert poll_condition(check_stream_state, 30, 1)
+
             # wait for opensearch cluster to be ready
             def check_domain_state():
                 result = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"][
@@ -364,6 +379,7 @@ class TestFirehoseIntegration:
         s3_client,
         s3_bucket,
         kinesis_create_stream,
+        cleanups,
     ):
 
         bucket_arn = aws_stack.s3_bucket_arn(s3_bucket)
@@ -414,9 +430,16 @@ class TestFirehoseIntegration:
                 },
             },
         )
-
+        cleanups.append(
+            lambda: firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+        )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
-        kinesis_client.delete_stream(StreamName=stream_name)
-        s3_client.delete_bucket(Bucket=s3_bucket)
+        # make sure the stream will come up at some point, for cleaner cleanup
+        def check_stream_state():
+            stream = firehose_client.describe_delivery_stream(
+                DeliveryStreamName=delivery_stream_name
+            )
+            return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
+
+        assert poll_condition(check_stream_state, 45, 1)

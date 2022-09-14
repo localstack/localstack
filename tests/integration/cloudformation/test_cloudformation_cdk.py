@@ -50,7 +50,9 @@ class TestCdkInit:
                 requests.request(method=op["method"], url=url, headers=headers, data=data)
                 if "Action=ExecuteChangeSet" in data:
                     assert wait_until(
-                        is_change_set_finished(change_set_name), _max_wait=20, strategy="linear"
+                        is_change_set_finished(change_set_name, stack_name=stack_name),
+                        _max_wait=20,
+                        strategy="linear",
                     )
         finally:
             # clean up

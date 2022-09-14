@@ -5,12 +5,16 @@ import random
 import re
 import time
 import traceback
+from binascii import crc32
+from contextlib import contextmanager
 from typing import Dict, List
 
 import requests
 import werkzeug
 
 from localstack import config, constants
+from localstack.aws import handlers
+from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import (
     CommonServiceException,
     RequestContext,
@@ -86,14 +90,13 @@ from localstack.aws.forwarder import HttpFallbackDispatcher, get_request_forward
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import LOCALHOST
 from localstack.http import Response
-from localstack.services.awslambda import lambda_api
 from localstack.services.dynamodb import server
+from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
 from localstack.services.dynamodb.server import start_dynamodb, wait_for_dynamodb
 from localstack.services.dynamodb.utils import (
     ItemFinder,
     ItemSet,
     SchemaExtractor,
-    calculate_crc32,
     extract_table_name_from_partiql_update,
 )
 from localstack.services.dynamodbstreams import dynamodbstreams_api
@@ -101,14 +104,11 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     get_and_increment_sequence_number_counter,
 )
 from localstack.services.edge import ROUTER
-from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import short_uid, to_bytes
-from localstack.utils.json import BytesEncoder
+from localstack.utils.json import BytesEncoder, canonical_json
 from localstack.utils.strings import long_uid, to_str
 from localstack.utils.threads import start_worker_thread
 
@@ -138,24 +138,6 @@ THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 MANAGED_KMS_KEYS = {}
 
 
-class DynamoDBRegion(RegionBackend):
-    # maps global table names to configurations
-    GLOBAL_TABLES: Dict[str, Dict] = {}
-    # cache table taggings - maps table ARN to tags dict
-    TABLE_TAGS: Dict[str, Dict] = {}
-    # maps table names to cached table definitions
-    table_definitions: Dict[str, Dict]
-    # maps table names to additional table properties that are not stored upstream (e.g., ReplicaUpdates)
-    table_properties: Dict[str, Dict]
-    # maps table names to TTL specifications
-    ttl_specifications: Dict[str, Dict]
-
-    def __init__(self):
-        self.table_definitions = {}
-        self.table_properties = {}
-        self.ttl_specifications = {}
-
-
 class EventForwarder:
     @classmethod
     def forward_to_targets(cls, records: List[Dict], background: bool = True):
@@ -180,7 +162,7 @@ class EventForwarder:
     @staticmethod
     def forward_to_kinesis_stream(records):
         kinesis = aws_stack.connect_to_service("kinesis")
-        table_definitions = DynamoDBRegion.get().table_definitions
+        table_definitions = get_store().table_definitions
         for record in records:
             event_source_arn = record.get("eventSourceARN")
             if not event_source_arn:
@@ -280,30 +262,62 @@ class ValidationException(CommonServiceException):
 
 class DynamoDBApiListener(AwsApiListener):
     def __init__(self, provider=None):
+        # TODO: remove once localstack-ext is refactored
         provider = provider or DynamoDBProvider()
         self.provider = provider
         super().__init__("dynamodb", HttpFallbackDispatcher(provider, provider.get_forward_url))
 
-    def return_response(self, method, path, data, headers, response):
-        if response._content:
-            response_content = to_str(response._content)
-            # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
-            content_replaced = re.sub(
-                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:([a-z-]+):dynamodb:ddblocal:([^"]+)"',
-                rf'\1: "arn:\2:dynamodb:{aws_stack.get_region()}:\3"',
-                response_content,
-            )
-            if content_replaced != response_content:
-                response._content = content_replaced
 
-        # set x-amz-crc32 headers required by some client
-        fix_headers_for_updated_response(response)
+def get_store(context: RequestContext | None = None) -> DynamoDBStore:
+    # todo: create an explicit protocol for to retrieve stores for each provider
+    _account_id: str = context.account_id if context else get_aws_account_id()
+    _region: str = context.region if context else aws_stack.get_region()
+    # special case: AWS NoSQL Workbench sends "localhost" as region - replace with proper region here
+    if _region == "localhost":
+        _region = aws_stack.get_local_region()
+    return dynamodb_stores[_account_id][_region]
 
-        # update table definitions
-        data = json.loads(to_str(data))
-        if data and "TableName" in data and "KeySchema" in data:
-            table_definitions = DynamoDBRegion.get().table_definitions
-            table_definitions[data["TableName"]] = data
+
+def find_global_table_region(table_name: str, target_region: str | None = None) -> str | None:
+    """
+    Check if the table is a Version 2019.11.21 table.
+    :param target_region: the region we are looking for
+    :param table_name: the name of the table
+    :return: the original region; `None` if this is not a global table
+    """
+    replicas = get_store().REPLICA_UPDATES.get(table_name)
+    if not replicas:
+        return None
+    original_region = list(replicas.keys())[0]
+    return original_region if target_region in replicas[original_region] else None
+
+
+@contextmanager
+def modify_context_region(context: RequestContext, region: str):
+    """
+    Context manager that modifies the region of a `RequestContext`. At the exit, the context is restored to its
+    original state.
+
+    :param context: the context to modify
+    :param region: the modified region
+    :return: a modified `RequestContext`
+    """
+    original_region = context.region
+    original_authorization = context.request.headers.get("Authorization")
+
+    context.region = region
+    context.request.headers["Authorization"] = re.sub(
+        r"Credential=([^/]+/[^/]+)/(.*?)/",
+        rf"Credential=\1/{region}/",
+        original_authorization or "",
+        flags=re.IGNORECASE,
+    )
+
+    yield context
+
+    # revert the original context
+    context.region = original_region
+    context.request.headers["Authorization"] = original_authorization
 
 
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
@@ -311,6 +325,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self.request_forwarder = get_request_forwarder_http(self.get_forward_url)
 
     def on_after_init(self):
+        # add response processor specific to ddblocal
+        handlers.modify_service_response.append(self.service, self._modify_ddblocal_arns)
+
+        # routes for the shell ui
         ROUTER.add(
             path="/shell",
             endpoint=self.handle_shell_ui_redirect,
@@ -321,12 +339,29 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             endpoint=self.handle_shell_ui_request,
         )
 
+    def _modify_ddblocal_arns(self, chain, context: RequestContext, response: Response):
+        """A service response handler that modifies the dynamodb backend response."""
+        if response_content := response.get_data(as_text=True):
+            # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
+            content_replaced = re.sub(
+                r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:([a-z-]+):dynamodb:ddblocal:([^"]+)"',
+                rf'\1: "arn:\2:dynamodb:{aws_stack.get_region()}:\3"',
+                response_content,
+            )
+            if content_replaced != response_content:
+                response.data = content_replaced
+                context.service_response = (
+                    None  # make sure the service response is parsed again later
+                )
+
+        # update x-amz-crc32 header required by some clients
+        response.headers["x-amz-crc32"] = crc32(response.data) & 0xFFFFFFFF
+
     def forward_request(
         self, context: RequestContext, service_request: ServiceRequest = None
     ) -> ServiceResponse:
         # check rate limiting for this request and raise an error, if provisioned throughput is exceeded
         self.check_provisioned_throughput(context.operation.name)
-
         # note: modifying headers in-place here before forwarding the request
         self.prepare_request_headers(context.request.headers)
         return self.request_forwarder(context, service_request)
@@ -377,7 +412,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result = self.forward_request(context)
         table_description = result["TableDescription"]
 
-        backend = DynamoDBRegion.get()
+        backend = get_store(context)
         backend.table_definitions[table_name] = table_definitions = dict(create_table_input)
 
         if "TableId" not in table_definitions:
@@ -405,16 +440,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if tags:
             table_arn = table_description["TableArn"]
             table_arn = self.fix_table_arn(table_arn)
-            DynamoDBRegion.TABLE_TAGS[table_arn] = {tag["Key"]: tag["Value"] for tag in tags}
+            get_store(context).TABLE_TAGS[table_arn] = {tag["Key"]: tag["Value"] for tag in tags}
 
         # remove invalid attributes from result
         table_description.pop("Tags", None)
         table_description.pop("BillingMode", None)
-
-        event_publisher.fire_event(
-            event_publisher.EVENT_DYNAMODB_CREATE_TABLE,
-            payload={"n": event_publisher.get_hash(table_name)},
-        )
 
         return result
 
@@ -426,33 +456,44 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # forward request to backend
         result = self.forward_request(context)
 
-        event_publisher.fire_event(
-            event_publisher.EVENT_DYNAMODB_DELETE_TABLE,
-            payload={"n": event_publisher.get_hash(table_name)},
-        )
         table_arn = result.get("TableDescription", {}).get("TableArn")
         table_arn = self.fix_table_arn(table_arn)
         self.delete_all_event_source_mappings(table_arn)
         dynamodbstreams_api.delete_streams(table_arn)
-        DynamoDBRegion.TABLE_TAGS.pop(table_arn, None)
+        get_store(context).TABLE_TAGS.pop(table_arn, None)
 
         return result
 
+    def _forward_request(self, context: RequestContext, region: str | None) -> ServiceResponse:
+        if region:
+            with modify_context_region(context, region):
+                return self.forward_request(context)
+        return self.forward_request(context)
+
     def describe_table(self, context: RequestContext, table_name: TableName) -> DescribeTableOutput:
+        global_table_region: str | None = find_global_table_region(
+            table_name=table_name, target_region=context.region
+        )
         # Check if table exists, to avoid error log output from DynamoDBLocal
-        if not self.table_exists(table_name):
+        if not self.table_exists(table_name) and not global_table_region:
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
-        # forward request to backend
-        result = self.forward_request(context)
+        result = self._forward_request(context=context, region=global_table_region)
 
         # update response with additional props
-        table_props = DynamoDBRegion.get().table_properties.get(table_name)
+        table_props = get_store(context).table_properties.get(table_name)
         if table_props:
             result.get("Table", {}).update(table_props)
 
+        replicas: Dict = get_store().REPLICA_UPDATES.get(table_name)
+        if replicas and replicas.get(context.region):
+            regions = replicas.get(context.region)
+            result.get("Table", {}).update(
+                {"Replicas": [{"RegionName": region} for region in regions]}
+            )
+
         # update only TableId and SSEDescription if present
-        table_definitions = DynamoDBRegion.get().table_definitions.get(table_name)
+        table_definitions = get_store(context).table_definitions.get(table_name)
         if table_definitions:
             for key in ["TableId", "SSEDescription"]:
                 if table_definitions.get(key):
@@ -483,31 +524,36 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             table_name = update_table_input.get("TableName")
 
             if update_table_input.get("TableClass"):
-                table_definitions = DynamoDBRegion.get().table_definitions.setdefault(
-                    table_name, {}
-                )
+                table_definitions = get_store(context).table_definitions.setdefault(table_name, {})
                 table_definitions["TableClass"] = update_table_input.get("TableClass")
 
             if update_table_input.get("ReplicaUpdates"):
                 # update local table props (replicas)
-                table_properties = DynamoDBRegion.get().table_properties
-                table_properties[table_name] = table_props = table_properties.get(table_name) or {}
-                table_props["Replicas"] = replicas = table_props.get("Replicas") or []
+                table_properties: Dict = get_store(context).REPLICA_UPDATES
+                table_properties[table_name] = table_replicas = (
+                    table_properties.get(table_name) or {}
+                )
+
+                # get dict of replicas for the table => {original_region: {regions}}
+                original_region = context.region
+                table_replicas[original_region] = region_replicas = (
+                    table_replicas.get(original_region) or set()
+                )
                 for repl_update in update_table_input["ReplicaUpdates"]:
                     for key, details in repl_update.items():
+                        # target region
                         region = details.get("RegionName")
-                        if key == "Create":
-                            details["ReplicaStatus"] = details.get("ReplicaStatus") or "ACTIVE"
-                            replicas.append(details)
-                        if key == "Update":
-                            replica = [r for r in replicas if r.get("RegionName") == region]
-                            if replica:
-                                replica[0].update(details)
-                        if key == "Delete":
-                            table_props["Replicas"] = [
-                                r for r in replicas if r.get("RegionName") != region
-                            ]
-
+                        match key:
+                            case "Create":
+                                table_replicas[original_region].add(region)
+                            case "Update":
+                                table_replicas[original_region] = set(
+                                    [r for r in region_replicas if r == region]
+                                )
+                            case "Delete":
+                                table_replicas[original_region] = set(
+                                    [r for r in region_replicas if r != region]
+                                )
             # update response content
             schema = SchemaExtractor.get_table_schema(table_name)
             return UpdateTableOutput(TableDescription=schema["Table"])
@@ -529,15 +575,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("PutItem", expand=False)
     def put_item(self, context: RequestContext, put_item_input: PutItemInput) -> PutItemOutput:
+        global_table_region: str | None = find_global_table_region(
+            table_name=put_item_input.get("TableName"), target_region=context.region
+        )
         existing_item = None
         table_name = put_item_input["TableName"]
         event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name)
         if event_sources_or_streams_enabled:
             existing_item = ItemFinder.find_existing_item(put_item_input)
 
-        # forward request to backend
-        self.fix_return_consumed_capacity(put_item_input)
-        result = self.forward_request(context, put_item_input)
+        result = self._forward_request(context=context, region=global_table_region)
 
         # Get stream specifications details for the table
         if event_sources_or_streams_enabled:
@@ -574,8 +621,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             existing_item = ItemFinder.find_existing_item(delete_item_input)
 
         # forward request to backend
-        self.fix_return_consumed_capacity(delete_item_input)
-        result = self.forward_request(context, delete_item_input)
+        result = self.forward_request(context)
 
         # determine and forward stream record
         if existing_item:
@@ -612,8 +658,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             existing_item = ItemFinder.find_existing_item(update_item_input)
 
         # forward request to backend
-        self.fix_return_consumed_capacity(update_item_input)
-        result = self.forward_request(context, update_item_input)
+        result = self.forward_request(context)
 
         # construct and forward stream record
         if event_sources_or_streams_enabled:
@@ -638,7 +683,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     @handler("GetItem", expand=False)
     def get_item(self, context: RequestContext, get_item_input: GetItemInput) -> GetItemOutput:
-        result = self.forward_request(context)
+        global_table_region: str | None = find_global_table_region(
+            table_name=get_item_input.get("TableName"), target_region=context.region
+        )
+        result = self._forward_request(context=context, region=global_table_region)
         self.fix_consumed_capacity(get_item_input, result)
         return result
 
@@ -702,7 +750,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             event_sources_or_streams_enabled = (
                 event_sources_or_streams_enabled
                 or has_event_sources_or_streams_enabled(
-                    record["eventSourceARN"], streams_enabled_cache
+                    record["eventSourceARN"], cache=streams_enabled_cache
                 )
             )
         if event_sources_or_streams_enabled:
@@ -745,6 +793,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 if inner_item:
                     existing_items.append(ItemFinder.find_existing_item(inner_item))
 
+        client_token: str | None = transact_write_items_input.get("ClientRequestToken")
+
+        if client_token:
+            # we sort the payload since identical payload but with different order could cause
+            # IdempotentParameterMismatchException error if a client token is provided
+            context.request.data = to_bytes(canonical_json(json.loads(context.request.data)))
+
         # forward request to backend
         result = self.forward_request(context)
 
@@ -759,7 +814,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             event_sources_or_streams_enabled = (
                 event_sources_or_streams_enabled
                 or has_event_sources_or_streams_enabled(
-                    record["eventSourceARN"], streams_enabled_cache
+                    record["eventSourceARN"],
+                    streams_enabled_cache,
                 )
             )
         if event_sources_or_streams_enabled:
@@ -791,7 +847,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     ) -> ExecuteStatementOutput:
         statement = execute_statement_input["Statement"]
         table_name = extract_table_name_from_partiql_update(statement)
-
         existing_items = None
         if table_name and has_event_sources_or_streams_enabled(table_name):
             # Note: fetching the entire list of items is hugely inefficient, especially for larger tables
@@ -814,7 +869,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def tag_resource(
         self, context: RequestContext, resource_arn: ResourceArnString, tags: TagList
     ) -> None:
-        table_tags = DynamoDBRegion.TABLE_TAGS
+        table_tags = get_store(context).TABLE_TAGS
         if resource_arn not in table_tags:
             table_tags[resource_arn] = {}
         table_tags[resource_arn].update({tag["Key"]: tag["Value"] for tag in tags})
@@ -823,7 +878,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self, context: RequestContext, resource_arn: ResourceArnString, tag_keys: TagKeyList
     ) -> None:
         for tag_key in tag_keys or []:
-            DynamoDBRegion.TABLE_TAGS.get(resource_arn, {}).pop(tag_key, None)
+            get_store(context).TABLE_TAGS.get(resource_arn, {}).pop(tag_key, None)
 
     def list_tags_of_resource(
         self,
@@ -833,14 +888,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     ) -> ListTagsOfResourceOutput:
         result = [
             {"Key": k, "Value": v}
-            for k, v in DynamoDBRegion.TABLE_TAGS.get(resource_arn, {}).items()
+            for k, v in get_store(context).TABLE_TAGS.get(resource_arn, {}).items()
         ]
         return ListTagsOfResourceOutput(Tags=result)
 
     def describe_time_to_live(
         self, context: RequestContext, table_name: TableName
     ) -> DescribeTimeToLiveOutput:
-        backend = DynamoDBRegion.get()
+        backend = get_store(context)
 
         ttl_spec = backend.ttl_specifications.get(table_name)
         result = {"TimeToLiveStatus": "DISABLED"}
@@ -863,18 +918,19 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         time_to_live_specification: TimeToLiveSpecification,
     ) -> UpdateTimeToLiveOutput:
         # TODO: TTL status is maintained/mocked but no real expiry is happening for items
-        backend = DynamoDBRegion.get()
+        backend = get_store(context)
         backend.ttl_specifications[table_name] = time_to_live_specification
         return UpdateTimeToLiveOutput(TimeToLiveSpecification=time_to_live_specification)
 
     def create_global_table(
         self, context: RequestContext, global_table_name: TableName, replication_group: ReplicaList
     ) -> CreateGlobalTableOutput:
-        if global_table_name in DynamoDBRegion.GLOBAL_TABLES:
+        global_tables: Dict = get_store(context).GLOBAL_TABLES
+        if global_table_name in global_tables:
             raise GlobalTableAlreadyExistsException("Global table with this name already exists")
         replication_group = [grp.copy() for grp in replication_group or []]
         data = {"GlobalTableName": global_table_name, "ReplicationGroup": replication_group}
-        DynamoDBRegion.GLOBAL_TABLES[global_table_name] = data
+        global_tables[global_table_name] = data
         for group in replication_group:
             group["ReplicaStatus"] = "ACTIVE"
             group["ReplicaStatusDescription"] = "Replica active"
@@ -883,7 +939,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def describe_global_table(
         self, context: RequestContext, global_table_name: TableName
     ) -> DescribeGlobalTableOutput:
-        details = DynamoDBRegion.GLOBAL_TABLES.get(global_table_name)
+        details = get_store(context).GLOBAL_TABLES.get(global_table_name)
         if not details:
             raise GlobalTableNotFoundException("Global table with this name does not exist")
         return DescribeGlobalTableOutput(GlobalTableDescription=details)
@@ -898,7 +954,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # TODO: add paging support
         result = [
             select_attributes(tab, ["GlobalTableName", "ReplicationGroup"])
-            for tab in DynamoDBRegion.GLOBAL_TABLES.values()
+            for tab in get_store(context).GLOBAL_TABLES.values()
         ]
         return ListGlobalTablesOutput(GlobalTables=result)
 
@@ -908,7 +964,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_name: TableName,
         replica_updates: ReplicaUpdateList,
     ) -> UpdateGlobalTableOutput:
-        details = DynamoDBRegion.GLOBAL_TABLES.get(global_table_name)
+        details = get_store(context).GLOBAL_TABLES.get(global_table_name)
         if not details:
             raise GlobalTableNotFoundException("Global table with this name does not exist")
         for update in replica_updates or []:
@@ -943,7 +999,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if not stream:
             raise ValidationException("User does not have a permission to use kinesis stream")
 
-        table_def = DynamoDBRegion.get().table_definitions.setdefault(table_name, {})
+        table_def = get_store(context).table_definitions.setdefault(table_name, {})
 
         dest_status = table_def.get("KinesisDataStreamDestinationStatus")
         if dest_status not in ["DISABLED", "ENABLE_FAILED", None]:
@@ -985,7 +1041,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "User does not have a permission to use kinesis stream",
             )
 
-        table_def = DynamoDBRegion.get().table_definitions.setdefault(table_name, {})
+        table_def = get_store(context).table_definitions.setdefault(table_name, {})
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations")
         if stream_destinations:
@@ -1012,7 +1068,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         if not self.table_exists(table_name):
             raise ResourceNotFoundException("Cannot do operations on a non-existent table")
 
-        table_def = DynamoDBRegion.get().table_definitions.get(table_name) or {}
+        table_def = get_store(context).table_definitions.get(table_name) or {}
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations") or []
         return DescribeKinesisStreamingDestinationOutput(
@@ -1024,7 +1080,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return aws_stack.dynamodb_table_exists(table_name)
 
     @staticmethod
-    def prepare_request_headers(headers):
+    def prepare_request_headers(headers: Dict):
         def _replace(regex, replace):
             headers["Authorization"] = re.sub(
                 regex, replace, headers.get("Authorization") or "", flags=re.IGNORECASE
@@ -1033,20 +1089,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # Note: We need to ensure that the same access key is used here for all requests,
         # otherwise DynamoDBLocal stores tables/items in separate namespaces
         _replace(r"Credential=[^/]+/", rf"Credential={constants.INTERNAL_AWS_ACCESS_KEY_ID}/")
+
         # Note: The NoSQL Workbench sends "localhost" or "local" as the region name, which we need to fix here
         _replace(
             r"Credential=([^/]+/[^/]+)/local(host)?/",
             rf"Credential=\1/{aws_stack.get_local_region()}/",
         )
-
-    def fix_return_consumed_capacity(self, request_dict):
-        # Fix incorrect values if ReturnValues==ALL_OLD and ReturnConsumedCapacity is
-        # empty, see https://github.com/localstack/localstack/issues/2049
-        return_values_all = (request_dict.get("ReturnValues") == "ALL_OLD") or (
-            not request_dict.get("ReturnValues")
-        )
-        if return_values_all and not request_dict.get("ReturnConsumedCapacity"):
-            request_dict["ReturnConsumedCapacity"] = "TOTAL"
 
     def fix_consumed_capacity(self, request: Dict, result: Dict):
         # make sure we append 'ConsumedCapacity', which is properly
@@ -1213,9 +1261,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def delete_all_event_source_mappings(self, table_arn):
         if table_arn:
-            # fix start dynamodb service without lambda
-            if not is_api_enabled("lambda"):
-                return
 
             lambda_client = aws_stack.connect_to_service("lambda")
             result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
@@ -1315,7 +1360,10 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
     cached = cache.get(table_arn)
     if isinstance(cached, bool):
         return cached
-    sources = lambda_api.get_event_sources(source_arn=table_arn)
+    lambda_client = aws_stack.connect_to_service("lambda")
+    sources = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)[
+        "EventSourceMappings"
+    ]
     result = False
     if sources:
         result = True
@@ -1326,7 +1374,7 @@ def has_event_sources_or_streams_enabled(table_name: str, cache: Dict = None):
     # get table name from table_arn
     # since batch_write and transact write operations passing table_arn instead of table_name
     table_name = table_arn.split("/", 1)[-1]
-    table_definitions = DynamoDBRegion.get().table_definitions
+    table_definitions: Dict = get_store().table_definitions
     if not result and table_definitions.get(table_name):
         if table_definitions[table_name].get("KinesisDataStreamDestinationStatus") == "ACTIVE":
             result = True
@@ -1390,11 +1438,6 @@ def get_updated_records(table_name: str, existing_items: List) -> List:
     for item in before.items_list:
         _add_record(item, after)
     return result
-
-
-def fix_headers_for_updated_response(response):
-    response.headers["Content-Length"] = len(to_bytes(response.content))
-    response.headers["x-amz-crc32"] = calculate_crc32(response)
 
 
 def create_dynamodb_stream(data, latest_stream_label):

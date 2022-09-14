@@ -67,9 +67,6 @@ APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
 # special tag name to allow specifying a custom ID for new REST APIs
 TAG_KEY_CUSTOM_ID = "_custom_id_"
 
-# map API IDs to region names - TODO remove and replace with in-memory lookup
-API_REGIONS = {}
-
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
 
@@ -216,9 +213,7 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
     if not context.stage:
         return {}
 
-    region_name = [
-        name for name, region in apigateway_backends.items() if context.api_id in region.apis
-    ][0]
+    region_name = get_api_region(context.api_id)
     api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
@@ -349,7 +344,7 @@ def find_api_subentity_by_id(api_id, entity_id, map_name):
     return ([a for a in auth_list if a["id"] == entity_id] or [None])[0]
 
 
-def path_based_url(api_id, stage_name, path):
+def path_based_url(api_id: str, stage_name: str, path: str) -> str:
     """Return URL for inbound API gateway for given API ID, stage name, and path"""
     pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
         config.service_url("apigateway"),
@@ -394,7 +389,7 @@ def extract_path_params(path: str, extracted_path: str) -> Dict[str, str]:
     return path_params
 
 
-def extract_query_string_params(path: str) -> list[str, Dict[str, str]]:
+def extract_query_string_params(path: str) -> Tuple[str, Dict[str, str]]:
     parsed_path = urlparse.urlparse(path)
     path = parsed_path.path
     parsed_query_string_params = urlparse.parse_qs(parsed_path.query)
@@ -406,9 +401,8 @@ def extract_query_string_params(path: str) -> list[str, Dict[str, str]]:
         else:
             query_string_params[query_param_name] = query_param_values
 
-    # strip trailing slashes from path to fix downstream lookups
-    path = path.rstrip("/") or "/"
-    return [path, query_string_params]
+    path = path or "/"
+    return path, query_string_params
 
 
 def get_cors_response(headers):
@@ -641,12 +635,12 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
                         authorizers.update({security_scheme_name: authorizer})
                     return authorizer
 
-    def get_or_create_path(path):
-        parts = path.rstrip("/").replace("//", "/").split("/")
+    def get_or_create_path(abs_path: str, base_path: str):
+        parts = abs_path.rstrip("/").replace("//", "/").split("/")
         parent_id = ""
         if len(parts) > 1:
             parent_path = "/".join(parts[:-1])
-            parent = get_or_create_path(parent_path)
+            parent = get_or_create_path(parent_path, base_path=base_path)
             parent_id = parent.id
         if existing := [
             r
@@ -654,12 +648,16 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
             if r.path_part == (parts[-1] or "/") and (r.parent_id or "") == (parent_id or "")
         ]:
             return existing[0]
-        return add_path(path, parts, parent_id=parent_id)
 
-    def add_path(path, parts, parent_id=""):
+        # construct relative path (without base path), then add method resources for this path
+        rel_path = abs_path.removeprefix(base_path)
+        return add_path_methods(rel_path, parts, parent_id=parent_id)
+
+    def add_path_methods(rel_path: str, parts: List[str], parent_id=""):
         child_id = create_resource_id()
-        path = path or "/"
+        rel_path = rel_path or "/"
         resource = Resource(
+            account_id=rest_api.account_id,
             resource_id=child_id,
             region_name=rest_api.region_name,
             api_id=rest_api.id,
@@ -667,7 +665,9 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
             parent_id=parent_id,
         )
 
-        for method, method_schema in resolved_schema["paths"].get(path, {}).items():
+        paths_dict = resolved_schema["paths"]
+        method_paths = paths_dict.get(rel_path, {})
+        for method, method_schema in method_paths.items():
             method = method.upper()
 
             method_integration = method_schema.get("x-amazon-apigateway-integration", {})
@@ -729,10 +729,17 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
         for name, model in definitions.items():
             rest_api.add_model(name=name, schema=model, content_type=APPLICATION_JSON)
 
+    # determine base path
     basepath_mode = (query_params.get("basepath") or ["prepend"])[0]
-    base_path = (resolved_schema.get("basePath") or "") if basepath_mode == "prepend" else ""
+    base_path = ""
+    if basepath_mode == "prepend":
+        base_path = resolved_schema.get("basePath") or ""
+    if basepath_mode == "split":
+        base_path = (resolved_schema.get("basePath") or "").strip("/").split("/")[0]
+        base_path = f"/{base_path}" if base_path else ""
+
     for path in resolved_schema.get("paths", {}):
-        get_or_create_path(base_path + path)
+        get_or_create_path(base_path + path, base_path=base_path)
 
     policy = resolved_schema.get("x-amazon-apigateway-policy")
     if policy:
@@ -755,7 +762,7 @@ def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tup
     path_map = get_rest_api_paths(
         rest_api_id=invocation_context.api_id, region_name=invocation_context.region_name
     )
-    relative_path = invocation_context.invocation_path
+    relative_path = invocation_context.invocation_path.rstrip("/") or "/"
     try:
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
         invocation_context.resource = resource
@@ -879,7 +886,7 @@ def set_api_id_stage_invocation_path(
         # set current region in request thread local, to ensure aws_stack.get_region() works properly
         # TODO: replace with RequestContextManager
         if getattr(THREAD_LOCAL, "request_context", None) is not None:
-            api_region = API_REGIONS.get(api_id, "")
+            api_region = get_api_region(api_id)
             THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = api_region
 
     # set details in invocation context
@@ -887,6 +894,14 @@ def set_api_id_stage_invocation_path(
     invocation_context.stage = stage
     invocation_context.path_with_query_string = relative_path_w_query_params
     return invocation_context
+
+
+def get_api_region(api_id: str) -> Optional[str]:
+    """Return the region name for the given REST API ID"""
+    for account_id, account in apigateway_backends.items():
+        for region_name, region in account.items():
+            if api_id in region.apis:
+                return region_name
 
 
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:

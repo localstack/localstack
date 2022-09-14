@@ -12,10 +12,12 @@ from typing import Dict, List
 import botocore.exceptions
 import requests as requests
 from flask import Response as FlaskResponse
+from moto.sns import sns_backends
 from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import MAXIMUM_MESSAGE_LENGTH
 from requests.models import Response
 
+from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.core import CommonServiceException
 from localstack.aws.api.sns import (
@@ -90,13 +92,12 @@ from localstack.aws.api.sns import (
     topicName,
 )
 from localstack.config import external_service_url
-from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes
+from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.json import json_safe
@@ -243,9 +244,9 @@ def message_to_endpoint(target_arn, message, structure, endpoint_attributes, pla
         )
 
     if response is None:
-        LOG.warn("Platform not implemeted yet")
+        LOG.warning("Platform not implemented yet")
     elif response.status_code != 200:
-        LOG.warn(
+        LOG.warning(
             f"Platform {platform_name} returned response {response.status_code} with content {response.content}"
         )
 
@@ -438,6 +439,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self, context: RequestContext, topic_arn: topicARN
     ) -> GetTopicAttributesResponse:
         moto_response = call_moto(context)
+        # todo fix some attributes by moto, see snapshot
         return GetTopicAttributesResponse(**moto_response)
 
     def publish_batch(
@@ -448,20 +450,35 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> PublishBatchResponse:
         if len(publish_batch_request_entries) > 10:
             raise TooManyEntriesInBatchRequestException(
-                "The batch request contains more entries than permissible"
+                "The batch request contains more entries than permissible."
             )
 
         ids = [entry["Id"] for entry in publish_batch_request_entries]
         if len(set(ids)) != len(publish_batch_request_entries):
             raise BatchEntryIdsNotDistinctException(
-                "Two or more batch entries in the request have the same Id"
+                "Two or more batch entries in the request have the same Id."
             )
 
         if topic_arn and ".fifo" in topic_arn:
             if not all(["MessageGroupId" in entry for entry in publish_batch_request_entries]):
                 raise InvalidParameterException(
-                    "The MessageGroupId parameter is required for FIFO topics"
+                    "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                 )
+            moto_sns_backend = sns_backends[context.account_id][context.region]
+            if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
+                if not all(
+                    ["MessageDeduplicationId" in entry for entry in publish_batch_request_entries]
+                ):
+                    raise InvalidParameterException(
+                        "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+                    )
+
+        sns_backend = SNSBackend.get()
+        if topic_arn not in sns_backend.sns_subscriptions:
+            raise NotFoundException(
+                "Topic does not exist",
+            )
+
         response = {"Successful": [], "Failed": []}
         for entry in publish_batch_request_entries:
             message_id = str(uuid.uuid4())
@@ -471,7 +488,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             data["Subject"] = [entry.get("Subject")]
             if ".fifo" in topic_arn:
                 data["MessageGroupId"] = [entry.get("MessageGroupId")]
-            # TODO: add MessageDeduplication checks once ASF-SQS implementation becomes default
+                data["MessageDeduplicationId"] = [entry.get("MessageDeduplicationId")]
+            # TODO: implement SNS MessageDeduplicationId and ContentDeduplication checks
 
             message_attributes = entry.get("MessageAttributes", {})
             try:
@@ -498,9 +516,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> None:
         sub = get_subscription_by_arn(subscription_arn)
         if not sub:
-            raise NotFoundException(
-                f"Unable to find subscription for given ARN: {subscription_arn}"
-            )
+            raise NotFoundException("Subscription does not exist")
         sub[attribute_name] = attribute_value
 
     def confirm_subscription(
@@ -513,7 +529,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sns_backend = SNSBackend.get()
         sub_arn = None
         for k, v in sns_backend.subscription_status.items():
-            if v["Token"] == token and v["TopicArn"] == topic_arn:
+            if v.get("Token") == token and v["TopicArn"] == topic_arn:
                 v["Status"] = "Subscribed"
                 sub_arn = k
         for k, v in sns_backend.sns_subscriptions.items():
@@ -575,6 +591,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return CreateEndpointResponse(**result)
 
     def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
+        call_moto(context)
         sns_backend = SNSBackend.get()
 
         def should_be_kept(current_subscription, target_subscription_arn):
@@ -628,6 +645,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sub = get_subscription_by_arn(subscription_arn)
         if not sub:
             raise NotFoundException(f"Subscription with arn {subscription_arn} not found")
+        # todo fix some attributes by moto see snapshot
         return GetSubscriptionAttributesResponse(Attributes=sub)
 
     def list_subscriptions(
@@ -651,16 +669,32 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     ) -> PublishResponse:
         # We do not want the request to be forwarded to SNS backend
         if subject == "":
-            raise InvalidParameterException("Empty string for subject is not supported")
+            raise InvalidParameterException("Invalid parameter: Subject")
         if not message or all(not m for m in message):
-            raise InvalidParameterException("Empty message")
+            raise InvalidParameterException("Invalid parameter: Empty message")
 
         if len(message) > MAXIMUM_MESSAGE_LENGTH:
-            raise InvalidParameterException("Message too long")
+            raise InvalidParameterException("Invalid parameter: Message too long")
 
-        if topic_arn and ".fifo" in topic_arn and not message_group_id:
+        if topic_arn and ".fifo" in topic_arn:
+            if not message_group_id:
+                raise InvalidParameterException(
+                    "Invalid parameter: The MessageGroupId parameter is required for FIFO topics",
+                )
+            moto_sns_backend = sns_backends[context.account_id][context.region]
+            if moto_sns_backend.get_topic(arn=topic_arn).content_based_deduplication == "false":
+                if not message_deduplication_id:
+                    raise InvalidParameterException(
+                        "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
+                    )
+        elif message_deduplication_id:
+            # this is the first one to raise if both are set while the topic is not fifo
             raise InvalidParameterException(
-                "The MessageGroupId parameter is required for FIFO topics",
+                "Invalid parameter: MessageDeduplicationId Reason: The request includes MessageDeduplicationId parameter that is not valid for this topic type"
+            )
+        elif message_group_id:
+            raise InvalidParameterException(
+                "Invalid parameter: MessageGroupId Reason: The request includes MessageGroupId parameter that is not valid for this topic type"
             )
 
         sns_backend = SNSBackend.get()
@@ -712,7 +746,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             )
         if ".fifo" in endpoint and ".fifo" not in topic_arn:
             raise InvalidParameterException(
-                "FIFO SQS Queues can not be subscribed to standard SNS topics"
+                "Invalid parameter: Invalid parameter: Endpoint Reason: FIFO SQS Queues can not be subscribed to standard SNS topics"
             )
         moto_response = call_moto(context)
         subscription_arn = moto_response.get("SubscriptionArn")
@@ -773,10 +807,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
     ) -> TagResourceResponse:
         # TODO: can this be used to tag any resource when using AWS?
+        # each tag key must be unique
+        # https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html#tag-best-practices
+        unique_tag_keys = {tag["Key"] for tag in tags}
+        if len(unique_tag_keys) < len(tags):
+            raise InvalidParameterException("Invalid parameter: Duplicated keys are not allowed.")
+
         call_moto(context)
         sns_backend = SNSBackend.get()
         existing_tags = sns_backend.sns_tags.get(resource_arn, [])
-        tags = [tag for idx, tag in enumerate(tags) if tag not in tags[:idx]]
 
         def existing_tag_index(item):
             for idx, tag in enumerate(existing_tags):
@@ -799,10 +838,6 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sns_backend = SNSBackend.get()
         sns_backend.sns_subscriptions.pop(topic_arn, None)
         sns_backend.sns_tags.pop(topic_arn, None)
-        event_publisher.fire_event(
-            event_publisher.EVENT_SNS_DELETE_TOPIC,
-            payload={"t": event_publisher.get_hash(topic_arn)},
-        )
 
     def create_topic(
         self,
@@ -816,16 +851,13 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         topic_arn = moto_response["TopicArn"]
         tag_resource_success = extract_tags(topic_arn, tags, True, sns_backend)
         if not tag_resource_success:
-            raise InvalidParameterException("Topic already exists with different tags")
+            raise InvalidParameterException(
+                "Invalid parameter: Tags Reason: Topic already exists with different tags"
+            )
         if tags:
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
         sns_backend.sns_subscriptions[topic_arn] = (
             sns_backend.sns_subscriptions.get(topic_arn) or []
-        )
-        # publish event
-        event_publisher.fire_event(
-            event_publisher.EVENT_SNS_CREATE_TOPIC,
-            payload={"t": event_publisher.get_hash(topic_arn)},
         )
         return CreateTopicResponse(TopicArn=topic_arn)
 
@@ -840,6 +872,7 @@ def message_to_subscribers(
     skip_checks=False,
     message_attributes=None,
 ):
+    # AWS allows using TargetArn to publish to a topic, for backward compatibility
     if not topic_arn:
         topic_arn = req_data.get("TargetArn")
     sns_backend = SNSBackend.get()
@@ -956,21 +989,25 @@ async def message_to_subscriber(
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             store_delivery_log(subscriber, False, message, message_id)
-            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
+
+            if is_raw_message_delivery(subscriber):
+                msg_attrs = create_sqs_message_attributes(subscriber, message_attributes)
+            else:
+                msg_attrs = {}
+
+            sns_error_to_dead_letter_queue(subscriber, message_body, str(exc), msg_attrs=msg_attrs)
             if "NonExistentQueue" in str(exc):
-                LOG.info(
-                    'Removing non-existent queue "%s" subscribed to topic "%s"',
-                    queue_url,
-                    topic_arn,
-                )
-                subscriptions.remove(subscriber)
+                LOG.debug("The SQS queue endpoint does not exist anymore")
+                # todo: if the queue got deleted, even if we recreate a queue with the same name/url
+                #  AWS won't send to it anymore. Would need to unsub/resub.
+                #  We should mark this subscription as "broken"
         return
 
     elif subscriber["Protocol"] == "lambda":
         try:
             external_url = external_service_url("sns")
             unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
-            response = lambda_api.process_sns_notification(
+            response = process_sns_notification_to_lambda(
                 subscriber["Endpoint"],
                 topic_arn,
                 subscriber["SubscriptionArn"],
@@ -986,8 +1023,8 @@ async def message_to_subscriber(
 
             if response is not None:
                 delivery = {
-                    "statusCode": response.status_code,
-                    "providerResponse": response.get_data(),
+                    "statusCode": response[0],
+                    "providerResponse": response[1],
                 }
                 store_delivery_log(subscriber, True, message, message_id, delivery)
 
@@ -1057,7 +1094,7 @@ async def message_to_subscriber(
                 "Received error on sending SNS message, putting to DLQ (if configured): %s", exc
             )
             store_delivery_log(subscriber, False, message, message_id)
-            # AWS doesnt send to the DLQ if there's an error trying to deliver a UnsubscribeConfirmation msg
+            # AWS doesn't send to the DLQ if there's an error trying to deliver a UnsubscribeConfirmation msg
             if msg_type != "UnsubscribeConfirmation":
                 sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
         return
@@ -1101,8 +1138,83 @@ async def message_to_subscriber(
                 Destination={"ToAddresses": [subscriber.get("Endpoint")]},
             )
             store_delivery_log(subscriber, True, message, message_id)
+    elif subscriber["Protocol"] == "firehose":
+        firehose_client = aws_stack.connect_to_service("firehose")
+        endpoint = subscriber["Endpoint"]
+        sns_body = create_sns_message_body(
+            subscriber=subscriber, req_data=req_data, message_id=message_id
+        )
+        if endpoint:
+            delivery_stream = aws_stack.extract_resource_from_arn(endpoint).split("/")[1]
+            firehose_client.put_record(
+                DeliveryStreamName=delivery_stream, Record={"Data": to_bytes(sns_body)}
+            )
+            store_delivery_log(subscriber, True, message, message_id)
+        return
     else:
         LOG.warning('Unexpected protocol "%s" for SNS subscription', subscriber["Protocol"])
+
+
+def process_sns_notification_to_lambda(
+    func_arn,
+    topic_arn,
+    subscription_arn,
+    message,
+    message_id,
+    message_attributes,
+    unsubscribe_url,
+    subject="",
+) -> tuple[int, bytes] | None:
+    """
+    Process the SNS notification to lambda
+
+    :param func_arn: Arn of the target function
+    :param topic_arn: Arn of the topic invoking the function
+    :param subscription_arn: Arn of the subscription
+    :param message: SNS message
+    :param message_id: SNS message id
+    :param message_attributes: SNS message attributes
+    :param unsubscribe_url: Unsubscribe url
+    :param subject: SNS message subject
+    :return: Tuple (status code, payload) if synchronous call, None otherwise
+    """
+    event = {
+        "Records": [
+            {
+                "EventSource": "aws:sns",
+                "EventVersion": "1.0",
+                "EventSubscriptionArn": subscription_arn,
+                "Sns": {
+                    "Type": "Notification",
+                    "MessageId": message_id,
+                    "TopicArn": topic_arn,
+                    "Subject": subject,
+                    "Message": message,
+                    "Timestamp": timestamp_millis(),
+                    "SignatureVersion": "1",
+                    # TODO Add a more sophisticated solution with an actual signature
+                    # Hardcoded
+                    "Signature": "EXAMPLEpH+..",
+                    "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+                    "UnsubscribeUrl": unsubscribe_url,
+                    "MessageAttributes": message_attributes,
+                },
+            }
+        ]
+    }
+    lambda_client = aws_stack.connect_to_service(
+        "lambda", region_name=extract_region_from_arn(func_arn)
+    )
+    inv_result = lambda_client.invoke(
+        FunctionName=func_arn,
+        Payload=to_bytes(json.dumps(event)),
+        InvocationType="RequestResponse" if config.SYNCHRONOUS_SNS_EVENTS else "Event",
+    )
+    status_code = inv_result.get("StatusCode")
+    payload = inv_result.get("Payload")
+    if payload:
+        return status_code, payload.read()
+    return None
 
 
 def get_subscription_by_arn(sub_arn):
@@ -1141,6 +1253,7 @@ def create_sns_message_body(
         "Timestamp": timestamp_millis(),
         "SignatureVersion": "1",
         # TODO Add a more sophisticated solution with an actual signature
+        #  check KMS for providing real cert and how to serve them
         # Hardcoded
         "Signature": "EXAMPLEpH+..",
         "SigningCertURL": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",

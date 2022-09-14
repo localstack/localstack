@@ -98,6 +98,20 @@ class CmdDockerClient(ContainerClient):
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 ) from e
 
+    def restart_container(self, container_name: str, timeout: int = 10) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["restart", "--time", str(timeout), container_name]
+        LOG.debug("Restarting container with cmd %s", cmd)
+        try:
+            run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in to_str(e.stdout):
+                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                ) from e
+
     def pause_container(self, container_name: str) -> None:
         cmd = self._docker_cmd()
         cmd += ["pause", container_name]
@@ -201,7 +215,10 @@ class CmdDockerClient(ContainerClient):
             ) from e
         container_list = []
         if cmd_result:
-            container_list = [json.loads(line) for line in cmd_result.splitlines()]
+            if cmd_result[0] == "[":
+                container_list = json.loads(cmd_result)
+            else:
+                container_list = [json.loads(line) for line in cmd_result.splitlines()]
         result = []
         for container in container_list:
             result.append(
@@ -583,6 +600,7 @@ class CmdDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        privileged: Optional[bool] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -592,6 +610,8 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--name", name]
         if entrypoint is not None:  # empty string entrypoint can be intentional
             cmd += ["--entrypoint", entrypoint]
+        if privileged:
+            cmd += ["--privileged"]
         if mount_volumes:
             cmd += [
                 volume

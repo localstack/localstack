@@ -13,7 +13,7 @@ def print_test_names(service):
         if len(tests) == 1:
             print(tests[0])
         else:
-            print('"(' + "|".join(tests) + ')"')
+            print('"(^' + "$|^".join(tests) + '$)"')
 
 
 if __name__ == "__main__":

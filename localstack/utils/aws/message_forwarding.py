@@ -5,22 +5,21 @@ import re
 import uuid
 from typing import Dict, Optional
 
-from moto.events.models import events_backends as moto_events_backends
+from moto.events.models import events_backends
 
 from localstack.services.apigateway.helpers import extract_query_string_params
-from localstack.services.awslambda.lambda_executors import InvocationException, InvocationResult
-from localstack.utils.aws.aws_models import LambdaFunction
+from localstack.utils import collections
 from localstack.utils.aws.aws_stack import (
     connect_to_service,
+    extract_account_id_from_arn,
     extract_region_from_arn,
     firehose_name,
     get_sqs_queue_url,
 )
-from localstack.utils.generic import dict_utils
 from localstack.utils.http import add_path_parameters_to_url, add_query_params_to_url
 from localstack.utils.http import safe_requests as requests
-from localstack.utils.strings import long_uid, to_bytes, to_str
-from localstack.utils.time import now_utc, timestamp_millis
+from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
 
@@ -29,63 +28,23 @@ AUTH_API_KEY = "API_KEY"
 AUTH_OAUTH = "OAUTH_CLIENT_CREDENTIALS"
 
 
-def lambda_result_to_destination(
-    func_details: LambdaFunction,
-    event: Dict,
-    result: InvocationResult,
-    is_async: bool,
-    error: InvocationException,
-):
-    if not func_details.destination_enabled():
-        return
-
-    payload = {
-        "version": "1.0",
-        "timestamp": timestamp_millis(),
-        "requestContext": {
-            "requestId": long_uid(),
-            "functionArn": func_details.arn(),
-            "condition": "RetriesExhausted",
-            "approximateInvokeCount": 1,
-        },
-        "requestPayload": event,
-        "responseContext": {"statusCode": 200, "executedVersion": "$LATEST"},
-        "responsePayload": {},
-    }
-
-    if result and result.result:
-        try:
-            payload["requestContext"]["condition"] = "Success"
-            payload["responsePayload"] = json.loads(result.result)
-        except Exception:
-            payload["responsePayload"] = result.result
-
-    if error:
-        payload["responseContext"]["functionError"] = "Unhandled"
-        # add the result in the response payload
-        if error.result is not None:
-            payload["responsePayload"] = json.loads(error.result)
-        send_event_to_target(func_details.on_failed_invocation, payload)
-        return
-
-    if func_details.on_successful_invocation is not None:
-        send_event_to_target(func_details.on_successful_invocation, payload)
-
-
 def send_event_to_target(
     target_arn: str,
     event: Dict,
     target_attributes: Dict = None,
     asynchronous: bool = True,
-    target: Dict = {},
+    target: Dict = None,
 ):
-    region = target_arn.split(":")[3]
+    region = extract_region_from_arn(target_arn)
+    if target is None:
+        target = {}
 
     if ":lambda:" in target_arn:
-        from localstack.services.awslambda import lambda_api
-
-        lambda_api.run_lambda(
-            func_arn=target_arn, event=event, context={}, asynchronous=asynchronous
+        lambda_client = connect_to_service("lambda")
+        lambda_client.invoke(
+            FunctionName=target_arn,
+            Payload=to_bytes(json.dumps(event)),
+            InvocationType="Event" if asynchronous else "RequestResponse",
         )
 
     elif ":sns:" in target_arn:
@@ -95,7 +54,7 @@ def send_event_to_target(
     elif ":sqs:" in target_arn:
         sqs_client = connect_to_service("sqs", region_name=region)
         queue_url = get_sqs_queue_url(target_arn)
-        msg_group_id = dict_utils.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
+        msg_group_id = collections.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
         sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
 
@@ -130,14 +89,14 @@ def send_event_to_target(
             )
 
     elif ":kinesis:" in target_arn:
-        partition_key_path = dict_utils.get_safe(
+        partition_key_path = collections.get_safe(
             target_attributes,
             "$.KinesisParameters.PartitionKeyPath",
             default_value="$.id",
         )
 
         stream_name = target_arn.split("/")[-1]
-        partition_key = dict_utils.get_safe(event, partition_key_path, event["id"])
+        partition_key = collections.get_safe(event, partition_key_path, event["id"])
         kinesis_client = connect_to_service("kinesis", region_name=region)
 
         kinesis_client.put_record(
@@ -226,7 +185,7 @@ def send_event_to_api_destination(target_arn, event, http_parameters: Optional[D
     See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
 
     # ARN format: ...:api-destination/{name}/{uuid}
-    region = target_arn.split(":")[3]
+    region = extract_region_from_arn(target_arn)
     api_destination_name = target_arn.split(":")[-1].split("/")[1]
     events_client = connect_to_service("events", region_name=region)
     destination = events_client.describe_api_destination(Name=api_destination_name)
@@ -262,10 +221,12 @@ def send_event_to_api_destination(target_arn, event, http_parameters: Optional[D
 def add_api_destination_authorization(destination, headers, event):
     connection_arn = destination.get("ConnectionArn", "")
     connection_name = re.search(r"connection\/([a-zA-Z0-9-_]+)\/", connection_arn).group(1)
-    connection_region = extract_region_from_arn(connection_arn)
+
+    account_id = extract_account_id_from_arn(connection_arn)
+    region = extract_region_from_arn(connection_arn)
 
     # Using backend directly due to boto hiding passwords, keys and secret values
-    event_backend = moto_events_backends.get(connection_region)
+    event_backend = events_backends[account_id][region]
     connection = event_backend.describe_connection(name=connection_name)
 
     headers.update(auth_keys_from_connection(connection))

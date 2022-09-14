@@ -1,14 +1,10 @@
 {
   "tests/integration/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_object_created_put": {
-    "recorded-date": "07-06-2022, 16:15:43",
+    "recorded-date": "09-08-2022, 11:38:05",
     "recorded-content": {
       "receive_messages": {
         "messages": [
           {
-            "Type": "Notification",
-            "MessageId": "<uuid:1>",
-            "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
-            "Subject": "Amazon S3 Notification",
             "Message": {
               "Records": [
                 {
@@ -31,11 +27,11 @@
                     "s3SchemaVersion": "1.0",
                     "configurationId": "<config-id:1>",
                     "bucket": {
-                      "name": "<resource:2>",
+                      "name": "<resource:1>",
                       "ownerIdentity": {
                         "principalId": "<principal-id:1>"
                       },
-                      "arn": "arn:aws:s3:::<resource:2>"
+                      "arn": "arn:aws:s3:::<resource:1>"
                     },
                     "object": {
                       "key": "bucket-key",
@@ -47,17 +43,17 @@
                 }
               ]
             },
-            "Timestamp": "date",
+            "MessageId": "<uuid:1>",
+            "Signature": "<signature>",
             "SignatureVersion": "1",
-            "Signature": "signature",
-            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
-            "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<token:1>"
+            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+            "Subject": "Amazon S3 Notification",
+            "Timestamp": "date",
+            "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:2>",
+            "Type": "Notification",
+            "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:2>:<resource:3>"
           },
           {
-            "Type": "Notification",
-            "MessageId": "<uuid:2>",
-            "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
-            "Subject": "Amazon S3 Notification",
             "Message": {
               "Records": [
                 {
@@ -80,11 +76,11 @@
                     "s3SchemaVersion": "1.0",
                     "configurationId": "<config-id:1>",
                     "bucket": {
-                      "name": "<resource:2>",
+                      "name": "<resource:1>",
                       "ownerIdentity": {
                         "principalId": "<principal-id:1>"
                       },
-                      "arn": "arn:aws:s3:::<resource:2>"
+                      "arn": "arn:aws:s3:::<resource:1>"
                     },
                     "object": {
                       "key": "bucket-key",
@@ -96,11 +92,15 @@
                 }
               ]
             },
-            "Timestamp": "date",
+            "MessageId": "<uuid:2>",
+            "Signature": "<signature>",
             "SignatureVersion": "1",
-            "Signature": "signature",
-            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>.pem",
-            "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<token:1>"
+            "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+            "Subject": "Amazon S3 Notification",
+            "Timestamp": "date",
+            "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:2>",
+            "Type": "Notification",
+            "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:2>:<resource:3>"
           }
         ]
       }

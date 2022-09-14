@@ -273,6 +273,7 @@ class PortMappings:
 
 
 SimpleVolumeBind = Tuple[str, str]
+"""Type alias for a simple version of VolumeBind"""
 
 
 @dataclasses.dataclass
@@ -420,6 +421,13 @@ class ContainerClient(metaclass=ABCMeta):
                         If not specified, defaults to `STOP_TIMEOUT`
         """
         pass
+
+    @abstractmethod
+    def restart_container(self, container_name: str, timeout: int = 10):
+        """Restarts a container with the given name.
+        :param container_name: Container identifier
+        :param timeout: Seconds to wait for stop before killing the container
+        """
 
     @abstractmethod
     def pause_container(self, container_name: str):
@@ -666,6 +674,7 @@ class ContainerClient(metaclass=ABCMeta):
             dns=container_config.dns,
             additional_flags=container_config.additional_flags,
             workdir=container_config.workdir,
+            privileged=container_config.privileged,
         )
 
     @abstractmethod
@@ -691,6 +700,7 @@ class ContainerClient(metaclass=ABCMeta):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        privileged: Optional[bool] = None,
     ) -> str:
         """Creates a container with the given image
 
@@ -722,6 +732,7 @@ class ContainerClient(metaclass=ABCMeta):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        privileged: Optional[bool] = None,
     ) -> Tuple[bytes, bytes]:
         """Creates and runs a given docker container
 

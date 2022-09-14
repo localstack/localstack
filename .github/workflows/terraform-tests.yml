@@ -92,6 +92,7 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/terraform-provider-aws/go.sum') }}
 
     - name: Run Test Cases
+      env:
+        CI: true
       run: |
-        cd terraform-provider-aws
-        AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test TF_ACC=true go test ./internal/service/${{ matrix.service }}/ -v -timeout 60m -run ${{ steps.get-list.outputs.testlist }}
+        bash tests/terraform/run.sh ${{ matrix.service }} ${{ steps.get-list.outputs.testlist }}

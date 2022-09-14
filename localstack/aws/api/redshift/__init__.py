@@ -1107,7 +1107,8 @@ class AuthorizeEndpointAccessMessage(ServiceRequest):
 
 
 class AuthorizeSnapshotAccessMessage(ServiceRequest):
-    SnapshotIdentifier: String
+    SnapshotIdentifier: Optional[String]
+    SnapshotArn: Optional[String]
     SnapshotClusterIdentifier: Optional[String]
     AccountWithRestoreAccess: String
 
@@ -2002,6 +2003,7 @@ SnapshotSortingEntityList = List[SnapshotSortingEntity]
 class DescribeClusterSnapshotsMessage(ServiceRequest):
     ClusterIdentifier: Optional[String]
     SnapshotIdentifier: Optional[String]
+    SnapshotArn: Optional[String]
     SnapshotType: Optional[String]
     StartTime: Optional[TStamp]
     EndTime: Optional[TStamp]
@@ -2163,6 +2165,7 @@ class DescribeNodeConfigurationOptionsMessage(ServiceRequest):
     ActionType: ActionType
     ClusterIdentifier: Optional[String]
     SnapshotIdentifier: Optional[String]
+    SnapshotArn: Optional[String]
     OwnerAccount: Optional[String]
     Filters: Optional[NodeConfigurationOptionsFilterList]
     Marker: Optional[String]
@@ -2834,7 +2837,8 @@ class ResizeProgressMessage(TypedDict, total=False):
 
 class RestoreFromClusterSnapshotMessage(ServiceRequest):
     ClusterIdentifier: String
-    SnapshotIdentifier: String
+    SnapshotIdentifier: Optional[String]
+    SnapshotArn: Optional[String]
     SnapshotClusterIdentifier: Optional[String]
     Port: Optional[IntegerOptional]
     AvailabilityZone: Optional[String]
@@ -2927,7 +2931,8 @@ class RevokeEndpointAccessMessage(ServiceRequest):
 
 
 class RevokeSnapshotAccessMessage(ServiceRequest):
-    SnapshotIdentifier: String
+    SnapshotIdentifier: Optional[String]
+    SnapshotArn: Optional[String]
     SnapshotClusterIdentifier: Optional[String]
     AccountWithRestoreAccess: String
 
@@ -3108,8 +3113,9 @@ class RedshiftApi:
     def authorize_snapshot_access(
         self,
         context: RequestContext,
-        snapshot_identifier: String,
         account_with_restore_access: String,
+        snapshot_identifier: String = None,
+        snapshot_arn: String = None,
         snapshot_cluster_identifier: String = None,
     ) -> AuthorizeSnapshotAccessResult:
         raise NotImplementedError
@@ -3522,6 +3528,7 @@ class RedshiftApi:
         context: RequestContext,
         cluster_identifier: String = None,
         snapshot_identifier: String = None,
+        snapshot_arn: String = None,
         snapshot_type: String = None,
         start_time: TStamp = None,
         end_time: TStamp = None,
@@ -3716,6 +3723,7 @@ class RedshiftApi:
         action_type: ActionType,
         cluster_identifier: String = None,
         snapshot_identifier: String = None,
+        snapshot_arn: String = None,
         owner_account: String = None,
         filters: NodeConfigurationOptionsFilterList = None,
         marker: String = None,
@@ -4194,7 +4202,8 @@ class RedshiftApi:
         self,
         context: RequestContext,
         cluster_identifier: String,
-        snapshot_identifier: String,
+        snapshot_identifier: String = None,
+        snapshot_arn: String = None,
         snapshot_cluster_identifier: String = None,
         port: IntegerOptional = None,
         availability_zone: String = None,
@@ -4276,8 +4285,9 @@ class RedshiftApi:
     def revoke_snapshot_access(
         self,
         context: RequestContext,
-        snapshot_identifier: String,
         account_with_restore_access: String,
+        snapshot_identifier: String = None,
+        snapshot_arn: String = None,
         snapshot_cluster_identifier: String = None,
     ) -> RevokeSnapshotAccessResult:
         raise NotImplementedError

@@ -27,6 +27,8 @@ THREAD_LOCAL = threading.local()
 
 MARKER_APIGW_REQUEST_REGION = "__apigw_request_region__"
 
+AWS_REGION_REGEX = r"(us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\d"
+
 
 def get_proxy_request_for_thread():
     try:
@@ -179,7 +181,10 @@ def patch_moto_request_handling():
                 if match:
                     action = snake_to_camel_case(match.group(1))
             service = extract_service_name_from_auth_header(request.headers)
-            msg = f"API action '{action}' for service '{service}' not yet implemented"
+            msg = (
+                f"API action '{action}' for service '{service}' not yet implemented or pro feature"
+                f" - check https://docs.localstack.cloud/aws/feature-coverage for further information"
+            )
             response = requests_error_response(request.headers, msg, code=501)
             if config.MOCK_UNIMPLEMENTED:
                 is_json = is_json_request(request.headers)

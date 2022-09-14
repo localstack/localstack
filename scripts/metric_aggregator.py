@@ -16,6 +16,76 @@ LOG = logging.getLogger(__name__)
 template_implemented_item = "- [X] "
 template_not_implemented_item = "- [ ] "
 
+template_implemented_html = '<input type="checkbox" disabled="disabled" checked="checked">'
+template_not_implemented_html = '<input type="checkbox" disabled="disabled">'
+
+SNAPSHOT = "📸"
+SNAPSHOT_SKIP_VERIFY = "🚫"
+AWS_VALIDATED = "✨"
+
+
+def _generate_details_block_html(details_title, details):
+    output = f"<li>  <details><summary>{details_title}</summary>\n\n"
+    for e, count in details.items():
+        if count > 0:
+            output += f"  {template_implemented_html}{e}</input><br/>\n"
+        else:
+            output += f"  {template_not_implemented_html}{e}</input><br/>\n"
+    output += "  </details></li>\n"
+    return output
+
+
+def create_simple_html_report(file_name, metrics):
+    output = "<html><h1> Metric Collection Report of Integration Tests </h1>\n\n"
+    output += "<div><b>Disclaimer</b>: naive calculation of test coverage - if operation is called at least once, it is considered as 'covered'.<br/>\n"
+    output += "&#x2728;: aws_validated or using the snapshot fixture<br/>\n"
+    output += "&#x1F4F8;: using the snapshot fixture without any skip_snapshot_verify<br/>\n"
+    output += "&#x1F6AB;: using the snapshot fixture but uses skip_snapshot_verify<br/></div>\n"
+
+    for service in sorted(metrics.keys()):
+        output += f"<h1> {service} </h1>\n<div>\n"
+        details = metrics[service]
+        if not details["service_attributes"]["pro"]:
+            output += "community<br/>\n"
+        elif not details["service_attributes"]["community"]:
+            output += "pro only<br/>\n"
+        else:
+            output += "community, and pro features<br/>\n"
+        del metrics[service]["service_attributes"]
+        output += "</div>\n"
+        operation_counter = len(details)
+        operation_tested = 0
+
+        tmp = ""
+        template_aws_validated = '<span title="AWS validated">&#x2728;</span>'
+        template_snapshot_verified = '<span title="Snapshot verified">&#x1F4F8;</span>'
+        template_snapshot_skipped = '<span title="Snapshot skipped">&#x1F6AB;</span>'
+
+        for operation in sorted(details.keys()):
+            op_details = details[operation]
+            if op_details.get("invoked", 0) > 0:
+                operation_tested += 1
+                aws_validated = f"{template_aws_validated if op_details.get('aws_validated') or op_details.get('snapshot') else ''}"
+                snapshot = f"{template_snapshot_verified if aws_validated and not op_details.get('snapshot_skipped_paths') else template_snapshot_skipped if aws_validated else ''}"
+                tmp += f"<p>{template_implemented_html}{operation} {aws_validated} {snapshot}</input>\n"
+            else:
+                tmp += f"<p>{template_not_implemented_html}{operation}</input>\n"
+
+            tmp += "<ul>"
+            if op_details.get("parameters"):
+                parameters = op_details.get("parameters")
+                if parameters:
+                    tmp += _generate_details_block_html("parameters  hit", parameters)
+            if op_details.get("errors"):
+                tmp += _generate_details_block_html("errors hit", op_details["errors"])
+            tmp += "</ul>"
+            tmp += "</p>"
+        output += f"<p><details><summary>{operation_tested/operation_counter*100:.2f}% test coverage</summary>\n\n{tmp}\n</details></p>\n"
+
+        with open(file_name, "a") as fd:
+            fd.write(f"{output}\n")
+            output = ""
+
 
 def _generate_details_block(details_title: str, details: dict) -> str:
     output = f"  <details><summary>{details_title}</summary>\n\n"
@@ -31,6 +101,10 @@ def _generate_details_block(details_title: str, details: dict) -> str:
 def create_readable_report(file_name: str, metrics: dict):
     output = "# Metric Collection Report of Integration Tests #\n\n"
     output += "**__Disclaimer__**: naive calculation of test coverage - if operation is called at least once, it is considered as 'covered'.\n"
+    output += f"{AWS_VALIDATED}: aws_validated or using the snapshot fixture\n"
+    output += f"{SNAPSHOT}: using the snapshot fixture without any skip_snapshot_verify\n"
+    output += f"{AWS_VALIDATED}: using the snapshot fixture but uses skip_snapshot_verify\n"
+
     for service in sorted(metrics.keys()):
         output += f"## {service} ##\n"
         details = metrics[service]
@@ -50,7 +124,9 @@ def create_readable_report(file_name: str, metrics: dict):
             op_details = details[operation]
             if op_details.get("invoked", 0) > 0:
                 operation_tested += 1
-                tmp += f"{template_implemented_item}{operation}\n"
+                aws_validated = f"{AWS_VALIDATED if op_details.get('aws_validated') or op_details.get('snapshot') else ''}"
+                snapshot = f"{SNAPSHOT if aws_validated and not op_details.get('snapshot_skipped_paths') else SNAPSHOT_SKIP_VERIFY if aws_validated else ''}"
+                tmp += f"{template_implemented_item}{operation} {aws_validated} {snapshot}\n"
             else:
                 tmp += f"{template_not_implemented_item}{operation}\n"
             if op_details.get("parameters"):
@@ -80,6 +156,8 @@ def _init_service_metric_counter() -> Dict:
             for op in service.operation_names:
                 attributes = {}
                 attributes["invoked"] = 0
+                attributes["aws_validated"] = False
+                attributes["snapshot"] = False
                 if hasattr(service.operation_model(op).input_shape, "members"):
                     params = {}
                     for n in service.operation_model(op).input_shape.members:
@@ -116,10 +194,11 @@ def _print_diff(metric_recorder_internal, metric_recorder_external):
                     print(f"found invocation mismatch: {key}.{subkey}")
 
 
-def append_row_to_raw_collection(collection_raw_csv_file_name, row, arch):
+def append_row_to_raw_collection(collection_raw_csv_file_name, row, arch=None):
     with open(collection_raw_csv_file_name, "a") as fd:
         writer = csv.writer(fd)
-        row.append(arch)
+        if arch:
+            row.append(arch)
         writer.writerow(row)
 
 
@@ -129,6 +208,8 @@ def aggregate_recorded_raw_data(
     pathlist = Path(base_dir).rglob("metric-report-raw-data-*.csv")
     recorded = _init_service_metric_counter()
     for path in pathlist:
+        if collection_raw_csv and str(path) == str(Path(collection_raw_csv)):
+            continue
         print(f"checking {str(path)}")
         with open(path, "r") as csv_obj:
             csv_dict_reader = csv.reader(csv_obj)
@@ -136,20 +217,17 @@ def aggregate_recorded_raw_data(
             next(csv_dict_reader)
             for row in csv_dict_reader:
                 if collection_raw_csv:
-                    arch = ""
-                    if "arm64" in str(path):
-                        arch = "arm64"
-                    elif "amd64" in str(path):
-                        arch = "amd64"
-                    append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row), arch)
-
+                    # only aggregate all if we did not set a specific target to collect
+                    if not collect_for_arch:
+                        append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row))
+                    elif collect_for_arch in str(path):
+                        append_row_to_raw_collection(collection_raw_csv, copy.deepcopy(row))
                 metric: Metric = Metric(*row)
-                if metric.xfail == "True":
-                    print(f"test {metric.node_id} marked as xfail")
-                    continue
                 if collect_for_arch and collect_for_arch not in str(path):
                     continue
-
+                if str(metric.xfail).lower() == "true":
+                    print(f"test {metric.node_id} marked as xfail")
+                    continue
                 service = recorded[metric.service]
                 ops = service[metric.operation]
 
@@ -168,6 +246,11 @@ def aggregate_recorded_raw_data(
                             break
 
                 ops["invoked"] += 1
+                if str(metric.snapshot).lower() == "true":
+                    ops["snapshot"] = True  # TODO snapshot currently includes also "skip_verify"
+                    ops["snapshot_skipped_paths"] = metric.snapshot_skipped_paths or ""
+                if str(metric.aws_validated).lower() == "true":
+                    ops["aws_validated"] = True
                 if not metric.parameters:
                     params = ops.setdefault("parameters", {})
                     params["_none_"] = params.get("_none_", 0) + 1
@@ -200,11 +283,13 @@ def main():
 
     # TODO: removed splitting of internal/external recorded calls, as some pro tests use 'internals' to connect to service
 
-    metrics_path = os.path.join(base_dir, "metrics")
+    metrics_path = os.path.join(base_dir, "parity_metrics")
     Path(metrics_path).mkdir(parents=True, exist_ok=True)
     dtime = datetime.datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%s")
 
-    collection_raw_csv = os.path.join(metrics_path, f"raw-collected-data-{dtime}.csv")
+    collection_raw_csv = os.path.join(
+        metrics_path, f"metric-report-raw-data-all-{collect_for_arch}{dtime}.csv"
+    )
 
     with open(collection_raw_csv, "w") as fd:
         writer = csv.writer(fd)
@@ -222,8 +307,10 @@ def main():
         recorded_metrics,
     )
 
-    filename = os.path.join(metrics_path, f"metric-report-{dtime}{collect_for_arch}.md")
-    create_readable_report(filename, recorded_metrics)
+    # filename = os.path.join(metrics_path, f"metric-report-{dtime}{collect_for_arch}.md")
+    # create_readable_report(filename, recorded_metrics)
+    filename = os.path.join(metrics_path, f"metric-report-{dtime}{collect_for_arch}.html")
+    create_simple_html_report(filename, recorded_metrics)
 
 
 if __name__ == "__main__":

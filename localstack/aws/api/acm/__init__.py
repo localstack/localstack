@@ -150,112 +150,96 @@ class AccessDeniedException(ServiceException):
     code: str = "AccessDeniedException"
     sender_fault: bool = False
     status_code: int = 400
-    Message: Optional[ServiceErrorMessage]
 
 
 class ConflictException(ServiceException):
     code: str = "ConflictException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidArgsException(ServiceException):
     code: str = "InvalidArgsException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidArnException(ServiceException):
     code: str = "InvalidArnException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidDomainValidationOptionsException(ServiceException):
     code: str = "InvalidDomainValidationOptionsException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidParameterException(ServiceException):
     code: str = "InvalidParameterException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidStateException(ServiceException):
     code: str = "InvalidStateException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class InvalidTagException(ServiceException):
     code: str = "InvalidTagException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class LimitExceededException(ServiceException):
     code: str = "LimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class RequestInProgressException(ServiceException):
     code: str = "RequestInProgressException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ResourceInUseException(ServiceException):
     code: str = "ResourceInUseException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class TagPolicyException(ServiceException):
     code: str = "TagPolicyException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ThrottlingException(ServiceException):
     code: str = "ThrottlingException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[AvailabilityErrorMessage]
 
 
 class TooManyTagsException(ServiceException):
     code: str = "TooManyTagsException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[String]
 
 
 class ValidationException(ServiceException):
     code: str = "ValidationException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ValidationExceptionMessage]
 
 
 class Tag(TypedDict, total=False):

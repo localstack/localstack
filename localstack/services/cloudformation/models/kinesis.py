@@ -32,7 +32,9 @@ class KinesisStream(GenericBaseModel):
         return "AWS::Kinesis::Stream"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return aws_stack.kinesis_stream_arn(self.props.get("Name"))
+        if attribute == "Arn":
+            return self.props.get("Arn")
+        return self.physical_resource_id
 
     def fetch_state(self, stack_name, resources):
         stream_name = self.resolve_refs_recursively(stack_name, self.props["Name"], resources)
@@ -52,11 +54,25 @@ class KinesisStream(GenericBaseModel):
         def get_delete_params(params, **kwargs):
             return {"StreamName": params["Name"], "EnforceConsumerDeletion": True}
 
+        def _store_arn(result, resource_id, resources, resource_type):
+            client = aws_stack.connect_to_service("kinesis")
+            stream_name = resources[resource_id]["Properties"]["Name"]
+
+            description = client.describe_stream(StreamName=stream_name)
+            while description["StreamDescription"]["StreamStatus"] != "ACTIVE":
+                description = client.describe_stream(StreamName=stream_name)
+
+            resources[resource_id]["PhysicalResourceId"] = stream_name
+            resources[resource_id]["Properties"]["Arn"] = description["StreamDescription"][
+                "StreamARN"
+            ]
+
         return {
             "create": {
                 "function": "create_stream",
                 "parameters": {"StreamName": "Name", "ShardCount": "ShardCount"},
                 "defaults": {"ShardCount": 1},
+                "result_handler": _store_arn,
             },
             "delete": {"function": "delete_stream", "parameters": get_delete_params},
         }

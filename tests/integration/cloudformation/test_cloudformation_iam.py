@@ -1,83 +1,24 @@
 import json
 import os
 
-import jinja2
 import pytest
 
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
-from localstack.testing.aws.cloudformation_utils import load_template_file
 from localstack.utils.common import short_uid
-from localstack.utils.generic.wait_utils import wait_until
 
 
-# TODO: refactor file and remove this compatibility fn
-def load_template_raw(file_name: str):
-    return load_template_file(os.path.join(os.path.dirname(__file__), "../templates", file_name))
-
-
-def test_delete_role_detaches_role_policy(
-    cfn_client,
-    iam_client,
-    cleanup_stacks,
-    cleanup_changesets,
-    is_change_set_created_and_available,
-    is_stack_created,
-):
-    stack_name = f"stack-{short_uid()}"
-    change_set_name = f"change-set-{short_uid()}"
+def test_delete_role_detaches_role_policy(cfn_client, iam_client, deploy_cfn_template):
     role_name = f"LsRole{short_uid()}"
-    policy_name = f"LsPolicy{short_uid()}"
-    template_rendered = jinja2.Template(load_template_raw("iam_role_policy.yaml")).render(
-        role_name=role_name,
-        policy_name=policy_name,
-        include_policy=True,
+    deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/iam_role_policy.yaml"),
+        parameters={"RoleName": role_name},
     )
-
-    response = cfn_client.create_change_set(
-        StackName=stack_name,
-        ChangeSetName=change_set_name,
-        TemplateBody=template_rendered,
-        ChangeSetType="CREATE",
-    )
-    change_set_id = response["Id"]
-    stack_id = response["StackId"]
-
-    try:
-        wait_until(is_change_set_created_and_available(change_set_id))
-        cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        wait_until(is_stack_created(stack_id))
-
-        attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
-            "AttachedPolicies"
-        ]
-        assert len(attached_policies) > 0
-
-        # nopolicy_template = jinja2.Template(load_template_raw("iam_role_policy.yaml")).render(
-        #     role_name=role_name,
-        #     policy_name=policy_name,
-        #     include_policy=False,
-        # )
-        # nopolicy_changeset_name = f"change-set-{short_uid()}"
-        # response = cfn_client.create_change_set(
-        #     StackName=stack_name,
-        #     ChangeSetName=nopolicy_changeset_name,
-        #     TemplateBody=nopolicy_template,
-        #     ChangeSetType="UPDATE",
-        # )
-        # change_set_id = response["Id"]
-        # wait_until(is_change_set_created_and_available(change_set_id))
-        # cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        # time.sleep(5)
-        # wait_until(is_stack_created(stack_id))  # TODO: wrong format
-        # wait_until(is_stack_deleted(stack_id))
-
-        # TODO: need to update stack to delete only a single resource
-        # attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)['AttachedPolicies']
-        # assert len(attached_policies) == 0
-
-    finally:
-        cleanup_changesets([change_set_id])
-        cleanup_stacks([stack_id])
+    attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)[
+        "AttachedPolicies"
+    ]
+    assert len(attached_policies) > 0
+    # TODO: need to update stack to delete only a single resource
+    # assert len(attached_policies) > 0
 
 
 def test_policy_attachments(
@@ -107,7 +48,7 @@ def test_policy_attachments(
     role_inline_policies = iam_client.list_role_policies(RoleName=role_name)
     user_inline_policies = iam_client.list_user_policies(UserName=user_name)
     group_inline_policies = iam_client.list_group_policies(GroupName=group_name)
-    assert len(role_inline_policies["PolicyNames"]) == 1
+    assert len(role_inline_policies["PolicyNames"]) == 2
     assert len(user_inline_policies["PolicyNames"]) == 1
     assert len(group_inline_policies["PolicyNames"]) == 1
 
@@ -150,3 +91,58 @@ def test_iam_username_defaultname(deploy_cfn_template, iam_client, snapshot):
 
     get_iam_user = iam_client.get_user(UserName=user_name)
     snapshot.match("get_iam_user", get_iam_user)
+
+
+@pytest.mark.aws_validated
+def test_iam_user_access_key(deploy_cfn_template, iam_client, snapshot):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("AccessKeyId", "key-id"),
+            snapshot.transform.key_value("UserName", "user-name"),
+            snapshot.transform.key_value("SecretAccessKey", "secret-access-key"),
+        ]
+    )
+
+    user_name = f"user-{short_uid()}"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/iam_access_key.yaml"),
+        parameters={"UserName": user_name},
+    )
+
+    snapshot.match("key_outputs", stack.outputs)
+
+    keys = iam_client.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
+    snapshot.match("access_key", keys[0])
+
+
+@pytest.mark.aws_validated
+@pytest.mark.skip_snapshot_verify(
+    paths=[
+        "$..Policy.Description",
+        "$..Policy.IsAttachable",
+        "$..Policy.PermissionsBoundaryUsageCount",
+        "$..Policy.Tags",
+    ]
+)
+def test_managed_policy_with_empty_resource(iam_client, deploy_cfn_template, snapshot):
+    snapshot.add_transformer(
+        snapshot.transform.iam_api(),
+    )
+    snapshot.add_transformers_list(
+        [snapshot.transform.resource_name(), snapshot.transform.key_value("PolicyId", "policy-id")]
+    )
+
+    parameters = {
+        "tableName": f"table-{short_uid()}",
+        "policyName": f"managed-policy-{short_uid()}",
+    }
+
+    template_path = os.path.join(os.path.dirname(__file__), "../templates/dynamodb_iam.yaml")
+
+    stack = deploy_cfn_template(template_path=template_path, parameters=parameters)
+
+    snapshot.match("outputs", stack.outputs)
+
+    policy_arn = stack.outputs["PolicyArn"]
+    policy = iam_client.get_policy(PolicyArn=policy_arn)
+    snapshot.match("managed_policy", policy)

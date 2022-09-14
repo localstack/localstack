@@ -20,6 +20,7 @@ AwsRegion = str
 BaseResourceId = str
 Boolean = bool
 ChannelName = str
+ComplianceScore = str
 ConfigRuleName = str
 Configuration = str
 ConfigurationAggregatorArn = str
@@ -68,6 +69,8 @@ ResourceTypeString = str
 RetentionConfigurationName = str
 RetentionPeriodInDays = int
 RuleLimit = int
+SSMDocumentName = str
+SSMDocumentVersion = str
 SchemaVersionId = str
 StackArn = str
 String = str
@@ -392,10 +395,43 @@ class ResourceType(str):
     AWS_GuardDuty_Detector = "AWS::GuardDuty::Detector"
     AWS_EMR_SecurityConfiguration = "AWS::EMR::SecurityConfiguration"
     AWS_SageMaker_CodeRepository = "AWS::SageMaker::CodeRepository"
+    AWS_Route53Resolver_ResolverEndpoint = "AWS::Route53Resolver::ResolverEndpoint"
+    AWS_Route53Resolver_ResolverRule = "AWS::Route53Resolver::ResolverRule"
+    AWS_Route53Resolver_ResolverRuleAssociation = "AWS::Route53Resolver::ResolverRuleAssociation"
+    AWS_DMS_ReplicationSubnetGroup = "AWS::DMS::ReplicationSubnetGroup"
+    AWS_DMS_EventSubscription = "AWS::DMS::EventSubscription"
+    AWS_MSK_Cluster = "AWS::MSK::Cluster"
+    AWS_StepFunctions_Activity = "AWS::StepFunctions::Activity"
+    AWS_WorkSpaces_Workspace = "AWS::WorkSpaces::Workspace"
+    AWS_WorkSpaces_ConnectionAlias = "AWS::WorkSpaces::ConnectionAlias"
+    AWS_SageMaker_Model = "AWS::SageMaker::Model"
+    AWS_ElasticLoadBalancingV2_Listener = "AWS::ElasticLoadBalancingV2::Listener"
+    AWS_StepFunctions_StateMachine = "AWS::StepFunctions::StateMachine"
+    AWS_Batch_JobQueue = "AWS::Batch::JobQueue"
+    AWS_Batch_ComputeEnvironment = "AWS::Batch::ComputeEnvironment"
+    AWS_AccessAnalyzer_Analyzer = "AWS::AccessAnalyzer::Analyzer"
+    AWS_Athena_WorkGroup = "AWS::Athena::WorkGroup"
+    AWS_Athena_DataCatalog = "AWS::Athena::DataCatalog"
+    AWS_Detective_Graph = "AWS::Detective::Graph"
+    AWS_GlobalAccelerator_Accelerator = "AWS::GlobalAccelerator::Accelerator"
+    AWS_GlobalAccelerator_EndpointGroup = "AWS::GlobalAccelerator::EndpointGroup"
+    AWS_GlobalAccelerator_Listener = "AWS::GlobalAccelerator::Listener"
+    AWS_EC2_TransitGatewayAttachment = "AWS::EC2::TransitGatewayAttachment"
+    AWS_EC2_TransitGatewayRouteTable = "AWS::EC2::TransitGatewayRouteTable"
+    AWS_DMS_Certificate = "AWS::DMS::Certificate"
 
 
 class ResourceValueType(str):
     RESOURCE_ID = "RESOURCE_ID"
+
+
+class SortBy(str):
+    SCORE = "SCORE"
+
+
+class SortOrder(str):
+    ASCENDING = "ASCENDING"
+    DESCENDING = "DESCENDING"
 
 
 class ConformancePackTemplateValidationException(ServiceException):
@@ -684,7 +720,6 @@ class ResourceConcurrentModificationException(ServiceException):
     code: str = "ResourceConcurrentModificationException"
     sender_fault: bool = False
     status_code: int = 400
-    message: Optional[ErrorMessage]
 
 
 class ResourceInUseException(ServiceException):
@@ -1136,6 +1171,21 @@ class ConformancePackComplianceFilters(TypedDict, total=False):
 
 
 ConformancePackComplianceResourceIds = List[StringWithCharLimit256]
+LastUpdatedTime = datetime
+
+
+class ConformancePackComplianceScore(TypedDict, total=False):
+    Score: Optional[ComplianceScore]
+    ConformancePackName: Optional[ConformancePackName]
+    LastUpdatedTime: Optional[LastUpdatedTime]
+
+
+ConformancePackComplianceScores = List[ConformancePackComplianceScore]
+ConformancePackNameFilter = List[ConformancePackName]
+
+
+class ConformancePackComplianceScoresFilters(TypedDict, total=False):
+    ConformancePackNames: ConformancePackNameFilter
 
 
 class ConformancePackComplianceSummary(TypedDict, total=False):
@@ -1144,6 +1194,11 @@ class ConformancePackComplianceSummary(TypedDict, total=False):
 
 
 ConformancePackComplianceSummaryList = List[ConformancePackComplianceSummary]
+
+
+class TemplateSSMDocumentDetails(TypedDict, total=False):
+    DocumentName: SSMDocumentName
+    DocumentVersion: Optional[SSMDocumentVersion]
 
 
 class ConformancePackInputParameter(TypedDict, total=False):
@@ -1163,6 +1218,7 @@ class ConformancePackDetail(TypedDict, total=False):
     ConformancePackInputParameters: Optional[ConformancePackInputParameters]
     LastUpdateRequestedTime: Optional[Date]
     CreatedBy: Optional[StringWithCharLimit256]
+    TemplateSSMDocumentDetails: Optional[TemplateSSMDocumentDetails]
 
 
 ConformancePackDetailList = List[ConformancePackDetail]
@@ -2158,6 +2214,19 @@ class ListAggregateDiscoveredResourcesResponse(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class ListConformancePackComplianceScoresRequest(ServiceRequest):
+    Filters: Optional[ConformancePackComplianceScoresFilters]
+    SortOrder: Optional[SortOrder]
+    SortBy: Optional[SortBy]
+    Limit: Optional[PageSizeLimit]
+    NextToken: Optional[NextToken]
+
+
+class ListConformancePackComplianceScoresResponse(TypedDict, total=False):
+    NextToken: Optional[NextToken]
+    ConformancePackComplianceScores: ConformancePackComplianceScores
+
+
 ResourceIdList = List[ResourceId]
 
 
@@ -2281,6 +2350,7 @@ class PutConformancePackRequest(ServiceRequest):
     DeliveryS3Bucket: Optional[DeliveryS3Bucket]
     DeliveryS3KeyPrefix: Optional[DeliveryS3KeyPrefix]
     ConformancePackInputParameters: Optional[ConformancePackInputParameters]
+    TemplateSSMDocumentDetails: Optional[TemplateSSMDocumentDetails]
 
 
 class PutConformancePackResponse(TypedDict, total=False):
@@ -3008,6 +3078,18 @@ class ConfigApi:
     ) -> ListAggregateDiscoveredResourcesResponse:
         raise NotImplementedError
 
+    @handler("ListConformancePackComplianceScores")
+    def list_conformance_pack_compliance_scores(
+        self,
+        context: RequestContext,
+        filters: ConformancePackComplianceScoresFilters = None,
+        sort_order: SortOrder = None,
+        sort_by: SortBy = None,
+        limit: PageSizeLimit = None,
+        next_token: NextToken = None,
+    ) -> ListConformancePackComplianceScoresResponse:
+        raise NotImplementedError
+
     @handler("ListDiscoveredResources")
     def list_discovered_resources(
         self,
@@ -3080,6 +3162,7 @@ class ConfigApi:
         delivery_s3_bucket: DeliveryS3Bucket = None,
         delivery_s3_key_prefix: DeliveryS3KeyPrefix = None,
         conformance_pack_input_parameters: ConformancePackInputParameters = None,
+        template_ssm_document_details: TemplateSSMDocumentDetails = None,
     ) -> PutConformancePackResponse:
         raise NotImplementedError
 

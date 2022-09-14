@@ -1,6 +1,4 @@
 import json
-import logging
-import os
 
 import pytest
 from botocore.exceptions import ClientError
@@ -10,7 +8,6 @@ from localstack.aws.api.iam import Tag
 from localstack.services.iam.provider import ADDITIONAL_MANAGED_POLICIES
 from localstack.testing.aws.util import create_client_with_keys, wait_for_user
 from localstack.utils.common import short_uid
-from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.strings import long_uid
 
 GET_USER_POLICY_DOC = """{
@@ -128,30 +125,6 @@ class TestIAMExtensions:
 
 
 class TestIAMIntegrations:
-
-    # TODO what does this test do?
-    def test_run_kcl_with_iam_assume_role(self):
-        env_vars = {}
-        if os.environ.get("AWS_ASSUME_ROLE_ARN"):
-            env_vars["AWS_ASSUME_ROLE_ARN"] = os.environ.get("AWS_ASSUME_ROLE_ARN")
-            env_vars["AWS_ASSUME_ROLE_SESSION_NAME"] = os.environ.get(
-                "AWS_ASSUME_ROLE_SESSION_NAME"
-            )
-            env_vars["ENV"] = os.environ.get("ENV") or "main"
-
-            def process_records(records):
-                print(records)
-
-            # start Kinesis client
-            stream_name = f"test-foobar-{short_uid()}"
-            kinesis_connector.listen_to_kinesis(
-                stream_name=stream_name,
-                listener_func=process_records,
-                env_vars=env_vars,
-                kcl_log_level=logging.INFO,
-                wait_until_started=True,
-            )
-
     def test_attach_iam_role_to_new_iam_user(self, iam_client):
         test_policy_document = {
             "Version": "2012-10-17",
@@ -416,8 +389,8 @@ class TestIAMIntegrations:
         assert actions["s3:GetObjectVersion"]["EvalDecision"] == "allowed"
 
     def test_create_role_with_assume_role_policy(self, iam_client):
-        role_name_1 = "role-{}".format(short_uid())
-        role_name_2 = "role-{}".format(short_uid())
+        role_name_1 = f"role-{short_uid()}"
+        role_name_2 = f"role-{short_uid()}"
 
         assume_role_policy_doc = {
             "Version": "2012-10-17",
@@ -479,9 +452,43 @@ class TestIAMIntegrations:
     def test_service_linked_role_name_should_match_aws(
         self, iam_client, service_name, expected_role
     ):
+        role_name = None
         try:
             service_linked_role = iam_client.create_service_linked_role(AWSServiceName=service_name)
             role_name = service_linked_role["Role"]["RoleName"]
             assert role_name == expected_role
         finally:
-            iam_client.delete_service_linked_role(RoleName=role_name)
+            if role_name:
+                iam_client.delete_service_linked_role(RoleName=role_name)
+
+    @pytest.mark.aws_validated
+    def test_update_assume_role_policy(self, iam_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.iam_api())
+        snapshot.add_transformer(snapshot.transform.resource_name("role_name"))
+        snapshot.add_transformer(snapshot.transform.key_value("RoleId", "role_id"))
+
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": ["ec2.amazonaws.com"]},
+                    "Action": ["sts:AssumeRole"],
+                }
+            ],
+        }
+
+        role_name = f"role-{short_uid()}"
+        result = iam_client.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(policy),
+        )
+        snapshot.match("created_role", result)
+        try:
+            result = iam_client.update_assume_role_policy(
+                RoleName=role_name,
+                PolicyDocument=json.dumps(policy),
+            )
+            snapshot.match("updated_policy", result)
+        finally:
+            iam_client.delete_role(RoleName=role_name)

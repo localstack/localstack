@@ -6,7 +6,10 @@ import random
 import re
 import string
 import uuid
+import zlib
 from typing import Dict, List, Union
+
+from botocore.httpchecksum import CrtCrc32cChecksum
 
 from localstack.config import DEFAULT_ENCODING
 
@@ -141,6 +144,28 @@ def md5(string: Union[str, bytes]) -> str:
     m = hashlib.md5()
     m.update(to_bytes(string))
     return m.hexdigest()
+
+
+def checksum_crc32(string: Union[str, bytes]) -> str:
+    bytes = to_bytes(string)
+    checksum = zlib.crc32(bytes)
+    return base64.b64encode(checksum.to_bytes(4, "big")).decode()
+
+
+def checksum_crc32c(string: Union[str, bytes]):
+    checksum = CrtCrc32cChecksum()
+    checksum.update(to_bytes(string))
+    return base64.b64encode(checksum.digest()).decode()
+
+
+def hash_sha1(string: Union[str, bytes]) -> str:
+    digest = hashlib.sha1(to_bytes(string)).digest()
+    return base64.b64encode(digest).decode()
+
+
+def hash_sha256(string: Union[str, bytes]) -> str:
+    digest = hashlib.sha256(to_bytes(string)).digest()
+    return base64.b64encode(digest).decode()
 
 
 def base64_to_hex(b64_string: str) -> bytes:

@@ -4,7 +4,8 @@ import os
 from datetime import date, datetime, time
 from typing import Any, Dict, Optional
 
-from moto.ses import ses_backend
+from moto.ses import ses_backends
+from moto.ses.models import SESBackend
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
@@ -40,7 +41,7 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
-from localstack.utils.time import timestamp_millis
+from localstack.utils.time import timestamp, timestamp_millis
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
     mkdir(ses_dir)
     path = os.path.join(ses_dir, id + ".json")
 
-    email = {"Id": id, "Region": region, **kwargs}
+    email = {"Id": id, "Timestamp": timestamp(), "Region": region, **kwargs}
 
     EMAILS[id] = email
 
@@ -88,6 +89,10 @@ def save_for_retrospection(id: str, region: str, **kwargs: Dict[str, Any]):
         f.write(json.dumps(email, default=_serialize))
 
     LOGGER.debug("Email saved at: %s", path)
+
+
+def get_ses_backend(context: RequestContext) -> SESBackend:
+    return ses_backends[context.account_id]["global"]
 
 
 class SesServiceApiResource:
@@ -153,7 +158,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     def list_templates(
         self, context: RequestContext, next_token: NextToken = None, max_items: MaxItems = None
     ) -> ListTemplatesResponse:
-        for template in ses_backend.list_templates():
+        backend = get_ses_backend(context)
+        for template in backend.list_templates():
             if isinstance(template["Timestamp"], (date, datetime)):
                 template["Timestamp"] = timestamp_millis(template["Timestamp"])
         return call_moto(context)
@@ -162,8 +168,9 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     def delete_template(
         self, context: RequestContext, template_name: TemplateName
     ) -> DeleteTemplateResponse:
-        if template_name in ses_backend.templates:
-            del ses_backend.templates[template_name]
+        backend = get_ses_backend(context)
+        if template_name in backend.templates:
+            del backend.templates[template_name]
         return DeleteTemplateResponse()
 
     @handler("GetIdentityVerificationAttributes")
@@ -269,10 +276,18 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 LOGGER.warning("Source not specified. Rejecting message.")
                 raise MessageRejected()
 
-        message = ses_backend.send_raw_email(source, destinations, raw_data, context.region)
+        if destinations is None:
+            destinations = []
+
+        backend = get_ses_backend(context)
+        message = backend.send_raw_email(source, destinations, raw_data, context.region)
 
         save_for_retrospection(
-            message.id, context.region, Source=source, Destination=destinations, RawData=raw_data
+            message.id,
+            context.region,
+            Source=source or message.source,
+            Destination=destinations,
+            RawData=raw_data,
         )
 
         return SendRawEmailResponse(MessageId=message.id)

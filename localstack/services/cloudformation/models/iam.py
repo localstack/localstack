@@ -1,6 +1,8 @@
 import json
 import logging
 
+from botocore.exceptions import ClientError
+
 from localstack.services.awslambda.lambda_api import IAM_POLICY_VERSION
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -46,7 +48,8 @@ class IAMManagedPolicy(GenericBaseModel):
             resource = resources[resource_id]
             props = resource["Properties"]
             cls.resolve_refs_recursively(stack_name, props, resources)
-            policy_doc = json.dumps(props["PolicyDocument"])
+
+            policy_doc = json.dumps(remove_none_values(props["PolicyDocument"]))
             policy = iam.create_policy(
                 PolicyName=props["ManagedPolicyName"], PolicyDocument=policy_doc
             )
@@ -164,6 +167,56 @@ class IAMUser(GenericBaseModel):
         }
 
 
+class IAMAccessKey(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::IAM::AccessKey"
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute == "SecretAccessKey":
+            return self.props("SecretAccessKey")
+        return self.physical_resource_id
+
+    def fetch_state(self, stack_name, resources):
+        user_name = self.resolve_refs_recursively(stack_name, self.props.get("UserName"), resources)
+        access_key_id = self.get_physical_resource_id()
+        if access_key_id:
+            keys = aws_stack.connect_to_service("iam").list_access_keys(UserName=user_name)[
+                "AccessKeyMetadata"
+            ]
+            return [key for key in keys if key["AccessKeyId"] == access_key_id][0]
+
+    @staticmethod
+    def get_deploy_templates():
+        def _delete(resource_id, resources, resource_type, func, stack_name):
+            iam_client = aws_stack.connect_to_service("iam")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            user_name = props["UserName"]
+            access_key_id = resource["PhysicalResourceId"]
+
+            try:
+                iam_client.delete_access_key(UserName=user_name, AccessKeyId=access_key_id)
+            except ClientError as err:
+                if "NotSuchEntity" not in err.response["Error"]["Code"]:
+                    raise
+
+        def _store_key_id(result, resource_id, resources, resource_type):
+            resources[resource_id]["PhysicalResourceId"] = result["AccessKey"]["AccessKeyId"]
+            resources[resource_id]["Properties"]["SecretAccessKey"] = result["AccessKey"][
+                "SecretAccessKey"
+            ]
+
+        return {
+            "create": {
+                "function": "create_access_key",
+                "parameters": ["UserName", "Serial", "Status"],
+                "result_handler": _store_key_id,
+            },
+            "delete": {"function": _delete},
+        }
+
+
 class IAMRole(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
@@ -260,6 +313,7 @@ class IAMRole(GenericBaseModel):
 
             # get policy document - make sure we're resolving references in the policy doc
             doc = dict(policy["PolicyDocument"])
+            doc = remove_none_values(doc)
             doc = resolve_refs_recursively(stack, doc)
 
             doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
