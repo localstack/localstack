@@ -640,6 +640,143 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..Grants..Grantee.DisplayName", "$..Grants..Grantee.ID"]
+    )
+    def test_s3_bucket_acl(self, s3_client, s3_create_bucket, snapshot):
+        # loosely based on
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketAcl.html
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("DisplayName"),
+                snapshot.transform.key_value("ID", value_replacement="owner-id"),
+            ]
+        )
+        list_bucket_output = s3_client.list_buckets()
+        owner = list_bucket_output["Owner"]
+
+        bucket_name = s3_create_bucket(ACL="public-read")
+        response = s3_client.get_bucket_acl(Bucket=bucket_name)
+        snapshot.match("get-bucket-acl", response)
+
+        s3_client.put_bucket_acl(Bucket=bucket_name, ACL="private")
+
+        response = s3_client.get_bucket_acl(Bucket=bucket_name)
+        snapshot.match("get-bucket-canned-acl", response)
+
+        s3_client.put_bucket_acl(
+            Bucket=bucket_name, GrantRead='uri="http://acs.amazonaws.com/groups/s3/LogDelivery"'
+        )
+
+        response = s3_client.get_bucket_acl(Bucket=bucket_name)
+        snapshot.match("get-bucket-grant-acl", response)
+
+        # Owner is mandatory, otherwise raise MalformedXML
+        acp = {
+            "Owner": owner,
+            "Grants": [
+                {
+                    "Grantee": {"ID": owner["ID"], "Type": "CanonicalUser"},
+                    "Permission": "FULL_CONTROL",
+                },
+                {
+                    "Grantee": {
+                        "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                        "Type": "Group",
+                    },
+                    "Permission": "WRITE",
+                },
+            ],
+        }
+        s3_client.put_bucket_acl(Bucket=bucket_name, AccessControlPolicy=acp)
+
+        response = s3_client.get_bucket_acl(Bucket=bucket_name)
+        snapshot.match("get-bucket-acp-acl", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skipif(LEGACY_S3_PROVIDER, reason="Behaviour not implemented in legacy provider")
+    def test_s3_bucket_acl_exceptions(self, s3_client, s3_bucket, snapshot):
+        list_bucket_output = s3_client.list_buckets()
+        owner = list_bucket_output["Owner"]
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, ACL="fake-acl")
+
+        snapshot.match("put-bucket-canned-acl", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(
+                Bucket=s3_bucket, GrantWrite='uri="http://acs.amazonaws.com/groups/s3/FakeGroup"'
+            )
+
+        snapshot.match("put-bucket-grant-acl-fake-uri", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, GrantWrite='fakekey="1234"')
+
+        snapshot.match("put-bucket-grant-acl-fake-key", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, GrantWrite='id="wrong-id"')
+
+        snapshot.match("put-bucket-grant-acl-wrong-id", e.value.response)
+
+        acp = {
+            "Grants": [
+                {
+                    "Grantee": {
+                        "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                        "Type": "Group",
+                    },
+                    "Permission": "WRITE",
+                }
+            ]
+        }
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-1", e.value.response)
+
+        # add Owner, but modify the permission
+        acp["Owner"] = owner
+        acp["Grants"][0]["Permission"] = "WRONG-PERMISSION"
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-2", e.value.response)
+
+        # restore good permission, but put bad format Owner ID
+        acp["Owner"] = {"ID": "wrong-id"}
+        acp["Grants"][0]["Permission"] = "FULL_CONTROL"
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-3", e.value.response)
+
+        # restore owner, but wrong URI
+        acp["Owner"] = owner
+        acp["Grants"][0]["Grantee"]["URI"] = "http://acs.amazonaws.com/groups/s3/FakeGroup"
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-4", e.value.response)
+
+        # different type of failing grantee (CanonicalUser/ID)
+        acp["Grants"][0]["Grantee"]["Type"] = "CanonicalUser"
+        acp["Grants"][0]["Grantee"]["ID"] = "wrong-id"
+        acp["Grants"][0]["Grantee"].pop("URI")
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-5", e.value.response)
+
+        # different type of failing grantee (Wrong type)
+        acp["Grants"][0]["Grantee"]["Type"] = "BadType"
+
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_acl(Bucket=s3_bucket, AccessControlPolicy=acp)
+        snapshot.match("put-bucket-acp-acl-6", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
         paths=[
             "$..AcceptRanges",
             "$..ContentLanguage",

@@ -255,6 +255,40 @@
         "shape": "RestoreObjectOutputStatusCode",
         "location": "statusCode"
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidArgument",
+      "value": {
+        "type": "structure",
+        "members": {
+          "ArgumentName": {
+            "shape": "ArgumentName"
+          },
+          "ArgumentValue": {
+            "shape": "ArgumentValue"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>Invalid Argument</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ArgumentName",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ArgumentValue",
+      "value": {
+        "type": "string"
+      }
     }
   ]
 }
