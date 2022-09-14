@@ -10,7 +10,6 @@ from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.config import EDGE_BIND_HOST, LOCALSTACK_HOSTNAME
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION, OPENSEARCH_PLUGIN_LIST
-from localstack.services.install import install_opensearch
 from localstack.services.opensearch.cluster import EdgeProxiedOpensearchCluster
 from localstack.services.opensearch.cluster_manager import (
     CustomBackendManager,
@@ -20,6 +19,7 @@ from localstack.services.opensearch.cluster_manager import (
     SingletonClusterManager,
     create_cluster_manager,
 )
+from localstack.services.opensearch.packages import opensearch_package
 from localstack.utils.common import call_safe, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread
@@ -47,10 +47,10 @@ def install_async():
             if installed.is_set():
                 return
             LOG.info("installing opensearch default version")
-            install_opensearch()
+            opensearch_package.install()
             LOG.info("done installing opensearch default version")
             LOG.info("installing opensearch 1.0")
-            install_opensearch("OpenSearch_1.0")
+            opensearch_package.install(version="OpenSearch_1.0")
             LOG.info("done installing opensearch 1.0")
             installed.set()
 

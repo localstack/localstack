@@ -3,9 +3,8 @@ import os
 from typing import List, Optional
 
 from localstack import config
-from localstack.config import dirs, is_env_true
-from localstack.services import install
-from localstack.services.install import DDB_AGENT_JAR_PATH
+from localstack.config import is_env_true
+from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.files import rm_rf
@@ -46,17 +45,17 @@ class DynamodbServer(Server):
 
     @property
     def jar_path(self) -> str:
-        return f"{dirs.static_libs}/dynamodb/DynamoDBLocal.jar"
+        return f"{dynamodblocal_package.get_installed_dir()}/DynamoDBLocal.jar"
 
     @property
     def library_path(self) -> str:
-        return f"{dirs.static_libs}/dynamodb/DynamoDBLocal_lib"
+        return f"{dynamodblocal_package.get_installed_dir()}/DynamoDBLocal_lib"
 
     def _create_shell_command(self) -> List[str]:
         cmd = [
             "java",
             "-Xmx%s" % self.heap_size,
-            f"-javaagent:{DDB_AGENT_JAR_PATH}",
+            f"-javaagent:{dynamodblocal_package.get_installer().get_ddb_agent_jar_path()}",
             f"-Djava.library.path={self.library_path}",
             "-jar",
             self.jar_path,
@@ -78,7 +77,7 @@ class DynamodbServer(Server):
         return cmd + parameters
 
     def do_start_thread(self) -> FuncThread:
-        install.install_dynamodb_local()
+        dynamodblocal_package.install()
 
         cmd = self._create_shell_command()
         LOG.debug("starting dynamodb process %s", cmd)
