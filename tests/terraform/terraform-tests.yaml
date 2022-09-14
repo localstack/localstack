@@ -87,8 +87,6 @@ route53resolver:
     - TestAccRoute53ResolverFirewallRule_block
     - TestAccRoute53ResolverFirewallRule_blockOverride
     - TestAccRoute53ResolverFirewallRule_disappears
-    - TestAccRoute53ResolverQueryLogConfigAssociation_basic
-    - TestAccRoute53ResolverQueryLogConfigAssociation_disappears
     - TestAccRoute53ResolverQueryLogConfig_basic
     - TestAccRoute53ResolverQueryLogConfig_disappears
     - TestAccRoute53ResolverQueryLogConfig_tags
