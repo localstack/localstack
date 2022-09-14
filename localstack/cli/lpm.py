@@ -71,21 +71,7 @@ def _do_install_package(package: Package, version=None, target=None):
     required=False,
     help="how many installers to run in parallel processes",
 )
-@click.option(
-    "--version",
-    type=str,
-    default=None,
-    required=False,
-    help="[Experimental] Defines the version to install of a package. Not supported for all packages yet.",
-)
-@click.option(
-    "--target",
-    type=click.Choice([target.name.lower() for target in InstallTarget]),
-    default=None,
-    required=False,
-    help="[Experimental] Defines the installation target package. Not supported for all packages yet.",
-)
-def install(package, parallel, version, target):
+def install(package, parallel, version=None, target=None):
     """
     Install one or more packages.
     """
@@ -114,7 +100,6 @@ def install(package, parallel, version, target):
         raise ClickException("one or more package installations failed.")
 
 
-@cli.command(name="list-service-packages")
 def list_service_packages():
     package_repo = PackageRepository()
     service_packages = package_repo.get_service_packages()
@@ -129,7 +114,6 @@ def list_service_packages():
                     console.print(f"    -  {version}", highlight=False)
 
 
-@cli.command(name="install-service-packages")
 @click.argument("services", nargs=-1, required=True)
 @click.option(
     "--parallel",
@@ -143,7 +127,7 @@ def list_service_packages():
     type=click.Choice([target.name.lower() for target in InstallTarget]),
     default=None,
     required=False,
-    help="[Experimental] Defines the installation target package. Not supported for all packages yet.",
+    help="target of the installation",
 )
 def install_service_packages(services: List[str], parallel: int, target: str):
     packages = []
@@ -168,9 +152,36 @@ def install_service_packages(services: List[str], parallel: int, target: str):
         )
 
 
+if not config.LEGACY_LPM_INSTALLERS:
+    # TODO remove the feature flag and enable this by default with the next minor version
+    # Enables new features for LPM
+    cli.command(name="list-service-packages", help="Lists packages used by services.")(
+        list_service_packages
+    )
+    cli.command(name="install-service-packages", help="Installs all packages for a service.")(
+        install_service_packages
+    )
+
+    click.option(
+        "--version",
+        type=str,
+        default=None,
+        required=False,
+        help="version to install of a package",
+    )(install)
+    click.option(
+        "--target",
+        type=click.Choice([target.name.lower() for target in InstallTarget]),
+        default=None,
+        required=False,
+        help="target of the installation",
+    )(install)
+
+
 @cli.command(name="list")
 def list_packages():
     """List available packages of all repositories"""
+    # TODO migrate to new package based installers instead of using the repositories
     installers = InstallerManager()
 
     for repo in installers.repositories.load_all():
