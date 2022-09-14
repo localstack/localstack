@@ -109,6 +109,10 @@ def dispatch_to_moto(context: RequestContext) -> Response:
 
     try:
         status, headers, content = dispatch(request, request.url, request.headers)
+        if isinstance(content, str) and len(content) == 0:
+            # moto often returns an empty string to indicate an empty body.
+            # use None instead to ensure that body-related headers aren't overwritten when creating the response object.
+            content = None
         return Response(content, status, headers)
     except RESTError as e:
         raise CommonServiceException(e.error_type, e.message, status_code=e.code) from e

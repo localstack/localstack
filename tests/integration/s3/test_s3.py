@@ -26,6 +26,7 @@ from botocore.exceptions import ClientError
 from pytz import timezone
 
 from localstack import config, constants
+from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import (
     S3_VIRTUAL_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
@@ -59,6 +60,14 @@ if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
 
 LOG = logging.getLogger(__name__)
+
+
+def is_old_provider():
+    return LEGACY_S3_PROVIDER
+
+
+def is_asf_provider():
+    return not LEGACY_S3_PROVIDER
 
 
 @pytest.fixture(scope="class")
@@ -263,7 +272,8 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("delimiter", ["/", "%2F"])
-    def test_list_objects_with_prefix(self, s3_client, s3_create_bucket, delimiter):
+    def test_list_objects_with_prefix(self, s3_client, s3_create_bucket, delimiter, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_create_bucket()
         key = "test/foo/bar/123"
         s3_client.put_object(Bucket=bucket_name, Key=key, Body=b"content 123")
@@ -271,6 +281,7 @@ class TestS3:
         response = s3_client.list_objects(
             Bucket=bucket_name, Prefix="test/", Delimiter=delimiter, MaxKeys=1, EncodingType="url"
         )
+        snapshot.match("list-objects", response)
         sub_dict = {
             "Delimiter": delimiter,
             "EncodingType": "url",
@@ -293,8 +304,9 @@ class TestS3:
         assert is_sub_dict(sub_dict, response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(path="$..Error.BucketName")
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_object_no_such_bucket(self, s3_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
             s3_client.get_object(Bucket=f"does-not-exist-{short_uid()}", Key="foobar")
 
@@ -309,8 +321,9 @@ class TestS3:
         snapshot.match("expected_error", e.value.response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.skip_snapshot_verify(path="$..Error.BucketName")
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
     def test_get_bucket_notification_configuration_no_such_bucket(self, s3_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_notification_configuration(Bucket=f"doesnotexist-{short_uid()}")
 
@@ -345,25 +358,26 @@ class TestS3:
         assert response["Body"].read() == content
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="error message is different in current implementation")
-    def test_invalid_range_error(self, s3_client, s3_bucket):
+    @pytest.mark.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=["$..Error.ActualObjectSize", "$..Error.RangeRequested", "$..Error.Message"],
+    )
+    def test_invalid_range_error(self, s3_client, s3_bucket, snapshot):
         key = "my-key"
         s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
 
         with pytest.raises(ClientError) as e:
             s3_client.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1024-4096")
-
-        e.match("InvalidRange")
-        e.match("The requested range is not satisfiable")
+        snapshot.match("exc", e.value.response)
 
     @pytest.mark.aws_validated
-    def test_range_key_not_exists(self, s3_client, s3_bucket):
+    @pytest.mark.skip_snapshot_verify(paths=["$..Error.Key", "$..Error.RequestID"])
+    def test_range_key_not_exists(self, s3_client, s3_bucket, snapshot):
         key = "my-key"
         with pytest.raises(ClientError) as e:
             s3_client.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1024-4096")
 
-        e.match("NoSuchKey")
-        e.match("The specified key does not exist.")
+        snapshot.match("exc", e.value.response)
 
     @pytest.mark.aws_validated
     def test_create_bucket_via_host_name(self, s3_vhost_client):
@@ -384,7 +398,11 @@ class TestS3:
             s3_vhost_client.delete_bucket(Bucket=bucket_name)
 
     @pytest.mark.aws_validated
-    def test_put_and_get_bucket_policy(self, s3_client, s3_bucket):
+    def test_put_and_get_bucket_policy(self, s3_client, s3_bucket, snapshot):
+        # just for the joke: Response syntax HTTP/1.1 200
+        # sample response: HTTP/1.1 204 No Content
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketPolicy.html
+        snapshot.add_transformer(snapshot.transform.key_value("Resource"))
         # put bucket policy
         policy = {
             "Version": "2012-10-17",
@@ -398,11 +416,13 @@ class TestS3:
             ],
         }
         response = s3_client.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+        # assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
+        snapshot.match("put-bucket-policy", response)
 
         # retrieve and check policy config
-        saved_policy = s3_client.get_bucket_policy(Bucket=s3_bucket)["Policy"]
-        assert policy == json.loads(saved_policy)
+        response = s3_client.get_bucket_policy(Bucket=s3_bucket)
+        snapshot.match("get-bucket-policy", response)
+        assert policy == json.loads(response["Policy"])
 
     @pytest.mark.aws_validated
     @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5769")
@@ -425,16 +445,11 @@ class TestS3:
         snapshot.match("deleted-object-tags", object_tags)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/6218")
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..AcceptRanges"])
     def test_head_object_fields(self, s3_client, s3_bucket, snapshot):
         key = "my-key"
         s3_client.put_object(Bucket=s3_bucket, Key=key, Body=b"abcdefgh")
-
         response = s3_client.head_object(Bucket=s3_bucket, Key=key)
-        # missing AcceptRanges field
-        # see https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html
-        # https://stackoverflow.com/questions/58541696/s3-not-returning-accept-ranges-header
-        # https://www.keycdn.com/support/frequently-asked-questions#is-byte-range-not-working-in-combination-with-s3
 
         snapshot.match("head-object", response)
 
@@ -461,7 +476,7 @@ class TestS3:
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256"])
-    def test_put_object_checksum(self, s3_client, s3_create_bucket, algorithm):
+    def test_put_object_checksum(self, s3_client, s3_create_bucket, algorithm, snapshot):
         bucket = s3_create_bucket()
         key = f"file-{short_uid()}"
         data = b"test data.."
@@ -476,6 +491,7 @@ class TestS3:
 
         with pytest.raises(ClientError) as e:
             s3_client.put_object(**params)
+        snapshot.match("put-wrong-checksum", e.value.response)
 
         error = e.value.response["Error"]
         assert error["Code"] == "InvalidRequest"
@@ -497,11 +513,13 @@ class TestS3:
                 checksum = ""
         params.update({f"Checksum{algorithm}": checksum})
         response = s3_client.put_object(**params)
+        snapshot.match("put-object-generated", response)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         # Test the autogenerated checksums
         params.pop(f"Checksum{algorithm}")
         response = s3_client.put_object(**params)
+        snapshot.match("put-object-autogenerated", response)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @pytest.mark.aws_validated
@@ -714,7 +732,8 @@ class TestS3:
         snapshot.match("get_object", response)
 
     @pytest.mark.aws_validated
-    @pytest.mark.xfail(reason="The error format is wrong in s3_listener (is_bucket_available)")
+    @pytest.mark.xfail(reason="Get 404 Not Found instead of NoSuchBucket")
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, paths=["$..Error.BucketName"])
     def test_bucket_availability(self, s3_client, snapshot):
         bucket_name = "test-bucket-lifecycle"
         with pytest.raises(ClientError) as e:
@@ -834,6 +853,9 @@ class TestS3:
     @pytest.mark.aws_validated
     def test_delete_bucket_lifecycle_configuration(self, s3_client, s3_bucket, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-exc-1", e.value.response)
         lfc = {
             "Rules": [
                 {
@@ -851,7 +873,7 @@ class TestS3:
 
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
-        snapshot.match("get-bucket-lifecycle-exc", e.value.response)
+        snapshot.match("get-bucket-lifecycle-exc-2", e.value.response)
 
     @pytest.mark.aws_validated
     def test_delete_lifecycle_configuration_on_bucket_deletion(
@@ -879,6 +901,42 @@ class TestS3:
         with pytest.raises(ClientError) as e:
             s3_client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
         snapshot.match("get-bucket-lifecycle-exc", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="Bucket lifecycle doesn't affect object expiration in both providers for now"
+    )
+    def test_bucket_lifecycle_configuration_object_expiry(self, s3_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("BucketName"),
+                snapshot.transform.key_value(
+                    "Expiration", reference_replacement=False, value_replacement="<expiration>"
+                ),
+            ]
+        )
+
+        lfc = {
+            "Rules": [
+                {
+                    "Expiration": {"Days": 7},
+                    "ID": "wholebucket",
+                    "Filter": {"Prefix": ""},
+                    "Status": "Enabled",
+                }
+            ]
+        }
+        s3_client.put_bucket_lifecycle_configuration(Bucket=s3_bucket, LifecycleConfiguration=lfc)
+        result = s3_client.get_bucket_lifecycle_configuration(Bucket=s3_bucket)
+        snapshot.match("get-bucket-lifecycle-conf", result)
+
+        key = "test-object-expiry"
+        s3_client.put_object(Body=b"test", Bucket=s3_bucket, Key=key)
+
+        response = s3_client.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-object-expiry", response)
+        response = s3_client.get_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("get-object-expiry", response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
@@ -1314,6 +1372,34 @@ class TestS3:
 
         response = s3_client.head_object(Bucket=function_name, Key="key.png")
         snapshot.match("head_object", response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(condition=is_old_provider, path="$..Error.BucketName")
+    def test_s3_uppercase_bucket_name(self, s3_client, s3_create_bucket, snapshot):
+        # bucket name should be lower-case
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"TESTUPPERCASE-{short_uid()}"
+        with pytest.raises(ClientError) as e:
+            s3_create_bucket(Bucket=bucket_name)
+        snapshot.match("uppercase-bucket", e.value.response)
+
+    @pytest.mark.aws_validated
+    def test_create_bucket_with_existing_name(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-{short_uid()}"
+        s3_create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
+        )
+
+        for loc_constraint in ["us-west-1", "us-east-2"]:
+            with pytest.raises(ClientError) as e:
+                s3_client.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={"LocationConstraint": loc_constraint},
+                )
+            e.match("BucketAlreadyOwnedByYou")
+            snapshot.match(f"create-bucket-{loc_constraint}", e.value.response)
 
 
 class TestS3TerraformRawRequests:
@@ -1957,24 +2043,6 @@ class TestS3PresignedUrl:
             # if the restoring happens in LocalStack (or was fast in AWS) we can retrieve the object
             response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
             assert "etag" in response.get("ResponseMetadata").get("HTTPHeaders")
-
-    @pytest.mark.aws_validated
-    def test_create_bucket_with_existing_name(self, s3_client, s3_create_bucket, snapshot):
-        snapshot.add_transformer(snapshot.transform.s3_api())
-        bucket_name = f"bucket-{short_uid()}"
-        s3_create_bucket(
-            Bucket=bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
-        )
-
-        for loc_constraint in ["us-west-1", "us-east-2"]:
-            with pytest.raises(ClientError) as e:
-                s3_client.create_bucket(
-                    Bucket=bucket_name,
-                    CreateBucketConfiguration={"LocationConstraint": loc_constraint},
-                )
-            e.match("BucketAlreadyOwnedByYou")
-            snapshot.match(f"create-bucket-{loc_constraint}", e.value.response)
 
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(paths=["$..Prefix"])
