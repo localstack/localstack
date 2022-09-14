@@ -80,12 +80,8 @@ class TestLambdaRuntimesCommon:
         assert invoke_result["StatusCode"] == 200
         assert json.loads(invoke_result["Payload"].read()) == payload
 
-    @pytest.mark.multiruntime(
-        scenario="introspection",
-        runtimes=["python", "nodejs", "ruby", "java", "go", "dotnet", "custom"],
-    )
+    @pytest.mark.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, lambda_client, multiruntime_lambda, snapshot):
-        # provided lambdas take a little longer for large payloads, hence timeout to 5s
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024, Environment={"Variables": {"TEST_KEY": "TEST_VAL"}}
         )
@@ -104,3 +100,16 @@ class TestLambdaRuntimesCommon:
         assert "ctx" in invocation_result_payload
         assert "packages" in invocation_result_payload
         snapshot.match("invocation_result_payload", invocation_result_payload)
+
+    @pytest.mark.multiruntime(scenario="uncaughtexception")
+    def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
+        create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
+        snapshot.match("create_function_result", create_function_result)
+
+        # simple payload
+        invocation_result = lambda_client.invoke(
+            FunctionName=create_function_result["FunctionName"],
+            Payload=b'{"error_msg": "some_error_msg"}',
+        )
+        assert "FunctionError" in invocation_result
+        snapshot.match("error_result", invocation_result)
