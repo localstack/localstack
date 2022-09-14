@@ -231,13 +231,13 @@ class SnapshotSession:
     def _transform(self, tmp: dict) -> dict:
         """build a persistable state definition that can later be compared against"""
         self._transform_dict_to_parseable_values(tmp)
-        if not self.update:
-            self._remove_skip_verification_paths(tmp)
 
         ctx = TransformContext()
-
         for transformer, _ in sorted(self.transformers, key=lambda p: p[1]):
             tmp = transformer.transform(tmp, ctx=ctx)
+
+        if not self.update:
+            self._remove_skip_verification_paths(tmp)
 
         tmp = json.dumps(tmp, default=str)
         for sr in ctx.serialized_replacements:
