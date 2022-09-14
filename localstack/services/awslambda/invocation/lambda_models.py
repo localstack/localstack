@@ -38,6 +38,13 @@ class Code:
 
 
 @dataclasses.dataclass
+class S3CodeLocation:
+    s3_bucket: str
+    s3_key: str
+    s3_object_version: str
+
+
+@dataclasses.dataclass
 class DeadLetterConfig:
     target_arn: str
 

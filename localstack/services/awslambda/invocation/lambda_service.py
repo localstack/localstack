@@ -1,8 +1,12 @@
 import concurrent.futures
+import io
 import logging
+import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from threading import RLock
 from typing import Dict, List, Optional
+
+from mypy_boto3_s3 import S3Client
 
 from localstack.aws.api.lambda_ import ResourceNotFoundException
 from localstack.services.awslambda.invocation.lambda_models import (
@@ -12,12 +16,14 @@ from localstack.services.awslambda.invocation.lambda_models import (
     FunctionVersion,
     Invocation,
     InvocationResult,
+    S3CodeLocation,
     UpdateStatus,
     VersionFunctionConfiguration,
     VersionIdentifier,
 )
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
 
@@ -177,3 +183,40 @@ class LambdaService:
                 payload=payload, client_context=client_context, invocation_type=invocation_type
             )
         )
+
+
+def store_lambda_archive(
+    archive_file: bytes, function_name: str, region_name: str, account_id: str
+) -> S3CodeLocation:
+    # store all buckets in us-east-1 for now
+    s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+    bucket_name = f"awslambda-{region_name}-tasks"
+    # s3 create bucket is idempotent
+    s3_client.create_bucket(Bucket=bucket_name)
+    key = f"snapshots/{account_id}/{function_name}-{uuid.uuid4()}"
+    s3_client.upload_fileobj(Fileobj=io.BytesIO(archive_file), Bucket=bucket_name, Key=key)
+    return S3CodeLocation(s3_bucket=bucket_name, s3_key=key)
+
+
+def store_s3_bucket_archive(
+    archive_bucket: str,
+    archive_key: str,
+    archive_version: Optional[str],
+    function_name: str,
+    region_name: str,
+    account_id: str,
+) -> S3CodeLocation:
+    s3_client: "S3Client" = aws_stack.connect_to_service("s3")
+    archive_file = s3_client.get_object(
+        Bucket=archive_bucket, Key=archive_key, VersionId=archive_version
+    )["Body"].read()
+    return store_lambda_archive(
+        archive_file, function_name=function_name, region_name=region_name, account_id=account_id
+    )
+
+
+def get_lambda_archive(location: S3CodeLocation) -> bytes:
+    s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+    return s3_client.get_object(
+        Bucket=location.s3_bucket, Key=location.s3_key, VersionId=location.s3_object_version
+    )["Body"].read()

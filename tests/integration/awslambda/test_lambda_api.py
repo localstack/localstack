@@ -191,11 +191,30 @@ class TestLambdaFunction:
         code_location = get_function_response["Code"]["Location"]
         response = requests.get(code_location)
         assert zip_file_bytes == response.content
-        h = sha256()
-        h.update(zip_file_bytes)
+        h = sha256(zip_file_bytes)
         b64digest = to_str(base64.b64encode(h.digest()))
         assert b64digest == get_function_response["Configuration"]["CodeSha256"]
         assert len(zip_file_bytes) == get_function_response["Configuration"]["CodeSize"]
+        zip_file_bytes_updated = create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON_VERSION), get_content=True
+        )
+        update_function_response = lambda_client.update_function_code(
+            FunctionName=function_name, ZipFile=zip_file_bytes_updated
+        )
+        snapshot.match("update-function-response", update_function_response)
+        get_function_response_updated = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-response-updated", get_function_response_updated)
+        code_location_updated = get_function_response_updated["Code"]["Location"]
+        response = requests.get(code_location_updated)
+        assert zip_file_bytes_updated == response.content
+        h = sha256(zip_file_bytes_updated)
+        b64digest_updated = to_str(base64.b64encode(h.digest()))
+        assert b64digest != b64digest_updated
+        assert b64digest_updated == get_function_response_updated["Configuration"]["CodeSha256"]
+        assert (
+            len(zip_file_bytes_updated)
+            == get_function_response_updated["Configuration"]["CodeSize"]
+        )
 
     def test_lambda_code_location_s3(
         self,
@@ -226,11 +245,34 @@ class TestLambdaFunction:
         code_location = get_function_response["Code"]["Location"]
         response = requests.get(code_location)
         assert zip_file_bytes == response.content
-        h = sha256()
-        h.update(zip_file_bytes)
+        h = sha256(zip_file_bytes)
         b64digest = to_str(base64.b64encode(h.digest()))
         assert b64digest == get_function_response["Configuration"]["CodeSha256"]
         assert len(zip_file_bytes) == get_function_response["Configuration"]["CodeSize"]
+        zip_file_bytes_updated = create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON_VERSION), get_content=True
+        )
+        # TODO check bucket addressing with version id as well?
+        s3_client.upload_fileobj(
+            Fileobj=io.BytesIO(zip_file_bytes_updated), Bucket=s3_bucket, Key=bucket_key
+        )
+        update_function_response = lambda_client.update_function_code(
+            FunctionName=function_name, S3Bucket=s3_bucket, S3Key=bucket_key
+        )
+        snapshot.match("update-function-response", update_function_response)
+        get_function_response_updated = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-response-updated", get_function_response_updated)
+        code_location_updated = get_function_response_updated["Code"]["Location"]
+        response = requests.get(code_location_updated)
+        assert zip_file_bytes_updated == response.content
+        h = sha256(zip_file_bytes_updated)
+        b64digest_updated = to_str(base64.b64encode(h.digest()))
+        assert b64digest != b64digest_updated
+        assert b64digest_updated == get_function_response_updated["Configuration"]["CodeSha256"]
+        assert (
+            len(zip_file_bytes_updated)
+            == get_function_response_updated["Configuration"]["CodeSize"]
+        )
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
