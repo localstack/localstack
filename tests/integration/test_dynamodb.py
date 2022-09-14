@@ -37,6 +37,7 @@ def dynamodb(dynamodb_resource):
 
 
 class TestDynamoDB:
+    @pytest.mark.only_localstack
     def test_non_ascii_chars(self, dynamodb):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
@@ -61,6 +62,7 @@ class TestDynamoDB:
         # clean up
         delete_table(TEST_DDB_TABLE_NAME)
 
+    @pytest.mark.only_localstack
     def test_large_data_download(self, dynamodb):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME_2)
@@ -78,6 +80,7 @@ class TestDynamoDB:
         # clean up
         delete_table(TEST_DDB_TABLE_NAME_2)
 
+    @pytest.mark.only_localstack
     def test_time_to_live(self, dynamodb):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME_3)
@@ -137,6 +140,7 @@ class TestDynamoDB:
         # clean up
         delete_table(TEST_DDB_TABLE_NAME_3)
 
+    @pytest.mark.only_localstack
     def test_list_tags_of_resource(self, dynamodb):
         table_name = "ddb-table-%s" % short_uid()
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
@@ -173,6 +177,7 @@ class TestDynamoDB:
 
         delete_table(table_name)
 
+    @pytest.mark.only_localstack
     def test_stream_spec_and_region_replacement(self, dynamodb):
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
         kinesis = aws_stack.create_external_boto_client("kinesis")
@@ -213,6 +218,7 @@ class TestDynamoDB:
         # assert stream has been deleted
         retry(_assert_stream_deleted, sleep=0.4, retries=5)
 
+    @pytest.mark.only_localstack
     def test_multiple_update_expressions(self, dynamodb):
         dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
@@ -262,6 +268,7 @@ class TestDynamoDB:
             )
         assert ctx.match("ValidationException")
 
+    @pytest.mark.only_localstack
     def test_invalid_query_index(self, dynamodb):
         """Raises an exception when a query requests ALL_ATTRIBUTES,
         but the index does not have a ProjectionType of ALL"""
@@ -300,6 +307,7 @@ class TestDynamoDB:
         # clean up
         delete_table(table_name)
 
+    @pytest.mark.only_localstack
     def test_valid_query_index(self, dynamodb):
         """Query requests ALL_ATTRIBUTES and the named index has a ProjectionType of ALL,
         no exception should be raised."""
@@ -388,6 +396,7 @@ class TestDynamoDB:
         )
         assert result["Items"] == [item]
 
+    @pytest.mark.only_localstack(reason="AWS has a 20 GSI limit")
     def test_more_than_20_global_secondary_indexes(
         self, dynamodb_client, dynamodb_create_table_with_parameters
     ):
@@ -529,6 +538,7 @@ class TestDynamoDB:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    @pytest.mark.only_localstack
     def test_binary_data_with_stream(
         self,
         wait_for_stream_ready,
@@ -560,6 +570,7 @@ class TestDynamoDB:
         assert 1 == len(json_records)
         assert "Data" in json_records[0]
 
+    @pytest.mark.only_localstack
     def test_dynamodb_stream_shard_iterator(
         self, wait_for_stream_ready, dynamodb_create_table_with_parameters
     ):
@@ -599,6 +610,7 @@ class TestDynamoDB:
         )
         assert "ShardIterator" in response
 
+    @pytest.mark.only_localstack
     def test_dynamodb_create_table_with_class(
         self, dynamodb_client, dynamodb_create_table_with_parameters
     ):
@@ -703,6 +715,7 @@ class TestDynamoDB:
         assert len(items) == 0
         dynamodb_client.delete_table(TableName=table_name)
 
+    @pytest.mark.only_localstack
     def test_dynamodb_stream_stream_view_type(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
@@ -780,6 +793,7 @@ class TestDynamoDB:
         # clean up
         delete_table(table_name)
 
+    @pytest.mark.only_localstack
     def test_dynamodb_with_kinesis_stream(self):
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         kinesis = aws_stack.create_external_boto_client("kinesis")
@@ -869,6 +883,7 @@ class TestDynamoDB:
         delete_table(table_name)
         kinesis.delete_stream(StreamName="kinesis_dest_stream")
 
+    @pytest.mark.only_localstack
     def test_global_tables_version_2019(
         self, create_boto_client, cleanups, dynamodb_wait_for_table_active
     ):
@@ -934,6 +949,7 @@ class TestDynamoDB:
             )
         ctx.match("ResourceNotFoundException")
 
+    @pytest.mark.only_localstack
     def test_global_tables(self):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
@@ -1001,6 +1017,7 @@ class TestDynamoDB:
             )
         ctx.match("ResourceInUseException")
 
+    @pytest.mark.only_localstack
     def test_delete_table(self, dynamodb_client, dynamodb_create_table):
         table_name = f"test-ddb-table-{short_uid()}"
 
@@ -1264,6 +1281,7 @@ class TestDynamoDB:
 
         retry(check_expected_records, retries=5, sleep=1, sleep_before=2)
 
+    @pytest.mark.only_localstack
     def test_query_on_deleted_resource(self, dynamodb_client, dynamodb_create_table):
         table_name = f"ddb-table-{short_uid()}"
         partition_key = "username"
@@ -1287,6 +1305,7 @@ class TestDynamoDB:
             )
         assert ctx.match("ResourceNotFoundException")
 
+    @pytest.mark.only_localstack
     def test_dynamodb_stream_to_lambda(
         self, lambda_client, dynamodb_resource, dynamodb_create_table, wait_for_stream_ready
     ):
@@ -1381,6 +1400,7 @@ class TestDynamoDB:
             )
         assert e.match("ValidationException")
 
+    @pytest.mark.only_localstack
     def test_dynamodb_create_table_with_sse_specification(
         self, dynamodb_create_table_with_parameters
     ):
@@ -1444,6 +1464,7 @@ class TestDynamoDB:
         )
         assert list(result["Responses"])[0] == table_name
 
+    @pytest.mark.only_localstack
     def test_dynamodb_streams_describe_with_exclusive_start_shard_id(
         self, dynamodb_resource, dynamodb_create_table
     ):
