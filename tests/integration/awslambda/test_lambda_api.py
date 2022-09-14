@@ -7,10 +7,14 @@ API-focused tests only. Don't add tests for asynchronous, blocking or implicit b
 # TODO: VPC config https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html
 
 """
+import base64
+import io
 import json
+from hashlib import sha256
 from io import BytesIO
 
 import pytest
+import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
@@ -25,7 +29,7 @@ from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import wait_until
 from localstack.utils.testutil import create_lambda_archive
 from tests.integration.awslambda.test_lambda import (
@@ -167,6 +171,66 @@ class TestLambdaFunction:
             method = getattr(lambda_client, clientfn)
             method(FunctionName=function_name)
         snapshot.match("not_found_exception", e.value.response)
+
+    def test_lambda_code_location_zipfile(
+        self, lambda_client, snapshot, create_lambda_function_aws, lambda_su_role
+    ):
+        function_name = f"code-function-{short_uid()}"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={"ZipFile": zip_file_bytes},
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+        )
+        snapshot.match("create-response-zip-file", create_response)
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-response", get_function_response)
+        code_location = get_function_response["Code"]["Location"]
+        response = requests.get(code_location)
+        assert zip_file_bytes == response.content
+        h = sha256()
+        h.update(zip_file_bytes)
+        b64digest = to_str(base64.b64encode(h.digest()))
+        assert b64digest == get_function_response["Configuration"]["CodeSha256"]
+        assert len(zip_file_bytes) == get_function_response["Configuration"]["CodeSize"]
+
+    def test_lambda_code_location_s3(
+        self,
+        lambda_client,
+        s3_bucket,
+        s3_client,
+        snapshot,
+        create_lambda_function_aws,
+        lambda_su_role,
+    ):
+        function_name = f"code-function-{short_uid()}"
+        bucket_key = "code/code-function.zip"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        s3_client.upload_fileobj(
+            Fileobj=io.BytesIO(zip_file_bytes), Bucket=s3_bucket, Key=bucket_key
+        )
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+        )
+        snapshot.match("create_response_s3", create_response)
+        get_function_response = lambda_client.get_function(FunctionName=function_name)
+        snapshot.match("get-function-response", get_function_response)
+        code_location = get_function_response["Code"]["Location"]
+        response = requests.get(code_location)
+        assert zip_file_bytes == response.content
+        h = sha256()
+        h.update(zip_file_bytes)
+        b64digest = to_str(base64.b64encode(h.digest()))
+        assert b64digest == get_function_response["Configuration"]["CodeSha256"]
+        assert len(zip_file_bytes) == get_function_response["Configuration"]["CodeSize"]
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")

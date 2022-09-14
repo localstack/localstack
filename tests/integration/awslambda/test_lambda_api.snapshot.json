@@ -418,26 +418,29 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_lambda": {
-    "recorded-date": "31-08-2022, 12:29:44",
+    "recorded-date": "22-09-2022, 12:46:15",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
           "Message": "Unzipped size must be smaller than 262144000 bytes"
         },
+        "Type": "User",
+        "message": "Unzipped size must be smaller than 262144000 bytes",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
-        },
-        "Type": "User",
-        "message": "Unzipped size must be smaller than 262144000 bytes"
+        }
       }
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_lambda": {
-    "recorded-date": "31-08-2022, 12:30:34",
+    "recorded-date": "22-09-2022, 12:47:09",
     "recorded-content": {
       "create_function_large_zip": {
+        "Architectures": [
+          "x86_64"
+        ],
         "CodeSha256": "code-sha256",
         "CodeSize": 262143118,
         "Description": "",
@@ -450,10 +453,6 @@
         "LastModified": "date",
         "MemorySize": 128,
         "PackageType": "Zip",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        },
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.9",
@@ -464,7 +463,11 @@
         "TracingConfig": {
           "Mode": "PassThrough"
         },
-        "Version": "$LATEST"
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
       }
     }
   },
@@ -2680,7 +2683,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_variables_fails": {
-    "recorded-date": "13-09-2022, 17:26:31",
+    "recorded-date": "22-09-2022, 12:47:28",
     "recorded-content": {
       "failed_create_fn_result": {
         "Error": {
@@ -2697,7 +2700,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_fails_multiple_keys": {
-    "recorded-date": "13-09-2022, 17:26:48",
+    "recorded-date": "22-09-2022, 12:47:46",
     "recorded-content": {
       "failured_create_fn_result_multi_key": {
         "Error": {
@@ -2714,7 +2717,7 @@
     }
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaSizeLimits::test_lambda_envvars_near_limit_succeeds": {
-    "recorded-date": "13-09-2022, 17:27:03",
+    "recorded-date": "22-09-2022, 12:48:02",
     "recorded-content": {
       "successful_create_fn_result": {
         "CreateEventSourceMappingResponse": null,
@@ -2754,6 +2757,154 @@
             "HTTPHeaders": {},
             "HTTPStatusCode": 201
           }
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
+    "recorded-date": "22-09-2022, 12:48:36",
+    "recorded-content": {
+      "create_response_s3": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "code-sha256",
+        "CodeSize": 264,
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-function-response": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha256",
+          "CodeSize": 264,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
+    "recorded-date": "22-09-2022, 12:49:00",
+    "recorded-content": {
+      "create-response-zip-file": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "code-sha256",
+        "CodeSize": 264,
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-function-response": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha256",
+          "CodeSize": 264,
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "index.handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.9",
+          "State": "Active",
+          "Timeout": 3,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
