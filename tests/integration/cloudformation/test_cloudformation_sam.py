@@ -6,7 +6,6 @@ import pytest
 
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid, to_str
-from tests.integration.test_cloudformation import THIS_FOLDER
 
 
 @pytest.mark.aws_validated
@@ -29,7 +28,10 @@ def test_sam_template(lambda_client, deploy_cfn_template):
 
     # deploy template
     func_name = f"test-{short_uid()}"
-    template = load_file(os.path.join(THIS_FOLDER, "templates/template4.yaml")) % func_name
+    template = (
+        load_file(os.path.join(os.path.dirname(__file__), "../templates/template4.yaml"))
+        % func_name
+    )
     deploy_cfn_template(template=template)
 
     # run Lambda test invocation

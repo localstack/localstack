@@ -7,8 +7,6 @@ import pytest
 from localstack.constants import PATH_USER_REQUEST
 from localstack.utils.generic.wait_utils import wait_until
 
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))  # TODO
-
 
 def test_statemachine_definitionsubstitution(stepfunctions_client, s3_client, deploy_cfn_template):
     stack = deploy_cfn_template(
