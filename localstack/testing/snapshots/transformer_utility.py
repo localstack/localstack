@@ -160,6 +160,17 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def dynamodb_api():
+        """
+        :return: array with Transformers, for dynamodb api.
+        """
+        return [
+            RegexTransformer(
+                r"([a-zA-Z0-9-_.]*)?test_table_([a-zA-Z0-9-_.]*)?", replacement="<test-table>"
+            ),
+        ]
+
+    @staticmethod
     def iam_api():
         """
         :return: array with Transformers, for iam api.

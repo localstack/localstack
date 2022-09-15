@@ -11,6 +11,7 @@ from boto3.dynamodb.types import STRING
 
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
+from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
@@ -34,6 +35,11 @@ TEST_DDB_TAGS = [
 @pytest.fixture()
 def dynamodb(dynamodb_resource):
     return dynamodb_resource
+
+
+@pytest.fixture(autouse=True)
+def transcribe_snapshot_transformer(snapshot):
+    snapshot.add_transformer(snapshot.transform.dynamodb_api())
 
 
 class TestDynamoDB:
@@ -356,7 +362,7 @@ class TestDynamoDB:
 
     @pytest.mark.aws_validated
     def test_valid_local_secondary_index(
-        self, dynamodb_client, dynamodb_create_table_with_parameters
+        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
     ):
         table_name = f"test-table-{short_uid()}"
         dynamodb_create_table_with_parameters(
@@ -394,7 +400,10 @@ class TestDynamoDB:
             ExpressionAttributeValues={":v1": {"S": "test one"}},
             Select="ALL_ATTRIBUTES",
         )
-        assert result["Items"] == [item]
+        transformer = SortingTransformer("Items", lambda x: x)
+        transformed_dict = transformer.transform(result)
+
+        snapshot.match("Items", transformed_dict)
 
     @pytest.mark.only_localstack(reason="AWS has a 20 GSI limit")
     def test_more_than_20_global_secondary_indexes(
@@ -423,84 +432,71 @@ class TestDynamoDB:
         assert len(table["Table"]["GlobalSecondaryIndexes"]) == num_gsis
 
     @pytest.mark.aws_validated
-    def test_return_values_in_put_item(self, dynamodb, dynamodb_client):
+    def test_return_values_in_put_item(self, dynamodb, dynamodb_client, snapshot):
         aws_stack.create_dynamodb_table(
             TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY, client=dynamodb_client
         )
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
-
-        def _validate_response(response, expected=None):
-            """
-            Validates the response against the optionally expected one.
-            It checks that the response doesn't contain `Attributes`,
-            `ConsumedCapacity` and `ItemCollectionMetrics` unless they are expected.
-            """
-            if expected is None:
-                expected = {}
-            should_not_contain = {
-                "Attributes",
-                "ConsumedCapacity",
-                "ItemCollectionMetrics",
-            } - expected.keys()
-            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-            assert expected.items() <= response.items()
-            assert response.keys().isdisjoint(should_not_contain)
 
         # items which are being used to put in the table
         item1 = {PARTITION_KEY: "id1", "data": "foobar"}
         item1b = {PARTITION_KEY: "id1", "data": "barfoo"}
         item2 = {PARTITION_KEY: "id2", "data": "foobar"}
 
-        response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
         # there is no data present in the table already so even if return values
         # is set to 'ALL_OLD' as there is no data it will not return any data.
-        _validate_response(response)
+        response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
+        snapshot.match("PutFirstItem", response)
+
         # now the same data is present so when we pass return values as 'ALL_OLD'
         # it should give us attributes
         response = table.put_item(Item=item1, ReturnValues="ALL_OLD")
-        _validate_response(response, expected={"Attributes": item1})
+        snapshot.match("PutFirstItemOLD", response)
 
         # now a previous version of data is present, so when we pass return
         # values as 'ALL_OLD' it should give us the old attributes
         response = table.put_item(Item=item1b, ReturnValues="ALL_OLD")
-        _validate_response(response, expected={"Attributes": item1})
+        snapshot.match("PutFirstItemB", response)
 
-        response = table.put_item(Item=item2)
         # we do not have any same item as item2 already so when we add this by default
         # return values is set to None so no Attribute values should be returned
-        _validate_response(response)
-
         response = table.put_item(Item=item2)
+        snapshot.match("PutSecondItem", response)
+
         # in this case we already have item2 in the table so on this request
         # it should not return any data as return values is set to None so no
         # Attribute values should be returned
-        _validate_response(response)
+        response = table.put_item(Item=item2)
+        snapshot.match("PutSecondItemReturnNone", response)
 
         # cleanup
         table.delete()
 
     @pytest.mark.aws_validated
-    def test_empty_and_binary_values(self, dynamodb, dynamodb_client):
+    def test_empty_and_binary_values(self, dynamodb, dynamodb_client, snapshot):
+        table_name = f"table-{short_uid()}"
         aws_stack.create_dynamodb_table(
-            TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY, client=dynamodb_client
+            table_name=table_name, partition_key=PARTITION_KEY, client=dynamodb_client
         )
-        table = dynamodb.Table(TEST_DDB_TABLE_NAME)
+        table = dynamodb.Table(table_name)
 
         # items which are being used to put in the table
         item1 = {PARTITION_KEY: "id1", "data": ""}
         item2 = {PARTITION_KEY: "id2", "data": b"\x90"}
 
         response = table.put_item(Item=item1)
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("PutFirstItem", response)
 
         response = table.put_item(Item=item2)
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("PutSecondItem", response)
 
         # clean up
         table.delete()
 
     @pytest.mark.aws_validated
-    def test_batch_write_binary(self, dynamodb_client, dynamodb_create_table_with_parameters):
+    def test_batch_write_binary(
+        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
+    ):
         table_name = f"table_batch_binary_{short_uid()}"
         dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -638,7 +634,7 @@ class TestDynamoDB:
 
     @pytest.mark.aws_validated
     def test_dynamodb_execute_transaction(
-        self, dynamodb_client, dynamodb_create_table_with_parameters
+        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
     ):
         table_name = f"table_{short_uid()}"
         dynamodb_create_table_with_parameters(
@@ -652,16 +648,16 @@ class TestDynamoDB:
             {"Statement": f"INSERT INTO {table_name} VALUE {{'Username': 'user02'}}"},
         ]
         result = dynamodb_client.execute_transaction(TransactStatements=statements)
-        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("ExecutedTransaction", result)
 
         result = dynamodb_client.scan(TableName=table_name)
-        assert result["ScannedCount"] == 2
+        snapshot.match("TableScan", result)
 
     @pytest.mark.aws_validated
     def test_dynamodb_batch_execute_statement(
-        self, dynamodb_client, dynamodb_create_table_with_parameters
+        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
     ):
-        table_name = f"table_{short_uid()}"
+        table_name = f"test_table_{short_uid()}"
         dynamodb_create_table_with_parameters(
             TableName=table_name,
             KeySchema=[{"AttributeName": "Username", "KeyType": "HASH"}],
@@ -676,22 +672,24 @@ class TestDynamoDB:
         ]
         result = dynamodb_client.batch_execute_statement(Statements=statements)
         # actions always succeeds
-        assert not any("Error" in r for r in result["Responses"])
+        snapshot.match("ExecutedStatement", result)
 
         item = dynamodb_client.get_item(TableName=table_name, Key={"Username": {"S": "user02"}})[
             "Item"
         ]
-        assert item["Age"]["N"] == "20"
+        snapshot.match("ItemUser2", item)
 
         item = dynamodb_client.get_item(TableName=table_name, Key={"Username": {"S": "user01"}})[
             "Item"
         ]
-        assert item
+        snapshot.match("ItemUser1", item)
 
         dynamodb_client.delete_table(TableName=table_name)
 
     @pytest.mark.aws_validated
-    def test_dynamodb_partiql_missing(self, dynamodb_client, dynamodb_create_table_with_parameters):
+    def test_dynamodb_partiql_missing(
+        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
+    ):
         table_name = f"table_with_stream_{short_uid()}"
 
         # create table
@@ -708,7 +706,8 @@ class TestDynamoDB:
         items = dynamodb_client.execute_statement(
             Statement=f"SELECT * FROM {table_name} WHERE FirstName IS NOT MISSING"
         )["Items"]
-        assert len(items) == 1
+        snapshot.match("FirstNameNotMissing", items)
+
         items = dynamodb_client.execute_statement(
             Statement=f"SELECT * FROM {table_name} WHERE FirstName IS MISSING"
         )["Items"]
@@ -996,8 +995,8 @@ class TestDynamoDB:
         assert ctx.match("GlobalTableNotFoundException")
 
     @pytest.mark.aws_validated
-    def test_create_duplicate_table(self, dynamodb_create_table_with_parameters):
-        table_name = f"duplicateTable-{short_uid()}"
+    def test_create_duplicate_table(self, dynamodb_create_table_with_parameters, snapshot):
+        table_name = f"test_table_{short_uid()}"
 
         dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -1015,9 +1014,11 @@ class TestDynamoDB:
                 ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
                 Tags=TEST_DDB_TAGS,
             )
-        ctx.match("ResourceInUseException")
+        snapshot.match("Error", ctx.value)
 
-    @pytest.mark.only_localstack
+    @pytest.mark.only_localstack(
+        reason="timing issues - needs a check to see if table is successfully deleted"
+    )
     def test_delete_table(self, dynamodb_client, dynamodb_create_table):
         table_name = f"test-ddb-table-{short_uid()}"
 
@@ -1043,7 +1044,9 @@ class TestDynamoDB:
         assert ctx.match("ResourceNotFoundException")
 
     @pytest.mark.aws_validated
-    def test_transaction_write_items(self, dynamodb_client, dynamodb_create_table_with_parameters):
+    def test_transaction_write_items(
+        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
+    ):
         table_name = f"test-ddb-table-{short_uid()}"
 
         dynamodb_create_table_with_parameters(
@@ -1078,11 +1081,11 @@ class TestDynamoDB:
                 {"Delete": {"TableName": table_name, "Key": {"id": {"S": "test4"}}}},
             ]
         )
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("Response", response)
 
     @pytest.mark.aws_validated
     def test_transaction_write_canceled(
-        self, dynamodb_create_table_with_parameters, dynamodb_client
+        self, dynamodb_create_table_with_parameters, dynamodb_client, snapshot
     ):
         table_name = "table_%s" % short_uid()
 
@@ -1111,31 +1114,11 @@ class TestDynamoDB:
                     {"Delete": {"TableName": table_name, "Key": {"Username": {"S": "Bert"}}}},
                 ]
             )
-        # Make sure the exception contains the cancellation reasons
-        assert ctx.match("TransactionCanceledException")
-        assert (
-            str(ctx.value)
-            == "An error occurred (TransactionCanceledException) when calling the TransactWriteItems operation: "
-            "Transaction cancelled, please refer cancellation reasons for specific reasons "
-            "[ConditionalCheckFailed, None]"
-        )
-        assert hasattr(ctx.value, "response")
-        assert "CancellationReasons" in ctx.value.response
-        conditional_check_failed = [
-            reason
-            for reason in ctx.value.response["CancellationReasons"]
-            if reason.get("Code") == "ConditionalCheckFailed"
-        ]
-        assert len(conditional_check_failed) == 1
-        assert "Message" in conditional_check_failed[0]
-        # dynamodb-local adds a trailing "." to the message, AWS does not
-        assert re.match(
-            r"^The conditional request failed\.?$", conditional_check_failed[0]["Message"]
-        )
+        snapshot.match("Error", ctx.value)
 
     @pytest.mark.aws_validated
     def test_transaction_write_binary_data(
-        self, dynamodb_client, dynamodb_create_table_with_parameters
+        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
     ):
         table_name = f"test-ddb-table-{short_uid()}"
         dynamodb_create_table_with_parameters(
@@ -1159,13 +1142,13 @@ class TestDynamoDB:
                 }
             ]
         )
+        snapshot.match("WriteResponse", response)
+
         item = dynamodb_client.get_item(TableName=table_name, Key={"id": {"S": "someUser"}})["Item"]
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert item["binaryData"]
-        assert item["binaryData"] == binary_item
+        snapshot.match("GetItem", item)
 
     @pytest.mark.aws_validated
-    def test_transact_get_items(self, dynamodb_client, dynamodb_create_table):
+    def test_transact_get_items(self, dynamodb_client, dynamodb_create_table, snapshot):
         table_name = f"test-ddb-table-{short_uid()}"
         dynamodb_create_table(
             table_name=table_name,
@@ -1175,10 +1158,12 @@ class TestDynamoDB:
         result = dynamodb_client.transact_get_items(
             TransactItems=[{"Get": {"Key": {"id": {"S": "John"}}, "TableName": table_name}}]
         )
-        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("TransactGetItems", result)
 
     @pytest.mark.aws_validated
-    def test_batch_write_items(self, dynamodb_client, dynamodb_create_table_with_parameters):
+    def test_batch_write_items(
+        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
+    ):
         table_name = f"test-ddb-table-{short_uid()}"
         dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -1196,7 +1181,7 @@ class TestDynamoDB:
                 ]
             }
         )
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("BatchWriteResponse", response)
 
     @pytest.mark.xfail(reason="this test flakes regularly in CI")
     def test_dynamodb_stream_records_with_update_item(
@@ -1362,7 +1347,7 @@ class TestDynamoDB:
 
     @pytest.mark.aws_validated
     def test_dynamodb_batch_write_item(
-        self, dynamodb_client, dynamodb_create_table_with_parameters
+        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
     ):
         table_name = f"ddb-table-{short_uid()}"
 
@@ -1383,11 +1368,10 @@ class TestDynamoDB:
                 ]
             }
         )
-
-        assert result.get("UnprocessedItems") == {}
+        snapshot.match("Result", result)
 
     @pytest.mark.aws_validated
-    def test_dynamodb_pay_per_request(self, dynamodb_create_table_with_parameters):
+    def test_dynamodb_pay_per_request(self, dynamodb_create_table_with_parameters, snapshot):
         table_name = f"ddb-table-{short_uid()}"
 
         with pytest.raises(Exception) as e:
@@ -1398,7 +1382,7 @@ class TestDynamoDB:
                 ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
                 BillingMode="PAY_PER_REQUEST",
             )
-        assert e.match("ValidationException")
+        snapshot.match("Error", e.value)
 
     @pytest.mark.only_localstack
     def test_dynamodb_create_table_with_sse_specification(
@@ -1424,11 +1408,19 @@ class TestDynamoDB:
         assert result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
 
     @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        paths=[
+            "$..TableDescription..ProvisionedThroughput..NumberOfDecreasesToday",
+            "$..TableDescription..TableStatus",
+            "$..KeyMetadata..KeyUsage",
+            "$..KeyMetadata..MultiRegion",
+            "$..KeyMetadata..SigningAlgorithms",
+        ]
+    )
     def test_dynamodb_create_table_with_partial_sse_specification(
-        self, dynamodb_create_table_with_parameters, kms_client
+        self, dynamodb_create_table_with_parameters, kms_client, snapshot
     ):
-        table_name = f"ddb-table-{short_uid()}"
-
+        table_name = f"test_table_{short_uid()}"
         sse_specification = {"Enabled": True}
 
         result = dynamodb_create_table_with_parameters(
@@ -1440,17 +1432,17 @@ class TestDynamoDB:
             Tags=TEST_DDB_TAGS,
         )
 
-        assert result["TableDescription"]["SSEDescription"]
-        assert result["TableDescription"]["SSEDescription"]["Status"] == "ENABLED"
-        assert result["TableDescription"]["SSEDescription"]["SSEType"] == "KMS"
-        assert "KMSMasterKeyArn" in result["TableDescription"]["SSEDescription"]
+        snapshot.match("Table", result)
+
         kms_master_key_arn = result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
         result = kms_client.describe_key(KeyId=kms_master_key_arn)
-        assert result["KeyMetadata"]["KeyManager"] == "AWS"
+        snapshot.match("KMSDescription", result)
 
     @pytest.mark.aws_validated
-    def test_dynamodb_get_batch_items(self, dynamodb_client, dynamodb_create_table_with_parameters):
-        table_name = f"ddb-table-{short_uid()}"
+    def test_dynamodb_get_batch_items(
+        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
+    ):
+        table_name = f"test_table_{short_uid()}"
 
         dynamodb_create_table_with_parameters(
             TableName=table_name,
@@ -1462,7 +1454,7 @@ class TestDynamoDB:
         result = dynamodb_client.batch_get_item(
             RequestItems={table_name: {"Keys": [{"PK": {"S": "test-key"}}]}}
         )
-        assert list(result["Responses"])[0] == table_name
+        snapshot.match("Response", result)
 
     @pytest.mark.only_localstack
     def test_dynamodb_streams_describe_with_exclusive_start_shard_id(
@@ -1491,7 +1483,7 @@ class TestDynamoDB:
 
     @pytest.mark.aws_validated
     def test_dynamodb_idempotent_writing(
-        self, dynamodb_create_table_with_parameters, dynamodb_client
+        self, dynamodb_create_table_with_parameters, dynamodb_client, snapshot
     ):
         table_name = f"ddb-table-{short_uid()}"
         dynamodb_create_table_with_parameters(
@@ -1508,7 +1500,7 @@ class TestDynamoDB:
         )
 
         def _transact_write(_d: Dict):
-            response = dynamodb_client.transact_write_items(
+            return dynamodb_client.transact_write_items(
                 ClientRequestToken="dedupe_token",
                 TransactItems=[
                     {
@@ -1519,14 +1511,19 @@ class TestDynamoDB:
                     },
                 ],
             )
-            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        _transact_write({"id": {"S": "id1"}, "name": {"S": "name1"}})
-        _transact_write({"name": {"S": "name1"}, "id": {"S": "id1"}})
+        response = _transact_write({"id": {"S": "id1"}, "name": {"S": "name1"}})
+        snapshot.match("Response1", response)
+        response = _transact_write({"name": {"S": "name1"}, "id": {"S": "id1"}})
+        snapshot.match("Response2", response)
 
     @pytest.mark.aws_validated
     def test_batch_write_not_matching_schema(
-        self, dynamodb_client, dynamodb_create_table_with_parameters, dynamodb_wait_for_table_active
+        self,
+        dynamodb_client,
+        dynamodb_create_table_with_parameters,
+        dynamodb_wait_for_table_active,
+        snapshot,
     ):
         table_name = f"ddb-table-{short_uid()}"
 
@@ -1549,7 +1546,7 @@ class TestDynamoDB:
             dynamodb_client.batch_write_item(
                 RequestItems={table_name: [{"PutRequest": faulty_item}]}
             )
-        assert ctx.match("ValidationException")
+        snapshot.match("ValidationException", ctx.value)
 
     @pytest.mark.only_localstack
     def test_nosql_workbench_localhost_region(self, dynamodb_create_table, dynamodb_client):
