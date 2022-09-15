@@ -39,7 +39,6 @@ from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 from localstack.utils.collections import select_attributes
 from localstack.utils.common import (
     TMP_FILES,
-    CaptureOutput,
     get_all_subclasses,
     get_free_tcp_port,
     in_docker,
@@ -69,7 +68,7 @@ from localstack.utils.container_utils.container_client import (
     PortMappings,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT, get_host_path_for_path_in_docker
-from localstack.utils.run import FuncThread
+from localstack.utils.run import CaptureOutputProcess, FuncThread
 from localstack.utils.time import timestamp_millis
 
 # constants
@@ -1301,6 +1300,13 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         )
 
 
+@dataclasses.dataclass
+class LocalExecutorResult:
+    stdout: str
+    stderr: str
+    result: str
+
+
 class LambdaExecutorLocal(LambdaExecutor):
     # maps functionARN -> functionVersion -> callable used to invoke a Lambda function locally
     FUNCTION_CALLABLES: Dict[str, Dict[str, Callable]] = {}
@@ -1390,41 +1396,45 @@ class LambdaExecutorLocal(LambdaExecutor):
             environment["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"] = str(context.memory_limit_in_mb)
 
         # execute the Lambda function in a forked sub-process, sync result via queue
-        queue = Queue()
-
         lambda_function_callable = self.get_lambda_callable(
             lambda_function, qualifier=inv_context.function_version
         )
 
-        def do_execute():
+        def do_execute(q):
             # now we're executing in the child process, safe to change CWD and ENV
-            result = None
-            try:
-                if lambda_cwd:
-                    os.chdir(lambda_cwd)
-                    sys.path.insert(0, "")
-                if environment:
-                    os.environ.update(environment)
-                # set default env variables required for most Lambda handlers
-                self.set_default_env_variables()
-                # run the actual handler function
-                result = lambda_function_callable(inv_context.event, context)
-            except Exception as e:
-                result = str(e)
-                sys.stderr.write("%s %s" % (e, traceback.format_exc()))
-                raise
-            finally:
-                queue.put(result)
+            with CaptureOutputProcess() as c:
+                try:
+                    if lambda_cwd:
+                        os.chdir(lambda_cwd)
+                        sys.path.insert(0, "")
+                    if environment:
+                        os.environ.update(environment)
+                    # set default env variables required for most Lambda handlers
+                    self.set_default_env_variables()
 
-        process = Process(target=do_execute)
+                    import importlib
+
+                    importlib.reload(logging)
+
+                    handler_fn = lambda_function_callable()
+
+                    execute_result = handler_fn(inv_context.event, context)
+                except Exception as e:
+                    execute_result = str(e)
+                    sys.stderr.write("%s %s" % (e, traceback.format_exc()))
+                    # raise
+            q.put(LocalExecutorResult(c.stdout(), c.stderr(), execute_result))
+
+        process_queue = Queue()
+        process = Process(target=do_execute, args=(process_queue,))
         start_time = now(millis=True)
         error = None
-        with CaptureOutput() as c:
-            try:
-                process.run()
-            except Exception as e:
-                error = e
-        result = queue.get()
+        process.start()
+        process_result: LocalExecutorResult = process_queue.get()
+        process.join()
+
+        result = process_result.result
+
         end_time = now(millis=True)
 
         # Make sure to keep the log line below, to ensure the log stream gets created
@@ -1434,7 +1444,7 @@ class LambdaExecutorLocal(LambdaExecutor):
             lambda_function.arn(),
         )
         # TODO: Interweaving stdout/stderr currently not supported
-        for stream in (c.stdout(), c.stderr()):
+        for stream in (process_result.stdout, process_result.stderr):
             if stream:
                 log_output += ("\n" if log_output else "") + stream
         if isinstance(result, InvocationResult) and result.log_output:
