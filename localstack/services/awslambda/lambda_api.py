@@ -54,7 +54,7 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
 from localstack.utils.archives import unzip
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
+from localstack.utils.aws.aws_models import CodeSigningConfig, InvalidEnvVars, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
 from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.common import get_unzipped_size, is_zip_file
@@ -1202,14 +1202,22 @@ def create_function():
                 409,
                 error_type="ResourceConflictException",
             )
-        region.lambdas[arn] = lambda_function = LambdaFunction(arn)
+        lambda_function = LambdaFunction(arn)
         lambda_function.versions = {VERSION_LATEST: {"RevisionId": str(uuid.uuid4())}}
         lambda_function.vpc_config = data.get("VpcConfig", {})
         lambda_function.last_modified = datetime.utcnow()
         lambda_function.description = data.get("Description", "")
         lambda_function.handler = data.get("Handler")
         lambda_function.runtime = data.get("Runtime")
-        lambda_function.envvars = data.get("Environment", {}).get("Variables", {})
+        try:
+            lambda_function.envvars = data.get("Environment", {}).get("Variables", {})
+        except InvalidEnvVars as e:
+            return error_response(
+                "Lambda was unable to configure your environment variables because the environment variables you have provided exceeded the 4KB limit. "
+                f"String measured: {e}",
+                400,
+                error_type=INVALID_PARAMETER_VALUE_EXCEPTION,
+            )
         lambda_function.tags = data.get("Tags", {})
         lambda_function.timeout = data.get("Timeout", LAMBDA_DEFAULT_TIMEOUT)
         lambda_function.role = data["Role"]
@@ -1227,6 +1235,7 @@ def create_function():
         lambda_function.tracing_config = data.get("TracingConfig", {})
         lambda_function.set_dead_letter_config(data)
         lambda_function.state = "Pending"
+        region.lambdas[arn] = lambda_function
         result = set_function_code(lambda_function)
         if isinstance(result, Response):
             del region.lambdas[arn]
