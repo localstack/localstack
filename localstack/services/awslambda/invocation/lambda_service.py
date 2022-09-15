@@ -21,21 +21,14 @@ from localstack.services.awslambda.invocation.lambda_models import (
     VersionFunctionConfiguration,
     VersionIdentifier,
 )
+from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
-from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
 
 LAMBDA_DEFAULT_TIMEOUT_SECONDS = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
-
-
-class LambdaStore(BaseStore):
-    functions: dict[str, Function] = LocalAttribute(default=dict)
-
-
-lambda_stores = AccountRegionBundle[LambdaStore]("lambda", LambdaStore)
 
 
 class LambdaService:

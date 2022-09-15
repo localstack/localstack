@@ -40,7 +40,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     InvocationError,
     VersionFunctionConfiguration,
 )
-from localstack.services.awslambda.invocation.lambda_service import LambdaService
+from localstack.services.awslambda.invocation.lambda_service import LambdaService, lambda_stores
 from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_bytes, to_str
@@ -106,6 +106,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateFunctionRequest,
     ) -> FunctionConfiguration:
+
+        # publish_version = request.get('Publish', False)
+
         # TODO: initial validations
         architectures = request.get("Architectures")
         if architectures and Architecture.arm64 in architectures:
@@ -122,6 +125,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 code.s3_bucket = request_code["S3Bucket"]
                 code.s3_bucket = request_code["S3Key"]
                 # code.s3_bucket = request_code['S3ObjectVersion']  # optional
+
+        lambda_stores[context.account_id][context.region]
 
         version = self.lambda_service.create_function(
             context.account_id,
@@ -152,12 +157,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def update_function_configuration(
         self, context: RequestContext, request: UpdateFunctionConfigurationRequest
     ) -> FunctionConfiguration:
+        """updates the $LATEST version of the function"""
         return FunctionConfiguration()
 
     @handler(operation="UpdateFunctionCode", expand=False)
     def update_function_code(
         self, context: RequestContext, request: UpdateFunctionCodeRequest
     ) -> FunctionConfiguration:
+        """updates the $LATEST version of the function"""
         # only supports normal zip packaging atm
         # if request.get("Publish"):
         #     self.lambda_service.create_function_version()

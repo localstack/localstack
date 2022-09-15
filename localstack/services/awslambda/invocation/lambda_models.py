@@ -1,7 +1,7 @@
 import abc
 import dataclasses
 import threading
-from typing import Dict, List, Optional
+from typing import Optional
 
 from localstack.aws.api.lambda_ import (
     Architecture,
@@ -18,9 +18,6 @@ class Invocation:
     payload: bytes
     client_context: Optional[str]
     invocation_type: InvocationType
-
-
-# TODO: this isn't actually necessary in the models here I think
 
 
 @dataclasses.dataclass
@@ -57,15 +54,15 @@ class FileSystemConfig:
 
 @dataclasses.dataclass
 class ImageConfig:
-    command: List[str]
-    entrypoint: List[str]
     working_directory: str
+    command: list[str] = dataclasses.field(default_factory=list)
+    entrypoint: list[str] = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass
 class VpcConfig:
-    security_group_ids: List[str] = dataclasses.field(default_factory=list)
-    subnet_ids: List[str] = dataclasses.field(default_factory=list)
+    security_group_ids: list[str] = dataclasses.field(default_factory=list)
+    subnet_ids: list[str] = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -97,12 +94,12 @@ class VersionFunctionConfiguration:
     handler: str
     package_type: PackageType
     reserved_concurrent_executions: int
-    environment: Dict[str, str]
-    architectures: List[Architecture]
+    environment: dict[str, str]
+    architectures: list[Architecture]
 
     tracing_config_mode: str
     image_config: Optional[ImageConfig] = None
-    layers: List[str] = dataclasses.field(default_factory=list)
+    layers: list[str] = dataclasses.field(default_factory=list)
     # kms_key_arn: str
     # dead_letter_config: DeadLetterConfig
     # file_system_configs: FileSystemConfig
@@ -122,10 +119,10 @@ class VersionWeight:
 
 @dataclasses.dataclass
 class AliasRoutingConfiguration:
-    version_weights: List[VersionWeight]
+    version_weights: list[VersionWeight]
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class VersionIdentifier:
     function_name: str
     qualifier: str
@@ -167,10 +164,11 @@ class FunctionVersion:
 @dataclasses.dataclass
 class Function:
     function_name: str
-    aliases: Dict[str, VersionAlias] = dataclasses.field(default_factory=dict)
-    next_version: int = 1
-    versions: Dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
+    aliases: dict[str, VersionAlias] = dataclasses.field(default_factory=dict)
+    versions: dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
+
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
+    next_version: int = 1
 
     def latest(self) -> FunctionVersion:
         return self.versions["$LATEST"]
@@ -235,6 +233,26 @@ class ServiceEndpoint(abc.ABC):
         :param executor_id: Executor ID this error report is for
         """
         raise NotImplementedError()
+
+
+@dataclasses.dataclass
+class EventSourceMapping:
+    ...
+
+
+@dataclasses.dataclass
+class CodeSigningConfig:
+    ...
+
+
+@dataclasses.dataclass
+class Layer:
+    ...
+
+
+@dataclasses.dataclass
+class LayerVersion:
+    ...
 
 
 # ASYNC
