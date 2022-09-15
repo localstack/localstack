@@ -1412,13 +1412,15 @@ class LambdaExecutorLocal(LambdaExecutor):
                     # set default env variables required for most Lambda handlers
                     self.set_default_env_variables()
 
+                    # patch to make local python handlers properly log. otherwise it'll use the existing logging setup
+                    # ideally this wouldn't be necessary and the handler would be more isolated but for now it's fine
+                    # until the new provider takes over
                     import importlib
 
                     importlib.reload(logging)
 
-                    handler_fn = lambda_function_callable()
+                    execute_result = lambda_function_callable(inv_context.event, context)
 
-                    execute_result = handler_fn(inv_context.event, context)
                 except Exception as e:
                     execute_result = str(e)
                     sys.stderr.write("%s %s" % (e, traceback.format_exc()))

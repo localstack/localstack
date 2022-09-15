@@ -779,14 +779,14 @@ def do_set_function_code(lambda_function: LambdaFunction):
                 # extract handler
                 handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
-                def exec_local_python():
+                def exec_local_python(event, context):
                     inner_handler = exec_lambda_code(
                         zip_file_content,
                         handler_function=handler_function,
                         lambda_cwd=lambda_cwd,
                         lambda_env=lambda_environment,
                     )
-                    return inner_handler
+                    return inner_handler(event, context)
 
                 lambda_handler = exec_local_python
 
