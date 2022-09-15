@@ -1,4 +1,4 @@
-from .core import (
+from .api import (
     InstallTarget,
     NoSuchVersionException,
     OSPackageInstaller,
