@@ -1,15 +1,14 @@
 from .api import (
     InstallTarget,
     NoSuchVersionException,
-    OSPackageInstaller,
     Package,
     PackageException,
     PackageInstaller,
     PackageRepository,
     PackagesPlugin,
-    SystemNotSupportedException,
     packages,
 )
+from .core import OSPackageInstaller, SystemNotSupportedException
 
 __all__ = [
     "Package",

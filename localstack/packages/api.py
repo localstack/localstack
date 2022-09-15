@@ -2,8 +2,6 @@ import abc
 import functools
 import logging
 import os
-import threading
-from abc import ABC
 from enum import Enum
 from inspect import getmodule
 from typing import Callable, Dict, List, Optional
@@ -11,8 +9,6 @@ from typing import Callable, Dict, List, Optional
 from plugin import Plugin, PluginManager, PluginSpec
 
 from localstack import config
-from localstack.utils.platform import in_docker, is_debian, is_redhat
-from localstack.utils.run import run
 
 LOG = logging.getLogger(__name__)
 
@@ -27,12 +23,6 @@ class PackageException(Exception):
 
 class NoSuchVersionException(PackageException):
     """Exception indicating that a requested installer version is not available / supported."""
-
-    pass
-
-
-class SystemNotSupportedException(PackageException):
-    """Exception indicating that the current system is not allowed."""
 
     pass
 
@@ -159,142 +149,6 @@ class PackageInstaller(abc.ABC):
         pass
 
 
-# Lock which is used for OS package installations (to avoid locking issues)
-OS_PACKAGE_INSTALL_LOCK = threading.RLock()
-# Cache directory for APT / the debian package manager.
-_DEBIAN_CACHE_DIR = os.path.join(config.dirs.cache, "apt")
-
-
-class OSPackageInstaller(PackageInstaller, ABC):
-    """
-    TODO make sure to log the output of all "run" commands (at least on trace level)
-    Package installer abstraction for packages which are installed on operating system level, using the OS package
-    manager.
-    These packages are exceptional, since they cannot be installed to a specific target.
-    If an OS level package is about to be installed to VAR_LIBS (i.e. it is installed at runtime and should persist
-    across container-recreations), a warning will be logged and - depending on the OS - there might be some caching
-    optimizations.
-    """
-
-    def __init__(self, name: str, version: str):
-        super().__init__(name, version)
-
-    def _get_install_dir(self, target: InstallTarget) -> str:
-        return self._os_switch(
-            debian=self._debian_get_install_dir,
-            redhat=self._redhat_get_install_dir,
-            target=target,
-        )
-
-    @staticmethod
-    def _os_switch(debian: Callable, redhat: Callable, **kwargs):
-        if not in_docker():
-            raise SystemNotSupportedException(
-                "OS level packages are only installed within docker containers."
-            )
-        if is_debian():
-            return debian(**kwargs)
-        elif is_redhat():
-            return redhat(**kwargs)
-        else:
-            raise SystemNotSupportedException(
-                "The current operating system is currently not supported."
-            )
-
-    def _prepare_installation(self, target: InstallTarget) -> None:
-        if target != InstallTarget.STATIC_LIBS:
-            LOG.warning(
-                "%s will be installed as an OS package, even though install target is _not_ set to be static.",
-                self.name,
-            )
-        with OS_PACKAGE_INSTALL_LOCK:
-            self._os_switch(
-                debian=self._debian_prepare_install,
-                redhat=self._redhat_prepare_install,
-                target=target,
-            )
-
-    def _install(self, target: InstallTarget) -> None:
-        with OS_PACKAGE_INSTALL_LOCK:
-            self._os_switch(debian=self._debian_install, redhat=self._redhat_install, target=target)
-
-    def _post_process(self, target: InstallTarget) -> None:
-        with OS_PACKAGE_INSTALL_LOCK:
-            self._os_switch(
-                debian=self._debian_post_process, redhat=self._redhat_post_process, target=target
-            )
-
-    def _get_install_marker_path(self, install_dir: str) -> str:
-        return self._os_switch(
-            debian=self._debian_get_install_marker_path,
-            redhat=self._redhat_get_install_marker_path,
-            install_dir=install_dir,
-        )
-
-    def _debian_get_install_dir(self, target: InstallTarget) -> str:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on Debian."
-        )
-
-    def _debian_get_install_marker_path(self, install_dir: str) -> str:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on Debian."
-        )
-
-    def _debian_packages(self) -> List[str]:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on Debian."
-        )
-
-    def _debian_prepare_install(self, target: InstallTarget) -> None:
-        run(self._debian_cmd_prefix() + ["update"])
-
-    def _debian_install(self, target: InstallTarget) -> None:
-        debian_packages = self._debian_packages()
-        LOG.debug("Downloading packages %s to folder: %s", packages, _DEBIAN_CACHE_DIR)
-        cmd = self._debian_cmd_prefix() + ["-d", "install"] + debian_packages
-        run(cmd)
-        cmd = self._debian_cmd_prefix() + ["install"] + debian_packages
-        run(cmd)
-
-    def _debian_post_process(self, target: InstallTarget) -> None:
-        # TODO maybe remove the debian cache dir here?
-        pass
-
-    def _debian_cmd_prefix(self) -> List[str]:
-        """Return the apt command prefix, configuring the local package cache folders"""
-        return [
-            "apt",
-            f"-o=dir::cache={_DEBIAN_CACHE_DIR}",
-            f"-o=dir::cache::archives={_DEBIAN_CACHE_DIR}",
-            "-y",
-        ]
-
-    def _redhat_get_install_dir(self, target: InstallTarget) -> str:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on RedHat."
-        )
-
-    def _redhat_get_install_marker_path(self, install_dir: str) -> str:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on Debian."
-        )
-
-    def _redhat_packages(self) -> List[str]:
-        raise SystemNotSupportedException(
-            f"There is no supported installation method for {self.name} on RedHat."
-        )
-
-    def _redhat_prepare_install(self, target: InstallTarget) -> None:
-        pass
-
-    def _redhat_install(self, target: InstallTarget) -> None:
-        run(["dnf", "install", "-y"] + self._redhat_packages())
-
-    def _redhat_post_process(self, target: InstallTarget) -> None:
-        run(["dnf", "clean", "all"])
-
-
 class Package(abc.ABC):
     """
     A Package defines a specific kind of software, mostly used as backends or supporting system for service
@@ -394,10 +248,17 @@ class PackagesPlugin(Plugin):
         self,
         service: str,
         get_packages: Callable[[], Package | List[Package]],
+        should_load: Callable[[], bool] = None,
     ) -> None:
         super().__init__()
         self.service = service
         self._get_packages = get_packages
+        self._should_load = should_load
+
+    def should_load(self) -> bool:
+        if self._should_load:
+            return self._should_load()
+        return True
 
     def get_packages(self) -> List[Package]:
         """
@@ -407,7 +268,11 @@ class PackagesPlugin(Plugin):
         return _packages if isinstance(_packages, list) else [_packages]
 
 
-def packages(service: Optional[str] = None, name: Optional[str] = "default"):
+def packages(
+    service: Optional[str] = None,
+    name: Optional[str] = "default",
+    should_load: Callable[[], bool] = None,
+):
     """
     Decorator for marking methods that create Package instances as a PackagePlugin.
     Methods marked with this decorator are discoverable as a PluginSpec within the namespace "localstack.packages",
@@ -419,7 +284,7 @@ def packages(service: Optional[str] = None, name: Optional[str] = "default"):
         @functools.wraps(fn)
         def factory() -> PackagesPlugin:
             _service = service or getmodule(fn).__name__
-            return PackagesPlugin(service=_service, get_packages=fn)
+            return PackagesPlugin(service=_service, get_packages=fn, should_load=should_load)
 
         return PluginSpec(PLUGIN_NAMESPACE, f"{service}:{name}", factory=factory)
 
