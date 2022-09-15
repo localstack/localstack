@@ -1305,6 +1305,7 @@ class LocalExecutorResult:
     stdout: str
     stderr: str
     result: str
+    error: Any
 
 
 class LambdaExecutorLocal(LambdaExecutor):
@@ -1420,19 +1421,23 @@ class LambdaExecutorLocal(LambdaExecutor):
                     importlib.reload(logging)
 
                     execute_result = lambda_function_callable(inv_context.event, context)
+                    execute_error = None
 
                 except Exception as e:
                     execute_result = str(e)
+                    execute_error = e
                     sys.stderr.write("%s %s" % (e, traceback.format_exc()))
-                    # raise
-            q.put(LocalExecutorResult(c.stdout(), c.stderr(), execute_result))
+
+            q.put(LocalExecutorResult(c.stdout(), c.stderr(), execute_result, execute_error))
 
         process_queue = Queue()
         process = Process(target=do_execute, args=(process_queue,))
         start_time = now(millis=True)
-        error = None
         process.start()
         process_result: LocalExecutorResult = process_queue.get()
+        error = None
+        if process_result.error:
+            error = process_result.error
         process.join()
 
         result = process_result.result
