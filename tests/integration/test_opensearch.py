@@ -439,7 +439,8 @@ class TestEdgeProxiedOpensearchCluster:
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
         cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"
-        cluster = EdgeProxiedOpensearchCluster(cluster_url)
+        arn = f"arn:aws:es:us-east-1:000000000000:domain/{cluster_id}"
+        cluster = EdgeProxiedOpensearchCluster(cluster_url, arn)
 
         try:
             cluster.start()
