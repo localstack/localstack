@@ -112,36 +112,6 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
             )
 
 
-def prepare_version(function_version: FunctionVersion) -> None:
-    time_before = time.perf_counter()
-    target_path = get_path_for_function(function_version)
-    target_path.mkdir(parents=True, exist_ok=True)
-    # write code to disk
-    target_code = get_code_path_for_function(function_version)
-    with NamedTemporaryFile() as file:
-        file.write(function_version.config.code.get_lambda_archive())
-        file.flush()
-        unzip(file.name, str(target_code))
-    if config.LAMBDA_PREBUILD_IMAGES:
-        prepare_image(target_path, function_version)
-    LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
-
-
-def cleanup_version(function_version: FunctionVersion) -> None:
-    function_path = get_path_for_function(function_version)
-    try:
-        shutil.rmtree(function_path)
-    except OSError as e:
-        LOG.debug(
-            "Could not cleanup function %s due to error %s while deleting file %s",
-            function_version.qualified_arn,
-            e.strerror,
-            e.filename,
-        )
-    if config.LAMBDA_PREBUILD_IMAGES:
-        CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))
-
-
 class LambdaRuntimeException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
@@ -236,3 +206,33 @@ class RuntimeExecutor:
     def invoke(self, payload: Dict[str, str]):
         LOG.debug("Sending invoke-payload '%s' to executor '%s'", payload, self.id)
         self.executor_endpoint.invoke(payload)
+
+    @staticmethod
+    def prepare_version(function_version: FunctionVersion) -> None:
+        time_before = time.perf_counter()
+        target_path = get_path_for_function(function_version)
+        target_path.mkdir(parents=True, exist_ok=True)
+        # write code to disk
+        target_code = get_code_path_for_function(function_version)
+        with NamedTemporaryFile() as file:
+            file.write(function_version.config.code.get_lambda_archive())
+            file.flush()
+            unzip(file.name, str(target_code))
+        if config.LAMBDA_PREBUILD_IMAGES:
+            prepare_image(target_path, function_version)
+        LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
+
+    @staticmethod
+    def cleanup_version(function_version: FunctionVersion) -> None:
+        function_path = get_path_for_function(function_version)
+        try:
+            shutil.rmtree(function_path)
+        except OSError as e:
+            LOG.debug(
+                "Could not cleanup function %s due to error %s while deleting file %s",
+                function_version.qualified_arn,
+                e.strerror,
+                e.filename,
+            )
+        if config.LAMBDA_PREBUILD_IMAGES:
+            CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))
