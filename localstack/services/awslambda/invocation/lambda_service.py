@@ -81,12 +81,9 @@ class LambdaService:
         for version in function.versions.values():
             self.stop_version(qualified_arn=version.id.qualified_arn())
 
-    def delete_version(
-        self, account_id: str, region_name: str, function_name: str, version_qualifier: str
-    ):
-        state = lambda_stores[account_id][region_name]
-        version = state.functions[function_name].versions[version_qualifier]
-        self.stop_version(qualified_arn=version.id.qualified_arn())
+    def delete_version(self, function_version: FunctionVersion):
+        # TODO is this necessary?
+        self.stop_version(qualified_arn=function_version.id.qualified_arn())
 
     def get_function_version(
         self,

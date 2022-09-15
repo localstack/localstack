@@ -55,7 +55,7 @@ def get_runtime_split(runtime: str) -> Tuple[str, str]:
 
 def get_path_for_function(function_version: FunctionVersion) -> Path:
     return Path(
-        f"{config.dirs.tmp}/lambda/{function_version.id.qualified_arn().replace(':', '_').replace('$', '_')}/"
+        f"{config.dirs.tmp}/lambda/{function_version.id.qualified_arn().replace(':', '_').replace('$', '_')}_{function_version.config.internal_revision}/"
     )
 
 

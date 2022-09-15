@@ -173,7 +173,7 @@ class LambdaVersionManager(ServiceEndpoint):
             invocation_thread.start()
             self.invocation_thread = invocation_thread
             self.log_handler.start_subscriber()
-            RuntimeExecutor.prepare_version(self.function_version)
+            RuntimeExecutor.prepare_version(self.function_version, id=self.id)
 
             self.state = VersionState(state=State.Active)
             LOG.debug(f"Lambda '{self.function_arn}' changed to active")
@@ -204,7 +204,7 @@ class LambdaVersionManager(ServiceEndpoint):
         for environment in list(self.all_environments.values()):
             self.stop_environment(environment)
         self.log_handler.stop()
-        RuntimeExecutor.cleanup_version(self.function_version)
+        RuntimeExecutor.cleanup_version(self.function_version, id=self.id)
 
     def update_provisioned_concurrency_config(self, provisioned_concurrent_executions: int) -> None:
         self.provisioned_concurrent_executions = provisioned_concurrent_executions

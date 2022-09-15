@@ -32,9 +32,13 @@ def function_name_from_arn(arn: str):
     return function_name_regex.match(arn).group("name")
 
 
+def lambda_arn_without_qualifier(function_name: str, account: str, region: str):
+    partition = aws_stack.get_partition(region)
+    return f"arn:{partition}:lambda:{region}:{account}:function:{function_name}"
+
+
 def qualified_lambda_arn(
     function_name: str, qualifier: Optional[str], account: str, region: str
 ) -> str:
-    partition = aws_stack.get_partition(region)
     qualifier = qualifier or "$LATEST"
-    return f"arn:{partition}:lambda:{region}:{account}:function:{function_name}:{qualifier}"
+    return f"{lambda_arn_without_qualifier(function_name=function_name, account=account, region=region)}:{qualifier}"

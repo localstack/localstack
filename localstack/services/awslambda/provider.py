@@ -1,4 +1,5 @@
 import base64
+import dataclasses
 import logging
 import re
 import threading
@@ -27,6 +28,7 @@ from localstack.aws.api.lambda_ import (
     PackageType,
     Qualifier,
     ResourceConflictException,
+    ResourceNotFoundException,
     ServiceException,
     State,
     String,
@@ -50,9 +52,12 @@ from localstack.services.awslambda.invocation.lambda_service import (
     store_lambda_archive,
     store_s3_bucket_archive,
 )
-from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
+from localstack.services.awslambda.invocation.lambda_util import (
+    lambda_arn_without_qualifier,
+    qualified_lambda_arn,
+)
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -191,6 +196,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     image_config=None,  # TODO
                     code=code,
                     layers=[],  # TODO
+                    internal_revision=short_uid(),
                 ),
             )
             fn.versions["$LATEST"] = version
@@ -214,7 +220,48 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # only supports normal zip packaging atm
         # if request.get("Publish"):
         #     self.lambda_service.create_function_version()
-        # self.lambda_service.update
+
+        function_name = request.get("FunctionName")
+        state = lambda_stores[context.account_id][context.region]
+        if function_name not in state.functions:
+            raise ResourceNotFoundException(
+                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}"
+            )
+        function = state.functions[function_name]
+        # TODO verify if correct combination of code is set
+        if zip_file := request.get("ZipFile"):
+            code = store_lambda_archive(
+                archive_file=zip_file,
+                function_name=function_name,
+                region_name=context.region,
+                account_id=context.account_id,
+            )
+        elif s3_bucket := request.get("S3Bucket"):
+            s3_key = request["S3Key"]
+            s3_object_version = request.get("S3ObjectVersion")
+            code = store_s3_bucket_archive(
+                archive_bucket=s3_bucket,
+                archive_key=s3_key,
+                archive_version=s3_object_version,
+                function_name=function_name,
+                region_name=context.region,
+                account_id=context.account_id,
+            )
+        else:
+            raise ServiceException("Gotta have s3 bucket or zip file")
+
+        old_function_version = function.versions.get("$LATEST")
+        self.lambda_service.delete_version(function_version=old_function_version)
+        # TODO this should be encapsulated better
+        old_code = old_function_version.config.code
+        old_code.destroy()
+        config = dataclasses.replace(
+            old_function_version.config, code=code, internal_revision=short_uid()
+        )
+        function_version = dataclasses.replace(old_function_version, config=config)
+        function.versions["$LATEST"] = function_version
+
+        self.lambda_service.create_function_version(function_version=function_version)
         return FunctionConfiguration()
 
     # TODO: does deleting the latest published version affect the next versions number?

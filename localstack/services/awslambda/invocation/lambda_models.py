@@ -44,6 +44,11 @@ class S3Code:
             params["VersionId"] = self.s3_object_version
         return s3_client.generate_presigned_url("get_object", Params=params)
 
+    def destroy(self) -> None:
+        s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+        kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
+        s3_client.delete_object(Bucket=self.s3_bucket, Key=self.s3_key, **kwargs)
+
 
 @dataclasses.dataclass
 class DeadLetterConfig:
@@ -98,6 +103,8 @@ class VersionFunctionConfiguration:
     reserved_concurrent_executions: int
     environment: dict[str, str]
     architectures: list[Architecture]
+    # internal revision is updated when runtime restart is necessary
+    internal_revision: str
 
     tracing_config_mode: str
     code: S3Code
