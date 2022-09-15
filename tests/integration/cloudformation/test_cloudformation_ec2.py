@@ -28,7 +28,7 @@ def test_vpc_creates_default_sg(deploy_cfn_template, ec2_client):
 
 
 @pytest.mark.aws_validated
-def test_cfn_with_multiple_route_tables(self, ec2_client, deploy_cfn_template):
+def test_cfn_with_multiple_route_tables(ec2_client, deploy_cfn_template):
 
     result = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../templates/template36.yaml"),

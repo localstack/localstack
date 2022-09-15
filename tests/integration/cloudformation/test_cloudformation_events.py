@@ -308,7 +308,7 @@ Resources:
 """
 
 
-def test_cfn_handle_events_rule(self, events_client, deploy_cfn_template):
+def test_cfn_handle_events_rule(events_client, deploy_cfn_template):
     bucket_name = f"target-{short_uid()}"
     rule_prefix = f"s3-rule-{short_uid()}"
     rule_name = f"{rule_prefix}-{short_uid()}"
@@ -330,7 +330,7 @@ def test_cfn_handle_events_rule(self, events_client, deploy_cfn_template):
     assert rule_name not in [rule["Name"] for rule in rs["Rules"]]
 
 
-def test_cfn_handle_events_rule_without_name(self, events_client, deploy_cfn_template):
+def test_cfn_handle_events_rule_without_name(events_client, deploy_cfn_template):
     rs = events_client.list_rules()
     rule_names = [rule["Name"] for rule in rs["Rules"]]
 

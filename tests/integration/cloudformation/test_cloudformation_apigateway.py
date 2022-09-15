@@ -196,7 +196,7 @@ def test_cfn_deploy_apigateway_integration(
 ):
     bucket_name = "hofund-local-deployment"
     key_name = "serverless/hofund/local/1599143878432/authorizer.zip"
-    package_path = os.path.join(os.path.dirname(__file__), "awslambda/functions/lambda_echo.js")
+    package_path = os.path.join(os.path.dirname(__file__), "../awslambda/functions/lambda_echo.js")
 
     s3_client.create_bucket(Bucket=bucket_name, ACL="public-read")
     s3_client.put_object(

@@ -418,10 +418,12 @@ class TestCloudFormation:
         key_name = "lambda-package"
         role_name = f"role-{short_uid()}"
         function_name = f"func-{short_uid()}"
-        package_path = os.path.join(os.path.dirname(__file__), "awslambda/functions/lambda_echo.js")
+        package_path = os.path.join(
+            os.path.dirname(__file__), "../awslambda/functions/lambda_echo.js"
+        )
         template = json.loads(
             load_file(
-                os.path.join(os.path.dirname(__file__), "templates/update_lambda_template.json")
+                os.path.join(os.path.dirname(__file__), "../templates/update_lambda_template.json")
             )
         )
         template["Resources"]["PullMarketsRole"]["Properties"]["RoleName"] = role_name
@@ -521,7 +523,9 @@ class TestCloudFormation:
         bucket = f"bucket-{short_uid()}"
         key = f"key-{short_uid()}"
 
-        package_path = os.path.join(os.path.dirname(__file__), "awslambda/functions/lambda_echo.js")
+        package_path = os.path.join(
+            os.path.dirname(__file__), "../awslambda/functions/lambda_echo.js"
+        )
 
         s3_create_bucket(Bucket=bucket, ACL="public-read")
         s3_client.put_object(
@@ -690,7 +694,7 @@ class TestCloudFormation:
         exports_before = cfn_client.list_exports()["Exports"]
 
         stack = deploy_cfn_template(
-            template_path=os.path.join(os.path.dirname(__file__), "templates/template32.yaml")
+            template_path=os.path.join(os.path.dirname(__file__), "../templates/template32.yaml")
         )
         stack_name = stack.stack_name
 
@@ -753,7 +757,7 @@ class TestCloudFormation:
         lambda_function_name = f"lambda-function-{short_uid()}"
 
         template = json.loads(
-            load_file(os.path.join(os.path.dirname(__file__), "templates/template7.json"))
+            load_file(os.path.join(os.path.dirname(__file__), "../templates/template7.json"))
         )
 
         template["Resources"]["LambdaExecutionRole"]["Properties"]["RoleName"] = lambda_role_name

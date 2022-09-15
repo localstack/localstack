@@ -55,7 +55,7 @@ Resources:
 """
 
 
-def test_cfn_handle_sqs_resource(self, deploy_cfn_template, sqs_client):
+def test_cfn_handle_sqs_resource(deploy_cfn_template, sqs_client):
     fifo_queue = f"queue-{short_uid()}.fifo"
 
     stack = deploy_cfn_template(template=TEST_TEMPLATE_15 % fifo_queue)
