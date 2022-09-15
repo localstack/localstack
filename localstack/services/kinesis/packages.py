@@ -51,7 +51,7 @@ _KINESALITE_VERSION = os.environ.get("KINESALITE_VERSION") or "3.3.3"
 
 class KinesalitePackage(Package):
     def __init__(self, default_version: str = _KINESALITE_VERSION):
-        super().__init__(name="Kinesis Mock", default_version=default_version)
+        super().__init__(name="Kinesalite", default_version=default_version)
 
     def _get_installer(self, version: str) -> PackageInstaller:
         return KinesalitePackageInstaller(version)

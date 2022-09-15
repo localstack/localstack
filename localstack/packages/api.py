@@ -221,6 +221,9 @@ class PackageRepository(PluginManager):
     list the packages for each service.
     """
 
+    # TODO couple the packages plugins to service providers instead of services
+    #  - maybe integrate these into the ServicePluginManager
+
     def __init__(self):
         super().__init__(namespace=PLUGIN_NAMESPACE)
 
@@ -276,16 +279,17 @@ def packages(
     """
     Decorator for marking methods that create Package instances as a PackagePlugin.
     Methods marked with this decorator are discoverable as a PluginSpec within the namespace "localstack.packages",
-    with the name "<service>:<name>". If service is not explicitly specified, then the module name is used as service
-    name.
+    with the name "<service>:<name>". If service is not explicitly specified, then the parent module name is used as
+    service name.
     """
 
     def wrapper(fn):
+        _service = service or getmodule(fn).__name__.split(".")[-2]
+
         @functools.wraps(fn)
         def factory() -> PackagesPlugin:
-            _service = service or getmodule(fn).__name__
             return PackagesPlugin(service=_service, get_packages=fn, should_load=should_load)
 
-        return PluginSpec(PLUGIN_NAMESPACE, f"{service}:{name}", factory=factory)
+        return PluginSpec(PLUGIN_NAMESPACE, f"{_service}:{name}", factory=factory)
 
     return wrapper

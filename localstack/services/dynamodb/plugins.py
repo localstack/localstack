@@ -1,7 +1,7 @@
 from localstack.packages import Package, packages
 
 
-@packages(service="dynamodb")
+@packages()
 def dynamodb_package() -> Package:
     from localstack.services.dynamodb.packages import dynamodblocal_package
 
