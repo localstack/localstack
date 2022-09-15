@@ -28,6 +28,7 @@ def is_redhat() -> bool:
     return "rhel" in load_file("/etc/os-release", "")
 
 
+@lru_cache()
 def get_arch() -> str:
     """
     Returns the current machine architecture
@@ -41,6 +42,7 @@ def get_arch() -> str:
     return arch
 
 
+@lru_cache()
 def get_os() -> str:
     if is_mac_os():
         return "osx"

@@ -2,12 +2,17 @@ import logging
 import os
 import threading
 from abc import ABC
-from typing import Callable, List
+from functools import lru_cache
+from typing import Callable, Dict, List
+
+import requests
 
 from localstack import config
 from localstack.utils.platform import in_docker, is_debian, is_redhat
 from localstack.utils.run import run
 
+from ..utils.files import chmod_r, mkdir
+from ..utils.http import download
 from .api import InstallTarget, PackageException, PackageInstaller
 
 LOG = logging.getLogger(__name__)
@@ -154,3 +159,74 @@ class OSPackageInstaller(PackageInstaller, ABC):
 
     def _redhat_post_process(self, target: InstallTarget) -> None:
         run(["dnf", "clean", "all"])
+
+
+class DownloadInstaller(PackageInstaller):
+    def __init__(self, name: str, version: str):
+        super().__init__(name, version)
+
+    @lru_cache()
+    def _get_download_url(self) -> str:
+        raise NotImplementedError()
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        url = self._get_download_url()
+        binary_name = os.path.basename(url)
+        return os.path.join(install_dir, binary_name)
+
+    def get_executable_path(self) -> str | None:
+        """
+        :return: the path to the downloaded binary or None if it's not yet downloaded / installed.
+        """
+        install_dir = self.get_installed_dir()
+        if install_dir:
+            return self._get_install_marker_path(install_dir)
+
+    def _install(self, target: InstallTarget) -> None:
+        target_directory = self._get_install_dir(target)
+        mkdir(target_directory)
+        download_url = self._get_download_url()
+        target_path = self._get_install_marker_path(target_directory)
+        download(download_url, target_path)
+        chmod_r(target_path, 0o777)
+
+
+class GitHubReleaseInstaller(DownloadInstaller):
+    """
+    Installer which downloads an asset from a GitHub project's tag.
+    """
+
+    def __init__(self, name: str, tag: str, github_slug: str):
+        super().__init__(name, tag)
+        self.github_tag_url = (
+            f"https://api.github.com/repos/{github_slug}/releases/tags/{self.version}"
+        )
+
+    def _get_download_url(self) -> str:
+        response = requests.get(self.github_tag_url)
+        if not response.ok:
+            raise PackageException(
+                f"Could not get list of releases from {self.github_tag_url}: {response.text}"
+            )
+        github_release = response.json()
+        asset_name = self._get_github_asset_name(github_release)
+        download_url = None
+        for asset in github_release.get("assets", []):
+            # find the correct binary in the release
+            if asset["name"] == asset_name:
+                download_url = asset["browser_download_url"]
+                break
+        if download_url is None:
+            raise PackageException(
+                f"Could not find required binary {asset_name} in release {self.github_tag_url}"
+            )
+        return download_url
+
+    def _get_github_asset_name(self, github_release: Dict) -> str:
+        """
+        Determines the name of the asset to download.
+
+        :param github_release: GitHub Release JSON data
+        :return: name of the asset to download from the GitHub project's tag / version
+        """
+        raise NotImplementedError()

@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from localstack import config
-from localstack.services import install
+from localstack.services.kinesis.packages import kinesalite_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
@@ -16,10 +16,16 @@ class KinesaliteServer(Server):
     """
 
     def __init__(
-        self, port: int, latency: str, host: str = "localhost", data_dir: Optional[str] = None
+        self,
+        install_dir: str,
+        port: int,
+        latency: str,
+        host: str = "localhost",
+        data_dir: Optional[str] = None,
     ):
         self._latency = latency
         self._data_dir = data_dir
+        self.install_dir = install_dir
         super().__init__(port, host)
 
     def do_start_thread(self) -> FuncThread:
@@ -44,7 +50,7 @@ class KinesaliteServer(Server):
             "%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s"
             " --createStreamMs %s --deleteStreamMs %s --updateStreamMs %s %s"
         ) % (
-            config.dirs.static_libs,
+            self.install_dir,
             config.KINESIS_SHARD_LIMIT,
             self.port,
             self._latency,
@@ -66,11 +72,16 @@ def create_kinesalite_server(port=None, persist_path: Optional[str] = None) -> K
     """
     port = port or get_free_tcp_port()
 
-    install.install_kinesalite()
+    kinesalite_package.install()
     persist_path = (
         f"{config.dirs.data}/dynamodb" if not persist_path and config.dirs.data else persist_path
     )
     if persist_path:
         mkdir(persist_path)
 
-    return KinesaliteServer(port=port, latency=config.KINESIS_LATENCY, data_dir=persist_path)
+    return KinesaliteServer(
+        install_dir=kinesalite_package.get_installed_dir(),
+        port=port,
+        latency=config.KINESIS_LATENCY,
+        data_dir=persist_path,
+    )
