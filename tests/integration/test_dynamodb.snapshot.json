@@ -86,12 +86,16 @@
     }
   },
   "tests/integration/test_dynamodb.py::TestDynamoDB::test_batch_write_binary": {
-    "recorded-date": "15-09-2022, 09:00:49",
-    "recorded-content": {}
-  },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_binary_data_with_stream": {
-    "recorded-date": "14-09-2022, 22:29:43",
-    "recorded-content": {}
+    "recorded-date": "15-09-2022, 10:19:38",
+    "recorded-content": {
+      "Response": {
+        "UnprocessedItems": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   },
   "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_transaction": {
     "recorded-date": "15-09-2022, 09:00:55",
@@ -246,18 +250,6 @@
       }
     }
   },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_batch_write_item": {
-    "recorded-date": "15-09-2022, 09:01:57",
-    "recorded-content": {
-      "Result": {
-        "UnprocessedItems": {},
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_pay_per_request": {
     "recorded-date": "15-09-2022, 09:01:57",
     "recorded-content": {
@@ -265,49 +257,17 @@
     }
   },
   "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_create_table_with_partial_sse_specification": {
-    "recorded-date": "15-09-2022, 09:02:03",
+    "recorded-date": "15-09-2022, 10:35:34",
     "recorded-content": {
-      "Table": {
-        "TableDescription": {
-          "AttributeDefinitions": [
-            {
-              "AttributeName": "id",
-              "AttributeType": "S"
-            }
-          ],
-          "CreationDateTime": "datetime",
-          "ItemCount": 0,
-          "KeySchema": [
-            {
-              "AttributeName": "id",
-              "KeyType": "HASH"
-            }
-          ],
-          "ProvisionedThroughput": {
-            "NumberOfDecreasesToday": 0,
-            "ReadCapacityUnits": 5,
-            "WriteCapacityUnits": 5
-          },
-          "SSEDescription": {
-            "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/<uuid:2>",
-            "SSEType": "KMS",
-            "Status": "ENABLED"
-          },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<test-table>",
-          "TableId": "<uuid:1>",
-          "TableName": "<test-table>",
-          "TableSizeBytes": 0,
-          "TableStatus": "CREATING"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
+      "SSEDescription": {
+        "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEType": "KMS",
+        "Status": "ENABLED"
       },
       "KMSDescription": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:2>",
+          "Arn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "Default key that protects my DynamoDB data when no other key is defined",
@@ -315,7 +275,7 @@
           "EncryptionAlgorithms": [
             "SYMMETRIC_DEFAULT"
           ],
-          "KeyId": "<uuid:2>",
+          "KeyId": "<uuid:1>",
           "KeyManager": "AWS",
           "KeySpec": "SYMMETRIC_DEFAULT",
           "KeyState": "Enabled",
@@ -367,9 +327,5 @@
     "recorded-content": {
       "ValidationException": "An error occurred (ValidationException) when calling the BatchWriteItem operation: The provided key element does not match the schema"
     }
-  },
-  "tests/integration/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_records_with_update_item": {
-    "recorded-date": "15-09-2022, 09:01:51",
-    "recorded-content": {}
   }
 }

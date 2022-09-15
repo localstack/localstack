@@ -400,9 +400,7 @@ class TestDynamoDB:
             ExpressionAttributeValues={":v1": {"S": "test one"}},
             Select="ALL_ATTRIBUTES",
         )
-        transformer = SortingTransformer("Items", lambda x: x)
-        transformed_dict = transformer.transform(result)
-
+        transformed_dict = SortingTransformer("Items", lambda x: x).transform(result)
         snapshot.match("Items", transformed_dict)
 
     @pytest.mark.only_localstack(reason="AWS has a 20 GSI limit")
@@ -532,7 +530,7 @@ class TestDynamoDB:
         response = dynamodb_client.batch_write_item(
             RequestItems={table_name: [{"PutRequest": item}, {"PutRequest": item_non_decodable}]}
         )
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        snapshot.match("Response", response)
 
     @pytest.mark.only_localstack
     def test_binary_data_with_stream(
@@ -651,7 +649,10 @@ class TestDynamoDB:
         snapshot.match("ExecutedTransaction", result)
 
         result = dynamodb_client.scan(TableName=table_name)
-        snapshot.match("TableScan", result)
+        transformed_dict = SortingTransformer("Items", lambda x: x["Username"]["S"]).transform(
+            result
+        )
+        snapshot.match("TableScan", transformed_dict)
 
     @pytest.mark.aws_validated
     def test_dynamodb_batch_execute_statement(
@@ -672,7 +673,8 @@ class TestDynamoDB:
         ]
         result = dynamodb_client.batch_execute_statement(Statements=statements)
         # actions always succeeds
-        snapshot.match("ExecutedStatement", result)
+        sorted_result = SortingTransformer("Responses", lambda x: x["TableName"]).transform(result)
+        snapshot.match("ExecutedStatement", sorted_result)
 
         item = dynamodb_client.get_item(TableName=table_name, Key={"Username": {"S": "user02"}})[
             "Item"
@@ -1346,31 +1348,6 @@ class TestDynamoDB:
         lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
 
     @pytest.mark.aws_validated
-    def test_dynamodb_batch_write_item(
-        self, dynamodb_client, dynamodb_create_table_with_parameters, snapshot
-    ):
-        table_name = f"ddb-table-{short_uid()}"
-
-        dynamodb_create_table_with_parameters(
-            TableName=table_name,
-            KeySchema=[{"AttributeName": PARTITION_KEY, "KeyType": "HASH"}],
-            AttributeDefinitions=[{"AttributeName": PARTITION_KEY, "AttributeType": "S"}],
-            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
-            Tags=TEST_DDB_TAGS,
-        )
-
-        result = dynamodb_client.batch_write_item(
-            RequestItems={
-                table_name: [
-                    {"PutRequest": {"Item": {PARTITION_KEY: {"S": "Test1"}}}},
-                    {"PutRequest": {"Item": {PARTITION_KEY: {"S": "Test2"}}}},
-                    {"PutRequest": {"Item": {PARTITION_KEY: {"S": "Test3"}}}},
-                ]
-            }
-        )
-        snapshot.match("Result", result)
-
-    @pytest.mark.aws_validated
     def test_dynamodb_pay_per_request(self, dynamodb_create_table_with_parameters, snapshot):
         table_name = f"ddb-table-{short_uid()}"
 
@@ -1410,8 +1387,6 @@ class TestDynamoDB:
     @pytest.mark.aws_validated
     @pytest.mark.skip_snapshot_verify(
         paths=[
-            "$..TableDescription..ProvisionedThroughput..NumberOfDecreasesToday",
-            "$..TableDescription..TableStatus",
             "$..KeyMetadata..KeyUsage",
             "$..KeyMetadata..MultiRegion",
             "$..KeyMetadata..SigningAlgorithms",
@@ -1432,7 +1407,7 @@ class TestDynamoDB:
             Tags=TEST_DDB_TAGS,
         )
 
-        snapshot.match("Table", result)
+        snapshot.match("SSEDescription", result["TableDescription"]["SSEDescription"])
 
         kms_master_key_arn = result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
         result = kms_client.describe_key(KeyId=kms_master_key_arn)
