@@ -3,7 +3,6 @@ import logging
 
 import pytest
 
-from localstack.services.awslambda import lambda_api
 from localstack.testing.aws.lambda_utils import is_old_provider
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import to_bytes, to_str
@@ -36,7 +35,7 @@ def snapshot_transformers(snapshot):
 
 
 @pytest.mark.skipif(
-    condition=is_old_provider() and not lambda_api.use_docker(),
+    condition=is_old_provider(),
     reason="Local executor does not support the majority of the runtimes",
 )
 class TestLambdaRuntimesCommon:
@@ -51,10 +50,6 @@ class TestLambdaRuntimesCommon:
 
     """
 
-    @pytest.mark.skipif(
-        condition=is_old_provider(),
-        reason="Skipped because provided.al2 does not work in old provider",
-    )
     @pytest.mark.multiruntime(scenario="echo")
     def test_echo_invoke(self, lambda_client, multiruntime_lambda):
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
@@ -90,7 +85,6 @@ class TestLambdaRuntimesCommon:
         assert invoke_result["StatusCode"] == 200
         assert json.loads(invoke_result["Payload"].read()) == payload
 
-    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     @pytest.mark.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         create_function_result = multiruntime_lambda.create_function(
@@ -112,7 +106,6 @@ class TestLambdaRuntimesCommon:
         assert "packages" in invocation_result_payload
         snapshot.match("invocation_result_payload", invocation_result_payload)
 
-    @pytest.mark.skip_snapshot_verify(condition=is_old_provider)
     @pytest.mark.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, lambda_client, multiruntime_lambda, snapshot):
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
