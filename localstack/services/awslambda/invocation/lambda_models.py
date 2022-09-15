@@ -1,7 +1,7 @@
 import abc
 import dataclasses
 import threading
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from localstack.aws.api.lambda_ import (
     Architecture,
@@ -11,6 +11,10 @@ from localstack.aws.api.lambda_ import (
     Runtime,
 )
 from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
+from localstack.utils.aws import aws_stack
+
+if TYPE_CHECKING:
+    from mypy_boto3_s3 import S3Client
 
 
 @dataclasses.dataclass
@@ -20,25 +24,25 @@ class Invocation:
     invocation_type: InvocationType
 
 
-@dataclasses.dataclass
-class Code:
-    # Image-based lambda
-    image_uri: Optional[str] = None
-
-    # Pointer to code in S3
-    s3_bucket: Optional[str] = None
-    s3_key: Optional[str] = None
-    s3_object_version: Optional[str] = None
-
-    # Code uploaded directly via Zip upload
-    zip_file: Optional[str] = None
-
-
-@dataclasses.dataclass
-class S3CodeLocation:
+@dataclasses.dataclass(frozen=True)
+class S3Code:
     s3_bucket: str
     s3_key: str
-    s3_object_version: str
+    s3_object_version: str | None
+    code_sha256: str
+    code_size: int
+
+    def get_lambda_archive(self) -> bytes:
+        s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+        kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
+        return s3_client.get_object(Bucket=self.s3_bucket, Key=self.s3_key, **kwargs)["Body"].read()
+
+    def generate_presigned_url(self) -> str:
+        s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
+        params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
+        if self.s3_object_version:
+            params["VersionId"] = self.s3_object_version
+        return s3_client.generate_presigned_url("get_object", Params=params)
 
 
 @dataclasses.dataclass
@@ -76,8 +80,6 @@ class UpdateStatus:
 class FunctionConfigurationMeta:
     function_arn: str
     revision_id: str  # UUID, new one on each change
-    code_size: int
-    coda_sha256: str
     last_modified: str  # ISO string
     last_update: UpdateStatus
 
@@ -98,6 +100,7 @@ class VersionFunctionConfiguration:
     architectures: list[Architecture]
 
     tracing_config_mode: str
+    code: S3Code
     image_config: Optional[ImageConfig] = None
     layers: list[str] = dataclasses.field(default_factory=list)
     # kms_key_arn: str
@@ -151,7 +154,6 @@ class VersionAlias:
 class FunctionVersion:
     id: VersionIdentifier
     qualifier: str
-    code: Code  # TODO: code might make more sense in the functionconfiguration?
     config_meta: FunctionConfigurationMeta
     config: VersionFunctionConfiguration
     provisioned_concurrency_config: Optional[ProvisionedConcurrencyConfiguration] = None

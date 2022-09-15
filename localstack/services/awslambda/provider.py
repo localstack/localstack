@@ -26,6 +26,7 @@ from localstack.aws.api.lambda_ import (
     NamespacedFunctionName,
     PackageType,
     Qualifier,
+    ResourceConflictException,
     ServiceException,
     State,
     String,
@@ -35,12 +36,20 @@ from localstack.aws.api.lambda_ import (
     UpdateFunctionConfigurationRequest,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
-    Code,
+    Function,
+    FunctionConfigurationMeta,
     FunctionVersion,
     InvocationError,
+    UpdateStatus,
     VersionFunctionConfiguration,
+    VersionIdentifier,
 )
-from localstack.services.awslambda.invocation.lambda_service import LambdaService, lambda_stores
+from localstack.services.awslambda.invocation.lambda_service import (
+    LambdaService,
+    lambda_stores,
+    store_lambda_archive,
+    store_s3_bucket_archive,
+)
 from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_bytes, to_str
@@ -55,10 +64,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     lambda_service: LambdaService
     lock: threading.RLock
+    create_fn_lock: threading.RLock
 
     def __init__(self) -> None:
         self.lambda_service = LambdaService()
         self.lock = threading.RLock()
+        self.create_fn_lock = threading.RLock()
 
     def on_before_stop(self) -> None:
         self.lambda_service.stop()
@@ -78,8 +89,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             Runtime=version.config.runtime,
             Handler=version.config.handler,
             Environment=EnvironmentResponse(Variables=version.config.environment, Error={}),
-            CodeSize=version.config_meta.code_size,
-            CodeSha256=version.config_meta.coda_sha256,
+            CodeSize=version.config.code.code_size,
+            CodeSha256=version.config.code.code_sha256,
             MemorySize=version.config.memory_size,
             PackageType=version.config.package_type,
             TracingConfig=TracingConfig(Mode=version.config.tracing_config_mode),
@@ -114,43 +125,78 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if architectures and Architecture.arm64 in architectures:
             raise ServiceException("ARM64 is currently not supported by this provider")
 
-        code = Code()
-        if request["PackageType"] == PackageType.Zip:
-            request_code = request["Code"]
-            if request_code.get("ZipFile"):
-                code.zip_file = request_code["ZipFile"]
-            elif request_code["S3Bucket"]:
-                # validate all are here
-                # TODO: test exception
-                code.s3_bucket = request_code["S3Bucket"]
-                code.s3_bucket = request_code["S3Key"]
-                # code.s3_bucket = request_code['S3ObjectVersion']  # optional
+        state = lambda_stores[context.account_id][context.region]
 
-        lambda_stores[context.account_id][context.region]
+        function_name = request["FunctionName"]
+        if function_name in state.functions:
+            raise ResourceConflictException(f"Function already exist: {function_name}")
+        fn = Function(function_name=function_name)
 
-        version = self.lambda_service.create_function(
-            context.account_id,
-            context.region,
-            function_name=request["FunctionName"],
-            function_config=VersionFunctionConfiguration(
-                description=request.get("Description", ""),
-                role=request["Role"],
-                timeout=request.get("Timeout", LAMBDA_DEFAULT_TIMEOUT),
-                runtime=request["Runtime"],
-                memory_size=request.get("MemorySize", LAMBDA_DEFAULT_MEMORY_SIZE),
-                handler=request["Handler"],
-                package_type=PackageType.Zip,  # TODO
-                reserved_concurrent_executions=0,
-                environment={
-                    k: v for k, v in request.get("Environment", {}).get("Variables", {}).items()
-                },
-                architectures=[Architecture.x86_64],  # TODO
-                tracing_config_mode=TracingMode.PassThrough,  # TODO
-                image_config=None,  # TODO
-                layers=[],  # TODO
-            ),
-            code=code,
-        )
+        with self.create_fn_lock:
+            arn = VersionIdentifier(
+                function_name=function_name,
+                qualifier="$LATEST",
+                region=context.region,
+                account=context.account_id,
+            )
+            # save function code to s3
+            code = None
+            if request["PackageType"] == PackageType.Zip:
+                request_code = request["Code"]
+                # TODO verify if correct combination of code is set
+                if zip_file := request_code.get("ZipFile"):
+                    code = store_lambda_archive(
+                        archive_file=zip_file,
+                        function_name=function_name,
+                        region_name=context.region,
+                        account_id=context.account_id,
+                    )
+                elif s3_bucket := request_code.get("S3Bucket"):
+                    s3_key = request_code["S3Key"]
+                    s3_object_version = request_code.get("S3ObjectVersion")
+                    code = store_s3_bucket_archive(
+                        archive_bucket=s3_bucket,
+                        archive_key=s3_key,
+                        archive_version=s3_object_version,
+                        function_name=function_name,
+                        region_name=context.region,
+                        account_id=context.account_id,
+                    )
+                else:
+                    raise ServiceException("Gotta have s3 bucket or zip file")
+
+            version = FunctionVersion(
+                id=arn,
+                qualifier="$LATEST",
+                config_meta=FunctionConfigurationMeta(
+                    function_arn=arn.qualified_arn(),
+                    revision_id="?",
+                    last_modified="asdf",
+                    last_update=UpdateStatus(status=LastUpdateStatus.Successful),
+                ),
+                config=VersionFunctionConfiguration(
+                    description=request.get("Description", ""),
+                    role=request["Role"],
+                    timeout=request.get("Timeout", LAMBDA_DEFAULT_TIMEOUT),
+                    runtime=request["Runtime"],
+                    memory_size=request.get("MemorySize", LAMBDA_DEFAULT_MEMORY_SIZE),
+                    handler=request["Handler"],
+                    package_type=PackageType.Zip,  # TODO
+                    reserved_concurrent_executions=0,
+                    environment={
+                        k: v for k, v in request.get("Environment", {}).get("Variables", {}).items()
+                    },
+                    architectures=[Architecture.x86_64],  # TODO
+                    tracing_config_mode=TracingMode.PassThrough,  # TODO
+                    image_config=None,  # TODO
+                    code=code,
+                    layers=[],  # TODO
+                ),
+            )
+            fn.versions["$LATEST"] = version
+            state.functions[function_name] = fn
+        self.lambda_service.create_function_version(version)
+
         return self._map_config_out(version)
 
     @handler(operation="UpdateFunctionConfiguration", expand=False)
@@ -219,12 +265,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,  # TODO
     ) -> GetFunctionResponse:
-        version = self.lambda_service.get_function_version(
-            context.account_id, context.region, function_name, qualifier or "$LATEST"
-        )
+        qualifier = qualifier or "$LATEST"
+        state = lambda_stores[context.account_id][context.region]
+        version = state.functions[function_name].versions[qualifier]
+        code = version.config.code
         return GetFunctionResponse(
             Configuration=self._map_config_out(version),
-            Code=FunctionCodeLocation(Location="http://httpbin.org/get"),  # TODO
+            Code=FunctionCodeLocation(
+                Location=code.generate_presigned_url(), RepositoryType="S3"
+            ),  # TODO
             # Tags={},  # TODO
             # Concurrency={},  # TODO
         )

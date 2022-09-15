@@ -113,15 +113,13 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
 
 
 def prepare_version(function_version: FunctionVersion) -> None:
-    if not function_version.code.zip_file:
-        raise NotImplementedError("Images without zipfile are currently not supported")
     time_before = time.perf_counter()
     target_path = get_path_for_function(function_version)
     target_path.mkdir(parents=True, exist_ok=True)
     # write code to disk
     target_code = get_code_path_for_function(function_version)
     with NamedTemporaryFile() as file:
-        file.write(function_version.code.zip_file)
+        file.write(function_version.config.code.get_lambda_archive())
         file.flush()
         unzip(file.name, str(target_code))
     if config.LAMBDA_PREBUILD_IMAGES:

@@ -1,29 +1,26 @@
+import base64
 import concurrent.futures
 import io
 import logging
 import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
+from hashlib import sha256
 from threading import RLock
 from typing import Dict, List, Optional
 
 from mypy_boto3_s3 import S3Client
 
-from localstack.aws.api.lambda_ import ResourceNotFoundException
+from localstack.aws.api.lambda_ import InvocationType, ResourceNotFoundException
 from localstack.services.awslambda.invocation.lambda_models import (
-    Code,
-    Function,
-    FunctionConfigurationMeta,
     FunctionVersion,
     Invocation,
     InvocationResult,
-    S3CodeLocation,
-    UpdateStatus,
-    VersionFunctionConfiguration,
-    VersionIdentifier,
+    S3Code,
 )
 from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 from localstack.utils.aws import aws_stack
+from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -35,13 +32,11 @@ class LambdaService:
     # mapping from qualified ARN to version manager
     lambda_version_managers: Dict[str, LambdaVersionManager]
     lambda_version_manager_lock: RLock
-    create_fn_lock: RLock
     task_executor: Executor
 
     def __init__(self) -> None:
         self.lambda_version_managers = {}
         self.lambda_version_manager_lock = RLock()
-        self.create_fn_lock = RLock()
         self.task_executor = ThreadPoolExecutor()
 
     def stop(self) -> None:
@@ -49,8 +44,7 @@ class LambdaService:
         for version_manager in self.lambda_version_managers.values():
             shutdown_futures.append(self.task_executor.submit(version_manager.stop))
         concurrent.futures.wait(shutdown_futures, timeout=5)
-        self.task_executor.shutdown()
-        # self.task_executor.shutdown(cancel_futures=True)  # TODO: python 3.9+
+        self.task_executor.shutdown(cancel_futures=True)
 
     def stop_version(self, qualified_arn: str) -> None:
         """
@@ -74,47 +68,6 @@ class LambdaService:
             raise ValueError(f"Could not find version '{function_arn}'. Is it created?")
 
         return version_manager
-
-    def create_function(
-        self,
-        account_id: str,
-        region_name: str,
-        function_name: str,
-        function_config: VersionFunctionConfiguration,
-        code: Code,
-    ) -> FunctionVersion:
-        state = lambda_stores[account_id][region_name]
-        fn = Function(function_name=function_name)
-
-        with self.create_fn_lock:
-            arn = VersionIdentifier(function_name, "$LATEST", region_name, account_id)
-
-            # zip_file_content = code.zip_file
-            # code_sha_256 = base64.standard_b64encode(
-            #     hashlib.sha256(zip_file_content).digest()
-            # ).decode("utf-8")
-            # TODO: calculate this from the actual code we retrieve here (e.g. downloaded from S3)
-            code_sha_256 = "codesha"
-            version = FunctionVersion(
-                id=arn,
-                qualifier="$LATEST",
-                code=code,
-                config_meta=FunctionConfigurationMeta(
-                    function_arn=arn.qualified_arn(),
-                    revision_id="?",
-                    code_size=512,
-                    # code_size=len(code.zip_file),
-                    coda_sha256=code_sha_256,
-                    last_modified="asdf",
-                    last_update=UpdateStatus(status="Successful"),
-                ),
-                config=function_config,
-            )
-            fn.versions["$LATEST"] = version
-            state.functions[function_name] = fn
-
-        self.create_function_version(version)
-        return version
 
     # TODO: is this sync?
     # TODO: what's the point of the qualifier here?
@@ -166,7 +119,7 @@ class LambdaService:
     def invoke(
         self,
         function_arn_qualified: str,
-        invocation_type: str,
+        invocation_type: InvocationType,
         client_context: Optional[str],
         payload: bytes,
     ) -> "Future[InvocationResult]":
@@ -180,7 +133,7 @@ class LambdaService:
 
 def store_lambda_archive(
     archive_file: bytes, function_name: str, region_name: str, account_id: str
-) -> S3CodeLocation:
+) -> S3Code:
     # store all buckets in us-east-1 for now
     s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
     bucket_name = f"awslambda-{region_name}-tasks"
@@ -188,7 +141,14 @@ def store_lambda_archive(
     s3_client.create_bucket(Bucket=bucket_name)
     key = f"snapshots/{account_id}/{function_name}-{uuid.uuid4()}"
     s3_client.upload_fileobj(Fileobj=io.BytesIO(archive_file), Bucket=bucket_name, Key=key)
-    return S3CodeLocation(s3_bucket=bucket_name, s3_key=key)
+    code_sha256 = to_str(base64.b64encode(sha256(archive_file).digest()))
+    return S3Code(
+        s3_bucket=bucket_name,
+        s3_key=key,
+        s3_object_version=None,
+        code_sha256=code_sha256,
+        code_size=len(archive_file),
+    )
 
 
 def store_s3_bucket_archive(
@@ -198,18 +158,12 @@ def store_s3_bucket_archive(
     function_name: str,
     region_name: str,
     account_id: str,
-) -> S3CodeLocation:
+) -> S3Code:
     s3_client: "S3Client" = aws_stack.connect_to_service("s3")
-    archive_file = s3_client.get_object(
-        Bucket=archive_bucket, Key=archive_key, VersionId=archive_version
-    )["Body"].read()
+    kwargs = {"VersionId": archive_version} if archive_version else {}
+    archive_file = s3_client.get_object(Bucket=archive_bucket, Key=archive_key, **kwargs)[
+        "Body"
+    ].read()
     return store_lambda_archive(
         archive_file, function_name=function_name, region_name=region_name, account_id=account_id
     )
-
-
-def get_lambda_archive(location: S3CodeLocation) -> bytes:
-    s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
-    return s3_client.get_object(
-        Bucket=location.s3_bucket, Key=location.s3_key, VersionId=location.s3_object_version
-    )["Body"].read()
