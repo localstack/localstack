@@ -127,3 +127,28 @@ def test_sns_subscription(
     finally:
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])
+
+
+def test_deploy_stack_with_sns_topic(sns_client, deploy_cfn_template):
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../templates/deploy_template_2.yaml"
+        ),
+        parameters={"CompanyName": "MyCompany", "MyEmail1": "my@email.com"},
+    )
+    assert len(stack.outputs) == 3
+
+    topic_arn = stack.outputs["MyTopic"]
+    rs = sns_client.list_topics()
+
+    # Topic resource created
+    topics = [tp for tp in rs["Topics"] if tp["TopicArn"] == topic_arn]
+    assert len(topics) == 1
+
+    stack.destroy()
+
+    # assert topic resource removed
+    rs = sns_client.list_topics()
+    topics = [tp for tp in rs["Topics"] if tp["TopicArn"] == topic_arn]
+    assert not topics
