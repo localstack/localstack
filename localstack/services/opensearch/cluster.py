@@ -86,8 +86,13 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
     :returns: a Directories data structure
     """
     # where to find cluster binary and the modules
-    engine_type, install_version = versions.get_install_type_and_version(version)
+    engine_type, _ = versions.get_install_type_and_version(version)
     install_dir = opensearch_package.get_installed_dir(version)
+
+    if not install_dir:
+        # install package, if it doesn't exist yet
+        opensearch_package.install(version)
+        install_dir = opensearch_package.get_installed_dir(version)
 
     modules_dir = os.path.join(install_dir, "modules")
 
