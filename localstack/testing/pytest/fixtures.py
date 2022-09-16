@@ -32,7 +32,7 @@ from localstack.utils.functions import run_safe
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import poll_condition, retry, wait_until
+from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
 from localstack.utils.testutil import start_http_server
 
 if TYPE_CHECKING:
@@ -1101,7 +1101,6 @@ def deploy_cfn_template(
 
         assert wait_until(is_change_set_created_and_available(change_set_id), _max_wait=60)
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        # TODO: potentially poll for ExecutionStatus=ROLLBACK_COMPLETE here as well, to catch errors early on
         assert wait_until(is_change_set_finished(change_set_id), _max_wait=max_wait or 60)
 
         outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0].get("Outputs", [])
@@ -1209,6 +1208,11 @@ def is_change_set_finished(cfn_client):
                 kwargs["StackName"] = stack_name
 
             check_set = cfn_client.describe_change_set(**kwargs)
+
+            if check_set.get("ExecutionStatus") == "ROLLBACK_COMPLETE":
+                LOG.warning("Change set failed")
+                raise ShortCircuitWaitException()
+
             return check_set.get("ExecutionStatus") == "EXECUTE_COMPLETE"
 
         return _inner
