@@ -38,6 +38,16 @@ VALID_GRANTEE_PERMISSIONS = {
     Permission.WRITE_ACP,
 }
 
+# response header overrides the client may request
+ALLOWED_HEADER_OVERRIDES = {
+    "ResponseContentType": "ContentType",
+    "ResponseContentLanguage": "ContentLanguage",
+    "ResponseExpires": "Expires",
+    "ResponseCacheControl": "CacheControl",
+    "ResponseContentDisposition": "ContentDisposition",
+    "ResponseContentEncoding": "ContentEncoding",
+}
+
 
 class InvalidRequest(ServiceException):
     """The lifecycle configuration does not exist."""

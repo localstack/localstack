@@ -1129,7 +1129,7 @@
     }
   },
   "tests/integration/s3/test_s3.py::TestS3::test_range_header_body_length": {
-    "recorded-date": "21-09-2022, 13:36:17",
+    "recorded-date": "21-09-2022, 16:11:28",
     "recorded-content": {
       "get-object": {
         "AcceptRanges": "bytes",
@@ -1137,7 +1137,7 @@
         "ContentLength": 1024,
         "ContentRange": "bytes 0-1023/2048",
         "ContentType": "binary/octet-stream",
-        "ETag": "\"a407c5edc8840c22ec42a82609f4b5ee\"",
+        "ETag": "<e-tag:1>",
         "LastModified": "datetime",
         "Metadata": {},
         "ResponseMetadata": {
@@ -2602,6 +2602,283 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_get_object_header_overrides": {
+    "recorded-date": "16-09-2022, 15:54:28",
+    "recorded-content": {
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "something",
+        "CacheControl": "max-age=74",
+        "ContentDisposition": "attachment; filename=\"foo.jpg\"",
+        "ContentEncoding": "identity",
+        "ContentLanguage": "de-DE",
+        "ContentLength": 9,
+        "ContentType": "image/jpeg",
+        "ETag": "\"437b930db84b8079c2dd804a71936b5f\"",
+        "Expires": "datetime",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3.py::TestS3::test_s3_put_object_versioned": {
+    "recorded-date": "16-09-2022, 16:52:17",
+    "recorded-content": {
+      "put-pre-versioned": {
+        "ETag": "\"e1474add07e050008472599be0883b17\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-pre-versioned": {
+        "AcceptRanges": "bytes",
+        "Body": "non-versioned-key",
+        "ContentLength": 17,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e1474add07e050008472599be0883b17\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-pre-versioned": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"e1474add07e050008472599be0883b17\"",
+            "IsLatest": true,
+            "Key": "non-version-bucket-key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 17,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-post-versioned": {
+        "AcceptRanges": "bytes",
+        "Body": "non-versioned-key",
+        "ContentLength": 17,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e1474add07e050008472599be0883b17\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-versioned-1": {
+        "ETag": "\"c43b615a50200509ceccc5f4122da4bf\"",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-obj-versioned-2": {
+        "ETag": "\"a26fe9d9854f719b8865291904326b58\"",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-versioned": {
+        "AcceptRanges": "bytes",
+        "Body": "versioned-key-updated",
+        "ContentLength": 21,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"a26fe9d9854f719b8865291904326b58\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-object-versioned": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"e1474add07e050008472599be0883b17\"",
+            "IsLatest": true,
+            "Key": "non-version-bucket-key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 17,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ETag": "\"a26fe9d9854f719b8865291904326b58\"",
+            "IsLatest": true,
+            "Key": "versioned-bucket-key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 21,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ETag": "\"c43b615a50200509ceccc5f4122da4bf\"",
+            "IsLatest": false,
+            "Key": "versioned-bucket-key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 13,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-bucket-suspended": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyMarker": "",
+        "MaxKeys": 1000,
+        "Name": "<bucket-name:1>",
+        "Prefix": "",
+        "VersionIdMarker": "",
+        "Versions": [
+          {
+            "ETag": "\"e1474add07e050008472599be0883b17\"",
+            "IsLatest": true,
+            "Key": "non-version-bucket-key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 17,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:1>"
+          },
+          {
+            "ETag": "\"a26fe9d9854f719b8865291904326b58\"",
+            "IsLatest": true,
+            "Key": "versioned-bucket-key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 21,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:3>"
+          },
+          {
+            "ETag": "\"c43b615a50200509ceccc5f4122da4bf\"",
+            "IsLatest": false,
+            "Key": "versioned-bucket-key",
+            "LastModified": "datetime",
+            "Owner": {
+              "DisplayName": "<display-name>",
+              "ID": "<owner-id>"
+            },
+            "Size": 13,
+            "StorageClass": "STANDARD",
+            "VersionId": "<version-id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-versioned-disabled": {
+        "AcceptRanges": "bytes",
+        "Body": "versioned-key-updated",
+        "ContentLength": 21,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"a26fe9d9854f719b8865291904326b58\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-obj-non-versioned-disabled": {
+        "AcceptRanges": "bytes",
+        "Body": "non-versioned-key",
+        "ContentLength": 17,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e1474add07e050008472599be0883b17\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-non-versioned-post-disable": {
+        "ETag": "\"6c0a0d0895ef9829b63848d506a68536\"",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-non-versioned-post-disable": {
+        "AcceptRanges": "bytes",
+        "Body": "non-versioned-key-post",
+        "ContentLength": 22,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"6c0a0d0895ef9829b63848d506a68536\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
