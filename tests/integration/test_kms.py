@@ -222,7 +222,7 @@ class TestKMS:
             KeyId=key_id, KeyPairSpec="RSA_2048"
         )
         assert result.get("PrivateKeyCiphertextBlob")
-        assert not result.get("PrivateKeyPlaintext")
+        assert "PrivateKeyPlaintext" not in result
         assert result.get("PublicKey")
 
     @pytest.mark.aws_validated
@@ -238,6 +238,28 @@ class TestKMS:
             CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id
         )
         assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
+
+    @pytest.mark.aws_validated
+    def test_generate_data_key(self, kms_client, kms_key):
+        key_id = kms_key["KeyId"]
+        # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
+        result = kms_client.generate_data_key(KeyId=key_id, KeySpec="AES_256")
+        assert result.get("CiphertextBlob")
+        assert result.get("Plaintext")
+        assert result.get("KeyId")
+
+        # assert correct value of encrypted key
+        decrypted = kms_client.decrypt(CiphertextBlob=result["CiphertextBlob"], KeyId=key_id)
+        assert decrypted["Plaintext"] == result["Plaintext"]
+
+    @pytest.mark.aws_validated
+    def test_generate_data_key_without_plaintext(self, kms_client, kms_key):
+        key_id = kms_key["KeyId"]
+        # LocalStack currently doesn't act on KeySpec or on NumberOfBytes params, but one of them has to be set.
+        result = kms_client.generate_data_key_without_plaintext(KeyId=key_id, KeySpec="AES_256")
+        assert result.get("CiphertextBlob")
+        assert "Plaintext" not in result
+        assert result.get("KeyId")
 
     @pytest.mark.aws_validated
     @pytest.mark.parametrize("key_type", ["rsa", "ecc"])

@@ -34,6 +34,10 @@ from localstack.aws.api.kms import (
     GenerateDataKeyPairResponse,
     GenerateDataKeyPairWithoutPlaintextRequest,
     GenerateDataKeyPairWithoutPlaintextResponse,
+    GenerateDataKeyRequest,
+    GenerateDataKeyResponse,
+    GenerateDataKeyWithoutPlaintextRequest,
+    GenerateDataKeyWithoutPlaintextResponse,
     GetKeyPolicyRequest,
     GetKeyPolicyResponse,
     GetKeyRotationStatusRequest,
@@ -100,7 +104,6 @@ from localstack.utils.common import select_attributes
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
-
 
 # valid operations
 VALID_OPERATIONS = [
@@ -481,6 +484,37 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         )
         result.pop("PrivateKeyPlaintext")
         return GenerateDataKeyPairResponse(**result)
+
+    # We currently act on neither on KeySpec setting (which is different from and holds values different then
+    # KeySpec for CreateKey) nor on NumberOfBytes. Instead, we generate a key with a key length that is "standard" in
+    # LocalStack.
+    #
+    # TODO We also do not use the encryption context. Should reuse the way we do it in encrypt / decrypt.
+    def _generate_data_key(self, key_id: str, context: RequestContext):
+        key = self._get_store(context).get_key(key_id)
+        # TODO Should also have a validation for the key being a symmetric one.
+        self._validate_key_for_encryption_decryption(key)
+        crypto_key = KmsCryptoKey("SYMMETRIC_DEFAULT")
+        return {
+            "KeyId": key_id,
+            "Plaintext": crypto_key.key_material,
+            "CiphertextBlob": key.encrypt(crypto_key.key_material),
+        }
+
+    @handler("GenerateDataKey", expand=False)
+    def generate_data_key(
+        self, context: RequestContext, request: GenerateDataKeyRequest
+    ) -> GenerateDataKeyResponse:
+        result = self._generate_data_key(request.get("KeyId"), context)
+        return GenerateDataKeyResponse(**result)
+
+    @handler("GenerateDataKeyWithoutPlaintext", expand=False)
+    def generate_data_key_without_plaintext(
+        self, context: RequestContext, request: GenerateDataKeyWithoutPlaintextRequest
+    ) -> GenerateDataKeyWithoutPlaintextResponse:
+        result = self._generate_data_key(request.get("KeyId"), context)
+        result.pop("Plaintext")
+        return GenerateDataKeyWithoutPlaintextResponse(**result)
 
     @handler("Sign", expand=False)
     def sign(self, context: RequestContext, request: SignRequest) -> SignResponse:
