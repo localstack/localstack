@@ -109,7 +109,7 @@ class SesServiceApiResource:
         messages = []
 
         for msg in EMAILS.values():
-            if filter_source in (msg["Source"], None, ""):
+            if filter_source in (msg.get("Source"), None, ""):
                 messages.append(msg)
 
         return {
