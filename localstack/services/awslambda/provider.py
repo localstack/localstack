@@ -9,11 +9,18 @@ from typing import IO
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.lambda_ import (
+    Alias,
+    AliasConfiguration,
+    AliasRoutingConfiguration,
     Architecture,
+    Arn,
     Blob,
+    CreateEventSourceMappingRequest,
     CreateFunctionRequest,
+    Description,
     EnvironmentResponse,
     EphemeralStorage,
+    EventSourceMappingConfiguration,
     FunctionCodeLocation,
     FunctionConfiguration,
     FunctionName,
@@ -22,7 +29,10 @@ from localstack.aws.api.lambda_ import (
     InvocationType,
     LambdaApi,
     LastUpdateStatus,
+    ListAliasesResponse,
+    ListEventSourceMappingsResponse,
     ListFunctionsResponse,
+    ListVersionsByFunctionResponse,
     LogType,
     MasterRegion,
     MaxListItems,
@@ -37,6 +47,7 @@ from localstack.aws.api.lambda_ import (
     TracingMode,
     UpdateFunctionCodeRequest,
     UpdateFunctionConfigurationRequest,
+    Version,
 )
 from localstack.services.awslambda.invocation.lambda_models import (
     Function,
@@ -489,3 +500,115 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         return response
+
+    # Version operations
+    def publish_version(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        code_sha256: String = None,
+        description: Description = None,
+        revision_id: String = None,
+    ) -> FunctionConfiguration:
+        ...
+
+    def list_versions_by_function(
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        marker: String = None,
+        max_items: MaxListItems = None,
+    ) -> ListVersionsByFunctionResponse:
+        ...
+
+    # Alias
+    def create_alias(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        name: Alias,
+        function_version: Version,
+        description: Description = None,
+        routing_config: AliasRoutingConfiguration = None,
+    ) -> AliasConfiguration:
+        ...
+
+    def list_aliases(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        function_version: Version = None,
+        marker: String = None,
+        max_items: MaxListItems = None,
+    ) -> ListAliasesResponse:
+        ...
+
+    def delete_alias(
+        self, context: RequestContext, function_name: FunctionName, name: Alias
+    ) -> None:
+        ...
+
+    def get_alias(
+        self, context: RequestContext, function_name: FunctionName, name: Alias
+    ) -> AliasConfiguration:
+        ...
+
+    def update_alias(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        name: Alias,
+        function_version: Version = None,
+        description: Description = None,
+        routing_config: AliasRoutingConfiguration = None,
+        revision_id: String = None,
+    ) -> AliasConfiguration:
+        ...
+
+    # Event Source Mappings
+
+    @handler("CreateEventSourceMapping", expand=False)
+    def create_event_source_mapping(
+        self,
+        context: RequestContext,
+        request: CreateEventSourceMappingRequest,
+    ) -> EventSourceMappingConfiguration:
+
+        ...
+
+    @handler("UpdateEventSourceMapping", expand=False)
+    def update_event_source_mapping(
+        self,
+        context: RequestContext,
+        request: CreateEventSourceMappingRequest,
+    ) -> EventSourceMappingConfiguration:
+        ...
+
+    def delete_event_source_mapping(
+        self, context: RequestContext, uuid: String
+    ) -> EventSourceMappingConfiguration:
+        ...
+
+    def get_event_source_mapping(
+        self, context: RequestContext, uuid: String
+    ) -> EventSourceMappingConfiguration:
+        ...
+
+    def list_event_source_mappings(
+        self,
+        context: RequestContext,
+        event_source_arn: Arn = None,
+        function_name: FunctionName = None,
+        marker: String = None,
+        max_items: MaxListItems = None,
+    ) -> ListEventSourceMappingsResponse:
+        ...
+
+    # TODO(s)
+    # Provisioned Concurrency Config
+    # Event Invoke Config
+    # Permission /Policy
+    # Code signing config
+    # Function URL
+    # Event Invoke Config
+    # Layer & Layer Version
