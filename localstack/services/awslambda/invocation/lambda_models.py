@@ -9,12 +9,25 @@ from localstack.aws.api.lambda_ import (
     LastUpdateStatus,
     PackageType,
     Runtime,
+    State,
+    StateReasonCode,
+    TracingMode,
 )
-from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
+from localstack.services.awslambda.invocation.lambda_util import (
+    lambda_arn_without_qualifier,
+    qualified_lambda_arn,
+)
 from localstack.utils.aws import aws_stack
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
+
+
+@dataclasses.dataclass(frozen=True)
+class VersionState:
+    state: State
+    code: Optional[StateReasonCode] = None
+    reason: Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -83,10 +96,15 @@ class UpdateStatus:
 
 @dataclasses.dataclass(frozen=True)
 class FunctionConfigurationMeta:
-    function_arn: str
+    function_arn: str  # TODO:?
     revision_id: str  # UUID, new one on each change
     last_modified: str  # ISO string
-    last_update: UpdateStatus
+    last_update: Optional[UpdateStatus] = None
+
+
+@dataclasses.dataclass
+class LambdaEphemeralStorage:
+    size: int
 
 
 @dataclasses.dataclass(frozen=True)
@@ -105,8 +123,9 @@ class VersionFunctionConfiguration:
     architectures: list[Architecture]
     # internal revision is updated when runtime restart is necessary
     internal_revision: str
+    ephemeral_storage: LambdaEphemeralStorage
 
-    tracing_config_mode: str
+    tracing_config_mode: TracingMode
     code: S3Code
     image_config: Optional[ImageConfig] = None
     layers: list[str] = dataclasses.field(default_factory=list)
@@ -143,6 +162,13 @@ class VersionIdentifier:
         return qualified_lambda_arn(
             function_name=self.function_name,
             qualifier=self.qualifier,
+            region=self.region,
+            account=self.account,
+        )
+
+    def unqualified_arn(self):
+        return lambda_arn_without_qualifier(
+            function_name=self.function_name,
             region=self.region,
             account=self.account,
         )

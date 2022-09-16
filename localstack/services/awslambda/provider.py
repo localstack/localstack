@@ -1,5 +1,6 @@
 import base64
 import dataclasses
+import datetime
 import logging
 import re
 import threading
@@ -12,6 +13,7 @@ from localstack.aws.api.lambda_ import (
     Blob,
     CreateFunctionRequest,
     EnvironmentResponse,
+    EphemeralStorage,
     FunctionCodeLocation,
     FunctionConfiguration,
     FunctionName,
@@ -30,7 +32,6 @@ from localstack.aws.api.lambda_ import (
     ResourceConflictException,
     ResourceNotFoundException,
     ServiceException,
-    State,
     String,
     TracingConfig,
     TracingMode,
@@ -42,6 +43,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     FunctionConfigurationMeta,
     FunctionVersion,
     InvocationError,
+    LambdaEphemeralStorage,
     UpdateStatus,
     VersionFunctionConfiguration,
     VersionIdentifier,
@@ -53,11 +55,13 @@ from localstack.services.awslambda.invocation.lambda_service import (
     store_s3_bucket_archive,
 )
 from localstack.services.awslambda.invocation.lambda_util import (
+    format_lambda_date,
+    generate_lambda_date,
     lambda_arn_without_qualifier,
     qualified_lambda_arn,
 )
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -80,27 +84,51 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service.stop()
 
     def _map_config_out(self, version: FunctionVersion) -> FunctionConfiguration:
-        return FunctionConfiguration(
+
+        # handle optional entries that shouldn't be rendered at all if not present
+        optional_kwargs = {}
+        if version.config_meta.last_update:
+            if version.config_meta.last_update.status:
+                optional_kwargs["LastUpdateStatus"] = version.config_meta.last_update.status
+            if version.config_meta.last_update.code:
+                optional_kwargs["LastUpdateStatusReasonCode"] = version.config_meta.last_update.code
+            if version.config_meta.last_update.reason:
+                optional_kwargs["LastUpdateStatusReason"] = version.config_meta.last_update.reason
+        version_state = self.lambda_service.get_state_for_version(version)
+        if version_state:
+            if version_state.state:
+                optional_kwargs["State"] = version_state.state
+            if version_state.reason:
+                optional_kwargs["StateReason"] = version_state.reason
+            if version_state.code:
+                optional_kwargs["StateReasonCode"] = version_state.code
+
+        if version.config.architectures:
+            optional_kwargs["Architectures"] = version.config.architectures
+
+        func_conf = FunctionConfiguration(
             RevisionId=version.config_meta.revision_id,
             FunctionName=version.id.function_name,
-            FunctionArn=version.id.qualified_arn(),
+            FunctionArn=version.id.unqualified_arn(),  # qualifier usually not included
             LastModified=version.config_meta.last_modified,
-            LastUpdateStatus=LastUpdateStatus.Successful,
-            State=State.Active,
             Version=version.id.qualifier,
             Description=version.config.description,
             Role=version.config.role,
             Timeout=version.config.timeout,
             Runtime=version.config.runtime,
             Handler=version.config.handler,
-            Environment=EnvironmentResponse(Variables=version.config.environment, Error={}),
+            Environment=EnvironmentResponse(
+                Variables=version.config.environment
+            ),  # TODO: Errors key?
             CodeSize=version.config.code.code_size,
             CodeSha256=version.config.code.code_sha256,
             MemorySize=version.config.memory_size,
             PackageType=version.config.package_type,
             TracingConfig=TracingConfig(Mode=version.config.tracing_config_mode),
-            Architectures=version.config.architectures,
+            EphemeralStorage=EphemeralStorage(Size=version.config.ephemeral_storage.size),
+            **optional_kwargs,
         )
+        return func_conf
 
     def _map_to_list_response(self, config: FunctionConfiguration) -> FunctionConfiguration:
         shallow_copy = config.copy()
@@ -125,7 +153,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # publish_version = request.get('Publish', False)
 
-        # TODO: initial validations
         architectures = request.get("Architectures")
         if architectures and Architecture.arm64 in architectures:
             raise ServiceException("ARM64 is currently not supported by this provider")
@@ -146,7 +173,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
             # save function code to s3
             code = None
-            if request["PackageType"] == PackageType.Zip:
+            if request.get("PackageType", PackageType.Zip) == PackageType.Zip:
                 request_code = request["Code"]
                 # TODO verify if correct combination of code is set
                 if zip_file := request_code.get("ZipFile"):
@@ -175,9 +202,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 qualifier="$LATEST",
                 config_meta=FunctionConfigurationMeta(
                     function_arn=arn.qualified_arn(),
-                    revision_id="?",
-                    last_modified="asdf",
-                    last_update=UpdateStatus(status=LastUpdateStatus.Successful),
+                    revision_id=long_uid(),
+                    last_modified=format_lambda_date(datetime.datetime.now()),
+                    # last_update=UpdateStatus(status=LastUpdateStatus.InProgress),
                 ),
                 config=VersionFunctionConfiguration(
                     description=request.get("Description", ""),
@@ -191,17 +218,24 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     environment={
                         k: v for k, v in request.get("Environment", {}).get("Variables", {}).items()
                     },
-                    architectures=[Architecture.x86_64],  # TODO
+                    architectures=request.get("Architectures"),  # TODO
                     tracing_config_mode=TracingMode.PassThrough,  # TODO
                     image_config=None,  # TODO
                     code=code,
                     layers=[],  # TODO
                     internal_revision=short_uid(),
+                    ephemeral_storage=LambdaEphemeralStorage(
+                        size=request.get("EphemeralStorage", {}).get("Size", 512)
+                    ),
                 ),
             )
             fn.versions["$LATEST"] = version
             state.functions[function_name] = fn
         self.lambda_service.create_function_version(version)
+
+        # if publish_version:
+        #     self.lambda_service.create_function_version(version)
+        # TODO: do we now need to return the $LATEST or version 1?
 
         return self._map_config_out(version)
 
@@ -210,7 +244,60 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self, context: RequestContext, request: UpdateFunctionConfigurationRequest
     ) -> FunctionConfiguration:
         """updates the $LATEST version of the function"""
-        return FunctionConfiguration()
+        function_name = request.get("FunctionName")  # TODO: can this be an ARN too?
+        state = lambda_stores[context.account_id][context.region]
+
+        if function_name not in state.functions:
+            raise ResourceNotFoundException(
+                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}"
+            )
+        function = state.functions[function_name]
+
+        # TODO: lock modification of latest version
+        # TODO: notify service for changes relevant to re-provisioning of $LATEST
+        latest_version = function.latest()
+        latest_version_config = latest_version.config
+
+        replace_kwargs = {}
+        if "EphemeralStorage" in request:
+            replace_kwargs["ephemeral_storage"] = LambdaEphemeralStorage(
+                request.get("EphemeralStorage", {}).get("Size", 512)
+            )  # TODO: do defaults here apply as well?
+
+        if "Role" in request:
+            replace_kwargs["role"] = request["Role"]
+
+        if "Description" in request:
+            replace_kwargs["description"] = request["Description"]
+
+        if "Timeout" in request:
+            replace_kwargs["timeout"] = request["Timeout"]
+
+        if "MemorySize" in request:
+            replace_kwargs["memory_size"] = request["MemorySize"]
+
+        if "Runtime" in request:
+            replace_kwargs["runtime"] = request["Runtime"]
+
+        if "Environment" in request:
+            replace_kwargs["environment"] = {
+                k: v for k, v in request.get("Environment", {}).get("Variables", {}).items()
+            }
+        new_latest_version = dataclasses.replace(
+            latest_version,
+            config=dataclasses.replace(latest_version_config, **replace_kwargs),
+            config_meta=dataclasses.replace(
+                latest_version.config_meta,
+                revision_id=long_uid(),
+                last_modified=generate_lambda_date(),
+                last_update=UpdateStatus(
+                    LastUpdateStatus.Successful
+                ),  # TODO: will need to be active at some point ...
+            ),
+        )
+        function.versions["$LATEST"] = new_latest_version  # TODO: notify
+
+        return self._map_config_out(new_latest_version)
 
     @handler(operation="UpdateFunctionCode", expand=False)
     def update_function_code(
@@ -262,13 +349,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function.versions["$LATEST"] = function_version
 
         self.lambda_service.create_function_version(function_version=function_version)
-        return FunctionConfiguration()
+        return self._map_config_out(function_version)
 
     # TODO: does deleting the latest published version affect the next versions number?
     # TODO: what happens when we call this with a qualifier and a fully qualified ARN? (+ conflicts?)
     # TODO: test different ARN patterns (shorthand ARN?)
-    # TODO: test deleting through regions?
+    # TODO: test deleting across regions?
     # TODO: test mismatch between context region and region in ARN
+    # TODO: test qualifier $LATEST, alias-name and version
     def delete_function(
         self,
         context: RequestContext,
@@ -279,19 +367,36 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
         )
         arn_match = re.search(FN_ARN_PATTERN, function_name)
+        state = lambda_stores[context.account_id][context.region]
 
         if arn_match:
+            # function_name is actually an ARN, so parse actual name and qualifier
             groups = arn_match.groupdict()
-            self.lambda_service.delete_function(
-                groups["account_id"],
-                groups["region_name"],
-                groups["function_name"],
-                groups["qualifier"],
-            )
+            function_name = groups["function_name"]
+            group_qualifier = groups["qualifier"]
+
+            if group_qualifier:
+                qualifier = group_qualifier
+
+        # TODO: error message if just the version is not there
+        if function_name not in state.functions:
+            raise ResourceNotFoundException(
+                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}"
+            )  # TODO: should probably include qualifier if one is available?
+        function = state.functions.pop(function_name)
+
+        if qualifier:
+            # delete a version of the function
+            if qualifier not in function.versions:
+                raise ResourceNotFoundException(
+                    f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}"
+                )  # TODO: adapt to version?
+            version = function.versions.pop(qualifier)
+            self.lambda_service.stop_version(version.qualified_arn())
         else:
-            self.lambda_service.delete_function(
-                context.account_id, context.region, function_name, qualifier
-            )
+            # delete the whole function
+            for version in function.versions.values():
+                self.lambda_service.stop_version(qualified_arn=version.id.qualified_arn())
 
     def list_functions(
         self,

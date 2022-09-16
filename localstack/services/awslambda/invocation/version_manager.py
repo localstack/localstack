@@ -5,11 +5,11 @@ import threading
 import uuid
 from concurrent.futures import Future
 from datetime import datetime
-from enum import Enum, auto
 from queue import Queue
 from threading import Thread
 from typing import Dict, List, Optional, Union
 
+from localstack.aws.api.lambda_ import State, StateReasonCode
 from localstack.services.awslambda.invocation.lambda_models import (
     FunctionVersion,
     Invocation,
@@ -17,6 +17,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     InvocationLogs,
     InvocationResult,
     ServiceEndpoint,
+    VersionState,
 )
 from localstack.services.awslambda.invocation.runtime_environment import (
     InvalidStatusException,
@@ -27,38 +28,6 @@ from localstack.services.awslambda.invocation.runtime_executor import RuntimeExe
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 
 LOG = logging.getLogger(__name__)
-
-
-class ValueNameEnum(Enum):
-    def __str__(self):
-        return str(self.name)
-
-
-class State(ValueNameEnum):
-    Pending = auto()
-    Active = auto()
-    Inactive = auto()
-    Failed = auto()
-
-
-class StateReasonCode(ValueNameEnum):
-    Idle = auto()
-    Creating = auto()
-    Restoring = auto()
-    InsufficientRolePermissions = auto()
-    InvalidConfiguration = auto()
-    InternalError = auto()
-    InvalidSecurityGroup = auto()
-    ImageDeleted = auto()
-    ImageAccessDenied = auto()
-    InvalidImage = auto()
-
-
-@dataclasses.dataclass(frozen=True)
-class VersionState:
-    state: State
-    code: Optional[StateReasonCode] = None
-    reason: Optional[str] = None
 
 
 # InvocationResultFuture = Future[InvocationResult]
@@ -163,7 +132,9 @@ class LambdaVersionManager(ServiceEndpoint):
         self.invocation_thread = None
         self.shutdown_event = threading.Event()
         self.state = VersionState(
-            state=State.Pending, code=StateReasonCode.Creating, reason="Function starting up"
+            state=State.Pending,
+            code=StateReasonCode.Creating,
+            reason="The function is being created.",
         )
         self.log_handler = LogHandler()
 
@@ -173,7 +144,7 @@ class LambdaVersionManager(ServiceEndpoint):
             invocation_thread.start()
             self.invocation_thread = invocation_thread
             self.log_handler.start_subscriber()
-            RuntimeExecutor.prepare_version(self.function_version, id=self.id)
+            RuntimeExecutor.prepare_version(self.function_version)
 
             self.state = VersionState(state=State.Active)
             LOG.debug(f"Lambda '{self.function_arn}' changed to active")
@@ -204,7 +175,7 @@ class LambdaVersionManager(ServiceEndpoint):
         for environment in list(self.all_environments.values()):
             self.stop_environment(environment)
         self.log_handler.stop()
-        RuntimeExecutor.cleanup_version(self.function_version, id=self.id)
+        RuntimeExecutor.cleanup_version(self.function_version)
 
     def update_provisioned_concurrency_config(self, provisioned_concurrent_executions: int) -> None:
         self.provisioned_concurrent_executions = provisioned_concurrent_executions

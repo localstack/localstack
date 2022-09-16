@@ -1,5 +1,6 @@
 import base64
 import concurrent.futures
+import dataclasses
 import io
 import logging
 import uuid
@@ -16,6 +17,9 @@ from localstack.services.awslambda.invocation.lambda_models import (
     Invocation,
     InvocationResult,
     S3Code,
+    UpdateStatus,
+    VersionIdentifier,
+    VersionState,
 )
 from localstack.services.awslambda.invocation.models import lambda_stores
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
@@ -75,8 +79,11 @@ class LambdaService:
         self, account_id: str, region_name: str, function_name: str, qualifier: str
     ):
         state = lambda_stores[account_id][region_name]
+        version_id = VersionIdentifier(
+            function_name=function_name, qualifier=qualifier, region=region_name, account=account_id
+        )
         if function_name not in state.functions:
-            raise ResourceNotFoundException(f"Function not found: {function_name}")
+            raise ResourceNotFoundException(f"Function not found: {version_id.qualified_arn()}")
         function = state.functions.pop(function_name)
         for version in function.versions.values():
             self.stop_version(qualified_arn=version.id.qualified_arn())
@@ -126,6 +133,20 @@ class LambdaService:
                 payload=payload, client_context=client_context, invocation_type=invocation_type
             )
         )
+
+    def get_state_for_version(self, version: FunctionVersion) -> VersionState:
+        version_manager = self.get_lambda_version_manager(version.qualified_arn)
+        return version_manager.state
+
+    def update_function_status(
+        self, version: FunctionVersion, status: UpdateStatus
+    ) -> FunctionVersion:
+        """Updates LastUpdateStatus. This as observed always goes hand in hand with a new revision id"""
+        return dataclasses.replace(
+            version, config_meta=dataclasses.replace(version.config_meta, last_update=status)
+        )
+
+    ...
 
 
 def store_lambda_archive(

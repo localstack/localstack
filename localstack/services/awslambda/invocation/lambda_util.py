@@ -1,3 +1,4 @@
+import datetime
 import re
 from typing import Optional
 
@@ -42,3 +43,14 @@ def qualified_lambda_arn(
 ) -> str:
     qualifier = qualifier or "$LATEST"
     return f"{lambda_arn_without_qualifier(function_name=function_name, account=account, region=region)}:{qualifier}"
+
+
+LAMBDA_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+0000"
+
+
+def format_lambda_date(date_to_format: datetime.datetime) -> str:
+    return date_to_format.strftime(LAMBDA_DATE_FORMAT)
+
+
+def generate_lambda_date() -> str:
+    return format_lambda_date(datetime.datetime.now())
