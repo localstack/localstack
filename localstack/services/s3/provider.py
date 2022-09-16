@@ -1,17 +1,22 @@
+import copy
 import logging
 import os
-from urllib.parse import quote
+from typing import Tuple
+from urllib.parse import SplitResult, quote, urlsplit, urlunsplit
 
 import moto.s3.models as moto_s3_models
 import moto.s3.responses as moto_s3_responses
+import requests
 from moto.s3 import s3_backends as moto_s3_backends
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.s3 import (
+    AccountId,
     BucketName,
     CreateBucketOutput,
     CreateBucketRequest,
+    GetBucketLocationOutput,
     GetObjectOutput,
     GetObjectRequest,
     HeadObjectOutput,
@@ -25,11 +30,17 @@ from localstack.aws.api.s3 import (
     PutObjectRequest,
     S3Api,
 )
+from localstack.config import get_edge_port_http, get_protocol
+from localstack.constants import LOCALHOST_HOSTNAME
+from localstack.http import Request, Response
+from localstack.services.apigateway.router_asf import convert_response
+from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.s3.models import S3Store, s3_stores
 from localstack.services.s3.utils import verify_checksum
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.objects import singleton_factory
 from localstack.utils.patch import patch
 
@@ -51,6 +62,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
     def on_after_init(self):
         apply_moto_patches()
+        self.add_custom_routes()
 
     @handler("CreateBucket", expand=False)
     def create_bucket(
@@ -60,8 +72,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     ) -> CreateBucketOutput:
         bucket_name = request.get("Bucket", "")
         validate_bucket_name(bucket=bucket_name)
-
         response: CreateBucketOutput = call_moto(context)
+        # Location is always contained in response -> full url for LocationConstraint outside us-east-1
+        if request.get("CreateBucketConfiguration"):
+            location = request["CreateBucketConfiguration"].get("LocationConstraint")
+            if location and location != "us-east-1":
+                response[
+                    "Location"
+                ] = f"{get_protocol()}://{bucket_name}.s3.{LOCALHOST_HOSTNAME}:{get_edge_port_http()}/"
+        if "Location" not in response:
+            response["Location"] = f"/{bucket_name}"
+        return response
+
+    def get_bucket_location(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> GetBucketLocationOutput:
+        response = call_moto(context)
         return response
 
     @handler("ListObjects", expand=False)
@@ -145,6 +171,73 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         response: PutObjectOutput = call_moto(context)
         return response
 
+    def add_custom_routes(self):
+        # virtual-host style: https://bucket-name.s3.region-code.amazonaws.com/key-name
+        # host_pattern_vhost_style = f"{bucket}.s3.<regex('({AWS_REGION_REGEX}\.)?'):region>{LOCALHOST_HOSTNAME}:{get_edge_port_http()}"
+        host_pattern_vhost_style = f"<regex('.*'):bucket>.s3.<regex('({AWS_REGION_REGEX}\\.)?'):region>{LOCALHOST_HOSTNAME}<regex('(?::\\d+)?'):port>"
+        ROUTER.add(
+            "/<path:path>",
+            host=host_pattern_vhost_style,
+            endpoint=self.serve_bucket,
+        )
+        ROUTER.add(
+            "/",
+            host=host_pattern_vhost_style,
+            endpoint=self.serve_bucket,
+            defaults={"path": "/"},
+        )
+
+        # regions for path-style need to be parsed correctly
+        host_pattern_vhost_style = f"s3.<regex('({AWS_REGION_REGEX}\\.)'):region>{LOCALHOST_HOSTNAME}<regex('(?::\\d+)?'):port>"
+        ROUTER.add(
+            "/<regex('.+'):bucket>/<path:path>",
+            host=host_pattern_vhost_style,
+            endpoint=self.serve_bucket,
+        )
+        ROUTER.add(
+            "/<regex('.+'):bucket>",
+            host=host_pattern_vhost_style,
+            endpoint=self.serve_bucket,
+            defaults={"path": "/"},
+        )
+
+    def serve_bucket(
+        self, request: Request, bucket: str, path: str, region: str, port: str
+    ) -> Response:
+        # TODO region pattern currently not working -> removing it from url
+        host, rewritten_url = self.rewrite_url(request.url, bucket, region)
+        LOG.debug(
+            f"Rewritten original virtual host url: {request.url} to path-style url: {rewritten_url}"
+        )
+        copied_headers = copy.deepcopy(request.headers)
+        # TODO is_internal_call_context
+        original_host = copied_headers["Host"]
+        copied_headers["Host"] = host
+        params = {"data": request.data, "headers": copied_headers}
+        response = requests.request(method=request.method, url=rewritten_url, **params)
+
+        response.request.headers["Host"] = original_host
+        response.request.url = request.url
+        ls_response = convert_response(response)
+        return ls_response
+
+    def rewrite_url(self, url: str, bucket: str, region: str) -> Tuple[str, str]:
+        splitted = urlsplit(url)
+        if splitted.netloc.startswith(f"{bucket}."):
+            netloc = splitted.netloc.replace(f"{bucket}.", "")
+            path = f"{bucket}{splitted.path}"
+        else:
+            # we already have a path-style addressing, only need to remove the region
+            netloc = splitted.netloc
+            path = splitted.path
+        # TODO region currently ignored
+        if region:
+            netloc = netloc.replace(f"{region}", "")
+
+        return netloc, urlunsplit(
+            SplitResult(splitted.scheme, netloc, path, splitted.query, splitted.fragment)
+        )
+
 
 def validate_bucket_name(bucket: BucketName):
     # TODO: add rules to validate bucket name
@@ -178,6 +271,7 @@ def apply_moto_patches():
         code, headers, body = fn(self, bucket_name, *args, **kwargs)
         bucket = self.backend.get_bucket(bucket_name)
         headers["x-amz-bucket-region"] = bucket.region_name
+        headers["content-type"] = "application/xml"
         return code, headers, body
 
 

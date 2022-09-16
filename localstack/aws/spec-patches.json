@@ -110,6 +110,11 @@
       "op": "add",
       "path": "/operations/PutBucketPolicy/http/responseCode",
       "value": 204
+    },
+    {
+      "op": "add",
+      "path": "/shapes/GetBucketLocationOutput/payload",
+      "value": "LocationConstraint"
     }
   ]
 }
