@@ -173,9 +173,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateKeyRequest = None,
     ) -> CreateKeyResponse:
-        key = KmsKey(request, context.account_id, context.region)
-        key_id = key.metadata.get("KeyId")
-        self._get_store(context).keys[key_id] = key
+        key = self._get_store(context).create_key(request, context.account_id, context.region)
         return CreateKeyResponse(KeyMetadata=key.metadata)
 
     @handler("ScheduleKeyDeletion", expand=False)

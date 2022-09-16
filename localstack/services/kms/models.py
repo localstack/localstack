@@ -72,6 +72,23 @@ CIPHERTEXT_HEADER_FORMAT = ">{key_id_len}s{iv_len}s{tag_len}s".format(
 HEADER_LEN = KEY_ID_LEN + IV_LEN + TAG_LEN
 Ciphertext = namedtuple("Ciphertext", ("key_id", "iv", "ciphertext", "tag"))
 
+RESERVED_ALIASES = [
+    "alias/aws/acm",
+    "alias/aws/dynamodb",
+    "alias/aws/ebs",
+    "alias/aws/elasticfilesystem",
+    "alias/aws/es",
+    "alias/aws/glue",
+    "alias/aws/kinesisvideo",
+    "alias/aws/lambda",
+    "alias/aws/rds",
+    "alias/aws/redshift",
+    "alias/aws/s3",
+    "alias/aws/secretsmanager",
+    "alias/aws/ssm",
+    "alias/aws/xray",
+]
+
 
 def _serialize_ciphertext_blob(ciphertext: Ciphertext) -> bytes:
     header = struct.pack(
@@ -205,7 +222,7 @@ class KmsKey:
     is_key_rotation_enabled: bool
 
     def __init__(
-        self, create_key_request: CreateKeyRequest, account_id: str = None, region: str = None
+        self, create_key_request: CreateKeyRequest = {}, account_id: str = None, region: str = None
     ):
         self._populate_metadata(create_key_request, account_id, region)
         self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"))
@@ -462,7 +479,10 @@ class KmsAlias:
     metadata: Dict
 
     def __init__(
-        self, create_alias_request: CreateAliasRequest, account_id: str = None, region: str = None
+        self,
+        create_alias_request: CreateAliasRequest = {},
+        account_id: str = None,
+        region: str = None,
     ):
         self.metadata = {}
         self.metadata["AliasName"] = create_alias_request.get("AliasName")
@@ -537,13 +557,50 @@ class KmsStore(BaseStore):
 
         return self.aliases.get(alias_name)
 
+    # Both account_id and region here are only supposed to be used to generate things like proper ARNs etc. The
+    # store for the key is not going to be selected using these parameters. Such a store selection is supposed to
+    # happen before the call to this function is made.
+    def create_key(
+        self, request: CreateKeyRequest = None, account_id: str = None, region: str = None
+    ):
+        key = KmsKey(request, account_id, region)
+        key_id = key.metadata.get("KeyId")
+        self.keys[key_id] = key
+        return key
+
+    # Both account_id and region here are only supposed to be used to generate things like proper ARNs etc. The
+    # store for the key is not going to be selected using these parameters. Such a store selection is supposed to
+    # happen before the call to this function is made.
+    def create_alias(self, request: CreateAliasRequest, account_id: str = None, region: str = None):
+        alias = KmsAlias(request, account_id, region)
+        alias_name = request.get("AliasName")
+        self.aliases[alias_name] = alias
+
+    # TODO Currently we follow the old moto implementation where reserved aliases and corresponding keys are getting
+    #  generated on the fly when someone tries to access such an alias. This is not great, as such aliases and keys
+    #  are not visible to ListAliases prior to someone trying to access such an alias. A better way might be to
+    #  generate all such aliases and keys the moment we initialize a new set of stores. But it might be an
+    #  unnecessary overhead. Should decide later, which approach is better.
+    def _create_alias_if_reserved_and_not_exists(
+        self, alias_name: str, account_id: str = None, region: str = None
+    ):
+        if alias_name not in RESERVED_ALIASES or alias_name in self.aliases:
+            return
+        create_key_request = {}
+        key_id = self.create_key(create_key_request, account_id, region).metadata.get("KeyId")
+        create_alias_request = CreateAliasRequest(AliasName=alias_name, TargetKeyId=key_id)
+        alias = KmsAlias(create_alias_request, account_id, region)
+        self.aliases[alias_name] = alias
+
     # In KMS, keys can be identified by
     # - key ID
     # - key ARN
     # - key alias
     # - key alias' ARN
     # This function allows us to find a key by any of these identifiers.
-    def get_key_id_from_any_id(self, some_id: str) -> str:
+    def get_key_id_from_any_id(
+        self, some_id: str, account_id: str = None, region: str = None
+    ) -> str:
         alias_name = None
         key_id = None
 
@@ -565,6 +622,7 @@ class KmsStore(BaseStore):
             key_id = some_id
 
         if alias_name:
+            self._create_alias_if_reserved_and_not_exists(alias_name, account_id, region)
             if alias_name not in self.aliases:
                 raise NotFoundException(f"Unable to find KMS alias with name {alias_name}")
             key_id = self.aliases[alias_name].metadata["TargetKeyId"]
