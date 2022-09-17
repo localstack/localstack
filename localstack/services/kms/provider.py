@@ -560,14 +560,14 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     ) -> EncryptResponse:
         key = self._get_store(context).get_key(key_id)
         self._validate_key_for_encryption_decryption(key)
-        encryption_context = encryption_context or {}
-        ciphertext_blob = key.encrypt(plaintext, encryption_context)
+        ciphertext_blob = key.encrypt(plaintext)
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always
         # encrypts with symmetric encryption no matter the key settings.
         return EncryptResponse(
             CiphertextBlob=ciphertext_blob, KeyId=key_id, EncryptionAlgorithm=encryption_algorithm
         )
 
+    # TODO We currently do not even check encryption_context, while moto does. Should add the corresponding logic later.
     def decrypt(
         self,
         context: RequestContext,
@@ -599,13 +599,17 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 f"ciphertext. Keep in mind that LocalStack currently doesn't perform asymmetric encryption"
             )
         self._validate_key_for_encryption_decryption(key)
-        encryption_context = encryption_context or {}
 
-        plaintext = key.decrypt(ciphertext, encryption_context)
+        plaintext = key.decrypt(ciphertext)
         # For compatibility, we return EncryptionAlgorithm values expected from AWS. But LocalStack currently always
         # encrypts with symmetric encryption no matter the key settings.
+        #
+        # We return a key ARN instead of KeyId despite the name of the parameter, as this is what AWS does and states
+        # in its docs.
         return DecryptResponse(
-            KeyId=key_id, Plaintext=plaintext, EncryptionAlgorithm=encryption_algorithm
+            KeyId=key.metadata.get("Arn"),
+            Plaintext=plaintext,
+            EncryptionAlgorithm=encryption_algorithm,
         )
 
     def get_parameters_for_import(

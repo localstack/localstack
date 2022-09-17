@@ -11,11 +11,9 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException
@@ -24,7 +22,6 @@ from localstack.aws.api.kms import (
     CreateGrantRequest,
     CreateKeyRequest,
     EncryptionContextType,
-    InvalidCiphertextException,
     KeyMetadata,
     NotFoundException,
     SigningAlgorithmSpec,
@@ -32,6 +29,7 @@ from localstack.aws.api.kms import (
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.aws_stack import kms_alias_arn, kms_key_arn
+from localstack.utils.crypto import decrypt, encrypt
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
@@ -64,7 +62,8 @@ class AccessDeniedException(CommonServiceException):
 
 
 KEY_ID_LEN = 36
-IV_LEN = 12
+# Moto uses IV_LEN of 12, as it is fine for GCM encryption mode, but we use CBC, so have to set it to 16.
+IV_LEN = 16
 TAG_LEN = 16
 CIPHERTEXT_HEADER_FORMAT = ">{key_id_len}s{iv_len}s{tag_len}s".format(
     key_id_len=KEY_ID_LEN, iv_len=IV_LEN, tag_len=TAG_LEN
@@ -113,46 +112,6 @@ def _serialize_encryption_context(encryption_context: EncryptionContextType) -> 
         aad.write(key.encode("utf-8"))
         aad.write(value.encode("utf-8"))
     return aad.getvalue()
-
-
-def _encrypt(
-    key_id: str, key_material: bytes, plaintext: bytes, encryption_context: EncryptionContextType
-) -> bytes:
-    if plaintext == b"":
-        raise ValidationException(
-            "1 validation error detected: Value at 'plaintext' failed to satisfy constraint: Member must have length greater than or equal to 1"
-        )
-
-    iv = os.urandom(IV_LEN)
-    aad = _serialize_encryption_context(encryption_context=encryption_context)
-
-    encryptor = Cipher(
-        algorithms.AES(key_material), modes.GCM(iv), backend=default_backend()
-    ).encryptor()
-    encryptor.authenticate_additional_data(aad)
-    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
-    return _serialize_ciphertext_blob(
-        ciphertext=Ciphertext(key_id=key_id, iv=iv, ciphertext=ciphertext, tag=encryptor.tag)
-    )
-
-
-def _decrypt(
-    key_material: bytes, ciphertext: Ciphertext, encryption_context: EncryptionContextType
-) -> bytes:
-    aad = _serialize_encryption_context(encryption_context=encryption_context)
-
-    try:
-        decryptor = Cipher(
-            algorithms.AES(key_material),
-            modes.GCM(ciphertext.iv, ciphertext.tag),
-            backend=default_backend(),
-        ).decryptor()
-        decryptor.authenticate_additional_data(aad)
-        plaintext = decryptor.update(ciphertext.ciphertext) + decryptor.finalize()
-    except Exception:
-        raise InvalidCiphertextException()
-
-    return plaintext
 
 
 # Confusion alert!
@@ -245,14 +204,19 @@ class KmsKey:
 
     # Encrypt is a method of KmsKey and not of KmsCryptoKey only because it requires KeyId, and KmsCryptoKeys do not
     # hold KeyIds. Maybe it would be possible to remodel this better.
-    def encrypt(self, plaintext: bytes, encryption_context: Dict = {}) -> bytes:
-        return _encrypt(
-            self.metadata["KeyId"], self.crypto_key.key_material, plaintext, encryption_context
+    def encrypt(self, plaintext: bytes) -> bytes:
+        iv = os.urandom(IV_LEN)
+        ciphertext = encrypt(self.crypto_key.key_material, plaintext, iv)
+        # Moto uses GCM mode, while we use CBC, where tags do not seem to be relevant. So leaving them empty.
+        return _serialize_ciphertext_blob(
+            ciphertext=Ciphertext(
+                key_id=self.metadata.get("KeyId"), iv=iv, ciphertext=ciphertext, tag=b""
+            )
         )
 
     # The ciphertext has to be deserialized before this call.
-    def decrypt(self, ciphertext: bytes, encryption_context: Dict = {}) -> bytes:
-        return _decrypt(self.crypto_key.key_material, ciphertext, encryption_context)
+    def decrypt(self, ciphertext: Ciphertext) -> bytes:
+        return decrypt(self.crypto_key.key_material, ciphertext.ciphertext, ciphertext.iv)
 
     def sign(self, data: bytes, signing_algorithm: SigningAlgorithmSpec) -> bytes:
         kwargs = self._construct_sign_verify_kwargs(signing_algorithm)
