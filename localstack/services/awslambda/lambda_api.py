@@ -98,14 +98,19 @@ VERSION_LATEST = LambdaFunction.QUALIFIER_LATEST
 FUNCTION_MAX_SIZE = 69905067
 FUNCTION_MAX_UNZIPPED_SIZE = 262144000
 
+# stream_type: (default_batch_size, maximum_batch_size)
 BATCH_SIZE_RANGES = {
     "kafka": (100, 10000),
     "kinesis": (100, 10000),
     "dynamodb": (100, 1000),
-    "sqs": (
+    "sqs_normal": (
+        10,
+        10_000,
+    ),
+    "sqs_fifo": (
         10,
         10,
-    ),  # should be (10,10000) for normal SQS queues, (10,10) for FIFO https://docs.aws.amazon.com/lambda/latest/dg/API_CreateEventSourceMapping.html#SSS-CreateEventSourceMapping-request-BatchSize
+    ),
 }
 
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+00:00"
@@ -195,9 +200,19 @@ def func_qualifier(function_name, qualifier=None):
     return arn
 
 
-def check_batch_size_range(source_arn, batch_size=None):
-    source = source_arn.split(":")[2].lower()
+def determine_source_based_on_arn(source_arn):
+    arn_split = source_arn.split(":")
+    source = arn_split[2].lower()
     source = "kafka" if "secretsmanager" in source else source
+    if "secretsmanager" in source:
+        return "kafka"
+    elif "sqs" in source:
+        return "sqs_fifo" if arn_split[-1].endswith(".fifo") else "sqs_normal"
+    return source
+
+
+def check_batch_size_range(source_arn, batch_size=None):
+    source = determine_source_based_on_arn(source_arn)
     batch_size_entry = BATCH_SIZE_RANGES.get(source)
     if not batch_size_entry:
         raise ValueError(INVALID_PARAMETER_VALUE_EXCEPTION, "Unsupported event source type")

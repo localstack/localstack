@@ -831,15 +831,24 @@ class TestSQSEventSourceMapping:
             snapshot.match("create-event-source-mapping", rs)
 
             uuid = rs["UUID"]
-            assert BATCH_SIZE_RANGES["sqs"][0] == rs["BatchSize"]
+            assert BATCH_SIZE_RANGES["sqs_normal"][0] == rs["BatchSize"]
             _await_event_source_mapping_enabled(lambda_client, uuid)
+
+            # Update batch size with value above default
+            rs = lambda_client.update_event_source_mapping(
+                UUID=uuid,
+                FunctionName=function_name,
+                BatchSize=BATCH_SIZE_RANGES["sqs_normal"][0] + 1,
+            )
+
+            assert BATCH_SIZE_RANGES["sqs_normal"][0] + 1 == rs["BatchSize"]
 
             with pytest.raises(ClientError) as e:
                 # Update batch size with invalid value
                 rs = lambda_client.update_event_source_mapping(
                     UUID=uuid,
                     FunctionName=function_name,
-                    BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
+                    BatchSize=BATCH_SIZE_RANGES["sqs_normal"][1] + 1,
                 )
             snapshot.match("invalid-update-event-source-mapping", e.value.response)
             e.match(INVALID_PARAMETER_VALUE_EXCEPTION)
@@ -852,7 +861,7 @@ class TestSQSEventSourceMapping:
                 rs = lambda_client.create_event_source_mapping(
                     EventSourceArn=queue_arn_2,
                     FunctionName=function_name,
-                    BatchSize=BATCH_SIZE_RANGES["sqs"][1] + 1,
+                    BatchSize=BATCH_SIZE_RANGES["sqs_normal"][1] + 1,
                 )
             snapshot.match("invalid-create-event-source-mapping", e.value.response)
             e.match(INVALID_PARAMETER_VALUE_EXCEPTION)

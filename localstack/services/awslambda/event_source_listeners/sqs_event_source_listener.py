@@ -59,7 +59,7 @@ class SQSEventSourceListener(EventSourceListener):
                     queue_arn = source["EventSourceArn"]
                     region_name = extract_region_from_arn(queue_arn)
                     sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
-                    batch_size = max(min(source.get("BatchSize", 1), 10), 1)
+                    batch_size = min(max(source.get("BatchSize", 10), 1), 10_000)
 
                     try:
                         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
