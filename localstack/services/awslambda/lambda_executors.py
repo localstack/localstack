@@ -1305,7 +1305,7 @@ class LocalExecutorResult:
     stdout: str
     stderr: str
     result: str
-    error: Any
+    error: Dict[str, str]
 
 
 class LambdaExecutorLocal(LambdaExecutor):
@@ -1425,19 +1425,23 @@ class LambdaExecutorLocal(LambdaExecutor):
 
                 except Exception as e:
                     execute_result = str(e)
-                    execute_error = e
+                    # need to translate to dict here, as custom errors from handlers cannot be pickled
+                    execute_error = {
+                        "errorType": e.__class__.__name__,
+                        "errorMessage": e.args[0],
+                        "stackTrace": traceback.format_tb(e.__traceback__),
+                    }
                     sys.stderr.write("%s %s" % (e, traceback.format_exc()))
 
             q.put(LocalExecutorResult(c.stdout(), c.stderr(), execute_result, execute_error))
+            q.close()
+            q.join_thread()
 
         process_queue = Queue()
         process = Process(target=do_execute, args=(process_queue,))
         start_time = now(millis=True)
         process.start()
         process_result: LocalExecutorResult = process_queue.get()
-        error = None
-        if process_result.error:
-            error = process_result.error
         process.join()
 
         result = process_result.result
@@ -1467,20 +1471,15 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         result = result.result if isinstance(result, InvocationResult) else result
 
-        if error:
+        if error := process_result.error:
             LOG.info(
-                'Error executing Lambda "%s": %s %s',
+                'Error executing Lambda "%s": %s: %s %s',
                 lambda_function.arn(),
-                error,
-                "".join(traceback.format_tb(error.__traceback__)),
+                error["errorType"],
+                error["errorMessage"],
+                "".join(error["stackTrace"]),
             )
-            result = json.dumps(
-                {
-                    "errorType": error.__class__.__name__,
-                    "errorMessage": error.args[0],
-                    "stackTrace": traceback.format_tb(error.__traceback__),
-                }
-            )
+            result = json.dumps(error)
             raise InvocationException(result, log_output=log_output, result=result)
 
         # construct final invocation result

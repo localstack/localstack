@@ -422,6 +422,7 @@ def run_lambda(
 
     # Ensure that the service provider has been initialized. This is required to ensure all lifecycle hooks
     # (e.g., persistence) have been executed when the run_lambda(..) function gets called (e.g., from API GW).
+    LOG.debug("Running lambda %s", func_arn)
     if not hasattr(run_lambda, "_provider_initialized"):
         aws_stack.connect_to_service("lambda").list_functions()
         run_lambda._provider_initialized = True
