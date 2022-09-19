@@ -19,7 +19,7 @@ class CDKMetadata(GenericBaseModel):
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        resource["Properties"] = (
+        resource["Properties"]["PhysicalResourceId"] = (
             resource["Properties"].get("PhysicalResourceId") or f"cdk-meta-{short_uid()}"
         )
 
