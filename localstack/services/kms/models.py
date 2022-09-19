@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import struct
-import time
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
@@ -181,11 +180,15 @@ class KmsKey:
     is_key_rotation_enabled: bool
 
     def __init__(
-        self, create_key_request: CreateKeyRequest = {}, account_id: str = None, region: str = None
+        self,
+        create_key_request: CreateKeyRequest = None,
+        account_id: str = None,
+        region: str = None,
     ):
+        create_key_request = create_key_request or CreateKeyRequest()
         self._populate_metadata(create_key_request, account_id, region)
         self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"))
-        # Please keep in ind that tags of a key could be present in the request, they are not a part of metadata. At
+        # Please keep in mind that tags of a key could be present in the request, they are not a part of metadata. At
         # least in the sense of DescribeKey not returning them with the rest of the metadata. Instead, tags are more
         # like aliases:
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_DescribeKey.html
@@ -302,7 +305,7 @@ class KmsKey:
 
         # Metadata fields AWS introduces automatically
         self.metadata["AWSAccountId"] = account_id or get_aws_account_id()
-        self.metadata["CreationDate"] = time.time()
+        self.metadata["CreationDate"] = datetime.datetime.now()
         self.metadata["Enabled"] = True
         self.metadata["KeyManager"] = "CUSTOMER"
         self.metadata["KeyState"] = "Enabled"
@@ -341,9 +344,9 @@ class KmsKey:
         #  notion of a primary key in LocalStack. Might be useful to improve it.
         #  https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-delete.html#primary-delete
         self.metadata["KeyState"] = "PendingDeletion"
-        self.metadata["DeletionDate"] = (
-            datetime.datetime.now() + datetime.timedelta(days=pending_window_in_days)
-        ).timestamp()
+        self.metadata["DeletionDate"] = datetime.datetime.now() + datetime.timedelta(
+            days=pending_window_in_days
+        )
 
     # An example of how the whole policy should look like:
     # https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
@@ -426,7 +429,7 @@ class KmsGrant:
     def __init__(self, create_grant_request: CreateGrantRequest):
         self.metadata = dict(create_grant_request)
         self.metadata["GrantId"] = long_uid()
-        self.metadata["CreationDate"] = time.time()
+        self.metadata["CreationDate"] = datetime.datetime.now()
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_GrantListEntry.html
         # "If a name was provided in the CreateGrant request, that name is returned. Otherwise this value is null."
         # According to the examples in AWS docs
@@ -444,10 +447,11 @@ class KmsAlias:
 
     def __init__(
         self,
-        create_alias_request: CreateAliasRequest = {},
+        create_alias_request: CreateAliasRequest = None,
         account_id: str = None,
         region: str = None,
     ):
+        create_alias_request = create_alias_request or CreateAliasRequest()
         self.metadata = {}
         self.metadata["AliasName"] = create_alias_request.get("AliasName")
         self.metadata["TargetKeyId"] = create_alias_request.get("TargetKeyId")
@@ -456,7 +460,7 @@ class KmsAlias:
         self.metadata["AliasArn"] = kms_alias_arn(self.metadata["AliasName"], account_id, region)
 
     def update_date_of_last_update(self):
-        self.metadata["LastUpdateDate"] = time.time()
+        self.metadata["LastUpdateDate"] = datetime.datetime.now()
 
 
 @dataclass
@@ -501,6 +505,9 @@ class KmsStore(BaseStore):
         if key_id not in self.keys:
             raise NotFoundException(f"Invalid keyID '{key_id}'")
         return self.keys[key_id]
+
+    def get_canonical_key_id(self, key_id: str):
+        return self.get_key(key_id).metadata["KeyId"]
 
     # TODO account_id and region params here are somewhat redundant, the store is supposed to know them. But at the
     #  moment there is no way to get them from the store itself. Should get rid of these params later.
