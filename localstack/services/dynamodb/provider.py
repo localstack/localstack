@@ -232,7 +232,9 @@ class SSEUtils:
         if existing_key:
             return existing_key
         kms_client = aws_stack.connect_to_service("kms")
-        key_data = kms_client.create_key(Description="Default key that protects DynamoDB data")
+        key_data = kms_client.create_key(
+            Description="Default key that protects my DynamoDB data when no other key is defined"
+        )
         key_id = key_data["KeyMetadata"]["KeyId"]
 
         provider.set_key_managed(key_id)
@@ -399,7 +401,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # Check if table exists, to avoid error log output from DynamoDBLocal
         table_name = create_table_input["TableName"]
         if self.table_exists(table_name):
-            raise ResourceInUseException("Cannot create preexisting table")
+            raise ResourceInUseException(f"Table already exists: {table_name}")
         billing_mode = create_table_input.get("BillingMode")
         provisioned_throughput = create_table_input.get("ProvisionedThroughput")
         if billing_mode == BillingMode.PAY_PER_REQUEST and provisioned_throughput is not None:
