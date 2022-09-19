@@ -1,6 +1,115 @@
 {
   "s3/2006-03-01/service-2": [
-    {"op": "add", "path": "/shapes/NoSuchBucket/members/BucketName", "value": {"shape": "BucketName"}},
-    {"op": "add", "path": "/shapes/NoSuchBucket/error", "value": {"httpStatusCode": 404}}
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchBucket/members/BucketName",
+      "value": {
+        "shape": "BucketName"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchBucket/error",
+      "value": {
+        "httpStatusCode": 404
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchLifecycleConfiguration",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 404
+        },
+        "documentation": "<p>The lifecycle configuration does not exist</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidBucketName",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketName": {
+            "shape": "BucketName"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The specified bucket is not valid.</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/BucketRegion",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/BucketContentType",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/HeadBucketOutput",
+      "value": {
+        "type": "structure",
+        "members": {
+          "BucketRegion": {
+            "shape": "BucketRegion",
+            "location": "header",
+            "locationName": "x-amz-bucket-region"
+          },
+          "BucketContentType": {
+            "shape": "BucketContentType",
+            "location": "header",
+            "locationName": "content-type"
+          }
+        }
+      }
+    },
+    {
+      "op": "add",
+      "path": "/operations/HeadBucket/output",
+      "value": {
+        "shape": "HeadBucketOutput"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectsOutput/members/BucketRegion",
+      "value": {
+        "shape": "BucketRegion",
+        "location": "header",
+        "locationName": "x-amz-bucket-region"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectsV2Output/members/BucketRegion",
+      "value": {
+        "shape": "BucketRegion",
+        "location": "header",
+        "locationName": "x-amz-bucket-region"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/operations/PutBucketPolicy/http/responseCode",
+      "value": 204
+    }
   ]
 }

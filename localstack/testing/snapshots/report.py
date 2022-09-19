@@ -51,6 +51,19 @@ class PatchPath(str):
         return False
 
 
+def _format_json_path(path: list):
+    json_str = "$.."
+    for idx, elem in enumerate(path):
+        if not isinstance(elem, int):
+            json_str += str(elem)
+        if idx < len(path) - 1 and not json_str.endswith(".."):
+            json_str += "."
+
+    if path and isinstance(path[-1], int):
+        json_str = json_str.rstrip(".")
+    return f'"{json_str}"'
+
+
 def render_report(result: SnapshotMatchResult):
     def _line(c) -> [(str, str)]:
         def _render_path_part(part):
@@ -87,16 +100,30 @@ def render_report(result: SnapshotMatchResult):
                     f"[replace](~)[/replace] {change_path} {expected!r} → {actual!r} ... (expected → actual)",
                 )
             ]
+        elif c.report_type == "type_changes":
+            return [
+                (
+                    change_path,
+                    f"[replace](~)[/replace] {change_path} {expected!r} (type: {type(expected)}) → {actual!r} (type: {type(actual)})... (expected → actual)",
+                )
+            ]
         else:
             LOG.warning(
                 f"Unsupported diff mismatch reason: {c.report_type}. Please report this to the team so we can add support. {expected=} | {actual=}"
             )
-        return []
+            return [
+                (
+                    change_path,
+                    f"[unknown]?[/unknown] {change_path} Unsupported diff mismatch for {expected!r} vs {actual!r}",
+                )
+            ]
 
     lines = []
+    json_paths = []
     for cat, changes in result.result.tree.items():
         for change in changes:
             lines.extend(_line(change))
+            json_paths.append(change.path(output_format="list"))
 
     printstr = f">> match key: {result.key}\n"
 
@@ -108,6 +135,7 @@ def render_report(result: SnapshotMatchResult):
         "remove": [_esctable["red"]],
         "add": [_esctable["green"]],
         "replace": [_esctable["yellow"]],
+        "unknown": [_esctable["cyan"]],
         "s": [_esctable["strikethrough"]],
     }
 
@@ -115,5 +143,9 @@ def render_report(result: SnapshotMatchResult):
     for token, replacements in replacement_map.items():
         printstr = printstr.replace(f"[{token}]", "".join(f"\x1b[{code}m" for code in replacements))
         printstr = printstr.replace(f"[/{token}]", "\x1b[0m")
+
+    printstr += "\n\tIgnore list (please keep in mind list indices might not work and should be replaced):\n\t"
+
+    printstr += f"[{', '.join(sorted(list({_format_json_path(path) for path in json_paths})))}]"
 
     return printstr

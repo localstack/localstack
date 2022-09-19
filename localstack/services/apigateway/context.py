@@ -7,10 +7,9 @@ from responses import Response
 
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.utils.aws.aws_responses import parse_query_string
-
-# type definition for data parameters (i.e., invocation payloads)
 from localstack.utils.strings import short_uid, to_str
 
+# type definition for data parameters (i.e., invocation payloads)
 InvocationPayload = Union[Dict, str, bytes]
 
 
@@ -129,8 +128,7 @@ class ApiInvocationContext:
             context = self.auth_info.setdefault("context", {})
             if principal := self.auth_info.get("principalId"):
                 context["principalId"] = principal
-                return context
-            return self.auth_info
+            return context
 
     @property
     def auth_identity(self) -> Optional[Dict]:

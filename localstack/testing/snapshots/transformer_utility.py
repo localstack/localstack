@@ -12,6 +12,7 @@ from localstack.testing.snapshots.transformer import (
     TransformContext,
     Transformer,
 )
+from localstack.utils.net import IP_REGEX
 
 LOG = logging.getLogger(__name__)
 
@@ -117,6 +118,41 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def apigateway_api():
+        return [
+            TransformerUtility.key_value("id"),
+            TransformerUtility.key_value("name"),
+        ]
+
+    @staticmethod
+    def apigateway_proxy_event():
+        return [
+            TransformerUtility.key_value("extendedRequestId"),
+            TransformerUtility.key_value("resourceId"),
+            TransformerUtility.key_value("sourceIp"),
+            TransformerUtility.jsonpath("$..headers.X-Amz-Cf-Id", value_replacement="cf-id"),
+            TransformerUtility.jsonpath(
+                "$..headers.CloudFront-Viewer-ASN", value_replacement="cloudfront-asn"
+            ),
+            TransformerUtility.jsonpath(
+                "$..headers.CloudFront-Viewer-Country", value_replacement="cloudfront-country"
+            ),
+            TransformerUtility.jsonpath("$..headers.Via", value_replacement="via"),
+            TransformerUtility.jsonpath("$..headers.X-Amzn-Trace-Id", value_replacement="trace-id"),
+            TransformerUtility.jsonpath(
+                "$..requestContext.requestTime",
+                value_replacement="<request-time>",
+                reference_replacement=False,
+            ),
+            KeyValueBasedTransformer(
+                lambda k, v: str(v) if k == "requestTimeEpoch" else None,
+                "<request-time-epoch>",
+                replace_reference=False,
+            ),
+            TransformerUtility.regex(IP_REGEX.strip("^$"), "<ip>"),
+        ]
+
+    @staticmethod
     def cloudformation_api():
         """
         :return: array with Transformers, for cloudformation api.
@@ -161,6 +197,8 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("Name", value_replacement="bucket-name"),
+            TransformerUtility.key_value("BucketName"),
+            TransformerUtility.key_value("VersionId"),
             TransformerUtility.jsonpath(
                 jsonpath="$..Owner.DisplayName",
                 value_replacement="<display-name>",

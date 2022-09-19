@@ -1530,6 +1530,19 @@ class TestDynamoDB:
             )
         assert ctx.match("ValidationException")
 
+    @pytest.mark.only_localstack
+    def test_nosql_workbench_localhost_region(self, dynamodb_create_table, dynamodb_client):
+        """Test for AWS NoSQL Workbench, which sends "localhost" as region in header"""
+        table_name = f"t-{short_uid()}"
+        dynamodb_create_table(table_name=table_name, partition_key=PARTITION_KEY)
+        # describe table for default region
+        table = dynamodb_client.describe_table(TableName=table_name)
+        assert table.get("Table")
+        # describe table for "localhost" region
+        client = aws_stack.connect_to_service("dynamodb", region_name="localhost")
+        table = client.describe_table(TableName=table_name)
+        assert table.get("Table")
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.create_external_boto_client("dynamodb")

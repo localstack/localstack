@@ -2,6 +2,7 @@ Resources:
   roleC7B7E775:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: {{ role_name }}
       AssumeRolePolicyDocument:
         Statement:
           - Action: sts:AssumeRole
@@ -15,7 +16,17 @@ Resources:
             - - "arn:"
               - Ref: AWS::Partition
               - :iam::aws:policy/AdministratorAccess
-      RoleName: {{ role_name }}
+      Policies:
+        - PolicyName: {{ role_name }}-s3
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:*"
+                Resource:
+                  - "arn:aws:s3:::bucket"
+                  - !Ref AWS::NoValue
   serviceLinkedRole754232:
     Type: AWS::IAM::ServiceLinkedRole
     Properties:

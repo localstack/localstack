@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from re import Pattern
-from typing import Callable, Optional, Protocol
+from typing import Any, Callable, Optional, Protocol
 
 from jsonpath_ng.ext import parse
 
@@ -61,7 +61,7 @@ def _register_serialized_reference_replacement(
             return replace_val
 
         SNAPSHOT_LOGGER.debug(
-            f"Registering reference replacement for value: '{reference_value}' -> '{actual_replacement}'"
+            f"Registering reference replacement for value: '{reference_value:.200s}' -> '{actual_replacement}'"
         )
         transform_context.register_serialized_replacement(
             _helper(reference_value, actual_replacement)
@@ -148,9 +148,11 @@ class RegexTransformer:
             def replace_val(s):
                 result = re.sub(pattern, repl, s)
                 if result != s:
-                    SNAPSHOT_LOGGER.debug(f"Replacing regex '{pattern.pattern}' with '{repl}'")
+                    SNAPSHOT_LOGGER.debug(
+                        f"Replacing regex '{pattern.pattern:.200s}' with '{repl}'"
+                    )
                 else:
-                    SNAPSHOT_LOGGER.debug(f"No match found for regex '{pattern.pattern}'")
+                    SNAPSHOT_LOGGER.debug(f"No match found for regex '{pattern.pattern:.200s}'")
                 return result
 
             return replace_val
@@ -159,7 +161,7 @@ class RegexTransformer:
             _regex_replacer_helper(compiled_regex, self.replacement)
         )
         SNAPSHOT_LOGGER.debug(
-            f"Registering regex pattern '{compiled_regex.pattern}' in snapshot with '{self.replacement}'"
+            f"Registering regex pattern '{compiled_regex.pattern:.200s}' in snapshot with '{self.replacement}'"
         )
         return input_data
 
@@ -185,7 +187,7 @@ class KeyValueBasedTransformer:
                 else:
                     if isinstance(v, str):
                         SNAPSHOT_LOGGER.debug(
-                            f"Replacing value for key '{k}': Match result '{match_result}' with '{self.replacement}'. (Original value: {str(v)})"
+                            f"Replacing value for key '{k}': Match result '{match_result:.200s}' with '{self.replacement}'. (Original value: {str(v)})"
                         )
                         input_data[k] = v.replace(match_result, self.replacement)
                     else:
@@ -203,8 +205,29 @@ class KeyValueBasedTransformer:
 
 
 class GenericTransformer:
-    def __init__(self, fn: Callable[[dict], dict]):
+    def __init__(self, fn: Callable[[dict, TransformContext], dict]):
         self.fn = fn
 
-    def transform(self, input_data: dict) -> dict:
-        return self.fn(input_data)
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        return self.fn(input_data, ctx)
+
+
+class SortingTransformer:
+    key: str
+    sorting_fn: Callable[[...], Any]
+
+    # TODO: add support for jsonpath
+    def __init__(self, key: str, sorting_fn: Callable[[...], Any]):
+        """Sorts a list at `key` with the given `sorting_fn` (argument for `sorted(list, key=sorting_fn)`)"""
+        self.key = key
+        self.sorting_fn = sorting_fn
+
+    def transform(self, input_data: dict, *, ctx: TransformContext = None) -> dict:
+        for k, v in input_data.items():
+            if k == self.key:
+                if not isinstance(v, list):
+                    raise ValueError("SortingTransformer should only be applied to lists.")
+                input_data[k] = sorted(v, key=self.sorting_fn)
+            elif isinstance(v, dict):
+                input_data[k] = self.transform(v, ctx=ctx)
+        return input_data

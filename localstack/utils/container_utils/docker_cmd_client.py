@@ -600,6 +600,7 @@ class CmdDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        privileged: Optional[bool] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -609,6 +610,8 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--name", name]
         if entrypoint is not None:  # empty string entrypoint can be intentional
             cmd += ["--entrypoint", entrypoint]
+        if privileged:
+            cmd += ["--privileged"]
         if mount_volumes:
             cmd += [
                 volume

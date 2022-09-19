@@ -1864,6 +1864,7 @@ class LocationType(str):
 class LogDestinationType(str):
     cloud_watch_logs = "cloud-watch-logs"
     s3 = "s3"
+    kinesis_data_firehose = "kinesis-data-firehose"
 
 
 class MarketType(str):
@@ -2201,6 +2202,7 @@ class ResourceType(str):
     capacity_reservation_fleet = "capacity-reservation-fleet"
     traffic_mirror_filter_rule = "traffic-mirror-filter-rule"
     vpc_endpoint_connection_device_type = "vpc-endpoint-connection-device-type"
+    vpn_connection_device_type = "vpn-connection-device-type"
 
 
 class RootDeviceType(str):
@@ -5237,6 +5239,7 @@ class CreateFlowLogsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     ClientToken: Optional[String]
     DeliverLogsPermissionArn: Optional[String]
+    DeliverCrossAccountRole: Optional[String]
     LogGroupName: Optional[String]
     ResourceIds: FlowLogResourceIds
     ResourceType: FlowLogsResourceType
@@ -8939,6 +8942,7 @@ class FlowLog(TypedDict, total=False):
     CreationTime: Optional[MillisecondDateTime]
     DeliverLogsErrorMessage: Optional[String]
     DeliverLogsPermissionArn: Optional[String]
+    DeliverCrossAccountRole: Optional[String]
     DeliverLogsStatus: Optional[String]
     FlowLogId: Optional[String]
     FlowLogStatus: Optional[String]
@@ -16283,6 +16287,7 @@ class Ec2Api:
         dry_run: Boolean = None,
         client_token: String = None,
         deliver_logs_permission_arn: String = None,
+        deliver_cross_account_role: String = None,
         log_group_name: String = None,
         traffic_type: TrafficType = None,
         log_destination_type: LogDestinationType = None,

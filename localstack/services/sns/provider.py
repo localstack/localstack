@@ -97,6 +97,7 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes
+from localstack.utils.aws.aws_stack import extract_region_from_arn
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.json import json_safe
@@ -528,7 +529,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         sns_backend = SNSBackend.get()
         sub_arn = None
         for k, v in sns_backend.subscription_status.items():
-            if v["Token"] == token and v["TopicArn"] == topic_arn:
+            if v.get("Token") == token and v["TopicArn"] == topic_arn:
                 v["Status"] = "Subscribed"
                 sub_arn = k
         for k, v in sns_backend.sns_subscriptions.items():
@@ -1201,7 +1202,9 @@ def process_sns_notification_to_lambda(
             }
         ]
     }
-    lambda_client = aws_stack.connect_to_service("lambda")
+    lambda_client = aws_stack.connect_to_service(
+        "lambda", region_name=extract_region_from_arn(func_arn)
+    )
     inv_result = lambda_client.invoke(
         FunctionName=func_arn,
         Payload=to_bytes(json.dumps(event)),

@@ -17,7 +17,6 @@ from localstack.services.opensearch.cluster import (
     EdgeProxiedOpensearchCluster,
     ElasticsearchCluster,
     OpensearchCluster,
-    resolve_directories,
 )
 from localstack.utils.common import (
     PortNotAvailableException,
@@ -255,13 +254,9 @@ class MultiplexingClusterManager(ClusterManager):
                 engine_type = versions.get_engine_type(version)
                 # startup routine for the singleton cluster instance
                 if engine_type == EngineType.OpenSearch:
-                    self.cluster = OpensearchCluster(
-                        get_free_tcp_port(), directories=resolve_directories(version, arn)
-                    )
+                    self.cluster = OpensearchCluster(port=get_free_tcp_port(), arn=arn)
                 else:
-                    self.cluster = ElasticsearchCluster(
-                        get_free_tcp_port(), directories=resolve_directories(version, arn)
-                    )
+                    self.cluster = ElasticsearchCluster(port=get_free_tcp_port(), arn=arn)
 
                 def _start_async(*_):
                     LOG.info("starting %s on %s", type(self.cluster), self.cluster.url)
@@ -295,29 +290,15 @@ class MultiClusterManager(ClusterManager):
         engine_type = versions.get_engine_type(version)
         if config.OPENSEARCH_ENDPOINT_STRATEGY != "port":
             if engine_type == EngineType.OpenSearch:
-                return EdgeProxiedOpensearchCluster(
-                    url, version, directories=resolve_directories(version, arn)
-                )
+                return EdgeProxiedOpensearchCluster(url=url, arn=arn, version=version)
             else:
-                return EdgeProxiedElasticsearchCluster(
-                    url, version, directories=resolve_directories(version, arn)
-                )
+                return EdgeProxiedElasticsearchCluster(url=url, arn=arn, version=version)
         else:
             port = _get_port_from_url(url)
             if engine_type == EngineType.OpenSearch:
-                return OpensearchCluster(
-                    port,
-                    host=EDGE_BIND_HOST,
-                    version=version,
-                    directories=resolve_directories(version, arn),
-                )
+                return OpensearchCluster(port=port, host=EDGE_BIND_HOST, arn=arn, version=version)
             else:
-                return ElasticsearchCluster(
-                    port,
-                    host=LOCALHOST,
-                    version=version,
-                    directories=resolve_directories(version, arn),
-                )
+                return ElasticsearchCluster(port=port, host=LOCALHOST, arn=arn, version=version)
 
 
 class SingletonClusterManager(ClusterManager):
@@ -355,17 +336,11 @@ class SingletonClusterManager(ClusterManager):
             engine_type = versions.get_engine_type(version)
             if engine_type == EngineType.OpenSearch:
                 self.cluster = OpensearchCluster(
-                    port,
-                    host=EDGE_BIND_HOST,
-                    version=version,
-                    directories=resolve_directories(version, arn),
+                    port=port, host=EDGE_BIND_HOST, version=version, arn=arn
                 )
             else:
                 self.cluster = ElasticsearchCluster(
-                    port,
-                    host=LOCALHOST,
-                    version=version,
-                    directories=resolve_directories(version, arn),
+                    port=port, host=LOCALHOST, version=version, arn=arn
                 )
 
         return self.cluster

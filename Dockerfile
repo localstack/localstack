@@ -1,7 +1,7 @@
 ARG IMAGE_TYPE=full
 
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM python:3.10.6-slim-buster@sha256:f17c94905c9cd56dce9ef6ce63229045a75f395f7b5b68eb69ef617079c51848 as java-builder
+FROM python:3.10.7-slim-buster@sha256:3e2f59423255b108729d6be55027552093b6edd8fff4e669b837ba3af225b747 as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -34,7 +34,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java, maven,...)
-FROM python:3.10.6-slim-buster@sha256:f17c94905c9cd56dce9ef6ce63229045a75f395f7b5b68eb69ef617079c51848 as base
+FROM python:3.10.7-slim-buster@sha256:3e2f59423255b108729d6be55027552093b6edd8fff4e669b837ba3af225b747 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -177,13 +177,13 @@ FROM base as base-full
 # https://github.com/pires/docker-elasticsearch/issues/56
 ENV ES_TMPDIR /tmp
 
-ENV ES_BASE_DIR=/usr/lib/localstack/elasticsearch
+ENV ES_BASE_DIR=/usr/lib/localstack/elasticsearch/Elasticsearch_7.10
 ENV ES_JAVA_HOME /usr/lib/jvm/java-11
 RUN TARGETARCH_SYNONYM=$([[ "$TARGETARCH" == "amd64" ]] && echo "x86_64" || echo "aarch64"); \
     curl -L -o /tmp/localstack.es.tar.gz \
         https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.0-linux-${TARGETARCH_SYNONYM}.tar.gz && \
-    (cd /usr/lib/localstack && tar -xf /tmp/localstack.es.tar.gz && \
-        mv elasticsearch* elasticsearch && rm /tmp/localstack.es.tar.gz) && \
+    (cd /tmp && tar -xf localstack.es.tar.gz && \
+        mkdir -p $ES_BASE_DIR && mv elasticsearch*/* $ES_BASE_DIR && rm /tmp/localstack.es.tar.gz) && \
     (cd $ES_BASE_DIR && \
         bin/elasticsearch-plugin install analysis-icu && \
         bin/elasticsearch-plugin install ingest-attachment --batch && \

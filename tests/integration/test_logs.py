@@ -13,7 +13,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
 
-from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON3
+from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON_ECHO
 
 logs_role = {
     "Statement": {
@@ -194,7 +194,7 @@ class TestCloudWatchLogs:
 
         test_lambda_name = f"test-lambda-function-{short_uid()}"
         create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON3,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             libs=TEST_LAMBDA_LIBS,
             func_name=test_lambda_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,

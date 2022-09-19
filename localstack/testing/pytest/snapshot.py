@@ -61,6 +61,9 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> Optional[Test
 def pytest_runtest_call(item: Item) -> None:
     call: CallInfo = yield  # noqa
 
+    if call.excinfo:
+        return
+
     # TODO: extremely dirty... maybe it would be better to find a way to fail the test itself instead?
     sm = item.funcargs.get("snapshot")
 

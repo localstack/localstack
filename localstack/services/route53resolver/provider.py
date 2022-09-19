@@ -522,7 +522,9 @@ class Route53ResolverProvider(Route53ResolverApi):
             CreationTime=datetime.now(timezone.utc).isoformat(),
         )
         region_details.resolver_query_log_configs[id] = resolver_query_log_config
-        route53resolver_backends[context.region].tagger.tag_resource(arn, tags or [])
+        route53resolver_backends[context.account_id][context.region].tagger.tag_resource(
+            arn, tags or []
+        )
         return CreateResolverQueryLogConfigResponse(
             ResolverQueryLogConfig=resolver_query_log_config
         )
@@ -665,7 +667,7 @@ class Route53ResolverProvider(Route53ResolverApi):
     ) -> ListFirewallConfigsResponse:
         region_details = Route53ResolverBackend.get()
         firewall_configs = []
-        backend = ec2_backends[context.region]
+        backend = ec2_backends[context.account_id][context.region]
         for vpc in backend.vpcs:
             if vpc not in region_details.firewall_configs:
                 region_details.get_or_create_firewall_config(
@@ -682,7 +684,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         firewall_fail_open: FirewallFailOpenStatus,
     ) -> UpdateFirewallConfigResponse:
         region_details = Route53ResolverBackend.get()
-        backend = ec2_backends[context.region]
+        backend = ec2_backends[context.account_id][context.region]
         for resource_id in backend.vpcs:
             if resource_id not in region_details.firewall_configs:
                 firewall_config = region_details.get_or_create_firewall_config(

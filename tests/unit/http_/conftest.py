@@ -4,7 +4,7 @@ from asyncio import AbstractEventLoop
 
 import pytest
 from hypercorn import Config
-from hypercorn.typing import ASGI3Framework
+from hypercorn.typing import ASGIFramework
 
 from localstack.http.asgi import ASGIAdapter
 from localstack.http.hypercorn import HypercornServer
@@ -19,7 +19,7 @@ def serve_asgi_app():
     _servers = []
 
     def _create(
-        app: ASGI3Framework, config: Config = None, event_loop: AbstractEventLoop = None
+        app: ASGIFramework, config: Config = None, event_loop: AbstractEventLoop = None
     ) -> HypercornServer:
         if not config:
             config = Config()

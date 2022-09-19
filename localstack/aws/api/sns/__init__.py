@@ -353,6 +353,7 @@ class CreateTopicInput(ServiceRequest):
     Name: topicName
     Attributes: Optional[TopicAttributesMap]
     Tags: Optional[TagList]
+    DataProtectionPolicy: Optional[attributeValue]
 
 
 class CreateTopicResponse(TypedDict, total=False):
@@ -382,6 +383,14 @@ class DeleteTopicInput(ServiceRequest):
 class Endpoint(TypedDict, total=False):
     EndpointArn: Optional[String]
     Attributes: Optional[MapStringToString]
+
+
+class GetDataProtectionPolicyInput(ServiceRequest):
+    ResourceArn: topicARN
+
+
+class GetDataProtectionPolicyResponse(TypedDict, total=False):
+    DataProtectionPolicy: Optional[attributeValue]
 
 
 class GetEndpointAttributesInput(ServiceRequest):
@@ -644,6 +653,11 @@ class PublishResponse(TypedDict, total=False):
     SequenceNumber: Optional[String]
 
 
+class PutDataProtectionPolicyInput(ServiceRequest):
+    ResourceArn: topicARN
+    DataProtectionPolicy: attributeValue
+
+
 class RemovePermissionInput(ServiceRequest):
     TopicArn: topicARN
     Label: label
@@ -790,6 +804,7 @@ class SnsApi:
         name: topicName,
         attributes: TopicAttributesMap = None,
         tags: TagList = None,
+        data_protection_policy: attributeValue = None,
     ) -> CreateTopicResponse:
         raise NotImplementedError
 
@@ -811,6 +826,12 @@ class SnsApi:
 
     @handler("DeleteTopic")
     def delete_topic(self, context: RequestContext, topic_arn: topicARN) -> None:
+        raise NotImplementedError
+
+    @handler("GetDataProtectionPolicy")
+    def get_data_protection_policy(
+        self, context: RequestContext, resource_arn: topicARN
+    ) -> GetDataProtectionPolicyResponse:
         raise NotImplementedError
 
     @handler("GetEndpointAttributes")
@@ -936,6 +957,15 @@ class SnsApi:
         topic_arn: topicARN,
         publish_batch_request_entries: PublishBatchRequestEntryList,
     ) -> PublishBatchResponse:
+        raise NotImplementedError
+
+    @handler("PutDataProtectionPolicy")
+    def put_data_protection_policy(
+        self,
+        context: RequestContext,
+        resource_arn: topicARN,
+        data_protection_policy: attributeValue,
+    ) -> None:
         raise NotImplementedError
 
     @handler("RemovePermission")

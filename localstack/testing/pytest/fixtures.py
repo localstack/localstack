@@ -20,6 +20,7 @@ from pytest_httpserver import HTTPServer
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.utils import testutil
@@ -71,17 +72,23 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 
-def _client(service, region_name=None):
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
-        return boto3.client(service, region_name=region_name)
+def _client(service, region_name=None, *, additional_config=None):
+    config = botocore.config.Config()
+
     # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
-    config = (
-        botocore.config.Config(
-            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+    if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
+        config = config.merge(
+            botocore.config.Config(
+                connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+            )
         )
-        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
-        else None
-    )
+
+    if additional_config:
+        config = config.merge(additional_config)
+
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.client(service, region_name=region_name, config=config)
+
     return aws_stack.create_external_boto_client(service, config=config, region_name=region_name)
 
 
@@ -196,6 +203,41 @@ def iam_client() -> "IAMClient":
 @pytest.fixture(scope="class")
 def s3_client() -> "S3Client":
     return _client("s3")
+
+
+@pytest.fixture(scope="class")
+def s3_vhost_client() -> "S3Client":
+    boto_config = botocore.config.Config(s3={"addressing_style": "virtual"})
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.client("s3", config=boto_config)
+    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
+    if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
+        external_boto_config = botocore.config.Config(
+            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+        )
+        boto_config = boto_config.merge(external_boto_config)
+
+    return aws_stack.create_external_boto_client("s3", config=boto_config)
+
+
+@pytest.fixture(scope="class")
+def s3_presigned_client() -> "S3Client":
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return _client("s3")
+    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
+    boto_config = (
+        botocore.config.Config(
+            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+        )
+        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
+        else None
+    )
+    return aws_stack.connect_to_service(
+        "s3",
+        config=boto_config,
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+    )
 
 
 @pytest.fixture(scope="class")
@@ -1113,14 +1155,16 @@ def is_change_set_finished(cfn_client):
 
 @pytest.fixture
 def wait_until_lambda_ready(lambda_client):
-    def _wait_until_ready(function_name: str, qualifier: str = None):
+    def _wait_until_ready(function_name: str, qualifier: str = None, client=None):
+        client = client or lambda_client
+
         def _is_not_pending():
             kwargs = {}
             if qualifier:
                 kwargs["Qualifier"] = qualifier
             try:
                 result = (
-                    lambda_client.get_function(FunctionName=function_name)["Configuration"]["State"]
+                    client.get_function(FunctionName=function_name)["Configuration"]["State"]
                     != "Pending"
                 )
                 LOG.debug(f"lambda state result: {result=}")
@@ -1170,13 +1214,54 @@ role_policy = """
 
 
 @pytest.fixture
-def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_lambda_ready):
+def create_lambda_function_aws(
+    lambda_client,
+):
     lambda_arns = []
+
+    def _create_lambda_function(**kwargs):
+        def _create_function():
+            resp = lambda_client.create_function(**kwargs)
+            lambda_arns.append(resp["FunctionArn"])
+
+            def _is_not_pending():
+                try:
+                    result = (
+                        lambda_client.get_function(FunctionName=resp["FunctionName"])[
+                            "Configuration"
+                        ]["State"]
+                        != "Pending"
+                    )
+                    return result
+                except Exception as e:
+                    LOG.error(e)
+                    raise
+
+            wait_until(_is_not_pending)
+            return resp
+
+        # @AWS, takes about 10s until the role/policy is "active", until then it will fail
+        # localstack should normally not require the retries and will just continue here
+        return retry(_create_function, retries=3, sleep=4)
+
+    yield _create_lambda_function
+
+    for arn in lambda_arns:
+        try:
+            lambda_client.delete_function(FunctionName=arn)
+        except Exception:
+            LOG.debug(f"Unable to delete function {arn=} in cleanup")
+
+
+@pytest.fixture
+def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_lambda_ready):
+    lambda_arns_and_clients = []
     role_names_policy_arns = []
     log_groups = []
 
     def _create_lambda_function(*args, **kwargs):
-        kwargs["client"] = lambda_client
+        client = kwargs.get("client") or lambda_client
+        kwargs["client"] = client
         func_name = kwargs.get("func_name")
         assert func_name
         del kwargs["func_name"]
@@ -1196,8 +1281,8 @@ def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_la
 
         def _create_function():
             resp = testutil.create_lambda_function(func_name, **kwargs)
-            lambda_arns.append(resp["CreateFunctionResponse"]["FunctionArn"])
-            wait_until_lambda_ready(function_name=func_name)
+            lambda_arns_and_clients.append((resp["CreateFunctionResponse"]["FunctionArn"], client))
+            wait_until_lambda_ready(function_name=func_name, client=client)
             log_group_name = f"/aws/lambda/{func_name}"
             log_groups.append(log_group_name)
             return resp
@@ -1208,9 +1293,9 @@ def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_la
 
     yield _create_lambda_function
 
-    for arn in lambda_arns:
+    for arn, client in lambda_arns_and_clients:
         try:
-            lambda_client.delete_function(FunctionName=arn)
+            client.delete_function(FunctionName=arn)
         except Exception:
             LOG.debug(f"Unable to delete function {arn=} in cleanup")
 
@@ -1234,7 +1319,7 @@ def create_lambda_function(lambda_client, logs_client, iam_client, wait_until_la
 
 @pytest.fixture
 def check_lambda_logs(logs_client):
-    def _check_logs(func_name: str, expected_lines: List[str] = None):
+    def _check_logs(func_name: str, expected_lines: List[str] = None) -> List[str]:
         if not expected_lines:
             expected_lines = []
         log_events = get_lambda_logs(func_name, logs_client=logs_client)
@@ -1245,6 +1330,7 @@ def check_lambda_logs(logs_client):
                 if any(found):
                     continue
             assert line in log_messages
+        return log_messages
 
     return _check_logs
 

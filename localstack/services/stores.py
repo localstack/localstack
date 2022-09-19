@@ -8,8 +8,8 @@ by subclassing BaseStore e.g. `localstack.services.sqs.models.SqsStore`
 Also by convention, cross-region attributes are declared in CAPITAL_CASE
 
     class SqsStore(BaseStore):
-        queues =  LocalAttribute(default=dict)        # type: Dict[str, SqsQueue]
-        DELETED = CrossRegionAttribute(default=dict)  # type: Dict[str, float]
+        queues: dict[str, SqsQueue] =  LocalAttribute(default=dict)
+        DELETED: dict[str, float] = CrossRegionAttribute(default=dict)
 
 Stores are then wrapped in AccountRegionBundle
 
@@ -21,12 +21,18 @@ Access patterns are as follows
     sqs_stores[account_id]  # -> RegionBundle
     sqs_stores[account_id]['ap-south-1']  # -> SqsStore
     sqs_stores[account_id]['ap-south-1'].queues  # -> {}
+
+There should be a single declaration of a Store for a given service. If a service
+has both Community and Pro providers, it must be declared as in Community codebase.
+All Pro attributes must be declared within.
+
+While not recommended, store classes may define member helper functions and properties.
 """
 
 import re
 from collections.abc import Callable
 from threading import RLock
-from typing import Any, Type, TypeVar, Union
+from typing import Any, Generic, Type, TypeVar, Union
 
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 
@@ -136,7 +142,7 @@ class BaseStore:
 #
 
 
-class RegionBundle(dict):
+class RegionBundle(dict, Generic[BaseStoreType]):
     """
     Encapsulation for stores across all regions for a specific AWS account ID.
     """
@@ -200,7 +206,7 @@ class RegionBundle(dict):
             self.clear()
 
 
-class AccountRegionBundle(dict):
+class AccountRegionBundle(dict, Generic[BaseStoreType]):
     """
     Encapsulation for all stores for all AWS account IDs.
     """
@@ -216,7 +222,7 @@ class AccountRegionBundle(dict):
         self.validate = validate
         self.lock = RLock()
 
-    def __getitem__(self, account_id: str) -> RegionBundle:
+    def __getitem__(self, account_id: str) -> RegionBundle[BaseStoreType]:
         if self.validate and not re.match(r"\d{12}", account_id):
             raise ValueError(f"'{account_id}' is not a valid AWS account ID")
 

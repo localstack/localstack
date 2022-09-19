@@ -38,6 +38,7 @@ def create_simplified_metrics(metrics: dict, impl_details: dict):
                     f"------> WARNING: {service}.{operation} does not have implementation details"
                 )
                 continue
+
             simplified_metric[service][operation] = {
                 "implemented": impl_details[service][operation]["implemented"],
                 "tested": True if op_details.get("invoked", 0) > 0 else False,
@@ -198,12 +199,17 @@ def main(path_to_implementation_details: str, path_to_raw_metrics: str):
     ) as file:
         csv_reader = csv.DictReader(file)
         for row in csv_reader:
-            if row["service"] not in impl_details:
-                print(f"{row['service']} is not available, continuing!")
-                continue
-            service = impl_details[row["service"]]
-            details = service[row["operation"]]
-            if not details["implemented"] and row["is_implemented"] == "True":
+            service = impl_details.setdefault(row["service"], {})
+            details = service.setdefault(row["operation"], {})
+            service[row["operation"]] = details
+
+            if "implemented" not in details and row["is_implemented"] == "False":
+                # service only available in pro, operation not implemented
+                details["implemented"] = False
+                details["pro"] = True
+
+            elif not details.get("implemented") and row["is_implemented"] == "True":
+                # only override the pro-information if the operation is not already implemented by community
                 details["implemented"] = True
                 details["pro"] = True
 
