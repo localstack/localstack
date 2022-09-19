@@ -16,7 +16,6 @@ ENV_DEV = "dev"
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = "x-localstack-edge"
 HEADER_LOCALSTACK_REQUEST_URL = "x-localstack-request-url"
-HEADER_LOCALSTACK_AUTHORIZATION = "x-localstack-authorization"
 HEADER_LOCALSTACK_TARGET = "x-localstack-target"
 HEADER_AMZN_ERROR_TYPE = "X-Amzn-Errortype"
 

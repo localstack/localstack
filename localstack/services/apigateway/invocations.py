@@ -10,7 +10,7 @@ from requests.models import Response
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
-from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_AUTHORIZATION
+from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
