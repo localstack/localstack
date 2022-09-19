@@ -1,8 +1,12 @@
+Parameters:
+  DynamicParameter:
+    Type: String
 Resources:
   topic69831491:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: {{ "'{{resolve:ssm:" + parameter_key + ":" + parameter_version +"}}'" }}
+      TopicName: !Join [ "", [ "{{resolve:ssm:", !Ref DynamicParameter, "}}"  ] ]
+
 Outputs:
   TopicName:
     Value:
