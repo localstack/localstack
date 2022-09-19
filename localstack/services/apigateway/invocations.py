@@ -317,10 +317,6 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
     integration_type = integration_type_orig.upper()
     uri = integration.get("uri") or integration.get("integrationUri") or ""
-    # XXX we need replace the internal Authorization header with an Authorization header set from
-    # the customer, even if it's empty that's what's expected in the integration.
-    custom_auth_header = invocation_context.headers.pop(HEADER_LOCALSTACK_AUTHORIZATION, "")
-    invocation_context.headers["Authorization"] = custom_auth_header
 
     try:
         path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
