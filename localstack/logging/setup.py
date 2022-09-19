@@ -22,6 +22,7 @@ default_log_levels = {
     "localstack.aws.serving.wsgi": logging.WARNING,
     "localstack.request": logging.INFO,
     "localstack.request.internal": logging.WARNING,
+    "localstack_ext.services.dns_server": logging.INFO,
 }
 
 trace_log_levels = {
@@ -33,6 +34,7 @@ trace_log_levels = {
 
 trace_internal_log_levels = {
     "localstack.request.internal": logging.DEBUG,
+    "localstack_ext.services.dns_server": logging.DEBUG,
 }
 
 
