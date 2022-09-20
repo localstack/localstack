@@ -11,7 +11,7 @@ from botocore.exceptions import ClientError
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import poll_condition
+from localstack.utils.sync import poll_condition, retry
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -570,9 +570,8 @@ class TestS3NotificationsToSQS:
         # put an object where the bucket_name is in the path
         s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
 
-        messages = []
-
         def get_messages():
+            recv_messages = []
             resp = sqs_client.receive_message(
                 QueueUrl=queue_url,
                 AttributeNames=["AWSTraceHeader"],
@@ -582,11 +581,12 @@ class TestS3NotificationsToSQS:
             for m in resp["Messages"]:
                 if "s3:TestEvent" in m["Body"]:
                     continue
-                messages.append(m)
+                recv_messages.append(m)
 
-            return len(messages)
+            assert len(recv_messages) >= 1
+            return recv_messages
 
-        assert poll_condition(lambda: get_messages() >= 1, timeout=10)
+        messages = retry(get_messages, retries=10)
 
         assert "AWSTraceHeader" in messages[0]["Attributes"]
         assert (
