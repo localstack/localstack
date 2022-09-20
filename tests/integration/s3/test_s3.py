@@ -28,6 +28,7 @@ from pytz import timezone
 from localstack import config, constants
 from localstack.config import LEGACY_S3_PROVIDER
 from localstack.constants import (
+    LOCALHOST_HOSTNAME,
     S3_VIRTUAL_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
@@ -160,6 +161,10 @@ def create_tmp_folder_lambda():
             shutil.rmtree(folder)
         except Exception:
             LOG.warning(f"could not delete folder {folder}")
+
+
+def _filter_header(param: dict) -> dict:
+    return {k: v for k, v in param.items() if k.startswith("x-amz") or k in ["content-type"]}
 
 
 class TestS3:
@@ -1400,6 +1405,191 @@ class TestS3:
                 )
             e.match("BucketAlreadyOwnedByYou")
             snapshot.match(f"create-bucket-{loc_constraint}", e.value.response)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.xfail(
+        reason="asf provider: routing for region-path style not working; "
+        "both provider: return 200 for other regions (no redirects)"
+    )
+    def test_access_bucket_different_region(self, s3_create_bucket, s3_vhost_client):
+        bucket_name = f"my-bucket-{short_uid()}"
+
+        s3_create_bucket(
+            Bucket=bucket_name,
+            ACL="public-read",
+            CreateBucketConfiguration={"LocationConstraint": "us-west-2"},
+        )
+        s3_vhost_client.list_objects(Bucket=bucket_name)
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-west-2")
+        response = requests.get(bucket_vhost_url)
+        assert response.status_code == 200
+
+        bucket_url = _bucket_url(bucket_name, region="us-west-2")
+        response = requests.get(bucket_url)
+        assert response.status_code == 200
+
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-east-2")
+        response = requests.get(bucket_vhost_url)
+        assert response.status_code == 301
+
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-east-1")
+        response = requests.get(bucket_vhost_url)
+        assert response.status_code == 200
+        assert response.history[0].status_code == 307
+
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER, paths=["$..Error.RequestID"]
+    )
+    def test_bucket_does_not_exist(self, s3_client, s3_vhost_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        bucket_name = f"bucket-does-not-exist-{short_uid()}"
+
+        with pytest.raises(ClientError) as e:
+            response = s3_client.list_objects(Bucket=bucket_name)
+        e.match("NoSuchBucket")
+        snapshot.match("list_object", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            response = s3_vhost_client.list_objects(Bucket=bucket_name)
+        e.match("NoSuchBucket")
+        snapshot.match("list_object_vhost", e.value.response)
+
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-east-1")
+        assert "us-east-1" not in bucket_vhost_url
+
+        response = requests.get(bucket_vhost_url)
+        assert response.status_code == 404
+
+        bucket_url = _bucket_url(bucket_name, region="us-east-1")
+        assert "us-east-1" not in bucket_url
+        response = requests.get(bucket_url)
+        assert response.status_code == 404
+
+        bucket_vhost_url = _bucket_url_vhost(bucket_name, region="us-west-2")
+        assert "us-west-2" in bucket_vhost_url
+        response = requests.get(bucket_vhost_url)
+        assert response.status_code == 404
+
+        bucket_url = _bucket_url(bucket_name, region="us-west-2")
+        assert "us-west-2" in bucket_url
+        response = requests.get(bucket_url)
+        assert response.status_code == 404
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: not LEGACY_S3_PROVIDER,
+        paths=["$..x-amz-access-point-alias", "$..x-amz-id-2"],
+    )
+    @pytest.mark.skip_snapshot_verify(
+        condition=lambda: LEGACY_S3_PROVIDER,
+        paths=[
+            "$..x-amz-access-point-alias",
+            "$..x-amz-id-2",
+            "$..create_bucket_location_constraint.Location",
+            "$..content-type",
+            "$..x-amzn-requestid",
+        ],
+    )
+    def test_create_bucket_head_bucket(self, s3_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+
+        bucket_1 = f"my-bucket-1{short_uid()}"
+        bucket_2 = f"my-bucket-2{short_uid()}"
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(rf"{bucket_1}", "<bucket-name:1>"),
+                snapshot.transform.regex(rf"{bucket_2}", "<bucket-name:2>"),
+                snapshot.transform.key_value("x-amz-id-2", reference_replacement=False),
+                snapshot.transform.key_value("x-amz-request-id", reference_replacement=False),
+                snapshot.transform.regex(r"s3\.amazonaws\.com", "host"),
+                snapshot.transform.regex(r"s3\.localhost\.localstack\.cloud:4566", "host"),
+            ]
+        )
+
+        try:
+            response = s3_client.create_bucket(Bucket=bucket_1)
+            snapshot.match("create_bucket", response)
+
+            response = s3_client.create_bucket(
+                Bucket=bucket_2,
+                CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
+            )
+            snapshot.match("create_bucket_location_constraint", response)
+
+            response = s3_client.head_bucket(Bucket=bucket_1)
+            snapshot.match("head_bucket", response)
+            snapshot.match(
+                "head_bucket_filtered_header",
+                _filter_header(response["ResponseMetadata"]["HTTPHeaders"]),
+            )
+
+            response = s3_client.head_bucket(Bucket=bucket_2)
+            snapshot.match("head_bucket_2", response)
+            snapshot.match(
+                "head_bucket_2_filtered_header",
+                _filter_header(response["ResponseMetadata"]["HTTPHeaders"]),
+            )
+
+            # TODO aws returns 403, LocalStack 404
+            # with pytest.raises(ClientError) as e:
+            #     response = s3_client.head_bucket(Bucket="does-not-exist")
+            # snapshot.match("head_bucket_not_exist", e.value.response)
+        finally:
+            s3_client.delete_bucket(Bucket=bucket_1)
+            s3_client.delete_bucket(Bucket=bucket_2)
+
+    @pytest.mark.aws_validated
+    @pytest.mark.skip_snapshot_verify
+    @pytest.mark.xfail(
+        condition=LEGACY_S3_PROVIDER, reason="virtual-host url for bucket with dots not supported"
+    )
+    def test_bucket_name_with_dots(self, s3_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(snapshot.transform.key_value("Date", reference_replacement=False))
+        snapshot.add_transformer(snapshot.transform.key_value("date", reference_replacement=False))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("x-amz-id-2", reference_replacement=False)
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("x-amz-request-id", reference_replacement=False)
+        )
+
+        bucket_name = f"my.bucket.name.{short_uid()}"
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        s3_client.put_object(Bucket=bucket_name, Key="my-content", Body="something")
+        response = s3_client.list_objects(Bucket=bucket_name)
+        assert response["Contents"][0]["Key"] == "my-content"
+        assert response["Contents"][0]["ETag"] == '"437b930db84b8079c2dd804a71936b5f"'
+        assert response["Contents"][0]["Size"] == 9
+
+        snapshot.match("list_objects", response)
+        snapshot.match("list_objects_headers", response["ResponseMetadata"]["HTTPHeaders"])
+
+        # will result in a host-name-match if we use https, as the bucket contains dots
+        response_vhost = requests.get(_bucket_url_vhost(bucket_name).replace("https://", "http://"))
+        content_vhost = response_vhost.content.decode("utf-8")
+        assert "<Key>my-content</Key>" in content_vhost
+        # TODO aws contains <ETag>&quot;437b930db84b8079c2dd804a71936b5f&quot;</ETag>
+        # assert '<ETag>"437b930db84b8079c2dd804a71936b5f"</ETag>' in content_vhost
+        assert "<Size>9</Size>" in content_vhost
+
+        snapshot.match("request_vhost_url_content", content_vhost)
+        # TODO headers different; raw response on AWS returns 'ListBucketResult', on LS 'ListObjectsOutput'
+        snapshot.match("request_vhost_headers", dict(response_vhost.headers))
+
+        response_path_style = requests.get(_bucket_url(bucket_name))
+        content_path_style = response_path_style.content.decode("utf-8")
+
+        assert "<Key>my-content</Key>" in content_path_style
+        # TODO aws contains <ETag>&quot;437b930db84b8079c2dd804a71936b5f&quot;</ETag>
+        # assert '<ETag>"437b930db84b8079c2dd804a71936b5f"</ETag>' in content_path_style
+        assert "<Size>9</Size>" in content_path_style
+
+        snapshot.match("request_path_url_content", content_path_style)
+        snapshot.match("request_path_headers", dict(response_path_style.headers))
+        assert content_vhost == content_path_style
 
 
 class TestS3TerraformRawRequests:
@@ -2822,7 +3012,7 @@ def _anon_client(service: str):
     return aws_stack.create_external_boto_client(service, config=conf)
 
 
-def _s3_client_custom_config(conf: Config, endpoint_url: str):
+def _s3_client_custom_config(conf: Config, endpoint_url: str = None):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client("s3", config=conf, endpoint_url=endpoint_url)
 
@@ -2851,7 +3041,9 @@ def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
             return "https://s3.amazonaws.com"
         else:
             return f"http://s3.{region}.amazonaws.com"
-    return f"{config.get_edge_url(localstack_hostname=localstack_host or S3_VIRTUAL_HOSTNAME)}"
+    if region == "us-east-1":
+        return f"{config.get_edge_url(localstack_hostname=localstack_host or S3_VIRTUAL_HOSTNAME)}"
+    return config.get_edge_url(f"s3.{region}.{LOCALHOST_HOSTNAME}")
 
 
 def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
@@ -2859,7 +3051,7 @@ def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None)
 
 
 def _website_bucket_url(bucket_name: str):
-    # TODO depending on region the syntax of the website variy (dot vs dash before region)
+    # TODO depending on region the syntax of the website vary (dot vs dash before region)
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         region = config.DEFAULT_REGION
         return f"http://{bucket_name}.s3-website-{region}.amazonaws.com"
@@ -2874,7 +3066,9 @@ def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str =
             return f"https://{bucket_name}.s3.amazonaws.com"
         else:
             return f"https://{bucket_name}.s3.{region}.amazonaws.com"
-    host = localstack_host or S3_VIRTUAL_HOSTNAME
+    host = localstack_host or (
+        f"s3.{region}.{LOCALHOST_HOSTNAME}" if region != "us-east-1" else S3_VIRTUAL_HOSTNAME
+    )
     s3_edge_url = config.get_edge_url(localstack_hostname=host)
     # TODO might add the region here
     return s3_edge_url.replace(f"://{host}", f"://{bucket_name}.{host}")
