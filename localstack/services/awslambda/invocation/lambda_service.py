@@ -1,6 +1,5 @@
 import base64
 import concurrent.futures
-import dataclasses
 import io
 import logging
 import uuid
@@ -17,7 +16,6 @@ from localstack.services.awslambda.invocation.lambda_models import (
     Invocation,
     InvocationResult,
     S3Code,
-    UpdateStatus,
     VersionIdentifier,
     VersionState,
 )
@@ -137,16 +135,6 @@ class LambdaService:
     def get_state_for_version(self, version: FunctionVersion) -> VersionState:
         version_manager = self.get_lambda_version_manager(version.qualified_arn)
         return version_manager.state
-
-    def update_function_status(
-        self, version: FunctionVersion, status: UpdateStatus
-    ) -> FunctionVersion:
-        """Updates LastUpdateStatus. This as observed always goes hand in hand with a new revision id"""
-        return dataclasses.replace(
-            version, config_meta=dataclasses.replace(version.config_meta, last_update=status)
-        )
-
-    ...
 
 
 def store_lambda_archive(

@@ -18,6 +18,7 @@ from localstack.services.awslambda.invocation.lambda_util import (
     qualified_lambda_arn,
 )
 from localstack.utils.aws import aws_stack
+from localstack.utils.strings import long_uid
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
@@ -94,14 +95,6 @@ class UpdateStatus:
     reason: Optional[str] = None
 
 
-@dataclasses.dataclass(frozen=True)
-class FunctionConfigurationMeta:
-    function_arn: str  # TODO:?
-    revision_id: str  # UUID, new one on each change
-    last_modified: str  # ISO string
-    last_update: Optional[UpdateStatus] = None
-
-
 @dataclasses.dataclass
 class LambdaEphemeralStorage:
     size: int
@@ -111,6 +104,7 @@ class LambdaEphemeralStorage:
 class VersionFunctionConfiguration:
     # fields
     # name: str
+    function_arn: str  # TODO:?
     description: str
     role: str
     timeout: int
@@ -127,7 +121,11 @@ class VersionFunctionConfiguration:
 
     tracing_config_mode: TracingMode
     code: S3Code
+    last_modified: str  # ISO string
+
     image_config: Optional[ImageConfig] = None
+    last_update: Optional[UpdateStatus] = None
+    revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
     layers: list[str] = dataclasses.field(default_factory=list)
     # kms_key_arn: str
     # dead_letter_config: DeadLetterConfig
@@ -187,7 +185,6 @@ class VersionAlias:
 class FunctionVersion:
     id: VersionIdentifier
     qualifier: str
-    config_meta: FunctionConfigurationMeta
     config: VersionFunctionConfiguration
     provisioned_concurrency_config: Optional[ProvisionedConcurrencyConfiguration] = None
 

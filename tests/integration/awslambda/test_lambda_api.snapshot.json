@@ -882,11 +882,14 @@
     "recorded-content": {}
   },
   "tests/integration/awslambda/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
-    "recorded-date": "05-09-2022, 08:15:42",
+    "recorded-date": "20-09-2022, 18:39:26",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
         "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "code-sha256",
           "CodeSize": 264,
           "Description": "",
@@ -902,10 +905,6 @@
           "LastModified": "date",
           "MemorySize": 256,
           "PackageType": "Zip",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          },
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.9",
@@ -916,7 +915,11 @@
           "TracingConfig": {
             "Mode": "PassThrough"
           },
-          "Version": "$LATEST"
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
         }
       },
       "get_function_response": {
@@ -925,6 +928,9 @@
           "RepositoryType": "S3"
         },
         "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "code-sha256",
           "CodeSize": 264,
           "Description": "",
@@ -957,6 +963,9 @@
         }
       },
       "update_func_conf_response": {
+        "Architectures": [
+          "x86_64"
+        ],
         "CodeSha256": "code-sha256",
         "CodeSize": 264,
         "Description": "Changed-Description",
@@ -977,10 +986,6 @@
         "LastUpdateStatusReasonCode": "Creating",
         "MemorySize": 512,
         "PackageType": "Zip",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
@@ -989,7 +994,11 @@
         "TracingConfig": {
           "Mode": "PassThrough"
         },
-        "Version": "$LATEST"
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "get_function_response_postupdate": {
         "Code": {
@@ -997,6 +1006,9 @@
           "RepositoryType": "S3"
         },
         "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "code-sha256",
           "CodeSize": 264,
           "Description": "Changed-Description",
@@ -1031,6 +1043,9 @@
         }
       },
       "update_code_response": {
+        "Architectures": [
+          "x86_64"
+        ],
         "CodeSha256": "code-sha256",
         "CodeSize": 311,
         "Description": "Changed-Description",
@@ -1051,10 +1066,6 @@
         "LastUpdateStatusReasonCode": "Creating",
         "MemorySize": 512,
         "PackageType": "Zip",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        },
         "RevisionId": "<uuid:5>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
         "Runtime": "python3.8",
@@ -1063,7 +1074,11 @@
         "TracingConfig": {
           "Mode": "PassThrough"
         },
-        "Version": "$LATEST"
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       },
       "get_function_response_postcodeupdate": {
         "Code": {
@@ -1071,6 +1086,9 @@
           "RepositoryType": "S3"
         },
         "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
           "CodeSha256": "code-sha256",
           "CodeSize": 311,
           "Description": "Changed-Description",
@@ -1116,11 +1134,11 @@
           "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>"
         },
         "Message": "Function not found: arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "Type": "User",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
-        },
-        "Type": "User"
+        }
       }
     }
   },

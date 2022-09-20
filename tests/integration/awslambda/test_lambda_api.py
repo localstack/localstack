@@ -78,6 +78,7 @@ class TestLambdaFunction:
             Timeout=5,
         )
         snapshot.match("create_response", create_response)
+        lambda_client.get_waiter("function_active_v2").wait(FunctionName=function_name)
 
         get_function_response = lambda_client.get_function(FunctionName=function_name)
         snapshot.match("get_function_response", get_function_response)

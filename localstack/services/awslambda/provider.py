@@ -51,7 +51,6 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.services.awslambda.invocation.lambda_models import (
     Function,
-    FunctionConfigurationMeta,
     FunctionVersion,
     InvocationError,
     LambdaEphemeralStorage,
@@ -72,7 +71,7 @@ from localstack.services.awslambda.invocation.lambda_util import (
     qualified_lambda_arn,
 )
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
+from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -81,7 +80,6 @@ LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
-
     lambda_service: LambdaService
     lock: threading.RLock
     create_fn_lock: threading.RLock
@@ -98,13 +96,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # handle optional entries that shouldn't be rendered at all if not present
         optional_kwargs = {}
-        if version.config_meta.last_update:
-            if version.config_meta.last_update.status:
-                optional_kwargs["LastUpdateStatus"] = version.config_meta.last_update.status
-            if version.config_meta.last_update.code:
-                optional_kwargs["LastUpdateStatusReasonCode"] = version.config_meta.last_update.code
-            if version.config_meta.last_update.reason:
-                optional_kwargs["LastUpdateStatusReason"] = version.config_meta.last_update.reason
+        if version.config.last_update:
+            if version.config.last_update.status:
+                optional_kwargs["LastUpdateStatus"] = version.config.last_update.status
+            if version.config.last_update.code:
+                optional_kwargs["LastUpdateStatusReasonCode"] = version.config.last_update.code
+            if version.config.last_update.reason:
+                optional_kwargs["LastUpdateStatusReason"] = version.config.last_update.reason
         version_state = self.lambda_service.get_state_for_version(version)
         if version_state:
             if version_state.state:
@@ -118,10 +116,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             optional_kwargs["Architectures"] = version.config.architectures
 
         func_conf = FunctionConfiguration(
-            RevisionId=version.config_meta.revision_id,
+            RevisionId=version.config.revision_id,
             FunctionName=version.id.function_name,
             FunctionArn=version.id.unqualified_arn(),  # qualifier usually not included
-            LastModified=version.config_meta.last_modified,
+            LastModified=version.config.last_modified,
             Version=version.id.qualifier,
             Description=version.config.description,
             Role=version.config.role,
@@ -211,13 +209,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             version = FunctionVersion(
                 id=arn,
                 qualifier="$LATEST",
-                config_meta=FunctionConfigurationMeta(
-                    function_arn=arn.qualified_arn(),
-                    revision_id=long_uid(),
-                    last_modified=format_lambda_date(datetime.datetime.now()),
-                    # last_update=UpdateStatus(status=LastUpdateStatus.InProgress),
-                ),
                 config=VersionFunctionConfiguration(
+                    function_arn=arn.qualified_arn(),
+                    last_modified=format_lambda_date(datetime.datetime.now()),
                     description=request.get("Description", ""),
                     role=request["Role"],
                     timeout=request.get("Timeout", LAMBDA_DEFAULT_TIMEOUT),
@@ -229,7 +223,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     environment={
                         k: v for k, v in request.get("Environment", {}).get("Variables", {}).items()
                     },
-                    architectures=request.get("Architectures"),  # TODO
+                    architectures=request.get("Architectures") or ["x86_64"],  # TODO
                     tracing_config_mode=TracingMode.PassThrough,  # TODO
                     image_config=None,  # TODO
                     code=code,
@@ -296,14 +290,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             }
         new_latest_version = dataclasses.replace(
             latest_version,
-            config=dataclasses.replace(latest_version_config, **replace_kwargs),
-            config_meta=dataclasses.replace(
-                latest_version.config_meta,
-                revision_id=long_uid(),
+            config=dataclasses.replace(
+                latest_version_config,
                 last_modified=generate_lambda_date(),
                 last_update=UpdateStatus(
                     LastUpdateStatus.Successful
                 ),  # TODO: will need to be active at some point ...
+                **replace_kwargs,
             ),
         )
         function.versions["$LATEST"] = new_latest_version  # TODO: notify
@@ -349,6 +342,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ServiceException("Gotta have s3 bucket or zip file")
 
         old_function_version = function.versions.get("$LATEST")
+        # TODO proper rollover
         self.lambda_service.delete_version(function_version=old_function_version)
         # TODO this should be encapsulated better
         old_code = old_function_version.config.code
@@ -489,7 +483,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             StatusCode=200,
             Payload=invocation_result.payload,
             ExecutedVersion="$LATEST",  # TODO: should be resolved version from qualifier
-            FunctionError=function_error,  # TODO: should be conditional. Might have to get this from the invoke result as well
+            FunctionError=function_error,
+            # TODO: should be conditional. Might have to get this from the invoke result as well
         )
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
         LOG.debug("Result: %s", invocation_result)
