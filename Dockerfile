@@ -146,7 +146,7 @@ RUN mkdir -p /usr/lib/localstack/dynamodb && \
       (cd /usr/lib/localstack/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip)
 
 # upgrade python build tools
-RUN (virtualenv .venv && bash -c "source .venv/bin/activate" && pip3 install --upgrade pip wheel setuptools)
+RUN (virtualenv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
 
 # add files necessary to install all dependencies
 ADD Makefile setup.py setup.cfg pyproject.toml ./
@@ -245,8 +245,7 @@ RUN make init
 # If this is a pre-release build, also include dev releases of these packages.
 ARG LOCALSTACK_PRE_RELEASE=1
 RUN (PIP_ARGS=$([[ "$LOCALSTACK_PRE_RELEASE" == "1" ]] && echo "--pre" || true); \
-      virtualenv .venv && bash -c "source .venv/bin/activate" && \
-      apt-get install -y gcc g++ libsasl2-dev && \
+      virtualenv .venv && . .venv/bin/activate && \
       pip3 install --upgrade ${PIP_ARGS} localstack-ext[runtime])
 RUN make entrypoints
 
