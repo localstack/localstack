@@ -168,6 +168,15 @@ IfCondition = str
 RestoreObjectOutputStatusCode = int
 ArgumentName = str
 ArgumentValue = str
+AWSAccessKeyId = str
+HostId = str
+HeadersNotSigned = str
+SignatureProvided = str
+StringToSign = str
+StringToSignBytes = str
+CanonicalRequest = str
+CanonicalRequestBytes = str
+X_Amz_Expires = int
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -645,6 +654,41 @@ class InvalidArgument(ServiceException):
     ArgumentValue: Optional[ArgumentValue]
 
 
+class SignatureDoesNotMatch(ServiceException):
+    code: str = "SignatureDoesNotMatch"
+    sender_fault: bool = False
+    status_code: int = 403
+    AWSAccessKeyId: Optional[AWSAccessKeyId]
+    CanonicalRequest: Optional[CanonicalRequest]
+    CanonicalRequestBytes: Optional[CanonicalRequestBytes]
+    HostId: Optional[HostId]
+    SignatureProvided: Optional[SignatureProvided]
+    StringToSign: Optional[StringToSign]
+    StringToSignBytes: Optional[StringToSignBytes]
+
+
+ServerTime = datetime
+Expires = datetime
+
+
+class AccessDenied(ServiceException):
+    code: str = "AccessDenied"
+    sender_fault: bool = False
+    status_code: int = 403
+    Expires: Optional[Expires]
+    ServerTime: Optional[ServerTime]
+    X_Amz_Expires: Optional[X_Amz_Expires]
+    HostId: Optional[HostId]
+    HeadersNotSigned: Optional[HeadersNotSigned]
+
+
+class AuthorizationQueryParametersError(ServiceException):
+    code: str = "AuthorizationQueryParametersError"
+    sender_fault: bool = False
+    status_code: int = 400
+    HostId: Optional[HostId]
+
+
 AbortDate = datetime
 
 
@@ -998,7 +1042,6 @@ class CopyObjectOutput(TypedDict, total=False):
 
 ObjectLockRetainUntilDate = datetime
 Metadata = Dict[MetadataKey, MetadataValue]
-Expires = datetime
 CopySourceIfUnmodifiedSince = datetime
 CopySourceIfModifiedSince = datetime
 

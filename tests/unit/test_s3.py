@@ -1,12 +1,23 @@
 import datetime
 import unittest
+from urllib.parse import urlparse
 
+import pytest
 import pytz
 from requests.models import Response
 
+from localstack.aws.api import RequestContext
 from localstack.constants import LOCALHOST, S3_VIRTUAL_HOSTNAME
+from localstack.http import Request
 from localstack.services.infra import patch_instance_tracker_meta
-from localstack.services.s3 import multipart_content, s3_listener, s3_starter, s3_utils
+from localstack.services.s3 import (
+    multipart_content,
+    presigned_url,
+    s3_listener,
+    s3_starter,
+    s3_utils,
+)
+from localstack.services.s3 import utils as s3_utils_asf
 from localstack.services.s3.s3_utils import get_key_from_s3_url, get_s3_backend
 from localstack.utils.strings import short_uid
 
@@ -454,3 +465,301 @@ class S3BackendTest(unittest.TestCase):
         bucket = s3_backend.create_bucket(bucket_name, region)
 
         self.assertNotIn(bucket, (bucket.instances or []))
+
+
+class TestS3UtilsAsf:
+    """
+    Testing the new utils from ASF
+    Some utils are duplicated, but it will be easier once we remove the old listener, we won't have to
+    untangle and leave old functions around
+    """
+
+    # test whether method correctly distinguishes between hosted and path style bucket references
+    # path style format example: https://s3.{region}.localhost.localstack.cloud:4566/{bucket-name}/{key-name}
+    # hosted style format example: http://{bucket-name}.s3.{region}localhost.localstack.cloud:4566/
+    # region is optional in localstack
+    # the requested has been forwarded by the router, and S3_VIRTUAL_HOST_FORWARDED_HEADER has been added with the
+    # original host header
+    def test_uses_host_address(self):
+        host_header = s3_utils_asf.S3_VIRTUAL_HOST_FORWARDED_HEADER
+        addresses = [
+            ({host_header: f"https://aws.{LOCALHOST}:4566"}, False),
+            # attention: This is **not** a host style reference according to s3 specs but a special case from our side
+            ({host_header: f"https://aws.{LOCALHOST}.localstack.cloud:4566"}, True),
+            ({host_header: f"https://{LOCALHOST}.aws:4566"}, False),
+            ({host_header: f"https://{LOCALHOST}.swa:4566"}, False),
+            ({host_header: f"https://swa.{LOCALHOST}:4566"}, False),
+            ({host_header: "https://bucket.s3.localhost.localstack.cloud"}, True),
+            ({host_header: "bucket.s3.eu-west-1.amazonaws.com"}, True),
+            ({host_header: "https://s3.eu-west-1.localhost.localstack.cloud/bucket"}, False),
+            ({host_header: "https://s3.eu-west-1.localhost.localstack.cloud/bucket/key"}, False),
+            ({host_header: "https://s3.localhost.localstack.cloud/bucket"}, False),
+            ({host_header: "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key"}, True),
+            (
+                {
+                    host_header: "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key/key/content.png"
+                },
+                True,
+            ),
+            ({host_header: "https://s3.localhost.localstack.cloud/bucket/key"}, False),
+            ({host_header: "https://bucket.s3.eu-west-1.localhost.localstack.cloud"}, True),
+            ({host_header: "https://bucket.s3.localhost.localstack.cloud/key"}, True),
+            ({host_header: "bucket.s3.eu-west-1.amazonaws.com"}, True),
+            ({host_header: "bucket.s3.amazonaws.com"}, True),
+            ({host_header: "notabucket.amazonaws.com"}, False),
+            ({host_header: "s3.amazonaws.com"}, False),
+            ({host_header: "s3.eu-west-1.amazonaws.com"}, False),
+        ]
+        for headers, expected_result in addresses:
+            assert s3_utils_asf.uses_host_addressing(headers) == expected_result
+
+    def test_is_valid_canonical_id(self):
+        canonical_ids = [
+            (
+                "0f84b30102b8e116121884e982fedc9d76715877fc810605f7ba5dca143b3bb0",
+                True,
+            ),  # 64 len hex string
+            ("f945fc46e86d3af9b2ebf8bda159f94b8f6be81413a5a2e21e8fd3a059de55a9", True),
+            ("73E7AFD3413526244BDA3D3E08CF191115773EFF5D875B4860963A71AB7C13E6", True),
+            ("0f84b30102b8e116121884e982fedc9d76715877fc810605f7ba5dca143b3bb", False),
+            ("0f84b30102b8e116121884e982fedc9d76715877fc810605f7ba5dca143b3bb00", False),
+            ("0f84b30102b8e116121884e982fedc9d76715877fc810605f7ba5dca143b3bbz", False),
+            ("KXy1MCaCAUmbwQGOqVkJrzIDEbDPg4mLwMMzj8CyFdmbZx-JAm158soGrLlPZwXG", False),
+            ("KXy1MCaCAUmbwQGOqVkJrzIDEbDPg4mLwMMzj8CyFdmbZx", False),
+        ]
+        for canonical_id, expected_result in canonical_ids:
+            assert s3_utils_asf.is_valid_canonical_id(canonical_id) == expected_result
+
+    def test_get_header_name(self):
+        """
+        Test to transform shape member names into their header location
+        We could maybe use the specs for this
+        """
+        query_params = [
+            ("GrantFullControl", "x-amz-grant-full-control"),
+            ("GrantRead", "x-amz-grant-read"),
+            ("GrantReadACP", "x-amz-grant-read-acp"),
+            ("GrantWrite", "x-amz-grant-write"),
+            ("GrantWriteACP", "x-amz-grant-write-acp"),
+        ]
+
+        for query_param, expected_header_name in query_params:
+            assert s3_utils_asf.get_header_name(query_param) == expected_header_name
+
+    def test_is_canned_acl_valid(self):
+        canned_acls = [
+            ("private", True),
+            ("public-read", True),
+            ("public-read-write", True),
+            ("authenticated-read", True),
+            ("aws-exec-read", True),
+            ("bucket-owner-read", True),
+            ("bucket-owner-full-control", True),
+            ("not-a-canned-one", False),
+            ("aws--exec-read", False),
+        ]
+
+        for canned_acl, expected_result in canned_acls:
+            assert s3_utils_asf.is_canned_acl_valid(canned_acl) == expected_result
+
+    def test_s3_bucket_name(self):
+        bucket_names = [
+            ("docexamplebucket1", True),
+            ("log-delivery-march-2020", True),
+            ("my-hosted-content", True),
+            ("docexamplewebsite.com", True),
+            ("www.docexamplewebsite.com", True),
+            ("my.example.s3.bucket", True),
+            ("doc_example_bucket", False),
+            ("DocExampleBucket", False),
+            ("doc-example-bucket-", False),
+        ]
+
+        for bucket_name, expected_result in bucket_names:
+            assert s3_utils_asf.is_bucket_name_valid(bucket_name) == expected_result
+
+    def test_verify_checksum(self):
+        valid_checksums = [
+            (
+                "SHA256",
+                b"test data..",
+                {"ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik="},
+            ),
+            ("CRC32", b"test data..", {"ChecksumCRC32": "cZWHwQ=="}),
+            ("CRC32C", b"test data..", {"ChecksumCRC32C": "Pf4upw=="}),
+            ("SHA1", b"test data..", {"ChecksumSHA1": "B++3uSfJMSHWToQMQ1g6lIJY5Eo="}),
+            (
+                "SHA1",
+                b"test data..",
+                {"ChecksumSHA1": "B++3uSfJMSHWToQMQ1g6lIJY5Eo=", "ChecksumCRC32C": "test"},
+            ),
+        ]
+
+        for checksum_algorithm, data, request in valid_checksums:
+            # means that it did not raise an exception
+            assert s3_utils_asf.verify_checksum(checksum_algorithm, data, request) is None
+
+        invalid_checksums = [
+            (
+                "sha256&",
+                b"test data..",
+                {"ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik="},
+            ),
+            (
+                "sha256",
+                b"test data..",
+                {"ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik="},
+            ),
+            ("CRC32", b"test data..", {"ChecksumCRC32": "cZWHwQ==="}),
+            ("CRC32", b"test data.", {"ChecksumCRC32C": "Pf4upw=="}),
+            ("SHA1", b"test da\nta..", {"ChecksumSHA1": "B++3uSfJMSHWToQMQ1g6lIJY5Eo="}),
+        ]
+        for checksum_algorithm, data, request in invalid_checksums:
+            with pytest.raises(Exception):
+                s3_utils_asf.verify_checksum(checksum_algorithm, data, request)
+
+
+class TestS3PresignedUrlAsf:
+    """
+    Testing utils from the new Presigned URL validation with ASF
+    """
+
+    @staticmethod
+    def _create_fake_context_from_path(path: str, method: str = "GET"):
+        fake_context = RequestContext()
+        fake_context.request = Request(
+            method=method, path=path, query_string=urlparse(f"http://localhost{path}").query
+        )
+        return fake_context
+
+    def test_is_presigned_url_request(self):
+        request_paths = [
+            (
+                "GET",
+                "/?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=test&X-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+            ),
+            (
+                "PUT",
+                "/?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=test&X-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+            ),
+            (
+                "GET",
+                "/?acl&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=test&X-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+            ),
+            (
+                "GET",
+                "/?acl&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=test&X-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+            ),
+            (
+                "GET",
+                "/?acl&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=testX-Amz-Expires=test&X-Amz-SignedHeaders=host",
+                True,
+            ),
+            (
+                "GET",
+                "/?X-Amz-Credential=test&X-Amz-Date=testX-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+            ),
+            ("GET", "/?AWSAccessKeyId=test&Signature=test&Expires=test", True),
+            ("GET", "/?acl&AWSAccessKeyId=test&Signature=test&Expires=test", True),
+            ("GET", "/?acl&AWSAccessKey=test", False),
+            ("GET", "/?acl", False),
+            (
+                "GET",
+                "/?x-Amz-Credential=test&x-Amz-Date=testx-Amz-Expires=test&x-Amz-SignedHeaders=host&x-Amz-Signature=test",
+                False,
+            ),
+        ]
+
+        for method, request_path, expected_result in request_paths:
+            fake_context = self._create_fake_context_from_path(path=request_path, method=method)
+            assert (
+                presigned_url.is_presigned_url_request(fake_context) == expected_result
+            ), request_path
+
+    def test_is_valid_presigned_url_v2(self):
+        # structure: method, path, is_sig_v2, will_raise
+        request_paths = [
+            (
+                "GET",
+                "/?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=test&X-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                False,
+                False,
+            ),
+            ("GET", "/?acl", False, False),
+            ("GET", "/?AWSAccessKeyId=test&Signature=test&Expires=test", True, False),
+            ("GET", "/?acl&AWSAccessKeyId=test&Signature=test&Expires=test", True, False),
+            ("GET", "/?acl&AWSAccessKey=test", False, False),
+            ("GET", "/?acl&AWSAccessKeyId=test", False, True),
+        ]
+
+        for method, request_path, is_sig_v2, will_raise in request_paths:
+            fake_context = self._create_fake_context_from_path(request_path, method)
+            query_args = set(fake_context.request.args)
+            if not will_raise:
+                assert presigned_url.is_valid_sig_v2(query_args) == is_sig_v2
+            else:
+                with pytest.raises(Exception):
+                    presigned_url.is_valid_sig_v2(query_args)
+
+    def test_is_valid_presigned_url_v4(self):
+        # structure: method, path, is_sig_v4, will_raise
+        request_paths = [
+            (
+                "GET",
+                "/?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=test&X-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+                False,
+            ),
+            ("GET", "/?acl", False, False),
+            ("GET", "/?AWSAccessKeyId=test&Signature=test&Expires=test", False, False),
+            (
+                "GET",
+                "/?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=test&X-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+                False,
+            ),
+            (
+                "PUT",
+                "/?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=test&X-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+                False,
+            ),
+            (
+                "GET",
+                "/?acl&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=test&X-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+                False,
+            ),
+            (
+                "GET",
+                "/?acl&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=testX-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+                True,
+            ),
+            (
+                "GET",
+                "/?acl&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test&X-Amz-Date=testX-Amz-Expires=test&X-Amz-SignedHeaders=host",
+                True,
+                True,
+            ),
+            (
+                "GET",
+                "/?X-Amz-Credential=test&X-Amz-Date=testX-Amz-Expires=test&X-Amz-SignedHeaders=host&X-Amz-Signature=test",
+                True,
+                True,
+            ),
+        ]
+
+        for method, request_path, is_sig_v4, will_raise in request_paths:
+            fake_context = self._create_fake_context_from_path(request_path, method)
+            query_args = set(fake_context.request.args)
+            if not will_raise:
+                assert presigned_url.is_valid_sig_v4(query_args) == is_sig_v4
+            else:
+                with pytest.raises(Exception):
+                    presigned_url.is_valid_sig_v4(query_args)
