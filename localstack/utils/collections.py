@@ -414,6 +414,11 @@ def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
     )
 
 
-def select_from_typed_dict(typed_dict: Type[TypedDict], obj: Dict):
+def select_from_typed_dict(typed_dict: Type[TypedDict], obj: Dict, filter: bool = False) -> Dict:
     """Select a subset of attributes from a dictionary based on the keys of a given `TypedDict`"""
-    return select_attributes(obj, [*typed_dict.__required_keys__, *typed_dict.__optional_keys__])
+    selection = select_attributes(
+        obj, [*typed_dict.__required_keys__, *typed_dict.__optional_keys__]
+    )
+    if filter:
+        return {k: v for k, v in selection.items() if v}
+    return selection
