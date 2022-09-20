@@ -640,7 +640,14 @@ def import_api_from_openapi_spec(rest_api: RestAPI, body: Dict, query_params: Di
         paths_dict = resolved_schema["paths"]
         method_paths = paths_dict.get(rel_path, {})
         for field, field_schema in method_paths.items():
-            if field in ["parameters", "servers", "description", "summary", "$ref"]:
+            if field in [
+                "parameters",
+                "servers",
+                "description",
+                "summary",
+                "$ref",
+            ] and not isinstance(field_schema, dict):
+                LOG.warning("Ignoring unsupported field %s in path %s", field, rel_path)
                 continue
 
             field = field.upper()
