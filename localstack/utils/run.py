@@ -436,3 +436,55 @@ class CaptureOutput:
 
     def _stream_value(self, stream):
         return stream.getvalue() if hasattr(stream, "getvalue") else stream
+
+
+class CaptureOutputProcess:
+    """A context manager that captures stdout/stderr of the current process.
+
+    Basically a lightweight version of CaptureOutput without tracking internal thread mapping
+
+    Use it as follows:
+
+    with CaptureOutput() as c:
+        ...
+    print(c.stdout(), c.stderr())
+    """
+
+    class LogStreamIO(io.StringIO):
+        def write(self, s):
+            if isinstance(s, str) and hasattr(s, "decode"):
+                s = s.decode("unicode-escape")
+            return super(CaptureOutputProcess.LogStreamIO, self).write(s)
+
+    def __init__(self):
+        self.orig_stdout = sys.stdout
+        self._stdout = self.LogStreamIO()
+        self.orig_stderr = sys.stderr
+        self._stderr = self.LogStreamIO()
+        self.stdout_value = None
+        self.stderr_value = None
+
+    def __enter__(self):
+        sys.stdout = self._stdout
+        sys.stderr = self._stderr
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self._stdout.flush()
+        self._stderr.flush()
+
+        self.stdout_value = self._stdout.getvalue()
+        self.stderr_value = self._stderr.getvalue()
+
+        # close handles
+        self._stdout.close()
+        self._stderr.close()
+
+        sys.stdout = self.orig_stdout
+        sys.stderr = self.orig_stderr
+
+    def stdout(self):
+        return self.stdout_value
+
+    def stderr(self):
+        return self.stderr_value

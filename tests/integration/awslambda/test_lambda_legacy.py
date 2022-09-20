@@ -1,4 +1,6 @@
+import base64
 import json
+import os.path
 
 import pytest
 
@@ -17,7 +19,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.files import load_file
 from localstack.utils.platform import get_arch, get_os
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.testutil import create_lambda_archive
 from tests.integration.awslambda.test_lambda import (
     TEST_GOLANG_LAMBDA_URL_TEMPLATE,
@@ -25,6 +27,37 @@ from tests.integration.awslambda.test_lambda import (
     TEST_LAMBDA_RUBY,
     read_streams,
 )
+
+
+@pytest.mark.parametrize(
+    "handler_path",
+    [
+        os.path.join(os.path.dirname(__file__), "./functions/lambda_logging.py"),
+        os.path.join(os.path.dirname(__file__), "./functions/lambda_print.py"),
+    ],
+    ids=["logging", "print"],
+)
+def test_logging_in_local_executor(lambda_client, create_lambda_function, handler_path):
+    function_name = f"lambda_func-{short_uid()}"
+    verification_token = f"verification_token-{short_uid()}"
+    create_lambda_function(
+        handler_file=handler_path,
+        func_name=function_name,
+        runtime=Runtime.python3_9,
+    )
+
+    invoke_result = lambda_client.invoke(
+        FunctionName=function_name,
+        LogType="Tail",
+        Payload=to_bytes(json.dumps({"verification_token": verification_token})),
+    )
+    log_result = invoke_result["LogResult"]
+    raw_logs = to_str(base64.b64decode(to_str(log_result)))
+    assert verification_token in raw_logs
+    result_payload_raw = invoke_result["Payload"].read().decode(encoding="utf-8")
+    result_payload = json.loads(result_payload_raw)
+    assert "verification_token" in result_payload
+    assert result_payload["verification_token"] == verification_token
 
 
 @pytest.mark.skipif(not is_old_provider(), reason="test does not make valid assertions against AWS")
