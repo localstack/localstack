@@ -107,7 +107,11 @@ def should_enforce_self_managed_service(context: RequestContext) -> bool:
         service_name = context.service.service_name
         if not config.DISABLE_CUSTOM_CORS_S3 and service_name == "s3":
             return False
-        if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and service_name == "apigateway":
+        if (
+            not config.DISABLE_CUSTOM_CORS_APIGATEWAY
+            and service_name == "apigateway"
+            and "_user_request_" in context.request.path
+        ):
             return False
     return True
 
