@@ -1,22 +1,35 @@
 import copy
+import json
 import logging
 import os
-from typing import Union
+from typing import List, Optional, Union
 from urllib.parse import SplitResult, quote, urlsplit, urlunsplit
 
 import moto.s3.models as moto_s3_models
 import moto.s3.responses as moto_s3_responses
+from botocore.config import Config as BotoConfig
 from moto.s3 import s3_backends as moto_s3_backends
 from moto.s3.exceptions import MissingBucket
 
+from localstack import config
 from localstack.aws.accounts import get_aws_account_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.s3 import (
     AccessControlPolicy,
     AccountId,
     BucketName,
+    CompleteMultipartUploadOutput,
+    CompleteMultipartUploadRequest,
+    CopyObjectOutput,
+    CopyObjectRequest,
     CreateBucketOutput,
     CreateBucketRequest,
+    DeleteObjectOutput,
+    DeleteObjectRequest,
+    DeleteObjectTaggingOutput,
+    DeleteObjectTaggingRequest,
+    Event,
+    EventList,
     GetBucketAclOutput,
     GetBucketLifecycleConfigurationOutput,
     GetBucketLifecycleOutput,
@@ -29,6 +42,7 @@ from localstack.aws.api.s3 import (
     HeadObjectRequest,
     InvalidArgument,
     InvalidBucketName,
+    LambdaFunctionConfiguration,
     ListObjectsOutput,
     ListObjectsRequest,
     ListObjectsV2Output,
@@ -36,6 +50,8 @@ from localstack.aws.api.s3 import (
     NoSuchBucket,
     NoSuchKey,
     NoSuchLifecycleConfiguration,
+    NotificationConfiguration,
+    NotificationConfigurationFilter,
     ObjectKey,
     PutBucketAclRequest,
     PutBucketLifecycleConfigurationRequest,
@@ -44,7 +60,12 @@ from localstack.aws.api.s3 import (
     PutBucketVersioningRequest,
     PutObjectOutput,
     PutObjectRequest,
+    PutObjectTaggingOutput,
+    PutObjectTaggingRequest,
+    QueueConfiguration,
     S3Api,
+    SkipValidation,
+    TopicConfiguration,
 )
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.config import get_edge_port_http, get_protocol
@@ -70,6 +91,8 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import AWS_REGION_REGEX
 from localstack.utils.objects import singleton_factory
 from localstack.utils.patch import patch
+from localstack.utils.strings import short_uid
+from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
 
@@ -78,6 +101,10 @@ os.environ[
 ] = "s3.localhost.localstack.cloud:4566,s3.localhost.localstack.cloud"
 
 MOTO_CANONICAL_USER_ID = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a"
+
+HEADER_AMZN_XRAY = "X-Amzn-Trace-Id"
+
+NOTIFICATION_FIELDS = {"TopicArn": "sns", "QueueArn": "sqs", "LambdaFunctionArn": "lambda"}
 
 
 class MalformedXML(CommonServiceException):
@@ -96,6 +123,12 @@ def get_moto_s3_backend(context: RequestContext) -> moto_s3_models.S3Backend:
 
 def get_full_default_bucket_location(bucket_name):
     return f"{get_protocol()}://{bucket_name}.s3.{LOCALHOST_HOSTNAME}:{get_edge_port_http()}/"
+
+
+class InvalidArgumentError(CommonServiceException):
+    def __init__(self, message: str, name: str, value: str):
+        super().__init__("InvalidArgument", message, 400, False)
+        # TODO how to set values?
 
 
 class S3Provider(S3Api, ServiceLifecycleHook):
@@ -251,6 +284,90 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             metadata = {k: v for k, v in key_object.metadata.items() if k != "expires"}
             key_object.set_metadata(metadata, replace=True)
 
+        self.send_bucket_notifications(
+            context,
+            request.get("Bucket"),
+            request.get("Key"),
+            event=Event.s3_ObjectCreated_Put,
+        )
+        return response
+
+    @handler("CopyObject", expand=False)
+    def copy_object(
+        self,
+        context: RequestContext,
+        request: CopyObjectRequest,
+    ) -> CopyObjectOutput:
+        response: CopyObjectOutput = call_moto(context)
+        self.send_bucket_notifications(
+            context,
+            request.get("Bucket"),
+            request.get("Key"),
+            event=Event.s3_ObjectCreated_Copy,
+        )
+        return response
+
+    @handler("DeleteObject", expand=False)
+    def delete_object(
+        self,
+        context: RequestContext,
+        request: DeleteObjectRequest,
+    ) -> DeleteObjectOutput:
+        # we need to make copies as the bucket and key will get deleted if the request was successful
+        bucket = copy.deepcopy(
+            get_bucket_from_moto(get_moto_s3_backend(context), bucket=request.get("Bucket"))
+        )
+        key = copy.deepcopy(bucket.keys.get(request.get("Key")))
+
+        response: DeleteObjectOutput = call_moto(context)
+        bucket_notifications = self.get_store().bucket_notification_configs.get(bucket.name)
+        if bucket_notifications:
+            _send_event_message(
+                event_name=Event.s3_ObjectRemoved_Delete,
+                bucket=bucket,
+                key=key,
+                notifications=bucket_notifications,
+                xray=context.request.headers.get(HEADER_AMZN_XRAY),
+            )
+        return response
+
+    @handler("CompleteMultipartUpload", expand=False)
+    def complete_multipart_upload(
+        self, context: RequestContext, request: CompleteMultipartUploadRequest
+    ) -> CompleteMultipartUploadOutput:
+        response: CopyObjectOutput = call_moto(context)
+        self.send_bucket_notifications(
+            context,
+            request.get("Bucket"),
+            request.get("Key"),
+            event=Event.s3_ObjectCreated_CompleteMultipartUpload,
+        )
+        return response
+
+    @handler("PutObjectTagging", expand=False)
+    def put_object_tagging(
+        self, context: RequestContext, request: PutObjectTaggingRequest
+    ) -> PutObjectTaggingOutput:
+        response: PutObjectTaggingOutput = call_moto(context)
+        self.send_bucket_notifications(
+            context,
+            request.get("Bucket"),
+            request.get("Key"),
+            event=Event.s3_ObjectTagging_Put,
+        )
+        return response
+
+    @handler("DeleteObjectTagging", expand=False)
+    def delete_object_tagging(
+        self, context: RequestContext, request: DeleteObjectTaggingRequest
+    ) -> DeleteObjectTaggingOutput:
+        response: DeleteObjectTaggingOutput = call_moto(context)
+        self.send_bucket_notifications(
+            context,
+            request.get("Bucket"),
+            request.get("Key"),
+            event=Event.s3_ObjectTagging_Delete,
+        )
         return response
 
     @handler("PutBucketRequestPayment", expand=False)
@@ -394,6 +511,138 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             bucket_name = request.get("Bucket", "")
             store = self.get_store()
             store.bucket_versioning_status[bucket_name] = versioning_status == "Enabled"
+
+    def put_bucket_notification_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        notification_configuration: NotificationConfiguration,
+        expected_bucket_owner: AccountId = None,
+        skip_destination_validation: SkipValidation = None,
+    ) -> None:
+        # TODO implement put_bucket_notification as well? ->  no longer used https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketNotificationConfiguration.html
+        # TODO expected_bucket_owner
+
+        # check if the bucket exists
+        get_bucket_from_moto(get_moto_s3_backend(context), bucket=bucket)
+
+        for topic in notification_configuration.get("TopicConfigurations", {}):
+            self._verify_notification(topic, skip_destination_validation)
+
+        for queue in notification_configuration.get("QueueConfigurations", {}):
+            self._verify_notification(queue, skip_destination_validation)
+
+        for cloudfun in notification_configuration.get("LambdaFunctionConfigurations", {}):
+            self._verify_notification(cloudfun, skip_destination_validation)
+
+        self.get_store().bucket_notification_configs[bucket] = notification_configuration
+
+    def get_bucket_notification_configuration(
+        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+    ) -> NotificationConfiguration:
+        # TODO how to verify expected_bucket_owner
+        # check if the bucket exists
+        get_bucket_from_moto(get_moto_s3_backend(context), bucket=bucket)
+        return self.get_store().bucket_notification_configs.get(bucket, NotificationConfiguration())
+
+    def send_bucket_notifications(
+        self,
+        context: RequestContext,
+        bucket_name: str,
+        key_name: str,
+        event: str,
+    ):
+        if self.get_store().bucket_notification_configs.get(bucket_name):
+            bucket = get_moto_s3_backend(context).get_bucket(bucket_name)
+            key = bucket.keys.get(key_name)
+
+            _send_event_message(
+                event_name=event,
+                bucket=bucket,
+                key=key,
+                notifications=self.get_store().bucket_notification_configs.get(bucket_name),
+                xray=context.request.headers.get(HEADER_AMZN_XRAY),
+            )
+
+    def _verify_notification(self, notification, skip_destination_validation=False):
+        """Does some verification of notification settings:
+        - validating the Rule names (and normalizing to capitalized),
+        - setting default ID if not provided,
+        - check if the filter value is not empty
+        - validate the arn pattern
+        """
+
+        # id's can be set the request, but need to be auto-generated if they are not provided
+        if not notification.get("Id"):
+            notification["Id"] = short_uid()
+
+        # arn pattern is always verified
+        # will contain the notification-key (e.g. TopicArn) and the actual arn
+        tmp = {k: v for k, v in notification.items() if "arn" in k.lower()}
+        (type,) = tmp
+        (arn,) = tmp.values()
+
+        if not arn.startswith(f"arn:aws:{NOTIFICATION_FIELDS.get(type)}:"):
+            # TODO raise InvalidArgument (patch service)
+            raise InvalidArgumentError(
+                "The ARN is not well formed", name=type.capitalize(), value=arn
+            )
+        if not skip_destination_validation:
+            self._verify_target_exists(NOTIFICATION_FIELDS.get(type), arn)
+
+        if filter_rules := notification.get("Filter", {}).get("Key", {}).get("FilterRules"):
+            for rule in filter_rules:
+                rule["Name"] = rule["Name"].capitalize()
+                if not rule["Name"] in ["Suffix", "Prefix"]:
+                    # TODO replace with patched InvalidArgument exception (patch service)
+                    raise InvalidArgumentError(
+                        "filter rule name must be either prefix or suffix",
+                        rule["Name"],
+                        rule["Value"],
+                    )
+                if not rule["Value"]:
+                    raise InvalidArgumentError(
+                        "filter value cannot be empty", rule["Name"], rule["Value"]
+                    )
+
+    def _verify_target_exists(self, type: str, arn: str):
+        """verifies if the notification target exists, by trying to access the resource"""
+        region_name = aws_stack.extract_region_from_arn(arn)
+        client = aws_stack.connect_to_service(type, region_name=region_name)
+        account_id = aws_stack.extract_account_id_from_arn(arn)
+
+        # TODO raise InvalidArgument error here (patch service)
+        #      it somehow adds numbers here, e.g. ArgumentValue1, ArgumentName1
+
+        if type == "sqs":
+            try:
+                queue_name = arn.split(":")[-1]
+                client.get_queue_url(QueueName=queue_name, QueueOwnerAWSAccountId=account_id)
+            except Exception:  # noqa
+                raise InvalidArgumentError(
+                    "Unable to validate the following destination configurations",
+                    name=arn,
+                    value="The destination queue does not exist",
+                )
+        elif type == "lambda":
+            try:
+                function_name = aws_stack.lambda_function_name(arn)
+                client.get_function(FunctionName=function_name)
+            except Exception:  # noqua
+                raise InvalidArgumentError(
+                    "Unable to validate the following destination configurations",
+                    name=arn,
+                    value="The destination Lambda does not exist",
+                )
+        elif type == "sns":
+            try:
+                client.get_topic_attributes(TopicArn=arn)
+            except Exception:  # noqua
+                raise InvalidArgumentError(
+                    "Unable to validate the following destination configurations",
+                    name=arn,
+                    value="The destination topic does not exist",
+                )
 
     def add_custom_routes(self):
         # virtual-host style: https://bucket-name.s3.region-code.amazonaws.com/key-name
@@ -594,6 +843,285 @@ def is_object_expired(context: RequestContext, bucket: BucketName, key: ObjectKe
     moto_bucket = get_bucket_from_moto(moto_backend, bucket)
     key_object = get_key_from_moto_bucket(moto_bucket, key)
     return is_key_expired(key_object=key_object)
+
+
+def normalize_bucket_name(bucket_name):
+    bucket_name = bucket_name or ""
+    bucket_name = bucket_name.lower()
+    return bucket_name
+
+
+def _send_event_message_to_topic(
+    notification: TopicConfiguration,
+    event_name: str,
+    bucket: moto_s3_models.FakeBucket,
+    key: moto_s3_models.FakeKey,
+    xray: str = None,
+):
+    event_body = _get_event_message(
+        event_name=event_name[3:],
+        bucket_name=bucket.name,
+        config_id=notification.get("Id"),
+        key_name=key.name,
+        key_etag=key.etag,
+        key_size=key.contentsize,
+        version_id=key.version_id if bucket.is_versioned else None,
+    )
+    message = json.dumps(event_body)
+    topic_arn = notification["TopicArn"]
+
+    region_name = aws_stack.extract_region_from_arn(topic_arn)
+    sns_client = aws_stack.connect_to_service("sns", region_name=region_name)
+    try:
+        sns_client.publish(
+            TopicArn=topic_arn,
+            Message=message,
+            Subject="Amazon S3 Notification",
+        )
+    except Exception as e:
+        LOG.warning(
+            f'Unable to send notification for S3 bucket "{bucket.name}" to SNS topic "{topic_arn}": {e}'
+        )
+
+
+def _send_event_message_to_lambda(
+    notification: LambdaFunctionConfiguration,
+    event_name: str,
+    bucket: moto_s3_models.FakeBucket,
+    key: moto_s3_models.FakeKey,
+    xray: str = None,
+):
+    event_body = _get_event_message(
+        event_name=event_name[3:],
+        bucket_name=bucket.name,
+        config_id=notification.get("Id"),
+        key_name=key.name,
+        key_etag=key.etag,
+        key_size=key.contentsize,
+        version_id=key.version_id if bucket.is_versioned else None,
+    )
+    message = json.dumps(event_body)
+    lambda_arn = notification["LambdaFunctionArn"]
+
+    region_name = aws_stack.extract_region_from_arn(lambda_arn)
+    # make sure we don't run into a socket timeout
+    connection_config = BotoConfig(read_timeout=300)
+    lambda_client = aws_stack.connect_to_service(
+        "lambda", config=connection_config, region_name=region_name
+    )
+    lambda_function_config = aws_stack.lambda_function_name(lambda_arn)
+    try:
+        lambda_client.invoke(
+            FunctionName=lambda_function_config,
+            InvocationType="Event",
+            Payload=message,
+        )
+    except Exception:
+        LOG.warning(
+            f'Unable to send notification for S3 bucket "{bucket.name}" to Lambda function "{lambda_function_config}".'
+        )
+
+
+def _send_event_message_to_queue(
+    notification: QueueConfiguration,
+    event_name: str,
+    bucket: moto_s3_models.FakeBucket,
+    key: moto_s3_models.FakeKey,
+    xray: str = None,
+):
+    event_body = _get_event_message(
+        event_name=event_name[3:],
+        bucket_name=bucket.name,
+        config_id=notification.get("Id"),
+        key_name=key.name,
+        key_etag=key.etag,
+        key_size=key.contentsize,
+        version_id=key.version_id if bucket.is_versioned else None,
+    )
+    message = json.dumps(event_body)
+    queue_arn = notification["QueueArn"]
+
+    region_name = aws_stack.extract_region_from_arn(queue_arn)
+    queue_name = queue_arn.split(":")[-1]
+    sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
+    try:
+        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+        system_attributes = {}
+        if xray:
+            system_attributes["AWSTraceHeader"] = {
+                "DataType": "String",
+                "StringValue": xray,
+            }
+        sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody=message,
+            MessageSystemAttributes=system_attributes,
+        )
+    except Exception as e:
+        LOG.warning(
+            f'Unable to send notification for S3 bucket "{bucket.name}" to SQS queue "{queue_name}": {e}',
+        )
+
+
+def _matching_event(events: EventList, event_name: str) -> bool:
+    if event_name in events:
+        return True
+    wildcard_pattern = f"{event_name[0:event_name.rindex(':')]}:*"
+    if wildcard_pattern in events:
+        return True
+    return False
+
+
+def _matching_filter(filter: Optional[NotificationConfigurationFilter], key_name: str) -> bool:
+    if not filter or not filter.get("Key", {}).get("FilterRules"):
+        return True
+    filter_rules = filter.get("Key").get("FilterRules")
+    for rule in filter_rules:
+        name = rule.get("Name", "").lower()
+        value = rule.get("Value", "")
+        if name == "prefix" and not key_name.startswith(value):
+            return False
+        if name == "suffix" and not key_name.endswith(value):
+            return False
+
+    return True
+
+
+def _send_event_to_event_bridge(
+    event_name: str,
+    bucket: moto_s3_models.FakeBucket,
+    key: moto_s3_models.FakeKey,
+    xray: str = None,
+):
+    s3api_client = aws_stack.connect_to_service("s3")
+    region = (
+        s3api_client.get_bucket_location(Bucket=bucket.name)["LocationConstraint"]
+        or config.DEFAULT_REGION
+    )
+    events_client = aws_stack.connect_to_service("events", region_name=region)
+    # structure defined here: https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
+    entry = {
+        "Source": "aws.s3",
+        "Resources": [f"arn:aws:s3:::{bucket.name}"],
+        "Detail": {
+            "version": "0",
+            "bucket": {"name": bucket.name},
+            "object": {
+                "key": key.name,
+                "size": key.size,
+                "etag": key.etag.strip('"'),
+                "sequencer": "0062E99A88DC407460",
+            },
+            "request-id": "RKREYG1RN2X92YX6",
+            "requester": "074255357339",
+            "source-ip-address": "127.0.0.1",  # TODO previously headers.get("X-Forwarded-For", "127.0.0.1").split(",")[0]
+        },
+    }
+    # messages are bit different for EventBridge, see https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html
+    if "ObjectCreated" in event_name:
+        entry["DetailType"] = "Object Created"
+        event_type = event_name[event_name.rindex(":") + 1 :]
+        if event_type in ["Put", "Post", "Copy"]:
+            event_type = f"{event_type}Object"
+        entry["Detail"]["reason"] = event_type
+
+    if "ObjectRemoved" in event_name:
+        entry["DetailType"] = "Object Deleted"
+        entry["Detail"]["reason"] = "DeleteObject"
+        entry["Detail"]["deletion-type"] = "Permanently Deleted"
+        entry["Detail"]["object"].pop("etag")
+        entry["Detail"]["object"].pop("size")
+
+    if "ObjectTagging" in event_name:
+        entry["DetailType"] = "Object Tags Added" if "Put" in event_name else "Object Tags Deleted"
+
+    entry["Detail"] = json.dumps(entry["Detail"])
+
+    try:
+        events_client.put_events(Entries=[entry])
+    except Exception as e:
+        LOG.exception(f'Unable to send notification for S3 bucket "{bucket}" to EventBridge', e)
+
+
+def _send_event_message(
+    event_name: str,
+    bucket: moto_s3_models.FakeBucket,
+    key: moto_s3_models.FakeKey,
+    notifications: NotificationConfiguration,
+    xray: str = None,
+):
+    for notification in notifications.get("QueueConfigurations", {}):
+        if _matching_event(notification["Events"], event_name) and _matching_filter(
+            notification.get("Filter"), key.name
+        ):
+            _send_event_message_to_queue(notification, event_name, bucket, key, xray)
+
+    for notification in notifications.get("TopicConfigurations", {}):
+        if _matching_event(notification["Events"], event_name) and _matching_filter(
+            notification.get("Filter"), key.name
+        ):
+            _send_event_message_to_topic(notification, event_name, bucket, key, xray)
+
+    for notification in notifications.get("LambdaFunctionConfigurations", {}):
+        if _matching_event(notification["Events"], event_name) and _matching_filter(
+            notification.get("Filter"), key.name
+        ):
+            _send_event_message_to_lambda(notification, event_name, bucket, key, xray)
+
+    if "EventBridgeConfiguration" in notifications:
+        _send_event_to_event_bridge(event_name, bucket, key)
+
+
+def _get_event_message(
+    event_name: str,
+    bucket_name: str,
+    config_id: str,
+    key_name: str,
+    key_size: int,
+    key_etag: str,
+    version_id: str = None,
+) -> List[dict]:
+    # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
+    bucket_name = normalize_bucket_name(bucket_name)
+    content = {
+        "eventVersion": "2.1",
+        "eventSource": "aws:s3",
+        "awsRegion": aws_stack.get_region(),
+        "eventTime": timestamp_millis(),
+        "eventName": event_name,
+        "userIdentity": {"principalId": "AIDAJDPLRKLG7UEXAMPLE"},
+        "requestParameters": {
+            "sourceIPAddress": "127.0.0.1"
+        },  # TODO sourceIPAddress was previously extracted from headers ("X-Forwarded-For")
+        "responseElements": {
+            "x-amz-request-id": short_uid(),
+            "x-amz-id-2": "eftixk72aD6Ap51TnqcoF8eFidJG9Z/2",  # Amazon S3 host that processed the request
+        },
+        "s3": {
+            "s3SchemaVersion": "1.0",
+            "configurationId": config_id,
+            "bucket": {
+                "name": bucket_name,
+                "ownerIdentity": {"principalId": "A3NL1KOZZKExample"},
+                "arn": "arn:aws:s3:::%s" % bucket_name,
+            },
+            "object": {
+                "key": quote(key_name),
+                "sequencer": "0055AED6DCD90281E5",
+            },
+        },
+    }
+    if version_id:
+        # object version if bucket is versioning-enabled, otherwise null
+        content["s3"]["object"]["versionId"] = version_id
+    if "created" in event_name.lower():
+        content["s3"]["object"]["size"] = key_size
+        content["s3"]["object"]["eTag"] = key_etag.strip('"')
+    if "ObjectTagging" in event_name:
+        content["eventVersion"] = "2.3"
+        content["s3"]["object"]["eTag"] = key_etag.strip('"')
+        content["s3"]["object"].pop("sequencer")
+    return {"Records": [content]}
 
 
 @singleton_factory

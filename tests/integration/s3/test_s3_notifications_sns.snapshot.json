@@ -105,5 +105,119 @@
         ]
       }
     }
+  },
+  "tests/integration/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_notifications_with_filter": {
+    "recorded-date": "22-09-2022, 13:28:52",
+    "recorded-content": {
+      "message": {
+        "Message": {
+          "Records": [
+            {
+              "eventVersion": "2.1",
+              "eventSource": "aws:s3",
+              "awsRegion": "<region>",
+              "eventTime": "date",
+              "eventName": "ObjectCreated:Put",
+              "userIdentity": {
+                "principalId": "<principal-id:2>"
+              },
+              "requestParameters": {
+                "sourceIPAddress": "<ip-address:1>"
+              },
+              "responseElements": {
+                "x-amz-request-id": "amz-request-id",
+                "x-amz-id-2": "amz-id"
+              },
+              "s3": {
+                "s3SchemaVersion": "1.0",
+                "configurationId": "<config-id:1>",
+                "bucket": {
+                  "name": "<resource:1>",
+                  "ownerIdentity": {
+                    "principalId": "<principal-id:1>"
+                  },
+                  "arn": "arn:aws:s3:::<resource:1>"
+                },
+                "object": {
+                  "key": "testupload/dir1/testfile.txt",
+                  "size": 35,
+                  "eTag": "f5260f0f41af2722d9fe17a57dfa9da5",
+                  "sequencer": "sequencer"
+                }
+              }
+            }
+          ]
+        },
+        "MessageId": "<uuid:1>",
+        "Signature": "<signature>",
+        "SignatureVersion": "1",
+        "SigningCertURL": "https://sns.<region>.amazonaws.com/SimpleNotificationService-<signing-cert-file:1>",
+        "Subject": "Amazon S3 Notification",
+        "Timestamp": "date",
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:2>",
+        "Type": "Notification",
+        "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:2>:<resource:3>"
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_invalid_topic_arn": {
+    "recorded-date": "22-09-2022, 19:29:33",
+    "recorded-content": {
+      "invalid_not_skip": {
+        "Error": {
+          "ArgumentName": "Topic",
+          "ArgumentValue": "invalid-topic",
+          "Code": "InvalidArgument",
+          "Message": "The ARN is not well formed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid_skip": {
+        "Error": {
+          "ArgumentName": "Topic",
+          "ArgumentValue": "invalid-topic",
+          "Code": "InvalidArgument",
+          "Message": "The ARN is not well formed"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "skip_destination_validation": {
+        "TopicConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Id": "id123",
+            "TopicArn": "arn:aws:sns:<region>:111111111111:my-topic"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/integration/s3/test_s3_notifications_sns.py::TestS3NotificationsToSns::test_bucket_not_exist": {
+    "recorded-date": "23-09-2022, 12:38:09",
+    "recorded-content": {
+      "bucket_not_exists": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucket",
+          "Message": "The specified bucket does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
