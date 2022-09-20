@@ -68,14 +68,31 @@ class ServiceOperation(NamedTuple):
 
 
 class RequestContext:
+    """
+    A RequestContext object holds the information of an HTTP request that is processed by the LocalStack Gateway. The
+    context holds information about the request, such as which AWS service the request is made to, which operation is
+    being invoked, and other metadata such as the account or the region. The context is continuously populated as the
+    request moves through the handler chain. Once the HTTP request has been parsed, the context also holds the parsed
+    request parameters of the AWS API call. The handler chain may also add the AWS response from the backend to the
+    context, so it can be used for logging or modification before going to the serializer.
+    """
+
     request: Optional[Request]
+    """The underlying incoming HTTP request."""
     service: Optional[ServiceModel]
+    """The botocore ServiceModel of the service the request is made to."""
     operation: Optional[OperationModel]
+    """The botocore OperationModel of the AWS operation being invoked."""
     region: Optional[str]
+    """The region the request is made to."""
     account_id: Optional[str]
+    """The account the request is made from."""
     service_request: Optional[ServiceRequest]
+    """The AWS operation parameters."""
     service_response: Optional[ServiceResponse]
+    """The response from the AWS emulator backend."""
     service_exception: Optional[ServiceException]
+    """The exception the AWS emulator backend may have raised."""
 
     def __init__(self) -> None:
         self.service = None
@@ -89,6 +106,12 @@ class RequestContext:
 
     @property
     def service_operation(self) -> Optional[ServiceOperation]:
+        """
+        If both the service model and the operation model are set, this returns a tuple of the service name and
+        operation name.
+
+        :return: a tuple like ("s3", "PutObject") or ("lambda", "CreateFunction")
+        """
         if not self.service or not self.operation:
             return None
         return ServiceOperation(self.service.service_name, self.operation.name)
@@ -98,9 +121,20 @@ class RequestContext:
 
 
 class ServiceRequestHandler(Protocol):
+    """
+    A protocol to describe a Request--Response handler that processes an AWS API call with the already parsed request.
+    """
+
     def __call__(
         self, context: RequestContext, request: ServiceRequest
     ) -> Optional[Union[ServiceResponse, Response]]:
+        """
+        Handle the given request.
+
+        :param context: the request context
+        :param request: the request parameters, e.g., ``{"Bucket": "my-bucket-name"}`` for an s3 create bucket operation
+        :return: either an already serialized HTTP Response object, or a service response dictionary.
+        """
         raise NotImplementedError
 
 
