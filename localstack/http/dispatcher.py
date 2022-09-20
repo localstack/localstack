@@ -37,6 +37,7 @@ def resource_dispatcher(pass_response: bool = False) -> Dispatcher:
     """
     A ``Dispatcher`` treats a Router endpoint like a REST resource, which dispatches the request further to the
     respective ``on_<http_verb>`` method. The following shows an example of how the pattern is used::
+
         class Foo:
             def on_get(self, request: Request):
                 return {"ok": "GET it"}
@@ -85,13 +86,35 @@ def resource_dispatcher(pass_response: bool = False) -> Dispatcher:
 
 
 class Handler(Protocol):
+    """
+    A protocol used by a ``Router`` together with the dispatcher created with ``handler_dispatcher``. Endpoints added
+    with this protocol take as first argument the HTTP request object, and then as keyword arguments the request
+    parameters added in the rule. This makes it work very similar to flask routes.
+
+    Example code could look like this::
+
+        def my_route(request: Request, organization: str, repo: str):
+            return {"something": "returned as json response"}
+
+        router = Router(dispatcher=handler_dispatcher)
+        router.add("/<organization>/<repo>", endpoint=my_route)
+
+    """
+
     def __call__(self, request: Request, **kwargs) -> ResultValue:
-        pass
+        """
+        Handle the given request.
+
+        :param request: the HTTP request object
+        :param kwargs: the url request parameters
+        :return: a string or bytes value, a dict to create a json response, or a raw werkzeug Response object.
+        """
+        raise NotImplementedError
 
 
 def handler_dispatcher() -> Dispatcher[Handler]:
     """
-    Creates a Dispatcher that treats endpoints like callables of the Handler Protocol.
+    Creates a Dispatcher that treats endpoints like callables of the ``Handler`` Protocol.
 
     :return: a new dispatcher
     """
