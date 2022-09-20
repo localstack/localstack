@@ -553,7 +553,7 @@ class TestAPIGateway:
             cors, "ALLOWED_CORS_ORIGINS", cors.ALLOWED_CORS_ORIGINS + ["http://allowed"]
         )
 
-        resps = [
+        responses = [
             {
                 "statusCode": "200",
                 "httpMethod": "OPTIONS",
@@ -564,20 +564,20 @@ class TestAPIGateway:
             }
         ]
         api_id = self.create_api_gateway_and_deploy(
-            integration_type="MOCK", integration_responses=resps
+            integration_type="MOCK", integration_responses=responses
         )
 
         # invoke endpoint with Origin header
         endpoint = self._get_invoke_endpoint(
             api_id, stage=self.TEST_STAGE_NAME, path="/", use_hostname=use_hostname
         )
-        headers = {"Origin": origin}
-        response = requests.options(endpoint, headers=headers)
+        response = requests.options(endpoint, headers={"Origin": origin})
 
         # assert response codes and CORS headers
         if disable_custom_cors:
             if origin == "http://allowed":
                 assert response.status_code == 204
+                assert "http://allowed" in response.headers["Access-Control-Allow-Origin"]
             else:
                 assert response.status_code == 403
         else:
