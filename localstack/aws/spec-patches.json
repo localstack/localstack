@@ -115,6 +115,146 @@
       "op": "add",
       "path": "/shapes/GetBucketLocationOutput/payload",
       "value": "LocationConstraint"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/BucketAlreadyOwnedByYou/members/BucketName",
+      "value": {
+        "shape": "BucketName"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/GetObjectOutput/members/StatusCode",
+      "value": {
+        "shape": "GetObjectResponseStatusCode",
+        "location": "statusCode"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchKey/members/Key",
+      "value": {
+        "shape": "ObjectKey"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/NoSuchKey/error",
+      "value": {
+        "httpStatusCode": 404
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/PreconditionFailed",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Condition": {
+            "shape": "IfCondition"
+          }
+        },
+        "error": {
+          "httpStatusCode": 412
+        },
+        "documentation": "<p>At least one of the pre-conditions you specified did not hold</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/IfCondition",
+      "value": {
+        "type": "string"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidRange",
+      "value": {
+        "type": "structure",
+        "members": {
+          "ActualObjectSize": {
+            "shape": "ObjectSize"
+          },
+          "RangeRequested": {
+            "shape": "ContentRange"
+          }
+        },
+        "error": {
+          "httpStatusCode": 416
+        },
+        "documentation": "<p>The requested range is not satisfiable</p>",
+        "exception": true
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/HeadObjectOutput/members/Expires",
+      "value": {
+        "shape": "Expires",
+        "documentation": "<p>The date and time at which the object is no longer cacheable.</p>",
+        "location": "header",
+        "locationName": "expires"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/GetObjectOutput/members/Expires",
+      "value": {
+        "shape": "Expires",
+        "documentation": "<p>The date and time at which the object is no longer cacheable.</p>",
+        "location": "header",
+        "locationName": "expires"
+      }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/DeleteObjectsOutput"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/DeleteResult",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Deleted": {
+            "shape": "DeletedObjects",
+            "documentation": "<p>Container element for a successful delete. It identifies the object that was successfully deleted.</p>"
+          },
+          "RequestCharged": {
+            "shape": "RequestCharged",
+            "location": "header",
+            "locationName": "x-amz-request-charged"
+          },
+          "Errors": {
+            "shape": "Errors",
+            "documentation": "<p>Container for a failed delete action that describes the object that Amazon S3 attempted to delete and the error it encountered.</p>",
+            "locationName": "Error"
+          }
+        }
+      }
+    },
+    {
+      "op": "replace",
+      "path": "/operations/DeleteObjects/output/shape",
+      "value": "DeleteResult"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/RestoreObjectOutputStatusCode",
+      "value": {
+        "type": "integer"
+      }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/RestoreObjectOutput/members/StatusCode",
+      "value": {
+        "shape": "RestoreObjectOutputStatusCode",
+        "location": "statusCode"
+      }
     }
   ]
 }
