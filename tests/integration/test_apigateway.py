@@ -17,6 +17,7 @@ from requests.structures import CaseInsensitiveDict
 
 from localstack import config
 from localstack.aws.accounts import get_aws_account_id
+from localstack.aws.handlers import cors
 from localstack.config import get_edge_url
 from localstack.constants import (
     APPLICATION_JSON,
@@ -540,6 +541,48 @@ class TestAPIGateway:
 
         # clean up
         proxy.stop()
+
+    @pytest.mark.parametrize("use_hostname", [True, False])
+    @pytest.mark.parametrize("disable_custom_cors", [True, False])
+    @pytest.mark.parametrize("origin", ["http://allowed", "http://denied"])
+    def test_invoke_endpoint_cors_headers(
+        self, use_hostname, disable_custom_cors, origin, monkeypatch
+    ):
+        monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_APIGATEWAY", disable_custom_cors)
+        monkeypatch.setattr(
+            cors, "ALLOWED_CORS_ORIGINS", cors.ALLOWED_CORS_ORIGINS + ["http://allowed"]
+        )
+
+        responses = [
+            {
+                "statusCode": "200",
+                "httpMethod": "OPTIONS",
+                "responseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": "'http://test.com'",
+                    "method.response.header.Vary": "'Origin'",
+                },
+            }
+        ]
+        api_id = self.create_api_gateway_and_deploy(
+            integration_type="MOCK", integration_responses=responses
+        )
+
+        # invoke endpoint with Origin header
+        endpoint = self._get_invoke_endpoint(
+            api_id, stage=self.TEST_STAGE_NAME, path="/", use_hostname=use_hostname
+        )
+        response = requests.options(endpoint, headers={"Origin": origin})
+
+        # assert response codes and CORS headers
+        if disable_custom_cors:
+            if origin == "http://allowed":
+                assert response.status_code == 204
+                assert "http://allowed" in response.headers["Access-Control-Allow-Origin"]
+            else:
+                assert response.status_code == 403
+        else:
+            assert response.status_code == 200
+            assert "http://test.com" in response.headers["Access-Control-Allow-Origin"]
 
     def test_api_gateway_lambda_proxy_integration(self):
         self._test_api_gateway_lambda_proxy_integration(

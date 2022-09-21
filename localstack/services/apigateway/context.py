@@ -90,6 +90,7 @@ class ApiInvocationContext:
         self.response_templates = {}
         self.stage_variables = {}
         self.path_params = {}
+        self.route = None
         self.ws_route = None
 
     @property
