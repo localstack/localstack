@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List, Optional, Tuple
 
 from localstack import config
-from localstack.services import install
+from localstack.services.kinesis.packages import kinesismock_package
 from localstack.utils.common import (
     TMP_THREADS,
     ShellCommandThread,
@@ -103,9 +103,8 @@ def create_kinesis_mock_server(port=None, persist_path: Optional[str] = None) ->
     config.KINESIS_INITIALIZE_STREAMS -> Initialize the given streams on startup
     """
     port = port or get_free_tcp_port()
-    is_kinesis_mock_installed, kinesis_mock_bin_path = install.get_is_kinesis_mock_installed()
-    if not is_kinesis_mock_installed:
-        install.install_kinesis_mock(kinesis_mock_bin_path)
+    kinesismock_package.install()
+    kinesis_mock_bin_path = kinesismock_package.get_installer().get_executable_path()
     persist_path = (
         f"{config.dirs.data}/kinesis" if not persist_path and config.dirs.data else persist_path
     )
