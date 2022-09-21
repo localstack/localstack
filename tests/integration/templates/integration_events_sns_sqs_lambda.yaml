@@ -1,3 +1,14 @@
+Parameters:
+  FunctionName:
+    Type: String
+  QueueName:
+    Type: String
+  TopicName:
+    Type: String
+  BusName:
+    Type: String
+  RuleName:
+    Type: String
 Resources:
   LogFnServiceRoleA176C900:
     Type: AWS::IAM::Role
@@ -48,7 +59,7 @@ Resources:
         Fn::GetAtt:
           - LogFnServiceRoleA176C900
           - Arn
-      FunctionName: fn-{{ref_id}}
+      FunctionName: !Ref FunctionName
       Handler: index.handler
       Runtime: python3.8
     DependsOn:
@@ -95,7 +106,7 @@ Resources:
   queue276F7297:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: queue-{{ref_id}}
+      QueueName: !Ref QueueName
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
   queuePolicy89DB7105:
@@ -126,7 +137,7 @@ Resources:
   topic69831491:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: topic-{{ref_id}}
+      TopicName: !Ref TopicName
   topicPolicyBC9D8025:
     Type: AWS::SNS::TopicPolicy
     Properties:
@@ -145,7 +156,7 @@ Resources:
   bus707364D1:
     Type: AWS::Events::EventBus
     Properties:
-      Name: bus-{{ref_id}}
+      Name: !Ref BusName
   ruleF2C1DCDC:
     Type: AWS::Events::Rule
     Properties:
@@ -154,7 +165,7 @@ Resources:
       EventPattern:
         version:
           - "0"
-      Name: rule-{{ref_id}}
+      Name: !Ref RuleName
       State: ENABLED
       Targets:
         - Arn:

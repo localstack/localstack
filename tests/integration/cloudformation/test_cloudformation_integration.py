@@ -1,26 +1,35 @@
 import json
 import os
 
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 
 
 def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cfn_template):
-    ref_id = short_uid()
+    function_name = f"function-{short_uid()}"
+    queue_name = f"queue-{short_uid()}"
+    topic_name = f"topic-{short_uid()}"
+    bus_name = f"bus-{short_uid()}"
+    rule_name = f"function-{short_uid()}"
+
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../templates/integration_events_sns_sqs_lambda.yaml"
         ),
-        template_mapping={"ref_id": ref_id},
+        parameters={
+            "FunctionName": function_name,
+            "QueueName": queue_name,
+            "TopicName": topic_name,
+            "BusName": bus_name,
+            "RuleName": rule_name,
+        },
     )
 
     assert len(stack.outputs) == 7
     lambda_name = stack.outputs["FnName"]
     bus_name = stack.outputs["EventBusName"]
 
-    # verify SNS topic policy is present
-    topic_arn = aws_stack.sns_topic_arn(f"topic-{ref_id}")  # TODO: make this an output
+    topic_arn = stack.outputs["TopicArn"]
     result = sns_client.get_topic_attributes(TopicArn=topic_arn)["Attributes"]
     assert json.loads(result.get("Policy")) == {
         "Statement": [
@@ -46,7 +55,6 @@ def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cf
         ]
     )
 
-    # verifying functions have been called and the respective log groups/streams were created
     def _check_lambda_invocations():
         groups = logs_client.describe_log_groups(logGroupNamePrefix=f"/aws/lambda/{lambda_name}")
         streams = logs_client.describe_log_streams(
@@ -64,8 +72,8 @@ def test_events_sqs_sns_lambda(logs_client, events_client, sns_client, deploy_cf
             )["events"]
             all_events.extend(events)
 
-        assert [e for e in all_events if f"topic-{ref_id}" in e["message"]]
-        assert [e for e in all_events if f"queue-{ref_id}" in e["message"]]
+        assert [e for e in all_events if topic_name in e["message"]]
+        assert [e for e in all_events if queue_name in e["message"]]
         return True
 
     assert wait_until(_check_lambda_invocations)
