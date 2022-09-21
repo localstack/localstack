@@ -384,9 +384,10 @@ class TestKMS:
         with pytest.raises(to_region_client.exceptions.NotFoundException):
             to_region_client.describe_key(KeyId=key_id)
 
-        kms_replicate_key(
+        response = kms_replicate_key(
             region_from=region_to_replicate_from, KeyId=key_id, ReplicaRegion=region_to_replicate_to
         )
+        assert response.get("ReplicaKeyMetadata")
         to_region_client.describe_key(KeyId=key_id)
         from_region_client.describe_key(KeyId=key_id)
 

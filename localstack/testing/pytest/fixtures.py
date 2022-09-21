@@ -835,7 +835,7 @@ def kms_replicate_key(create_boto_client):
     def _replicate_key(region_from=None, **kwargs):
         region_to = kwargs.get("ReplicaRegion")
         key_ids.append((region_to, kwargs.get("KeyId")))
-        create_boto_client("kms", region_from).replicate_key(**kwargs)
+        return create_boto_client("kms", region_from).replicate_key(**kwargs)
 
     yield _replicate_key
 

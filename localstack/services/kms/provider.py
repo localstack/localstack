@@ -52,6 +52,7 @@ from localstack.aws.api.kms import (
     InvalidGrantIdException,
     InvalidKeyUsageException,
     KeyIdType,
+    KeyState,
     KmsApi,
     KMSInvalidStateException,
     LimitType,
@@ -164,7 +165,8 @@ class ValidationError(CommonServiceException):
 
 
 class KmsProvider(KmsApi, ServiceLifecycleHook):
-    def _get_store(self, context: RequestContext) -> KmsStore:
+    @staticmethod
+    def _get_store(context: RequestContext) -> KmsStore:
         return kms_stores[context.account_id][context.region]
 
     def _get_key(self, context: RequestContext, key_id: str) -> KmsKey:
@@ -200,7 +202,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self, context: RequestContext, request: CancelKeyDeletionRequest
     ) -> CancelKeyDeletionResponse:
         key = self._get_key(context, request.get("KeyId"))
-        key.metadata["KeyState"] = "Disabled"
+        key.metadata["KeyState"] = KeyState.Disabled
         key.metadata["DeletionDate"] = None
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_CancelKeyDeletion.html#API_CancelKeyDeletion_ResponseElements
         # "The Amazon Resource Name (key ARN) of the KMS key whose deletion is canceled."
@@ -209,13 +211,13 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     @handler("DisableKey", expand=False)
     def disable_key(self, context: RequestContext, request: DisableKeyRequest) -> None:
         key = self._get_key(context, request.get("KeyId"))
-        key.metadata["KeyState"] = "Disabled"
+        key.metadata["KeyState"] = KeyState.Disabled
         key.metadata["Enabled"] = False
 
     @handler("EnableKey", expand=False)
     def enable_key(self, context: RequestContext, request: EnableKeyRequest) -> None:
         key = self._get_key(context, request.get("KeyId"))
-        key.metadata["KeyState"] = "Enabled"
+        key.metadata["KeyState"] = KeyState.Enabled
         key.metadata["Enabled"] = True
 
     @handler("ListKeys", expand=False)
@@ -228,6 +230,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 for key in self._get_store(context).keys.values()
             ]
         )
+        # https://docs.aws.amazon.com/kms/latest/APIReference/API_ListKeys.html#API_ListKeys_RequestParameters
+        # Regarding the default value of Limit: "If you do not include a value, it defaults to 100."
         page, next_token = keys_list.get_page(
             lambda key_data: key_data.get("KeyId"),
             next_token=request.get("Marker"),
@@ -268,6 +272,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # replicas.
         replica_key.calculate_and_set_arn(context.account_id, replica_region)
         replicate_to_store.keys[key_id] = replica_key
+        return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key.metadata)
 
     @handler("UpdateKeyDescription", expand=False)
     def update_key_description(
@@ -289,7 +294,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         request["KeyId"] = store.get_canonical_key_id(request.get("KeyId"))
         self._validate_grant_request(request, store)
         grant_name = request.get("Name")
-        grant = None
         if grant_name and grant_name in store.grant_names:
             grant = store.grants[store.grant_names[grant_name]]
         else:
@@ -364,8 +368,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     # We currently do not model permissions for retirement and revocation of grants. At least not in KMS,
     # maybe IAM in LocalStack has some modelling though. We also accept both key IDs and key ARNs for both
     # operations. So apart from RevokeGrant not accepting GrantToken parameter, we treat these two operations the same.
+    @staticmethod
     def _delete_grant(
-        self, store: KmsStore, grant_id: str = None, key_id: str = None, grant_token: str = None
+        store: KmsStore, grant_id: str = None, key_id: str = None, grant_token: str = None
     ):
         if grant_token:
             if grant_token not in store.grant_tokens:
