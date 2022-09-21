@@ -2,10 +2,10 @@ import json
 import os
 import urllib.parse
 
+import pytest
+
 from localstack.constants import PATH_USER_REQUEST
 from localstack.utils.generic.wait_utils import wait_until
-
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))  # TODO
 
 
 def test_statemachine_definitionsubstitution(stepfunctions_client, s3_client, deploy_cfn_template):
@@ -241,3 +241,26 @@ def test_retry_and_catch(deploy_cfn_template, stepfunctions_client, sqs_client):
     # fetch the message
     receive_result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
     assert receive_result["Messages"][0]["Body"] == "Fail"
+
+
+@pytest.mark.aws_validated
+def test_cfn_statemachine_with_dependencies(deploy_cfn_template, stepfunctions_client):
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../templates/statemachine_test.json"
+        ),
+        max_wait=150,
+    )
+
+    rs = stepfunctions_client.list_state_machines()
+    sm_name = "SFSM22S5Y"
+    statemachines = [sm for sm in rs["stateMachines"] if sm_name in sm["name"]]
+    assert len(statemachines) == 1
+
+    stack.destroy()
+
+    rs = stepfunctions_client.list_state_machines()
+    statemachines = [sm for sm in rs["stateMachines"] if sm_name in sm["name"]]
+
+    assert not statemachines
