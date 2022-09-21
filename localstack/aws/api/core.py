@@ -35,13 +35,15 @@ class ServiceException(Exception):
     sender_fault: bool
     message: str
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         super(ServiceException, self).__init__(*args)
 
         if len(args) >= 1:
             self.message = args[0]
         else:
             self.message = ""
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
 class CommonServiceException(ServiceException):

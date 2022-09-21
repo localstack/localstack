@@ -11,19 +11,13 @@ from typing import Dict, Optional
 
 from mypy_boto3_s3 import S3Client
 
-from localstack.aws.api.lambda_ import (
-    InvocationType,
-    LastUpdateStatus,
-    ResourceNotFoundException,
-    State,
-)
+from localstack.aws.api.lambda_ import InvocationType, LastUpdateStatus, State
 from localstack.services.awslambda.invocation.lambda_models import (
     FunctionVersion,
     Invocation,
     InvocationResult,
     S3Code,
     UpdateStatus,
-    VersionIdentifier,
     VersionState,
 )
 from localstack.services.awslambda.invocation.models import lambda_stores
@@ -51,8 +45,13 @@ class LambdaService:
         self.task_executor = ThreadPoolExecutor()
 
     def stop(self) -> None:
+        """
+        Stop the whole lambda service
+        """
         shutdown_futures = []
         for version_manager in self.lambda_running_versions.values():
+            shutdown_futures.append(self.task_executor.submit(version_manager.stop))
+        for version_manager in self.lambda_starting_versions.values():
             shutdown_futures.append(self.task_executor.submit(version_manager.stop))
         concurrent.futures.wait(shutdown_futures, timeout=5)
         self.task_executor.shutdown(cancel_futures=True)
@@ -79,35 +78,6 @@ class LambdaService:
             raise ValueError(f"Could not find version '{function_arn}'. Is it created?")
 
         return version_manager
-
-    # TODO: is this sync?
-    # TODO: what's the point of the qualifier here?
-    def delete_function(
-        self, account_id: str, region_name: str, function_name: str, qualifier: str
-    ):
-        state = lambda_stores[account_id][region_name]
-        version_id = VersionIdentifier(
-            function_name=function_name, qualifier=qualifier, region=region_name, account=account_id
-        )
-        if function_name not in state.functions:
-            raise ResourceNotFoundException(f"Function not found: {version_id.qualified_arn()}")
-        function = state.functions.pop(function_name)
-        for version in function.versions.values():
-            self.stop_version(qualified_arn=version.id.qualified_arn())
-
-    def delete_version(self, function_version: FunctionVersion):
-        # TODO is this necessary?
-        self.stop_version(qualified_arn=function_version.id.qualified_arn())
-
-    def get_function_version(
-        self,
-        account_id: str,
-        region_name: str,
-        function_name: str,
-        qualifier: Optional[str] = "$LATEST",
-    ) -> FunctionVersion:
-        state = lambda_stores[account_id][region_name]
-        return state.functions[function_name].versions[qualifier]
 
     def create_function_version(self, function_version: FunctionVersion) -> None:
         """
@@ -171,12 +141,24 @@ class LambdaService:
     def update_version_state(
         self, function_version: FunctionVersion, new_state: VersionState
     ) -> None:
+        """
+        Update the version state for the given function version.
+
+        This will perform a rollover to the given function if the new state is active and there is a previously
+        running version registered. The old version will be shutdown and its code deleted.
+
+        If the new state is failed, it will abort the update and mark it as failed.
+        If an older version is still running, it will keep running.
+
+        :param function_version: Version reporting the state
+        :param new_state: New state
+        """
         function_arn = function_version.qualified_arn
         with self.lambda_version_manager_lock:
             new_version = self.lambda_starting_versions.pop(function_arn)
             if not new_version:
                 raise ValueError(
-                    f"Version {function_arn} reporting state Active does exist in the starting versions."
+                    f"Version {function_arn} reporting state {new_state.state} does exist in the starting versions."
                 )
             if new_state.state == State.Active:
                 old_version = self.lambda_running_versions.get(function_arn, None)
@@ -184,7 +166,6 @@ class LambdaService:
                 if old_version:
                     # if there is an old version, we assume it is an update, and stop the old one
                     self.task_executor.submit(old_version.stop)
-                    old_version.function_version.config.code.destroy()
                 update_status = UpdateStatus(status=LastUpdateStatus.Successful)
             elif new_state.state == State.Failed:
                 update_status = UpdateStatus(status=LastUpdateStatus.Failed)
@@ -218,6 +199,15 @@ class LambdaService:
 def store_lambda_archive(
     archive_file: bytes, function_name: str, region_name: str, account_id: str
 ) -> S3Code:
+    """
+    Stores the given lambda archive in an internal s3 bucket
+
+    :param archive_file: Archive file to store
+    :param function_name: function name the archive should be stored for
+    :param region_name: region name the archive should be stored for
+    :param account_id: account id the archive should be stored for
+    :return: S3 Code object representing the archive stored in S3
+    """
     # store all buckets in us-east-1 for now
     s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
     bucket_name = f"awslambda-{region_name}-tasks"
@@ -243,6 +233,17 @@ def store_s3_bucket_archive(
     region_name: str,
     account_id: str,
 ) -> S3Code:
+    """
+    Takes the lambda archive stored in the given bucket and stores it in an internal s4 bucket
+
+    :param archive_bucket: Bucket the archive is stored in
+    :param archive_key: Key the archive is stored under
+    :param archive_version: Version of the archive object in the bucket
+    :param function_name: function name the archive should be stored for
+    :param region_name: region name the archive should be stored for
+    :param account_id: account id the archive should be stored for
+    :return: S3 Code object representing the archive stored in S3
+    """
     s3_client: "S3Client" = aws_stack.connect_to_service("s3")
     kwargs = {"VersionId": archive_version} if archive_version else {}
     archive_file = s3_client.get_object(Bucket=archive_bucket, Key=archive_key, **kwargs)[

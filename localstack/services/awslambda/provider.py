@@ -262,7 +262,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if function_name not in state.functions:
             raise ResourceNotFoundException(
-                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}"
+                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}",
+                Type="User",
             )
         function = state.functions[function_name]
 
@@ -328,7 +329,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = lambda_stores[context.account_id][context.region]
         if function_name not in state.functions:
             raise ResourceNotFoundException(
-                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}"
+                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}",
+                Type="User",
             )
         function = state.functions[function_name]
         # TODO verify if correct combination of code is set
@@ -400,16 +402,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # TODO: error message if just the version is not there
         if function_name not in state.functions:
-            raise ResourceNotFoundException(
-                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}"
+            e = ResourceNotFoundException(
+                f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}",
+                Type="User",
             )  # TODO: should probably include qualifier if one is available?
+            raise e
         function = state.functions.pop(function_name)
 
         if qualifier:
             # delete a version of the function
             if qualifier not in function.versions:
                 raise ResourceNotFoundException(
-                    f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}"
+                    f"Function not found: {lambda_arn_without_qualifier(function_name=function_name, region=context.region, account=context.account_id)}",
+                    Type="User",
                 )  # TODO: adapt to version?
             version = function.versions.pop(qualifier)
             self.lambda_service.stop_version(version.qualified_arn())
@@ -417,6 +422,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             # delete the whole function
             for version in function.versions.values():
                 self.lambda_service.stop_version(qualified_arn=version.id.qualified_arn())
+                # we can safely destroy the code here
+                version.config.code.destroy()
 
     def list_functions(
         self,

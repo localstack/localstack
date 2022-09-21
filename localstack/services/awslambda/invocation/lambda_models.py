@@ -1,7 +1,10 @@
 import abc
 import dataclasses
+import logging
 import threading
 from typing import TYPE_CHECKING, Optional
+
+from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import (
     Architecture,
@@ -22,6 +25,8 @@ from localstack.utils.strings import long_uid
 
 if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
+
+LOG = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -61,7 +66,12 @@ class S3Code:
     def destroy(self) -> None:
         s3_client: "S3Client" = aws_stack.connect_to_service("s3", region_name="us-east-1")
         kwargs = {"VersionId": self.s3_object_version} if self.s3_object_version else {}
-        s3_client.delete_object(Bucket=self.s3_bucket, Key=self.s3_key, **kwargs)
+        try:
+            s3_client.delete_object(Bucket=self.s3_bucket, Key=self.s3_key, **kwargs)
+        except ClientError as e:
+            LOG.debug(
+                "Cannot delete lambda archive %s in bucket %s: %s", self.s3_key, self.s3_bucket, e
+            )
 
 
 @dataclasses.dataclass
