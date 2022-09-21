@@ -9,7 +9,7 @@ from localstack.utils.common import short_uid
 
 def test_delete_role_detaches_role_policy(cfn_client, iam_client, deploy_cfn_template):
     role_name = f"LsRole{short_uid()}"
-    deploy_cfn_template(
+    stack = deploy_cfn_template(
         template_path=os.path.join(os.path.dirname(__file__), "../templates/iam_role_policy.yaml"),
         parameters={"RoleName": role_name},
     )
@@ -17,8 +17,17 @@ def test_delete_role_detaches_role_policy(cfn_client, iam_client, deploy_cfn_tem
         "AttachedPolicies"
     ]
     assert len(attached_policies) > 0
-    # TODO: need to update stack to delete only a single resource
-    # assert len(attached_policies) > 0
+
+    deploy_cfn_template(
+        is_update=True,
+        stack_name=stack.stack_name,
+        template_path=os.path.join(os.path.dirname(__file__), "../templates/iam_role_policy.yaml"),
+        parameters={"RoleName": f"role-{short_uid()}"},
+    )
+
+    with pytest.raises(Exception) as e:
+        iam_client.list_attached_role_policies(RoleName=role_name)["AttachedPolicies"]
+    assert e.value.response.get("Error").get("Code") == "NoSuchEntity"
 
 
 def test_policy_attachments(
