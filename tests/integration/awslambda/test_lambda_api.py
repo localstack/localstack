@@ -61,6 +61,7 @@ def environment_length_bytes(e: dict) -> int:
 
 
 @pytest.mark.skipif(is_old_provider(), reason="focusing on new provider")
+@pytest.mark.skip_snapshot_verify(paths=["$..Type"])
 class TestLambdaFunction:
     # TODO: maybe need to wait for each update to be active?
     @pytest.mark.aws_validated

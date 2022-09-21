@@ -90,9 +90,9 @@ class VpcConfig:
 
 @dataclasses.dataclass(frozen=True)
 class UpdateStatus:
-    status: LastUpdateStatus
-    code: Optional[str] = None  # TODO: probably not a string
-    reason: Optional[str] = None
+    status: LastUpdateStatus | None
+    code: str | None = None  # TODO: probably not a string
+    reason: str | None = None
 
 
 @dataclasses.dataclass
@@ -122,6 +122,7 @@ class VersionFunctionConfiguration:
     tracing_config_mode: TracingMode
     code: S3Code
     last_modified: str  # ISO string
+    state: VersionState
 
     image_config: Optional[ImageConfig] = None
     last_update: Optional[UpdateStatus] = None

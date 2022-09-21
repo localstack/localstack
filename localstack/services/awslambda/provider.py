@@ -42,6 +42,8 @@ from localstack.aws.api.lambda_ import (
     ResourceConflictException,
     ResourceNotFoundException,
     ServiceException,
+    State,
+    StateReasonCode,
     String,
     TracingConfig,
     TracingMode,
@@ -57,6 +59,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     UpdateStatus,
     VersionFunctionConfiguration,
     VersionIdentifier,
+    VersionState,
 )
 from localstack.services.awslambda.invocation.lambda_service import (
     LambdaService,
@@ -103,8 +106,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 optional_kwargs["LastUpdateStatusReasonCode"] = version.config.last_update.code
             if version.config.last_update.reason:
                 optional_kwargs["LastUpdateStatusReason"] = version.config.last_update.reason
-        version_state = self.lambda_service.get_state_for_version(version)
-        if version_state:
+
+        if version_state := version.config.state:
             if version_state.state:
                 optional_kwargs["State"] = version_state.state
             if version_state.reason:
@@ -232,6 +235,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     ephemeral_storage=LambdaEphemeralStorage(
                         size=request.get("EphemeralStorage", {}).get("Size", 512)
                     ),
+                    state=VersionState(
+                        state=State.Pending,
+                        code=StateReasonCode.Creating,
+                        reason="The function is being created.",
+                    ),
                 ),
             )
             fn.versions["$LATEST"] = version
@@ -293,13 +301,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             config=dataclasses.replace(
                 latest_version_config,
                 last_modified=generate_lambda_date(),
+                internal_revision=short_uid(),
                 last_update=UpdateStatus(
-                    LastUpdateStatus.Successful
-                ),  # TODO: will need to be active at some point ...
+                    status=LastUpdateStatus.InProgress,
+                    code="Creating",
+                    reason="The function is being created.",
+                ),
                 **replace_kwargs,
             ),
         )
         function.versions["$LATEST"] = new_latest_version  # TODO: notify
+        self.lambda_service.update_version(new_version=new_latest_version)
 
         return self._map_config_out(new_latest_version)
 
@@ -342,18 +354,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             raise ServiceException("Gotta have s3 bucket or zip file")
 
         old_function_version = function.versions.get("$LATEST")
-        # TODO proper rollover
-        self.lambda_service.delete_version(function_version=old_function_version)
-        # TODO this should be encapsulated better
-        old_code = old_function_version.config.code
-        old_code.destroy()
         config = dataclasses.replace(
-            old_function_version.config, code=code, internal_revision=short_uid()
+            old_function_version.config,
+            code=code,
+            internal_revision=short_uid(),
+            last_modified=generate_lambda_date(),
+            last_update=UpdateStatus(
+                status=LastUpdateStatus.InProgress,
+                code="Creating",
+                reason="The function is being created.",
+            ),
         )
         function_version = dataclasses.replace(old_function_version, config=config)
         function.versions["$LATEST"] = function_version
 
-        self.lambda_service.create_function_version(function_version=function_version)
+        self.lambda_service.update_version(new_version=function_version)
         return self._map_config_out(function_version)
 
     # TODO: does deleting the latest published version affect the next versions number?
@@ -411,7 +426,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,  # TODO
         max_items: MaxListItems = None,  # TODO
     ) -> ListFunctionsResponse:
-        versions = self.lambda_service.list_function_versions(context.account_id, context.region)
+        state = lambda_stores[context.account_id][context.region]
+        versions = [f.latest() for f in state.functions.values()]  # TODO: qualifier
         return ListFunctionsResponse(
             Functions=[self._map_to_list_response(self._map_config_out(fc)) for fc in versions]
         )

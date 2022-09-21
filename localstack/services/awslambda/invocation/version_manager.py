@@ -7,7 +7,7 @@ from concurrent.futures import Future
 from datetime import datetime
 from queue import Queue
 from threading import Thread
-from typing import Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 from localstack.aws.api.lambda_ import State, StateReasonCode
 from localstack.services.awslambda.invocation.lambda_models import (
@@ -26,6 +26,9 @@ from localstack.services.awslambda.invocation.runtime_environment import (
 )
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
+
+if TYPE_CHECKING:
+    from localstack.services.awslambda.invocation.lambda_service import LambdaService
 
 LOG = logging.getLogger(__name__)
 
@@ -114,16 +117,20 @@ class LambdaVersionManager(ServiceEndpoint):
     provisioned_concurrent_executions: int
     invocation_thread: Optional[Thread]
     shutdown_event: threading.Event
-    state: VersionState
+    state: VersionState | None
     log_handler: LogHandler
+    # TODO not sure about this backlink, maybe a callback is better?
+    lambda_service: "LambdaService"
 
     def __init__(
         self,
         function_arn: str,
         function_version: FunctionVersion,
+        lambda_service: "LambdaService",
     ):
         self.function_arn = function_arn
         self.function_version = function_version
+        self.lambda_service = lambda_service
         self.running_invocations = {}
         self.available_environments = queue.LifoQueue()
         self.all_environments = {}
@@ -131,11 +138,7 @@ class LambdaVersionManager(ServiceEndpoint):
         self.provisioned_concurrent_executions = 0
         self.invocation_thread = None
         self.shutdown_event = threading.Event()
-        self.state = VersionState(
-            state=State.Pending,
-            code=StateReasonCode.Creating,
-            reason="The function is being created.",
-        )
+        self.state = None
         self.log_handler = LogHandler()
 
     def start(self) -> None:
@@ -147,7 +150,9 @@ class LambdaVersionManager(ServiceEndpoint):
             RuntimeExecutor.prepare_version(self.function_version)
 
             self.state = VersionState(state=State.Active)
-            LOG.debug(f"Lambda '{self.function_arn}' changed to active")
+            LOG.debug(
+                f"Lambda '{self.function_arn}' (id {self.function_version.config.internal_revision}) changed to active"
+            )
         except Exception as e:
             self.state = VersionState(
                 state=State.Failed,
@@ -156,6 +161,10 @@ class LambdaVersionManager(ServiceEndpoint):
             )
             LOG.debug(
                 f"Lambda '{self.function_arn}' changed to failed. Reason: %s", e, exc_info=True
+            )
+        finally:
+            self.lambda_service.update_version_state(
+                function_version=self.function_version, new_state=self.state
             )
 
     def stop(self) -> None:

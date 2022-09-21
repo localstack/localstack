@@ -214,6 +214,7 @@ class RuntimeExecutor:
         target_path.mkdir(parents=True, exist_ok=True)
         # write code to disk
         target_code = get_code_path_for_function(function_version)
+        target_code.mkdir(parents=True, exist_ok=True)
         with NamedTemporaryFile() as file:
             file.write(function_version.config.code.get_lambda_archive())
             file.flush()

@@ -1,21 +1,28 @@
 import base64
 import concurrent.futures
+import dataclasses
 import io
 import logging
 import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from hashlib import sha256
 from threading import RLock
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from mypy_boto3_s3 import S3Client
 
-from localstack.aws.api.lambda_ import InvocationType, ResourceNotFoundException
+from localstack.aws.api.lambda_ import (
+    InvocationType,
+    LastUpdateStatus,
+    ResourceNotFoundException,
+    State,
+)
 from localstack.services.awslambda.invocation.lambda_models import (
     FunctionVersion,
     Invocation,
     InvocationResult,
     S3Code,
+    UpdateStatus,
     VersionIdentifier,
     VersionState,
 )
@@ -32,18 +39,20 @@ LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 class LambdaService:
     # mapping from qualified ARN to version manager
-    lambda_version_managers: Dict[str, LambdaVersionManager]
+    lambda_running_versions: Dict[str, LambdaVersionManager]
+    lambda_starting_versions: Dict[str, LambdaVersionManager]
     lambda_version_manager_lock: RLock
     task_executor: Executor
 
     def __init__(self) -> None:
-        self.lambda_version_managers = {}
+        self.lambda_running_versions = {}
+        self.lambda_starting_versions = {}
         self.lambda_version_manager_lock = RLock()
         self.task_executor = ThreadPoolExecutor()
 
     def stop(self) -> None:
         shutdown_futures = []
-        for version_manager in self.lambda_version_managers.values():
+        for version_manager in self.lambda_running_versions.values():
             shutdown_futures.append(self.task_executor.submit(version_manager.stop))
         concurrent.futures.wait(shutdown_futures, timeout=5)
         self.task_executor.shutdown(cancel_futures=True)
@@ -54,7 +63,7 @@ class LambdaService:
         :param qualified_arn: Qualified arn for the version to stop
         """
         LOG.debug("Stopping version %s", qualified_arn)
-        version_manager = self.lambda_version_managers.pop(qualified_arn)
+        version_manager = self.lambda_running_versions.pop(qualified_arn)
         if not version_manager:
             raise ValueError(f"Unable to find version manager for {qualified_arn}")
         self.task_executor.submit(version_manager.stop)
@@ -65,7 +74,7 @@ class LambdaService:
         :param function_arn: qualified arn for the lambda version
         :return: LambdaVersionManager for the arn
         """
-        version_manager = self.lambda_version_managers.get(function_arn)
+        version_manager = self.lambda_running_versions.get(function_arn)
         if not version_manager:
             raise ValueError(f"Could not find version '{function_arn}'. Is it created?")
 
@@ -100,22 +109,26 @@ class LambdaService:
         state = lambda_stores[account_id][region_name]
         return state.functions[function_name].versions[qualifier]
 
-    def list_function_versions(self, account_id: str, region_name: str) -> List[FunctionVersion]:
-        state = lambda_stores[account_id][region_name]
-        return [f.latest() for f in state.functions.values()]  # TODO: qualifier
-
     def create_function_version(self, function_version: FunctionVersion) -> None:
+        """
+        Creates a new function version (manager), and puts it in the startup dict
+
+        :param function_version: Function Version to create
+        """
         with self.lambda_version_manager_lock:
             qualified_arn = function_version.id.qualified_arn()
-            version_manager = self.lambda_version_managers.get(qualified_arn)
+            version_manager = self.lambda_starting_versions.get(qualified_arn)
             if version_manager:
-                raise Exception("Version '%s' already created", qualified_arn)
+                raise Exception(
+                    "Version '%s' already starting up and in state %s",
+                    qualified_arn,
+                    version_manager.state,
+                )
             version_manager = LambdaVersionManager(
-                function_arn=qualified_arn,
-                function_version=function_version,
+                function_arn=qualified_arn, function_version=function_version, lambda_service=self
             )
-            self.lambda_version_managers[qualified_arn] = version_manager
-            self.task_executor.submit(version_manager.start)
+            self.lambda_starting_versions[qualified_arn] = version_manager
+        self.task_executor.submit(version_manager.start)
 
     # Commands
     def invoke(
@@ -125,6 +138,15 @@ class LambdaService:
         client_context: Optional[str],
         payload: bytes,
     ) -> "Future[InvocationResult]":
+        """
+        Invokes a specific version of a lambda
+
+        :param function_arn_qualified: Qualified function arn
+        :param invocation_type: Invocation Type
+        :param client_context: Client Context, if applicable
+        :param payload: Invocation payload
+        :return: A future for the invocation result
+        """
         version_manager = self.get_lambda_version_manager(function_arn_qualified)
         return version_manager.invoke(
             invocation=Invocation(
@@ -132,9 +154,65 @@ class LambdaService:
             )
         )
 
-    def get_state_for_version(self, version: FunctionVersion) -> VersionState:
-        version_manager = self.get_lambda_version_manager(version.qualified_arn)
-        return version_manager.state
+    def update_version(self, new_version: FunctionVersion) -> None:
+        """
+        Updates a given version. Will perform a rollover, so the old version will be active until the new one is ready
+        to be invoked
+
+        :param new_version: New version (with the same qualifier as an older one)
+        """
+        if new_version.qualified_arn not in self.lambda_running_versions:
+            raise ValueError(
+                f"Version {new_version.qualified_arn} cannot be updated if an old one is not running"
+            )
+
+        return self.create_function_version(function_version=new_version)
+
+    def update_version_state(
+        self, function_version: FunctionVersion, new_state: VersionState
+    ) -> None:
+        function_arn = function_version.qualified_arn
+        with self.lambda_version_manager_lock:
+            new_version = self.lambda_starting_versions.pop(function_arn)
+            if not new_version:
+                raise ValueError(
+                    f"Version {function_arn} reporting state Active does exist in the starting versions."
+                )
+            if new_state.state == State.Active:
+                old_version = self.lambda_running_versions.get(function_arn, None)
+                self.lambda_running_versions[function_arn] = new_version
+                if old_version:
+                    # if there is an old version, we assume it is an update, and stop the old one
+                    self.task_executor.submit(old_version.stop)
+                    old_version.function_version.config.code.destroy()
+                update_status = UpdateStatus(status=LastUpdateStatus.Successful)
+            elif new_state.state == State.Failed:
+                update_status = UpdateStatus(status=LastUpdateStatus.Failed)
+                self.task_executor.submit(new_version.stop)
+            else:
+                # TODO what to do if state pending or inactive is supported?
+                self.task_executor.submit(new_version.stop)
+                LOG.error(
+                    "State %s for version %s should not have been reported. New version will be stopped.",
+                    new_state,
+                    function_arn,
+                )
+                return
+
+        # TODO is it necessary to get the version again? Should be locked for modification anyway
+        state = lambda_stores[function_version.id.account][function_version.id.region]
+        current_version = state.functions[function_version.id.function_name].versions[
+            function_version.id.qualifier
+        ]
+        new_version = dataclasses.replace(
+            current_version,
+            config=dataclasses.replace(
+                current_version.config, state=new_state, last_update=update_status
+            ),
+        )
+        state.functions[function_version.id.function_name].versions[
+            function_version.id.qualifier
+        ] = new_version
 
 
 def store_lambda_archive(
