@@ -3,6 +3,8 @@ Parameters:
     Type: String
   Param2:
     Type: String
+  BuckeName:
+    Type: String
 Conditions:
   condition1:
     Fn::Equals:
@@ -20,5 +22,5 @@ Resources:
   MyBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: {{ bucket_name }}
+      BucketName: !Ref BucketName
     Condition: condition3
